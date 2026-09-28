@@ -18,7 +18,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 |---|---|
 | App | Next.js 16 (App Router), TypeScript, Tailwind |
 | Versión | **16.3.6**, la que está en `package.json`. El 30 de septiembre, subir a **16.3.7** cuando salga el parche de seguridad |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. Un solo color de acento, el lima `#B7EE34` (`--acento`). El texto sobre ese fondo es `#08090C` (`--sobre-acento`) |
+| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Inter. Un solo color de acento, lo define Abdiel. Hoy `--acento` es `#1c1c1c` |
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es la de Abdiel, y solo para Laya |
@@ -90,7 +90,7 @@ La referencia es Ramp: el integrante resuelve su parte en el teléfono en segund
 - **Revisión.** La foto a la izquierda. A la derecha, una tarjeta corta: cumplió, parcial o insuficiente, y la frase de la evidencia. Un botón: Aprobar. Si hace falta otra foto, un enlace secundario, no un segundo botón del mismo peso.
 - **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
 
-Una pantalla, una acción principal. Fondo claro, Poppins, mucho espacio, un solo color de acento (lima `#B7EE34`). Estados con color: pendiente, en revisión, pagado.
+Una pantalla, una acción principal. Fondo claro, Inter, mucho espacio, un solo color de acento. Estados con color: pendiente, en revisión, pagado.
 
 ## Salida del lunes 28
 

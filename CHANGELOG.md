@@ -18,7 +18,6 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Cambiado
 
-- La app usa Poppins y el botón primario lleva el lima `#B7EE34`, con texto `#08090C` para que el rótulo se lea. Abdiel, PR #7.
 - La documentación quedó al día con lo que ya está después de las pantallas del integrante: qué está hecho, qué sigue y de quién es cada parte. Josué Valles, PR #2.
 - Quedó escrito que cada cambio va en una rama con el nombre de la persona y la tarea, y entra por pull request. Josué Valles (entró directo, sin pull request).
 - Se alineó el orden del trabajo de cada persona y quedó claro que el Acta entra solo después de un pago. Josué Valles (entró directo, sin pull request).
@@ -29,6 +28,6 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - Sebas: publicar el identificador de Cavos. Sin eso, las cuentas de prueba no se preparan y el botón Entrar avisa que lo está esperando.
 - Sebas: dejar listo el dinero guardado hasta aprobar, la forma de firmar el pago y, solo después de un pago, el Acta.
 - Esteban: guardar los datos y las fotos, y publicar las rutas que las pantallas ya llaman. Mientras no existan, se sigue viendo el ejemplo de ZEEK.
-- Abdiel: el diseño de las seis pantallas y la dirección de Laya. Poppins y el lima `#B7EE34` ya están.
+- Abdiel: el diseño de las seis pantallas, el color de acento y la dirección de Laya.
 - Josué: conectar la bandeja con las rutas de Esteban, y los botones Fondear y Aprobar con la firma de Sebas. El 30 de septiembre, actualizar la versión de la aplicación.
 - Raúl: dejar listas las cuatro cuentas del demo cuando exista el identificador de Cavos.
