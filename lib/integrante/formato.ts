@@ -24,10 +24,11 @@ function fechaDeCalendario(anio: number, mes: number, dia: number): string | nul
 
 export function formatearFecha(iso: string): string {
   const limpio = iso.trim();
-  const calendario = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?(?:Z|[+-]00:00))?$/.exec(limpio);
+  const calendario = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?(?:[zZ]|[+-]00:?00))?$/.exec(limpio);
   if (calendario) {
     const texto = fechaDeCalendario(Number(calendario[1]), Number(calendario[2]), Number(calendario[3]));
     if (texto) return texto;
+    return iso;
   }
   const fecha = new Date(limpio);
   if (Number.isNaN(fecha.getTime())) return iso;
