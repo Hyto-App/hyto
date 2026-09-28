@@ -6,7 +6,7 @@ Organización: [Hyto-App](https://github.com/Hyto-App)
 
 Contexto para quien construya:
 
-- [PLAN.md](PLAN.md) — orden de trabajo de cada persona, con el mínimo de dependencias.
+- [PLAN.md](PLAN.md) — orden de trabajo de cada persona. Cada entrega va en una rama `nombre/tarea` y entra por pull request. Nadie sube directo a `main`.
 - [STACK.md](STACK.md) — stack cerrado y reglas del dinero.
 - [ROLES.md](ROLES.md) — qué hace cada persona. La IA de cada integrante actúa solo dentro de su rol.
 - [Hyto-informe.md](Hyto-informe.md) — informe general: premisa, stack, roles, demo y calendario.

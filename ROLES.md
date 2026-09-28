@@ -34,7 +34,7 @@ Evento de ZEEK, montos de ejemplo:
 | Josué | App del admin | Next.js del organizador: crear proyecto, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia, y las cuentas de testnet del demo |
 
-Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro.
+Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: cada entrega es una rama `nombre/tarea` y un pull request.
 
 Raúl es nuevo en hackatones. Su parte se ve en el demo y tiene revisión al lado: Josué en la app, Sebas en las wallets. No toma el escrow ni la arquitectura.
 

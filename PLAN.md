@@ -1,6 +1,8 @@
 # Plan para empezar a codear Hyto
 
-El contrato está en [STACK.md](STACK.md) y [ROLES.md](ROLES.md). Cada quien avanza su lista en orden, en su propia rama. No espera a otra persona salvo el único dato marcado como encuentro.
+El contrato está en [STACK.md](STACK.md) y [ROLES.md](ROLES.md). Cada quien avanza su lista en orden. No espera a otra persona salvo el único dato marcado como encuentro.
+
+Nadie sube directo a `main`. Cada entrega va en una rama `nombre/tarea` y entra por pull request. Ejemplos: `sebas/escrow`, `esteban/neon-blob`, `abdiel/pantallas`, `josue/admin`, `raul/mis-tareas`. Cuando esa parte se mergea, la siguiente tarea abre otra rama desde `main` actualizado. No se reutiliza la misma rama para todo el proyecto.
 
 El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un hito sin foto, y el informe.
 
