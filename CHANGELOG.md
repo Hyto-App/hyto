@@ -8,7 +8,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 - Quedó creado el repositorio y se compartió el plan del proyecto, los roles de cada persona y cómo está armada la aplicación. Josué Valles (entró directo, sin pull request).
 - El integrante ya puede ver sus tareas, con monto y estado, y subir una foto como evidencia de un trabajo o de un reembolso. Si el servidor todavía no responde, se muestra el ejemplo del evento ZEEK: tres trabajos de US$20 y un reembolso de comida de hasta US$15. También está la pantalla de las cuatro cuentas de prueba; espera el identificador de Cavos para mostrar la dirección y dejar el pago listo. Raúl (Milasur), PR #1.
-- El módulo de firma ya prepara el XDR de fondear, marcar el hito y aprobar y liberar, y envía el XDR firmado. Las rutas son `POST /api/firma` y `POST /api/firma/enviar`. El script `scripts/hito-prueba.ts` usa ese módulo en testnet. Fondear y Aprobar del admin todavía no lo llaman. Sebastián Ceciliano, rama `sebas/escrow`.
+- El módulo de firma ya prepara el XDR de fondear, marcar el hito y aprobar y liberar, y envía el XDR firmado. Las rutas son `POST /api/firma` y `POST /api/firma/enviar`. El script `scripts/hito-prueba.ts` usa ese módulo en testnet. Fondear y Aprobar del admin todavía no lo llaman. Sebastián Ceciliano, PR #8.
 - El organizador ya tiene la bandeja de inicio (presupuesto, lo pagado, lo pendiente y lo que falta aprobar), la pantalla para crear un proyecto, la revisión de una evidencia y un informe para imprimir. Usan el mismo ejemplo de ZEEK. El botón Entrar llama a Cavos solo si ya existe el identificador. Fondear y Aprobar todavía no firman un pago. Josué Valles, PR #3.
 
 ### Arreglado
