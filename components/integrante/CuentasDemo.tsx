@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
@@ -21,6 +21,7 @@ function filasIniciales(): CuentaPreparada[] {
 export function CuentasDemo() {
   const [cuentas, setCuentas] = useState<CuentaPreparada[]>(filasIniciales);
   const [preparando, setPreparando] = useState(false);
+  const preparandoRef = useRef(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const hayApp = appIdPublico() !== null;
 
@@ -36,16 +37,22 @@ export function CuentasDemo() {
   }, []);
 
   async function preparar() {
+    if (preparandoRef.current) return;
     if (!hayApp) {
       setAviso("Las cuentas esperan el identificador de Cavos.");
       return;
     }
+    preparandoRef.current = true;
     setAviso(null);
     setPreparando(true);
-    await prepararCuentasDemo((cuenta) => {
-      setCuentas((actuales) => actuales.map((item) => (item.id === cuenta.id ? cuenta : item)));
-    });
-    setPreparando(false);
+    try {
+      await prepararCuentasDemo((cuenta) => {
+        setCuentas((actuales) => actuales.map((item) => (item.id === cuenta.id ? cuenta : item)));
+      });
+    } finally {
+      preparandoRef.current = false;
+      setPreparando(false);
+    }
   }
 
   return (
@@ -75,7 +82,11 @@ export function CuentasDemo() {
         </BotonPrincipal>
       </div>
 
-      {aviso ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {aviso ? (
+        <p role="alert" className="mt-4 text-sm leading-6 text-[var(--suave)]">
+          {aviso}
+        </p>
+      ) : null}
     </main>
   );
 }
