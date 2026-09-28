@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/integrante/*.test.ts"
+    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts"
   },
   "dependencies": {
     "@cavos/kit": "0.2.5",

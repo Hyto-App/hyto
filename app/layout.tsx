@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Hyto",
-  description: "Tareas y evidencia del integrante",
+  description: "Control de gastos y pagos por hitos",
 };
 
 export const viewport: Viewport = {
@@ -21,9 +21,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={inter.variable}>
-      <body className="min-h-dvh antialiased">
-        <div className="mx-auto min-h-dvh w-full max-w-md px-5 py-8">{children}</div>
-      </body>
+      <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
 }

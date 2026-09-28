@@ -11,7 +11,7 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
 | Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
-| Pantallas del admin, informe, botón Entrar | No existen. `/` redirige a `/mis-tareas` | Josué |
+| Pantallas del admin, informe, botón Entrar | En `josue/admin`, con datos fijos. `/` es la bandeja. Falta conectar rutas y el módulo de firma | Josué |
 | Neon, Blob, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, Scout | No existen | Esteban |
 | Escrow, módulo de firma, Acta | No existen. Acta solo después de un pago en USDC | Sebas |
 | Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
