@@ -64,7 +64,7 @@ function normalizarTarea(valor: unknown): Tarea | null {
     proyectoId: texto(crudo.proyectoId) ?? "",
     titulo,
     tipo: tipoTarea,
-    monto: texto(crudo.monto) ?? "0",
+    monto: texto(crudo.monto) ?? "",
     tope: texto(crudo.tope),
     condicion: texto(crudo.condicion) ?? "",
     miembroId: texto(crudo.miembroId) ?? "",
@@ -132,12 +132,8 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
 
 export async function leerTarea(id: string, filtro: FiltroTareas, opciones: OpcionesRuta = {}): Promise<{ tarea: Tarea | null; ejemplo: boolean }> {
   const lista = await listarTareas(filtro, opciones);
-  const propia = lista.tareas.find((tarea) => tarea.id === id);
-  if (propia) return { tarea: propia, ejemplo: lista.ejemplo };
-  if (!lista.ejemplo) return { tarea: null, ejemplo: false };
-
-  const cualquiera = conEstados(tareasEjemplo(), opciones.estados).find((tarea) => tarea.id === id) ?? null;
-  return { tarea: cualquiera, ejemplo: true };
+  const propia = lista.tareas.find((tarea) => tarea.id === id) ?? null;
+  return { tarea: propia, ejemplo: lista.ejemplo };
 }
 
 export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: OpcionesRuta = {}): Promise<FotoEnviada> {

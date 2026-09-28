@@ -40,19 +40,20 @@ export function MisTareas() {
   }, [miembroId]);
 
   function elegir(id: string) {
+    if (id === miembroId) return;
     guardarMiembro(id);
     setMiembroId(id);
     setLista(false);
   }
 
-  const siguiente = tareas.find((tarea) => tarea.estado === "pendiente") ?? null;
+  const siguiente = lista ? (tareas.find((tarea) => tarea.estado === "pendiente") ?? null) : null;
 
   return (
     <main>
       <header className="mb-8">
         <p className="text-sm text-[var(--suave)]">Hyto</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Mis tareas</h1>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Integrante">
           {MIEMBROS.map((item) => (
             <button
               key={item.id}
@@ -68,38 +69,48 @@ export function MisTareas() {
         {direccion ? <p className="mt-3 font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p> : null}
       </header>
 
-      {!lista ? <p className="text-[var(--suave)]">Cargando tareas…</p> : null}
+      {!lista ? (
+        <p className="text-[var(--suave)]" aria-live="polite">
+          Cargando tareas…
+        </p>
+      ) : null}
 
       {lista && tareas.length === 0 ? <p className="text-lg text-[var(--suave)]">No tienes tareas.</p> : null}
 
-      <div className="space-y-4">
-        {tareas.map((tarea) => {
-          const esSiguiente = siguiente?.id === tarea.id;
-          return (
-            <article key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
-              <p className="text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                <Link href={`/tareas/${tarea.id}`} className="underline-offset-4 hover:underline">
-                  {tarea.titulo}
-                </Link>
-              </h2>
-              {tarea.condicion ? <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}
-              <div className="mt-6 flex items-end justify-between gap-4">
-                <p className="text-2xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
-                <PastillaEstado estado={tarea.estado} />
-              </div>
-              {!esSiguiente && tarea.estado === "pendiente" ? (
-                <Link href={`/tareas/${tarea.id}`} className="mt-5 inline-block text-sm font-medium text-[var(--suave)]">
-                  Subir esta evidencia
-                </Link>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
+      {lista && tareas.length > 0 ? (
+        <div className="space-y-4">
+          {tareas.map((tarea) => {
+            const esSiguiente = siguiente?.id === tarea.id;
+            return (
+              <article key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
+                <p className="text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
+                <h2 className="mt-1 text-xl font-semibold tracking-tight">
+                  <Link href={`/tareas/${tarea.id}`} className="underline-offset-4 hover:underline">
+                    {tarea.titulo}
+                  </Link>
+                </h2>
+                {tarea.condicion ? <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}
+                <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+                  <p className="text-2xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
+                  <PastillaEstado estado={tarea.estado} />
+                </div>
+                {!esSiguiente && tarea.estado === "pendiente" ? (
+                  <Link
+                    href={`/tareas/${tarea.id}`}
+                    aria-label={`Subir evidencia de ${tarea.titulo}`}
+                    className="mt-5 inline-block text-sm font-medium text-[var(--suave)]"
+                  >
+                    Subir esta evidencia
+                  </Link>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
 
       {siguiente ? (
-        <Link href={`/tareas/${siguiente.id}`} className={`${claseBoton} mt-6`}>
+        <Link href={`/tareas/${siguiente.id}`} aria-label={`Subir evidencia de ${siguiente.titulo}`} className={`${claseBoton} mt-6`}>
           Subir evidencia
         </Link>
       ) : null}

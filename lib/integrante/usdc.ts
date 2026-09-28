@@ -13,13 +13,18 @@ export function cuentaTieneUsdc(cuenta: { balances?: Saldo[] } | null): boolean 
 }
 
 export async function consultarUsdc(direccion: string, fetchImpl: typeof fetch = fetch): Promise<boolean> {
-  const respuesta = await fetchImpl(`https://horizon-testnet.stellar.org/accounts/${direccion}`);
-  if (respuesta.status === 404) return false;
-  if (!respuesta.ok) {
+  try {
+    const respuesta = await fetchImpl(`https://horizon-testnet.stellar.org/accounts/${encodeURIComponent(direccion)}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (respuesta.status === 404) return false;
+    if (!respuesta.ok) throw new Error("No se pudo leer la cuenta.");
+    const json = (await respuesta.json()) as { balances?: Saldo[] };
+    return cuentaTieneUsdc(json);
+  } catch (error) {
+    if (error instanceof Error && error.message === "No se pudo leer la cuenta.") throw error;
     throw new Error("No se pudo leer la cuenta.");
   }
-  const json = (await respuesta.json()) as { balances?: Saldo[] };
-  return cuentaTieneUsdc(json);
 }
 
 export async function asegurarCobroUsdc(
@@ -35,7 +40,13 @@ export async function asegurarCobroUsdc(
   }
 
   if (billetera.status === "undeployed") {
-    await billetera.execute(1n, billetera.address);
+    try {
+      // La cuenta patrocinada nace con 0 XLM. Ese pago de 1 stroop a sí misma
+      // puede fallar recién creada; la trustline no depende de él.
+      await billetera.execute(1n, billetera.address);
+    } catch (error) {
+      if (billetera.status === "undeployed") throw error;
+    }
   }
 
   if (await tieneUsdc(billetera.address)) {

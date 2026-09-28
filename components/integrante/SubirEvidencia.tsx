@@ -15,6 +15,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const streamRef = useRef<MediaStream | null>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
   const fotoUrlRef = useRef<string | null>(null);
+  const montadoRef = useRef(true);
+  const enviandoRef = useRef(false);
   const [fase, setFase] = useState<Fase>("cargando");
   const [tarea, setTarea] = useState<Tarea | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
@@ -44,6 +46,9 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         return;
       }
       setFase("inicio");
+    }).catch(() => {
+      if (!activo) return;
+      setFase("faltante");
     });
     return () => {
       activo = false;
@@ -51,16 +56,26 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   }, [tareaId]);
 
   useEffect(() => {
+    montadoRef.current = true;
     return () => {
+      montadoRef.current = false;
       streamRef.current?.getTracks().forEach((pista) => pista.stop());
+      streamRef.current = null;
       if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     };
   }, []);
 
   useEffect(() => {
     if (fase !== "camara" || !videoRef.current || !streamRef.current) return;
-    videoRef.current.srcObject = streamRef.current;
-    void videoRef.current.play();
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    let vivo = true;
+    void video.play().catch(() => {
+      if (vivo) setError("No se pudo mostrar la cámara.");
+    });
+    return () => {
+      vivo = false;
+    };
   }, [fase]);
 
   function usarFoto(blob: Blob) {
@@ -87,6 +102,10 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         audio: false,
         video: { facingMode: { ideal: "environment" } },
       });
+      if (!montadoRef.current) {
+        stream.getTracks().forEach((pista) => pista.stop());
+        return;
+      }
       streamRef.current = stream;
       setFase("camara");
     } catch {
@@ -97,12 +116,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   function tomarFoto() {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      setError("La cámara todavía no está lista.");
+      return;
+    }
     const lienzo = document.createElement("canvas");
-    lienzo.width = video.videoWidth || 1280;
-    lienzo.height = video.videoHeight || 720;
+    lienzo.width = video.videoWidth;
+    lienzo.height = video.videoHeight;
     const contexto = lienzo.getContext("2d");
-    if (!contexto) return;
+    if (!contexto) {
+      setError("No se pudo tomar la foto.");
+      return;
+    }
     contexto.drawImage(video, 0, 0);
     lienzo.toBlob(
       (blob) => {
@@ -121,11 +146,16 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo) return;
+    if (archivo.type && !archivo.type.startsWith("image/")) {
+      setError("Elige una foto.");
+      return;
+    }
     usarFoto(archivo);
   }
 
   async function enviar() {
-    if (!tarea || !foto) return;
+    if (!tarea || !foto || enviandoRef.current) return;
+    enviandoRef.current = true;
     setFase("enviando");
     setError(null);
     try {
@@ -141,6 +171,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     } catch {
       setError("No se pudo enviar. Intenta otra vez.");
       setFase("foto");
+    } finally {
+      enviandoRef.current = false;
     }
   }
 
@@ -154,7 +186,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   }
 
   if (fase === "cargando") {
-    return <p className="text-[var(--suave)]">Cargando…</p>;
+    return (
+      <main>
+        <p className="text-[var(--suave)]">Cargando…</p>
+      </main>
+    );
   }
 
   if (fase === "faltante" || !tarea) {
@@ -197,7 +233,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={fotoUrl} alt="Evidencia" className="aspect-[3/4] w-full object-cover" />
           ) : fase === "camara" ? (
-            <video ref={videoRef} playsInline muted className="aspect-[3/4] w-full object-cover" />
+            <video ref={videoRef} playsInline muted aria-label="Vista previa de la cámara" className="aspect-[3/4] w-full object-cover" />
           ) : (
             <div className="flex aspect-[3/4] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
               {tarea.tipo === "reembolso" ? "Foto del comprobante" : "Foto de lo hecho"}
@@ -238,7 +274,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </div>
       )}
 
-      {error ? <p className="mt-4 text-sm text-[var(--pendiente-tinta)]">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-4 text-sm text-[var(--pendiente-tinta)]">
+          {error}
+        </p>
+      ) : null}
 
       {fase === "foto" || fase === "lista" ? (
         <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
@@ -255,6 +295,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         type="file"
         accept="image/*"
         capture="environment"
+        tabIndex={-1}
+        aria-hidden="true"
         className="sr-only"
         onChange={elegirArchivo}
       />
