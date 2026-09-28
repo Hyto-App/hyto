@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
-import { listarTareas, subirEvidencia } from "./rutas";
+import { leerTarea, listarTareas, subirEvidencia } from "./rutas";
 import type { Tarea } from "./tipos";
 
 function json(body: unknown, status = 200): Response {
@@ -114,6 +114,33 @@ test("si la lectura trae monto y fecha, la pantalla puede mostrarlos", async () 
   assert.equal(enviada.ejemplo, false);
   assert.equal(enviada.evidencia.monto, "9.5");
   assert.equal(enviada.evidencia.fecha, "2026-09-28");
+});
+
+test("la evidencia de ejemplo no abre la tarea de otro integrante", async () => {
+  const fetchImpl: typeof fetch = async () => {
+    throw new Error("red");
+  };
+  const ajena = await leerTarea("stand", { miembroId: "voluntario-2" }, { fetch: fetchImpl });
+  assert.equal(ajena.tarea, null);
+
+  const propia = await leerTarea(
+    "stand",
+    { miembroId: "voluntario-1" },
+    { fetch: fetchImpl, estados: { stand: "en revisión" } },
+  );
+  assert.equal(propia.ejemplo, true);
+  assert.equal(propia.tarea?.id, "stand");
+  assert.equal(propia.tarea?.estado, "en revisión");
+});
+
+test("un monto que no viene no se inventa como cero", async () => {
+  const fetchImpl: typeof fetch = async () =>
+    json({
+      tareas: [{ id: "sin-monto", titulo: "Sin monto", tipo: "trabajo", miembroId: "voluntario-1" }],
+    });
+  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl });
+  assert.equal(lista.ejemplo, false);
+  assert.equal(lista.tareas[0]?.monto, "");
 });
 
 test("el estado local de ejemplo pisa el pendiente", async () => {

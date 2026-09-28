@@ -1,5 +1,7 @@
 export function formatearMonto(monto: string): string {
-  const valor = Number(monto);
+  const limpio = monto.trim();
+  if (!limpio) return "";
+  const valor = Number(limpio);
   if (!Number.isFinite(valor)) return monto;
   const decimales = Number.isInteger(valor) ? 0 : 2;
   return `US$${valor.toLocaleString("en-US", {
@@ -8,13 +10,32 @@ export function formatearMonto(monto: string): string {
   })}`;
 }
 
+function fechaDeCalendario(anio: number, mes: number, dia: number): string | null {
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));
+  if (fecha.getUTCFullYear() !== anio || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) return null;
+  return new Intl.DateTimeFormat("es-CR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(fecha);
+}
+
 export function formatearFecha(iso: string): string {
-  const fecha = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
+  const limpio = iso.trim();
+  const calendario = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?(?:Z|[+-]00:00))?$/.exec(limpio);
+  if (calendario) {
+    const texto = fechaDeCalendario(Number(calendario[1]), Number(calendario[2]), Number(calendario[3]));
+    if (texto) return texto;
+  }
+  const fecha = new Date(limpio);
   if (Number.isNaN(fecha.getTime())) return iso;
   return new Intl.DateTimeFormat("es-CR", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "America/Costa_Rica",
   }).format(fecha);
 }
 
@@ -25,7 +46,8 @@ export function acortarDireccion(direccion: string): string {
 
 export function montoDeTarea(tarea: { tipo: "trabajo" | "reembolso"; monto: string; tope: string | null }): string {
   if (tarea.tipo === "reembolso") {
-    return `Hasta ${formatearMonto(tarea.tope ?? tarea.monto)}`;
+    const tope = formatearMonto(tarea.tope ?? tarea.monto);
+    return tope ? `Hasta ${tope}` : "";
   }
   return formatearMonto(tarea.monto);
 }
