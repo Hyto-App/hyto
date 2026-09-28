@@ -42,8 +42,9 @@ export function Entrar() {
         setAviso("No se pudo entrar.");
         return;
       }
-      guardarDireccionAdmin(billetera.address);
+      const guardado = guardarDireccionAdmin(billetera.address);
       setDireccion(billetera.address);
+      if (guardado.aviso) setAviso(guardado.aviso);
     } catch (error) {
       setAviso(error instanceof Error ? error.message : "No se pudo entrar.");
     } finally {

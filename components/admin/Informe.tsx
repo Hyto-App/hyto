@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
-import { montoDeTarea } from "@/lib/integrante/formato";
+import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { formatearMonto } from "@/lib/integrante/formato";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 
 export function Informe() {
-  const [vista, setVista] = useState<VistaAdmin>(() => vistaAdmin(null));
+  const [vista, setVista] = useState<VistaAdmin | null>(null);
 
   useEffect(() => {
     setVista(vistaAdmin(leerMemoriaAdmin()));
   }, []);
+
+  if (!vista) {
+    return <p className="text-[var(--suave)]">Cargando…</p>;
+  }
 
   return (
     <main>
@@ -48,6 +52,8 @@ export function Informe() {
               {persona.tareas.map((tarea) => {
                 const pago = enlacePago(tarea.hashPago);
                 const credencial = enlaceCredencial(tarea.credencialUrl);
+                const detalle = detalleMonto(tarea);
+                const cifra = detalle.hasta ? `Hasta ${formatearMonto(detalle.cifra)}` : formatearMonto(detalle.cifra);
                 return (
                   <div key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -57,7 +63,10 @@ export function Informe() {
                       </div>
                       <PastillaEstado estado={tarea.estado} />
                     </div>
-                    <p className="mt-4 text-xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
+                    <p className="mt-4 text-xl font-semibold tracking-tight">{cifra}</p>
+                    {detalle.tope && detalle.tope !== detalle.cifra ? (
+                      <p className="mt-1 text-sm text-[var(--suave)]">Tope {formatearMonto(detalle.tope)}</p>
+                    ) : null}
                     {tarea.frase ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.frase}</p> : null}
                     {pago || credencial ? (
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">

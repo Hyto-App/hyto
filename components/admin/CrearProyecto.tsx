@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { guardarProyecto } from "@/lib/admin/memoria";
+import { normalizarMonto } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 
 type Fila = {
@@ -13,14 +14,16 @@ type Fila = {
   monto: string;
 };
 
-function filaVacia(): Fila {
+const FILA_INICIAL: Fila = { clave: "1", titulo: "", tipo: "trabajo", monto: "" };
+
+function filaNueva(): Fila {
   return { clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`, titulo: "", tipo: "trabajo", monto: "" };
 }
 
 export function CrearProyecto() {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
-  const [filas, setFilas] = useState<Fila[]>([filaVacia()]);
+  const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
@@ -32,26 +35,30 @@ export function CrearProyecto() {
       .map((fila) => ({
         titulo: fila.titulo.trim(),
         tipo: fila.tipo,
-        monto: fila.monto.trim(),
+        monto: normalizarMonto(fila.monto),
       }))
       .filter((fila) => fila.titulo || fila.monto);
 
     const nombreLimpio = nombre.trim();
-    const montosValidos = tareas.every((fila) => fila.titulo && Number(fila.monto) > 0);
+    const montosValidos = tareas.every((fila) => fila.titulo && fila.monto);
     if (!nombreLimpio || tareas.length === 0 || !montosValidos) {
       setAviso("Escribe el nombre y al menos una tarea con monto.");
       return;
     }
 
-    guardarProyecto({
+    const guardado = guardarProyecto({
       nombre: nombreLimpio,
       tareas: tareas.map((fila, indice) => ({
         id: `nueva-${indice + 1}`,
         titulo: fila.titulo,
         tipo: fila.tipo,
-        monto: fila.monto,
+        monto: fila.monto!,
       })),
     });
+    if (guardado.aviso) {
+      setAviso(guardado.aviso);
+      return;
+    }
     router.push("/");
   }
 
@@ -126,7 +133,7 @@ export function CrearProyecto() {
         ))}
       </div>
 
-      <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaVacia()])} className="mt-4 text-sm font-medium">
+      <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="mt-4 text-sm font-medium">
         Agregar tarea
       </button>
 

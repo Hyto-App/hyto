@@ -6,12 +6,13 @@ import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
 export function Revision({ tareaId }: { tareaId: string }) {
-  const [tarea, setTarea] = useState<TareaAdmin | null>(() => vistaAdmin(null).tareas.find((item) => item.id === tareaId) ?? null);
+  const [tarea, setTarea] = useState<TareaAdmin | null | undefined>(undefined);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     const vista = vistaAdmin(leerMemoriaAdmin());
@@ -19,8 +20,13 @@ export function Revision({ tareaId }: { tareaId: string }) {
   }, [tareaId]);
 
   function decidir(decision: "pagado" | "pendiente") {
-    const memoria = guardarDecision(tareaId, decision);
-    const vista = vistaAdmin(memoria);
+    const guardado = guardarDecision(tareaId, decision);
+    if (guardado.aviso) {
+      setAviso(guardado.aviso);
+      return;
+    }
+    setAviso(null);
+    const vista = vistaAdmin(guardado.memoria);
     setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
   }
 
@@ -103,9 +109,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </button>
           ) : null}
 
+          {aviso && tarea.estado !== "pagado" ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">Pagado {formatearMonto(tarea.tipo === "reembolso" && tarea.montoRevisado ? tarea.montoRevisado : tarea.monto)}</p>
+              <p className="text-lg font-medium">Pagado {formatearMonto(detalleMonto(tarea).cifra)}</p>
               {pago ? (
                 <a href={pago} className="inline-block text-sm font-semibold underline-offset-4 hover:underline">
                   Ver pago

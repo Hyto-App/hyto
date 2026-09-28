@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { enlaceCredencial, enlacePago, resumir, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enlaceCredencial, enlacePago, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -46,6 +46,39 @@ test("un proyecto propio no entra a la bandeja sin evidencia", () => {
   assert.equal(vista.nombre, "Ensayo");
   assert.deepEqual(resumir(vista.tareas), { presupuesto: "10", pagado: "0", pendiente: "10" });
   assert.equal(vista.bandeja.length, 0);
+});
+
+test("el reembolso del informe usa el monto revisado y cuadra con lo pagado", () => {
+  const vista = vistaAdmin({ ...VACIA, decisiones: { comida: "pagado", stand: "pagado" } });
+  const comida = vista.tareas.find((tarea) => tarea.id === "comida");
+  const stand = vista.tareas.find((tarea) => tarea.id === "stand");
+  assert.ok(comida && stand);
+  assert.deepEqual(detalleMonto(comida), { cifra: "12.40", hasta: false, tope: "15" });
+  assert.equal(detalleMonto(comida).cifra, textoMonto(centavosGasto(comida)));
+  assert.equal(detalleMonto(stand).cifra, textoMonto(centavosGasto(stand)));
+  const suma = vista.tareas.reduce((total, tarea) => (tarea.estado === "pagado" ? total + centavos(detalleMonto(tarea).cifra) : total), 0);
+  assert.equal(textoMonto(suma), vista.resumen.pagado);
+});
+
+test("los centavos salen del texto y aceptan una coma decimal", () => {
+  assert.equal(centavos("19.99"), 1999);
+  assert.equal(centavos("12,40"), 1240);
+  assert.equal(centavos("10"), 1000);
+  assert.equal(centavos("10.5"), 1050);
+  assert.equal(centavos("10.555"), 0);
+  assert.equal(centavos("1e2"), 0);
+  assert.equal(normalizarMonto("12,4"), "12.40");
+  assert.equal(normalizarMonto("0"), null);
+  assert.equal(normalizarMonto("10.999"), null);
+
+  const vista = vistaAdmin({
+    ...VACIA,
+    proyecto: {
+      nombre: "Ensayo",
+      tareas: [{ id: "comida", titulo: "Comida", tipo: "reembolso", monto: "12,40" }],
+    },
+  });
+  assert.equal(vista.resumen.presupuesto, "12.40");
 });
 
 test("ver pago y la credencial solo aparecen con un enlace válido", () => {

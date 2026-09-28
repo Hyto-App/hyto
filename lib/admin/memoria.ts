@@ -59,35 +59,43 @@ export function leerMemoriaAdmin(): MemoriaAdmin {
   }
 }
 
-function escribir(memoria: MemoriaAdmin) {
-  if (!puedeGuardar()) return;
-  window.localStorage.setItem(CLAVE, JSON.stringify(memoria));
+export const AVISO_MEMORIA = "No se pudo guardar en este navegador.";
+
+export type GuardadoAdmin = {
+  memoria: MemoriaAdmin;
+  aviso: string | null;
+};
+
+function escribir(memoria: MemoriaAdmin): string | null {
+  if (!puedeGuardar()) return AVISO_MEMORIA;
+  try {
+    window.localStorage.setItem(CLAVE, JSON.stringify(memoria));
+    return null;
+  } catch {
+    return AVISO_MEMORIA;
+  }
 }
 
-export function guardarDecision(tareaId: string, decision: Decision): MemoriaAdmin {
+export function guardarDecision(tareaId: string, decision: Decision): GuardadoAdmin {
   const memoria = leerMemoriaAdmin();
   memoria.decisiones[tareaId] = decision;
-  escribir(memoria);
-  return memoria;
+  return { memoria, aviso: escribir(memoria) };
 }
 
-export function guardarProyecto(proyecto: ProyectoCreado): MemoriaAdmin {
+export function guardarProyecto(proyecto: ProyectoCreado): GuardadoAdmin {
   const memoria = { ...VACIA, direccion: leerMemoriaAdmin().direccion, proyecto };
-  escribir(memoria);
-  return memoria;
+  return { memoria, aviso: escribir(memoria) };
 }
 
-export function volverAlEjemplo(): MemoriaAdmin {
+export function volverAlEjemplo(): GuardadoAdmin {
   const memoria = leerMemoriaAdmin();
   memoria.proyecto = null;
   memoria.decisiones = {};
-  escribir(memoria);
-  return memoria;
+  return { memoria, aviso: escribir(memoria) };
 }
 
-export function guardarDireccionAdmin(direccion: string): MemoriaAdmin {
+export function guardarDireccionAdmin(direccion: string): GuardadoAdmin {
   const memoria = leerMemoriaAdmin();
   memoria.direccion = direccion;
-  escribir(memoria);
-  return memoria;
+  return { memoria, aviso: escribir(memoria) };
 }

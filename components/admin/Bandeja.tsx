@@ -10,14 +10,22 @@ import { montoDeTarea } from "@/lib/integrante/formato";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 
 export function Bandeja() {
-  const [vista, setVista] = useState<VistaAdmin>(() => vistaAdmin(null));
+  const [vista, setVista] = useState<VistaAdmin | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     setVista(vistaAdmin(leerMemoriaAdmin()));
   }, []);
 
   function usarEjemplo() {
-    setVista(vistaAdmin(volverAlEjemplo()));
+    const guardado = volverAlEjemplo();
+    setAviso(guardado.aviso);
+    if (guardado.aviso) return;
+    setVista(vistaAdmin(guardado.memoria));
+  }
+
+  if (!vista) {
+    return <p className="text-[var(--suave)]">Cargando…</p>;
   }
 
   return (
@@ -62,6 +70,8 @@ export function Bandeja() {
           ))}
         </div>
       </section>
+
+      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
 
       {vista.ejemplo ? (
         <p className="mt-8 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que las rutas respondan.</p>

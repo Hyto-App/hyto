@@ -1,11 +1,21 @@
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
 import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
 
-function centavos(valor: string | null): number {
-  if (!valor) return 0;
-  const numero = Number(valor);
-  if (!Number.isFinite(numero)) return 0;
-  return Math.round(numero * 100);
+const MONTO = /^\d+([.,]\d{1,2})?$/;
+
+export function centavos(valor: string | null): number {
+  const texto = valor?.trim() ?? "";
+  if (!MONTO.test(texto)) return 0;
+  const [entero, fraccion = ""] = texto.replace(",", ".").split(".");
+  return Number(entero) * 100 + Number((fraccion + "00").slice(0, 2));
+}
+
+export function normalizarMonto(valor: string): string | null {
+  const texto = valor.trim();
+  if (!MONTO.test(texto)) return null;
+  const valorCentavos = centavos(texto);
+  if (valorCentavos <= 0) return null;
+  return textoMonto(valorCentavos);
 }
 
 export function textoMonto(centavosValor: number): string {
@@ -26,6 +36,29 @@ export function centavosGasto(tarea: TareaAdmin): number {
   if (tarea.estado !== "pagado") return 0;
   if (tarea.tipo === "reembolso" && tarea.montoRevisado) return centavos(tarea.montoRevisado);
   return centavos(tarea.monto);
+}
+
+export type DetalleMonto = {
+  cifra: string;
+  hasta: boolean;
+  tope: string | null;
+};
+
+export function detalleMonto(tarea: TareaAdmin): DetalleMonto {
+  if (tarea.tipo === "reembolso" && centavos(tarea.montoRevisado) > 0) {
+    return {
+      cifra: textoMonto(centavos(tarea.montoRevisado)),
+      hasta: false,
+      tope: textoMonto(centavosPresupuesto(tarea)),
+    };
+  }
+  if (tarea.estado === "pagado") {
+    return { cifra: textoMonto(centavosGasto(tarea)), hasta: false, tope: null };
+  }
+  if (tarea.tipo === "reembolso") {
+    return { cifra: textoMonto(centavosPresupuesto(tarea)), hasta: true, tope: null };
+  }
+  return { cifra: textoMonto(centavos(tarea.monto)), hasta: false, tope: null };
 }
 
 export function resumir(tareas: TareaAdmin[]): Resumen {
