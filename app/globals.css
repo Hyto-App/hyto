@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  /* El acento lo define Abdiel. Este valor es provisional. */
+  --acento: #1c1c1c;
+  --fondo: #f4f3ef;
+  --papel: #ffffff;
+  --tinta: #1c1c1c;
+  --suave: #6b6b66;
+  --linea: #e6e4de;
+  --pendiente-fondo: #f3ead4;
+  --pendiente-tinta: #7a5b12;
+  --revision-fondo: #e4eef8;
+  --revision-tinta: #1a4f86;
+  --pagado-fondo: #e3f3ea;
+  --pagado-tinta: #1b6a42;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--font-inter), Inter, sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
