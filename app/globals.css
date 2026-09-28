@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  /* Lima muestreada de la hoja de marca. No es un valor oficial: cambiar solo esta línea. */
+  /* Lima oficial de la marca. */
   --acento: #B7EE34;
-  /* Negro de marca para el texto que va encima de la lima. */
+  /* Negro de marca para el texto que va encima de la lima. El blanco no alcanza contraste. */
   --sobre-acento: #08090C;
   --fondo: #f4f3ef;
   --papel: #ffffff;
@@ -30,12 +30,6 @@ body {
   background: var(--fondo);
   color: var(--tinta);
   font-family: var(--font-poppins), Poppins, sans-serif;
-}
-
-/* El botón primario lleva fondo --acento. Las pantallas aún fijan text-white;
-   el blanco no se lee sobre la lima, así que el rótulo usa --sobre-acento. */
-:is(a, button)[class*="bg-[var(--acento)]"] {
-  color: var(--sobre-acento);
 }
 
 button,

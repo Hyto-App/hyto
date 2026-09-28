@@ -23,13 +23,13 @@ Las pantallas usan tres tareas de trabajo de US$20 y un reembolso de hasta US$15
 | `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel. Sin eso, `/cuentas` no crea wallets y Entrar no llama a Cavos | Sebas |
 | Escrow y módulo de firma. Acta solo después de un pago en USDC | Sebas |
 | Base de datos, rutas `/api` y revisión con IA | Esteban |
-| Seis pantallas, color de acento y `LAYA_URL` | Abdiel |
+| Seis pantallas y `LAYA_URL`. Poppins y el lima `#B7EE34` ya están | Abdiel |
 | Conectar la bandeja a esas rutas, y Fondear y Aprobar a la firma, cuando existan | Josué |
 | El 30 de septiembre, subir Next.js a 16.3.7 | Josué |
 | Cuatro cuentas de Cavos del demo, cuando exista el `appId` | Raúl |
 | En `components/admin/Entrar.tsx:46`, `setDireccion` solo si `guardado.aviso` es null, para poder reintentar el guardado | Josué |
 
-`--acento` en `app/globals.css` es un placeholder (`#1c1c1c`) hasta que Abdiel lo defina.
+`--acento` en `app/globals.css` es el lima de la marca, `#B7EE34`. El texto sobre ese fondo usa `--sobre-acento` (`#08090C`). La tipografía es Poppins.
 
 ## Cómo correrlo
 

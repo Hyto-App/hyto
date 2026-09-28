@@ -77,7 +77,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | Capa | Decisión |
 |---|---|
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Inter. Un color de acento, lo define Abdiel. |
+| Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave no va al navegador. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |

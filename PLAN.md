@@ -19,7 +19,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 
 - **Sebas** no necesita la app, Neon ni las pantallas. Prueba el dinero con un script y cuatro cuentas de testnet propias. El `appId` sigue sin publicarse.
 - **Esteban** no necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
-- **Abdiel** no necesita código. Dibuja las seis pantallas y levanta Laya en su PC. El acento del CSS es provisional.
+- **Abdiel** no necesita el escrow ni las rutas. Dibuja las seis pantallas y levanta Laya en su PC. La tipografía es Poppins y el acento es el lima `#B7EE34`.
 - **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). Las cuatro wallets esperan el `appId`.
 
@@ -68,14 +68,14 @@ El ejemplo local (no hace falta devolverlo) son las tareas `stand`, `registro` y
 
 ## Abdiel, en este orden
 
-1. Seis pantallas, un botón por pantalla, fondo claro, Inter. Inicio del admin (tres números y bandeja), crear proyecto, Mis tareas, subir evidencia, revisión (foto, tarjeta corta, Aprobar), informe. Sin las palabras escrow, XDR, trustline ni Soroban. Mis tareas y subir evidencia ya están construidas con el acento provisional.
-2. Color de acento. Hoy `--acento` es `#1c1c1c`.
+1. Seis pantallas, un botón por pantalla, fondo claro, Poppins. Inicio del admin (tres números y bandeja), crear proyecto, Mis tareas, subir evidencia, revisión (foto, tarjeta corta, Aprobar), informe. Sin las palabras escrow, XDR, trustline ni Soroban. Mis tareas y subir evidencia ya están construidas.
+2. Color de acento. `--acento` es el lima `#B7EE34`. El texto sobre ese fondo usa `--sobre-acento` (`#08090C`).
 3. En su Windows: `pip install laya`, checkpoint `laya-multilingual`. Una URL pública en `LAYA_URL`. `localhost` no sirve para Vercel. Esa PC queda encendida en el ensayo.
 
 ## Josué, en este orden
 
 1. La base Next.js 16.3.6, TypeScript, Tailwind y App Router ya está en `main` (PR #1). No la recrees. El 30 de septiembre, subir a 16.3.7.
-2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento sigue provisional.
+2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento es el lima `#B7EE34`.
 3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). Llama a Cavos solo cuando el `appId` esté en Vercel.
 4. Cambiar los datos fijos por las rutas de Esteban. Sigue pendiente.
 5. Fondear y Aprobar llaman al módulo de Sebas: construir XDR, firmar, enviar. Una firma en Aprobar. Hoy no firman en Stellar.

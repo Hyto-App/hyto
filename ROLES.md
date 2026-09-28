@@ -14,7 +14,7 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
 | Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
 | `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
-| Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
+| Seis pantallas, `--acento`, `LAYA_URL` | Poppins y acento lima `#B7EE34` (texto `#08090C`). Falta `LAYA_URL` | Abdiel |
 
 Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
@@ -69,9 +69,9 @@ UX, identidad de marca, redes y comunicación del pitch.
 - Revisión: foto, tarjeta corta de la IA y un botón Aprobar.
 - Informe: presupuesto contra gasto, y enlaces de "Ver pago" y de la credencial si ya existe.
 
-La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Inter, un acento, una acción principal por pantalla.
+La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Poppins, acento lima, una acción principal por pantalla.
 
-También define el color de acento. La tipografía es Inter. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz. `--acento` hoy es `#1c1c1c`, a propósito provisional.
+También define el color de acento. La tipografía es Poppins. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz. `--acento` es el lima `#B7EE34`. El texto sobre ese fondo usa `--sobre-acento` (`#08090C`).
 
 Laya corre en su computadora Windows: `pip install laya`, checkpoint `laya-multilingual`. Durante el demo esa PC queda encendida y alcanzable. La URL va en `LAYA_URL`. No se despliega Laya en Vercel. Esa URL todavía no está.
 
