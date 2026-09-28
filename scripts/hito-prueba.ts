@@ -16,6 +16,7 @@ import { USDC } from "../lib/integrante/identidades";
 const ARCHIVO_CUENTAS = ".sebas-cuentas.json";
 const ARCHIVO_PAGO = "lib/escrow/pago-prueba.json";
 const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const GRIFO_USDC = "https://faucet.circle.com/";
 const MONTO = 1;
 const ROLES = ["organizador", "receptor", "admin", "plataforma", "resolutor"] as const;
 
@@ -40,14 +41,17 @@ async function main(): Promise<void> {
     symbol: USDC.code,
     address: USDC.issuer,
   };
+  let detalleGrifo = "";
   const saldo = await saldoUsdc(cuentas.organizador.public);
   if (saldo < MONTO) {
-    await pedirUsdc(cuentas.organizador.public);
+    detalleGrifo = (await pedirUsdc(cuentas.organizador.public)) ?? "";
   }
   const saldoFinal = await saldoUsdc(cuentas.organizador.public);
   if (saldoFinal < MONTO) {
-    console.error(`El organizador ${cuentas.organizador.public} no tiene ${MONTO} USDC de testnet.`);
-    console.error("El grifo de Circle no entregó el activo. Sin USDC no se fondea y no hay pago.");
+    avisarFondeoManual(
+      cuentas.organizador.public,
+      detalleGrifo || `El organizador no tiene ${MONTO} USDC de testnet. Sin ese activo no se fondea el hito.`,
+    );
     process.exit(3);
   }
 
@@ -113,6 +117,9 @@ async function correr(
     red === "v2"
       ? await paso({ accion: "aprobar", contrato, firmante: cuentas.organizador.public, indice: 0 }, cuentas.organizador, red, clave)
       : await aprobarYLiberarV1(contrato, cuentas.organizador, red, clave);
+  if (!pago.hash) {
+    throw new Error("El envío salió bien y no hay hash para guardar el pago.");
+  }
   console.log(`Pago ${red}: ${pago.hash}`);
   console.log(enlacePago(pago.hash));
   return { hash: pago.hash, contrato, red };
@@ -126,9 +133,11 @@ async function aprobarYLiberarV1(contrato: string, organizador: Par, red: RedEsc
 async function desplegar(cuentas: CuentasDespliegue, secreto: string, direccion: string, clave: string): Promise<string> {
   const intentar = async () => {
     const listo = await prepararDespliegue(cuentas, { clave, red: cuentas.red });
-    if (!listo.contrato) throw new ErrorFirma("El despliegue no devolvió el contrato.", 502, null);
-    await enviar(firmar(listo.xdr, secreto), { clave, red: cuentas.red });
-    return listo.contrato;
+    const firmado = firmar(listo.xdr, secreto);
+    const enviado = conHash(await enviar(firmado, { clave, red: cuentas.red }), firmado);
+    const contrato = listo.contrato ?? enviado.contrato;
+    if (!contrato) throw new ErrorFirma("El despliegue no devolvió el contrato.", 502, null);
+    return contrato;
   };
   try {
     return await intentar();
@@ -142,7 +151,8 @@ async function desplegar(cuentas: CuentasDespliegue, secreto: string, direccion:
 async function paso(accion: AccionFirma, par: Par, red: RedEscrow, clave: string): Promise<PagoEnviado> {
   const intentar = async () => {
     const listo = await preparar(accion, { clave, red });
-    return enviar(firmar(listo.xdr, par.secret), { clave, red });
+    const firmado = firmar(listo.xdr, par.secret);
+    return conHash(await enviar(firmado, { clave, red }), firmado);
   };
   try {
     return await intentar();
@@ -157,6 +167,17 @@ function firmar(xdr: string, secreto: string): string {
   const tx = TransactionBuilder.fromXDR(xdr, Networks.TESTNET);
   tx.sign(Keypair.fromSecret(secreto));
   return tx.toXDR();
+}
+
+function conHash(pago: PagoEnviado, xdr: string): PagoEnviado {
+  if (pago.hash) return pago;
+  if (pago.estado && pago.estado !== "SUCCESS") return pago;
+  try {
+    const hash = Buffer.from(TransactionBuilder.fromXDR(xdr, Networks.TESTNET).hash()).toString("hex");
+    return { ...pago, hash };
+  } catch {
+    return pago;
+  }
 }
 
 function guardarPago(pago: { hash: string; contrato: string; red: RedEscrow }): void {
@@ -245,30 +266,39 @@ async function saldoUsdc(direccion: string): Promise<number> {
   }
 }
 
-async function pedirUsdc(direccion: string): Promise<void> {
-  const cuerpos = [
-    {
-      url: "https://faucet.circle.com/api/graphql",
-      body: {
+async function pedirUsdc(direccion: string): Promise<string | null> {
+  try {
+    const respuesta = await fetch("https://faucet.circle.com/api/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
         operationName: "RequestToken",
-        query:
-          "mutation RequestToken($input: RequestTokenInput!) { requestToken(input: $input) { amount } }",
-        variables: { input: { address: direccion, blockchain: "XLM", token: "USDC" } },
-      },
-    },
-  ];
-  for (const intento of cuerpos) {
-    try {
-      const respuesta = await fetch(intento.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(intento.body),
-      });
-      if (respuesta.ok) return;
-    } catch {
-      continue;
-    }
+        query: "mutation RequestToken($input: RequestTokenInput!) { requestToken(input: $input) { amount } }",
+        variables: { input: { destinationAddress: direccion, blockchain: "XLM", token: "USDC" } },
+      }),
+    });
+    const cuerpo = await respuesta.text();
+    if (!respuesta.ok || graphqlConError(cuerpo)) return cuerpo || `HTTP ${respuesta.status}`;
+    return null;
+  } catch (error) {
+    return mensaje(error);
   }
+}
+
+function graphqlConError(cuerpo: string): boolean {
+  try {
+    const json = JSON.parse(cuerpo) as { errors?: unknown };
+    return Array.isArray(json.errors) && json.errors.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function avisarFondeoManual(direccion: string, detalle: string): void {
+  console.error("El grifo de Circle no entregó USDC. Hay que fondear a mano.");
+  if (detalle) console.error(detalle);
+  console.error(`Cuenta del organizador: ${direccion}`);
+  console.error(`Grifo: ${GRIFO_USDC}`);
 }
 
 function mensaje(error: unknown): string {

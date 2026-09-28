@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "../integrante/identidades";
-import { BASE_V1, BASE_V2, enlacePago, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { BASE_V1, BASE_V2, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { excedido, reiniciarLimite } from "./limite";
 import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot } from "./modulo";
 import type { CuentasDespliegue } from "./tipos";
 
@@ -94,7 +95,7 @@ test("enviar manda el XDR firmado y devuelve el hash", async () => {
   assert.equal(pago.ledger, 12);
   assert.deepEqual(red.llamadas[0]?.body, { signedXdr: "FIRMADO" });
   assert.equal(red.llamadas[0]?.url, `${BASE_V2}/stellar/send-transaction`);
-  assert.equal(enlacePago(pago.hash), "https://stellar.expert/explorer/testnet/tx/deadbeef");
+  assert.equal(enlacePago(pago.hash ?? ""), "https://stellar.expert/explorer/testnet/tx/deadbeef");
 });
 
 test("si el envío rechaza el fee-bump, se puede reintentar con Friendbot", async () => {
@@ -113,12 +114,69 @@ test("si el envío rechaza el fee-bump, se puede reintentar con Friendbot", asyn
   );
 });
 
-test("sin hash no se inventa un pago", async () => {
-  const red = fetchDe({ status: "SUCCESS", message: "ok" });
+test("send-transaction sin hash es un envío exitoso y no inventa el hash", async () => {
+  const red = fetchDe({ status: "SUCCESS", message: "Transaction sent", contractId: CONTRATO });
+  const pago = await enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba", red: "v1" });
+  assert.equal(pago.hash, null);
+  assert.equal(pago.estado, "SUCCESS");
+  assert.equal(pago.mensaje, "Transaction sent");
+  assert.equal(pago.contrato, CONTRATO);
+  assert.equal(red.llamadas[0]?.url, `${BASE_V1}/helper/send-transaction`);
+  assert.deepEqual(red.llamadas[0]?.body, { signedXdr: "FIRMADO" });
+});
+
+test("send-transaction con status distinto de SUCCESS no es un pago", async () => {
+  const red = fetchDe({ status: "FAILED", message: "no llegó" });
   await assert.rejects(
-    () => enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba" }),
-    (error: unknown) => error instanceof ErrorFirma && error.message.includes("hash"),
+    () => enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba", red: "v1" }),
+    (error: unknown) => error instanceof ErrorFirma && /no llegó/.test(error.message),
   );
+});
+
+test("indice null no se convierte en el primer hito", () => {
+  const entrada = leerEntrada({
+    accion: "aprobar",
+    contrato: CONTRATO,
+    firmante: ORGANIZADOR,
+    indice: null,
+  });
+  assert.equal("aviso" in entrada, true);
+  if (!("aviso" in entrada)) return;
+  assert.match(entrada.aviso, /hito/);
+});
+
+test("sin indice no se usa el primer hito", () => {
+  const entrada = leerEntrada({ accion: "marcar", contrato: CONTRATO, firmante: RECEPTOR, estado: "completed" });
+  assert.equal("aviso" in entrada, true);
+});
+
+test("el indice 0 sigue siendo el primer hito", () => {
+  const entrada = leerEntrada({ accion: "aprobar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 });
+  assert.equal("aviso" in entrada, false);
+  if ("aviso" in entrada || entrada.accion === "fondear") return;
+  assert.equal(entrada.indice, 0);
+});
+
+test("la evidencia de más de 500 caracteres se rechaza", () => {
+  const pedido = pedidoAccion(
+    {
+      accion: "marcar",
+      contrato: CONTRATO,
+      firmante: RECEPTOR,
+      indice: 0,
+      estado: "completed",
+      evidencia: "a".repeat(501),
+    },
+    "v2",
+  );
+  assert.equal(pedido, "La evidencia no puede pasar de 500 caracteres.");
+});
+
+test("el límite de firma corta después de treinta pedidos", () => {
+  reiniciarLimite();
+  for (let i = 0; i < 30; i += 1) assert.equal(excedido("prueba"), false);
+  assert.equal(excedido("prueba"), true);
+  reiniciarLimite();
 });
 
 test("sin clave no llama a la red", async () => {

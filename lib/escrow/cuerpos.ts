@@ -221,7 +221,10 @@ function avisoAccion(accion: AccionFirma): string | null {
     return null;
   }
   if (!Number.isInteger(accion.indice) || accion.indice < 0) return "El hito no es válido.";
-  if (accion.accion === "marcar" && accion.estado.trim() === "") return "El estado del hito está vacío.";
+  if (accion.accion === "marcar") {
+    if (accion.estado.trim() === "") return "El estado del hito está vacío.";
+    if (accion.evidencia && accion.evidencia.length > 500) return "La evidencia no puede pasar de 500 caracteres.";
+  }
   return null;
 }
 
@@ -249,13 +252,21 @@ export function leerEntrada(body: unknown): EntradaLeida {
     const monto = typeof datos.monto === "number" ? datos.monto : Number(datos.monto);
     return { accion, contrato, firmante, monto };
   }
-  const indice = typeof datos.indice === "number" ? datos.indice : Number(datos.indice);
+  const indice = leerIndice(datos.indice);
+  if (typeof indice === "string") return { aviso: indice };
   if (accion === "marcar") {
     const estado = texto(datos.estado) ?? "";
     const evidencia = texto(datos.evidencia);
     return evidencia ? { accion, contrato, firmante, indice, estado, evidencia } : { accion, contrato, firmante, indice, estado };
   }
   return { accion, contrato, firmante, indice };
+}
+
+function leerIndice(valor: unknown): number | string {
+  if (valor === null || valor === undefined || valor === "") return "Falta el hito.";
+  const indice = typeof valor === "number" ? valor : typeof valor === "string" ? Number(valor) : Number.NaN;
+  if (!Number.isInteger(indice) || indice < 0) return "El hito no es válido.";
+  return indice;
 }
 
 function texto(valor: unknown): string | null {

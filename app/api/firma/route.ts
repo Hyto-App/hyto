@@ -1,7 +1,10 @@
 import { leerEntrada } from "@/lib/escrow/cuerpos";
+import { respuestaSiCuerpoGrande, respuestaSiExcedido } from "@/lib/escrow/limite";
 import { ErrorFirma, preparar } from "@/lib/escrow/modulo";
 
 export async function POST(request: Request): Promise<Response> {
+  const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
+  if (limitado) return limitado;
   let body: unknown;
   try {
     body = await request.json();

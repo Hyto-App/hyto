@@ -13,9 +13,12 @@ export type XdrListo = {
 };
 
 export type PagoEnviado = {
-  hash: string;
+  hash: string | null;
   ledger: number | null;
   codigo: string | null;
+  contrato: string | null;
+  estado: string | null;
+  mensaje: string | null;
 };
 
 export type OpcionesRed = {

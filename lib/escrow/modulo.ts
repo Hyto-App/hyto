@@ -103,13 +103,22 @@ function leerXdr(json: unknown): XdrListo {
 
 function leerPago(json: unknown): PagoEnviado {
   const datos = registro(json);
-  if (datos.status === "FAILED") {
+  const estado = texto(datos.status);
+  // docs.trustlesswork.com: SendTransactionResponse es { status, message }.
+  // status vale SUCCESS o FAILED. El hash no forma parte de esa respuesta.
+  // En el alta, el SDK admite leer también contractId (InitializeEscrowResponse).
+  if (estado && estado !== "SUCCESS") {
     throw new ErrorFirma(texto(datos.message) ?? "El envío del pago falló.", 502, texto(datos.code));
   }
-  const hash = texto(datos.txHash) ?? texto(datos.hash);
-  if (!hash) throw new ErrorFirma("La red no devolvió el hash del pago.", 502, texto(datos.code));
   const ledger = typeof datos.ledger === "number" ? datos.ledger : null;
-  return { hash, ledger, codigo: texto(datos.code) };
+  return {
+    hash: texto(datos.txHash) ?? texto(datos.hash),
+    ledger,
+    codigo: texto(datos.code),
+    contrato: texto(datos.contractId),
+    estado,
+    mensaje: texto(datos.message),
+  };
 }
 
 function registro(json: unknown): Record<string, unknown> {
