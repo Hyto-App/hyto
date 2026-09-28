@@ -65,7 +65,7 @@ Backend. Buen nivel en servidor.
 
 **Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel.
 
-La revisión corre en una ruta de Vercel. Llama 4 Scout en Groq (`meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en la PC Windows de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, la PC de Abdiel está apagada o un modelo falla, responde el guion fijo. No instales Laya ni guardes la base en el disco de Vercel. No uses laya.studio.
+La revisión corre en una ruta de Vercel. Llama 4 Scout en Groq (`meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en la PC Windows de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, la PC de Abdiel está apagada o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
 
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
@@ -92,7 +92,7 @@ Quien aprueba y quien libera es la wallet del organizador, en una sola transacci
 
 **Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe.
 
-Acta va después de ese pago, no antes. Es viable como una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si todavía no hay USDC, no la integres: el informe sigue con el hash de Stellar. No uses el contrato experimental `credential-escrow`.
+Acta va después de ese pago, no antes. Es viable como una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si todavía no hay USDC, no la integres: el informe sigue con el hash de Stellar.
 
 ## Josué
 
@@ -112,7 +112,7 @@ App del integrante y preparación de las cuentas del demo.
 
 **Empieza por:** Mis tareas y Subir evidencia, contra las rutas de Esteban o con respuestas de ejemplo si aún no responden. Trabajo y reembolso son la misma pantalla. Josué revisa ese código.
 
-Las cuatro identidades de Cavos (organizador y tres voluntarios) se crean cuando exista el `appId`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar. No instales Freighter.
+Las cuatro identidades de Cavos (organizador y tres voluntarios) se crean cuando exista el `appId`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 

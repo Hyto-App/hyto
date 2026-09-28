@@ -22,7 +22,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 4. Fondear y liberar con `approve-and-release`. Cavos firma con `signXdr`. El envío es `POST /stellar/send-transaction`. Si ese endpoint rechaza el fee-bump, la cuenta se fondea con Friendbot y se reintenta.
 5. Si el beta no libera el hito, cambiar la base a `https://dev.api.trustlesswork.com` y repetir el mismo script. La app no se reescribe.
 6. Dejar un módulo que reciba la acción (fondear, marcar estado, aprobar y liberar) y devuelva el XDR, y que acepte el XDR firmado y lo envíe. Josué lo llama después. Hasta entonces el módulo se prueba solo.
-7. Acta, al final de su lista y solo si el paso 4 ya pagó. Una credencial, clave de servidor de [dapp.acta.build](https://dapp.acta.build). Si no hay pago, no se hace. No usar `credential-escrow`.
+7. Acta, al final de su lista y solo si el paso 4 ya pagó. Una credencial, clave de servidor de [dapp.acta.build](https://dapp.acta.build). Si no hay pago, no se hace.
 
 ## Esteban, en este orden
 
@@ -53,7 +53,7 @@ Revisa el código de Raúl cuando lo abra, sin bloquear el suyo.
 
 1. Pantalla Mis tareas: monto y estado. Pantalla Subir evidencia: cámara y enviar. Trabajo y reembolso son la misma pantalla. En el reembolso, monto y fecha se muestran cuando la revisión los traiga.
 2. Esas pantallas llaman las rutas de Esteban. Mientras no respondan, usa los ejemplos del paso 3 de Esteban.
-3. Con el `appId` de Sebas, cuatro identidades: organizador y tres voluntarios. Cada una muestra `G…` y trustline de USDC. Sebas solo confirma que cobran. No instalar Freighter.
+3. Con el `appId` de Sebas, cuatro identidades: organizador y tres voluntarios. Cada una muestra `G…` y trustline de USDC. Sebas solo confirma que cobran.
 
 ## Lo único que hay que pasar de una persona a otra
 

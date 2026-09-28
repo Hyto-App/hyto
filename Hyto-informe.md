@@ -89,15 +89,13 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 
 Ejemplo de las dos IA: la tarea es montar el stand de ZEEK, con banner visible y mesa armada. Scout describe la foto: "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón." Laya responde categoría stand, condición cumplida y evidencia parcial. El código marca parcial. El tope de un reembolso lo compara el código, no Laya. La justificación en pantalla es el texto de Scout más esas tres respuestas.
 
-Acta es viable en el demo, como una sola credencial y no como el sistema de pago. Trustless Work libera el USDC, Cavos firma la emisión y el informe abre "esta persona cumplió esta tarea". En testnet son 5 XLM de Friendbot. Leerla después no vuelve a cobrar. En mainnet sería 1 USDC por credencial. Si todavía no hay un pago en USDC, esa credencial no entra y el informe se queda con el hash de Stellar. No se usa el escrow experimental de Acta.
+Acta es viable en el demo, como una sola credencial y no como el sistema de pago. Trustless Work libera el USDC, Cavos firma la emisión y el informe abre "esta persona cumplió esta tarea". En testnet son 5 XLM de Friendbot. Leerla después no vuelve a cobrar. En mainnet sería 1 USDC por credencial. Si todavía no hay un pago en USDC, esa credencial no entra y el informe se queda con el hash de Stellar.
 
 ## UX
 
 Hyto se usa como Ramp y se ve como una app web normal. El integrante, en el teléfono, abre su tarea, toma una foto y envía. El administrador, en el escritorio, ve tres números y una bandeja, y aprueba con un botón. La recomendación de la IA es una tarjeta corta al lado de la foto, no un informe.
 
 La entrada es un botón con Cavos. No hay extensión, frase semilla ni pantalla de configuración de Stellar. La cuenta se crea cuando hace falta cobrar o fondear. En la interfaz se dice pago, tarea y evidencia. "Ver pago" es un enlace después de aprobar, no un paso para entender la red.
-
-Queda fuera: backend separado, Vite, app nativa, Supabase, SQLite, carpeta local de fotos, Freighter, contrato Soroban propio, librería de PDF, el SDK de React de Trustless Work en el cliente, el wrapper de escrow de Cavos, mainnet y pago proporcional. Cavos es la identidad que abre la wallet. Laya no se despliega en Vercel.
 
 **Salida del lunes 28.** Si no se puede desplegar, fondear y liberar un hito en el beta, ese día la API pasa a `dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito.
 

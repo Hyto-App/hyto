@@ -31,7 +31,7 @@ El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `si
 La revisión son dos modelos. Ninguno firma ni mueve fondos. La ruta en Vercel lee la foto desde Blob y no publica esa URL.
 
 1. **Llama 4 Scout** describe la imagen. Groq, modelo `meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo (unas 1.000 solicitudes al día).
-2. **Laya** decide sobre ese texto. Corre en la computadora Windows de Abdiel (`pip install laya`, checkpoint `laya-multilingual`), no en Vercel ni en laya.studio. La ruta de la app la llama con `LAYA_URL`. Esa PC tiene que estar encendida durante el demo. Si la app está en Vercel, la PC tiene que ser alcanzable desde internet: `localhost` no alcanza. Recibe el texto de Scout más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
+2. **Laya** decide sobre ese texto. Corre en la computadora Windows de Abdiel (`pip install laya`, checkpoint `laya-multilingual`). La ruta de la app la llama con `LAYA_URL`. Esa PC tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de Scout más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
 3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de Scout más esas tres respuestas.
 
 Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
@@ -52,7 +52,7 @@ Ejemplo, stand de ZEEK. La tarea pide banner visible y mesa armada. Scout dice: 
 
 Acta es viable en el demo como una sola credencial, no como el sistema de pago. Entra al final: un hito ya pagado, Cavos firma la emisión, y el informe abre la credencial de "esta persona cumplió esta tarea".
 
-En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor. No se usa el contrato experimental `credential-escrow`.
+En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor.
 
 Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar.
 
@@ -69,10 +69,6 @@ La referencia es Ramp: el integrante resuelve su parte en el teléfono en segund
 - **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
 
 Una pantalla, una acción principal. Fondo claro, Inter, mucho espacio, un solo color de acento. Estados con color: pendiente, en revisión, pagado.
-
-## Qué no usamos
-
-Backend separado, Vite, app nativa, Supabase, SQLite, carpeta local de fotos, Freighter, contrato Soroban propio, librería de PDF, el SDK de React de Trustless Work en el cliente, el wrapper de escrow de Cavos, mainnet y pago proporcional dentro de un hito. Cavos es la identidad que abre la wallet: no hay un segundo login. Laya no se despliega en Vercel.
 
 ## Salida del lunes 28
 
