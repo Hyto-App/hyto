@@ -17,21 +17,21 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 
 ## Qué puede hacerse solo
 
-- **Sebas** no necesita la app, Neon ni las pantallas. Prueba el dinero con un script y cuatro cuentas de testnet propias. El `appId` sigue sin publicarse.
+- **Sebas** ya dejó en `main` el módulo de firma y el script del hito (PR #8). No necesita la app, Neon ni las pantallas. `NEXT_PUBLIC_CAVOS_APP_ID` sigue sin publicarse. `TRUSTLESS_API_KEY` tiene nombre y se queda en el servidor; sin esa clave el script no paga. En el repositorio no hay hash de un pago en USDC, así que el Acta sigue sin hacerse.
 - **Esteban** no necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
 - **Abdiel** no necesita el escrow ni las rutas. La marca ya está en `main` (PR #7): Poppins y `--acento` `#B7EE34`. Sigue Laya en su PC. `LAYA_URL` todavía no está.
-- **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
+- **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman: el módulo de Sebas ya está y esos botones todavía no lo llaman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). Las cuatro wallets esperan el `appId`.
 
 ## Sebas, en este orden
 
 1. Crear la app de Cavos en el dashboard. Publicar `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel. Ese es el único dato que desbloquea las cuentas de Raúl y el botón de Josué. Hoy no está.
-2. Dos cuentas de prueba suyas: organizador y receptor. Trustline de USDC, emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`.
-3. API key de Trustless Work. Desplegar un multi-release v2 en `https://beta.api.trustlesswork.com`. Admin del contrato es otra dirección. El organizador está en aprobadores y en firmantes de liberación. Un hito, con monto y receptor.
-4. Fondear y liberar con `approve-and-release`. Cavos firma con `signXdr`. El envío es `POST /stellar/send-transaction`. Si ese endpoint rechaza el fee-bump, la cuenta se fondea con Friendbot y se reintenta.
-5. Si el beta no libera el hito, cambiar la base a `https://dev.api.trustlesswork.com` y repetir el mismo script. La app no se reescribe.
-6. Dejar un módulo que reciba la acción (fondear, marcar estado, aprobar y liberar) y devuelva el XDR, y que acepte el XDR firmado y lo envíe. Josué lo llama después. Hasta entonces el módulo se prueba solo.
-7. Acta, al final de su lista y solo si el paso 4 ya pagó. Una credencial, clave de servidor de [dapp.acta.build](https://dapp.acta.build). Si no hay pago, no se hace.
+2. Hecho en el script del PR #8, no como pago registrado: `npm run hito` crea cinco cuentas de prueba (organizador, receptor, admin, plataforma y resolutor) y abre la trustline de USDC al emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. Pide USDC de testnet al grifo de Circle (`destinationAddress`). Si Circle lo rechaza, indica la cuenta del organizador y `https://faucet.circle.com/` para fondear a mano. Las cuentas locales quedan en `.sebas-cuentas.json`, fuera de git.
+3. Hecho en el mismo script, cuando hay `TRUSTLESS_API_KEY`: despliega un multi-release en `https://beta.api.trustlesswork.com`. La cuenta admin es otra dirección. El organizador está en aprobadores y en firmantes de liberación. Un hito, con monto y receptor. La clave no va al navegador.
+4. El script fondea, marca el hito y libera. En v2, aprobar es `approve-and-release` (una firma). El envío es `POST /stellar/send-transaction`. Si rechaza el fee-bump, la cuenta se fondea con Friendbot y se reintenta. Un SUCCESS sin hash no se toma como fallo: el script saca el hash del XDR firmado. Hoy ese pago no está en el repositorio.
+5. Si el beta no libera el hito, el mismo script cambia la base a `https://dev.api.trustlesswork.com` y repite. En v1 el operador marca el estado y el receptor solo cobra. La app no se reescribe.
+6. Hecho en el PR #8: `lib/escrow` recibe la acción (fondear, marcar, aprobar y liberar) y devuelve el XDR, y acepta el XDR firmado y lo envía. Josué lo llama por `POST /api/firma` y `POST /api/firma/enviar`. La ruta HTTP rechaza `liberar`, porque en v2 aprobar ya libera. Para v1, el script llama al módulo directo.
+7. Acta, al final de su lista y solo si el paso 4 ya pagó. Una credencial, clave de servidor de [dapp.acta.build](https://dapp.acta.build). Si no hay pago, no se hace. Sigue pendiente.
 
 ## Esteban, en este orden
 
@@ -66,6 +66,25 @@ Cliente en `lib/integrante/rutas.ts`. Timeout de 4 segundos. Si falla la red, el
 
 El ejemplo local (no hace falta devolverlo) son las tareas `stand`, `registro` y `bienvenida` (US$20, trabajo) y `comida` (reembolso, tope US$15), proyecto `zeek`.
 
+## Contrato del módulo de firma
+
+Ya está en `main` (PR #8). La clave `TRUSTLESS_API_KEY` no sale del servidor. Hay un tope de 30 pedidos por minuto por cliente.
+
+`POST /api/firma`
+
+- JSON: `accion` (`fondear`, `marcar` o `aprobar`), `contrato` (`C…`) y `firmante` (`G…`).
+- Fondear también pide `monto`, mayor que cero.
+- Marcar también pide `indice` (0 es el primer hito) y `estado`. `evidencia` es opcional y no pasa de 500 caracteres.
+- `liberar` responde 400: en v2, aprobar ya libera el hito.
+- Respuesta: `xdr`, `hashPreparado` y `contrato`.
+
+`POST /api/firma/enviar`
+
+- JSON: `xdr` firmado.
+- Respuesta: `hash`, `ledger`, `codigo`, `contrato` y `estado`. Un SUCCESS sin hash no es un fallo. El hash puede venir vacío; el script de prueba lo calcula del XDR firmado.
+
+Josué firma en el navegador con `signXdr` y no ve la clave. Los botones Fondear y Aprobar todavía no hacen esta llamada.
+
 ## Abdiel, en este orden
 
 1. Hecho en el PR #7: Poppins 400, 500 y 600, fondo claro, un botón principal por pantalla. Las seis pantallas (inicio del admin, crear proyecto, Mis tareas, subir evidencia, revisión e informe) ya están en la app. Sin las palabras escrow, XDR, trustline ni Soroban.
@@ -78,10 +97,10 @@ El ejemplo local (no hace falta devolverlo) son las tareas `stand`, `registro` y
 2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento es el lima del PR #7.
 3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). Llama a Cavos solo cuando el `appId` esté en Vercel.
 4. Cambiar los datos fijos por las rutas de Esteban. Sigue pendiente.
-5. Fondear y Aprobar llaman al módulo de Sebas: construir XDR, firmar, enviar. Una firma en Aprobar. Hoy no firman en Stellar.
+5. Fondear y Aprobar tienen que llamar al módulo de Sebas, ya en `main` (PR #8): `POST /api/firma` arma el XDR, el navegador lo firma con `signXdr` y `POST /api/firma/enviar` lo manda. Una firma en Aprobar. Hoy esos botones solo guardan el ejemplo en el navegador.
 6. Hecho en el PR #3: informe imprimible. Presupuesto contra gasto, detalle por persona, "Ver pago", y la credencial de Acta solo si el enlace existe.
 
-El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Esteban y el módulo de Sebas.
+El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Esteban. El módulo de firma de Sebas ya está; falta conectarlo a Fondear y Aprobar.
 
 ## Raúl, en este orden
 
@@ -93,7 +112,7 @@ El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Es
 
 - Sebas publica el `appId`. Josué lo pone en el botón. Raúl crea las cuatro cuentas del demo.
 - Esteban publica las rutas. Josué y Raúl dejan los datos de ejemplo.
-- Sebas publica el módulo de firma. Josué lo conecta a Fondear y Aprobar.
+- El módulo de firma ya está en `main` (PR #8). Josué lo conecta a Fondear y Aprobar. Sebas publica el `appId` y, cuando el script deje un pago, el hash para el informe.
 - Abdiel publica `LAYA_URL`. Esteban cambia el stub por esa URL.
 - El hash que guarda Sebas llena el campo que Esteban ya dejó en el informe.
 
@@ -105,4 +124,8 @@ PR #1 de Raúl mergeado en `main` (squash `3a000e0`). Entró la base de Next.js 
 
 PR #3 de Josué mergeado en `main` (squash `b2451a6`), el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica. Entraron las pantallas del admin con el ejemplo de ZEEK, sin recrear el proyecto: crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible. `/` es la bandeja (presupuesto, pagado, pendiente y lo que falta aprobar). En la revisión, Pedir otra foto es un enlace. El informe muestra presupuesto contra gasto y el detalle por persona. "Ver pago" y la credencial solo se dibujan si el enlace existe; en el ejemplo no existen. Entrar usa Cavos con `network: "testnet"` y `appSalt` `hyto` únicamente cuando `NEXT_PUBLIC_CAVOS_APP_ID` tiene valor. Fondear y Aprobar no firman en Stellar. El esqueleto y el admin de Josué quedan hechos. Siguen pendientes Esteban (base de datos, rutas `/api` y la revisión con IA) y Sebas (el `appId` de Cavos, el escrow y la firma). Next.js se queda en 16.3.6; el parche 16.3.7 es el 30 de septiembre. Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
-PR #7 de Abdiel Cole mergeado en `main` (squash `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica. Lo empujó Josué Valles. La app deja Inter y usa Poppins 400, 500 y 600 vía `next/font`. `--acento` pasa de `#1c1c1c` a `#B7EE34`. `--sobre-acento` (`#08090C`) es el texto de los botones primarios (Entrar, Imprimir y el botón del integrante). En el mismo PR, Josué Valles dejó legibles el hover, el foco y el estado deshabilitado sobre esa lima. No cambió la lógica de Esteban ni de Sebas. Sigue pendiente `LAYA_URL`. El detalle de `setDireccion` en Entrar sigue pendiente de Josué. Sebas tiene abierto el PR #8 (módulo de firma y script del hito de prueba); todavía no está en `main`.
+PR #7 de Abdiel Cole mergeado en `main` (squash `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica. Lo empujó Josué Valles. La app deja Inter y usa Poppins 400, 500 y 600 vía `next/font`. `--acento` pasa de `#1c1c1c` a `#B7EE34`. `--sobre-acento` (`#08090C`) es el texto de los botones primarios (Entrar, Imprimir y el botón del integrante). En el mismo PR, Josué Valles dejó legibles el hover, el foco y el estado deshabilitado sobre esa lima. No cambió la lógica de Esteban ni de Sebas. Sigue pendiente `LAYA_URL`. El detalle de `setDireccion` en Entrar sigue pendiente de Josué.
+
+PR #4 mergeado en `main` (squash `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. Es la auditoría de las pantallas del integrante. La abrió la automatización de Cursor y Josué Valles figura como coautor. Una evidencia de ejemplo ya no abre la tarea de otra persona. Al cambiar de integrante no queda el botón de la lista anterior. Un monto vacío no se ve como US$0. Una fecha de calendario, o la medianoche UTC, no corre el día en Costa Rica; si esa fecha no existe, se muestra el texto original. Si la cuenta patrocinada nace con 0 XLM y sí quedó creada, se abre la trustline de USDC. Horizon corta a los 4 segundos. La cámara se apaga al salir, un doble clic no reenvía y un archivo que no es imagen no pasa. No tocó el admin, el escrow ni la marca.
+
+PR #8 de Sebastián Ceciliano Piedra (Sebas) mergeado en `main` (squash `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. Lo empujó Josué Valles. Entró el módulo de firma (`lib/escrow`) y el script `npm run hito`. Prepara el XDR de fondear, marcar y aprobar y liberar, y envía el XDR firmado. `POST /api/firma` y `POST /api/firma/enviar` leen `TRUSTLESS_API_KEY` en el servidor. Si Circle no entrega USDC, el script avisa la cuenta y el enlace del grifo. En el repositorio no hay `lib/escrow/pago-prueba.json`: sin un pago en USDC no hay Acta. `NEXT_PUBLIC_CAVOS_APP_ID` sigue sin publicarse. Fondear y Aprobar del admin no llaman estas rutas. Josué las conecta. Siguen pendientes Esteban (base de datos, rutas de tareas y evidencias, y la revisión con IA) y Abdiel (`LAYA_URL`).

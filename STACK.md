@@ -8,7 +8,9 @@ Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La ev
 
 Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Tipografía Poppins (400, 500 y 600). `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C` (PR #7 de Abdiel Cole, squash `cff4512`). Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
-Aún no está en el código: Drizzle, Neon, Vercel Blob, rutas `/api`, Groq, Laya, el script de escrow y el Acta. El `appId` de Cavos no está definido. No hay ESLint.
+El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
+
+Aún no está en el código: Drizzle, Neon, Vercel Blob, `GET /api/tareas`, `POST /api/evidencias`, Groq, Laya y el Acta. El `appId` de Cavos no está definido. No hay un hash de pago guardado. No hay ESLint.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -38,9 +40,10 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
 | `DATABASE_URL` | Neon. La pondrá Esteban |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. La pondrá Esteban |
 | `GROQ_API_KEY` | Scout. La pondrá Esteban |
+| `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
 | `LAYA_URL` | URL pública de Laya. La publica Abdiel |
 
-La clave de API de Trustless Work y la clave `cav_…` de Cavos se quedan en el servidor. No tienen nombre en el repo todavía. La clave de Acta, igual, y solo después de un pago en USDC.
+La clave `TRUSTLESS_API_KEY` y la clave `cav_…` de Cavos se quedan en el servidor. `cav_…` todavía no tiene nombre en el repo. La clave de Acta, igual, y solo después de un pago en USDC.
 
 La clave de API de Trustless Work no va al navegador. La API arma un XDR sin firmar, Cavos lo firma con `wallet.signXdr` y el servidor lo envía a Stellar. Ese ciclo es el mismo para fondear, marcar el hito, aprobar y liberar.
 
@@ -48,7 +51,7 @@ Cavos se conecta con `chains: ["stellar"]`, `network: "testnet"` y un `appId` de
 
 La dirección es una cuenta Stellar normal, así que puede ser rol de Trustless Work. Para cobrar USDC hace falta trustline. El relayer de Cavos, si hay `appId`, patrocina la reserva de XLM al crear la cuenta. El envío a Trustless Work es `POST /stellar/send-transaction` y rechaza fee-bumps: la cuenta que firma tiene que existir y poder pagar la comisión en XLM. Hay que comprobarlo; si el relayer no cubre ese envío, la cuenta se fondea con Friendbot.
 
-El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia). La foto se sube a Vercel Blob y en Neon se guarda su identificador. En el repo todavía no hay script de escrow.
+El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia, hasta 500 caracteres). La foto se sube a Vercel Blob y en Neon se guarda su identificador. El script del hito ya está (`npm run hito`, PR #8). Si hay pago, el hash se escribiría en `lib/escrow/pago-prueba.json`; ese archivo no está en el repositorio.
 
 La revisión son dos modelos. Ninguno firma ni mueve fondos. La ruta en Vercel lee la foto desde Blob y no publica esa URL. Esa ruta todavía no existe.
 
@@ -76,7 +79,7 @@ Acta es viable en el demo como una sola credencial, no como el sistema de pago. 
 
 En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor.
 
-Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar. El informe imprimible ya está en el repo (PR #3) y el ejemplo no trae hash. No hay pago en USDC.
+Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar. El informe imprimible ya está en el repo (PR #3) y el ejemplo no trae hash. El módulo de firma ya está (PR #8) y no dejó un pago en USDC.
 
 ## UX
 
@@ -94,7 +97,7 @@ Una pantalla, una acción principal. Fondo claro, Poppins, mucho espacio, un sol
 
 ## Salida del lunes 28
 
-Si el spike no logra desplegar, fondear y liberar un hito en el beta, ese mismo día la base de la API pasa a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito. Al cierre del 28 no hay script de escrow en el repositorio: el spike no está registrado aquí.
+El script ya está en el repositorio (PR #8, a las 3:48 p.m., hora de Costa Rica). Si el beta no logra desplegar, fondear y liberar un hito, el mismo script pasa la base a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito. Al cierre de esta entrada no hay un pago en USDC guardado: sin `TRUSTLESS_API_KEY`, o si el grifo de Circle no entrega el activo, el script se detiene y el Acta no entra.
 
 ## Fuentes
 

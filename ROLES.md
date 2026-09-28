@@ -11,9 +11,11 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
 | Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
-| Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
-| Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
-| `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
+| Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman: el módulo ya está y esos botones no lo llaman | Josué |
+| Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
+| Base de datos, rutas de tareas y evidencias, revisión con IA | Pendiente | Esteban |
+| Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
+| `appId` de Cavos y Acta | Pendientes. El Acta solo entra después de un pago en USDC | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
 | `LAYA_URL` | Pendiente | Abdiel |
 
@@ -41,7 +43,7 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). Fondear y Aprobar no firman en Stellar. La revisión con IA y el pago no están.
+De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). El módulo de firma ya está (PR #8). Fondear y Aprobar no lo llaman y no firman en Stellar. La revisión con IA y un pago en USDC no están.
 
 ## Equipo
 
@@ -49,7 +51,7 @@ De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proy
 |---|---|---|
 | Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su PC Windows |
 | Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
-| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC |
+| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC. El módulo y el script ya están (PR #8) |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
 
@@ -96,7 +98,7 @@ El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma t
 
 Escrow y wallet. Implementa el flujo de dinero.
 
-**Empieza por:** el spike del lunes 28. En el repo no hay script de escrow.
+**Empieza por:** el spike del lunes 28. El script ya está: `npm run hito` (`scripts/hito-prueba.ts`, PR #8). Sin `TRUSTLESS_API_KEY` no paga. En el repositorio no hay hash de un pago en USDC.
 
 1. API key de Trustless Work.
 2. Desplegar un escrow multi-release v2 en `https://beta.api.trustlesswork.com`.
@@ -121,11 +123,11 @@ App del administrador en Next.js.
 
 **Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Fondear y Aprobar no firman en Stellar.
 
-**Sigue con:** las rutas de Esteban y el módulo de firma de Sebas, cuando existan. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
+**Sigue con:** las rutas de Esteban, y conectar Fondear y Aprobar al módulo de Sebas, ya en `main`: `POST /api/firma`, `signXdr` en el navegador y `POST /api/firma/enviar`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
-**Listo cuando:** un admin puede crear el proyecto, ver la recomendación, aprobar y abrir el informe. Las pantallas ya se abren con el ejemplo. La firma espera a Sebas.
+**Listo cuando:** un admin puede crear el proyecto, ver la recomendación, aprobar y abrir el informe. Las pantallas ya se abren con el ejemplo. La firma ya está en el servidor; falta llamarla desde Fondear y Aprobar.
 
 ## Raúl
 
