@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  /* El acento lo define Abdiel. Este valor es provisional. */
-  --acento: #1c1c1c;
+  /* Lima muestreada de la hoja de marca. No es un valor oficial: cambiar solo esta línea. */
+  --acento: #B7EE34;
+  /* Negro de marca para el texto que va encima de la lima. */
+  --sobre-acento: #08090C;
   --fondo: #f4f3ef;
   --papel: #ffffff;
   --tinta: #1c1c1c;
@@ -27,7 +29,13 @@
 body {
   background: var(--fondo);
   color: var(--tinta);
-  font-family: var(--font-inter), Inter, sans-serif;
+  font-family: var(--font-poppins), Poppins, sans-serif;
+}
+
+/* El botón primario lleva fondo --acento. Las pantallas aún fijan text-white;
+   el blanco no se lee sobre la lima, así que el rótulo usa --sobre-acento. */
+:is(a, button)[class*="bg-[var(--acento)]"] {
+  color: var(--sobre-acento);
 }
 
 button,
