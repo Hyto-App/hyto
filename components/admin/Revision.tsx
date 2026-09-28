@@ -11,7 +11,7 @@ import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/f
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
 export function Revision({ tareaId }: { tareaId: string }) {
-  const [tarea, setTarea] = useState<TareaAdmin | null | undefined>(undefined);
+  const [tarea, setTarea] = useState<TareaAdmin | null>(() => vistaAdmin(null).tareas.find((item) => item.id === tareaId) ?? null);
 
   useEffect(() => {
     const vista = vistaAdmin(leerMemoriaAdmin());
