@@ -108,12 +108,12 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 | Abdiel Cole | UX, marca y Laya | Seis pantallas, color, y Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
 | Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
 | Sebas | Escrow y wallet | App de Cavos, y un hito liberado con un script propio | Hay un pago de prueba en testnet, el `appId` y el módulo de firma |
-| Josué | App del admin | Next.js con pantallas de datos fijos | El admin crea, revisa, aprueba y abre el informe |
-| Raúl | App del integrante | Mis tareas y subir foto, con datos de ejemplo | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Josué | App del admin | Pantallas del admin sobre la base Next.js ya en `main` | El admin crea, revisa, aprueba y abre el informe |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están; las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué construye las del admin. Raúl construye mis tareas y subir evidencia.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué construye las del admin. Raúl ya dejó mis tareas, subir evidencia y `/cuentas` en `main` (PR #1, 28 de septiembre de 2026). La base de Next.js salió en ese mismo PR; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` todavía no está.
 
 ## 8. Guion de demo
 

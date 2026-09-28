@@ -1,8 +1,22 @@
 # Roles de Hyto
 
-Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de octubre de 2026, demo en Stellar testnet.
+Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de octubre de 2026, 4:00 p.m. Meetup: 30 de septiembre de 2026, TEC Cartago. Demo en Stellar testnet.
 
 Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
+
+## Estado al 28 de septiembre de 2026
+
+| Pieza | Estado | Dueño |
+|---|---|---|
+| Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
+| Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
+| Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
+| Pantallas del admin, informe, botón Entrar | No existen. `/` redirige a `/mis-tareas` | Josué |
+| Neon, Blob, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, Scout | No existen | Esteban |
+| Escrow, módulo de firma, Acta | No existen. Acta solo después de un pago en USDC | Sebas |
+| Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
+
+No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
 
 ## Producto
 
@@ -24,17 +38,19 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
+De eso, hoy solo se puede recorrer en local el paso de ver la tarea y subir la foto, con el ejemplo (tres trabajos de US$20 y un reembolso de hasta US$15). El pago, la IA y el informe no están.
+
 ## Equipo
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
 | Abdiel Cole | UX, marca y el proceso de Laya | Pantallas, color, tono, redes, y Laya encendida en su PC Windows |
 | Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
-| Sebas | Escrow y wallet | Trustless Work, Cavos y la liberación del USDC |
-| Josué | App del admin | Next.js del organizador: crear proyecto, revisión e informe |
-| Raúl | App del integrante | Pantallas de tareas y de subir evidencia, y las cuentas de testnet del demo |
+| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC |
+| Josué | App del admin | Pantallas del organizador: crear proyecto, revisión e informe. La base Next.js ya está |
+| Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
 
-Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: cada entrega es una rama `nombre/tarea` y un pull request.
+Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: el trabajo es en la nube, cada entrega es una rama `nombre/tarea` y un pull request. La rama nueva sale de `main` actualizado.
 
 Raúl es nuevo en hackatones. Su parte se ve en el demo y tiene revisión al lado: Josué en la app, Sebas en las wallets. No toma el escrow ni la arquitectura.
 
@@ -46,26 +62,28 @@ UX, identidad de marca, redes y comunicación del pitch.
 
 - Inicio del admin: tres números (presupuesto, pagado, pendiente) y la bandeja de lo que falta aprobar.
 - Crear proyecto: nombre, tareas con monto y un botón para fondear. Sin configurar roles del contrato en la pantalla.
-- Mis tareas, en el móvil: una tarea, un monto, un estado.
-- Subir evidencia: cámara y enviar. El reembolso muestra monto y fecha ya rellenados.
+- Mis tareas, en el móvil: una tarea, un monto, un estado. Ya está en `main`.
+- Subir evidencia: cámara y enviar. El reembolso muestra monto y fecha ya rellenados. Ya está en `main`; monto y fecha salen cuando la API los trae.
 - Revisión: foto, tarjeta corta de la IA y un botón Aprobar.
 - Informe: presupuesto contra gasto, y enlaces de "Ver pago" y de la credencial si ya existe.
 
 La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Inter, un acento, una acción principal por pantalla.
 
-También define el color de acento. La tipografía es Inter. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz.
+También define el color de acento. La tipografía es Inter. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz. `--acento` hoy es `#1c1c1c`, a propósito provisional.
 
-Laya corre en su computadora Windows: `pip install laya`, checkpoint `laya-multilingual`. Durante el demo esa PC queda encendida y alcanzable. La URL va en `LAYA_URL`. No se despliega Laya en Vercel.
+Laya corre en su computadora Windows: `pip install laya`, checkpoint `laya-multilingual`. Durante el demo esa PC queda encendida y alcanzable. La URL va en `LAYA_URL`. No se despliega Laya en Vercel. Esa URL todavía no está.
 
-**Listo cuando:** el resto puede construir esas pantallas sin inventarse el flujo. Josué usa las de admin. Raúl usa las del integrante.
+**Listo cuando:** el resto puede construir esas pantallas sin inventarse el flujo. Josué usa las de admin. Raúl ya usa las del integrante.
 
 ## Esteban
 
 Backend. Buen nivel en servidor.
 
-**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel.
+**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
 
 La revisión corre en una ruta de Vercel. Llama 4 Scout en Groq (`meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en la PC Windows de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, la PC de Abdiel está apagada o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
+
+Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
@@ -75,7 +93,7 @@ El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma t
 
 Escrow y wallet. Implementa el flujo de dinero.
 
-**Empieza por:** el spike del lunes 28.
+**Empieza por:** el spike del lunes 28. En el repo no hay script de escrow.
 
 1. API key de Trustless Work.
 2. Desplegar un escrow multi-release v2 en `https://beta.api.trustlesswork.com`.
@@ -84,7 +102,7 @@ Escrow y wallet. Implementa el flujo de dinero.
 
 Si ese beta no logra las cuatro cosas, el mismo día la base pasa a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito.
 
-La clave de API de Trustless Work se queda en el servidor. Cavos firma en el navegador con `signXdr`. El ciclo es siempre: la API devuelve un XDR, Cavos lo firma, el servidor lo envía a Stellar. Paquete `@cavos/kit`, red `testnet`, `appSalt` fijo `hyto`. El `appId` sale del dashboard de Cavos. La clave `cav_…` no va al navegador. USDC de testnet, emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`.
+La clave de API de Trustless Work se queda en el servidor. Cavos firma en el navegador con `signXdr`. El ciclo es siempre: la API devuelve un XDR, Cavos lo firma, el servidor lo envía a Stellar. Paquete `@cavos/kit`, red `testnet`, `appSalt` fijo `hyto`. El `appId` sale del dashboard de Cavos y se publica como `NEXT_PUBLIC_CAVOS_APP_ID`. Hoy no está, y sin él `/cuentas` no prepara wallets. La clave `cav_…` no va al navegador. USDC de testnet, emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`.
 
 El spike incluye crear la app en el dashboard, conectar una wallet Stellar, abrir la trustline de USDC y firmar el XDR de fondeo y de `approve-and-release`. No uses el wrapper `TrustlessWorkEscrow` del kit. El envío es `POST /stellar/send-transaction`. Ese endpoint rechaza fee-bumps: confirma que la cuenta firmante puede pagar la comisión en XLM. Si no, fóndala con Friendbot.
 
@@ -98,9 +116,9 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Empieza por:** el esqueleto de Next.js 16.3.6 con datos fijos en las pantallas del admin. El botón de Cavos se conecta cuando Sebas publique el `appId`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad.
+**Empieza por:** las pantallas del admin con datos fijos, sobre la base que ya está en `main`. No crees otro proyecto Next.js. El botón de Cavos se conecta cuando Sebas publique `NEXT_PUBLIC_CAVOS_APP_ID`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad.
 
-Después cambia los datos fijos por las rutas de Esteban y conecta Fondear y Aprobar al módulo de firma de Sebas. Revisa el código de Raúl cuando lo abra, sin frenar el suyo.
+Después cambia los datos fijos por las rutas de Esteban y conecta Fondear y Aprobar al módulo de firma de Sebas. El código de Raúl ya está mergeado; revisarlo no frena el admin.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -110,9 +128,9 @@ El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl 
 
 App del integrante y preparación de las cuentas del demo.
 
-**Empieza por:** Mis tareas y Subir evidencia, contra las rutas de Esteban o con respuestas de ejemplo si aún no responden. Trabajo y reembolso son la misma pantalla. Josué revisa ese código.
+**Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-Las cuatro identidades de Cavos (organizador y tres voluntarios) se crean cuando exista el `appId`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar.
+**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios) cuando exista `NEXT_PUBLIC_CAVOS_APP_ID`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 
