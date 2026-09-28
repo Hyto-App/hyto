@@ -8,7 +8,7 @@ const ESTILOS: Record<EstadoTarea, string> = {
 
 export function PastillaEstado({ estado }: { estado: EstadoTarea }) {
   return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${ESTILOS[estado]}`}>
+    <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${ESTILOS[estado]}`}>
       {estado}
     </span>
   );
