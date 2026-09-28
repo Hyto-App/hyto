@@ -30,7 +30,7 @@ export function Informe() {
         <button
           type="button"
           onClick={() => window.print()}
-          className="flex h-14 items-center justify-center rounded-full bg-[var(--acento)] px-6 text-base font-semibold text-white print:hidden"
+          className="flex h-14 items-center justify-center rounded-full bg-[var(--acento)] px-6 text-base font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] print:hidden"
         >
           Imprimir
         </button>

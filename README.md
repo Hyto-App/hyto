@@ -6,7 +6,7 @@ El demo es un evento de ZEEK. Organización: [Hyto-App](https://github.com/Hyto-
 
 ## Estado al 28 de septiembre de 2026
 
-En `main` están el PR #1 de Raúl (squash `3a000e0`) y el PR #3 de Josué (squash `b2451a6`), fusionado el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica. El esqueleto y el admin de Josué están hechos. Sigue pendiente Esteban (base de datos, rutas de tareas y la revisión con IA). De Sebas, el módulo de firma y el script del hito entran en `sebas/escrow`. Siguen sin publicarse el `appId` de Cavos y un pago en USDC.
+En `main` están el PR #1 de Raúl (squash `3a000e0`), el PR #3 de Josué (squash `b2451a6`, el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica) y el PR #7 de Abdiel Cole (squash `cff4512`, el 28 de septiembre a las 2:58 p.m., hora de Costa Rica). El esqueleto, el admin y la marca (Poppins y lima) están hechos. Siguen pendientes Esteban (base de datos, rutas `/api` y la revisión con IA), Sebas (el `appId` de Cavos, el escrow y la firma; el PR #8 está abierto y no está en `main`) y Abdiel (`LAYA_URL`).
 
 | Hecho | Dueño |
 |---|---|
@@ -14,22 +14,23 @@ En `main` están el PR #1 de Raúl (squash `3a000e0`) y el PR #3 de Josué (squa
 | Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas` | Raúl |
 | Esqueleto y admin: bandeja en `/`, crear proyecto, revisión y aprobar, informe imprimible. Mis tareas sigue en `/mis-tareas`. Ejemplo de ZEEK. Fondear y Aprobar no firman en Stellar | Josué |
 | Botón Entrar. Llama a Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID` | Josué |
+| Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C` | Abdiel |
 | `npm ci`, `npm test` y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
 
 Las pantallas usan tres tareas de trabajo de US$20 y un reembolso de hasta US$15. Si la API no responde, se muestra ese ejemplo.
 
 | Pendiente | Dueño |
 |---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel. Sin eso, `/cuentas` no crea wallets y Entrar no llama a Cavos. En este entorno no hay app de Cavos ni proyecto Hyto en el equipo de Vercel visible | Sebas |
-| Un pago de prueba en testnet, y el Acta solo después de ese pago. El módulo de firma ya está: `POST /api/firma` devuelve el XDR y `POST /api/firma/enviar` manda el XDR firmado. Fondear y Aprobar del admin todavía no lo llaman | Sebas |
+| `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel. Sin eso, `/cuentas` no crea wallets y Entrar no llama a Cavos | Sebas |
+| Escrow y módulo de firma. Acta solo después de un pago en USDC | Sebas |
 | Base de datos, rutas `/api` y revisión con IA | Esteban |
-| Seis pantallas, color de acento y `LAYA_URL` | Abdiel |
+| `LAYA_URL` en su PC Windows | Abdiel |
 | Conectar la bandeja a esas rutas, y Fondear y Aprobar a la firma, cuando existan | Josué |
 | El 30 de septiembre, subir Next.js a 16.3.7 | Josué |
 | Cuatro cuentas de Cavos del demo, cuando exista el `appId` | Raúl |
 | En `components/admin/Entrar.tsx:46`, `setDireccion` solo si `guardado.aviso` es null, para poder reintentar el guardado | Josué |
 
-`--acento` en `app/globals.css` es un placeholder (`#1c1c1c`) hasta que Abdiel lo defina.
+`--acento` es `#B7EE34` y `--sobre-acento` es `#08090C`, en `app/globals.css`. La tipografía es Poppins.
 
 ## Cómo correrlo
 
@@ -40,22 +41,21 @@ npm test
 npm run build
 ```
 
-`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/integrante`, `lib/admin` y `lib/escrow` con `tsx`. `npm run hito` corre el script del hito de prueba. No hay `npm run lint`.
+`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/integrante` y `lib/admin` con `tsx`. No hay `npm run lint`.
 
 ## Variables de entorno
 
-Solo nombres. Los valores van en Vercel, no en el repo. El código lee `NEXT_PUBLIC_CAVOS_APP_ID` en el navegador y `TRUSTLESS_API_KEY` solo en el servidor.
+Solo nombres. Los valores van en Vercel, no en el repo. Hoy el código solo lee la primera.
 
 | Nombre | Para qué | Dueño |
 |---|---|---|
 | `NEXT_PUBLIC_CAVOS_APP_ID` | App de Cavos. Sin valor, las cuentas del demo no se preparan | Sebas |
-| `TRUSTLESS_API_KEY` | Clave de Trustless Work. Solo servidor. La leen `lib/escrow` y el script del hito | Sebas |
 | `DATABASE_URL` | Neon. Aún no se usa en el código | Esteban |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Aún no se usa en el código | Esteban |
 | `GROQ_API_KEY` | Llama 4 Scout. Aún no se usa en el código | Esteban |
 | `LAYA_URL` | Laya en la PC de Abdiel. Aún no se usa en el código | Abdiel |
 
-`.env.example` declara `NEXT_PUBLIC_CAVOS_APP_ID` y `TRUSTLESS_API_KEY`, las dos vacías.
+`.env.example` solo declara `NEXT_PUBLIC_CAVOS_APP_ID`.
 
 ## Fechas
 

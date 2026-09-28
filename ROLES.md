@@ -13,9 +13,9 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
 | Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
-| `appId` de Cavos | Pendiente. No hay app en el dashboard ni proyecto Hyto en el equipo de Vercel visible | Sebas |
-| Módulo de firma | En `lib/escrow` y `POST /api/firma`. Devuelve el XDR y envía el XDR firmado. Fondear y Aprobar todavía no lo llaman. El pago en testnet espera `TRUSTLESS_API_KEY`. Acta solo después de ese pago | Sebas |
-| Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
+| `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
+| Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
+| `LAYA_URL` | Pendiente | Abdiel |
 
 Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
@@ -47,7 +47,7 @@ De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proy
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
-| Abdiel Cole | UX, marca y el proceso de Laya | Pantallas, color, tono, redes, y Laya encendida en su PC Windows |
+| Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su PC Windows |
 | Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
 | Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
@@ -70,9 +70,9 @@ UX, identidad de marca, redes y comunicación del pitch.
 - Revisión: foto, tarjeta corta de la IA y un botón Aprobar.
 - Informe: presupuesto contra gasto, y enlaces de "Ver pago" y de la credencial si ya existe.
 
-La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Inter, un acento, una acción principal por pantalla.
+La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Poppins, un acento, una acción principal por pantalla.
 
-También define el color de acento. La tipografía es Inter. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz. `--acento` hoy es `#1c1c1c`, a propósito provisional.
+La tipografía y el color ya están en `main` (PR #7): Poppins 400, 500 y 600, `--acento` `#B7EE34` y `--sobre-acento` `#08090C` para el texto del botón primario. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz.
 
 Laya corre en su computadora Windows: `pip install laya`, checkpoint `laya-multilingual`. Durante el demo esa PC queda encendida y alcanzable. La URL va en `LAYA_URL`. No se despliega Laya en Vercel. Esa URL todavía no está.
 
@@ -96,7 +96,7 @@ El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma t
 
 Escrow y wallet. Implementa el flujo de dinero.
 
-**Empieza por:** el spike del lunes 28. El script está en `scripts/hito-prueba.ts` y el módulo en `lib/escrow`.
+**Empieza por:** el spike del lunes 28. En el repo no hay script de escrow.
 
 1. API key de Trustless Work.
 2. Desplegar un escrow multi-release v2 en `https://beta.api.trustlesswork.com`.
@@ -111,7 +111,7 @@ El spike incluye crear la app en el dashboard, conectar una wallet Stellar, abri
 
 Quien aprueba y quien libera es la wallet del organizador, en una sola transacción. La cuenta Admin del contrato es otra dirección: no puede aprobar, marcar el hito, liberar ni resolver disputas. El proveedor marca el estado y adjunta la referencia de la evidencia. Los hitos no se editan después de fondear.
 
-**Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe. El módulo ya devuelve el XDR y acepta el XDR firmado. El hash se guarda en `lib/escrow/pago-prueba.json` solo si el script libera el hito. Hoy falta `TRUSTLESS_API_KEY` y el `appId`.
+**Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe.
 
 Acta va después de ese pago, no antes. Es viable como una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si todavía no hay USDC, no la integres: el informe sigue con el hash de Stellar.
 

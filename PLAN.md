@@ -19,7 +19,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 
 - **Sebas** no necesita la app, Neon ni las pantallas. Prueba el dinero con un script y cuatro cuentas de testnet propias. El `appId` sigue sin publicarse.
 - **Esteban** no necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
-- **Abdiel** no necesita código. Dibuja las seis pantallas y levanta Laya en su PC. El acento del CSS es provisional.
+- **Abdiel** no necesita el escrow ni las rutas. La marca ya está en `main` (PR #7): Poppins y `--acento` `#B7EE34`. Sigue Laya en su PC. `LAYA_URL` todavía no está.
 - **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). Las cuatro wallets esperan el `appId`.
 
@@ -68,17 +68,17 @@ El ejemplo local (no hace falta devolverlo) son las tareas `stand`, `registro` y
 
 ## Abdiel, en este orden
 
-1. Seis pantallas, un botón por pantalla, fondo claro, Inter. Inicio del admin (tres números y bandeja), crear proyecto, Mis tareas, subir evidencia, revisión (foto, tarjeta corta, Aprobar), informe. Sin las palabras escrow, XDR, trustline ni Soroban. Mis tareas y subir evidencia ya están construidas con el acento provisional.
-2. Color de acento. Hoy `--acento` es `#1c1c1c`.
-3. En su Windows: `pip install laya`, checkpoint `laya-multilingual`. Una URL pública en `LAYA_URL`. `localhost` no sirve para Vercel. Esa PC queda encendida en el ensayo.
+1. Hecho en el PR #7: Poppins 400, 500 y 600, fondo claro, un botón principal por pantalla. Las seis pantallas (inicio del admin, crear proyecto, Mis tareas, subir evidencia, revisión e informe) ya están en la app. Sin las palabras escrow, XDR, trustline ni Soroban.
+2. Hecho en el mismo PR: `--acento` es `#B7EE34`. `--sobre-acento` (`#08090C`) es el texto del botón primario sobre esa lima.
+3. En su Windows: `pip install laya`, checkpoint `laya-multilingual`. Una URL pública en `LAYA_URL`. `localhost` no sirve para Vercel. Esa PC queda encendida en el ensayo. Sigue pendiente.
 
 ## Josué, en este orden
 
 1. La base Next.js 16.3.6, TypeScript, Tailwind y App Router ya está en `main` (PR #1). No la recrees. El 30 de septiembre, subir a 16.3.7.
-2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento sigue provisional.
+2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento es el lima del PR #7.
 3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). Llama a Cavos solo cuando el `appId` esté en Vercel.
 4. Cambiar los datos fijos por las rutas de Esteban. Sigue pendiente.
-5. Fondear y Aprobar llaman al módulo de Sebas: `POST /api/firma` devuelve el XDR, Cavos lo firma con `signXdr`, `POST /api/firma/enviar` lo manda. Una firma en Aprobar. Hoy los botones no llaman esas rutas.
+5. Fondear y Aprobar llaman al módulo de Sebas: construir XDR, firmar, enviar. Una firma en Aprobar. Hoy no firman en Stellar.
 6. Hecho en el PR #3: informe imprimible. Presupuesto contra gasto, detalle por persona, "Ver pago", y la credencial de Acta solo si el enlace existe.
 
 El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Esteban y el módulo de Sebas.
@@ -101,8 +101,8 @@ El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Es
 
 ### 2026-09-28
 
-PR #1 de Raúl mergeado en `main` (squash `3a000e0`). Entró la base de Next.js 16.3.6 y las pantallas del integrante: Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas`. Los datos en pantalla son el ejemplo de ZEEK hasta que existan `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. `NEXT_PUBLIC_CAVOS_APP_ID` no está. `--acento` sigue provisional. No hay ESLint ni script `lint`. En ese PR, `npm ci`, `npm test` y `npm run build` pasan. Siguen pendientes Neon, Blob, el escrow, el Acta y Laya.
+PR #1 de Raúl mergeado en `main` (squash `3a000e0`). Entró la base de Next.js 16.3.6 y las pantallas del integrante: Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas`. Los datos en pantalla son el ejemplo de ZEEK hasta que existan `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. `NEXT_PUBLIC_CAVOS_APP_ID` no está. En ese momento `--acento` seguía provisional (`#1c1c1c`). No hay ESLint ni script `lint`. En ese PR, `npm ci`, `npm test` y `npm run build` pasan. Siguen pendientes Neon, Blob, el escrow, el Acta y Laya.
 
 PR #3 de Josué mergeado en `main` (squash `b2451a6`), el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica. Entraron las pantallas del admin con el ejemplo de ZEEK, sin recrear el proyecto: crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible. `/` es la bandeja (presupuesto, pagado, pendiente y lo que falta aprobar). En la revisión, Pedir otra foto es un enlace. El informe muestra presupuesto contra gasto y el detalle por persona. "Ver pago" y la credencial solo se dibujan si el enlace existe; en el ejemplo no existen. Entrar usa Cavos con `network: "testnet"` y `appSalt` `hyto` únicamente cuando `NEXT_PUBLIC_CAVOS_APP_ID` tiene valor. Fondear y Aprobar no firman en Stellar. El esqueleto y el admin de Josué quedan hechos. Siguen pendientes Esteban (base de datos, rutas `/api` y la revisión con IA) y Sebas (el `appId` de Cavos, el escrow y la firma). Next.js se queda en 16.3.6; el parche 16.3.7 es el 30 de septiembre. Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
-En la rama `sebas/escrow` (PR #8) quedó el módulo de firma y el script del hito. `POST /api/firma` arma el XDR de fondear, marcar o aprobar y liberar. `POST /api/firma/enviar` manda el XDR firmado. Los botones del admin no los llaman: eso es de Josué. El script, con `TRUSTLESS_API_KEY`, despliega un multi-release v2, fondea y libera un hito; si el beta no libera, repite el flujo en v1. `NEXT_PUBLIC_CAVOS_APP_ID` no se publicó: no hay app de Cavos ni proyecto Hyto en el equipo de Vercel visible. Sin un pago en USDC, el Acta no se integra.
+PR #7 de Abdiel Cole mergeado en `main` (squash `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica. Lo empujó Josué Valles. La app deja Inter y usa Poppins 400, 500 y 600 vía `next/font`. `--acento` pasa de `#1c1c1c` a `#B7EE34`. `--sobre-acento` (`#08090C`) es el texto de los botones primarios (Entrar, Imprimir y el botón del integrante). En el mismo PR, Josué Valles dejó legibles el hover, el foco y el estado deshabilitado sobre esa lima. No cambió la lógica de Esteban ni de Sebas. Sigue pendiente `LAYA_URL`. El detalle de `setDireccion` en Entrar sigue pendiente de Josué. Sebas tiene abierto el PR #8 (módulo de firma y script del hito de prueba); todavía no está en `main`.
