@@ -8,7 +8,7 @@ Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La ev
 
 Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
-Aún no está en el código: Drizzle, Neon, Vercel Blob, rutas `/api`, Groq, Laya, el script de escrow y el Acta. El `appId` de Cavos no está definido. No hay ESLint.
+Aún no está en el código: Drizzle, Neon, Vercel Blob, las rutas de tareas y evidencias, Groq, Laya y el Acta. Sí está el módulo de firma (`lib/escrow`, `POST /api/firma`) y el script `scripts/hito-prueba.ts`. El `appId` de Cavos no está definido. No hay ESLint.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -40,7 +40,7 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
 | `GROQ_API_KEY` | Scout. La pondrá Esteban |
 | `LAYA_URL` | URL pública de Laya. La publica Abdiel |
 
-La clave de API de Trustless Work y la clave `cav_…` de Cavos se quedan en el servidor. No tienen nombre en el repo todavía. La clave de Acta, igual, y solo después de un pago en USDC.
+La clave de API de Trustless Work se llama `TRUSTLESS_API_KEY` y se queda en el servidor. La clave `cav_…` de Cavos también, y todavía no tiene nombre en el repo. La clave de Acta, igual, y solo después de un pago en USDC.
 
 La clave de API de Trustless Work no va al navegador. La API arma un XDR sin firmar, Cavos lo firma con `wallet.signXdr` y el servidor lo envía a Stellar. Ese ciclo es el mismo para fondear, marcar el hito, aprobar y liberar.
 
@@ -48,7 +48,7 @@ Cavos se conecta con `chains: ["stellar"]`, `network: "testnet"` y un `appId` de
 
 La dirección es una cuenta Stellar normal, así que puede ser rol de Trustless Work. Para cobrar USDC hace falta trustline. El relayer de Cavos, si hay `appId`, patrocina la reserva de XLM al crear la cuenta. El envío a Trustless Work es `POST /stellar/send-transaction` y rechaza fee-bumps: la cuenta que firma tiene que existir y poder pagar la comisión en XLM. Hay que comprobarlo; si el relayer no cubre ese envío, la cuenta se fondea con Friendbot.
 
-El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia). La foto se sube a Vercel Blob y en Neon se guarda su identificador. En el repo todavía no hay script de escrow.
+El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia). La foto se sube a Vercel Blob y en Neon se guarda su identificador. El módulo está en `lib/escrow`: prepara el XDR de fondear, marcar y aprobar-y-liberar, y envía el XDR firmado con `POST /stellar/send-transaction`. Las rutas son `POST /api/firma` y `POST /api/firma/enviar`. Josué las conecta a los botones. El script `scripts/hito-prueba.ts` prueba el mismo módulo. Si el beta no libera el hito, el script repite el flujo en `https://dev.api.trustlesswork.com`. Sin `TRUSTLESS_API_KEY` no hay pago, y sin pago no hay Acta.
 
 La revisión son dos modelos. Ninguno firma ni mueve fondos. La ruta en Vercel lee la foto desde Blob y no publica esa URL. Esa ruta todavía no existe.
 
@@ -94,7 +94,7 @@ Una pantalla, una acción principal. Fondo claro, Inter, mucho espacio, un solo 
 
 ## Salida del lunes 28
 
-Si el spike no logra desplegar, fondear y liberar un hito en el beta, ese mismo día la base de la API pasa a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito. Al cierre del 28 no hay script de escrow en el repositorio: el spike no está registrado aquí.
+Si el spike no logra desplegar, fondear y liberar un hito en el beta, el mismo script cambia la base a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito. El script ya está. El pago en testnet espera `TRUSTLESS_API_KEY` y USDC de prueba.
 
 ## Fuentes
 

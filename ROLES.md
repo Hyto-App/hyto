@@ -13,7 +13,8 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
 | Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
-| `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
+| `appId` de Cavos | Pendiente. No hay app en el dashboard ni proyecto Hyto en el equipo de Vercel visible | Sebas |
+| Módulo de firma | En `lib/escrow` y `POST /api/firma`. Devuelve el XDR y envía el XDR firmado. Fondear y Aprobar todavía no lo llaman. El pago en testnet espera `TRUSTLESS_API_KEY`. Acta solo después de ese pago | Sebas |
 | Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
 
 Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
@@ -95,7 +96,7 @@ El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma t
 
 Escrow y wallet. Implementa el flujo de dinero.
 
-**Empieza por:** el spike del lunes 28. En el repo no hay script de escrow.
+**Empieza por:** el spike del lunes 28. El script está en `scripts/hito-prueba.ts` y el módulo en `lib/escrow`.
 
 1. API key de Trustless Work.
 2. Desplegar un escrow multi-release v2 en `https://beta.api.trustlesswork.com`.
@@ -110,7 +111,7 @@ El spike incluye crear la app en el dashboard, conectar una wallet Stellar, abri
 
 Quien aprueba y quien libera es la wallet del organizador, en una sola transacción. La cuenta Admin del contrato es otra dirección: no puede aprobar, marcar el hito, liberar ni resolver disputas. El proveedor marca el estado y adjunta la referencia de la evidencia. Los hitos no se editan después de fondear.
 
-**Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe.
+**Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe. El módulo ya devuelve el XDR y acepta el XDR firmado. El hash se guarda en `lib/escrow/pago-prueba.json` solo si el script libera el hito. Hoy falta `TRUSTLESS_API_KEY` y el `appId`.
 
 Acta va después de ese pago, no antes. Es viable como una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si todavía no hay USDC, no la integres: el informe sigue con el hash de Stellar.
 
