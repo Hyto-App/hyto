@@ -6,15 +6,17 @@ El demo es un evento de ZEEK. Organización: [Hyto-App](https://github.com/Hyto-
 
 ## Estado al 28 de septiembre de 2026
 
-En `main` está el PR #1 de Raúl (squash `3a000e0`). No hay admin, base de datos, Blob, escrow ni Laya en el repo.
+En `main` está el PR #1 de Raúl (squash `3a000e0`). La rama `josue/admin` agrega las pantallas del admin con datos fijos. No hay base de datos, Blob, escrow ni Laya en el repo.
 
 | Hecho | Dueño |
 |---|---|
 | Proyecto Next.js 16.3.6: `package.json`, `tsconfig.json`, `app/layout.tsx`, `app/globals.css`, `next.config.ts` | Raúl |
-| `/` redirige a `/mis-tareas` (aún no hay admin) | Raúl |
 | Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas` | Raúl |
+| `/` es la bandeja del admin. Mis tareas sigue en `/mis-tareas` | Josué |
 | Datos de ejemplo de ZEEK hasta que respondan las rutas de abajo | Raúl |
-| `npm ci`, `npm test` (13) y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
+| `npm ci`, `npm test` y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
+| Bandeja del admin en `/`, crear proyecto, revisión e informe imprimible, con el ejemplo de ZEEK | Josué |
+| Botón Entrar. Llama a Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID` | Josué |
 
 Las pantallas usan tres tareas de trabajo de US$20 y un reembolso de hasta US$15. Si la API no responde, se muestra ese ejemplo.
 
@@ -24,7 +26,8 @@ Las pantallas usan tres tareas de trabajo de US$20 y un reembolso de hasta US$15
 | Script de escrow, módulo de firma y, solo después de un pago en USDC, el Acta | Sebas |
 | Neon, Blob, rutas y revisión con Scout | Esteban |
 | Seis pantallas, color de acento y `LAYA_URL` | Abdiel |
-| Pantallas del admin sobre esta base | Josué |
+| Conectar la bandeja a las rutas de Esteban, y Fondear y Aprobar al módulo de firma de Sebas | Josué |
+| El 30 de septiembre, subir Next.js a 16.3.7 | Josué |
 | Cuatro cuentas de Cavos del demo, cuando exista el `appId` | Raúl |
 
 `--acento` en `app/globals.css` es un placeholder (`#1c1c1c`) hasta que Abdiel lo defina.
@@ -38,7 +41,7 @@ npm test
 npm run build
 ```
 
-`npm run dev` abre Next.js. `npm test` corre las 13 pruebas de `lib/integrante` con `tsx`. No hay `npm run lint`.
+`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/integrante` y `lib/admin` con `tsx`. No hay `npm run lint`.
 
 ## Variables de entorno
 

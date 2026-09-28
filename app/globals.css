@@ -14,6 +14,14 @@
   --revision-tinta: #1a4f86;
   --pagado-fondo: #e3f3ea;
   --pagado-tinta: #1b6a42;
+  --insuficiente-fondo: #f8e6e4;
+  --insuficiente-tinta: #8a2e2e;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
 }
 
 body {

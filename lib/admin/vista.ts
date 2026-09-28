@@ -1,0 +1,124 @@
+import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
+import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
+
+function centavos(valor: string | null): number {
+  if (!valor) return 0;
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return 0;
+  return Math.round(numero * 100);
+}
+
+export function textoMonto(centavosValor: number): string {
+  const signo = centavosValor < 0 ? "-" : "";
+  const absoluto = Math.abs(centavosValor);
+  const entero = Math.floor(absoluto / 100);
+  const decimales = absoluto % 100;
+  if (decimales === 0) return `${signo}${entero}`;
+  return `${signo}${entero}.${String(decimales).padStart(2, "0")}`;
+}
+
+export function centavosPresupuesto(tarea: TareaAdmin): number {
+  if (tarea.tipo === "reembolso") return centavos(tarea.tope ?? tarea.monto);
+  return centavos(tarea.monto);
+}
+
+export function centavosGasto(tarea: TareaAdmin): number {
+  if (tarea.estado !== "pagado") return 0;
+  if (tarea.tipo === "reembolso" && tarea.montoRevisado) return centavos(tarea.montoRevisado);
+  return centavos(tarea.monto);
+}
+
+export function resumir(tareas: TareaAdmin[]): Resumen {
+  const presupuesto = tareas.reduce((total, tarea) => total + centavosPresupuesto(tarea), 0);
+  const pagado = tareas.reduce((total, tarea) => total + centavosGasto(tarea), 0);
+  return {
+    presupuesto: textoMonto(presupuesto),
+    pagado: textoMonto(pagado),
+    pendiente: textoMonto(presupuesto - pagado),
+  };
+}
+
+export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendiente" | undefined): TareaAdmin {
+  if (!decision) return tarea;
+  if (decision === "pagado") return { ...tarea, estado: "pagado" };
+  return { ...tarea, estado: "pendiente" };
+}
+
+export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
+  return tareas.filter((tarea) => tarea.estado === "en revisión");
+}
+
+export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
+  const orden: string[] = [];
+  const grupos = new Map<string, PersonaInforme>();
+  for (const tarea of tareas) {
+    const clave = tarea.miembroId || tarea.miembro;
+    const actual = grupos.get(clave);
+    if (actual) {
+      actual.tareas.push(tarea);
+      continue;
+    }
+    orden.push(clave);
+    grupos.set(clave, { miembroId: tarea.miembroId, miembro: tarea.miembro, tareas: [tarea] });
+  }
+  return orden.map((clave) => grupos.get(clave)!);
+}
+
+export function enlacePago(hash: string | null | undefined): string | null {
+  const limpio = hash?.trim() ?? "";
+  if (!/^[a-fA-F0-9]{64}$/.test(limpio)) return null;
+  return `https://stellar.expert/explorer/testnet/tx/${limpio}`;
+}
+
+export function enlaceCredencial(url: string | null | undefined): string | null {
+  const limpio = url?.trim() ?? "";
+  if (!limpio) return null;
+  try {
+    const parsed = new URL(limpio);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function desdeCreada(tarea: TareaCreada, decision: "pagado" | "pendiente" | undefined): TareaAdmin {
+  return aplicarDecision(
+    {
+      id: tarea.id,
+      titulo: tarea.titulo,
+      tipo: tarea.tipo,
+      monto: tarea.monto,
+      tope: tarea.tipo === "reembolso" ? tarea.monto : null,
+      condicion: "",
+      miembroId: "",
+      miembro: "Sin asignar",
+      estado: "pendiente",
+      veredicto: null,
+      frase: null,
+      montoRevisado: null,
+      fecha: null,
+      hashPago: null,
+      credencialUrl: null,
+    },
+    decision,
+  );
+}
+
+export function vistaAdmin(memoria: MemoriaAdmin | null): VistaAdmin {
+  const decisiones = memoria?.decisiones ?? {};
+  const propio = memoria?.proyecto ?? null;
+  const tareas = propio
+    ? propio.tareas.map((tarea) => desdeCreada(tarea, decisiones[tarea.id]))
+    : tareasEjemploAdmin().map((tarea) => aplicarDecision(tarea, decisiones[tarea.id]));
+
+  return {
+    nombre: propio?.nombre || PROYECTO_EJEMPLO,
+    ejemplo: true,
+    propio: propio !== null,
+    tareas,
+    bandeja: bandejaDe(tareas),
+    resumen: resumir(tareas),
+    personas: porPersona(tareas),
+  };
+}
