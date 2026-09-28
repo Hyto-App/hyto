@@ -14,7 +14,8 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
 | Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
 | `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
-| Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
+| Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
+| `LAYA_URL` | Pendiente | Abdiel |
 
 Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
@@ -46,7 +47,7 @@ De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proy
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
-| Abdiel Cole | UX, marca y el proceso de Laya | Pantallas, color, tono, redes, y Laya encendida en su PC Windows |
+| Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su PC Windows |
 | Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
 | Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
@@ -69,9 +70,9 @@ UX, identidad de marca, redes y comunicación del pitch.
 - Revisión: foto, tarjeta corta de la IA y un botón Aprobar.
 - Informe: presupuesto contra gasto, y enlaces de "Ver pago" y de la credencial si ya existe.
 
-La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Inter, un acento, una acción principal por pantalla.
+La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Poppins, un acento, una acción principal por pantalla.
 
-También define el color de acento. La tipografía es Inter. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz. `--acento` hoy es `#1c1c1c`, a propósito provisional.
+La tipografía y el color ya están en `main` (PR #7): Poppins 400, 500 y 600, `--acento` `#B7EE34` y `--sobre-acento` `#08090C` para el texto del botón primario. Fondo claro, mucho espacio, un botón primario por pantalla. No uses la palabra escrow, XDR, trustline ni Soroban en la interfaz.
 
 Laya corre en su computadora Windows: `pip install laya`, checkpoint `laya-multilingual`. Durante el demo esa PC queda encendida y alcanzable. La URL va en `LAYA_URL`. No se despliega Laya en Vercel. Esa URL todavía no está.
 

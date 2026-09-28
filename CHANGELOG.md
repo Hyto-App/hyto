@@ -12,12 +12,14 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Arreglado
 
+- El texto de los botones de acento se lee sobre el lima al pasar el cursor, al enfocarlos y cuando están deshabilitados. Josué Valles, PR #7.
 - La revisión de una tarea se ve de inmediato, sin quedar en blanco mientras carga la página. Josué Valles, PR #3.
 - En el informe, el reembolso muestra el monto ya revisado, la misma cifra que suma el total pagado. Si no se puede guardar, la pantalla avisa y no borra lo que ya estaba. Josué Valles, PR #3.
 - El color del botón queda definido en un solo lugar, y la aplicación ya no crea sola un archivo de reglas al arrancar. Raúl (Milasur), PR #1.
 
 ### Cambiado
 
+- La aplicación usa Poppins (pesos 400, 500 y 600) en lugar de Inter. El color de acento es el lima `#B7EE34`, y el texto de los botones primarios es `#08090C`. Abdiel Cole, PR #7.
 - La documentación quedó al día con lo que ya está después de las pantallas del integrante: qué está hecho, qué sigue y de quién es cada parte. Josué Valles, PR #2.
 - Quedó escrito que cada cambio va en una rama con el nombre de la persona y la tarea, y entra por pull request. Josué Valles (entró directo, sin pull request).
 - Se alineó el orden del trabajo de cada persona y quedó claro que el Acta entra solo después de un pago. Josué Valles (entró directo, sin pull request).
@@ -26,8 +28,8 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 ### Pendiente para el equipo
 
 - Sebas: publicar el identificador de Cavos. Sin eso, las cuentas de prueba no se preparan y el botón Entrar avisa que lo está esperando.
-- Sebas: dejar listo el dinero guardado hasta aprobar, la forma de firmar el pago y, solo después de un pago, el Acta.
+- Sebas: dejar listo el dinero guardado hasta aprobar, la forma de firmar el pago y, solo después de un pago, el Acta. El PR #8 está abierto y todavía no está en la aplicación.
 - Esteban: guardar los datos y las fotos, y publicar las rutas que las pantallas ya llaman. Mientras no existan, se sigue viendo el ejemplo de ZEEK.
-- Abdiel: el diseño de las seis pantallas, el color de acento y la dirección de Laya.
-- Josué: conectar la bandeja con las rutas de Esteban, y los botones Fondear y Aprobar con la firma de Sebas. El 30 de septiembre, actualizar la versión de la aplicación.
+- Abdiel: la dirección de Laya. Poppins y el lima ya están en la aplicación.
+- Josué: conectar la bandeja con las rutas de Esteban, y los botones Fondear y Aprobar con la firma de Sebas. El 30 de septiembre, actualizar la versión de la aplicación. En Entrar, guardar la dirección solo cuando el aviso de error no exista, para poder reintentar.
 - Raúl: dejar listas las cuatro cuentas del demo cuando exista el identificador de Cavos.

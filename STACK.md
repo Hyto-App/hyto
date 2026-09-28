@@ -6,7 +6,7 @@ Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La ev
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
-Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
+Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Tipografía Poppins (400, 500 y 600). `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C` (PR #7 de Abdiel Cole, squash `cff4512`). Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
 Aún no está en el código: Drizzle, Neon, Vercel Blob, rutas `/api`, Groq, Laya, el script de escrow y el Acta. El `appId` de Cavos no está definido. No hay ESLint.
 
@@ -18,7 +18,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 |---|---|
 | App | Next.js 16 (App Router), TypeScript, Tailwind |
 | Versión | **16.3.6**, la que está en `package.json`. El 30 de septiembre, subir a **16.3.7** cuando salga el parche de seguridad |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Inter. Un solo color de acento, lo define Abdiel. Hoy `--acento` es `#1c1c1c` |
+| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). Lo definió Abdiel en el PR #7 |
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es la de Abdiel, y solo para Laya |
@@ -76,7 +76,7 @@ Acta es viable en el demo como una sola credencial, no como el sistema de pago. 
 
 En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor.
 
-Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar. Hoy no hay pago ni informe en el repo.
+Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar. El informe imprimible ya está en el repo (PR #3) y el ejemplo no trae hash. No hay pago en USDC.
 
 ## UX
 
@@ -90,7 +90,7 @@ La referencia es Ramp: el integrante resuelve su parte en el teléfono en segund
 - **Revisión.** La foto a la izquierda. A la derecha, una tarjeta corta: cumplió, parcial o insuficiente, y la frase de la evidencia. Un botón: Aprobar. Si hace falta otra foto, un enlace secundario, no un segundo botón del mismo peso.
 - **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
 
-Una pantalla, una acción principal. Fondo claro, Inter, mucho espacio, un solo color de acento. Estados con color: pendiente, en revisión, pagado.
+Una pantalla, una acción principal. Fondo claro, Poppins, mucho espacio, un solo color de acento (`#B7EE34`). Estados con color: pendiente, en revisión, pagado.
 
 ## Salida del lunes 28
 
