@@ -77,7 +77,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | Capa | Decisión |
 |---|---|
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Inter. Un color de acento, lo define Abdiel. |
+| Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave no va al navegador. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
@@ -105,7 +105,7 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Seis pantallas, color, y Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
+| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
 | Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
 | Sebas | Escrow y wallet | App de Cavos, y un hito liberado con un script propio | Hay un pago de prueba en testnet, el `appId` y el módulo de firma |
 | Josué | App del admin | Pantallas del admin sobre la base Next.js ya en `main` | El admin crea, revisa, aprueba y abre el informe |
@@ -113,7 +113,7 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué construye las del admin. Raúl ya dejó mis tareas, subir evidencia y `/cuentas` en `main` (PR #1, 28 de septiembre de 2026). La base de Next.js salió en ese mismo PR; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` todavía no está.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, el 28 de septiembre a las 2:58 p.m., hora de Costa Rica). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` y `LAYA_URL` todavía no están. Sebas tiene abierto el PR #8 (módulo de firma); todavía no está en `main`.
 
 ## 8. Guion de demo
 
@@ -161,7 +161,7 @@ El orden para construir está en [PLAN.md](PLAN.md). Esta tabla solo marca lo qu
 
 ## 11. Identidad y riesgos
 
-Hyto viene de pagos por hitos y también significa un logro. El login de GitHub `hyto` ya pertenecía a otra persona, así que la organización es Hyto-App y el repositorio es Hyto-App/hyto. El nombre visible es Hyto. Tono: claro, profesional y cercano. Se dice pago, no jerga cripto, cuando se pueda. El color de acento sigue pendiente, a cargo de Abdiel.
+Hyto viene de pagos por hitos y también significa un logro. El login de GitHub `hyto` ya pertenecía a otra persona, así que la organización es Hyto-App y el repositorio es Hyto-App/hyto. El nombre visible es Hyto. Tono: claro, profesional y cercano. Se dice pago, no jerga cripto, cuando se pueda. El color de acento es el lima `#B7EE34` y la tipografía es Poppins, definidos por Abdiel (PR #7, 28 de septiembre de 2026). Sigue pendiente la dirección de Laya.
 
 Taglines posibles:
 

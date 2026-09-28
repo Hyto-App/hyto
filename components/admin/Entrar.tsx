@@ -61,7 +61,7 @@ export function Entrar() {
           type="button"
           onClick={() => void entrar()}
           disabled={entrando}
-          className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-white transition disabled:opacity-50"
+          className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
         >
           {entrando ? "Entrando…" : "Entrar"}
         </button>
