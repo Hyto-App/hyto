@@ -38,7 +38,7 @@ npm test
 npm run build
 ```
 
-`npm run dev` abre Next.js. `npm test` corre las 13 pruebas de `lib/integrante` con `tsx`. No hay `npm run lint`.
+`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/integrante` con `tsx`. No hay `npm run lint`.
 
 ## Variables de entorno
 
