@@ -89,7 +89,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 
 Ejemplo de las dos IA: la tarea es montar el stand de ZEEK, con banner visible y mesa armada. Scout describe la foto: "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón." Laya responde categoría stand, condición cumplida y evidencia parcial. El código marca parcial. El tope de un reembolso lo compara el código, no Laya. La justificación en pantalla es el texto de Scout más esas tres respuestas.
 
-Acta, si el pago ya funciona: una sola credencial al cerrar un hito. Trustless Work libera el USDC, Cavos firma la emisión y el informe abre "esta persona cumplió esta tarea". En testnet son 5 XLM de Friendbot. Leerla después no vuelve a cobrar. En mainnet sería 1 USDC por credencial. Si el viernes 2 de octubre no hay pago, Acta no entra y el informe se queda con el hash de Stellar. No se usa el escrow experimental de Acta.
+Acta es viable en el demo, como una sola credencial y no como el sistema de pago. Trustless Work libera el USDC, Cavos firma la emisión y el informe abre "esta persona cumplió esta tarea". En testnet son 5 XLM de Friendbot. Leerla después no vuelve a cobrar. En mainnet sería 1 USDC por credencial. Si todavía no hay un pago en USDC, esa credencial no entra y el informe se queda con el hash de Stellar. No se usa el escrow experimental de Acta.
 
 ## UX
 
@@ -97,21 +97,21 @@ Hyto se usa como Ramp y se ve como una app web normal. El integrante, en el tel�
 
 La entrada es un botón con Cavos. No hay extensión, frase semilla ni pantalla de configuración de Stellar. La cuenta se crea cuando hace falta cobrar o fondear. En la interfaz se dice pago, tarea y evidencia. "Ver pago" es un enlace después de aprobar, no un paso para entender la red.
 
-Queda fuera: backend separado, Vite, app nativa, Supabase, Freighter, contrato Soroban propio, librería de PDF, el SDK de React de Trustless Work en el cliente, el wrapper de escrow de Cavos, mainnet y pago proporcional. Cavos es la identidad que abre la wallet.
+Queda fuera: backend separado, Vite, app nativa, Supabase, SQLite, carpeta local de fotos, Freighter, contrato Soroban propio, librería de PDF, el SDK de React de Trustless Work en el cliente, el wrapper de escrow de Cavos, mainnet y pago proporcional. Cavos es la identidad que abre la wallet. Laya no se despliega en Vercel.
 
 **Salida del lunes 28.** Si no se puede desplegar, fondear y liberar un hito en el beta, ese día la API pasa a `dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito.
 
 ## 7. Roles
 
-El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). Cada persona actúa solo dentro de su rol.
+El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden de trabajo, sin esperarse entre personas salvo un dato concreto, está en [PLAN.md](PLAN.md). Cada persona actúa solo dentro de su rol.
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Pantallas, color, y Laya encendida en su PC Windows | El resto puede construir las pantallas, y el demo puede llamar a Laya |
-| Esteban | Backend | Neon, Vercel Blob, rutas de proyecto, tarea y evidencia | La app en Vercel guarda un proyecto y una foto |
-| Sebas | Escrow y wallet | API key, desplegar, fondear y liberar un hito | Hay un pago de prueba en testnet y su hash |
-| Josué | App del admin | Next.js, layout de admin y conectar Cavos | El admin crea, revisa, aprueba y abre el informe |
-| Raúl | App del integrante | Cuatro identidades de Cavos en testnet, con trustline de USDC | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, marca y Laya | Seis pantallas, color, y Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
+| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
+| Sebas | Escrow y wallet | App de Cavos, y un hito liberado con un script propio | Hay un pago de prueba en testnet, el `appId` y el módulo de firma |
+| Josué | App del admin | Next.js con pantallas de datos fijos | El admin crea, revisa, aprueba y abre el informe |
+| Raúl | App del integrante | Mis tareas y subir foto, con datos de ejemplo | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
@@ -148,17 +148,15 @@ Registrarse en Luma no basta. Cada integrante crea cuenta en Stellar Passport, s
 - Trustless Work: https://trustlesswork.com
 - Precios: https://www.trustlesswork.com/pricing
 
-## 10. Calendario
+## 10. Fechas de la hackathon
 
-| Fecha | Meta |
+El orden para construir está en [PLAN.md](PLAN.md). Esta tabla solo marca lo que no controla el equipo.
+
+| Fecha | Qué pasa |
 |---|---|
-| Dom 27 sep | Equipo, repositorio, stack y roles. Inscripción en Stellar Passport. |
-| Lun 28 sep | Spike de escrow. Esquema de pantallas. API base. App Next.js. Wallets de prueba. |
-| Mar 29 sep | Evidencia, veredicto y primeras pantallas conectadas. |
-| Mié 30 sep | Meetup en TEC Cartago, 17:00. Validar la idea. Confirmar la hora de cierre. Subir Next.js a 16.3.7. |
-| Jue 1 oct | Subida de evidencia y revisión con IA. UI del integrante. |
-| Vie 2 oct | Aprobar y liberar el pago. Dashboard del admin. |
-| Sáb 3 oct | Informe. Flujo completo. Ensayo del guion. |
+| Dom 27 sep | Repositorio, stack, roles y plan compartidos. |
+| Mié 30 sep | Meetup en TEC Cartago, llegar a las 17:00. Confirmar la hora de cierre. Subir Next.js a 16.3.7. |
+| Sáb 3 oct | Ensayo del guion de ZEEK. La PC de Abdiel queda encendida. |
 | Dom 4 oct | Grabar la demo, pulir el pitch y enviar. |
 | Lun 5 oct | Colchón. Cierre 4:00 p.m., posiblemente 1:00 p.m. hora de Costa Rica. |
 | Lun 12 oct | Resultados. |

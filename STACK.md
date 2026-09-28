@@ -50,11 +50,11 @@ Ejemplo, stand de ZEEK. La tarea pide banner visible y mesa armada. Scout dice: 
 
 ## Acta, en el demo
 
-Acta no guarda el presupuesto ni paga el hito. Eso sigue en Trustless Work. En el demo entra como una sola credencial, al final: un hito ya pagado, Cavos firma la emisión, y el informe abre la credencial de "esta persona cumplió esta tarea".
+Acta es viable en el demo como una sola credencial, no como el sistema de pago. Entra al final: un hito ya pagado, Cavos firma la emisión, y el informe abre la credencial de "esta persona cumplió esta tarea".
 
 En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor. No se usa el contrato experimental `credential-escrow`.
 
-Sebas no integra Acta antes de que el escrow libere un pago. Si el viernes 2 de octubre todavía no hay USDC entregado, Acta sale del demo y el informe se queda con el hash de Stellar.
+Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar.
 
 ## UX
 

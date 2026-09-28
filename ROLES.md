@@ -34,7 +34,7 @@ Evento de ZEEK, montos de ejemplo:
 | Josué | App del admin | Next.js del organizador: crear proyecto, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia, y las cuentas de testnet del demo |
 
-Abdiel no bloquea el código. El lunes entrega la estructura de las pantallas. Esteban y Sebas avanzan con `STACK.md` sin esperar el diseño final.
+Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro.
 
 Raúl es nuevo en hackatones. Su parte se ve en el demo y tiene revisión al lado: Josué en la app, Sebas en las wallets. No toma el escrow ni la arquitectura.
 
@@ -92,17 +92,17 @@ Quien aprueba y quien libera es la wallet del organizador, en una sola transacci
 
 **Listo cuando:** un hito de prueba se pagó en testnet y el hash queda guardado para el informe.
 
-Acta va después de ese pago, no antes. Una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si el viernes 2 de octubre el USDC aún no salió, no integres Acta: el informe sigue con el hash de Stellar. No uses el contrato experimental `credential-escrow`.
+Acta va después de ese pago, no antes. Es viable como una sola credencial en el hito ya pagado: Cavos firma la emisión y el informe la abre. En testnet cuesta 5 XLM de Friendbot. La clave de https://dapp.acta.build se queda en el servidor. Si todavía no hay USDC, no la integres: el informe sigue con el hash de Stellar. No uses el contrato experimental `credential-escrow`.
 
 ## Josué
 
 App del administrador en Next.js.
 
-**Empieza por:** el esqueleto de Next.js 16.3.6, el layout del admin y el botón de conectar Cavos (`@cavos/kit`, Stellar testnet). El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad.
+**Empieza por:** el esqueleto de Next.js 16.3.6 con datos fijos en las pantallas del admin. El botón de Cavos se conecta cuando Sebas publique el `appId`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad.
 
-Después conecta crear proyecto, panel de revisión e informe con la API de Esteban y las firmas de Sebas. Revisa el código de Raúl en las pantallas del integrante.
+Después cambia los datos fijos por las rutas de Esteban y conecta Fondear y Aprobar al módulo de firma de Sebas. Revisa el código de Raúl cuando lo abra, sin frenar el suyo.
 
-El sábado cierra el guion del evento de ZEEK. Raúl prepara las cuentas y Sebas el pago en vivo.
+El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
 **Listo cuando:** un admin puede crear el proyecto, ver la recomendación, aprobar y abrir el informe.
 
@@ -110,18 +110,10 @@ El sábado cierra el guion del evento de ZEEK. Raúl prepara las cuentas y Sebas
 
 App del integrante y preparación de las cuentas del demo.
 
-**Empieza por:** cuatro identidades de demo en Cavos (organizador y tres voluntarios). Cada una conecta, muestra su dirección `G…` y abre la trustline de USDC. Sebas revisa que sirvan para cobrar. No instales Freighter.
+**Empieza por:** Mis tareas y Subir evidencia, contra las rutas de Esteban o con respuestas de ejemplo si aún no responden. Trabajo y reembolso son la misma pantalla. Josué revisa ese código.
 
-Cuando Abdiel entregue la estructura, construye "Mis tareas" y "Subir evidencia" contra la API de Esteban. Josué revisa ese código.
+Las cuatro identidades de Cavos (organizador y tres voluntarios) se crean cuando exista el `appId`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar. No instales Freighter.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 
-## Lunes 28
-
-| Persona | Primera entrega |
-|---|---|
-| Abdiel | Estructura de las seis pantallas, el color de acento, y Laya corriendo en su PC Windows |
-| Esteban | Modelos y rutas de proyecto, tarea y evidencia |
-| Sebas | Un hito liberado en testnet, o el cambio a la API v1 |
-| Josué | App Next.js con layout de admin y conectar wallet |
-| Raúl | Cuatro wallets de Cavos en testnet, con trustline de USDC |
+El orden completo de los cinco está en [PLAN.md](PLAN.md).
