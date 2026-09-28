@@ -19,7 +19,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 
 - **Sebas** ya dejó en `main` el módulo de firma y el script del hito (PR #8). No necesita la app, Neon ni las pantallas. `NEXT_PUBLIC_CAVOS_APP_ID` sigue sin publicarse. `TRUSTLESS_API_KEY` tiene nombre y se queda en el servidor; sin esa clave el script no paga. En el repositorio no hay hash de un pago en USDC, así que el Acta sigue sin hacerse.
 - **Esteban** no necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
-- **Abdiel** no necesita el escrow ni las rutas. La marca ya está en `main` (PR #7): Poppins y `--acento` `#B7EE34`. Sigue Laya en su PC. `LAYA_URL` todavía no está.
+- **Abdiel** no necesita el escrow ni las rutas. La marca ya está en `main` (PR #7): Poppins y `--acento` `#B7EE34`. Sigue Laya en su servidor. `LAYA_URL` todavía no está.
 - **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman: el módulo de Sebas ya está y esos botones todavía no lo llaman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). Las cuatro wallets esperan el `appId`.
 
@@ -89,7 +89,7 @@ Josué firma en el navegador con `signXdr` y no ve la clave. Los botones Fondear
 
 1. Hecho en el PR #7: Poppins 400, 500 y 600, fondo claro, un botón principal por pantalla. Las seis pantallas (inicio del admin, crear proyecto, Mis tareas, subir evidencia, revisión e informe) ya están en la app. Sin las palabras escrow, XDR, trustline ni Soroban.
 2. Hecho en el mismo PR: `--acento` es `#B7EE34`. `--sobre-acento` (`#08090C`) es el texto del botón primario sobre esa lima.
-3. En su Windows: `pip install laya`, checkpoint `laya-multilingual`. Una URL pública en `LAYA_URL`. `localhost` no sirve para Vercel. Esa PC queda encendida en el ensayo. Sigue pendiente.
+3. Laya en el servidor de escritorio de Abdiel (Ryzen 5 5600, 32 GB), el mismo donde corre Argus, pero en un entorno de Python aparte y en un puerto propio. Se instala `laya[serve]` con el checkpoint `laya-multilingual`. La URL pública sale de Tailscale Funnel (`https://…ts.net`), sin pagar dominio ni servidor, y va en `LAYA_URL`. `localhost` no sirve para Vercel. Esa máquina queda encendida en el ensayo del 3 de octubre. Falta verificar el comando del servidor y si la respuesta ya trae `choice`, `noul` y `score`.
 
 ## Josué, en este orden
 
@@ -113,7 +113,7 @@ El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Es
 - Sebas publica el `appId`. Josué lo pone en el botón. Raúl crea las cuatro cuentas del demo.
 - Esteban publica las rutas. Josué y Raúl dejan los datos de ejemplo.
 - El módulo de firma ya está en `main` (PR #8). Josué lo conecta a Fondear y Aprobar. Sebas publica el `appId` y, cuando el script deje un pago, el hash para el informe.
-- Abdiel publica `LAYA_URL`. Esteban cambia el stub por esa URL.
+- Abdiel publica `LAYA_URL`. Esteban cambia el stub por esa URL. La URL sale de Tailscale Funnel.
 - El hash que guarda Sebas llena el campo que Esteban ya dejó en el informe.
 
 ## Bitácora
@@ -129,3 +129,5 @@ PR #7 de Abdiel Cole mergeado en `main` (squash `cff4512`), el 28 de septiembre 
 PR #4 mergeado en `main` (squash `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. Es la auditoría de las pantallas del integrante. La abrió la automatización de Cursor y Josué Valles figura como coautor. Una evidencia de ejemplo ya no abre la tarea de otra persona. Al cambiar de integrante no queda el botón de la lista anterior. Un monto vacío no se ve como US$0. Una fecha de calendario, o la medianoche UTC, no corre el día en Costa Rica; si esa fecha no existe, se muestra el texto original. Si la cuenta patrocinada nace con 0 XLM y sí quedó creada, se abre la trustline de USDC. Horizon corta a los 4 segundos. La cámara se apaga al salir, un doble clic no reenvía y un archivo que no es imagen no pasa. No tocó el admin, el escrow ni la marca.
 
 PR #8 de Sebastián Ceciliano Piedra (Sebas) mergeado en `main` (squash `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. Lo empujó Josué Valles. Entró el módulo de firma (`lib/escrow`) y el script `npm run hito`. Prepara el XDR de fondear, marcar y aprobar y liberar, y envía el XDR firmado. `POST /api/firma` y `POST /api/firma/enviar` leen `TRUSTLESS_API_KEY` en el servidor. Si Circle no entrega USDC, el script avisa la cuenta y el enlace del grifo. En el repositorio no hay `lib/escrow/pago-prueba.json`: sin un pago en USDC no hay Acta. `NEXT_PUBLIC_CAVOS_APP_ID` sigue sin publicarse. Fondear y Aprobar del admin no llaman estas rutas. Josué las conecta. Siguen pendientes Esteban (base de datos, rutas de tareas y evidencias, y la revisión con IA) y Abdiel (`LAYA_URL`).
+
+Laya se va a alojar en el servidor de Abdiel y se publica con Tailscale Funnel en lugar de pagar una URL. Todavía no está instalado. Esteban sigue con el stub hasta que Abdiel publique `LAYA_URL`. La URL de Funnel es pública, así que conviene que la ruta de revisión mande una clave compartida (pendiente de acordar con Esteban).
