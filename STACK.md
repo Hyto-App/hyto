@@ -6,7 +6,7 @@ Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La ev
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
-Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. `/` redirige a `/mis-tareas`.
+Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
 Aún no está en el código: Drizzle, Neon, Vercel Blob, rutas `/api`, Groq, Laya, el script de escrow y el Acta. El `appId` de Cavos no está definido. No hay ESLint.
 
@@ -25,7 +25,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. Todavía no está cableado |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
 | IA | Scout (Groq) describe la foto. Laya corre en la computadora Windows de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
-| Informe | Página imprimible, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) por cada pago. Aún no hay pantalla |
+| Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
 ## Variables
@@ -84,9 +84,9 @@ Hyto se ve como una app web normal. El dinero está en Stellar, pero la pantalla
 
 La referencia es Ramp: el integrante resuelve su parte en el teléfono en segundos, y el administrador trabaja en una bandeja.
 
-- **Entrada.** Un botón, con Cavos. La cuenta de Stellar se crea en el primer pago o en la primera evidencia, no en un asistente de configuración. El botón de entrar todavía no está: lo arma Josué cuando haya `appId`.
+- **Entrada.** Un botón, con Cavos. La cuenta de Stellar se crea en el primer pago o en la primera evidencia, no en un asistente de configuración. El botón Entrar está en el admin. Sin `appId` no llama a Cavos y avisa que espera el identificador.
 - **Integrante, móvil.** Ve su tarea, el monto y un estado. Un botón abre la cámara. Enviar. Si es un reembolso, la app rellena monto y fecha. No hay un formulario largo. Mis tareas y Subir evidencia ya están, con datos de ejemplo.
-- **Admin, escritorio.** Tres números: presupuesto, pagado, pendiente. Debajo, una bandeja de lo que falta aprobar. El resto no compite con esa lista. Aún no hay pantallas de admin.
+- **Admin, escritorio.** Tres números: presupuesto, pagado, pendiente. Debajo, una bandeja de lo que falta aprobar. El resto no compite con esa lista. Está en `/`, con el ejemplo de ZEEK.
 - **Revisión.** La foto a la izquierda. A la derecha, una tarjeta corta: cumplió, parcial o insuficiente, y la frase de la evidencia. Un botón: Aprobar. Si hace falta otra foto, un enlace secundario, no un segundo botón del mismo peso.
 - **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
 

@@ -11,10 +11,12 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
 | Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
-| Pantallas del admin, informe, botón Entrar | No existen. `/` redirige a `/mis-tareas` | Josué |
-| Neon, Blob, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, Scout | No existen | Esteban |
-| Escrow, módulo de firma, Acta | No existen. Acta solo después de un pago en USDC | Sebas |
+| Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman | Josué |
+| Base de datos, rutas `/api`, revisión con IA | Pendiente | Esteban |
+| `appId` de Cavos, escrow y firma | Pendiente. Acta solo después de un pago en USDC | Sebas |
 | Seis pantallas, `--acento`, `LAYA_URL` | El acento del CSS es provisional (`#1c1c1c`) | Abdiel |
+
+Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
 No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
 
@@ -38,7 +40,7 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, hoy solo se puede recorrer en local el paso de ver la tarea y subir la foto, con el ejemplo (tres trabajos de US$20 y un reembolso de hasta US$15). El pago, la IA y el informe no están.
+De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). Fondear y Aprobar no firman en Stellar. La revisión con IA y el pago no están.
 
 ## Equipo
 
@@ -47,7 +49,7 @@ De eso, hoy solo se puede recorrer en local el paso de ver la tarea y subir la f
 | Abdiel Cole | UX, marca y el proceso de Laya | Pantallas, color, tono, redes, y Laya encendida en su PC Windows |
 | Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
 | Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC |
-| Josué | App del admin | Pantallas del organizador: crear proyecto, revisión e informe. La base Next.js ya está |
+| Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
 
 Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: el trabajo es en la nube, cada entrega es una rama `nombre/tarea` y un pull request. La rama nueva sale de `main` actualizado.
@@ -116,13 +118,13 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Empieza por:** las pantallas del admin con datos fijos, sobre la base que ya está en `main`. No crees otro proyecto Next.js. El botón de Cavos se conecta cuando Sebas publique `NEXT_PUBLIC_CAVOS_APP_ID`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Fondear y Aprobar no firman en Stellar.
 
-Después cambia los datos fijos por las rutas de Esteban y conecta Fondear y Aprobar al módulo de firma de Sebas. El código de Raúl ya está mergeado; revisarlo no frena el admin.
+**Sigue con:** las rutas de Esteban y el módulo de firma de Sebas, cuando existan. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
-**Listo cuando:** un admin puede crear el proyecto, ver la recomendación, aprobar y abrir el informe.
+**Listo cuando:** un admin puede crear el proyecto, ver la recomendación, aprobar y abrir el informe. Las pantallas ya se abren con el ejemplo. La firma espera a Sebas.
 
 ## Raúl
 

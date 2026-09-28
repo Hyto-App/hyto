@@ -20,7 +20,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 - **Sebas** no necesita la app, Neon ni las pantallas. Prueba el dinero con un script y cuatro cuentas de testnet propias. El `appId` sigue sin publicarse.
 - **Esteban** no necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
 - **Abdiel** no necesita código. Dibuja las seis pantallas y levanta Laya en su PC. El acento del CSS es provisional.
-- **Josué** arma las pantallas del admin con datos fijos, sobre la base de Next.js que ya está en `main`. No vuelve a crear el proyecto. El botón de Cavos usa el `appId` cuando Sebas lo publique.
+- **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman. El botón de Cavos usa el `appId` cuando Sebas lo publique.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). Las cuatro wallets esperan el `appId`.
 
 ## Sebas, en este orden
@@ -75,13 +75,13 @@ El ejemplo local (no hace falta devolverlo) son las tareas `stand`, `registro` y
 ## Josué, en este orden
 
 1. La base Next.js 16.3.6, TypeScript, Tailwind y App Router ya está en `main` (PR #1). No la recrees. El 30 de septiembre, subir a 16.3.7.
-2. Layout del admin y las pantallas de su lista con datos fijos, según el orden de Abdiel cuando exista. Si las pantallas aún no están, usa la lista de [STACK.md](STACK.md) y luego ajusta el acento. `/` hoy redirige a `/mis-tareas`.
-3. Botón Entrar con Cavos (`network: "testnet"`, `appSalt` fijo `hyto`) en cuanto el `appId` esté en Vercel.
-4. Cambiar los datos fijos por las rutas de Esteban.
-5. Fondear y Aprobar llaman al módulo de Sebas: construir XDR, firmar, enviar. Una firma en Aprobar.
-6. Informe imprimible. Presupuesto contra gasto, detalle por persona, "Ver pago", y la credencial de Acta solo si el enlace existe.
+2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento sigue provisional.
+3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). Llama a Cavos solo cuando el `appId` esté en Vercel.
+4. Cambiar los datos fijos por las rutas de Esteban. Sigue pendiente.
+5. Fondear y Aprobar llaman al módulo de Sebas: construir XDR, firmar, enviar. Una firma en Aprobar. Hoy no firman en Stellar.
+6. Hecho en el PR #3: informe imprimible. Presupuesto contra gasto, detalle por persona, "Ver pago", y la credencial de Acta solo si el enlace existe.
 
-El código del integrante ya está en `main`. Revisarlo no bloquea el admin.
+El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Esteban y el módulo de Sebas.
 
 ## Raúl, en este orden
 
@@ -101,4 +101,6 @@ El código del integrante ya está en `main`. Revisarlo no bloquea el admin.
 
 ### 2026-09-28
 
-PR #1 de Raúl mergeado en `main` (squash `3a000e0`). Entró la base de Next.js 16.3.6 y las pantallas del integrante: Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas`. `/` redirige a `/mis-tareas` porque el admin todavía no existe. Los datos en pantalla son el ejemplo de ZEEK hasta que existan `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. `NEXT_PUBLIC_CAVOS_APP_ID` no está. `--acento` sigue provisional. No hay ESLint ni script `lint`. En ese PR, `npm ci`, `npm test` (13 pruebas) y `npm run build` pasan. Siguen pendientes el admin, Neon, Blob, el escrow, el Acta y Laya.
+PR #1 de Raúl mergeado en `main` (squash `3a000e0`). Entró la base de Next.js 16.3.6 y las pantallas del integrante: Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas`. Los datos en pantalla son el ejemplo de ZEEK hasta que existan `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. `NEXT_PUBLIC_CAVOS_APP_ID` no está. `--acento` sigue provisional. No hay ESLint ni script `lint`. En ese PR, `npm ci`, `npm test` y `npm run build` pasan. Siguen pendientes Neon, Blob, el escrow, el Acta y Laya.
+
+PR #3 de Josué mergeado en `main` (squash `b2451a6`), el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica. Entraron las pantallas del admin con el ejemplo de ZEEK, sin recrear el proyecto: crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible. `/` es la bandeja (presupuesto, pagado, pendiente y lo que falta aprobar). En la revisión, Pedir otra foto es un enlace. El informe muestra presupuesto contra gasto y el detalle por persona. "Ver pago" y la credencial solo se dibujan si el enlace existe; en el ejemplo no existen. Entrar usa Cavos con `network: "testnet"` y `appSalt` `hyto` únicamente cuando `NEXT_PUBLIC_CAVOS_APP_ID` tiene valor. Fondear y Aprobar no firman en Stellar. El esqueleto y el admin de Josué quedan hechos. Siguen pendientes Esteban (base de datos, rutas `/api` y la revisión con IA) y Sebas (el `appId` de Cavos, el escrow y la firma). Next.js se queda en 16.3.6; el parche 16.3.7 es el 30 de septiembre. Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
