@@ -6,14 +6,14 @@ El demo es un evento de ZEEK. Organización: [Hyto-App](https://github.com/Hyto-
 
 ## Estado al 28 de septiembre de 2026
 
-En `main` están el PR #1 de Raúl (squash `3a000e0`), el PR #3 de Josué (squash `b2451a6`, el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica), el PR #7 de Abdiel Cole (squash `cff4512`, a las 2:58 p.m.), la auditoría del integrante (PR #4, squash `bc94a9c`, a las 3:47 p.m.) y el PR #8 de Sebas (squash `ae10a9e`, a las 3:48 p.m.). Las horas son de Costa Rica. El esqueleto, el admin, la marca (Poppins y lima) y el módulo de firma están hechos. Siguen pendientes Esteban (base de datos, rutas de tareas y evidencias, y la revisión con IA), Sebas (el `appId` de Cavos y un pago en USDC; sin ese pago no hay Acta) y Abdiel (`LAYA_URL`). Fondear y Aprobar todavía no usan el módulo.
+En `main` están el PR #1 de Raúl (squash `3a000e0`), el PR #3 de Josué (squash `b2451a6`, el 28 de septiembre cerca de las 7:42 a.m., hora de Costa Rica), el PR #7 de Abdiel Cole (squash `cff4512`, a las 2:58 p.m.), la auditoría del integrante (PR #4, squash `bc94a9c`, a las 3:47 p.m.) y el PR #8 de Sebas (squash `ae10a9e`, a las 3:48 p.m.). Las horas son de Costa Rica. El esqueleto, el admin, la marca (Poppins y lima) y el módulo de firma están hechos. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel y es el correcto. Siguen pendientes Esteban (todo el backend: rutas, Neon y el login real de Cavos), Sebas (un pago en USDC; sin ese pago no hay Acta) y Abdiel (`LAYA_URL`). Fondear y Aprobar todavía no usan el módulo. Entrar falla: el diagnóstico está en [PLAN.md](PLAN.md).
 
 | Hecho | Dueño |
 |---|---|
 | Proyecto Next.js 16.3.6: `package.json`, `tsconfig.json`, `app/layout.tsx`, `app/globals.css`, `next.config.ts` | Raúl |
 | Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas` | Raúl |
 | Esqueleto y admin: bandeja en `/`, crear proyecto, revisión y aprobar, informe imprimible. Mis tareas sigue en `/mis-tareas`. Ejemplo de ZEEK. Fondear y Aprobar no firman en Stellar | Josué |
-| Botón Entrar. Llama a Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID` | Josué |
+| Botón Entrar. Llama a Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está; el login real es de Esteban | Josué |
 | Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C` | Abdiel |
 | Módulo de firma (`lib/escrow`), `POST /api/firma`, `POST /api/firma/enviar` y el script `npm run hito`. Sin hash de pago en el repositorio | Sebas |
 | Auditoría del integrante: no mezcla tareas, no inventa US$0 ni corre el día de una fecha, abre USDC si la cuenta ya existe, y cierra fallos de la cámara | Josué (coautor), PR #4 |
@@ -23,13 +23,12 @@ Las pantallas usan tres tareas de trabajo de US$20 y un reembolso de hasta US$15
 
 | Pendiente | Dueño |
 |---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel. Sin eso, `/cuentas` no crea wallets y Entrar no llama a Cavos | Sebas |
 | Un pago de prueba en USDC con `npm run hito` y `TRUSTLESS_API_KEY`. El Acta solo después de ese pago. El hash no está en el repositorio | Sebas |
-| Base de datos, rutas de tareas y evidencias, y revisión con IA | Esteban |
+| Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios, email → rol, migraciones y seed), login real de Cavos contra la base, y revisión con IA. Entrar falla con `registry lookup skipped: no login token` (2026-09-28, diagnóstico en [PLAN.md](PLAN.md)) | Esteban |
 | `LAYA_URL` en su PC Windows | Abdiel |
 | Conectar la bandeja a las rutas de Esteban, y Fondear y Aprobar a `POST /api/firma` y `POST /api/firma/enviar` | Josué |
 | El 30 de septiembre, subir Next.js a 16.3.7 | Josué |
-| Cuatro cuentas de Cavos del demo, cuando exista el `appId` | Raúl |
+| Cuatro cuentas de Cavos del demo. El `appId` ya está; el login real es de Esteban | Raúl |
 | En `components/admin/Entrar.tsx:46`, `setDireccion` solo si `guardado.aviso` es null, para poder reintentar el guardado | Josué |
 
 `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C`, en `app/globals.css`. La tipografía es Poppins.
@@ -52,7 +51,7 @@ Solo nombres. Los valores van en Vercel, no en el repo. El código lee `NEXT_PUB
 
 | Nombre | Para qué | Dueño |
 |---|---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` | App de Cavos. Sin valor, las cuentas del demo no se preparan | Sebas |
+| `NEXT_PUBLIC_CAVOS_APP_ID` | App de Cavos. Ya está en Vercel y es el correcto | Sebas |
 | `TRUSTLESS_API_KEY` | Trustless Work, solo en el servidor. La leen `npm run hito` y `/api/firma`. Sin ella no hay pago | Sebas |
 | `DATABASE_URL` | Neon. Aún no se usa en el código | Esteban |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. Aún no se usa en el código | Esteban |

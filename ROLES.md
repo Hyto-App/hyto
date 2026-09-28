@@ -10,12 +10,12 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 |---|---|---|
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
-| Cuatro cuentas de Cavos | Pantalla lista; falta `NEXT_PUBLIC_CAVOS_APP_ID` | Raúl, dato de Sebas |
+| Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman: el módulo ya está y esos botones no lo llaman | Josué |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
-| Base de datos, rutas de tareas y evidencias, revisión con IA | Pendiente | Esteban |
+| Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios, email → rol, migraciones y seed), login real de Cavos y revisión con IA | Pendiente | Esteban |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
-| `appId` de Cavos y Acta | Pendientes. El Acta solo entra después de un pago en USDC | Sebas |
+| Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
 | `LAYA_URL` | Pendiente | Abdiel |
 
@@ -50,8 +50,8 @@ De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proy
 | Persona | Rol | Es dueño de |
 |---|---|---|
 | Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su servidor |
-| Esteban | Backend | Neon, Vercel Blob, veredicto de la IA y datos del informe |
-| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`) y la liberación del USDC. El módulo y el script ya están (PR #8) |
+| Esteban | Backend | Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe |
+| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`, ya en Vercel) y la liberación del USDC. El módulo y el script ya están (PR #8) |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
 
@@ -82,17 +82,19 @@ Laya corre en su servidor de escritorio, el mismo de Argus, en un entorno de Pyt
 
 ## Esteban
 
-Backend. Buen nivel en servidor.
+Backend. Buen nivel en servidor. Es dueño de todo el backend.
 
-**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
+**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
 
 La revisión corre en una ruta de Vercel. Llama 4 Scout en Groq (`meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
+El login real de Cavos también es suyo y se conecta a esa base. Hoy el botón Entrar de https://hyto.vercel.app falla. El diagnóstico, del 28 de septiembre de 2026, está en [PLAN.md](PLAN.md).
+
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
-**Listo cuando:** Josué y Raúl pueden guardar un proyecto y una evidencia llamando a su API.
+**Listo cuando:** Josué y Raúl pueden guardar un proyecto y una evidencia llamando a su API, y Entrar resuelve el rol por email en Neon.
 
 ## Sebas
 
@@ -107,7 +109,7 @@ Escrow y wallet. Implementa el flujo de dinero.
 
 Si ese beta no logra las cuatro cosas, el mismo día la base pasa a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito.
 
-La clave de API de Trustless Work se queda en el servidor. Cavos firma en el navegador con `signXdr`. El ciclo es siempre: la API devuelve un XDR, Cavos lo firma, el servidor lo envía a Stellar. Paquete `@cavos/kit`, red `testnet`, `appSalt` fijo `hyto`. El `appId` sale del dashboard de Cavos y se publica como `NEXT_PUBLIC_CAVOS_APP_ID`. Hoy no está, y sin él `/cuentas` no prepara wallets. La clave `cav_…` no va al navegador. USDC de testnet, emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`.
+La clave de API de Trustless Work se queda en el servidor. Cavos firma en el navegador con `signXdr`. El ciclo es siempre: la API devuelve un XDR, Cavos lo firma, el servidor lo envía a Stellar. Paquete `@cavos/kit`, red `testnet`, `appSalt` fijo `hyto`. El `appId` sale del dashboard de Cavos y se publica como `NEXT_PUBLIC_CAVOS_APP_ID`. Ya está en Vercel y es el correcto. Los orígenes permitidos de Cavos también. Sin un login real, Entrar y `/cuentas` no registran la wallet: eso lo resuelve Esteban. La clave `cav_…` no va al navegador. USDC de testnet, emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`.
 
 El spike incluye crear la app en el dashboard, conectar una wallet Stellar, abrir la trustline de USDC y firmar el XDR de fondeo y de `approve-and-release`. No uses el wrapper `TrustlessWorkEscrow` del kit. El envío es `POST /stellar/send-transaction`. Ese endpoint rechaza fee-bumps: confirma que la cuenta firmante puede pagar la comisión en XLM. Si no, fóndala con Friendbot.
 
@@ -121,7 +123,7 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Fondear y Aprobar no firman en Stellar.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
 
 **Sigue con:** las rutas de Esteban, y conectar Fondear y Aprobar al módulo de Sebas, ya en `main`: `POST /api/firma`, `signXdr` en el navegador y `POST /api/firma/enviar`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
 
@@ -135,7 +137,7 @@ App del integrante y preparación de las cuentas del demo.
 
 **Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios) cuando exista `NEXT_PUBLIC_CAVOS_APP_ID`. Cada una muestra su dirección `G…` y abre la trustline de USDC. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 
