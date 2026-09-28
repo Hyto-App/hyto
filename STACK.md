@@ -23,10 +23,10 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). Lo definió Abdiel en el PR #7 |
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
-| Dónde corre | Vercel. La única computadora que tiene que estar encendida es la de Abdiel, y solo para Laya |
+| Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. Todavía no está cableado |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Scout (Groq) describe la foto. Laya corre en la computadora Windows de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
+| IA | Scout (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
@@ -41,7 +41,7 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob. La pondrá Esteban |
 | `GROQ_API_KEY` | Scout. La pondrá Esteban |
 | `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
-| `LAYA_URL` | URL pública de Laya. La publica Abdiel |
+| `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
 
 La clave `TRUSTLESS_API_KEY` y la clave `cav_…` de Cavos se quedan en el servidor. `cav_…` todavía no tiene nombre en el repo. La clave de Acta, igual, y solo después de un pago en USDC.
 
@@ -56,7 +56,7 @@ El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `si
 La revisión son dos modelos. Ninguno firma ni mueve fondos. La ruta en Vercel lee la foto desde Blob y no publica esa URL. Esa ruta todavía no existe.
 
 1. **Llama 4 Scout** describe la imagen. Groq, modelo `meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo (unas 1.000 solicitudes al día).
-2. **Laya** decide sobre ese texto. Corre en la computadora Windows de Abdiel (`pip install laya`, checkpoint `laya-multilingual`). La ruta de la app la llama con `LAYA_URL`. Esa PC tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de Scout más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
+2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de Scout más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
 3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de Scout más esas tres respuestas.
 
 Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
