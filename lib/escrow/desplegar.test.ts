@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { pedidoDespliegue } from "./cuerpos";
-import { cuentasDeTarea, rolesDeEntorno, USDC_SAC_TESTNET } from "./desplegar";
+import type { TareaFila } from "../db/tipos";
+import { cuentasDeTarea, montoDeTarea, rolesDeEntorno, USDC_SAC_TESTNET } from "./desplegar";
 
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const RECEPTOR = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
@@ -73,6 +74,27 @@ test("el despliegue deja al organizador en aprobar, marcar y liberar", () => {
   assert.equal(trustline.contractId, USDC_SAC_TESTNET);
   assert.equal(trustline.symbol, "USDC");
   assert.match(USDC_SAC_TESTNET, /^C[A-Z2-7]{55}$/);
+});
+
+test("el monto del escrow no pasa el tope de la tarea", () => {
+  const tarea = {
+    id: "stand",
+    proyectoId: "zeek",
+    titulo: "Stand",
+    tipo: "trabajo",
+    monto: "20",
+    tope: "15",
+    condicion: "",
+    miembroId: "",
+    walletCobro: "",
+    estado: "pendiente",
+    hashPago: null,
+    credencialUrl: null,
+    contratoEscrow: null,
+  } satisfies TareaFila;
+  assert.equal(montoDeTarea(tarea, null), 15);
+  assert.equal(montoDeTarea({ ...tarea, tope: null }, null), 20);
+  assert.equal(montoDeTarea({ ...tarea, monto: "10" }, null), 10);
 });
 
 test("la plataforma no puede ser quien cobra", () => {

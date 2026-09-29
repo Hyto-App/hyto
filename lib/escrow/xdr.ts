@@ -19,7 +19,7 @@ export type InvocacionFirmada = {
 // la función del invoke y las cuentas con firma en la autorización Soroban.
 // No verifica la firma contra la clave: la red lo hace al aceptar la transacción.
 // Si el cliente solo pegó la G… en la sesión, no puede fabricar esta autorización.
-export function leerInvocacion(crudo: string): InvocacionFirmada | null {
+export function leerInvocacion(crudo: string, wallet: string | null = null): InvocacionFirmada | null {
   const tx = abrir(crudo);
   if (!tx || tx.operations.length !== 1) return null;
   const op = tx.operations[0] as {
@@ -39,7 +39,7 @@ export function leerInvocacion(crudo: string): InvocacionFirmada | null {
   }
   const funcion = llamada.functionName.toString();
   if (!funcion) return null;
-  const firmantes = firmantesDe(tx, op.auth ?? [], funcion, contrato);
+  const firmantes = firmantesDe(tx, op.auth ?? [], funcion, contrato, wallet);
   if (!firmantes || firmantes.length === 0) return null;
   return { contrato, funcion, firmantes };
 }
@@ -62,13 +62,27 @@ function firmantesDe(
   auth: xdr.SorobanAuthorizationEntry[],
   funcion: string,
   contrato: string,
+  wallet: string | null,
 ): string[] | null {
   if (auth.length === 0) {
-    return sobreFirmado(tx) && esCuenta(tx.source) ? [tx.source] : null;
+    if (!sobreFirmado(tx) || !esCuenta(tx.source)) return null;
+    if (wallet && tx.source !== wallet) return null;
+    return [tx.source];
   }
   const vistos = new Set<string>();
   let coincidencias = 0;
   for (const entrada of auth) {
+    const info = inspectAuthEntry(entrada);
+    // Una G firmada que no es la wallet de la sesión invalida el XDR,
+    // aunque autorice otro contrato (por ejemplo transfer). Una credencial
+    // de contrato (C…) puede quedar: no es la cuenta de la sesión.
+    if (info.address === null) {
+      if (!sobreFirmado(tx) || !esCuenta(tx.source)) return null;
+      if (wallet && tx.source !== wallet) return null;
+    } else if (esCuenta(info.address)) {
+      const firmada = info.signed || (sobreFirmado(tx) && tx.source === info.address);
+      if (firmada && wallet && info.address !== wallet) return null;
+    }
     const raiz = entrada.rootInvocation.function;
     if (raiz.type !== "sorobanAuthorizedFunctionTypeContractFn") continue;
     if (raiz.contractFn.functionName.toString() !== funcion) continue;
@@ -80,18 +94,14 @@ function firmantesDe(
     }
     if (contratoAuth !== contrato) continue;
     coincidencias += 1;
-    const info = inspectAuthEntry(entrada);
-    // La cuenta que autoriza el invoke es la de la credencial (address) o,
-    // si la credencial es la cuenta origen, tx.source. No usamos una clave
-    // interna distinta ni el fee-payer cuando la credencial nombra otra G.
     if (info.address === null) {
-      if (!sobreFirmado(tx) || !esCuenta(tx.source)) return null;
       vistos.add(tx.source);
       continue;
     }
     if (!esCuenta(info.address)) continue;
     const firmada = info.signed || (sobreFirmado(tx) && tx.source === info.address);
     if (!firmada) return null;
+    if (wallet && info.address !== wallet) return null;
     vistos.add(info.address);
   }
   if (coincidencias === 0 || vistos.size === 0) return null;

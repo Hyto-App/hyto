@@ -7,6 +7,8 @@ export const usuarios = pgTable("usuarios", {
   rol: text("rol").notNull(),
 });
 
+// Hyto asume un solo organizador por despliegue. proyectos no tiene dueño:
+// cualquier sesión con rol organizador puede desplegar y liberar esa tarea.
 export const proyectos = pgTable("proyectos", {
   id: text("id").primaryKey(),
   nombre: text("nombre").notNull(),

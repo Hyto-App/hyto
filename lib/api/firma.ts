@@ -11,6 +11,12 @@ import { leerInvocacion } from "@/lib/escrow/xdr";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
+const FUNCION_DESPLIEGUE = "deploy";
+const FUNCION_LIBERACION = "release_funds";
+
+// contractId que devolvió el prepare de esta tarea. No viene del cliente.
+const contratosPreparados = new Map<string, string>();
+
 export async function prepararFirmaHttp(sesion: SesionFila, request: Request, almacen?: Almacen | null): Promise<Response> {
   const grande = respuestaSiCuerpoGrande(request);
   if (grande) return grande;
@@ -70,8 +76,8 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     );
   }
   // accion y firmante del cuerpo no autorizan el envío. La cuenta sale del XDR.
-  const invocacion = leerInvocacion(envio.xdr);
   const wallet = (sesion.wallet ?? "").trim();
+  const invocacion = leerInvocacion(envio.xdr, wallet);
   if (!invocacion || invocacion.firmantes.length !== 1 || invocacion.firmantes[0] !== wallet) {
     return Response.json({ aviso: "El XDR no lo firma la wallet de esta sesión." }, { status: 400 });
   }
@@ -93,22 +99,38 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   } else if (sesion.rol !== "organizador") {
     return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
   }
+  const base = almacen === undefined ? await almacenNeon() : almacen;
+  if (envio.accion === "desplegar") {
+    if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
+      return Response.json({ aviso: "La transacción no despliega el escrow." }, { status: 409 });
+    }
+    const ocupada = await escrowYaGuardado(base, envio.tareaId);
+    if (ocupada) return Response.json({ aviso: "Esta tarea ya tiene un escrow." }, { status: 409 });
+  }
+  let pago: PagoEnviado;
   try {
-    const pago = await enviar(envio.xdr);
-    const hash = pago.hash ?? hashDeXdr(envio.xdr);
-    const base = almacen === undefined ? await almacenNeon() : almacen;
-    const aviso = await guardarResultado(sesion, envio, { ...pago, hash }, invocacion.funcion, base);
-    return Response.json({
+    pago = await enviar(envio.xdr);
+  } catch (error) {
+    return respuestaDeErrorFirma(error, "No se pudo enviar el pago.");
+  }
+  const hash = pago.hash ?? hashDeXdr(envio.xdr);
+  let guardado: ResultadoGuardado = { aviso: null, estadoHttp: 200 };
+  try {
+    guardado = await guardarResultado(sesion, envio, { ...pago, hash }, invocacion, base);
+  } catch {
+    guardado = { aviso: "El envío salió bien y no se pudo guardar en la base.", estadoHttp: 200 };
+  }
+  return Response.json(
+    {
       hash,
       ledger: pago.ledger,
       codigo: pago.codigo,
       contrato: pago.contrato,
       estado: pago.estado,
-      ...(aviso ? { aviso } : {}),
-    });
-  } catch (error) {
-    return respuestaDeErrorFirma(error, "No se pudo enviar el pago.");
-  }
+      ...(guardado.aviso ? { aviso: guardado.aviso } : {}),
+    },
+    { status: guardado.estadoHttp },
+  );
 }
 
 async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almacen: Almacen): Promise<Response> {
@@ -143,60 +165,108 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     monto,
     titulo: tarea.titulo,
     descripcion: tarea.condicion,
-    engagementId: `hyto-${tarea.id}-${Date.now()}`,
+    engagementId: `hyto-${tarea.id}`,
     roles,
   });
   if ("aviso" in cuentas) return Response.json({ aviso: cuentas.aviso }, { status: 400 });
   try {
     const listo = await prepararDespliegue(cuentas);
+    if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto });
   } catch (error) {
     return respuestaDeErrorFirma(error, "No se pudo preparar el pago.");
   }
 }
 
+type ResultadoGuardado = { aviso: string | null; estadoHttp: number };
+type Invocacion = { contrato: string; funcion: string };
+
+async function escrowYaGuardado(almacen: Almacen | null, tareaId: string | null): Promise<boolean> {
+  if (!almacen || !tareaId) return false;
+  const tarea = await almacen.leerTarea(tareaId);
+  return Boolean(tarea?.contratoEscrow && esContrato(tarea.contratoEscrow));
+}
+
 async function guardarResultado(
   sesion: SesionFila,
   envio: MetaEnvio,
   pago: PagoEnviado,
-  funcion: string,
+  invocacion: Invocacion,
   almacen: Almacen | null,
-): Promise<string | null> {
-  if (sesion.rol !== "organizador" || !envio.tareaId) return null;
-  if (envio.accion !== "desplegar" && envio.accion !== "liberar") return null;
-  if (!almacen) return "La base no está configurada y no se guardó el pago.";
+): Promise<ResultadoGuardado> {
+  if (sesion.rol !== "organizador" || !envio.tareaId) return { aviso: null, estadoHttp: 200 };
+  if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
+  if (!almacen) return { aviso: "La base no está configurada y no se guardó el pago.", estadoHttp: 200 };
   const tarea = await almacen.leerTarea(envio.tareaId);
-  if (!tarea) return "No encontramos esa tarea para guardar el pago.";
+  if (!tarea) return { aviso: "No encontramos esa tarea para guardar el pago.", estadoHttp: 200 };
   if (envio.accion === "desplegar") {
-    const contrato = pago.contrato ?? (envio.contrato && esContrato(envio.contrato) ? envio.contrato : null);
-    if (!contrato) return "El envío salió bien y Trustless no devolvió el contrato.";
+    if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
+      return { aviso: "La transacción no despliega el escrow.", estadoHttp: 409 };
+    }
+    if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
+      return { aviso: "Esta tarea ya tiene un escrow.", estadoHttp: 409 };
+    }
+    const contrato = contratoDeServidor(pago, tarea.id);
+    if (!contrato) return { aviso: "El envío salió bien y Trustless no devolvió el contrato.", estadoHttp: 200 };
     await almacen.actualizarTarea(tarea.id, { contratoEscrow: contrato });
-    return null;
+    contratosPreparados.delete(tarea.id);
+    return { aviso: null, estadoHttp: 200 };
   }
-  if (!/release/i.test(funcion)) {
-    return "El envío salió bien, pero la transacción no libera el hito, así que no se marcó como pagado.";
+  if (invocacion.funcion !== FUNCION_LIBERACION) {
+    return {
+      aviso: "El envío salió bien, pero la transacción no libera el hito, así que no se marcó como pagado.",
+      estadoHttp: 200,
+    };
+  }
+  if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow) || invocacion.contrato !== tarea.contratoEscrow) {
+    return { aviso: "El envío no corresponde al escrow de esta tarea, así que no se marcó como pagado.", estadoHttp: 200 };
+  }
+  if (pago.estado !== "SUCCESS") {
+    return { aviso: "El envío no quedó confirmado, así que no se marcó como pagado.", estadoHttp: 200 };
   }
   if (!pago.hash || !/^[a-fA-F0-9]{64}$/.test(pago.hash)) {
-    return "El envío salió bien y no hay hash para guardar el pago.";
+    return { aviso: "El envío salió bien y no hay hash para guardar el pago.", estadoHttp: 200 };
+  }
+  let escrow: Record<string, unknown>;
+  try {
+    escrow = await leerEscrow(tarea.contratoEscrow);
+  } catch {
+    return { aviso: "No se pudo confirmar que el hito está liberado, así que no se marcó como pagado.", estadoHttp: 200 };
+  }
+  if (!hitoLiberado(escrow)) {
+    return { aviso: "El hito todavía no figura liberado, así que no se marcó como pagado.", estadoHttp: 200 };
   }
   await almacen.actualizarTarea(tarea.id, { hashPago: pago.hash, estado: "pagado" });
-  return null;
+  return { aviso: null, estadoHttp: 200 };
 }
 
-type MetaEnvio = { xdr: string | null; accion: string | null; tareaId: string | null; contrato: string | null };
+function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | null {
+  if (pago.contrato && esContrato(pago.contrato)) return pago.contrato;
+  const preparado = contratosPreparados.get(tareaId);
+  return preparado && esContrato(preparado) ? preparado : null;
+}
+
+function hitoLiberado(escrow: Record<string, unknown>): boolean {
+  const hitos = Array.isArray(escrow.milestones) ? escrow.milestones : [];
+  const hito = hitos[0];
+  if (!hito || typeof hito !== "object") return false;
+  const datos = hito as Record<string, unknown>;
+  const flags = datos.flags && typeof datos.flags === "object" ? (datos.flags as Record<string, unknown>) : null;
+  return flags?.released === true;
+}
+
+type MetaEnvio = { xdr: string | null; accion: string | null; tareaId: string | null };
 
 function datosEnvio(body: unknown): MetaEnvio {
-  if (!body || typeof body !== "object") return { xdr: null, accion: null, tareaId: null, contrato: null };
-  const datos = body as { xdr?: unknown; accion?: unknown; tareaId?: unknown; contrato?: unknown };
+  if (!body || typeof body !== "object") return { xdr: null, accion: null, tareaId: null };
+  const datos = body as { xdr?: unknown; accion?: unknown; tareaId?: unknown };
   const xdr = typeof datos.xdr === "string" ? datos.xdr.trim() : "";
   const accion = typeof datos.accion === "string" ? datos.accion.trim() : "";
   const tareaId = typeof datos.tareaId === "string" ? datos.tareaId.trim() : "";
-  const contrato = typeof datos.contrato === "string" ? datos.contrato.trim() : "";
   return {
     xdr: xdr || null,
     accion: accion || null,
     tareaId: tareaId && /^[A-Za-z0-9_-]{1,80}$/.test(tareaId) ? tareaId : null,
-    contrato: contrato || null,
   };
 }
 

@@ -32,9 +32,20 @@ export function montoDeTarea(tarea: TareaFila, evidencia: EvidenciaFila | null):
   const crudo = tarea.tipo === "reembolso" ? evidencia?.monto || tarea.tope || tarea.monto : tarea.monto;
   const normal = normalizarMonto(crudo ?? "");
   if (!normal) return null;
-  const monto = Number(normal);
+  let monto = Number(normal);
   if (!(monto > 0) || !Number.isFinite(monto)) return null;
-  return monto;
+  const tope = topePositivo(tarea.tope);
+  if (tope !== null && monto > tope) monto = tope;
+  return monto > 0 ? monto : null;
+}
+
+function topePositivo(tope: string | null): number | null {
+  if (!tope) return null;
+  const normal = normalizarMonto(tope);
+  if (!normal) return null;
+  const cifra = Number(normal);
+  if (!(cifra > 0) || !Number.isFinite(cifra)) return null;
+  return cifra;
 }
 
 export function cuentasDeTarea(opciones: {

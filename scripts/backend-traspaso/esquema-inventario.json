@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "ef7fde616a727584092a15f0ab5e527c4ce0e4bb4df914d5ff09e1e63c985a5e",
+      "sha256": "b3f7c2cb5eef340e0cf0b6508222cc0f244dfe8dadffaf3160801f9e0b3c64f2",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",

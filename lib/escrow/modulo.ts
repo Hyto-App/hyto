@@ -174,10 +174,9 @@ function leerXdr(json: unknown): XdrListo {
 function leerPago(json: unknown): PagoEnviado {
   const datos = registro(json);
   const estado = texto(datos.status);
-  // docs.trustlesswork.com: SendTransactionResponse es { status, message }.
-  // status vale SUCCESS o FAILED. El hash no forma parte de esa respuesta.
-  // En el alta, el SDK admite leer también contractId (InitializeEscrowResponse).
-  if (estado && estado !== "SUCCESS") {
+  // Solo status SUCCESS cuenta como envío aceptado. Sin status no es éxito:
+  // un código suelto (STELLAR_TX_SUBMITTED) no alcanza para guardar el pago.
+  if (estado !== "SUCCESS") {
     throw new ErrorFirma(texto(datos.message) ?? "El envío del pago falló.", 502, texto(datos.code));
   }
   const ledger = typeof datos.ledger === "number" ? datos.ledger : null;

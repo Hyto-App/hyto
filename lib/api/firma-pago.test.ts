@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Account, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
+import { Account, Address, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
@@ -59,7 +59,15 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
     }
     if (url.endsWith("/stellar/send-transaction")) {
-      return new Response(JSON.stringify({ txHash: "cd".repeat(32), ledger: 9, contractId: CONTRATO }), { status: 200 });
+      return new Response(
+        JSON.stringify({ status: "SUCCESS", txHash: "cd".repeat(32), ledger: 9, contractId: CONTRATO_XDR }),
+        { status: 200 },
+      );
+    }
+    if (url.includes(`/escrow/multi-release/v2/${CONTRATO_XDR}`)) {
+      return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ flags: { released: true } }] }), {
+        status: 200,
+      });
     }
     throw new Error(`fetch inesperado: ${url}`);
   };
@@ -97,6 +105,16 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.equal((cuerpo.trustline as { contractId: string }).contractId, USDC_SAC_TESTNET);
     assert.equal((cuerpo.milestones as { receiver: string }[])[0]?.receiver, RECEPTOR);
     assert.equal(cuerpo.platformFee, 0);
+    assert.equal(cuerpo.engagementId, "hyto-stand");
+
+    const ajena = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "fund_escrow", firmante: FIRMANTE_XDR });
+    const noDespliega = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: ajena, accion: "desplegar", tareaId: "stand", contrato: CONTRATO }),
+      almacen,
+    );
+    assert.equal(noDespliega.status, 409);
+    assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, null);
 
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
     const enviado = await enviarFirmaHttp(
@@ -105,13 +123,26 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
       almacen,
     );
     assert.equal(enviado.status, 200);
-    assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, CONTRATO);
+    assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, CONTRATO_XDR);
 
-    const pago = xdrDeInvocacion({
-      contrato: CONTRATO_XDR,
-      funcion: "release_funds",
-      firmante: FIRMANTE_XDR,
-    });
+    const repetido = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "stand" }),
+      almacen,
+    );
+    assert.equal(repetido.status, 409);
+
+    const otro = Address.contract(new Uint8Array(32).fill(4)).toString();
+    const cruzado = xdrDeInvocacion({ contrato: otro, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    const noPago = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: cruzado, accion: "liberar", tareaId: "stand" }),
+      almacen,
+    );
+    assert.equal(noPago.status, 200);
+    assert.notEqual((await almacen.leerTarea("stand"))?.estado, "pagado");
+
+    const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
     const pagado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: pago, accion: "liberar", tareaId: "stand" }),
@@ -159,6 +190,127 @@ test("un fee-bump no se envía y el aviso habla de XLM", async () => {
     assert.match(aviso, /fee-bump/);
     assert.match(aviso, /XLM/);
     assert.equal(llamadas, 0);
+  } finally {
+    globalThis.fetch = original;
+    reiniciarLimite();
+  }
+});
+
+test("sin contractId en el envío se guarda el del prepare, no el del cliente", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarTarea("registro", { walletCobro: RECEPTOR });
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
+    }
+    if (url.endsWith("/stellar/send-transaction")) {
+      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "ab".repeat(32), ledger: 3 }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    const preparado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
+    assert.equal(preparado.status, 200);
+    const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const enviado = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO }),
+      almacen,
+    );
+    assert.equal(enviado.status, 200);
+    assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, CONTRATO_XDR);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior);
+    reiniciarLimite();
+  }
+});
+
+test("si la base falla después del envío, la respuesta es 200 con el hash", async () => {
+  reiniciarLimite();
+  const base = crearMemoria();
+  await asegurarSemilla(base);
+  await base.actualizarTarea("bienvenida", { walletCobro: RECEPTOR });
+  const almacen = {
+    ...base,
+    actualizarTarea: async () => {
+      throw new Error("la base no escribe");
+    },
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
+    }
+    if (url.endsWith("/stellar/send-transaction")) {
+      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "ef".repeat(32), ledger: 4, contractId: CONTRATO_XDR }), {
+        status: 200,
+      });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    assert.equal(
+      (await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen)).status,
+      200,
+    );
+    const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const enviado = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida" }),
+      almacen,
+    );
+    assert.equal(enviado.status, 200);
+    const json = (await enviado.json()) as { hash: string; aviso: string };
+    assert.equal(json.hash, "ef".repeat(32));
+    assert.match(json.aviso, /no se pudo guardar/);
+    assert.equal((await base.leerTarea("bienvenida"))?.contratoEscrow, null);
+  } finally {
+    globalThis.fetch = original;
+    reiniciarLimite();
+  }
+});
+
+test("liberar sin el hito marcado como released no deja la tarea pagada", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarTarea("comida", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/stellar/send-transaction")) {
+      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "11".repeat(32), ledger: 5 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ flags: { released: false } }] }), {
+      status: 200,
+    });
+  };
+  try {
+    const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    const respuesta = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "comida" }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 200);
+    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /liberado/);
+    assert.notEqual((await almacen.leerTarea("comida"))?.estado, "pagado");
   } finally {
     globalThis.fetch = original;
     reiniciarLimite();
