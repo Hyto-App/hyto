@@ -1,7 +1,7 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
-import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
 import { baseNoLista, json, sinFotos } from "./json";
@@ -9,9 +9,15 @@ import { baseNoLista, json, sinFotos } from "./json";
 const MAX_BYTES = 8_000_000;
 const PLAZO_MS = 2800;
 
+export type ActorEvidencia = {
+  usuarioId: string;
+  rol: Rol;
+};
+
 export type DepsEvidencia = {
   almacen: Almacen;
   fotos: Fotos | null;
+  actor?: ActorEvidencia;
   revisarTarea?: (tarea: TareaFila, foto: Awaited<ReturnType<Fotos["leer"]>>) => Promise<ResultadoRevision>;
   continuar?: (trabajo: Promise<void>) => void;
 };
@@ -78,6 +84,18 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
+    const wallet = direccion(texto(form.get("wallet")));
+    const asignado = puedeFijarWallet(tarea, deps.actor);
+    if (deps.actor && !asignado) {
+      const aviso =
+        wallet && wallet !== tarea.walletCobro
+          ? "Solo quien tiene la tarea puede indicar la cuenta de cobro."
+          : "Solo quien tiene la tarea puede enviar la evidencia.";
+      return json({ aviso }, 403);
+    }
+    if (wallet && wallet !== tarea.walletCobro && !asignado) {
+      return json({ aviso: "Solo quien tiene la tarea puede indicar la cuenta de cobro." }, 403);
+    }
 
     let blobId: string;
     try {
@@ -95,8 +113,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     };
     await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
-    const wallet = direccion(texto(form.get("wallet")));
-    if (wallet) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
+    if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
 
     const leida = await deps.fotos.leer(blobId);
     const trabajo = (deps.revisarTarea ?? revisarPorDefecto)(tarea, leida);
@@ -172,4 +189,8 @@ function esImagen(foto: Blob): boolean {
 function direccion(valor: string): string | null {
   if (!/^G[A-Z2-7]{55}$/.test(valor)) return null;
   return valor;
+}
+
+function puedeFijarWallet(tarea: TareaFila, actor: ActorEvidencia | undefined): boolean {
+  return Boolean(actor && tarea.miembroId && actor.usuarioId === tarea.miembroId);
 }

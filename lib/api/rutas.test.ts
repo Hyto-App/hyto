@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
 import test from "node:test";
+import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
+import { POST as crearProyecto } from "../../app/api/proyectos/route";
+import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
 import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
@@ -11,8 +15,33 @@ import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp } from "./sesion";
 import { listarTareasHttp } from "./tareas";
 
-function token(email: string): string {
-  return `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email })).toString("base64url")}.bbbb`;
+const EMISOR_PRUEBA = "https://emisor.prueba";
+const par = generateKeyPairSync("rsa", { modulusLength: 2048 });
+const jwk = par.publicKey.export({ format: "jwk" }) as JsonWebKey;
+jwk.kid = "prueba";
+jwk.alg = "RS256";
+jwk.use = "sig";
+process.env.CAVOS_JWT_JWK = JSON.stringify(jwk);
+process.env.CAVOS_JWT_ISSUER = EMISOR_PRUEBA;
+delete process.env.CAVOS_JWT_AUDIENCE;
+delete process.env.CAVOS_JWKS_URL;
+
+function token(email: string | null, extra: Record<string, unknown> = {}): string {
+  const encabezado = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "prueba" })).toString("base64url");
+  const cuerpo = Buffer.from(
+    JSON.stringify({
+      sub: "cavos-1",
+      iss: EMISOR_PRUEBA,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      ...(email ? { email } : {}),
+      ...extra,
+    }),
+  ).toString("base64url");
+  const datos = `${encabezado}.${cuerpo}`;
+  const firma = createSign("RSA-SHA256");
+  firma.update(datos);
+  firma.end();
+  return `${datos}.${firma.sign(par.privateKey).toString("base64url")}`;
 }
 
 test("las tareas de ZEEK salen de la base", async () => {
@@ -54,6 +83,58 @@ test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
 
   const tarea = await almacen.leerTarea("comida");
   assert.equal(tarea?.estado, "en revisión");
+});
+
+test("solo el voluntario asignado fija la cuenta de cobro", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const propia = "G" + "A".repeat(55);
+  const ajena = "G" + "B".repeat(55);
+  const pedir = (wallet: string) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("wallet", wallet);
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+
+  const otro = await publicarEvidenciaHttp(pedir(ajena), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+  });
+  assert.equal(otro.status, 403);
+  const sinWallet = new FormData();
+  sinWallet.set("tareaId", "stand");
+  sinWallet.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+  const otroSinWallet = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: sinWallet }), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+  });
+  assert.equal(otroSinWallet.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+
+  const organizador = await publicarEvidenciaHttp(pedir(ajena), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "organizador", rol: "organizador" },
+  });
+  assert.equal(organizador.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+
+  const sinActor = await publicarEvidenciaHttp(pedir(propia), { almacen, fotos });
+  assert.equal(sinActor.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+
+  const asignado = await publicarEvidenciaHttp(pedir(propia), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-1", rol: "voluntario" },
+  });
+  assert.equal(asignado.status, 201);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
 });
 
 test("un archivo que no es imagen no pasa", async () => {
@@ -125,11 +206,45 @@ test("un proyecto nuevo entra por la ruta", async () => {
   assert.equal(tareas.tareas.some((tarea) => tarea.titulo === "Cajas"), true);
 });
 
-test("la sesión sale del correo y el pago exige al organizador", async () => {
+test("la sesión sale del correo firmado y el pago exige al organizador", async () => {
   const almacen = crearMemoria();
+  const falso = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "organizador@demo.hyto",
+        token: `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email: "organizador@demo.hyto" })).toString("base64url")}.bbbb`,
+      }),
+    }),
+    almacen,
+  );
+  assert.equal(falso.status, 400);
+
+  const sinEmail = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "organizador@demo.hyto", token: token(null) }),
+    }),
+    almacen,
+  );
+  assert.equal(sinEmail.status, 400);
+
+  const otroCorreo = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "organizador@demo.hyto", token: token("voluntario1@demo.hyto") }),
+    }),
+    almacen,
+  );
+  assert.equal(otroCorreo.status, 400);
+
   const ajeno = await crearSesionHttp(
     new Request("http://local/api/sesion", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "nadie@demo.hyto", token: token("nadie@demo.hyto") }),
     }),
     almacen,
@@ -139,6 +254,7 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   const propia = await crearSesionHttp(
     new Request("http://local/api/sesion", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "organizador@demo.hyto", token: token("organizador@demo.hyto") }),
     }),
     almacen,
@@ -152,4 +268,22 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   assert.equal(sinSesion.status, 401);
   const envio = await enviarFirma(new Request("http://local/api/firma/enviar", { method: "POST", body: "{}" }));
   assert.equal(envio.status, 401);
+});
+
+test("las rutas que escriben responden 401 sin sesión", async () => {
+  const contexto = { params: Promise.resolve({ id: "stand" }) };
+  const rutas = [
+    crearProyecto(new Request("http://local/api/proyectos", { method: "POST", body: "{}" })),
+    publicarEvidencia(new Request("http://local/api/evidencias", { method: "POST" })),
+    leerRevision(new Request("http://local/api/revision/stand"), contexto),
+    forzarRevision(new Request("http://local/api/revision/stand", { method: "POST" }), contexto),
+    prepararFirma(new Request("http://local/api/firma", { method: "POST", body: "{}" })),
+    enviarFirma(new Request("http://local/api/firma/enviar", { method: "POST", body: "{}" })),
+  ];
+  for (const pendiente of rutas) {
+    const respuesta = await pendiente;
+    assert.equal(respuesta.status, 401);
+    const cuerpo = (await respuesta.json()) as { aviso: string };
+    assert.equal(cuerpo.aviso, "Entra para continuar.");
+  }
 });

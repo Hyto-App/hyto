@@ -25,6 +25,16 @@ export type FotoEnviada = {
   ejemplo: boolean;
 };
 
+export class ErrorDeSesion extends Error {
+  readonly aviso: string;
+
+  constructor(aviso: string) {
+    super(aviso);
+    this.name = "ErrorDeSesion";
+    this.aviso = aviso;
+  }
+}
+
 function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | undefined): Tarea[] {
   if (!estados) return tareas;
   return tareas.map((tarea) => (estados[tarea.id] ? { ...tarea, estado: estados[tarea.id] } : tarea));
@@ -100,6 +110,16 @@ function listaDesdeJson(json: unknown): Tarea[] | null {
   return crudo.map(normalizarTarea).filter((tarea): tarea is Tarea => tarea !== null);
 }
 
+async function avisoDeAuth(respuesta: Response): Promise<string> {
+  try {
+    const json = (await respuesta.json()) as { aviso?: unknown };
+    if (json && typeof json.aviso === "string" && json.aviso.trim()) return json.aviso.trim();
+  } catch {
+    // cuerpo vacío o no JSON
+  }
+  return "Entra para continuar.";
+}
+
 async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {
   return fetchImpl(url, { ...init, signal: AbortSignal.timeout(4000) });
 }
@@ -147,6 +167,7 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
 
   try {
     const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
+    if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
     if (!creada) throw new Error("forma");
@@ -156,10 +177,12 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
       if (!lectura.ok) return { evidencia: creada, ejemplo: false };
       const leida = normalizarEvidencia(await leerJson(lectura), tarea.id);
       return { evidencia: leida ?? creada, ejemplo: false };
-    } catch {
+    } catch (error) {
+      if (error instanceof ErrorDeSesion) throw error;
       return { evidencia: creada, ejemplo: false };
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ErrorDeSesion) throw error;
     return { evidencia: evidenciaEjemplo(tarea), ejemplo: true };
   }
 }
