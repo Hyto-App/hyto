@@ -150,6 +150,10 @@ async function firmarConCavos(unsignedXdr: string): Promise<string> {
   return billetera.signXdr(unsignedXdr);
 }
 
+export function firmarXdrDeSesion(unsignedXdr: string): Promise<string> {
+  return firmarConCavos(unsignedXdr);
+}
+
 async function postJson(
   fetchImpl: typeof fetch,
   url: string,
