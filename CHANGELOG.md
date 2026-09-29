@@ -8,12 +8,13 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 - La base guarda usuarios, proyectos, tareas, evidencias, veredictos y el hash de pago, que sigue vacío. El correo mapea al rol. Hay migración y semilla del evento ZEEK. Las fotos van a un almacén privado y en la base queda el identificador. Esteban.
 - Las pantallas ya pueden llamar `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. También están `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. El informe abre aunque el pago no tenga hash. Ver pago usa el hash cuando exista. Esteban.
-- La revisión describe la foto con Llama 4 Scout. Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
+- La revisión describe la foto con Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`). Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
 - Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban.
 
 ### Arreglado
 
 - `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
+- La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban.
 
 ### Pendiente para el equipo
 

@@ -1,7 +1,7 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Descripcion } from "./armar";
 
-const MODELO = "meta-llama/llama-4-scout-17b-16e-instruct";
+const MODELO = "qwen/qwen3.8-27b";
 const BASE = "https://api.groq.com/openai/v1";
 
 const PEDIDO =

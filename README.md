@@ -16,7 +16,7 @@ En `main` están el PR #1 de Raúl (squash `3a000e0`), el PR #3 de Josué (squas
 | Botón Entrar. Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. El ingreso pide el código al correo, o Google, y guarda la dirección solo si no hay aviso | Josué, ingreso de Esteban |
 | Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C` | Abdiel |
 | Módulo de firma (`lib/escrow`), `POST /api/firma`, `POST /api/firma/enviar` y el script `npm run hito`. Sin hash de pago en el repositorio. Esas dos rutas exigen la sesión del organizador | Sebas, sesión de Esteban |
-| Neon con Drizzle, Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos` y `GET /api/revision/:id`. Seed de ZEEK. Revisión con Scout, stub de Laya y guion fijo. Entrar usa CavosAuth y busca el rol por correo | Esteban |
+| Neon con Drizzle, Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos` y `GET /api/revision/:id`. Seed de ZEEK. Revisión con Qwen 3.8 27B, stub de Laya y guion fijo. Entrar usa CavosAuth y busca el rol por correo | Esteban |
 | Auditoría del integrante: no mezcla tareas, no inventa US$0 ni corre el día de una fecha, abre USDC si la cuenta ya existe, y cierra fallos de la cámara | Josué (coautor), PR #4 |
 | `npm ci`, `npm test` y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
 
@@ -57,7 +57,7 @@ Solo nombres. Los valores van en Vercel, no en el repo. El código lee `NEXT_PUB
 | `TRUSTLESS_API_KEY` | Trustless Work, solo en el servidor. La leen `npm run hito` y `/api/firma`. Sin ella no hay pago | Sebas |
 | `DATABASE_URL` | Neon. La leen las rutas y `npm run db:migrar` | Esteban |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob, almacén privado. La lee `POST /api/evidencias` | Esteban |
-| `GROQ_API_KEY` | Llama 4 Scout. Sin ella, la revisión usa el guion fijo | Esteban |
+| `GROQ_API_KEY` | Qwen 3.8 27B (`qwen/qwen3.8-27b`). Sin ella, o si Groq falla, la revisión usa el guion fijo | Esteban |
 | `LAYA_URL` | Laya en la PC de Abdiel. Sin ella, la revisión usa el stub | Abdiel |
 
 `.env.example` declara los nombres. `LAYA_API_KEY` es opcional: si está, la revisión la manda a Laya.

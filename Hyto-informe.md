@@ -35,7 +35,7 @@ El mismo problema aparece en gastos operativos, pagos por entregables y reembols
 
 1. **Presupuesto con reglas.** El organizador crea un proyecto, deposita fondos en un escrow de Trustless Work y los divide por tareas, cada una con monto y condiciones. El dinero queda bloqueado.
 2. **Evidencia obligatoria.** Cada hito es trabajo o reembolso. Los dos se suben con la misma cámara: una foto de lo hecho, o una foto de la factura. La revisión es la misma.
-3. **Revisión con IA.** Llama 4 Scout describe la foto. Laya, en la computadora Windows de Abdiel, la clasifica con tres respuestas. El código arma cumplió, parcial o insuficiente. Ninguno mueve dinero.
+3. **Revisión con IA.** Qwen 3.8 27B en Groq describe la foto. Laya, en la computadora Windows de Abdiel, la clasifica con tres respuestas. El código arma cumplió, parcial o insuficiente. Ninguno mueve dinero.
 4. **Aprobación humana.** El administrador puede contradecir a la IA. Si aprueba, el hito se libera y el USDC llega a la wallet. El pago es todo o nada: un cumplimiento parcial pide más evidencia o aprueba el monto completo.
 5. **Informe.** Al cerrar: presupuesto contra gasto, detalle por persona con evidencia y el enlace público de cada pago.
 
@@ -60,7 +60,7 @@ Modelo técnico: un escrow multi-release por proyecto. Cada hito tiene su monto 
 
 Para el demo, el stack cuesta $0. Trustless Work en testnet es gratis: API, API key y escrows de prueba, sin mensualidad. El 0,3 % se cobra solo en mainnet, cuando un hito se libera con dinero real. La comisión de plataforma de Hyto va en 0. En testnet, el XLM de las comisiones de red lo da Friendbot.
 
-La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Llama 4 Scout en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde o esa PC está apagada, el veredicto sale de un guion fijo y el resto de la web sigue. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
+La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Qwen 3.8 27B en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde o esa PC está apagada, el veredicto sale de un guion fijo y el resto de la web sigue. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
 
 ## 5. Referencias
 
@@ -83,11 +83,11 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
-| IA | Scout en Groq describe la foto. Laya corre en la PC Windows de Abdiel (`LAYA_URL`) y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. |
+| IA | Qwen 3.8 27B en Groq describe la foto. Laya corre en la PC Windows de Abdiel (`LAYA_URL`) y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 
-Ejemplo de las dos IA: la tarea es montar el stand de ZEEK, con banner visible y mesa armada. Scout describe la foto: "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón." Laya responde categoría stand, condición cumplida y evidencia parcial. El código marca parcial. El tope de un reembolso lo compara el código, no Laya. La justificación en pantalla es el texto de Scout más esas tres respuestas.
+Ejemplo de las dos IA: la tarea es montar el stand de ZEEK, con banner visible y mesa armada. Qwen describe la foto: "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón." Laya responde categoría stand, condición cumplida y evidencia parcial. El código marca parcial. El tope de un reembolso lo compara el código, no Laya. La justificación en pantalla es el texto de la foto más esas tres respuestas.
 
 Acta es viable en el demo, como una sola credencial y no como el sistema de pago. Trustless Work libera el USDC, Cavos firma la emisión y el informe abre "esta persona cumplió esta tarea". En testnet son 5 XLM de Friendbot. Leerla después no vuelve a cobrar. En mainnet sería 1 USDC por credencial. El módulo de firma ya está y no dejó un pago en USDC, así que esa credencial no entra y el informe se queda con el hash de Stellar.
 

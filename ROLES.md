@@ -29,7 +29,7 @@ Hyto es un control de gastos y pagos por hitos para equipos. El organizador depo
 
 La IA de revisión nunca firma ni mueve dinero. El pago de un hito es todo o nada.
 
-Cada hito es trabajo o reembolso, y los dos se suben igual: una foto. Trabajo: foto de lo hecho. Reembolso: foto de la factura o del comprobante. Scout describe las dos. En la factura, además, saca monto y fecha, y el código los compara con el tope. Laya responde las tres preguntas en los dos casos. La pantalla de subir y la de aprobar no cambian.
+Cada hito es trabajo o reembolso, y los dos se suben igual: una foto. Trabajo: foto de lo hecho. Reembolso: foto de la factura o del comprobante. Qwen describe las dos. En la factura, además, saca monto y fecha, y el código los compara con el tope. Laya responde las tres preguntas en los dos casos. La pantalla de subir y la de aprobar no cambian.
 
 ## Demo que hay que poder mostrar
 
@@ -86,7 +86,7 @@ Backend. Buen nivel en servidor. Es dueño de todo el backend.
 
 **Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
 
-La revisión corre en una ruta de Vercel. Llama 4 Scout en Groq (`meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
+La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
