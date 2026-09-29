@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarProyecto } from "@/lib/admin/memoria";
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 
 type Fila = {
   clave: string;
@@ -22,6 +24,7 @@ function filaNueva(): Fila {
 
 export function CrearProyecto() {
   const router = useRouter();
+  const modoDemo = useModoDemo();
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -31,6 +34,10 @@ export function CrearProyecto() {
   }
 
   function fondear() {
+    if (modoDemo) {
+      setAviso(AVISO_PROYECTO_DEMO);
+      return;
+    }
     const tareas = filas
       .map((fila) => ({
         titulo: fila.titulo.trim(),
@@ -138,11 +145,13 @@ export function CrearProyecto() {
       </button>
 
       <div className="mt-8">
-        <BotonPrincipal type="button" onClick={fondear}>
+        <BotonPrincipal type="button" onClick={fondear} disabled={modoDemo}>
           Fondear
         </BotonPrincipal>
       </div>
-      {aviso ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {modoDemo || aviso ? (
+        <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{modoDemo ? AVISO_PROYECTO_DEMO : aviso}</p>
+      ) : null}
       <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que el pago esté conectado.</p>
     </main>
   );

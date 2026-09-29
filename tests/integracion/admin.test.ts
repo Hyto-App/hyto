@@ -5,6 +5,7 @@ import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { createElement } from "react";
 import { Bandeja } from "../../components/admin/Bandeja";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
+import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { Informe } from "../../components/admin/Informe";
 import { Marco } from "../../components/admin/Marco";
 import { Revision } from "../../components/admin/Revision";
@@ -55,6 +56,23 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await escribir("#monto-1", "0");
     await pulsar("Fondear");
     assert.match(texto(), /Escribe el nombre y al menos una tarea con monto/);
+    assert.equal(leerMemoriaAdmin().proyecto, null);
+    assert.deepEqual(idas, []);
+  });
+
+  test("en modo demo no se crea el proyecto y se muestra el aviso", async () => {
+    const idas: string[] = [];
+    await montar(
+      createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
+      { push: (href) => idas.push(href) },
+    );
+    assert.match(texto(), /En el modo demo no se pueden crear proyectos/);
+    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Fondear"));
+    assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
+    await escribir("#nombre-proyecto", "Feria");
+    await escribir("#titulo-1", "Cajas");
+    await escribir("#monto-1", "8");
+    await pulsar("Fondear");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
