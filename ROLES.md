@@ -92,6 +92,10 @@ Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/ev
 
 El login real de Cavos también es suyo y se conecta a esa base. Hoy el botón Entrar de https://hyto.vercel.app falla. El diagnóstico, del 28 de septiembre de 2026, está en [PLAN.md](PLAN.md).
 
+### Pruebas de punta a punta (2026-09-28)
+
+El 28 de septiembre se recorrió `main` (`ade63ce`) en local y en https://hyto.vercel.app. La bandeja, Mis tareas, la revisión, el informe y subir una foto se abren con el ejemplo de ZEEK. `GET /api/tareas` y `POST /api/evidencias` responden 404. Entrar y Preparar cuentas, en el sitio, fallan con `registry lookup skipped: no login token`. `npm test`: 42 ok, 0 fallos. `npm run build` pasa en Next.js 16.3.6. La tabla y los errores están en [PLAN.md](PLAN.md).
+
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
 **Listo cuando:** Josué y Raúl pueden guardar un proyecto y una evidencia llamando a su API, y Entrar resuelve el rol por email en Neon.

@@ -42,6 +42,29 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 5. Ruta del informe leyendo esas tablas. El enlace "Ver pago" usa el hash cuando exista; si no, el informe igual se abre.
 6. Pendiente, 2026-09-28. Login real de Cavos, conectado a Neon. En https://hyto.vercel.app, Entrar falla con `registry lookup skipped: no login token`. `components/admin/Entrar.tsx` y `lib/integrante/preparar.ts` llaman `Cavos.connect` con `vault: true` y una `identity` fija de `lib/integrante/identidades.ts`, sin `auth`. `@cavos/kit` 0.2.5 exige un token de un login real (CavosAuth: email con `sendOtp` y `verifyOtp`, o Google con `handleCallback`). Arreglo: entrar con CavosAuth, pasar `auth` a `Cavos.connect` y, en el servidor, buscar el rol por email en Neon. Los orígenes permitidos de Cavos ya están. `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel es el correcto. Alternativa solo para el demo, sin probar: `vault: false` y `InMemoryWalletRegistry`.
 
+### Pruebas de punta a punta (2026-09-28)
+
+`main` en `ade63ce`. `npm ci`, `npm test` y `npm run build`. Después `npm run dev` en local, sin `.env`, y el sitio https://hyto.vercel.app en el navegador. No se envió ninguna transacción y no se usaron secretos. Los cuerpos de `/api/firma` y `/api/firma/enviar` fueron de ejemplo.
+
+`npm test`: 42 pruebas, 42 ok, 0 fallos. `npm run build`: Next.js 16.3.6, compila, TypeScript pasa, 9 páginas. Rutas: `/`, `/informe`, `/mis-tareas`, `/cuentas`, `/proyectos/nuevo`, `/revision/[id]`, `/tareas/[id]`, `POST /api/firma`, `POST /api/firma/enviar`. No hay script `lint`. En `app/api` no están `/api/tareas` ni `/api/evidencias`.
+
+| Flujo | Resultado | Nota |
+| --- | --- | --- |
+| Bandeja `/` | solo ejemplo | ZEEK. Presupuesto US$75, pagado US$0, pendiente US$75. "Vista de ejemplo, hasta que las rutas respondan." Igual en local y en el sitio. |
+| Crear proyecto y Fondear | solo ejemplo | Vacío: "Escribe el nombre y al menos una tarea con monto." Con datos, el navegador guarda el proyecto (local "Prueba E2E", US$10; sitio "Prueba E2E live", US$5), dice "Nada por aprobar" y sigue el aviso de ejemplo. No llama a `/api/firma`. |
+| Revisión y Aprobar | solo ejemplo | `/revision/stand` y `/revision/comida`: "Evidencia de ejemplo". Aprobar deja "Pagado US$20" y "Pagado US$12.40", y "Vista de ejemplo, hasta que el pago esté conectado." Sin "Ver pago". No llama a `/api/firma`. |
+| Pedir otra foto | solo ejemplo | En `/revision/registro` (parcial) el botón está. Al pulsarlo desaparecen Aprobar y Pedir otra foto. La pastilla sigue en "parcial". Sin red. |
+| Informe `/informe` | solo ejemplo | Presupuesto contra gasto y detalle por persona. Sin "Ver pago" ni credencial. En local, Imprimir abrió el diálogo del navegador (2 páginas, Save as PDF) y se canceló. |
+| Mis tareas `/mis-tareas` | solo ejemplo | `GET /api/tareas?miembro=…` es 404 en local y en el sitio. Vuelve ZEEK: voluntario 1, stand y comida; voluntario 2, registro; voluntario 3, bienvenida. |
+| Subir evidencia | solo ejemplo | Cámara: "No se pudo abrir la cámara." Con un PNG, "Evidencia enviada" y el aviso de ejemplo. `POST /api/evidencias` es 404. En `comida`, el ejemplo muestra después Monto US$12.40 y Fecha 27 sept 2026. |
+| `/cuentas`, Preparar cuentas | falla | Local: "Las cuentas esperan el identificador de Cavos." Sitio: las cuatro quedan sin dirección, USDC pendiente, y "registry lookup skipped: no login token". |
+| Entrar | falla | Local: "El ingreso espera el identificador de Cavos." Sitio: "registry lookup skipped: no login token". El botón sigue diciendo Entrar. |
+| `POST /api/firma` | falla | Fondear de ejemplo, contrato `C…` y firmante `G…`, monto 1. Local 503: "Falta la clave de Trustless Work en el servidor." Sitio 401: "Invalid API key", código `AUTH_INVALID_CREDENTIAL`. `liberar` responde 400 en los dos: "En v2 aprobar ya libera el hito." |
+| `POST /api/firma/enviar` | falla | Cuerpo `{"xdr":"AAAA-ejemplo-no-firmado"}`. Local 503, la misma frase de la clave. Sitio 401, "Invalid API key". No hubo hash. |
+| `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id` | falla | 404 en local y en el sitio. En el dev, el POST dice "Server action not found." En el sitio el 404 es HTML. |
+
+Depende de su backend: `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, Neon (proyecto, tarea, evidencia, veredicto, usuarios y email → rol) y el login real de Cavos contra esa base. Hoy Entrar y Preparar cuentas no pasan de `Cavos.connect` sin token. La revisión en pantalla es el guion fijo de ZEEK; no hay ruta de revisión ni de informe leyendo tablas. Fondear y Aprobar tampoco firman: eso sigue en la lista de Josué, y estas pruebas no lo conectaron.
+
 ## Contrato que ya esperan las pantallas
 
 Cliente en `lib/integrante/rutas.ts`. Timeout de 4 segundos. Si falla la red, el estado o el JSON, Mis tareas y Subir evidencia vuelven al ejemplo y lo dicen en pantalla.
