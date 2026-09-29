@@ -79,12 +79,18 @@ export function normalizarTipo(tipo: string): string {
     .replace(/\s+\(/g, "(")
     .replace(/\(\s+/g, "(")
     .replace(/\s+\)/g, ")");
-  if (limpio === "int" || limpio === "int4" || limpio === "integer") return "integer";
-  if (limpio === "int8" || limpio === "bigint") return "bigint";
+  if (limpio === "int" || limpio === "int4" || limpio === "integer" || limpio === "serial") return "integer";
+  if (limpio === "smallserial") return "smallint";
+  if (limpio === "int8" || limpio === "bigint" || limpio === "bigserial") return "bigint";
   if (limpio === "bool" || limpio === "boolean") return "boolean";
-  if (limpio === "timestamptz" || limpio === "timestamp with time zone") return "timestamp with time zone";
+  if (/^timestamp(?:\(\d+\))?(?: without time zone)?$/.test(limpio)) return "timestamp without time zone";
+  if (/^timestamp(?:\(\d+\))? with time zone$/.test(limpio) || /^timestamptz(?:\(\d+\))?$/.test(limpio)) {
+    return "timestamp with time zone";
+  }
   if (limpio === "varchar") return "character varying";
   if (limpio.startsWith("varchar(")) return `character varying${limpio.slice("varchar".length)}`;
+  if (limpio === "char") return "character";
+  if (limpio.startsWith("char(")) return `character${limpio.slice("char".length)}`;
   const numerico = /^(?:numeric|decimal)\((\d+)(?:,(\d+))?\)$/.exec(limpio);
   if (numerico) return `numeric(${numerico[1]},${numerico[2] ?? "0"})`;
   return limpio;
@@ -389,11 +395,15 @@ function mismoOrden(a: string[], b: string[]): boolean {
 
 function leerTipo(texto: string): { tipo: string; resto: string } | null {
   const patrones = [
-    /^timestamp\s+with\s+time\s+zone/i,
-    /^timestamp\s+without\s+time\s+zone/i,
-    /^double\s+precision/i,
-    /^character\s+varying(?:\s*\(\s*\d+\s*\))?/i,
-    /^(?:text|integer|int|bigint|smallint|boolean|bool|numeric|decimal|real|uuid|jsonb|json|bytea|date|time|timestamptz|varchar|char|character)(?:\s*\([^)]*\))?/i,
+    /^timestamp\b(?:\s*\(\s*\d+\s*\))?\s+with\s+time\s+zone\b/i,
+    /^timestamp\b(?:\s*\(\s*\d+\s*\))?\s+without\s+time\s+zone\b/i,
+    /^timestamptz\b(?:\s*\(\s*\d+\s*\))?/i,
+    /^timestamp\b(?:\s*\(\s*\d+\s*\))?/i,
+    /^time\b(?:\s*\(\s*\d+\s*\))?/i,
+    /^double\s+precision\b/i,
+    /^character\s+varying\b(?:\s*\(\s*\d+\s*\))?/i,
+    /^character\b(?:\s*\(\s*\d+\s*\))?/i,
+    /^(?:varchar|char|text|integer|int|bigint|smallint|boolean|bool|numeric|decimal|real|uuid|jsonb|json|bytea|date|smallserial|bigserial|serial)\b(?:\s*\([^)]*\))?/i,
   ];
   for (const patron of patrones) {
     const match = patron.exec(texto);
@@ -440,7 +450,12 @@ function leerDefault(resto: string): { valor: string | null; resto: string; avis
 }
 
 function quitarCast(resto: string): string {
-  return resto.replace(/^::\s*[A-Za-z_][\w\s]*(\([^)]*\))?/i, "").trim();
+  return resto
+    .replace(
+      /^::\s*(?:character\s+varying|timestamp\s+without\s+time\s+zone|timestamp\s+with\s+time\s+zone|double\s+precision|"[^"]+"|[A-Za-z_][\w]*)(?:\s*\([^)]*\))?/i,
+      "",
+    )
+    .trim();
 }
 
 function codigoAccion(accion: string): string {

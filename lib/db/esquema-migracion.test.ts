@@ -546,6 +546,110 @@ test("numeric(10) y decimal(10) se comparan como numeric(10,0)", () => {
   }
 });
 
+test("timestamp, time, character(n) y varchar(n) se leen como en information_schema", () => {
+  assert.equal(normalizarTipo("timestamp"), "timestamp without time zone");
+  assert.equal(normalizarTipo("timestamp(3)"), "timestamp without time zone");
+  assert.equal(normalizarTipo("timestamptz"), "timestamp with time zone");
+  assert.equal(normalizarTipo("timestamp(3) with time zone"), "timestamp with time zone");
+  assert.equal(normalizarTipo("char(2)"), "character(2)");
+  assert.equal(normalizarTipo("serial"), "integer");
+  assert.equal(normalizarTipo("smallserial"), "smallint");
+  assert.equal(normalizarTipo("bigserial"), "bigint");
+  conMigracion(
+    `CREATE TABLE marcas (
+      id serial PRIMARY KEY,
+      corto smallserial,
+      largo bigserial,
+      codigo character(2) NOT NULL,
+      sigla char(3) NOT NULL,
+      nombre varchar(40) NOT NULL,
+      hora time,
+      creado timestamp NOT NULL,
+      creado_sin timestamp without time zone,
+      creado_tz timestamp with time zone,
+      creado_abrev timestamptz,
+      preciso timestamp(3) with time zone NOT NULL
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      const tipo = (nombre: string) => esperado.columnas.find((columna) => columna.nombre === nombre);
+      assert.equal(tipo("id")?.tipo, "integer");
+      assert.equal(tipo("id")?.primaryKey, true);
+      assert.equal(tipo("id")?.nullable, false);
+      assert.equal(tipo("corto")?.tipo, "smallint");
+      assert.equal(tipo("largo")?.tipo, "bigint");
+      assert.equal(tipo("codigo")?.tipo, "character(2)");
+      assert.equal(tipo("codigo")?.nullable, false);
+      assert.equal(tipo("sigla")?.tipo, "character(3)");
+      assert.equal(tipo("nombre")?.tipo, "character varying(40)");
+      assert.equal(tipo("hora")?.tipo, "time");
+      assert.equal(tipo("creado")?.tipo, "timestamp without time zone");
+      assert.equal(tipo("creado")?.nullable, false);
+      assert.equal(tipo("creado_sin")?.tipo, "timestamp without time zone");
+      assert.equal(tipo("creado_tz")?.tipo, "timestamp with time zone");
+      assert.equal(tipo("creado_abrev")?.tipo, "timestamp with time zone");
+      assert.equal(tipo("preciso")?.tipo, "timestamp with time zone");
+      assert.equal(tipo("preciso")?.nullable, false);
+    },
+  );
+});
+
+test("un cast en el DEFAULT no se traga NOT NULL ni UNIQUE", () => {
+  conMigracion(
+    `CREATE TABLE estados (
+      id integer PRIMARY KEY,
+      estado text DEFAULT 'pendiente'::text NOT NULL UNIQUE,
+      nota character varying(20) DEFAULT 'ok'::character varying NOT NULL,
+      creado timestamp DEFAULT now()::timestamp without time zone NOT NULL
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      const estado = esperado.columnas.find((columna) => columna.nombre === "estado");
+      assert.equal(estado?.defecto, "'pendiente'");
+      assert.equal(estado?.nullable, false);
+      assert.equal(estado?.unique, true);
+      const nota = esperado.columnas.find((columna) => columna.nombre === "nota");
+      assert.equal(nota?.defecto, "'ok'");
+      assert.equal(nota?.nullable, false);
+      assert.equal(nota?.tipo, "character varying(20)");
+      const creado = esperado.columnas.find((columna) => columna.nombre === "creado");
+      assert.equal(creado?.defecto, "now()");
+      assert.equal(creado?.nullable, false);
+      assert.equal(creado?.tipo, "timestamp without time zone");
+    },
+  );
+});
+
+test("schema.ts lee references con onDelete, defaults que no son string y defaultNow", () => {
+  const leido = leerSchemaDrizzle(`
+export const proyectos = pgTable("proyectos", {
+  id: text("id").primaryKey(),
+});
+export const tareas = pgTable("tareas", {
+  id: serial("id").primaryKey(),
+  chico: smallserial("chico"),
+  grande: bigserial("grande"),
+  proyectoId: text("proyecto_id").notNull().references(() => proyectos.id, { onDelete: "cascade" }),
+  activo: boolean("activo").notNull().default(true),
+  cantidad: integer("cantidad").notNull().default(0),
+  creadoEn: timestamp("creado_en").notNull().defaultNow(),
+  nombre: varchar("nombre", { length: 40 }).default("hola"),
+});
+`);
+  assert.deepEqual(leido.avisos, []);
+  const porNombre = new Map(leido.columnas.map((columna) => [columna.columna, columna]));
+  assert.equal(porNombre.get("id")?.tipo, "integer");
+  assert.equal(porNombre.get("chico")?.tipo, "smallint");
+  assert.equal(porNombre.get("grande")?.tipo, "bigint");
+  assert.deepEqual(porNombre.get("proyecto_id")?.referencia, { tabla: "proyectos", columna: "id" });
+  assert.equal(porNombre.get("activo")?.defecto, "true");
+  assert.equal(porNombre.get("cantidad")?.defecto, "0");
+  assert.equal(porNombre.get("creado_en")?.defecto, "now()");
+  assert.equal(porNombre.get("creado_en")?.tipo, "timestamp without time zone");
+  assert.equal(porNombre.get("nombre")?.defecto, "'hola'");
+  assert.equal(porNombre.get("nombre")?.tipo, "character varying(40)");
+});
+
 test("schema.ts lee otros builders y avisa si no reconoce uno", () => {
   const leido = leerSchemaDrizzle(`
 export const tareas = pgTable("tareas", {

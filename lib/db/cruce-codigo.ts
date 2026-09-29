@@ -315,8 +315,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
       if (!tipo) {
         avisos.push(`No se reconoció el builder ${match[2]}() de ${tabla}.${match[3]} en schema.ts. Confirmar con Esteban.`);
       }
-      const referenciaCruda = /\.references\(\(\)\s*=>\s*(\w+)\.(\w+)\)/.exec(resto);
-      const defecto = /\.default\(\s*"((?:\\.|[^"\\])*)"\s*\)/.exec(resto);
+      const referenciaCruda = /\.references\(\s*\(\s*\)\s*=>\s*(\w+)\.(\w+)\s*(?:,\s*\{[\s\S]*?\}\s*)?\)/.exec(resto);
       columnas.push({
         exportName,
         tabla,
@@ -324,7 +323,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         columna: match[3],
         tipo: tipo ?? "",
         nullable: !/\.notNull\(\)/.test(resto) && !/\.primaryKey\(\)/.test(resto),
-        defecto: defecto ? `'${defecto[1].replace(/'/g, "''")}'` : null,
+        defecto: defectoDrizzle(resto),
         primaryKey: /\.primaryKey\(\)/.test(resto),
         unique: /\.unique\(\)/.test(resto),
         referencia: referenciaCruda ? { tabla: referenciaCruda[1], columna: referenciaCruda[2] } : null,
@@ -344,6 +343,17 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
     if (tabla && remota) columna.referencia = { tabla, columna: remota };
   }
   return { columnas, avisos };
+}
+
+function defectoDrizzle(resto: string): string | null {
+  if (/\.defaultNow\(\s*\)/.test(resto)) return "now()";
+  const texto = /\.default\(\s*"((?:\\.|[^"\\])*)"\s*\)/.exec(resto);
+  if (texto) return `'${texto[1].replace(/'/g, "''")}'`;
+  const booleano = /\.default\(\s*(true|false)\s*\)/i.exec(resto);
+  if (booleano) return booleano[1].toLowerCase();
+  const numero = /\.default\(\s*(-?\d+(?:\.\d+)?)\s*\)/.exec(resto);
+  if (numero) return numero[1];
+  return null;
 }
 
 function tipoDeBuilder(builder: string, opciones: string | undefined): string | null {
