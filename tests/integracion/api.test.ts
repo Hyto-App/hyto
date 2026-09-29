@@ -73,6 +73,15 @@ function pedidoRevision(id: string, cookie: string, method = "GET"): Request {
   return new Request(`http://local/api/revision/${id}`, { method, headers: { cookie } });
 }
 
+function pedirGet(url: string, cookie?: string): Request {
+  return new Request(url, { headers: cookie ? { cookie } : {} });
+}
+
+async function duenoZeek(cookie: string): Promise<void> {
+  await tareasGet(pedirGet("http://local/api/tareas", cookie));
+  await consulta("update proyectos set organizador_id = 'organizador' where id = 'zeek' and organizador_id is null");
+}
+
 function proyectoNuevo() {
   return {
     nombre: "Feria",
@@ -125,8 +134,12 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     }
   });
 
-  test("GET /api/tareas devuelve la semilla de ZEEK sin sesión", async () => {
-    const respuesta = await tareasGet();
+  test("GET /api/tareas exige sesión y, con el dueño, devuelve la semilla de ZEEK", async () => {
+    const anonima = await tareasGet(pedirGet("http://local/api/tareas"));
+    assert.equal(anonima.status, 401);
+    const sesion = await cookieSesionPrueba();
+    await duenoZeek(sesion);
+    const respuesta = await tareasGet(pedirGet("http://local/api/tareas", sesion));
     assert.equal(respuesta.status, 200);
     assert.match(respuesta.headers.get("content-type") ?? "", /json/);
     const json = (await leer(respuesta)) as { tareas?: { id: string; monto: string; tipo: string; tope: string | null }[] };
@@ -141,7 +154,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
   test("GET /api/tareas sin base responde 503", async () => {
     usarAlmacen(async () => null);
-    const respuesta = await tareasGet();
+    const respuesta = await tareasGet(pedirGet("http://local/api/tareas", "hyto_sesion=sin-base"));
     assert.equal(respuesta.status, 503);
     assert.equal(avisoDe(await leer(respuesta)), "La base no está configurada.");
   });
@@ -245,7 +258,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(reembolso?.tope, "15");
     assert.equal(reembolso?.monto, "15");
 
-    const lectura = await proyectosGet();
+    await duenoZeek(sesion);
+    const lectura = await proyectosGet(pedirGet("http://local/api/proyectos", sesion));
     assert.equal(lectura.status, 200);
     const actual = (await leer(lectura)) as { proyecto?: { nombre?: string }; tareas?: { titulo: string }[] };
     assert.equal(actual.proyecto?.nombre, "Feria");
@@ -254,14 +268,14 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
       ["Cajas", "Comida extra"],
     );
 
-    const tareas = (await leer(await tareasGet())) as { tareas?: { titulo: string }[] };
+    const tareas = (await leer(await tareasGet(pedirGet("http://local/api/tareas", sesion)))) as { tareas?: { titulo: string }[] };
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Cajas"), true);
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Montar el stand"), true);
   });
 
   test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {
     const sesion = await cookieSesionPrueba();
-    await proyectosGet();
+    await proyectosGet(pedirGet("http://local/api/proyectos", sesion));
     const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{", sesion));
     assert.equal(noJson.status, 400);
     assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
@@ -293,7 +307,9 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   });
 
   test("GET /api/informe abre ZEEK sin hash y la bandeja sigue vacía hasta la evidencia", async () => {
-    const respuesta = await informeGet();
+    const sesion = await cookieSesionPrueba();
+    await duenoZeek(sesion);
+    const respuesta = await informeGet(pedirGet("http://local/api/informe", sesion));
     assert.equal(respuesta.status, 200);
     const json = (await leer(respuesta)) as {
       nombre?: string;
@@ -311,9 +327,10 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   });
 
   test("GET /api/informe muestra el hash cuando la tarea ya está pagada", async () => {
-    await tareasGet();
+    const sesion = await cookieSesionPrueba();
+    await duenoZeek(sesion);
     await consulta("update tareas set hash_pago = $1, estado = 'pagado' where id = 'stand'", [HASH]);
-    const json = (await leer(await informeGet())) as {
+    const json = (await leer(await informeGet(pedirGet("http://local/api/informe", sesion)))) as {
       resumen?: { pagado: string };
       tareas?: { id: string; hashPago: string | null; estado: string }[];
     };
@@ -324,6 +341,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
   test("GET /api/revision/:id devuelve la tarea y 404 si no existe", async () => {
     const sesion = await cookieSesionPrueba();
+    await duenoZeek(sesion);
     const ok = await revisionGet(pedidoRevision("stand", sesion), contexto("stand"));
     assert.equal(ok.status, 200);
     const json = (await leer(ok)) as {
@@ -344,6 +362,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
   test("POST /api/evidencias guarda la foto, deja el error de la IA y GET la lee", async () => {
     const sesion = await cookieSesionPrueba();
+    await duenoZeek(sesion);
     const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), sesion));
     assert.equal(creada.status, 201);
     const json = (await leer(creada)) as { evidencia?: { id: string; monto: string | null; fecha: string | null; tareaId: string } };
@@ -358,12 +377,13 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(tarea.rows[0]?.estado, "en revisión");
     assert.equal(tarea.rows[0]?.wallet_cobro, CUENTA);
 
-    const lectura = await evidenciaGet(new Request(`http://local/api/evidencias/${id}`), contexto(id));
+    const lectura = await evidenciaGet(pedirGet(`http://local/api/evidencias/${id}`, sesion), contexto(id));
     assert.equal(lectura.status, 200);
     const leida = (await leer(lectura)) as { evidencia?: { monto: string | null } };
     assert.equal(leida.evidencia?.monto, null);
 
-    const foto = await fotoGet(new Request(`http://local/api/evidencias/${id}/foto`), contexto(id));
+    await duenoZeek(sesion);
+    const foto = await fotoGet(pedirGet(`http://local/api/evidencias/${id}/foto`, sesion), contexto(id));
     assert.equal(foto.status, 200);
     assert.equal(foto.headers.get("content-type"), "image/jpeg");
     assert.equal((await foto.arrayBuffer()).byteLength, 4);
@@ -380,7 +400,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.match(vista.tarea?.frase ?? "", /no está configurada/);
     assert.equal(vista.foto, `/api/evidencias/${id}/foto`);
 
-    const informe = (await leer(await informeGet())) as {
+    const informe = (await leer(await informeGet(pedirGet("http://local/api/informe", sesion)))) as {
       bandeja?: { id: string; veredicto: string | null; origen: string | null }[];
     };
     assert.equal(informe.bandeja?.some((tarea) => tarea.id === "comida" && tarea.veredicto === null && tarea.origen === "error"), true);
@@ -388,7 +408,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
   test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async () => {
     const sesion = await cookieSesionPrueba();
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), sesion));
+    const voluntario = await cookieSesionPrueba("voluntario");
+    await duenoZeek(sesion);
+    const creada = await evidenciasPost(
+      pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), voluntario),
+    );
     const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
     await consulta(
       "update veredictos set veredicto = 'insuficiente', frase = 'cambiado', origen = 'scout' where evidencia_id = $1",
@@ -399,6 +423,10 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const guardado = (await leer(lectura)) as { tarea?: { veredicto: string; frase: string } };
     assert.equal(guardado.tarea?.veredicto, "insuficiente");
     assert.equal(guardado.tarea?.frase, "cambiado");
+
+    const ajena = await revisionPost(pedidoRevision("stand", voluntario, "POST"), contexto("stand"));
+    assert.equal(ajena.status, 403);
+    assert.equal(avisoDe(await leer(ajena)), "Solo el organizador revisa.");
 
     const forzada = await revisionPost(pedidoRevision("stand", sesion, "POST"), contexto("stand"));
     assert.equal(forzada.status, 200);
@@ -461,11 +489,12 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   });
 
   test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {
-    const evidencia = await evidenciaGet(new Request("http://local/api/evidencias/no-existe"), contexto("no-existe"));
+    const sesion = await cookieSesionPrueba();
+    const evidencia = await evidenciaGet(pedirGet("http://local/api/evidencias/no-existe", sesion), contexto("no-existe"));
     assert.equal(evidencia.status, 404);
     assert.equal(avisoDe(await leer(evidencia)), "No encontramos esa evidencia.");
 
-    const foto = await fotoGet(new Request("http://local/api/evidencias/no-existe/foto"), contexto("no-existe"));
+    const foto = await fotoGet(pedirGet("http://local/api/evidencias/no-existe/foto", sesion), contexto("no-existe"));
     assert.equal(foto.status, 404);
   });
 
@@ -476,13 +505,13 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(creada.status, 503);
     assert.equal(avisoDe(await leer(creada)), "El almacén de fotos no está configurado.");
 
-    await tareasGet();
+    await duenoZeek(sesion);
     const id = "ev-prueba";
     await consulta(
       "insert into evidencias (id, tarea_id, blob_id, creada_en) values ($1, 'stand', 'blob-inexistente', $2)",
       [id, new Date().toISOString()],
     );
-    const foto = await fotoGet(new Request(`http://local/api/evidencias/${id}/foto`), contexto(id));
+    const foto = await fotoGet(pedirGet(`http://local/api/evidencias/${id}/foto`, sesion), contexto(id));
     assert.equal(foto.status, 503);
   });
 

@@ -8,6 +8,7 @@ import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, resp
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
+import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
@@ -29,20 +30,21 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   const entrada = leerEntrada(body);
   if ("aviso" in entrada) return Response.json({ aviso: entrada.aviso }, { status: 400 });
   if (entrada.accion === "desplegar") {
-    if (sesion.rol !== "organizador") {
-      return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
-    }
     const limitado = respuestaSiExcedido(request);
     if (limitado) return limitado;
     const base = almacen === undefined ? await almacenNeon() : almacen;
     if (!base) return Response.json({ aviso: "La base no está configurada." }, { status: 503 });
+    const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { tareaId: entrada.tareaId });
+    if (rechazo) return rechazo;
     return prepararDespliegueHttp(sesion, entrada.tareaId, base);
   }
   if (entrada.accion === "resolver") {
     const aviso = avisoSesionResolutor(sesion, entrada.firmante);
     if (aviso) return Response.json({ aviso }, { status: 400 });
-  } else if (sesion.rol !== "organizador") {
-    return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
+  } else {
+    const base = almacen === undefined ? await almacenNeon() : almacen;
+    const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato });
+    if (rechazo) return rechazo;
   }
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
@@ -81,6 +83,7 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   if (!invocacion || invocacion.firmantes.length !== 1 || invocacion.firmantes[0] !== wallet) {
     return Response.json({ aviso: "El XDR no lo firma la wallet de esta sesión." }, { status: 400 });
   }
+  const base = almacen === undefined ? await almacenNeon() : almacen;
   if (invocacion.funcion === "resolve_dispute") {
     try {
       const escrow = await leerEscrow(invocacion.contrato);
@@ -96,10 +99,15 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     } catch (error) {
       return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
     }
-  } else if (sesion.rol !== "organizador") {
-    return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
+  } else {
+    const despliegue = envio.accion === "desplegar" || invocacion.funcion === FUNCION_DESPLIEGUE;
+    const rechazo = await respuestaSiNoOrganiza(
+      base,
+      sesion.usuarioId,
+      despliegue ? { tareaId: envio.tareaId } : { contrato: invocacion.contrato, tareaId: envio.tareaId },
+    );
+    if (rechazo) return rechazo;
   }
-  const base = almacen === undefined ? await almacenNeon() : almacen;
   if (envio.accion === "desplegar") {
     if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
       return Response.json({ aviso: "La transacción no despliega el escrow." }, { status: 409 });
@@ -201,7 +209,7 @@ async function guardarResultado(
   invocacion: Invocacion,
   almacen: Almacen | null,
 ): Promise<ResultadoGuardado> {
-  if (sesion.rol !== "organizador" || !envio.tareaId) return { aviso: null, estadoHttp: 200 };
+  if (!envio.tareaId) return { aviso: null, estadoHttp: 200 };
   if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
   if (!almacen) return { aviso: "La base no está configurada y no se guardó el pago.", estadoHttp: 200 };
   const tarea = await almacen.leerTarea(envio.tareaId);

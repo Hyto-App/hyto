@@ -3,10 +3,11 @@ import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
 
-export async function crearProyectoHttp(request: Request, almacen: Almacen): Promise<Response> {
+export async function crearProyectoHttp(request: Request, almacen: Almacen, organizadorId: string): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -17,20 +18,26 @@ export async function crearProyectoHttp(request: Request, almacen: Almacen): Pro
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
   try {
     await asegurarSemilla(almacen);
-    await almacen.crearProyecto(proyecto.proyecto, proyecto.tareas);
-    return json({ proyecto: { id: proyecto.proyecto.id, nombre: proyecto.proyecto.nombre }, tareas: proyecto.tareas.map(tareaPublica) }, 201);
+    const fila = { ...proyecto.proyecto, organizadorId };
+    await almacen.crearProyecto(fila, proyecto.tareas);
+    return json({ proyecto: { id: fila.id, nombre: fila.nombre }, tareas: proyecto.tareas.map(tareaPublica) }, 201);
   } catch {
     return baseNoLista();
   }
 }
 
-export async function leerProyectoHttp(almacen: Almacen): Promise<Response> {
+export async function leerProyectoHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
-    const proyecto = await almacen.ultimoProyecto();
+    const proyectos = await proyectosVisibles(almacen, visor);
+    const proyecto = proyectos[0] ?? null;
     if (!proyecto) return json({ aviso: "Todavía no hay un proyecto." }, 404);
-    const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto.id);
-    return json({ proyecto: { id: proyecto.id, nombre: proyecto.nombre }, tareas: tareas.map(tareaPublica) });
+    const tareas = (await tareasVisibles(almacen, visor)).filter((tarea) => tarea.proyectoId === proyecto.id);
+    return json({
+      proyecto: { id: proyecto.id, nombre: proyecto.nombre },
+      proyectos: proyectos.map((item) => ({ id: item.id, nombre: item.nombre })),
+      tareas: tareas.map(tareaPublica),
+    });
   } catch {
     return baseNoLista();
   }

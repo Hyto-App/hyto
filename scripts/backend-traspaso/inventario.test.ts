@@ -19,7 +19,7 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
     ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 3);
+  assert.equal(inventario.relaciones.length, 4);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);
@@ -96,7 +96,7 @@ test("el archivo generado sale de armarInventario y no trae una URL", () => {
   assert.match(base.sha, /^[0-9a-f]{40}$/);
   assert.match(base.shaCortoPedido, /^[0-9a-f]+$/);
   assert.equal(base.coincideConElShaPedido, base.sha.startsWith(base.shaCortoPedido));
-  assert.equal(base.archivosDeEsquemaIgualesAEseCommit, false);
+  assert.equal(base.archivosDeEsquemaIgualesAEseCommit, true);
   assert.deepEqual(
     prs.map((pr) => [pr.numero, pr.cambiaEsquema]),
     [

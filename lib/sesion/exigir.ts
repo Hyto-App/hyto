@@ -18,13 +18,6 @@ export async function exigirSesion(request: Request): Promise<SesionFila | Respo
   }
 }
 
-export async function exigirOrganizador(request: Request, aviso = "Solo el organizador prepara el pago."): Promise<Response | null> {
-  const sesion = await exigirSesion(request);
-  if (sesion instanceof Response) return sesion;
-  if (sesion.rol !== "organizador") return json({ aviso }, 403);
-  return null;
-}
-
 // resolve-dispute lo firma disputeResolver. Esa cuenta no es la del organizador.
 // Si la wallet de esta sesión no es firmante, no se arma ni se envía el XDR.
 export function avisoSesionResolutor(sesion: { wallet?: string }, firmante: string): string | null {

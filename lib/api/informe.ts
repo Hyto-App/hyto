@@ -3,24 +3,25 @@ import type { TareaAdmin } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila } from "@/lib/db/tipos";
+import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 
-export async function informeHttp(almacen: Almacen): Promise<Response> {
+export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
-    const vista = await armarInforme(almacen);
+    const vista = await armarInforme(almacen, visor);
     return json(vista);
   } catch {
     return baseNoLista();
   }
 }
 
-export async function armarInforme(almacen: Almacen) {
-  const proyecto = await almacen.ultimoProyecto();
+export async function armarInforme(almacen: Almacen, visor: Visor) {
+  const proyecto = (await proyectosVisibles(almacen, visor))[0] ?? null;
   const usuarios = await almacen.listarUsuarios();
   const nombres = new Map(usuarios.map((usuario) => [usuario.id, usuario.nombre]));
-  const todas = await almacen.listarTareas();
-  const tareas = proyecto ? todas.filter((tarea) => tarea.proyectoId === proyecto.id) : [];
+  const visibles = await tareasVisibles(almacen, visor);
+  const tareas = proyecto ? visibles.filter((tarea) => tarea.proyectoId === proyecto.id) : [];
   const admin: TareaAdmin[] = [];
   for (const tarea of tareas) admin.push(await tareaAdmin(almacen, tarea, nombres));
   return {

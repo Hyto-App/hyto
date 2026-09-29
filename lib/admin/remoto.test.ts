@@ -151,6 +151,30 @@ test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
   assert.equal(vista, null);
 });
 
+test("la bandeja muestra los proyectos que organiza y omite el resto", async () => {
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }, { id: "ajena" }] });
+    if (url === "/api/proyectos") return json({ proyecto: { nombre: "Feria" } });
+    if (url === "/api/revision/stand") return json({ tarea: tarea(), foto: null });
+    if (url === "/api/revision/ajena") return json({ aviso: "Solo el organizador revisa." }, 403);
+    return json({ aviso: "no" }, 404);
+  };
+  const vista = await cargarVistaOrganizador({ fetch: fetchImpl });
+  assert.deepEqual(
+    vista?.tareas.map((item) => item.id),
+    ["stand"],
+  );
+  assert.equal(vista?.nombre, "Feria");
+
+  const soloAjena: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "ajena" }] });
+    return json({ aviso: "Solo el organizador revisa." }, 403);
+  };
+  assert.equal(await cargarVistaOrganizador({ fetch: soloAjena }), null);
+});
+
 test("la vista real arma Ver pago con el hash de cada revisión", async () => {
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);

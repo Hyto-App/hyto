@@ -184,10 +184,15 @@ describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () =
     const tareaId = alta.tareas[0]?.id ?? "";
     assert.equal(alta.tareas[0]?.titulo, "Cajas");
 
-    const proyecto = (await (await proyectosGet()).json()) as { proyecto: { nombre: string } };
+    const proyecto = (await (await proyectosGet(new Request("http://local/api/proyectos", { headers: { cookie: sesion } }))).json()) as {
+      proyecto: { nombre: string };
+    };
     assert.equal(proyecto.proyecto.nombre, "Feria");
 
-    const antes = (await (await informeGet()).json()) as { nombre: string; bandeja: unknown[] };
+    const antes = (await (await informeGet(new Request("http://local/api/informe", { headers: { cookie: sesion } }))).json()) as {
+      nombre: string;
+      bandeja: unknown[];
+    };
     assert.equal(antes.nombre, "Feria");
     assert.equal(antes.bandeja.length, 0);
 
@@ -215,7 +220,7 @@ describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () =
     assert.match(vista.foto ?? "", /^\/api\/evidencias\/.+\/foto$/);
     assert.equal(vista.enlacePago, null);
 
-    const informe = (await (await informeGet()).json()) as {
+    const informe = (await (await informeGet(new Request("http://local/api/informe", { headers: { cookie: sesion } }))).json()) as {
       nombre: string;
       bandeja: { id: string; veredicto: string | null; origen: string | null }[];
     };

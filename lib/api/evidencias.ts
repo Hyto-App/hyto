@@ -4,6 +4,7 @@ import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
+import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
 const MAX_BYTES = 8_000_000;
@@ -32,11 +33,14 @@ export function evidenciaPublica(evidencia: EvidenciaFila) {
   };
 }
 
-export async function leerEvidenciaHttp(almacen: Almacen, id: string): Promise<Response> {
+export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
-    if (!evidencia) return json({ aviso: "No encontramos esa evidencia." }, 404);
+    const acceso = await accesoEvidencia(almacen, visor, evidencia);
+    if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
+    if (acceso === "entrar") return json({ aviso: "Entra para continuar." }, 401);
+    if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
     return json({ evidencia: evidenciaPublica(evidencia) });
   } catch {
     return baseNoLista();
@@ -45,11 +49,14 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string): Promise<R
 
 const MARCADOR_EJEMPLO = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" role="img" aria-label="Evidencia de ejemplo"><rect width="64" height="48" fill="#ece7dc"/></svg>`;
 
-export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string): Promise<Response> {
+export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
-    if (!evidencia) return json({ aviso: "No encontramos esa evidencia." }, 404);
+    const acceso = await accesoEvidencia(almacen, visor, evidencia);
+    if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
+    if (acceso === "entrar") return json({ aviso: "Entra para continuar." }, 401);
+    if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
       return new Response(MARCADOR_EJEMPLO, {
         headers: { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" },
