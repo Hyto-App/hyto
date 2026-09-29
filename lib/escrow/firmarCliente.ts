@@ -5,6 +5,14 @@ export const AVISO_XLM = "No hay XLM suficiente para la comisión.";
 export const AVISO_RECHAZO = "Rechazaste la firma.";
 export const AVISO_FIRMA = "No se pudo firmar el pago.";
 export const AVISO_SIN_CONTRATO = "El envío salió bien y Trustless no devolvió el contrato.";
+export const AVISO_SESION_CAVOS = "Tu sesión de Cavos se cerró. Entrá de nuevo para firmar.";
+
+const PAGO: readonly AccionCliente[] = ["marcar", "aprobar", "liberar"];
+
+export function pasosDesde(fallo: AccionCliente | null): AccionCliente[] {
+  const indice = fallo ? PAGO.indexOf(fallo) : -1;
+  return indice >= 0 ? PAGO.slice(indice) : [...PAGO];
+}
 
 export type AccionCliente = "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar";
 
@@ -134,6 +142,8 @@ function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contra
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
   const auth = await crearAuth();
   if (!auth) throw new ErrorFirmaCliente("Falta configurar Cavos para entrar.");
+  // persistSession:false deja la identidad en sessionStorage, no en la instancia nueva.
+  if (!auth.restoreIdentity()) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar") throw new ErrorFirmaCliente(AVISO_FIRMA);

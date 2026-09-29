@@ -14,16 +14,46 @@ export function montoDeVista(tarea: TareaAdmin): number | null {
   const crudo = tarea.tipo === "reembolso" ? tarea.montoRevisado || tarea.tope || tarea.monto : tarea.monto;
   const normal = normalizarMonto(crudo ?? "");
   if (!normal) return null;
-  const monto = Number(normal);
-  return monto > 0 && Number.isFinite(monto) ? monto : null;
+  let monto = Number(normal);
+  if (!(monto > 0) || !Number.isFinite(monto)) return null;
+  if (tarea.tipo === "reembolso" && tarea.tope) {
+    const tope = normalizarMonto(tarea.tope);
+    const limite = tope ? Number(tope) : Number.NaN;
+    if (limite > 0 && monto > limite) monto = limite;
+  }
+  return monto;
+}
+
+export function escrowFondeado(json: unknown): boolean | null {
+  if (!json || typeof json !== "object") return null;
+  const raiz = json as Record<string, unknown>;
+  const escrow = raiz.escrow && typeof raiz.escrow === "object" ? (raiz.escrow as Record<string, unknown>) : raiz;
+  return saldoPositivo(escrow.balance);
+}
+
+export async function leerFondeo(contrato: string, opciones: OpcionesRemoto = {}): Promise<boolean | null> {
+  const id = contrato.trim();
+  if (!id) return null;
+  try {
+    const respuesta = await pedir(opciones.fetch ?? fetch, `/api/escrow/${encodeURIComponent(id)}`);
+    if (!respuesta.ok) return null;
+    return escrowFondeado(await respuesta.json());
+  } catch {
+    return null;
+  }
 }
 
 export type OpcionesRemoto = {
   fetch?: typeof fetch;
 };
 
-export function botonesRevision(tarea: TareaAdmin, real: boolean): {
+export function botonesRevision(
+  tarea: TareaAdmin,
+  real: boolean,
+  escrow: { contrato: string | null; fondeado: boolean | null } = { contrato: null, fondeado: null },
+): {
   desplegar: boolean;
+  fondear: boolean;
   pagar: boolean;
   aprobarLocal: boolean;
   pedirOtra: boolean;
@@ -32,13 +62,17 @@ export function botonesRevision(tarea: TareaAdmin, real: boolean): {
     const puede = tarea.estado === "en revisión" && tarea.veredicto !== null;
     return {
       desplegar: false,
+      fondear: false,
       pagar: false,
       aprobarLocal: puede,
       pedirOtra: puede && tarea.veredicto !== "cumplió",
     };
   }
+  const abierto = tarea.estado !== "pagado";
+  const conContrato = Boolean(escrow.contrato);
   return {
-    desplegar: tarea.estado !== "pagado",
+    desplegar: abierto && !conContrato,
+    fondear: abierto && conContrato && escrow.fondeado === false,
     pagar: tarea.estado === "en revisión",
     aprobarLocal: false,
     pedirOtra: false,
@@ -236,6 +270,12 @@ function estadoDe(valor: unknown): EstadoTarea {
 function veredictoDe(valor: unknown): TareaAdmin["veredicto"] {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
   return null;
+}
+
+function saldoPositivo(valor: unknown): boolean | null {
+  const numero = typeof valor === "number" ? valor : typeof valor === "string" && valor.trim() ? Number(valor) : Number.NaN;
+  if (!Number.isFinite(numero)) return null;
+  return numero > 0;
 }
 
 function texto(valor: unknown): string | null {

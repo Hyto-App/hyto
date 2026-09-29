@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador, montoDeVista } from "@/lib/admin/remoto";
+import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
-import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, type AccionCliente } from "@/lib/escrow/firmarCliente";
+import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
@@ -29,8 +29,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
   const [paso, setPaso] = useState<AccionCliente | null>(null);
   const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [contrato, setContrato] = useState<string | null>(null);
+  const [fondeado, setFondeado] = useState<boolean | null>(null);
+  const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const fondeoForzado = useRef<string | null>(null);
 
   useEffect(() => {
     let viva = true;
@@ -40,6 +43,9 @@ export function Revision({ tareaId }: { tareaId: string }) {
     setReal(false);
     setHashPaso(null);
     setContrato(null);
+    setFondeado(null);
+    setReanudar(null);
+    fondeoForzado.current = null;
     setWallet(null);
     if (modoDemo) return;
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
@@ -55,6 +61,21 @@ export function Revision({ tareaId }: { tareaId: string }) {
     };
   }, [tareaId, modoDemo]);
 
+  useEffect(() => {
+    if (modoDemo || !real || !contrato) return;
+    if (fondeoForzado.current === contrato) {
+      setFondeado(true);
+      return;
+    }
+    let viva = true;
+    void leerFondeo(contrato).then((valor) => {
+      if (viva) setFondeado(valor);
+    });
+    return () => {
+      viva = false;
+    };
+  }, [modoDemo, real, contrato]);
+
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
     if (guardado.aviso) {
@@ -68,18 +89,18 @@ export function Revision({ tareaId }: { tareaId: string }) {
 
   async function correr(acciones: readonly AccionCliente[]) {
     if (paso || !tarea) return;
-    const secuencia = acciones[0] === "desplegar" && contrato ? (["fondear"] as const) : acciones;
     if (!wallet) {
       setAviso("Esta sesión no tiene una wallet de Stellar. Entrá de nuevo para firmar.");
       return;
     }
-    if (secuencia[0] !== "desplegar" && !contrato) {
+    if (acciones[0] !== "desplegar" && !contrato) {
       setAviso("Esta tarea todavía no tiene escrow. Desplegá y fondeá primero.");
       return;
     }
     setAviso(null);
+    let actual: AccionCliente | null = null;
     try {
-      const pago = await firmarPasos(secuencia, tareaId, {
+      const pago = await firmarPasos(acciones, tareaId, {
         extra: {
           firmante: wallet,
           ...(contrato ? { contrato } : {}),
@@ -87,9 +108,17 @@ export function Revision({ tareaId }: { tareaId: string }) {
           indice: 0,
           estado: "completed",
         },
-        alEmpezar: setPaso,
+        alEmpezar: (accion) => {
+          actual = accion;
+          setPaso(accion);
+        },
       });
       if (pago.contrato) setContrato(pago.contrato);
+      if (acciones.includes("fondear") && pago.contrato) {
+        fondeoForzado.current = pago.contrato;
+        setFondeado(true);
+      }
+      setReanudar(null);
       setHashPaso(pago.hash);
       if (pago.aviso) setAviso(pago.aviso);
       const fresco = await cargarDetalleOrganizador(tareaId);
@@ -101,14 +130,15 @@ export function Revision({ tareaId }: { tareaId: string }) {
         setReal(true);
         return;
       }
-      if (secuencia.includes("liberar") && pago.hash) {
-        setTarea((actual) => {
-          if (!actual) return actual;
-          const hashPago = pago.hash ?? actual.hashPago;
-          return { ...actual, estado: "pagado", hashPago };
+      if (acciones.includes("liberar") && pago.hash) {
+        setTarea((actualTarea) => {
+          if (!actualTarea) return actualTarea;
+          const hashPago = pago.hash ?? actualTarea.hashPago;
+          return { ...actualTarea, estado: "pagado", hashPago };
         });
       }
     } catch (error) {
+      if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
       setAviso(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA);
     } finally {
       setPaso(null);
@@ -130,7 +160,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
     );
   }
 
-  const botones = botonesRevision(tarea, real);
+  const botones = botonesRevision(tarea, real, { contrato, fondeado });
   const pago = enlacePago(tarea.hashPago);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
@@ -197,15 +227,20 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </button>
           ) : null}
 
-          {botones.desplegar || botones.pagar ? (
+          {botones.desplegar || botones.fondear || botones.pagar ? (
             <div className="mt-8 space-y-3">
               {botones.desplegar ? (
                 <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
                   {paso === "desplegar" || paso === "fondear" ? PASO[paso] : "Desplegar y fondear"}
                 </BotonPrincipal>
               ) : null}
+              {botones.fondear ? (
+                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["fondear"])}>
+                  {paso === "fondear" ? PASO.fondear : "Fondear"}
+                </BotonPrincipal>
+              ) : null}
               {botones.pagar ? (
-                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["marcar", "aprobar", "liberar"])}>
+                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
                   {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : "Aprobar y pagar"}
                 </BotonPrincipal>
               ) : null}
