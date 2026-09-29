@@ -2,6 +2,8 @@ import { conAlmacen } from "@/lib/api/base";
 import { json } from "@/lib/api/json";
 import { AVISO_REVISION, estadoOrganizadorTarea, organizaAlguno } from "@/lib/api/organizador";
 import { leerRevisionHttp } from "@/lib/api/revision";
+import { esProyectoDemo } from "@/lib/db/semilla";
+import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
 
 export async function GET(request: Request, contexto: { params: Promise<{ id: string }> }): Promise<Response> {
@@ -21,6 +23,11 @@ async function atender(
   if (sesion instanceof Response) return sesion;
   const { id } = await contexto.params;
   return conAlmacen(async (almacen, fotos) => {
+    if (demoHabilitado() && sesionEsDemo(sesion)) {
+      const tarea = await almacen.leerTarea(id);
+      const proyecto = tarea ? await almacen.leerProyecto(tarea.proyectoId) : null;
+      if (!esProyectoDemo(proyecto)) return json({ aviso: AVISO_REVISION }, 403);
+    }
     const estado = await estadoOrganizadorTarea(almacen, sesion.usuarioId, id);
     if (estado === "ausente") {
       if (await organizaAlguno(almacen, sesion.usuarioId)) {

@@ -4,6 +4,7 @@ import { GET as evidenciaGet } from "../../app/api/evidencias/[id]/route";
 import { GET as fotoGet } from "../../app/api/evidencias/[id]/foto/route";
 import { GET as informeGet } from "../../app/api/informe/route";
 import { GET as proyectosGet } from "../../app/api/proyectos/route";
+import { GET as revisionGet } from "../../app/api/revision/[id]/route";
 import { GET as tareasGet } from "../../app/api/tareas/route";
 import type { Almacen } from "../db/almacen";
 import { crearMemoria } from "../db/memoria";
@@ -165,59 +166,102 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
   }
 });
 
-test("en demo, sin sesión, solo el ejemplo es público y demo-organizador revisa ZEEK", async () => {
+test("en demo, sin sesión solo se ve el proyecto demo y no ZEEK", async () => {
   const almacen = crearMemoria();
   const anterior = usar(almacen);
   const demo = process.env.HYTO_DEMO_LOGIN;
   process.env.HYTO_DEMO_LOGIN = "1";
   try {
     await asegurarSemilla(almacen);
-    assert.equal((await almacen.leerProyecto("zeek"))?.organizadorId, "demo-organizador");
-    await crearProyectoHttp(
-      new Request("http://local/api/proyectos", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre: "Privado", tareas: [{ titulo: "Secreto", tipo: "trabajo", monto: "3", miembroId: "voluntario-1" }] }),
-      }),
-      almacen,
-      "voluntario-1",
-    );
-    const fotos = crearFotosMemoria();
-    const cuerpo = new FormData();
-    cuerpo.set("tareaId", "stand");
-    cuerpo.set("foto", new Blob([Uint8Array.from([8])], { type: "image/jpeg" }), "evidencia.jpg");
-    const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
-      almacen,
-      fotos,
-    });
-    const privada = ((await creada.json()) as { evidencia: { id: string } }).evidencia.id;
+    await almacen.asignarOrganizador("zeek", "demo-organizador");
+    await almacen.actualizarTarea("stand", { walletCobro: "WALLET-ZEEK", contratoEscrow: "C" + "A".repeat(55) });
+    const guardado = await almacen.veredictoDe("ejemplo-stand");
+    assert.ok(guardado);
+    await almacen.guardarVeredicto({ ...guardado, frase: "SECRETO-ZEEK", textoScout: "SECRETO-ZEEK" });
 
     const proyectos = (await (await proyectosGet(pedir("http://local/api/proyectos"))).json()) as {
-      proyecto: { nombre: string };
-      proyectos: { nombre: string }[];
+      proyecto: { id: string; nombre: string };
+      proyectos: { id: string }[];
     };
-    assert.equal(proyectos.proyecto.nombre, "ZEEK");
-    assert.deepEqual(proyectos.proyectos.map((proyecto) => proyecto.nombre), ["ZEEK"]);
+    assert.equal(proyectos.proyecto.id, "demo");
+    assert.deepEqual(proyectos.proyectos.map((proyecto) => proyecto.id), ["demo"]);
 
-    const tareas = (await (await tareasGet(pedir("http://local/api/tareas"))).json()) as { tareas: { id: string; titulo: string }[] };
-    assert.deepEqual(tareas.tareas.map((tarea) => tarea.id).sort(), ["bienvenida", "comida", "registro", "stand"]);
-    assert.equal(tareas.tareas.some((tarea) => tarea.titulo === "Secreto"), false);
+    const tareas = (await (await tareasGet(pedir("http://local/api/tareas"))).json()) as {
+      tareas: { id: string; walletCobro: string; contratoEscrow: string | null }[];
+    };
+    assert.deepEqual(tareas.tareas.map((tarea) => tarea.id).sort(), ["demo-bienvenida", "demo-comida", "demo-registro", "demo-stand"]);
+    assert.equal(tareas.tareas.some((tarea) => tarea.walletCobro === "WALLET-ZEEK" || tarea.contratoEscrow), false);
 
-    const informe = (await (await informeGet(pedir("http://local/api/informe"))).json()) as { nombre: string; resumen: { presupuesto: string } };
-    assert.equal(informe.nombre, "ZEEK");
-    assert.equal(informe.resumen.presupuesto, "75");
+    const informe = (await (await informeGet(pedir("http://local/api/informe"))).json()) as {
+      nombre: string;
+      tareas: { id: string; frase: string | null }[];
+    };
+    assert.equal(informe.nombre, "Demo");
+    assert.equal(informe.tareas.some((tarea) => tarea.id === "stand" || tarea.frase === "SECRETO-ZEEK"), false);
 
-    const ejemplo = { params: Promise.resolve({ id: "ejemplo-stand" }) };
-    assert.equal((await evidenciaGet(pedir("http://local/api/evidencias/ejemplo-stand"), ejemplo)).status, 200);
-    assert.match((await fotoGet(pedir("http://local/api/evidencias/ejemplo-stand/foto"), ejemplo)).headers.get("content-type") ?? "", /svg/);
-    assert.equal((await evidenciaGet(pedir(`http://local/api/evidencias/${privada}`), { params: Promise.resolve({ id: privada }) })).status, 401);
+    assert.equal((await evidenciaGet(pedir("http://local/api/evidencias/ejemplo-stand"), { params: Promise.resolve({ id: "ejemplo-stand" }) })).status, 401);
+    const fotoDemo = await fotoGet(pedir("http://local/api/evidencias/ejemplo-demo-stand/foto"), {
+      params: Promise.resolve({ id: "ejemplo-demo-stand" }),
+    });
+    assert.equal(fotoDemo.status, 200);
+    assert.match(fotoDemo.headers.get("content-type") ?? "", /svg/);
+  } finally {
+    restaurar(anterior);
+    if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = demo;
+  }
+});
 
+test("una sesión demo no lee ZEEK y el dueño real sí", async () => {
+  const almacen = crearMemoria();
+  const anterior = usar(almacen);
+  const demo = process.env.HYTO_DEMO_LOGIN;
+  process.env.HYTO_DEMO_LOGIN = "1";
+  try {
+    await asegurarSemilla(almacen);
+    await almacen.asignarOrganizador("zeek", "ana");
+    await almacen.actualizarTarea("stand", { walletCobro: "WALLET-ZEEK" });
+    const guardado = await almacen.veredictoDe("ejemplo-stand");
+    assert.ok(guardado);
+    await almacen.guardarVeredicto({ ...guardado, frase: "SECRETO-ZEEK", textoScout: "SECRETO-ZEEK" });
     await sesion(almacen, "demo-org", "demo-organizador", "organizador");
-    const propias = (await (await tareasGet(pedir("http://local/api/tareas", "demo-org"))).json()) as {
-      tareas: { id: string; titulo: string }[];
+    await sesion(almacen, "ana", "ana", "organizador");
+
+    const deDemo = (await (await tareasGet(pedir("http://local/api/tareas", "demo-org"))).json()) as {
+      tareas: { id: string; walletCobro: string }[];
     };
-    assert.equal(propias.tareas.some((tarea) => tarea.id === "stand"), true);
-    assert.equal(propias.tareas.some((tarea) => tarea.titulo === "Secreto"), false);
+    assert.equal(deDemo.tareas.some((tarea) => tarea.id === "stand" || tarea.walletCobro === "WALLET-ZEEK"), false);
+    assert.equal(deDemo.tareas.some((tarea) => tarea.id === "demo-stand"), true);
+    assert.equal(
+      (await evidenciaGet(pedir("http://local/api/evidencias/ejemplo-stand", "demo-org"), { params: Promise.resolve({ id: "ejemplo-stand" }) })).status,
+      403,
+    );
+    const informeDemo = (await (await informeGet(pedir("http://local/api/informe", "demo-org"))).json()) as { nombre: string };
+    assert.equal(informeDemo.nombre, "Demo");
+    assert.equal(
+      (await revisionGet(pedir("http://local/api/revision/stand", "demo-org"), { params: Promise.resolve({ id: "stand" }) })).status,
+      403,
+    );
+    assert.equal(
+      (await revisionGet(pedir("http://local/api/revision/demo-stand", "demo-org"), { params: Promise.resolve({ id: "demo-stand" }) })).status,
+      200,
+    );
+
+    const deAna = (await (await tareasGet(pedir("http://local/api/tareas", "ana"))).json()) as {
+      tareas: { id: string; walletCobro: string }[];
+    };
+    assert.equal(deAna.tareas.some((tarea) => tarea.id === "stand" && tarea.walletCobro === "WALLET-ZEEK"), true);
+    assert.equal(deAna.tareas.some((tarea) => tarea.id === "demo-stand"), false);
+    const informeAna = (await (await informeGet(pedir("http://local/api/informe", "ana"))).json()) as {
+      nombre: string;
+      tareas: { frase: string | null }[];
+    };
+    assert.equal(informeAna.nombre, "ZEEK");
+    assert.equal(informeAna.tareas.some((tarea) => tarea.frase === "SECRETO-ZEEK"), true);
+    assert.equal(
+      (await evidenciaGet(pedir("http://local/api/evidencias/ejemplo-stand", "ana"), { params: Promise.resolve({ id: "ejemplo-stand" }) })).status,
+      200,
+    );
   } finally {
     restaurar(anterior);
     if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;

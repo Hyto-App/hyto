@@ -101,21 +101,32 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   assert.equal(reembolso.tarea.fecha, "2026-09-27");
 });
 
-test("sin demo el ejemplo no tiene dueño y con demo lo toma demo-organizador", async () => {
+test("la semilla no toca organizador_id de zeek y el demo es otro proyecto", async () => {
   const anterior = process.env.HYTO_DEMO_LOGIN;
   try {
     const vacio = crearMemoria();
     delete process.env.HYTO_DEMO_LOGIN;
     await asegurarSemilla(vacio);
     assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, null);
-    await vacio.asignarOrganizador("zeek", "ana");
+    assert.equal(await vacio.leerProyecto("demo"), null);
+
     process.env.HYTO_DEMO_LOGIN = "1";
     await asegurarSemilla(vacio);
-    assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, "ana");
+    assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, null);
+    assert.equal((await vacio.leerProyecto("demo"))?.organizadorId, "demo-organizador");
+    assert.deepEqual(
+      (await vacio.listarTareas())
+        .filter((tarea) => tarea.proyectoId === "demo")
+        .map((tarea) => tarea.id)
+        .sort(),
+      ["demo-bienvenida", "demo-comida", "demo-registro", "demo-stand"],
+    );
 
-    const demo = crearMemoria();
-    await asegurarSemilla(demo);
-    assert.equal((await demo.leerProyecto("zeek"))?.organizadorId, "demo-organizador");
+    await vacio.asignarOrganizador("zeek", "ana");
+    await vacio.asignarOrganizador("demo", "ana");
+    await asegurarSemilla(vacio);
+    assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, "ana");
+    assert.equal((await vacio.leerProyecto("demo"))?.organizadorId, "ana");
   } finally {
     if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
     else process.env.HYTO_DEMO_LOGIN = anterior;

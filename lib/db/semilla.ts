@@ -12,6 +12,10 @@ export const PROYECTO_ZEEK: Proyecto = {
   organizadorId: null,
 };
 
+export const ID_PROYECTO_DEMO = "demo";
+
+const CREADO_DEMO = "2026-09-27T12:00:00.000Z";
+
 export const MARCA_EJEMPLO = "ejemplo";
 
 export function usuariosSemilla(): Usuario[] {
@@ -24,9 +28,17 @@ export function usuariosSemilla(): Usuario[] {
 }
 
 export function tareasSemilla(): TareaFila[] {
+  return filasTareas(PROYECTO_ZEEK.id, (id) => id);
+}
+
+export function tareasDemo(): TareaFila[] {
+  return filasTareas(ID_PROYECTO_DEMO, idTareaDemo);
+}
+
+function filasTareas(proyectoId: string, idDe: (id: string) => string): TareaFila[] {
   return tareasEjemploAdmin().map((tarea) => ({
-    id: tarea.id,
-    proyectoId: PROYECTO_ZEEK.id,
+    id: idDe(tarea.id),
+    proyectoId,
     titulo: tarea.titulo,
     tipo: tarea.tipo,
     monto: tarea.monto,
@@ -41,36 +53,61 @@ export function tareasSemilla(): TareaFila[] {
   }));
 }
 
+function idTareaDemo(tareaId: string): string {
+  return `demo-${tareaId}`;
+}
+
 export function esBlobEjemplo(blobId: string): boolean {
   return blobId.startsWith(`${MARCA_EJEMPLO}/`);
 }
 
 export function evidenciasSemilla(): EvidenciaFila[] {
+  return filasEvidencias(PROYECTO_ZEEK.creadoEn, (id) => id, idEjemplo);
+}
+
+export function evidenciasDemo(): EvidenciaFila[] {
+  return filasEvidencias(CREADO_DEMO, idTareaDemo, (id) => idEjemplo(idTareaDemo(id)));
+}
+
+function filasEvidencias(
+  creadoEn: string,
+  idTarea: (id: string) => string,
+  idEvidencia: (id: string) => string,
+): EvidenciaFila[] {
   return tareasEjemploAdmin().flatMap((tarea) => {
     if (!tarea.veredicto) return [];
+    const tareaId = idTarea(tarea.id);
     return [
       {
-        id: idEjemplo(tarea.id),
-        tareaId: tarea.id,
-        blobId: `${MARCA_EJEMPLO}/${tarea.id}`,
+        id: idEvidencia(tarea.id),
+        tareaId,
+        blobId: `${MARCA_EJEMPLO}/${tareaId}`,
         monto: tarea.montoRevisado,
         fecha: tarea.fecha,
-        creadaEn: PROYECTO_ZEEK.creadoEn,
+        creadaEn: creadoEn,
       },
     ];
   });
 }
 
 export function veredictosSemilla(): VeredictoFila[] {
+  return filasVeredictos((id) => id, idEjemplo);
+}
+
+export function veredictosDemo(): VeredictoFila[] {
+  return filasVeredictos(idTareaDemo, (id) => idEjemplo(idTareaDemo(id)));
+}
+
+function filasVeredictos(idTarea: (id: string) => string, idEvidencia: (id: string) => string): VeredictoFila[] {
   return tareasEjemploAdmin().flatMap((tarea) => {
     if (!tarea.veredicto || !tarea.frase) return [];
-    const id = idEjemplo(tarea.id);
+    const id = idEvidencia(tarea.id);
     const texto = `Ejemplo. ${tarea.frase}`;
     return [
       {
         id,
         evidenciaId: id,
-        tareaId: tarea.id,
+        tareaId: idTarea(tarea.id),
         veredicto: tarea.veredicto,
         frase: texto,
         textoScout: texto,
@@ -81,6 +118,10 @@ export function veredictosSemilla(): VeredictoFila[] {
       },
     ];
   });
+}
+
+export function esProyectoDemo(proyecto: Pick<Proyecto, "id" | "organizadorId"> | null): boolean {
+  return Boolean(proyecto && proyecto.id === ID_PROYECTO_DEMO && proyecto.organizadorId === usuarioDemo("organizador").id);
 }
 
 export async function asegurarSemilla(almacen: Almacen): Promise<void> {
@@ -97,7 +138,7 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
   if (!proyecto) {
     await almacen.crearProyecto(PROYECTO_ZEEK, tareasSemilla());
   }
-  await duenoDemo(almacen);
+  await asegurarProyectoDemo(almacen);
   for (const evidencia of evidenciasSemilla()) {
     if (await almacen.leerEvidencia(evidencia.id)) continue;
     try {
@@ -113,11 +154,32 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
   await reponerPendientes(almacen);
 }
 
-async function duenoDemo(almacen: Almacen): Promise<void> {
+async function asegurarProyectoDemo(almacen: Almacen): Promise<void> {
   if (!demoHabilitado()) return;
-  const proyecto = await almacen.leerProyecto(PROYECTO_ZEEK.id);
-  if (!proyecto || proyecto.organizadorId) return;
-  await almacen.asignarOrganizador(proyecto.id, usuarioDemo("organizador").id);
+  const actual = await almacen.leerProyecto(ID_PROYECTO_DEMO);
+  if (!actual) {
+    await almacen.crearProyecto(
+      {
+        id: ID_PROYECTO_DEMO,
+        nombre: "Demo",
+        creadoEn: CREADO_DEMO,
+        organizadorId: usuarioDemo("organizador").id,
+      },
+      tareasDemo(),
+    );
+  }
+  for (const evidencia of evidenciasDemo()) {
+    if (await almacen.leerEvidencia(evidencia.id)) continue;
+    try {
+      await almacen.crearEvidencia(evidencia);
+    } catch (error) {
+      if (!esClaveDuplicada(error)) throw error;
+    }
+  }
+  for (const veredicto of veredictosDemo()) {
+    if (await almacen.veredictoDe(veredicto.evidenciaId)) continue;
+    await almacen.guardarVeredicto(veredicto);
+  }
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {
