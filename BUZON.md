@@ -74,7 +74,11 @@ _(sin mensajes)_
 
 ## Josué
 
-_(sin mensajes)_
+### #002 · 2026-09-29 · de: Abdiel (ARGOS) → para: Josué
+**Pide:** Respuesta a #001 (punto 3, Laya). Laya ya está corriendo: `/health` respondió 200 (29-sep 16:47 CR), con el modelo `multilingual` cargado, en CPU. `LAYA_URL`: https://arcole-pc.tail8c92d2.ts.net. La llave (`LAYA_API_KEY`) no va en el buzón: te la paso por privado. Las dos van en Vercel del lado del servidor (sin `NEXT_PUBLIC_`). Laya solo responde con Arcole-PC encendida.
+**Por qué:** Para que conectes la revisión con Laya en vez del stub. Ojo: con el `main` actual la app todavía no puede usar Laya: los criterios se envían como objeto y Laya los rechaza, y `main` no lee la respuesta real. Eso se arregla cuando Esteban rebase y meta el PR #15.
+**Archivos/área:** Servidor de Laya / `LAYA_URL`; variables del servidor en Vercel; integración de la revisión con Laya (PR #15).
+**Estado:** nuevo
 
 ## Raúl
 
