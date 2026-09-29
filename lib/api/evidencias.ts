@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
+import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
@@ -37,12 +37,19 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string): Promise<R
   }
 }
 
+const MARCADOR_EJEMPLO = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" role="img" aria-label="Evidencia de ejemplo"><rect width="64" height="48" fill="#ece7dc"/></svg>`;
+
 export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string): Promise<Response> {
-  if (!fotos) return sinFotos();
   try {
     await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
     if (!evidencia) return json({ aviso: "No encontramos esa evidencia." }, 404);
+    if (esBlobEjemplo(evidencia.blobId)) {
+      return new Response(MARCADOR_EJEMPLO, {
+        headers: { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" },
+      });
+    }
+    if (!fotos) return sinFotos();
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "No encontramos la foto." }, 404);
     return new Response(Buffer.from(foto.bytes), {

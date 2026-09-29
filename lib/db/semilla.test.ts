@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { armarInforme } from "../api/informe";
 import { leerRevisionHttp } from "../api/revision";
+import { leerFotoHttp } from "../api/evidencias";
 import { crearMemoria } from "./memoria";
 import { asegurarSemilla, evidenciasSemilla, MARCA_EJEMPLO, tareasSemilla, veredictosSemilla } from "./semilla";
 
@@ -11,8 +12,12 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
     tareas.map((tarea) => tarea.id),
     ["stand", "registro", "bienvenida", "comida"],
   );
-  assert.equal(tareas.find((tarea) => tarea.id === "stand")?.estado, "en revisión");
+  assert.equal(tareas.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
   assert.equal(tareas.find((tarea) => tarea.id === "bienvenida")?.estado, "pendiente");
+  assert.equal(
+    tareas.some((tarea) => tarea.miembroId === "voluntario-1" && tarea.estado === "pendiente"),
+    true,
+  );
   assert.equal(
     tareas.every((tarea) => tarea.hashPago === null),
     true,
@@ -46,6 +51,8 @@ test("el informe de ejemplo arma la bandeja de admin", async () => {
   const informe = await armarInforme(almacen);
   assert.equal(informe.nombre, "ZEEK");
   assert.equal(informe.ejemplo, false);
+  assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
+  assert.equal(informe.bandeja.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
   assert.deepEqual(
     informe.bandeja.map((tarea) => tarea.id),
     ["stand", "registro", "comida"],
@@ -69,10 +76,14 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
     tarea: { veredicto: string; frase: string; estado: string };
     foto: string | null;
   };
-  assert.equal(json.tarea.estado, "en revisión");
+  assert.equal(json.tarea.estado, "pendiente");
   assert.equal(json.tarea.veredicto, "cumplió");
   assert.match(json.tarea.frase, /^Ejemplo\./);
-  assert.equal(json.foto, "/api/evidencias/ejemplo-stand/foto");
+  assert.equal(json.foto, null);
+
+  const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand");
+  assert.equal(marcador.status, 200);
+  assert.match(marcador.headers.get("content-type") ?? "", /image\/svg\+xml/);
 
   const sinEvidencia = await leerRevisionHttp(almacen, null, "bienvenida");
   const vacia = (await sinEvidencia.json()) as { tarea: { veredicto: string | null; estado: string }; foto: string | null };
@@ -100,4 +111,19 @@ test("sembrar dos veces no duplica ni pisa un pago", async () => {
   assert.equal(stand?.hashPago, hash);
   assert.equal((await almacen.ultimaEvidencia("stand"))?.id, "ejemplo-stand");
   assert.equal((await almacen.ultimaEvidencia("bienvenida")), null);
+});
+
+test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarEvidencia("ejemplo-stand", { monto: "9" });
+  await almacen.crearEvidencia({
+    id: "ejemplo-stand",
+    tareaId: "stand",
+    blobId: "ejemplo/stand",
+    monto: "1",
+    fecha: null,
+    creadaEn: "2026-09-27T12:00:00.000Z",
+  });
+  assert.equal((await almacen.leerEvidencia("ejemplo-stand"))?.monto, "9");
 });

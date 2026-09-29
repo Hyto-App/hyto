@@ -32,10 +32,15 @@ export function tareasSemilla(): TareaFila[] {
     condicion: tarea.condicion,
     miembroId: tarea.miembroId,
     walletCobro: "",
-    estado: tarea.estado,
+    // El ejemplo del admin nace «en revisión». Acá quedan pendientes para que el voluntario pueda subir evidencia.
+    estado: "pendiente",
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
   }));
+}
+
+export function esBlobEjemplo(blobId: string): boolean {
+  return blobId.startsWith(`${MARCA_EJEMPLO}/`);
 }
 
 export function evidenciasSemilla(): EvidenciaFila[] {
@@ -87,15 +92,9 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
   if (!proyecto) {
     await almacen.crearProyecto(PROYECTO_ZEEK, tareasSemilla());
   }
-  const estados = new Map(tareasSemilla().map((tarea) => [tarea.id, tarea.estado]));
   for (const evidencia of evidenciasSemilla()) {
     if (await almacen.leerEvidencia(evidencia.id)) continue;
     await almacen.crearEvidencia(evidencia);
-    const tarea = await almacen.leerTarea(evidencia.tareaId);
-    const estado = estados.get(evidencia.tareaId);
-    if (tarea && estado === "en revisión" && tarea.estado === "pendiente") {
-      await almacen.actualizarTarea(tarea.id, { estado: "en revisión" });
-    }
   }
   for (const veredicto of veredictosSemilla()) {
     if (await almacen.veredictoDe(veredicto.evidenciaId)) continue;

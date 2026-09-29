@@ -20,10 +20,23 @@ function pools(): Map<string, Pool> {
   return poolsGlobales.__hytoPools;
 }
 
+function escucharErrores(pool: Pool): void {
+  if (pool.listenerCount("error") > 0) return;
+  // Sin este listener, un cliente ocioso que se cae emite `error` y Node cierra el proceso.
+  pool.on("error", (error: Error) => {
+    const mensaje = error instanceof Error ? error.message : "error";
+    console.error("Postgres cerró una conexión ociosa.", mensaje);
+  });
+}
+
 function poolDe(url: string): Pool {
   const existente = pools().get(url);
-  if (existente) return existente;
+  if (existente) {
+    escucharErrores(existente);
+    return existente;
+  }
   const pool = new Pool({ connectionString: url, max: 5, allowExitOnIdle: true });
+  escucharErrores(pool);
   pools().set(url, pool);
   return pool;
 }
@@ -91,7 +104,7 @@ function crearAlmacen(db: Base): Almacen {
       await db.update(tareas).set(cambio).where(eq(tareas.id, id));
     },
     async crearEvidencia(evidencia) {
-      await db.insert(evidencias).values(evidencia);
+      await db.insert(evidencias).values(evidencia).onConflictDoNothing();
     },
     async leerEvidencia(id) {
       const filas = await db.select().from(evidencias).where(eq(evidencias.id, id)).limit(1);

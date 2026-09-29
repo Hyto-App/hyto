@@ -87,7 +87,7 @@ async function asegurarBase(url: string): Promise<void> {
 async function main(): Promise<number> {
   const url = urlDeTrabajo();
   if (!esHostLocal(url)) {
-    console.error("db:local solo usa Postgres en esta máquina (127.0.0.1 o localhost).");
+    console.error("db:local solo usa Postgres en esta máquina (127.0.0.1, localhost o ::1).");
     return 1;
   }
   try {

@@ -78,7 +78,7 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
-  return tareas.filter((tarea) => tarea.estado === "en revisión");
+  return tareas.filter((tarea) => tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado"));
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
@@ -150,7 +150,8 @@ export function vistaAdmin(memoria: MemoriaAdmin | null): VistaAdmin {
     ejemplo: true,
     propio: propio !== null,
     tareas,
-    bandeja: bandejaDe(tareas),
+    // Pedir otra foto deja la tarea pendiente y la saca de esta bandeja. La API usa bandejaDe.
+    bandeja: tareas.filter((tarea) => tarea.estado === "en revisión"),
     resumen: resumir(tareas),
     personas: porPersona(tareas),
   };
