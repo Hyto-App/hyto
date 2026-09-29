@@ -9,6 +9,7 @@ import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_FIRMA_DEMO } from "../sesion/demo";
 import { crearDemoHttp, estadoDemoHttp } from "./demo";
+import { cerrarSesionHttp } from "./sesion";
 
 const ENV_ON = { HYTO_DEMO_LOGIN: "1" };
 const ENV_OFF = { HYTO_DEMO_LOGIN: "" };
@@ -131,6 +132,71 @@ describe("ingreso demo", { concurrency: false }, () => {
     const otraIp = await crearDemoHttp(pedido("organizador", "198.51.100.9"), almacen, ENV_ON);
     assert.equal(otraIp.status, 200);
     reiniciarLimite();
+  });
+
+  test("cerrar sesión borra la fila y expira la cookie", async () => {
+    const almacen = crearMemoria();
+    await almacen.crearSesion(sesion({ token: "tok-cerrar" }));
+    const respuesta = await cerrarSesionHttp(
+      new Request("http://local/api/sesion", { method: "DELETE", headers: { cookie: "hyto_sesion=tok-cerrar" } }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 200);
+    assert.equal(await almacen.leerSesion("tok-cerrar"), null);
+    const cookie = respuesta.headers.get("set-cookie") ?? "";
+    assert.match(cookie, /hyto_sesion=/);
+    assert.match(cookie, /Max-Age=0/);
+
+    const vacia = await cerrarSesionHttp(new Request("http://local/api/sesion", { method: "DELETE" }), almacen);
+    assert.equal(vacia.status, 200);
+    assert.match(vacia.headers.get("set-cookie") ?? "", /Max-Age=0/);
+  });
+
+  test("cambiar de rol invalida la sesión demo anterior", async () => {
+    reiniciarLimite();
+    const almacen = crearMemoria();
+    const primera = await crearDemoHttp(pedido("organizador", "203.0.113.40"), almacen, ENV_ON);
+    assert.equal(primera.status, 200);
+    const cookie = primera.headers.get("set-cookie") ?? "";
+    const token = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(cookie)?.[1] ?? "");
+    assert.equal((await almacen.leerSesion(token))?.rol, "organizador");
+
+    await almacen.crearSesion(
+      sesion({
+        token: "sesion-real",
+        email: "organizador@demo.hyto",
+        usuarioId: "organizador",
+        rol: "organizador",
+      }),
+    );
+    const real = await crearDemoHttp(
+      new Request("http://local/api/sesion/demo", {
+        method: "POST",
+        headers: { cookie: "hyto_sesion=sesion-real", "content-type": "application/json", "x-forwarded-for": "203.0.113.42" },
+        body: JSON.stringify({ rol: "voluntario" }),
+      }),
+      almacen,
+      ENV_ON,
+    );
+    assert.equal(real.status, 200);
+    assert.equal((await almacen.leerSesion("sesion-real"))?.email, "organizador@demo.hyto");
+
+    const cambio = await crearDemoHttp(
+      new Request("http://local/api/sesion/demo", {
+        method: "POST",
+        headers: { cookie: `hyto_sesion=${token}`, "content-type": "application/json", "x-forwarded-for": "203.0.113.41" },
+        body: JSON.stringify({ rol: "voluntario" }),
+      }),
+      almacen,
+      ENV_ON,
+    );
+    assert.equal(cambio.status, 200);
+    assert.equal(((await cambio.json()) as { rol: string }).rol, "voluntario");
+    assert.equal(await almacen.leerSesion(token), null);
+    const nuevo = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(cambio.headers.get("set-cookie") ?? "")?.[1] ?? "");
+    assert.notEqual(nuevo, token);
+    assert.equal((await almacen.leerSesion(nuevo))?.rol, "voluntario");
+    assert.equal((await almacen.leerSesion(nuevo))?.wallet, "");
   });
 
   test("preparar y enviar rechazan la sesión demo", async () => {

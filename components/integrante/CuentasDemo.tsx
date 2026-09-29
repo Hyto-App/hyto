@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
+import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
@@ -121,6 +122,7 @@ export function CuentasDemo() {
         <p className="text-sm text-[var(--suave)]">
           <Link href="/mis-tareas">Mis tareas</Link>
           <InsigniaDemo />
+          <SalirDemo />
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">Cuentas del demo</h1>
         <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Organizador y tres voluntarios.</p>

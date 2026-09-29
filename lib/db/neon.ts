@@ -171,6 +171,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       const fila = filas[0];
       return fila ? { ...fila, rol: rolDe(fila.rol), wallet: fila.wallet ?? "" } : null;
     },
+    async borrarSesion(token) {
+      await db.delete(sesiones).where(eq(sesiones.token, token));
+    },
     async guardarWallet(token, wallet) {
       await db.update(sesiones).set({ wallet }).where(eq(sesiones.token, token));
     },

@@ -19,5 +19,6 @@ export type Almacen = {
   veredictoDe(evidenciaId: string): Promise<VeredictoFila | null>;
   crearSesion(sesion: SesionFila): Promise<void>;
   leerSesion(token: string): Promise<SesionFila | null>;
+  borrarSesion(token: string): Promise<void>;
   guardarWallet(token: string, wallet: string): Promise<void>;
 };

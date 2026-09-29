@@ -1,8 +1,8 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { clienteDe, excedido } from "@/lib/escrow/limite";
-import { encabezadoCookie, expiracion, tokenSesion } from "@/lib/sesion/cookie";
-import { demoHabilitado, rolDemoDe, usuarioDemo } from "@/lib/sesion/demo";
+import { COOKIE_SESION, encabezadoCookie, expiracion, leerCookie, tokenSesion } from "@/lib/sesion/cookie";
+import { demoHabilitado, rolDemoDe, sesionEsDemo, usuarioDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json } from "./json";
 
 export async function estadoDemoHttp(env: NodeJS.ProcessEnv | { HYTO_DEMO_LOGIN?: string } = process.env): Promise<Response> {
@@ -34,6 +34,11 @@ export async function crearDemoHttp(
     await almacen.guardarUsuario(fijo);
     const usuario = await almacen.usuarioPorEmail(fijo.email);
     if (!usuario || usuario.rol !== rol) return json({ aviso: "No se pudo abrir la sesión demo." }, 500);
+    const previa = leerCookie(request, COOKIE_SESION);
+    if (previa) {
+      const sesionPrevia = await almacen.leerSesion(previa);
+      if (sesionPrevia && sesionEsDemo(sesionPrevia)) await almacen.borrarSesion(previa);
+    }
     const sesion = tokenSesion();
     await almacen.crearSesion({
       token: sesion,

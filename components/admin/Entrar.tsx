@@ -17,15 +17,16 @@ import {
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { appIdPublico } from "@/lib/integrante/identidades";
-import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 
 type Fase = "inicio" | "correo" | "codigo";
-type Ocupado = "envio" | "google" | "codigo" | "demo";
+type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
 
 const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
 
 export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
   const modoDemo = useModoDemo();
+  const rolActual = useRolDemo();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>("inicio");
   const [correo, setCorreo] = useState("");
@@ -166,7 +167,27 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     }
   }
 
-  async function entrarDemo() {
+  async function salirDemo() {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setAviso(null);
+    setOcupado("salida");
+    try {
+      const respuesta = await fetch("/api/sesion", { method: "DELETE" });
+      if (!respuesta.ok) {
+        setAviso("No se pudo salir del demo.");
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setAviso("No se pudo salir del demo.");
+    } finally {
+      enCurso.current = false;
+      setOcupado(null);
+    }
+  }
+
+  async function entrarDemo(rolPedido = rolDemo) {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -175,14 +196,14 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       const respuesta = await fetch("/api/sesion/demo", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rol: rolDemo }),
+        body: JSON.stringify({ rol: rolPedido }),
       });
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
       if (!respuesta.ok) {
         setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "No se pudo entrar.");
         return;
       }
-      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolDemo;
+      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
       window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/");
     } catch {
       setAviso("No se pudo entrar.");
@@ -217,7 +238,40 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     }
   }
 
-  if (modoDemo) return null;
+  if (modoDemo) {
+    const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
+    const nombreRol = rolActual === "voluntario" ? "Voluntario" : "Organizador";
+    const nombreOtro = otro === "voluntario" ? "voluntario" : "organizador";
+    return (
+      <div className="flex w-full max-w-xs flex-col items-end gap-2">
+        <p className="text-sm text-[var(--suave)]">
+          <InsigniaDemo />
+          <span className="ml-2 align-middle">{nombreRol}</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => void entrarDemo(otro)}
+          disabled={ocupado !== null}
+          className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {ocupado === "demo" ? "Entrando…" : `Cambiar a ${nombreOtro}`}
+        </button>
+        <button
+          type="button"
+          onClick={() => void salirDemo()}
+          disabled={ocupado !== null}
+          className="text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {ocupado === "salida" ? "Saliendo…" : "Salir del demo"}
+        </button>
+        {aviso ? (
+          <p role="status" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+            {aviso}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   const demo = esCorreoDemo(correo);
   const mensaje = mostrarEspera && espera > 0 ? textoEspera(espera) : aviso;

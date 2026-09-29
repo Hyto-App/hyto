@@ -1,15 +1,29 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import type { RolDemo } from "@/lib/sesion/demo";
 
-const Contexto = createContext(false);
+type EstadoDemo = {
+  activo: boolean;
+  rol: RolDemo | null;
+};
 
-export function ProveedorModoDemo({ activo, children }: { activo: boolean; children: ReactNode }) {
-  return <Contexto.Provider value={activo}>{children}</Contexto.Provider>;
+const Contexto = createContext<EstadoDemo>({ activo: false, rol: null });
+
+export function ProveedorModoDemo({
+  activo,
+  rol = null,
+  children,
+}: {
+  activo: boolean;
+  rol?: RolDemo | null;
+  children: ReactNode;
+}) {
+  return <Contexto.Provider value={{ activo, rol: activo ? (rol ?? null) : null }}>{children}</Contexto.Provider>;
 }
 
 export function InsigniaDemo() {
-  const activo = useContext(Contexto);
+  const { activo } = useContext(Contexto);
   if (!activo) return null;
   return (
     <span className="ml-2 inline-flex items-center rounded-full border border-[var(--linea)] px-2 py-0.5 align-middle text-xs font-medium text-[var(--suave)]">
@@ -19,5 +33,9 @@ export function InsigniaDemo() {
 }
 
 export function useModoDemo(): boolean {
-  return useContext(Contexto);
+  return useContext(Contexto).activo;
+}
+
+export function useRolDemo(): RolDemo | null {
+  return useContext(Contexto).rol;
 }

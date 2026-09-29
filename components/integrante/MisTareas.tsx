@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { claseBoton } from "@/components/integrante/BotonPrincipal";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
+import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { leerMemoria, guardarMiembro } from "@/lib/integrante/almacen";
 import { acortarDireccion, montoDeTarea } from "@/lib/integrante/formato";
@@ -55,6 +56,7 @@ export function MisTareas() {
         <p className="text-sm text-[var(--suave)]">
           Hyto
           <InsigniaDemo />
+          <SalirDemo />
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Mis tareas</h1>
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Integrante">

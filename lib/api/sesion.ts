@@ -1,7 +1,7 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
-import { COOKIE_SESION, encabezadoCookie, expiracion, leerCookie, tokenSesion, vigente } from "@/lib/sesion/cookie";
+import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { baseNoLista, json } from "./json";
 
@@ -39,6 +39,16 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   } catch {
     return baseNoLista();
   }
+}
+
+export async function cerrarSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
+  const token = leerCookie(request, COOKIE_SESION);
+  try {
+    if (token) await almacen.borrarSesion(token);
+  } catch {
+    return json({ aviso: "No se pudo cerrar la sesión." }, 503, { "set-cookie": encabezadoCookieCerrada() });
+  }
+  return json({ ok: true }, 200, { "set-cookie": encabezadoCookieCerrada() });
 }
 
 export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
