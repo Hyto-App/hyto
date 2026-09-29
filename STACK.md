@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+El estado del código al 29 de septiembre de 2026 (`9fc7c94`, PR #44 de Josué Valles, 1:38 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Desde el PR #44 el dueño de cada proyecto es `proyectos.organizador_id`. El rol global ya no autoriza el escrow ni la revisión. ZEEK nace sin dueño. `drizzle/0002_organizador_proyecto.sql` solo agrega la columna y no se corrió. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
@@ -72,7 +72,7 @@ Ejemplo, stand de ZEEK. La tarea pide banner visible y mesa armada. Qwen dice: "
 - **Un escrow multi-release por proyecto, un hito por tarea.** Cada hito tiene monto y receptor propios. Hasta 5 direcciones por rol y 50 hitos. El demo cabe: 3 voluntarios y 1 reembolso.
 - **Pago todo o nada.** Liberar un hito paga su monto completo, menos comisiones. Un parcial pide más evidencia o aprueba el monto entero. Partir el monto solo existe en una disputa, y eso queda fuera del MVP.
 - **El admin de Hyto puede contradecir a la IA.** La IA no tiene rol en el contrato y no firma.
-- **Quien aprueba y quien libera es el organizador**, en las dos listas. v2 permite `approve-and-release`: una sola firma hace las dos cosas. El estado del hito lo marca el proveedor, no el organizador.
+- **Quien aprueba y quien libera es el organizador de ese proyecto** (`proyectos.organizador_id`, PR #44), no cualquiera con rol `organizador`. v2 separa aprobar y liberar: en la revisión son dos pasos. El estado del hito lo marca el proveedor, no el organizador. Resolver una disputa lo firma la wallet del resolutor.
 - **La cuenta Admin del contrato es otra dirección.** No puede ser aprobador, proveedor, firmante de liberación ni resolutor de disputas. El resolutor tampoco puede coincidir con esos roles, con Platform ni con el receptor. Los hitos no se editan después de fondear.
 
 ## Acta, en el demo
