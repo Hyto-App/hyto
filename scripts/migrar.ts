@@ -1,13 +1,18 @@
 import { readFileSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
+import { prepararBaseDe } from "../lib/config/entorno";
 import { sentencias } from "../lib/db/sql";
+import { cargarEnvLocal } from "./cargar-env-local";
 
-const url = process.env.DATABASE_URL?.trim();
-if (!url) {
-  console.error("Falta DATABASE_URL. Sin esa variable no hay base.");
+const lineasOmitidas = cargarEnvLocal();
+if (lineasOmitidas > 0) process.exit(1);
+const preparada = prepararBaseDe(process.env);
+if (!preparada.ok) {
+  console.error(preparada.mensaje);
   process.exit(1);
 }
-const base = url;
+if (preparada.aviso) console.error(preparada.aviso);
+const base = preparada.url;
 
 async function main(): Promise<void> {
   const sql = neon(base);

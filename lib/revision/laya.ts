@@ -1,3 +1,4 @@
+import { claveDeLaya } from "@/lib/config/entorno";
 import type { Senales } from "./armar";
 import { nivelScore } from "./armar";
 
@@ -94,7 +95,7 @@ export async function preguntarLaya(
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
 ): Promise<Senales | null> {
-  const clave = process.env.LAYA_API_KEY?.trim();
+  const clave = claveDeLaya();
   const respuesta = await fetchImpl(urlLaya(base), {
     method: "POST",
     headers: {

@@ -52,12 +52,12 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "drizzle-kit",
-      "sha256": "1fca84a46a64ad4ed30fbda6dbd8bd8dad44d5cacb3a0732d5f7d9faf9dc2a4e",
+      "sha256": "272fd95ab4020af5e554c6bd928b05f8e7c0915704a496571e5129c0d3455647",
       "detalle": {
         "schema": "./lib/db/schema.ts",
         "out": "./drizzle",
         "dialect": "postgresql",
-        "dbCredentials": "El archivo referencia DATABASE_URL. Este inventario no lee el valor ni abre una conexión."
+        "dbCredentials": "confirmar con Esteban"
       }
     },
     {
@@ -66,7 +66,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "SQL ejecutado con @neondatabase/serverless. No usa drizzle-kit migrate.",
-      "sha256": "dd13d91d2f6ff7db19f41bfd8e00d819270ffedcacc00542c2748ac98673a18e",
+      "sha256": "2c6c17e658d8afc6527a1f84e04afce6e5cb6f92c04827e5f24f63047b615f3c",
       "detalle": {
         "archivosQueLee": [
           "drizzle/0000_inicio.sql"
@@ -1821,10 +1821,10 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "ce9ff7c3abdfd2e7f2def46761c71cdd141ae943",
+    "sha": "7c64a5437b3c294bb163e07f59bb9b5f43d2904f",
     "shaCortoPedido": "ce9ff7c",
-    "coincideConElShaPedido": true,
-    "asunto": "Esteban: Neon, Blob, rutas y el ingreso de Cavos (#14)",
+    "coincideConElShaPedido": false,
+    "asunto": "feat: configuración central de entorno y salvaguarda de la base (#22)",
     "archivosDeEsquemaIgualesAEseCommit": true,
     "archivosComparados": [
       {

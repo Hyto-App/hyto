@@ -1,3 +1,4 @@
+import { claveDeGroq, urlDeLaya } from "@/lib/config/entorno";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
 import { cerrar, desdeGuion, stubLaya, type ResultadoRevision } from "./armar";
@@ -30,8 +31,8 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
 
 export function contextoDesdeEntorno(fetchImpl?: typeof fetch): ContextoRevision {
   return {
-    claveGroq: process.env.GROQ_API_KEY?.trim() || null,
-    layaUrl: process.env.LAYA_URL?.trim() || null,
+    claveGroq: claveDeGroq(),
+    layaUrl: urlDeLaya(),
     fetchImpl,
   };
 }
