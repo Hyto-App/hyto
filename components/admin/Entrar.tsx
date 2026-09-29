@@ -28,17 +28,20 @@ export function Entrar() {
     const codigoGoogle = params.get("cavos_auth_code");
     if (!codigoGoogle) return;
     let vivo = true;
-    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(codigoGoogle);
+    const busqueda = window.location.search;
+    const redirect = redirectLimpio();
+    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(codigoGoogle, busqueda, redirect);
     googleEnCurso.set(codigoGoogle, pendiente);
     void pendiente.then((resultado) => {
-      if (!vivo) return;
       if (resultado.direccion) {
         const guardado = guardarDireccionAdmin(resultado.direccion);
+        if (!vivo) return;
         if (!guardado.aviso) setDireccion(resultado.direccion);
         setAviso(guardado.aviso);
         setFase("inicio");
         return;
       }
+      if (!vivo) return;
       setAviso(resultado.aviso);
     });
     return () => {
@@ -197,12 +200,19 @@ export function Entrar() {
   );
 }
 
-function iniciarGoogle(codigo: string): Promise<{ aviso: string | null; direccion: string | null }> {
+function iniciarGoogle(
+  codigo: string,
+  busqueda: string,
+  redirect: string,
+): Promise<{ aviso: string | null; direccion: string | null }> {
+  const consulta = new URLSearchParams(busqueda).get("cavos_auth_code")
+    ? busqueda
+    : `?cavos_auth_code=${encodeURIComponent(codigo)}`;
   return (async () => {
-    const auth = await crearAuth();
-    if (!auth) return { aviso: "El ingreso espera el identificador de Cavos.", direccion: null };
     try {
-      return await entrarConGoogle(auth, window.location.search, redirectLimpio());
+      const auth = await crearAuth();
+      if (!auth) return { aviso: "El ingreso espera el identificador de Cavos.", direccion: null };
+      return await entrarConGoogle(auth, consulta, redirect);
     } catch (error) {
       return { aviso: error instanceof Error ? error.message : "No se pudo entrar.", direccion: null };
     }
