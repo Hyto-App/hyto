@@ -22,9 +22,9 @@ import { leerMigraciones, normalizarDefault, normalizarTipo, type EsquemaEsperad
 test("la migración real declara las seis tablas y las relaciones que el código usa", () => {
   const esperado = leerMigraciones("drizzle");
   assert.deepEqual(esperado.avisos, []);
-  assert.deepEqual(esperado.archivos, ["0000_inicio.sql", "0001_contrato_escrow.sql"]);
+  assert.deepEqual(esperado.archivos, ["0000_inicio.sql", "0001_contrato_escrow.sql", "0002_organizador_proyecto.sql"]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]);
-  assert.equal(esperado.columnas.length, 42);
+  assert.equal(esperado.columnas.length, 43);
   const contrato = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "contrato_escrow");
   assert.equal(contrato?.tipo, "text");
   assert.equal(contrato?.nullable, true);
@@ -35,7 +35,12 @@ test("la migración real declara las seis tablas y las relaciones que el código
   );
   assert.deepEqual(
     esperado.fks.map((fk) => `${fk.tabla}.${fk.columnas[0]}→${fk.tablaRef}.${fk.columnasRef[0]}`),
-    ["tareas.proyecto_id→proyectos.id", "evidencias.tarea_id→tareas.id", "veredictos.evidencia_id→evidencias.id"],
+    [
+      "tareas.proyecto_id→proyectos.id",
+      "evidencias.tarea_id→tareas.id",
+      "veredictos.evidencia_id→evidencias.id",
+      "proyectos.organizador_id→usuarios.id",
+    ],
   );
   assert.equal(esperado.fks.every((fk) => fk.alBorrar === "a" && !fk.alBorrarExplicito), true);
   assert.deepEqual(esperado.uniques, [{ tabla: "usuarios", columnas: ["email"] }]);

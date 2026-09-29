@@ -139,7 +139,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
       pedido({ xdr: cruzado, accion: "liberar", tareaId: "stand" }),
       almacen,
     );
-    assert.equal(noPago.status, 200);
+    assert.equal(noPago.status, 403);
     assert.notEqual((await almacen.leerTarea("stand"))?.estado, "pagado");
 
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });

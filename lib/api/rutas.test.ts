@@ -205,8 +205,10 @@ test("un proyecto nuevo entra por la ruta", async () => {
       }),
     }),
     almacen,
+    "voluntario-2",
   );
   assert.equal(respuesta.status, 201);
+  assert.equal((await almacen.ultimoProyecto())?.organizadorId, "voluntario-2");
   const tareas = (await (await listarTareasHttp(almacen)).json()) as { tareas: { titulo: string }[] };
   assert.equal(tareas.tareas.some((tarea) => tarea.titulo === "Cajas"), true);
 });

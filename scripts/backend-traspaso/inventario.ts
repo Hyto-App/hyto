@@ -668,6 +668,7 @@ export function armarInventario(raiz: string): Inventario {
       if (sentencia.tipo === "tabla") tablasSql.push({ archivo: relativo, tabla: sentencia.tabla });
       else if (sentencia.tipo === "indice") indicesSql.push({ archivo: relativo, indice: sentencia.indice });
       else if (sentencia.tipo === "alter-columna") alteraciones.push(sentencia.alteracion);
+      else if (sentencia.tipo === "datos") continue;
       else sentenciasNoParseadas.push({ archivo: relativo, sql: sentencia.sql, nota: sentencia.nota });
     }
   }

@@ -1,5 +1,6 @@
 import { conAlmacen } from "@/lib/api/base";
 import { json } from "@/lib/api/json";
+import { AVISO_REVISION, estadoOrganizadorTarea, organizaAlguno } from "@/lib/api/organizador";
 import { leerRevisionHttp } from "@/lib/api/revision";
 import { exigirSesion } from "@/lib/sesion/exigir";
 
@@ -18,7 +19,16 @@ async function atender(
 ): Promise<Response> {
   const sesion = await exigirSesion(request);
   if (sesion instanceof Response) return sesion;
-  if (sesion.rol !== "organizador") return json({ aviso: "Solo el organizador revisa." }, 403);
   const { id } = await contexto.params;
-  return conAlmacen((almacen, fotos) => leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet));
+  return conAlmacen(async (almacen, fotos) => {
+    const estado = await estadoOrganizadorTarea(almacen, sesion.usuarioId, id);
+    if (estado === "ausente") {
+      if (await organizaAlguno(almacen, sesion.usuarioId)) {
+        return json({ aviso: "No encontramos esa tarea." }, 404);
+      }
+      return json({ aviso: AVISO_REVISION }, 403);
+    }
+    if (estado === "no") return json({ aviso: AVISO_REVISION }, 403);
+    return leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet);
+  });
 }

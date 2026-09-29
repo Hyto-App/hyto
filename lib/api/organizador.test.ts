@@ -1,0 +1,178 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
+import { POST as crearProyecto } from "../../app/api/proyectos/route";
+import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
+import { POST as prepararFirma } from "../../app/api/firma/route";
+import type { Almacen } from "../db/almacen";
+import { crearMemoria } from "../db/memoria";
+import { asegurarSemilla } from "../db/semilla";
+import { reiniciarLimite } from "../escrow/limite";
+import { crearProyectoHttp } from "./proyectos";
+
+const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+type Gancho = () => Promise<Almacen | null>;
+
+function gancho(): Gancho | undefined {
+  return (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA;
+}
+
+function usar(almacen: Almacen): void {
+  (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = async () => almacen;
+}
+
+function cookie(token: string): string {
+  return `hyto_sesion=${token}`;
+}
+
+test("quien crea el proyecto es su organizador aunque su rol sea voluntario", async () => {
+  const almacen = crearMemoria();
+  const respuesta = await crearProyectoHttp(
+    new Request("http://local/api/proyectos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        nombre: "Feria",
+        tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "8" }],
+      }),
+    }),
+    almacen,
+    "voluntario-1",
+  );
+  assert.equal(respuesta.status, 201);
+  const proyecto = await almacen.ultimoProyecto();
+  assert.equal(proyecto?.organizadorId, "voluntario-1");
+  assert.equal(proyecto?.nombre, "Feria");
+  const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto?.id);
+  assert.equal(tareas.length, 1);
+  assert.equal((await almacen.leerProyecto("zeek"))?.organizadorId, "organizador");
+});
+
+test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarTarea("stand", { contratoEscrow: CONTRATO });
+  const expiraEn = new Date(Date.now() + 60_000).toISOString();
+  await almacen.crearSesion({
+    token: "dueño",
+    email: "voluntario1@demo.hyto",
+    usuarioId: "voluntario-1",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "ajeno",
+    email: "voluntario2@demo.hyto",
+    usuarioId: "voluntario-2",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "global",
+    email: "organizador@demo.hyto",
+    usuarioId: "organizador",
+    rol: "organizador",
+    expiraEn,
+    wallet: "",
+  });
+  const creado = await crearProyectoHttp(
+    new Request("http://local/api/proyectos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nombre: "Feria", tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "8" }] }),
+    }),
+    almacen,
+    "voluntario-1",
+  );
+  const tareaId = ((await creado.json()) as { tareas: { id: string }[] }).tareas[0]?.id ?? "";
+  const anterior = gancho();
+  const clave = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  usar(almacen);
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response(JSON.stringify({ contractId: CONTRATO, balance: 0 }), { status: 200 });
+  };
+  try {
+    const contexto = { params: Promise.resolve({ id: tareaId }) };
+    const revisionAjena = await leerRevision(new Request("http://local/api/revision/" + tareaId, { headers: { cookie: cookie("ajeno") } }), contexto);
+    assert.equal(revisionAjena.status, 403);
+    const forzada = await forzarRevision(
+      new Request("http://local/api/revision/" + tareaId, { method: "POST", headers: { cookie: cookie("ajeno") } }),
+      contexto,
+    );
+    assert.equal(forzada.status, 403);
+    const propia = await leerRevision(new Request("http://local/api/revision/" + tareaId, { headers: { cookie: cookie("dueño") } }), contexto);
+    assert.equal(propia.status, 200);
+
+    const stand = { params: Promise.resolve({ id: "stand" }) };
+    const zeekAjeno = await leerRevision(new Request("http://local/api/revision/stand", { headers: { cookie: cookie("dueño") } }), stand);
+    assert.equal(zeekAjeno.status, 403);
+    const zeekGlobal = await leerRevision(new Request("http://local/api/revision/stand", { headers: { cookie: cookie("global") } }), stand);
+    assert.equal(zeekGlobal.status, 200);
+    const fantasma = await leerRevision(
+      new Request("http://local/api/revision/hyto-sin-tarea", { headers: { cookie: cookie("global") } }),
+      { params: Promise.resolve({ id: "hyto-sin-tarea" }) },
+    );
+    assert.equal(fantasma.status, 404);
+    const fantasmaAjeno = await leerRevision(
+      new Request("http://local/api/revision/hyto-sin-tarea", { headers: { cookie: cookie("ajeno") } }),
+      { params: Promise.resolve({ id: "hyto-sin-tarea" }) },
+    );
+    assert.equal(fantasmaAjeno.status, 403);
+
+    const escrowAjeno = await leerEscrowHttp(new Request(`http://local/api/escrow/${CONTRATO}`, { headers: { cookie: cookie("ajeno") } }), {
+      params: Promise.resolve({ contrato: CONTRATO }),
+    });
+    assert.equal(escrowAjeno.status, 403);
+    assert.equal(llamadas, 0);
+    const escrowPropio = await leerEscrowHttp(new Request(`http://local/api/escrow/${CONTRATO}`, { headers: { cookie: cookie("global") } }), {
+      params: Promise.resolve({ contrato: CONTRATO }),
+    });
+    assert.equal(escrowPropio.status, 200);
+    assert.equal(llamadas, 1);
+
+    const firmaAjena = await prepararFirma(
+      new Request("http://local/api/firma", {
+        method: "POST",
+        headers: { cookie: cookie("ajeno"), "content-type": "application/json" },
+        body: JSON.stringify({ accion: "desplegar", tareaId }),
+      }),
+    );
+    assert.equal(firmaAjena.status, 403);
+    const firmaFondeo = await prepararFirma(
+      new Request("http://local/api/firma", {
+        method: "POST",
+        headers: { cookie: cookie("dueño"), "content-type": "application/json" },
+        body: JSON.stringify({
+          accion: "fondear",
+          contrato: CONTRATO,
+          firmante: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          monto: 1,
+        }),
+      }),
+    );
+    assert.equal(firmaFondeo.status, 403);
+    const alta = await crearProyecto(
+      new Request("http://local/api/proyectos", {
+        method: "POST",
+        headers: { cookie: cookie("ajeno"), "content-type": "application/json" },
+        body: JSON.stringify({ nombre: "Otra", tareas: [{ titulo: "Mesas", tipo: "trabajo", monto: "4" }] }),
+      }),
+    );
+    assert.equal(alta.status, 201);
+    assert.equal((await almacen.listarProyectos()).find((proyecto) => proyecto.nombre === "Otra")?.organizadorId, "voluntario-2");
+  } finally {
+    globalThis.fetch = original;
+    (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = anterior;
+    if (clave === undefined) delete process.env.TRUSTLESS_API_KEY;
+    else process.env.TRUSTLESS_API_KEY = clave;
+    reiniciarLimite();
+  }
+});

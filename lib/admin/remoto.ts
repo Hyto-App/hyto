@@ -124,7 +124,7 @@ export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Pro
   if (detalles.some((item) => item === "ajeno")) return null;
   const porId = new Map(filas.map((fila) => [fila.id, fila]));
   const tareas = detalles.flatMap((item) => {
-    if (!item || item === "ajeno" || item === "fallo") return [];
+    if (!item || item === "ajeno" || item === "omitida" || item === "fallo") return [];
     return [cruzarLista(item, porId.get(item.tarea.id) ?? null).tarea];
   });
   if (tareas.length === 0) return null;
@@ -139,10 +139,11 @@ function cruzarLista(detalle: DetalleRevision, fila: FilaTarea | null): DetalleR
   return { ...detalle, contratoEscrow, tarea: { ...detalle.tarea, hashPago } };
 }
 
-async function leerUna(fetchImpl: typeof fetch, id: string): Promise<DetalleRevision | "ajeno" | "fallo"> {
+async function leerUna(fetchImpl: typeof fetch, id: string): Promise<DetalleRevision | "ajeno" | "omitida" | "fallo"> {
   try {
     const revision = await pedir(fetchImpl, `/api/revision/${encodeURIComponent(id)}`);
-    if (revision.status === 401 || revision.status === 403) return "ajeno";
+    if (revision.status === 401) return "ajeno";
+    if (revision.status === 403) return "omitida";
     if (!revision.ok) return "fallo";
     return detalleDe(await revision.json()) ?? "fallo";
   } catch {

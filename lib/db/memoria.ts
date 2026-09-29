@@ -33,6 +33,9 @@ export function crearMemoria(): Almacen {
     async leerProyecto(id) {
       return proyectos.get(id) ?? null;
     },
+    async listarProyectos() {
+      return [...proyectos.values()];
+    },
     async ultimoProyecto() {
       return [...proyectos.values()].sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))[0] ?? null;
     },

@@ -1,12 +1,12 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import type { TareaFila } from "@/lib/db/tipos";
+import type { Proyecto, TareaFila } from "@/lib/db/tipos";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
 
-export async function crearProyectoHttp(request: Request, almacen: Almacen): Promise<Response> {
+export async function crearProyectoHttp(request: Request, almacen: Almacen, organizadorId: string): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -17,23 +17,29 @@ export async function crearProyectoHttp(request: Request, almacen: Almacen): Pro
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
   try {
     await asegurarSemilla(almacen);
-    await almacen.crearProyecto(proyecto.proyecto, proyecto.tareas);
-    return json({ proyecto: { id: proyecto.proyecto.id, nombre: proyecto.proyecto.nombre }, tareas: proyecto.tareas.map(tareaPublica) }, 201);
+    const fila = { ...proyecto.proyecto, organizadorId };
+    await almacen.crearProyecto(fila, proyecto.tareas);
+    return json({ proyecto: { id: fila.id, nombre: fila.nombre }, tareas: proyecto.tareas.map(tareaPublica) }, 201);
   } catch {
     return baseNoLista();
   }
 }
 
-export async function leerProyectoHttp(almacen: Almacen): Promise<Response> {
+export async function leerProyectoHttp(almacen: Almacen, usuarioId: string | null = null): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
-    const proyecto = await almacen.ultimoProyecto();
+    const proyecto = usuarioId ? await ultimoDe(almacen, usuarioId) : await almacen.ultimoProyecto();
     if (!proyecto) return json({ aviso: "Todavía no hay un proyecto." }, 404);
     const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto.id);
     return json({ proyecto: { id: proyecto.id, nombre: proyecto.nombre }, tareas: tareas.map(tareaPublica) });
   } catch {
     return baseNoLista();
   }
+}
+
+async function ultimoDe(almacen: Almacen, usuarioId: string): Promise<Proyecto | null> {
+  const propios = (await almacen.listarProyectos()).filter((proyecto) => proyecto.organizadorId === usuarioId);
+  return propios.sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))[0] ?? null;
 }
 
 function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; creadoEn: string }; tareas: TareaFila[] } | { aviso: string } {

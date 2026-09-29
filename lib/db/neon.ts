@@ -94,6 +94,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       const filas = await db.select().from(proyectos).where(eq(proyectos.id, id)).limit(1);
       return filas[0] ?? null;
     },
+    async listarProyectos() {
+      return db.select().from(proyectos);
+    },
     async ultimoProyecto() {
       const filas = await db.select().from(proyectos).orderBy(desc(proyectos.creadoEn)).limit(1);
       return filas[0] ?? null;

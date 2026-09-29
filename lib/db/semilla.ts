@@ -9,6 +9,7 @@ export const PROYECTO_ZEEK: Proyecto = {
   id: "zeek",
   nombre: "ZEEK",
   creadoEn: "2026-09-27T12:00:00.000Z",
+  organizadorId: "organizador",
 };
 
 export const MARCA_EJEMPLO = "ejemplo";

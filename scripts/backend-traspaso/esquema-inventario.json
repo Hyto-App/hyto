@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "b3f7c2cb5eef340e0cf0b6508222cc0f244dfe8dadffaf3160801f9e0b3c64f2",
+      "sha256": "de0ebc9c6e854591cf9ab65f00fa336e7759b78a571e22edd576615b05a03ff3",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -70,7 +70,8 @@
       "detalle": {
         "archivosQueLee": [
           "drizzle/0000_inicio.sql",
-          "drizzle/0001_contrato_escrow.sql"
+          "drizzle/0001_contrato_escrow.sql",
+          "drizzle/0002_organizador_proyecto.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -105,6 +106,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "1f4a87d435c9ff63fc6d006fbff086c959ffd18e30c25402b074533a45b2885b",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0002_organizador_proyecto.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "6ea33295288b20fc3f7bdaf8f872f766a275a911b04d85e62fb6a96fd917d960",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -386,6 +399,58 @@
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
+        },
+        {
+          "nombre": "organizador_id",
+          "nombreEnDrizzle": "organizadorId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "organizador_id"
+            ],
+            "tabla": "usuarios",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": null,
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "no action",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": false,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "proyectos_organizador_id_usuarios_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Proyecto",
+            "campo": "organizadorId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
         }
       ],
       "llavePrimaria": {
@@ -397,7 +462,28 @@
         "createIndexEnLaMigracion": false
       },
       "unicos": [],
-      "clavesForaneas": [],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "organizador_id"
+          ],
+          "tabla": "usuarios",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": null,
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "no action",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": false,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "proyectos_organizador_id_usuarios_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
       "indices": [],
       "checks": []
     },
@@ -1792,6 +1878,26 @@
   "relaciones": [
     {
       "desde": {
+        "tabla": "proyectos",
+        "columnas": [
+          "organizador_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "usuarios",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": null,
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
         "tabla": "tareas",
         "columnas": [
           "proyecto_id"
@@ -1900,15 +2006,15 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "fca79a2fda0a0eff45514e567b2ade240b17c3ca",
+    "sha": "77a04319df47fefc1d9d5fd378ff78166fa76255",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "fix: verificar el JWT de Cavos y exigir sesión al escribir (#23)",
+    "asunto": "feat: registrar como voluntario cualquier correo con login de Cavos (#41)",
     "archivosDeEsquemaIgualesAEseCommit": false,
     "archivosComparados": [
       {
         "ruta": "drizzle/0000_inicio.sql",
-        "igual": false
+        "igual": true
       },
       {
         "ruta": "lib/db/schema.ts",
