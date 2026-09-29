@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "../integrante/identidades";
-import { BASE_V1, BASE_V2, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { BASE_V1, BASE_V2, claveDeV1, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
 import { excedido, reiniciarLimite } from "./limite";
-import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot } from "./modulo";
+import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, textoDeError } from "./modulo";
 import type { CuentasDespliegue } from "./tipos";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -14,12 +14,17 @@ const PLATAFORMA = "GDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
 const RESOLUTOR = "GEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
 const XDR = "AAAA";
 
-function fetchDe(respuesta: unknown, estado = 200): { fetch: typeof fetch; llamadas: { url: string; body: unknown; clave: string }[] } {
-  const llamadas: { url: string; body: unknown; clave: string }[] = [];
+function fetchDe(respuesta: unknown, estado = 200): {
+  fetch: typeof fetch;
+  llamadas: { url: string; method: string; body: unknown; clave: string }[];
+} {
+  const llamadas: { url: string; method: string; body: unknown; clave: string }[] = [];
   const fetchImpl: typeof fetch = async (input, init) => {
+    const crudo = init?.body;
     llamadas.push({
       url: String(input),
-      body: JSON.parse(String(init?.body ?? "null")) as unknown,
+      method: init?.method ?? "GET",
+      body: typeof crudo === "string" ? (JSON.parse(crudo) as unknown) : null,
       clave: new Headers(init?.headers).get("x-api-key") ?? "",
     });
     return new Response(JSON.stringify(respuesta), {
@@ -63,18 +68,94 @@ test("fondear en v2 pide el XDR y no lo firma", async () => {
   assert.equal(red.llamadas[0]?.clave, "clave-de-prueba");
 });
 
-test("aprobar en v2 es una sola firma de approve-and-release", async () => {
+test("aprobar en v2 no libera el hito", async () => {
   const red = fetchDe({ unsignedXdr: XDR, txHash: "abc" });
   await preparar(
     { accion: "aprobar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 },
     { fetch: red.fetch, clave: "clave-de-prueba" },
   );
-  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/approve-and-release-milestones`);
+  assert.equal(red.llamadas[0]?.method, "POST");
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/approve-milestones`);
+  assert.deepEqual(red.llamadas[0]?.body, {
+    contractId: CONTRATO,
+    approver: ORGANIZADOR,
+    milestoneIndexes: [0],
+  });
+  assert.equal(red.llamadas[0]?.clave, "clave-de-prueba");
+});
+
+test("liberar en v2 pide release-funds", async () => {
+  const red = fetchDe({ unsignedXdr: XDR, txHash: "abc" });
+  await preparar(
+    { accion: "liberar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 },
+    { fetch: red.fetch, clave: "clave-de-prueba" },
+  );
+  assert.equal(red.llamadas[0]?.method, "POST");
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/release-funds`);
+  assert.deepEqual(red.llamadas[0]?.body, {
+    contractId: CONTRATO,
+    releaseSigner: ORGANIZADOR,
+    milestoneIndexes: [0],
+  });
+  assert.equal(red.llamadas[0]?.clave, "clave-de-prueba");
+});
+
+test("disputar en v2 manda el motivo", async () => {
+  const red = fetchDe({ unsignedXdr: XDR, txHash: "abc" });
+  await preparar(
+    { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "La foto no coincide." },
+    { fetch: red.fetch, clave: "clave-de-prueba" },
+  );
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/dispute-milestones`);
   assert.deepEqual(red.llamadas[0]?.body, {
     contractId: CONTRATO,
     signer: ORGANIZADOR,
     milestoneIndexes: [0],
+    reason: "La foto no coincide.",
   });
+});
+
+test("resolver en v2 reparte el hito en disputa", async () => {
+  const red = fetchDe({ unsignedXdr: XDR, txHash: "abc" });
+  await preparar(
+    {
+      accion: "resolver",
+      contrato: CONTRATO,
+      firmante: RESOLUTOR,
+      indice: 0,
+      distribuciones: [
+        { direccion: RECEPTOR, monto: 0.6 },
+        { direccion: ORGANIZADOR, monto: 0.4 },
+      ],
+    },
+    { fetch: red.fetch, clave: "clave-de-prueba" },
+  );
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/resolve-dispute`);
+  assert.deepEqual(red.llamadas[0]?.body, {
+    contractId: CONTRATO,
+    disputeResolver: RESOLUTOR,
+    milestoneIndexes: [0],
+    distributions: [
+      { address: RECEPTOR, amount: 0.6 },
+      { address: ORGANIZADOR, amount: 0.4 },
+    ],
+  });
+});
+
+test("leer el escrow es un GET del contrato en v2", async () => {
+  const red = fetchDe({
+    type: "multi-release",
+    contractId: CONTRATO,
+    balance: 1,
+    milestones: [{ status: "completed", released: false }],
+  });
+  const escrow = await leerEscrow(CONTRATO, { fetch: red.fetch, clave: "clave-de-prueba" });
+  assert.equal(red.llamadas[0]?.method, "GET");
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/${CONTRATO}`);
+  assert.equal(red.llamadas[0]?.body, null);
+  assert.equal(red.llamadas[0]?.clave, "clave-de-prueba");
+  assert.equal(escrow.contractId, CONTRATO);
+  assert.equal(escrow.balance, 1);
 });
 
 test("marcar adjunta la referencia de la evidencia", async () => {
@@ -157,6 +238,25 @@ test("el indice 0 sigue siendo el primer hito", () => {
   assert.equal(entrada.indice, 0);
 });
 
+test("el estado de más de 50 caracteres se rechaza", () => {
+  const pedido = pedidoAccion(
+    { accion: "marcar", contrato: CONTRATO, firmante: RECEPTOR, indice: 0, estado: "e".repeat(51) },
+    "v2",
+  );
+  assert.equal(pedido, "El estado del hito no puede pasar de 50 caracteres.");
+});
+
+test("el estado de 50 caracteres sigue siendo válido", () => {
+  const pedido = pedidoAccion(
+    { accion: "marcar", contrato: CONTRATO, firmante: RECEPTOR, indice: 0, estado: "e".repeat(50) },
+    "v2",
+  );
+  assert.equal(typeof pedido === "string", false);
+  if (typeof pedido === "string") return;
+  const updates = pedido.cuerpo.updates as { newStatus: string }[];
+  assert.equal(updates[0]?.newStatus.length, 50);
+});
+
 test("la evidencia de más de 500 caracteres se rechaza", () => {
   const pedido = pedidoAccion(
     {
@@ -209,6 +309,118 @@ test("el despliegue v2 separa al admin y pone al organizador en las dos listas",
   assert.deepEqual(roles.releaseSigners, [ORGANIZADOR]);
   assert.equal(roles.admin, ADMIN);
   assert.equal((pedido.cuerpo.trustline as { contractId: string }).contractId, "CUSDCCONTRACT");
+});
+
+test("sin motivo no se disputa", () => {
+  const entrada = leerEntrada({ accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 });
+  assert.equal("aviso" in entrada, true);
+  const largo = pedidoAccion(
+    { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "m".repeat(501) },
+    "v2",
+  );
+  assert.equal(largo, "El motivo no puede pasar de 500 caracteres.");
+  const justo = pedidoAccion(
+    { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "m".repeat(500) },
+    "v2",
+  );
+  assert.equal(typeof justo === "string", false);
+});
+
+test("resolver exige un reparto con cuentas y montos", () => {
+  const vacio = leerEntrada({ accion: "resolver", contrato: CONTRATO, firmante: RESOLUTOR, indice: 0 });
+  assert.equal("aviso" in vacio, true);
+  const cero = pedidoAccion(
+    {
+      accion: "resolver",
+      contrato: CONTRATO,
+      firmante: RESOLUTOR,
+      indice: 0,
+      distribuciones: [{ direccion: RECEPTOR, monto: 0 }],
+    },
+    "v2",
+  );
+  assert.equal(cero, "Cada monto del reparto tiene que ser mayor que cero.");
+  const demasiados = pedidoAccion(
+    {
+      accion: "resolver",
+      contrato: CONTRATO,
+      firmante: RESOLUTOR,
+      indice: 0,
+      distribuciones: Array.from({ length: 51 }, () => ({ direccion: RECEPTOR, monto: 1 })),
+    },
+    "v2",
+  );
+  assert.equal(demasiados, "El reparto no puede pasar de 50 destinos.");
+});
+
+test("disputar en v1 no arma un pedido", () => {
+  const pedido = pedidoAccion(
+    { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "falta" },
+    "v1",
+  );
+  assert.equal(typeof pedido, "string");
+});
+
+test("una clave inválida conserva el code de Trustless", async () => {
+  const formato = fetchDe(
+    { code: "AUTH_INVALID_FORMAT", detail: "Invalid API key format.", title: "Unauthorized", status: 401, type: "about:blank" },
+    401,
+  );
+  await assert.rejects(
+    () => preparar({ accion: "liberar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 }, { fetch: formato.fetch, clave: "sin-punto" }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorFirma);
+      assert.equal(error.codigo, "AUTH_INVALID_FORMAT");
+      assert.equal(textoDeError(error), "La clave de Trustless Work tiene que ser id.secreto (AUTH_INVALID_FORMAT).");
+      return true;
+    },
+  );
+  const credencial = fetchDe(
+    { code: "AUTH_INVALID_CREDENTIAL", detail: "Invalid API key.", title: "Unauthorized", status: 401, type: "about:blank" },
+    401,
+  );
+  await assert.rejects(
+    () => leerEscrow(CONTRATO, { fetch: credencial.fetch, clave: "id.ajena" }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorFirma);
+      assert.equal(error.codigo, "AUTH_INVALID_CREDENTIAL");
+      assert.match(textoDeError(error), /AUTH_INVALID_CREDENTIAL/);
+      return true;
+    },
+  );
+});
+
+test("v1 usa otra clave y no la de v2", () => {
+  const falta = claveDeV1({ TRUSTLESS_API_KEY: "id.v2" });
+  assert.equal("aviso" in falta, true);
+  const igual = claveDeV1({ TRUSTLESS_API_KEY: "id.misma", TRUSTLESS_API_KEY_V1: "id.misma" });
+  assert.equal("clave" in igual, false);
+  const distinta = claveDeV1({ TRUSTLESS_API_KEY: "id.v2", TRUSTLESS_API_KEY_V1: "id.v1" });
+  assert.deepEqual(distinta, { clave: "id.v1" });
+});
+
+test("la clave pública no reemplaza a la del servidor", async () => {
+  let llamadas = 0;
+  const fetchImpl: typeof fetch = async () => {
+    llamadas += 1;
+    return new Response("{}", { status: 200 });
+  };
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  const publica = process.env.NEXT_PUBLIC_TRUSTLESS_API_KEY;
+  delete process.env.TRUSTLESS_API_KEY;
+  process.env.NEXT_PUBLIC_TRUSTLESS_API_KEY = "id.secreto";
+  try {
+    await assert.rejects(
+      () => leerEscrow(CONTRATO, { fetch: fetchImpl }),
+      (error: unknown) => error instanceof ErrorFirma && error.estado === 503,
+    );
+    assert.equal(llamadas, 0);
+  } finally {
+    if (anterior === undefined) delete process.env.TRUSTLESS_API_KEY;
+    else process.env.TRUSTLESS_API_KEY = anterior;
+    if (publica === undefined) delete process.env.NEXT_PUBLIC_TRUSTLESS_API_KEY;
+    else process.env.NEXT_PUBLIC_TRUSTLESS_API_KEY = publica;
+  }
 });
 
 test("v1 usa la otra base y parte aprobar de liberar", () => {

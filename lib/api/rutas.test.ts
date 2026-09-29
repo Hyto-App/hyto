@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
 import { crearFotosMemoria } from "../blob/fotos";
@@ -152,4 +153,40 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   assert.equal(sinSesion.status, 401);
   const envio = await enviarFirma(new Request("http://local/api/firma/enviar", { method: "POST", body: "{}" }));
   assert.equal(envio.status, 401);
+});
+
+test("liberar, aprobar, disputar, resolver y leer el escrow exigen al organizador", async () => {
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    throw new Error("no hay que llamar a Trustless");
+  };
+  const contrato = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  const base = {
+    contrato,
+    firmante: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    indice: 0,
+    motivo: "La foto no coincide.",
+    distribuciones: [{ direccion: "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", monto: 1 }],
+  };
+  try {
+    for (const accion of ["liberar", "aprobar", "disputar", "resolver"] as const) {
+      const respuesta = await prepararFirma(
+        new Request("http://local/api/firma", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...base, accion }),
+        }),
+      );
+      assert.equal(respuesta.status, 401);
+    }
+    const lectura = await leerEscrowHttp(new Request(`http://local/api/escrow/${contrato}`), {
+      params: Promise.resolve({ contrato }),
+    });
+    assert.equal(lectura.status, 401);
+    assert.equal(llamadas, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
 });

@@ -16,9 +16,6 @@ export async function POST(request: Request): Promise<Response> {
   }
   const entrada = leerEntrada(body);
   if ("aviso" in entrada) return Response.json({ aviso: entrada.aviso }, { status: 400 });
-  if (entrada.accion === "liberar") {
-    return Response.json({ aviso: "En v2 aprobar ya libera el hito." }, { status: 400 });
-  }
   try {
     const listo = await preparar(entrada);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
