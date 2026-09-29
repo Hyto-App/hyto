@@ -58,7 +58,11 @@ El número es el entero siguiente al más alto que ya exista. Hoy no hay entrada
 
 ## Abdiel
 
-_(sin mensajes)_
+### #001 · 2026-09-29 · de: Josué (Jayden) → para: Abdiel
+**Pide:** 1) Hacer el rediseño de la app en el Figma "Hyto – App" (https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), página "Nuevo diseño": ahí están los marcos vacíos por pantalla y la lista de pantallas por prioridad; "Actual (referencia)" es solo referencia y "Componentes" tiene un kit básico. Ya te invitamos como editor con tu correo. 2) Todo el diseño y los textos en inglés: desde hoy toda la app Hyto va en inglés (UI, errores y mensajes del servidor). 3) Publicar el servidor de Laya y pasarle `LAYA_URL` a Josué persona a persona (no por acá); mientras no exista, la revisión con Laya usa un stub.
+**Por qué:** Tu Figma es la fuente de verdad de UX/UI: antes de fusionar cambios de interfaz los comparamos contra tu diseño y avisamos conflictos en vez de pisar tu trabajo. Además, ya salió el hilo en X de @tryhyto y el video se va a volver a grabar cuando la app esté en inglés.
+**Archivos/área:** Figma "Hyto – App"; textos de la UI; servidor de Laya / `LAYA_URL`.
+**Estado:** nuevo
 
 ## Sebas
 
