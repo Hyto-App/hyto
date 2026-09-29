@@ -79,10 +79,10 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8, 28 de septiembre a las 3:48 p.m., hora de Costa Rica). Fondear y Aprobar del admin todavía no los llaman. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8, 28 de septiembre a las 3:48 p.m., hora de Costa Rica). Preparar y enviar el pago exigen la sesión del organizador (PR #14). Fondear y Aprobar del admin todavía no los llaman. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
-| Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
-| Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
+| Datos | Neon Postgres con Drizzle. `DATABASE_URL`. El esquema, la migración y la semilla de ZEEK están en el repo (PR #14 de Esteban, el 28 de septiembre a las 11:40 p.m., hora de Costa Rica). Las tablas ya se corrieron en la base. Falta la variable en el sitio. |
+| Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. Falta crear ese almacén y poner la clave en el sitio. |
 | IA | Qwen 3.8 27B en Groq describe la foto. Laya corre en la PC Windows de Abdiel (`LAYA_URL`) y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
@@ -105,15 +105,15 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su servidor, y una clave con Esteban | El demo puede llamar a `LAYA_URL` |
+| Esteban | Backend | Neon, Blob, rutas, revisión e ingreso ya están (PR #14). Falta cargar las variables en el sitio | La app en Vercel guarda un proyecto, una foto y un veredicto |
+| Sebas | Escrow y wallet | El módulo, el script y el `appId` de Cavos ya están (PR #8). Sigue un pago en USDC | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas del admin, `.env.example` (PR #20, 29 de septiembre a las 9:16 a.m.) y pruebas contra Postgres local (PR #27, a las 9:44 a.m.). Sigue conectar las pantallas y Fondear y Aprobar, y el regreso de Google (PR #18, abierto) | El admin crea, revisa, aprueba en Stellar y abre el informe |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. El `appId` ya está. Faltan las cuatro cuentas; el ingreso pide el código del correo | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` y `LAYA_URL` todavía no están. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio. Esteban dejó Neon, Blob, las rutas y el ingreso (PR #14, squash `ce9ff7c`, el 28 a las 11:40 p.m.). El 29 de septiembre, Josué precisó `.env.example` (PR #20, a las 9:16 a.m.) y dejó pruebas contra Postgres local (PR #27, a las 9:44 a.m.). Las pantallas del admin siguen con el ejemplo. Fondear y Aprobar no firman. El regreso de Google sigue abierto (PR #18).
 
 ## 8. Guion de demo
 

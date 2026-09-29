@@ -4,13 +4,15 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-## Qué hay en el repo al 28 de septiembre de 2026
+## Qué hay en el repo al 29 de septiembre de 2026, 9:44 a.m., hora de Costa Rica
 
 Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Tipografía Poppins (400, 500 y 600). `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C` (PR #7 de Abdiel Cole, squash `cff4512`). Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
-El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
+El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. Esas dos rutas exigen la sesión del organizador. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
 
-En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
+En el código, de Esteban (PR #14, squash `ce9ff7c`, el 28 de septiembre a las 11:40 p.m.): Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`, `GET` y `POST /api/proyectos`, `GET /api/informe`, `GET` y `POST /api/revision/:id`, `POST /api/sesion` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel, y hay que crear el almacén privado. Las tablas y la semilla de ZEEK ya se corrieron en la base.
+
+El 29 de septiembre, Josué Valles precisó `.env.example` (PR #20, squash `36fd91a`, a las 9:16 a.m.): sin valores, dice el alcance, si cada variable es obligatoria y qué pasa si falta. `NODE_ENV` no se declara; lo pone Next.js. A las 9:44 a.m. entró el PR #27 (squash `d26a443`): `npm run test:integracion` contra Postgres local. Si no hay base, o si el host no es local, no conecta. `pg`, `happy-dom` y `@types/pg` quedaron en devDependencies. `almacenNeon` y `fotosBlob` aceptan un gancho de esas pruebas; en el servidor siguen Neon y Blob. El regreso de Google queda como fallo esperado (PR #18, abierto).
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
