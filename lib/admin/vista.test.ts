@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enlaceCredencial, enlacePago, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
+
+test("el origen de la revisión se lee como IA, simulado o error", () => {
+  assert.equal(etiquetaOrigen("scout"), "IA");
+  assert.equal(etiquetaOrigen("stub"), "simulado");
+  assert.equal(etiquetaOrigen("guion"), "simulado");
+  assert.equal(etiquetaOrigen("error"), "error");
+  assert.equal(etiquetaOrigen(null), null);
+});
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {
   const vista = vistaAdmin(VACIA);

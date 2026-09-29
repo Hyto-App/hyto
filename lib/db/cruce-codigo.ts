@@ -156,7 +156,7 @@ export function lineasCruce(cruce: CruceCodigo): string[] {
     const lista = cruce.sinLector.map((columna) => `${columna.tabla}.${columna.columna}`).join(", ");
     lineas.push(`Columnas que se guardan y ninguna ruta lee: ${lista}.`);
     if (cruce.neonNormalizaNoul) {
-      lineas.push("lib/db/neon.ts normaliza noul y origen al armar la fila. Después de eso nadie usa ese valor.");
+      lineas.push("lib/db/neon.ts normaliza noul y origen al armar la fila. noul sigue sin lector; origen sí se lee.");
     }
   }
   if (cruce.blobSinTabla) {
@@ -215,7 +215,7 @@ export function pendientesConEsteban(esperado: EsquemaEsperado, cruce: CruceCodi
   }
   const sinLectorVeredicto = cruce.sinLector.filter((columna) => columna.tabla === "veredictos").map((columna) => columna.columna);
   if (sinLectorVeredicto.length > 0) {
-    const nota = cruce.neonNormalizaNoul ? " neon.ts normaliza noul y origen al leer, y ningún llamador usa el resultado." : "";
+    const nota = cruce.neonNormalizaNoul ? " neon.ts normaliza noul y origen al leer. noul sigue sin lector." : "";
     pendientes.push({
       id: "veredictos-sin-lector",
       texto: `Estas columnas de veredictos se guardan y ninguna ruta lee el valor: ${sinLectorVeredicto.join(", ")}. La respuesta usa veredicto y frase.${nota} Confirmar con Esteban si quedan para auditoría.`,

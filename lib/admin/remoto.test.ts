@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista } from "./remoto";
+import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista, reintentarRevision } from "./remoto";
 import type { TareaAdmin } from "./tipos";
 
 const HASH = "ab".repeat(32);
@@ -18,6 +18,8 @@ function tarea(parcial: Partial<TareaAdmin> = {}): TareaAdmin {
     estado: "en revisión",
     veredicto: "cumplió",
     frase: "Listo",
+    origen: null,
+    codigo: null,
     montoRevisado: null,
     fecha: null,
     hashPago: null,
@@ -165,4 +167,24 @@ test("la vista real arma Ver pago con el hash de cada revisión", async () => {
     vista?.bandeja.map((item) => item.id),
     ["comida"],
   );
+});
+
+test("reintentar revisión hace POST a la tarea", async () => {
+  const llamadas: { url: string; method: string }[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    llamadas.push({ url, method: init?.method ?? "GET" });
+    return json({
+      tarea: tarea({ origen: "scout", codigo: null, frase: "Banner de ZEEK." }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      walletCobro: null,
+      wallet: "GORGANIZADOR",
+    });
+  };
+  const detalle = await reintentarRevision("stand", { fetch: fetchImpl });
+  assert.deepEqual(llamadas, [{ url: "/api/revision/stand", method: "POST" }]);
+  assert.equal(detalle?.tarea.origen, "scout");
+  assert.equal(detalle?.tarea.frase, "Banner de ZEEK.");
+  assert.equal(await reintentarRevision("  ", { fetch: fetchImpl }), null);
 });

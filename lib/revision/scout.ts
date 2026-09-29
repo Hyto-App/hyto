@@ -1,8 +1,10 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Descripcion } from "./armar";
+import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 
 const MODELO = "qwen/qwen3.8-27b";
 const BASE = "https://api.groq.com/openai/v1";
+const MAX_TOKENS = 1024;
 
 const PEDIDO =
   "Describe la foto en una frase corta, en español. Si es una factura o un comprobante, extrae el monto en dólares (solo dígitos y hasta dos decimales, sin símbolo) y la fecha como YYYY-MM-DD. Si no es una factura, monto y fecha van null. Responde solo JSON con las claves texto, monto y fecha.";
@@ -53,32 +55,63 @@ export async function describirFoto(
   clave: string,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
-): Promise<Descripcion | null> {
-  const respuesta = await fetchImpl(`${BASE}/chat/completions`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${clave}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODELO,
-      temperature: 0,
-      max_tokens: 300,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: PEDIDO },
-            { type: "image_url", image_url: { url: `data:${tipo || "image/jpeg"};base64,${Buffer.from(bytes).toString("base64")}` } },
-          ],
-        },
-      ],
-    }),
-    signal,
-  });
-  if (!respuesta.ok) return null;
-  const json = (await respuesta.json()) as { choices?: { message?: { content?: unknown } }[] };
-  const contenido = json.choices?.[0]?.message?.content;
-  if (typeof contenido !== "string") return null;
-  return leerDescripcion(contenido);
+): Promise<Descripcion> {
+  if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
+  let respuesta: Response;
+  try {
+    respuesta = await fetchImpl(`${BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${clave}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODELO,
+        temperature: 0,
+        max_tokens: MAX_TOKENS,
+        reasoning_effort: "none",
+        reasoning_format: "hidden",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PEDIDO },
+              { type: "image_url", image_url: { url: `data:${tipo || "image/jpeg"};base64,${Buffer.from(bytes).toString("base64")}` } },
+            ],
+          },
+        ],
+      }),
+      signal,
+    });
+  } catch (error) {
+    throw falloDeExcepcion(error, "groq", clave);
+  }
+  if (!respuesta.ok) throw await falloHttp(respuesta, "groq", clave);
+  let json: { choices?: { finish_reason?: string; message?: { content?: unknown } }[] };
+  try {
+    json = (await respuesta.json()) as { choices?: { finish_reason?: string; message?: { content?: unknown } }[] };
+  } catch {
+    throw new FalloRevision("respuesta", { fuente: "groq", status: respuesta.status, providerMessage: "json", secreto: clave });
+  }
+  const choice = json.choices?.[0];
+  const contenido = choice?.message?.content;
+  if (typeof contenido !== "string") {
+    throw new FalloRevision("respuesta", {
+      fuente: "groq",
+      status: respuesta.status,
+      providerMessage: choice?.finish_reason === "length" ? "truncado" : "json",
+      secreto: clave,
+    });
+  }
+  const descripcion = leerDescripcion(contenido);
+  if (!descripcion) {
+    const cortado = choice?.finish_reason === "length" || (contenido.includes("{") && !contenido.includes("}"));
+    throw new FalloRevision("respuesta", {
+      fuente: "groq",
+      status: respuesta.status,
+      providerMessage: cortado ? "truncado" : "json",
+      secreto: clave,
+    });
+  }
+  return descripcion;
 }

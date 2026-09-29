@@ -1519,10 +1519,12 @@
             "archivo": "lib/db/tipos.ts",
             "tipo": "VeredictoFila",
             "campo": "origen",
-            "tipoTs": "\"scout\" | \"guion\"",
+            "tipoTs": "\"scout\" | \"guion\" | \"stub\" | \"error\"",
             "literales": [
               "scout",
-              "guion"
+              "guion",
+              "stub",
+              "error"
             ],
             "aceptaNull": false,
             "esCheckDeLaBase": false,

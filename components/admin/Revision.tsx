@@ -7,8 +7,8 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista } from "@/lib/admin/remoto";
-import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
+import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -33,6 +33,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [reintentando, setReintentando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
 
   useEffect(() => {
@@ -85,6 +86,26 @@ export function Revision({ tareaId }: { tareaId: string }) {
     setAviso(null);
     const vista = vistaAdmin(guardado.memoria);
     setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
+  }
+
+  async function reintentar() {
+    if (reintentando || !tarea) return;
+    setReintentando(true);
+    setAviso(null);
+    try {
+      const detalle = await reintentarRevision(tareaId);
+      if (!detalle) {
+        setAviso("No se pudo reintentar la revisión.");
+        return;
+      }
+      setReal(true);
+      setTarea(detalle.tarea);
+      setFoto(detalle.foto);
+      setContrato(detalle.contratoEscrow);
+      setWallet(detalle.wallet);
+    } finally {
+      setReintentando(false);
+    }
   }
 
   async function correr(acciones: readonly AccionCliente[]) {
@@ -161,6 +182,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
   }
 
   const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const origen = etiquetaOrigen(tarea.origen);
   const pago = enlacePago(tarea.hashPago);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
@@ -197,8 +219,20 @@ export function Revision({ tareaId }: { tareaId: string }) {
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} /> : <PastillaEstado estado={tarea.estado} />}
+            {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
-          {tarea.frase ? <p className="mt-4 text-base leading-7">{tarea.frase}</p> : null}
+          {tarea.origen === "error" && tarea.frase ? (
+            <p role="alert" className="mt-4 text-base leading-7">
+              {tarea.frase}
+            </p>
+          ) : tarea.frase ? (
+            <p className="mt-4 text-base leading-7">{tarea.frase}</p>
+          ) : null}
+          {tarea.origen === "error" && real ? (
+            <button type="button" onClick={() => void reintentar()} disabled={reintentando} className="mt-4 text-sm text-[var(--suave)]">
+              Reintentar revisión
+            </button>
+          ) : null}
 
           {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (
             <dl className="mt-6 grid grid-cols-2 gap-4">

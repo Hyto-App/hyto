@@ -204,24 +204,26 @@ describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () =
     });
     assert.equal(revision.status, 200);
     const vista = (await revision.json()) as {
-      tarea: { titulo: string; estado: string; veredicto: string };
+      tarea: { titulo: string; estado: string; veredicto: string | null; origen: string };
       foto: string | null;
       enlacePago: string | null;
     };
     assert.equal(vista.tarea.titulo, "Cajas");
     assert.equal(vista.tarea.estado, "en revisión");
-    assert.equal(vista.tarea.veredicto, "parcial");
+    assert.equal(vista.tarea.veredicto, null);
+    assert.equal(vista.tarea.origen, "error");
     assert.match(vista.foto ?? "", /^\/api\/evidencias\/.+\/foto$/);
     assert.equal(vista.enlacePago, null);
 
     const informe = (await (await informeGet()).json()) as {
       nombre: string;
-      bandeja: { id: string; veredicto: string }[];
+      bandeja: { id: string; veredicto: string | null; origen: string | null }[];
     };
     assert.equal(informe.nombre, "Feria");
     assert.equal(informe.bandeja.length, 1);
     assert.equal(informe.bandeja[0]?.id, tareaId);
-    assert.equal(informe.bandeja[0]?.veredicto, "parcial");
+    assert.equal(informe.bandeja[0]?.veredicto, null);
+    assert.equal(informe.bandeja[0]?.origen, "error");
   });
 });
 });

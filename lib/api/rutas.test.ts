@@ -63,24 +63,31 @@ test("las tareas de ZEEK salen de la base", async () => {
   assert.equal(json.tareas[3]?.tope, "15");
 });
 
-test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
+test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha", async () => {
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "comida");
   cuerpo.set("foto", new Blob([Uint8Array.from([1, 2, 3])], { type: "image/jpeg" }), "evidencia.jpg");
-  const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
-    almacen,
-    fotos,
-  });
+  const previo = console.error;
+  console.error = () => undefined;
+  let creada: Response;
+  try {
+    creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
+      almacen,
+      fotos,
+    });
+  } finally {
+    console.error = previo;
+  }
   assert.equal(creada.status, 201);
-  const json = (await creada.json()) as { evidencia: { id: string; monto: string; fecha: string; blobId: string } };
-  assert.equal(json.evidencia.monto, "12.40");
-  assert.equal(json.evidencia.fecha, "2026-09-27");
+  const json = (await creada.json()) as { evidencia: { id: string; monto: string | null; fecha: string | null; blobId: string } };
+  assert.equal(json.evidencia.monto, null);
+  assert.equal(json.evidencia.fecha, null);
 
   const lectura = await leerEvidenciaHttp(almacen, json.evidencia.id);
-  const leida = (await lectura.json()) as { evidencia: { monto: string } };
-  assert.equal(leida.evidencia.monto, "12.40");
+  const leida = (await lectura.json()) as { evidencia: { monto: string | null } };
+  assert.equal(leida.evidencia.monto, null);
 
   const foto = await leerFotoHttp(almacen, fotos, json.evidencia.id);
   assert.equal(foto.headers.get("content-type"), "image/jpeg");
@@ -174,23 +181,32 @@ test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () =
   assert.equal(revision.enlacePago, `https://stellar.expert/explorer/testnet/tx/${hash}`);
 });
 
-test("la revisión de un trabajo sin clave usa el guion", async () => {
+test("la revisión de un trabajo sin clave guarda el error y no el guion", async () => {
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
   cuerpo.set("foto", new Blob([Uint8Array.from([9])], { type: "image/png" }), "evidencia.jpg");
-  await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), { almacen, fotos });
-  const json = (await (await leerRevisionHttp(almacen, fotos, "stand")).json()) as {
-    tarea: { veredicto: string; frase: string; estado: string };
-    foto: string;
-    enlacePago: string | null;
-  };
-  assert.equal(json.tarea.veredicto, "parcial");
-  assert.equal(json.tarea.estado, "en revisión");
-  assert.match(json.tarea.frase, /Mesa armada/);
-  assert.match(json.foto, /^\/api\/evidencias\/.+\/foto$/);
-  assert.equal(json.enlacePago, null);
+  const previo = console.error;
+  console.error = () => undefined;
+  try {
+    await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), { almacen, fotos });
+    const json = (await (await leerRevisionHttp(almacen, fotos, "stand")).json()) as {
+      tarea: { veredicto: string | null; frase: string; estado: string; origen: string; codigo: string | null };
+      foto: string;
+      enlacePago: string | null;
+    };
+    assert.equal(json.tarea.veredicto, null);
+    assert.equal(json.tarea.origen, "error");
+    assert.equal(json.tarea.codigo, "sin_clave");
+    assert.equal(json.tarea.estado, "en revisión");
+    assert.match(json.tarea.frase, /no está configurada/);
+    assert.equal(json.tarea.frase.includes("Mesa armada"), false);
+    assert.match(json.foto, /^\/api\/evidencias\/.+\/foto$/);
+    assert.equal(json.enlacePago, null);
+  } finally {
+    console.error = previo;
+  }
 });
 
 test("un proyecto nuevo entra por la ruta", async () => {
