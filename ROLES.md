@@ -4,22 +4,23 @@ Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de 
 
 Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
 
-## Estado al 28 de septiembre de 2026
+## Estado al 29 de septiembre de 2026
 
 | Pieza | Estado | Dueño |
 |---|---|---|
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
-| Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
+| Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El ingreso pide el código del correo (PR #14). Falta dejar listas las cuatro cuentas | Raúl |
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman: el módulo ya está y esos botones no lo llaman | Josué |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
-| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos. Falta cargar las variables en Vercel y migrar | En el código | Esteban |
+| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos | En `main` (PR #14, `ce9ff7c`). La migración y la semilla ya corrieron en Neon. Faltan las variables en Vercel y el Blob privado `hyto` | Esteban |
+| `.env.example` | En `main` (PR #20, `36fd91a`), el 29 de septiembre a las 9:16 a.m., hora de Costa Rica. Alcance, obligatoriedad y qué pasa si falta cada variable, sin valores | Josué |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
-| Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel | Sebas |
+| Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel. La clave `cav_…` sigue sin nombre | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
-| `LAYA_URL` | Pendiente | Abdiel |
+| `LAYA_URL` | Pendiente. `LAYA_API_KEY` es opcional y sigue sin acordar | Abdiel |
 
-Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
+Entrar guarda la dirección solo cuando el aviso de guardado es null. Ese detalle de `components/admin/Entrar.tsx` quedó resuelto con el ingreso del PR #14.
 
 No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
 
@@ -43,14 +44,14 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). El módulo de firma ya está (PR #8). Fondear y Aprobar no lo llaman y no firman en Stellar. La revisión con IA y un pago en USDC no están.
+De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). El módulo de firma ya está (PR #8). Fondear y Aprobar no lo llaman y no firman en Stellar. La ruta de revisión con IA ya está (PR #14) y, sin `GROQ_API_KEY` o sin `LAYA_URL`, cae al guion fijo. Un pago en USDC no está.
 
 ## Equipo
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
 | Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su servidor |
-| Esteban | Backend | Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe |
+| Esteban | Backend | Todo el backend, ya en `main` (PR #14): `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe. Faltan las variables en Vercel |
 | Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`, ya en Vercel) y la liberación del USDC. El módulo y el script ya están (PR #8) |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
@@ -84,13 +85,13 @@ Laya corre en su servidor de escritorio, el mismo de Argus, en un entorno de Pyt
 
 Backend. Buen nivel en servidor. Es dueño de todo el backend.
 
-**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
+**Hecho en el PR #14:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. La migración y la semilla de ZEEK ya se corrieron en Neon. Falta poner esas variables en Vercel y crear el Blob privado `hyto`.
 
 La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
-El login real de Cavos también es suyo y se conecta a esa base. Hoy el botón Entrar de https://hyto.vercel.app falla. El diagnóstico, del 28 de septiembre de 2026, está en [PLAN.md](PLAN.md).
+El login real de Cavos también es suyo y ya está en `main` (PR #14): CavosAuth, `auth` en `Cavos.connect` y el rol por correo en Neon. El fallo `registry lookup skipped: no login token` en https://hyto.vercel.app es el diagnóstico del 28 de septiembre, anterior a ese PR. El detalle está en [PLAN.md](PLAN.md).
 
 ### Pruebas de punta a punta (2026-09-28)
 
@@ -114,6 +115,8 @@ Errores verificados, para corregir. El detalle está en [PLAN.md](PLAN.md).
 14. **Media.** `components/admin/Entrar.tsx:46`. `setDireccion` corre aunque el guardado falle. Arreglo: solo si `guardado.aviso` es null.
 15. **Baja.** `lib/escrow/cuerpos.ts:231`. La dirección no lleva checksum. Arreglo: `StrKey`.
 16. **Baja.** `lib/integrante/almacen.ts:42`. `setItem` sin `try`. Un fallo se ve como "No se pudo enviar." Arreglo: el aviso que ya usa el admin.
+
+El 29 de septiembre, el PR #14 cerró los puntos 1, 2 y 3, y Entrar guarda la dirección solo si el aviso es null (el punto 14). Siguen abiertos el 4 al 13, el 15 y el 16. Josué: 5, 6, 7, 13 y el almacén del admin en el 8. Sebas: 4, 9, 10, 11, 12 y 15. Raúl: 16 y el almacén del integrante en el 8.
 
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
@@ -146,9 +149,11 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel. El ingreso con código o Google lo dejó Esteban en el PR #14, y la dirección se guarda solo si no hay aviso. Fondear y Aprobar no firman en Stellar.
 
-**Sigue con:** las rutas de Esteban, y conectar Fondear y Aprobar al módulo de Sebas, ya en `main`: `POST /api/firma`, `signXdr` en el navegador y `POST /api/firma/enviar`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
+**Hecho en el PR #20**, el 29 de septiembre a las 9:16 a.m., hora de Costa Rica: `.env.example` precisa cada variable, sin valores.
+
+**Sigue con:** conectar la bandeja, la revisión y el informe a las rutas de Esteban, ya en `main`, y conectar Fondear y Aprobar al módulo de Sebas: `POST /api/firma`, `signXdr` en el navegador y `POST /api/firma/enviar`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -160,7 +165,7 @@ App del integrante y preparación de las cuentas del demo.
 
 **Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El ingreso ya pide el código del correo (PR #14 de Esteban). Hace falta que Vercel alcance la base. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 

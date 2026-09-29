@@ -81,8 +81,8 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8, 28 de septiembre a las 3:48 p.m., hora de Costa Rica). Fondear y Aprobar del admin todavía no los llaman. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
-| Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
-| Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
+| Datos | Neon Postgres con Drizzle. `DATABASE_URL`. El esquema, la migración y la semilla de ZEEK ya están (PR #14 de Esteban). La migración ya corrió en Neon. Falta la variable en Vercel. |
+| Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. Falta `BLOB_READ_WRITE_TOKEN` en Vercel y el Blob `hyto`. |
 | IA | Qwen 3.8 27B en Groq describe la foto. Laya corre en la PC Windows de Abdiel (`LAYA_URL`) y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
@@ -105,15 +105,15 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows. `LAYA_API_KEY` es opcional y no está acordada | El demo puede llamar a `LAYA_URL` |
+| Esteban | Backend | Neon, Blob, rutas, revisión e ingreso con Cavos ya están (PR #14). Faltan en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `GROQ_API_KEY` y el Blob `hyto` | La app en Vercel guarda un proyecto, una foto y un veredicto |
+| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). El `appId` de Cavos ya está en Vercel. Sigue un pago en USDC. La clave `cav_…` no tiene nombre en el código | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas del admin ya están. El 29 de septiembre a las 9:16 a.m., hora de Costa Rica, precisó `.env.example` (PR #20). Sigue conectar la bandeja, Fondear y Aprobar | El admin crea, revisa, aprueba en Stellar y abre el informe |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. El `appId` ya está. Las cuatro cuentas esperan que la base responda desde Vercel | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` y `LAYA_URL` todavía no están. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel y es el correcto. `LAYA_URL` sigue pendiente. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio. Esteban dejó Neon, Blob, las rutas, la revisión y el ingreso con Cavos (PR #14, squash `ce9ff7c`). La migración y la semilla ya corrieron en Neon; en Vercel faltan las variables y el Blob `hyto`. El 29 de septiembre a las 9:16 a.m., hora de Costa Rica, Josué Valles precisó `.env.example` (PR #20, squash `36fd91a`): alcance, obligatoriedad y qué hace el código si falta cada variable, sin valores. No cambió código.
 
 ## 8. Guion de demo
 

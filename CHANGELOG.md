@@ -6,22 +6,27 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Nuevo
 
-- La base guarda usuarios, proyectos, tareas, evidencias, veredictos y el hash de pago, que sigue vacío. El correo mapea al rol. Hay migración y semilla del evento ZEEK. Las fotos van a un almacén privado y en la base queda el identificador. Esteban.
-- Las pantallas ya pueden llamar `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. También están `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. El informe abre aunque el pago no tenga hash. Ver pago usa el hash cuando exista. Esteban.
-- La revisión describe la foto con Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`). Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
-- Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban.
+- La base guarda usuarios, proyectos, tareas, evidencias, veredictos y el hash de pago, que sigue vacío. El correo mapea al rol. Hay migración y semilla del evento ZEEK. Las fotos van a un almacén privado y en la base queda el identificador. Esteban (Psybre), PR #14.
+- Las pantallas ya pueden llamar `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. También están `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. El informe abre aunque el pago no tenga hash. Ver pago usa el hash cuando exista. Esteban (Psybre), PR #14.
+- La revisión describe la foto con Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`). Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban (Psybre), PR #14.
+- Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban (Psybre), PR #14.
 
 ### Arreglado
 
-- `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
-- La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban.
+- `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban (Psybre), PR #14.
+- La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban (Psybre), PR #14.
+
+### Cambiado
+
+- `.env.example` precisa, sin valores, el alcance de cada variable que lee `process.env`, si es obligatoria y qué hace el código si falta. `NODE_ENV` no se declara: lo define Next.js, y en production la cookie `hyto_sesion` lleva Secure. La única variable pública es `NEXT_PUBLIC_CAVOS_APP_ID`. No hay `GOOGLE_CLIENT_ID` ni `GOOGLE_CLIENT_SECRET`. Josué Valles, PR #20.
 
 ### Pendiente para el equipo
 
-- Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`. La migración y la semilla de ZEEK ya se corrieron en Neon.
-- Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma.
-- Raúl: las cuatro cuentas del demo, ahora con el código de cada correo.
-- Abdiel: `LAYA_URL`. Sebas: un pago en USDC. Sin ese pago no hay Acta.
+- Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`, y crear el Blob privado `hyto`. La migración y la semilla de ZEEK ya se corrieron en Neon.
+- Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma. El 30 de septiembre, subir Next.js a 16.3.7.
+- Raúl: las cuatro cuentas del demo, con el código de cada correo. Dependen de que la base esté alcanzable desde Vercel.
+- Abdiel: `LAYA_URL`. `LAYA_API_KEY` sigue opcional y sin acordar.
+- Sebas: un pago en USDC. Sin ese pago no hay Acta. La clave de servidor de Cavos (`cav_…`) sigue sin nombre en el código.
 
 ## 2026-09-28
 

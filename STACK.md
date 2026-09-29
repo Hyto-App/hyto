@@ -4,13 +4,15 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-## Qué hay en el repo al 28 de septiembre de 2026
+## Qué hay en el repo al 29 de septiembre de 2026
 
 Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Tipografía Poppins (400, 500 y 600). `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C` (PR #7 de Abdiel Cole, squash `cff4512`). Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
 
 El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
 
-En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
+En el código, de Esteban (Psybre, PR #14, squash `ce9ff7c`): Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. La migración y la semilla de ZEEK ya se corrieron en Neon. En Vercel todavía faltan `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `GROQ_API_KEY` y el Blob privado `hyto`.
+
+`.env.example` (PR #20 de Josué Valles, squash `36fd91a`, el 29 de septiembre a las 9:16 a.m., hora de Costa Rica) describe cada lectura de `process.env` sin valores: alcance, si es obligatoria y qué hace el código si falta. `NODE_ENV` no se declara. Lo define Next.js; en production la cookie `hyto_sesion` lleva Secure.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -32,18 +34,21 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
 ## Variables
 
-Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
+Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`. El detalle de obligatoriedad está en `.env.example` (PR #20).
 
-| Nombre | Uso |
-|---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
-| `DATABASE_URL` | Neon. La leen las rutas |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
-| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión usa el guion fijo |
-| `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
-| `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
+| Nombre | Uso | Si falta |
+|---|---|---|
+| `NEXT_PUBLIC_CAVOS_APP_ID` | Id de la app de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel. No es una clave | No se llama a Cavos |
+| `DATABASE_URL` | Neon, solo en el servidor. Obligatoria para la base. La leen las rutas, `npm run db:migrar` y `npm run db:semilla` | Las rutas responden 503. Esos comandos salen con código 1 |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado, solo en el servidor. Obligatoria para fotos | Subir la evidencia y leer la foto responden 503 |
+| `GROQ_API_KEY` | Qwen 3.8 27B, solo en el servidor. Opcional | La revisión usa el guion fijo |
+| `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. Obligatoria para pagar. La pone Sebas | `/api/firma` responde 503. `npm run hito` sale con código 2 |
+| `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. Solo en el servidor. Opcional. La publica Abdiel | Después de Groq, la revisión usa el stub |
+| `LAYA_API_KEY` | Bearer hacia Laya, solo en el servidor. Opcional. Sigue sin acordar | Laya se llama igual, sin esa cabecera |
 
-La clave `TRUSTLESS_API_KEY` y la clave `cav_…` de Cavos se quedan en el servidor. `cav_…` todavía no tiene nombre en el repo. La clave de Acta, igual, y solo después de un pago en USDC.
+`NODE_ENV` no está en `.env.example`. Lo define Next.js. En production la cookie `hyto_sesion` lleva Secure. No hay `GOOGLE_CLIENT_ID` ni `GOOGLE_CLIENT_SECRET`.
+
+La clave `TRUSTLESS_API_KEY` y la clave `cav_…` de Cavos se quedan en el servidor. `cav_…` todavía no tiene nombre en el repo: es de Sebas y este inventario no la agrega. La clave de Acta, igual, y solo después de un pago en USDC.
 
 La clave de API de Trustless Work no va al navegador. La API arma un XDR sin firmar, Cavos lo firma con `wallet.signXdr` y el servidor lo envía a Stellar. Ese ciclo es el mismo para fondear, marcar el hito, aprobar y liberar.
 
