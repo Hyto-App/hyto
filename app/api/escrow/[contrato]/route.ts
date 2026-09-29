@@ -1,5 +1,5 @@
 import { respuestaSiExcedido } from "@/lib/escrow/limite";
-import { leerEscrow, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { leerEscrow, respuestaDeLectura } from "@/lib/escrow/modulo";
 import { exigirOrganizador } from "@/lib/sesion/exigir";
 
 export async function GET(request: Request, contexto: { params: Promise<{ contrato: string }> }): Promise<Response> {
@@ -12,6 +12,6 @@ export async function GET(request: Request, contexto: { params: Promise<{ contra
     const escrow = await leerEscrow(contrato.trim());
     return Response.json({ escrow });
   } catch (error) {
-    return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+    return respuestaDeLectura(error);
   }
 }

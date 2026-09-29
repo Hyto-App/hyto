@@ -1,6 +1,7 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import { encabezadoCookie, expiracion, tokenSesion } from "@/lib/sesion/cookie";
+import { esCuenta } from "@/lib/escrow/cuerpos";
+import { COOKIE_SESION, encabezadoCookie, expiracion, leerCookie, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken } from "@/lib/sesion/correo";
 import { baseNoLista, json } from "./json";
 
@@ -28,12 +29,37 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       usuarioId: usuario.id,
       rol: usuario.rol,
       expiraEn: expiracion(),
+      wallet: "",
     });
     return json(
       { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre },
       200,
       { "set-cookie": encabezadoCookie(sesion) },
     );
+  } catch {
+    return baseNoLista();
+  }
+}
+
+export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
+  const token = leerCookie(request, COOKIE_SESION);
+  if (!token) return json({ aviso: "Entra para continuar." }, 401);
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ aviso: "El cuerpo no es JSON." }, 400);
+  }
+  const crudo = body && typeof body === "object" ? (body as { wallet?: unknown }).wallet : undefined;
+  if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
+    return json({ aviso: "La wallet no es una cuenta de Stellar." }, 400);
+  }
+  try {
+    const sesion = await almacen.leerSesion(token);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: "Entra para continuar." }, 401);
+    const wallet = crudo.trim();
+    await almacen.guardarWallet(token, wallet);
+    return json({ wallet }, 200);
   } catch {
     return baseNoLista();
   }

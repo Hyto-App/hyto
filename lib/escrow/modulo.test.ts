@@ -3,7 +3,7 @@ import test from "node:test";
 import { USDC } from "../integrante/identidades";
 import { BASE_V1, BASE_V2, claveDeV1, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
 import { excedido, reiniciarLimite, respuestaSiExcedido } from "./limite";
-import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, respuestaDeErrorFirma, textoDeError } from "./modulo";
+import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, respuestaDeErrorFirma, respuestaDeLectura, textoDeError } from "./modulo";
 import type { CuentasDespliegue } from "./tipos";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -263,6 +263,11 @@ test("un 401 de Trustless no se informa como sesión ausente", async () => {
   assert.equal(json.codigo, "TRUSTLESS_AUTH");
   assert.match(json.aviso, /AUTH_INVALID_CREDENTIAL/);
   assert.equal(json.aviso.includes("Entra para continuar"), false);
+
+  const otro = respuestaDeLectura(new ErrorFirma("no está", 422, "ESCROW_MILESTONE_NOT_IN_DISPUTE"));
+  assert.equal(otro.status, 502);
+  const contrato = respuestaDeLectura(new ErrorFirma("El contrato del pago no es válido.", 400, null));
+  assert.equal(contrato.status, 400);
 });
 
 test("leer el escrow es un GET del contrato en v2", async () => {

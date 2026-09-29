@@ -58,4 +58,5 @@ export type SesionFila = {
   usuarioId: string;
   rol: Rol;
   expiraEn: string;
+  wallet: string;
 };

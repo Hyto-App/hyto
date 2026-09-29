@@ -9,8 +9,11 @@ import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./eviden
 import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
 import { leerRevisionHttp } from "./revision";
-import { crearSesionHttp } from "./sesion";
+import { crearSesionHttp, fijarWalletHttp } from "./sesion";
+import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
 import { listarTareasHttp } from "./tareas";
+import type { SesionFila } from "../db/tipos";
+import { reiniciarLimite } from "../escrow/limite";
 
 function token(email: string): string {
   return `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email })).toString("base64url")}.bbbb`;
@@ -189,4 +192,140 @@ test("sin sesión no se prepara la firma ni se lee el escrow", async () => {
   } finally {
     globalThis.fetch = original;
   }
+});
+
+const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const RECEPTOR = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+const RESOLUTOR = "GEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
+
+function sesion(rol: SesionFila["rol"], wallet: string): SesionFila {
+  return {
+    token: "tok",
+    email: "alguien@demo.hyto",
+    usuarioId: rol,
+    rol,
+    expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    wallet,
+  };
+}
+
+test("resolver no arma ni envía el XDR si la wallet de la sesión no es el firmante", async () => {
+  reiniciarLimite();
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    throw new Error("no hay que llamar a Trustless");
+  };
+  const cuerpo = {
+    accion: "resolver",
+    contrato: CONTRATO,
+    firmante: RESOLUTOR,
+    indice: 0,
+    distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+  };
+  try {
+    const sinWallet = await prepararFirmaHttp(
+      sesion("organizador", ""),
+      new Request("http://local/api/firma", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo),
+      }),
+    );
+    assert.equal(sinWallet.status, 400);
+    assert.match(((await sinWallet.json()) as { aviso: string }).aviso, /no puede resolver/);
+
+    const otra = await prepararFirmaHttp(
+      sesion("organizador", ORGANIZADOR),
+      new Request("http://local/api/firma", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo),
+      }),
+    );
+    assert.equal(otra.status, 400);
+    assert.match(((await otra.json()) as { aviso: string }).aviso, /firmante/);
+
+    const envio = await enviarFirmaHttp(
+      sesion("organizador", ORGANIZADOR),
+      new Request("http://local/api/firma/enviar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ xdr: "AAAA", accion: "resolver", firmante: RESOLUTOR }),
+      }),
+    );
+    assert.equal(envio.status, 400);
+    assert.equal(llamadas, 0);
+  } finally {
+    globalThis.fetch = original;
+    reiniciarLimite();
+  }
+});
+
+test("la sesión cuya wallet es el resolutor prepara el XDR", async () => {
+  reiniciarLimite();
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_input, init) => {
+    const metodo = init?.method ?? "GET";
+    if (metodo === "GET") {
+      return new Response(
+        JSON.stringify({
+          contractId: CONTRATO,
+          roles: { disputeResolvers: [RESOLUTOR] },
+          milestones: [{ amount: "1", status: "inDispute", flags: { disputed: true, resolved: false } }],
+        }),
+        { status: 200 },
+      );
+    }
+    return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc" }), { status: 200 });
+  };
+  try {
+    const listo = await prepararFirmaHttp(
+      sesion("voluntario", RESOLUTOR),
+      new Request("http://local/api/firma", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          accion: "resolver",
+          contrato: CONTRATO,
+          firmante: RESOLUTOR,
+          indice: 0,
+          distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+        }),
+      }),
+    );
+    assert.equal(listo.status, 200);
+    assert.equal(((await listo.json()) as { xdr: string }).xdr, "AAAA");
+  } finally {
+    globalThis.fetch = original;
+    if (anterior === undefined) delete process.env.TRUSTLESS_API_KEY;
+    else process.env.TRUSTLESS_API_KEY = anterior;
+    reiniciarLimite();
+  }
+});
+
+test("la wallet de la sesión se guarda para poder resolver", async () => {
+  const almacen = crearMemoria();
+  await almacen.crearSesion({
+    token: "tok-wallet",
+    email: "voluntario1@demo.hyto",
+    usuarioId: "voluntario-1",
+    rol: "voluntario",
+    expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    wallet: "",
+  });
+  const respuesta = await fijarWalletHttp(
+    new Request("http://local/api/sesion/wallet", {
+      method: "POST",
+      headers: { cookie: "hyto_sesion=tok-wallet", "content-type": "application/json" },
+      body: JSON.stringify({ wallet: RESOLUTOR }),
+    }),
+    almacen,
+  );
+  assert.equal(respuesta.status, 200);
+  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
 });

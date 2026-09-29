@@ -70,5 +70,10 @@ export function crearMemoria(): Almacen {
     async leerSesion(token) {
       return sesiones.get(token) ?? null;
     },
+    async guardarWallet(token, wallet) {
+      const actual = sesiones.get(token);
+      if (!actual) return;
+      sesiones.set(token, { ...actual, wallet });
+    },
   };
 }

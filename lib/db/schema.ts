@@ -62,4 +62,5 @@ export const sesiones = pgTable("sesiones", {
   usuarioId: text("usuario_id").notNull(),
   rol: text("rol").notNull(),
   expiraEn: text("expira_en").notNull(),
+  wallet: text("wallet").notNull().default(""),
 });

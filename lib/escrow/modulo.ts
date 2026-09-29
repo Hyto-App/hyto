@@ -45,6 +45,13 @@ export async function preparar(accion: AccionFirma, opciones: OpcionesRed = {}):
   return leerXdr(await post(pedido.ruta, pedido.cuerpo, opciones));
 }
 
+export function respuestaDeLectura(error: unknown): Response {
+  if (error instanceof ErrorFirma && error.estado !== 400 && error.estado !== 503 && error.estado !== 401) {
+    return Response.json({ aviso: error.message, codigo: error.codigo }, { status: 502 });
+  }
+  return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+}
+
 export function respuestaDeErrorFirma(error: unknown, avisoPorDefecto: string): Response {
   if (error instanceof ErrorFirma) {
     if (error.estado === 401) {
