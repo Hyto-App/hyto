@@ -1,11 +1,17 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import type { TareaFila } from "@/lib/db/tipos";
+import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
+
+export function rechazoProyectoDemo(sesion: Pick<SesionFila, "email" | "usuarioId">): Response | null {
+  if (!sesionEsDemo(sesion)) return null;
+  return json({ aviso: AVISO_PROYECTO_DEMO }, 403);
+}
 
 export async function crearProyectoHttp(request: Request, almacen: Almacen, organizadorId: string): Promise<Response> {
   let body: unknown;
