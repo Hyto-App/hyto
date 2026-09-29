@@ -1,4 +1,5 @@
 import { get, put } from "@vercel/blob";
+import { tokenDeBlob } from "@/lib/config/entorno";
 
 export type FotoLeida = {
   tipo: string;
@@ -28,7 +29,7 @@ export function crearFotosMemoria(): Fotos {
 }
 
 export function fotosBlob(): Fotos | null {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  const token = tokenDeBlob();
   if (!token) return null;
   return {
     async guardar(nombre, cuerpo) {
