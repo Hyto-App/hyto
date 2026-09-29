@@ -62,9 +62,17 @@ export type IndiceSql = {
   sql: string;
 };
 
+export type AlterColumnaSql = {
+  tabla: string;
+  esquema: string | null;
+  ifNotExists: boolean;
+  columna: ColumnaSql;
+};
+
 export type SentenciaSql =
   | { tipo: "tabla"; parseada: true; tabla: TablaSql; sql: string }
   | { tipo: "indice"; parseada: true; indice: IndiceSql; sql: string }
+  | { tipo: "alter-columna"; parseada: true; alteracion: AlterColumnaSql; sql: string }
   | { tipo: "no-parseada"; parseada: false; sql: string; nota: string };
 
 const CONFIRMAR = "confirmar con Esteban";
@@ -623,10 +631,41 @@ function parsearCreateIndex(cursor: Cursor, sql: string, unico: boolean): Senten
   };
 }
 
+function parsearAlterColumna(cursor: Cursor, sql: string): SentenciaSql {
+  if (cursor.verId("only")) cursor.tomar();
+  const identidad = nombreCalificado(cursor);
+  cursor.esperarId("add");
+  cursor.esperarId("column");
+  if (!cursor.verId("if")) throw new Error("ADD COLUMN sin IF NOT EXISTS");
+  cursor.tomar();
+  cursor.esperarId("not");
+  cursor.esperarId("exists");
+  const ifNotExists = true;
+  const restantes: Token[] = [];
+  while (!cursor.fin()) restantes.push(cursor.tomar());
+  if (restantes.length === 0) throw new Error("ADD COLUMN sin definición");
+  return {
+    tipo: "alter-columna",
+    parseada: true,
+    sql: sql.trim(),
+    alteracion: {
+      tabla: identidad.nombre,
+      esquema: identidad.esquema,
+      ifNotExists,
+      columna: parsearColumna(restantes),
+    },
+  };
+}
+
 export function parsearSentencia(sql: string): SentenciaSql {
   try {
     const cursor = new Cursor(tokenizar(sql));
     if (cursor.fin()) throw new Error("sentencia vacía");
+    if (cursor.verId("alter")) {
+      cursor.tomar();
+      cursor.esperarId("table");
+      return parsearAlterColumna(cursor, sql);
+    }
     if (!cursor.verId("create")) {
       throw new Error(`sentencia ${cursor.ver().tipo === "id" ? cursor.ver().valor : "no reconocida"}`);
     }

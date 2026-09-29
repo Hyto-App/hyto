@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "f3a53c846be3fc20f7a0b53b2c4c740e314cd27427c47c7e2f311c934f65f4e2",
+      "sha256": "32b0eecfe52d1ff74584c9465aa86777f6f1a810bf4bcea6148eea0d4e0feb81",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -89,7 +89,7 @@
       "presente": true,
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
-      "sha256": "2aa201d5f63be87a4bf4e49ae857e341b8d92951fefb4025939ded8d0dc00177",
+      "sha256": "c58d75ddee3010c0de653da708de5deccb8d734ef16923a621e9ef3097b78a83",
       "detalle": {
         "loEjecutaMigrarTs": false,
         "nota": "Está en drizzle/ y scripts/migrar.ts no lo lee. confirmar con Esteban"
@@ -1692,6 +1692,39 @@
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
+        },
+        {
+          "nombre": "wallet",
+          "nombreEnDrizzle": "wallet",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": "",
+          "defaultDeclaradoEnSql": true,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": "",
+          "defaultDeclaradoEnDrizzle": true,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "SesionFila",
+            "campo": "wallet",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
         }
       ],
       "llavePrimaria": {
@@ -1820,19 +1853,19 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "9508e0c0cfb109909babd4419186c487cf3fa9b3",
+    "sha": "fca79a2fda0a0eff45514e567b2ade240b17c3ca",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "fix: Postgres local, migración y semilla de ejemplo (#21)",
-    "archivosDeEsquemaIgualesAEseCommit": true,
+    "asunto": "fix: verificar el JWT de Cavos y exigir sesión al escribir (#23)",
+    "archivosDeEsquemaIgualesAEseCommit": false,
     "archivosComparados": [
       {
         "ruta": "drizzle/0000_inicio.sql",
-        "igual": true
+        "igual": false
       },
       {
         "ruta": "lib/db/schema.ts",
-        "igual": true
+        "igual": false
       },
       {
         "ruta": "drizzle.config.ts",

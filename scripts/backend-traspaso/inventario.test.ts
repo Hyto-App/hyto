@@ -96,7 +96,7 @@ test("el archivo generado sale de armarInventario y no trae una URL", () => {
   assert.match(base.sha, /^[0-9a-f]{40}$/);
   assert.match(base.shaCortoPedido, /^[0-9a-f]+$/);
   assert.equal(base.coincideConElShaPedido, base.sha.startsWith(base.shaCortoPedido));
-  assert.equal(base.archivosDeEsquemaIgualesAEseCommit, true);
+  assert.equal(base.archivosDeEsquemaIgualesAEseCommit, false);
   assert.deepEqual(
     prs.map((pr) => [pr.numero, pr.cambiaEsquema]),
     [

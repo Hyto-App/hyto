@@ -5,7 +5,7 @@ import ts from "typescript";
 import { is } from "drizzle-orm";
 import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
 import * as esquema from "../../lib/db/schema";
-import { parsearSql, type ClaveForaneaSql, type ColumnaSql, type IndiceSql, type TablaSql } from "./leer-sql";
+import { parsearSql, type AlterColumnaSql, type ClaveForaneaSql, type ColumnaSql, type IndiceSql, type TablaSql } from "./leer-sql";
 
 const CONFIRMAR = "confirmar con Esteban" as const;
 
@@ -658,12 +658,14 @@ export function armarInventario(raiz: string): Inventario {
   const sentenciasNoParseadas: Inventario["sentenciasNoParseadas"] = [];
   const tablasSql: { archivo: string; tabla: TablaSql }[] = [];
   const indicesSql: { archivo: string; indice: IndiceSql }[] = [];
+  const alteraciones: AlterColumnaSql[] = [];
 
   for (const relativo of sqls) {
     const texto = readFileSync(path.join(raiz, relativo), "utf8");
     for (const sentencia of parsearSql(texto)) {
       if (sentencia.tipo === "tabla") tablasSql.push({ archivo: relativo, tabla: sentencia.tabla });
       else if (sentencia.tipo === "indice") indicesSql.push({ archivo: relativo, indice: sentencia.indice });
+      else if (sentencia.tipo === "alter-columna") alteraciones.push(sentencia.alteracion);
       else sentenciasNoParseadas.push({ archivo: relativo, sql: sentencia.sql, nota: sentencia.nota });
     }
   }
@@ -746,6 +748,23 @@ export function armarInventario(raiz: string): Inventario {
 
   const nombresTablas = new Set(tablasSql.map((item) => item.tabla.nombre));
   const diferencias: string[] = [];
+  for (const alteracion of alteraciones) {
+    const destino = tablasSql.find((item) => item.tabla.nombre === alteracion.tabla);
+    if (!destino) {
+      diferencias.push(`${alteracion.tabla}: ALTER TABLE cita una tabla que el SQL no crea. ${CONFIRMAR}`);
+      continue;
+    }
+    const ya = destino.tabla.columnas.find((columna) => columna.nombre === alteracion.columna.nombre);
+    if (!ya) {
+      destino.tabla.columnas.push(alteracion.columna);
+      continue;
+    }
+    if (JSON.stringify(ya) !== JSON.stringify(alteracion.columna)) {
+      diferencias.push(
+        `${alteracion.tabla}.${alteracion.columna.nombre}: ADD COLUMN no coincide con la columna del CREATE. ${CONFIRMAR}`,
+      );
+    }
+  }
   if (sentenciasNoParseadas.length > 0) {
     diferencias.push(`Hay sentencias SQL sin parsear. ${CONFIRMAR}`);
   }

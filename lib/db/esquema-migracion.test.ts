@@ -24,7 +24,11 @@ test("la migración real declara las seis tablas y las relaciones que el código
   assert.deepEqual(esperado.avisos, []);
   assert.deepEqual(esperado.archivos, ["0000_inicio.sql"]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]);
-  assert.equal(esperado.columnas.length, 40);
+  assert.equal(esperado.columnas.length, 41);
+  assert.equal(
+    esperado.columnas.some((columna) => columna.tabla === "sesiones" && columna.nombre === "wallet" && columna.nullable === false),
+    true,
+  );
   assert.deepEqual(
     esperado.fks.map((fk) => `${fk.tabla}.${fk.columnas[0]}→${fk.tablaRef}.${fk.columnasRef[0]}`),
     ["tareas.proyecto_id→proyectos.id", "evidencias.tarea_id→tareas.id", "veredictos.evidencia_id→evidencias.id"],
