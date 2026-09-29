@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista, reintentarRevision } from "./remoto";
 import type { TareaAdmin } from "./tipos";
 
@@ -143,7 +144,7 @@ test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
     if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }] });
-    return json({ aviso: "Entra para continuar." }, 401);
+    return json({ aviso: AVISO_ENTRAR }, 401);
   };
   assert.equal(await cargarDetalleOrganizador("stand", { fetch: fetchImpl }), null);
 
