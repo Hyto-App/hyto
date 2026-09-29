@@ -1,11 +1,22 @@
-import { bandejaDe, porPersona, resumir } from "@/lib/admin/vista";
+import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type DetalleRevision = {
   tarea: TareaAdmin;
   foto: string | null;
+  contratoEscrow: string | null;
+  walletCobro: string | null;
+  wallet: string | null;
 };
+
+export function montoDeVista(tarea: TareaAdmin): number | null {
+  const crudo = tarea.tipo === "reembolso" ? tarea.montoRevisado || tarea.tope || tarea.monto : tarea.monto;
+  const normal = normalizarMonto(crudo ?? "");
+  if (!normal) return null;
+  const monto = Number(normal);
+  return monto > 0 && Number.isFinite(monto) ? monto : null;
+}
 
 export type OpcionesRemoto = {
   fetch?: typeof fetch;
@@ -47,7 +58,10 @@ export async function cargarDetalleOrganizador(tareaId: string, opciones: Opcion
     if (!revision.ok) return null;
     const detalle = detalleDe(await revision.json());
     if (!detalle) return null;
-    if (lista.ok) await lista.json().catch(() => null);
+    if (lista.ok) {
+      const filas = await lista.json().catch(() => null);
+      return cruzarLista(detalle, filaDe(filas, detalle.tarea.id));
+    }
     return detalle;
   } catch {
     return null;
@@ -56,27 +70,39 @@ export async function cargarDetalleOrganizador(tareaId: string, opciones: Opcion
 
 export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Promise<VistaAdmin | null> {
   const fetchImpl = opciones.fetch ?? fetch;
-  let ids: string[];
+  let filas: FilaTarea[];
   try {
     const lista = await pedir(fetchImpl, "/api/tareas");
     if (!lista.ok) return null;
-    const leidos = idsDe(await lista.json());
-    if (!leidos) return null;
-    ids = leidos;
+    const leidas = filasDe(await lista.json());
+    if (!leidas) return null;
+    filas = leidas;
   } catch {
     return null;
   }
 
-  if (ids.length === 0) {
+  if (filas.length === 0) {
     if (!(await esOrganizador(fetchImpl))) return null;
     return armarVista([], await nombreProyecto(fetchImpl));
   }
 
-  const detalles = await Promise.all(ids.map((id) => leerUna(fetchImpl, id)));
+  const detalles = await Promise.all(filas.map((fila) => leerUna(fetchImpl, fila.id)));
   if (detalles.some((item) => item === "ajeno")) return null;
-  const tareas = detalles.flatMap((item) => (item && item !== "ajeno" && item !== "fallo" ? [item.tarea] : []));
+  const porId = new Map(filas.map((fila) => [fila.id, fila]));
+  const tareas = detalles.flatMap((item) => {
+    if (!item || item === "ajeno" || item === "fallo") return [];
+    return [cruzarLista(item, porId.get(item.tarea.id) ?? null).tarea];
+  });
   if (tareas.length === 0) return null;
   return armarVista(tareas, await nombreProyecto(fetchImpl));
+}
+
+function cruzarLista(detalle: DetalleRevision, fila: FilaTarea | null): DetalleRevision {
+  if (!fila) return detalle;
+  const contratoEscrow = detalle.contratoEscrow ?? fila.contratoEscrow;
+  const hashPago = detalle.tarea.hashPago ?? fila.hashPago;
+  if (hashPago === detalle.tarea.hashPago && contratoEscrow === detalle.contratoEscrow) return detalle;
+  return { ...detalle, contratoEscrow, tarea: { ...detalle.tarea, hashPago } };
 }
 
 async function leerUna(fetchImpl: typeof fetch, id: string): Promise<DetalleRevision | "ajeno" | "fallo"> {
@@ -128,20 +154,40 @@ function detalleDe(json: unknown): DetalleRevision | null {
   const tarea = leerTareaAdmin(datos.tarea);
   if (!tarea) return null;
   const foto = typeof datos.foto === "string" && datos.foto.trim() ? datos.foto.trim() : null;
-  return { tarea, foto };
+  return {
+    tarea,
+    foto,
+    contratoEscrow: texto(datos.contratoEscrow),
+    walletCobro: texto(datos.walletCobro),
+    wallet: texto(datos.wallet),
+  };
 }
 
-function idsDe(json: unknown): string[] | null {
+type FilaTarea = {
+  id: string;
+  hashPago: string | null;
+  contratoEscrow: string | null;
+};
+
+function filasDe(json: unknown): FilaTarea[] | null {
   if (!json || typeof json !== "object") return null;
   const tareas = (json as { tareas?: unknown }).tareas;
   if (!Array.isArray(tareas)) return null;
-  const ids: string[] = [];
+  const filas: FilaTarea[] = [];
   for (const item of tareas) {
     if (!item || typeof item !== "object") continue;
-    const id = (item as { id?: unknown }).id;
-    if (typeof id === "string" && id.trim()) ids.push(id.trim());
+    const datos = item as Record<string, unknown>;
+    const id = texto(datos.id);
+    if (!id) continue;
+    const hashPago = texto(datos.hashPago);
+    const contratoEscrow = texto(datos.contratoEscrow);
+    filas.push({ id, hashPago, contratoEscrow });
   }
-  return ids;
+  return filas;
+}
+
+function filaDe(json: unknown, id: string): FilaTarea | null {
+  return filasDe(json)?.find((fila) => fila.id === id) ?? null;
 }
 
 function leerTareaAdmin(valor: unknown): TareaAdmin | null {

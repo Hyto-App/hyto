@@ -39,38 +39,57 @@ function fetchDe(pasos: { status?: number; body: unknown }[]): {
   return { fetch: fetchImpl, llamadas };
 }
 
-test("prepara, firma el XDR con Cavos y envía la acción y la tarea", async () => {
+test("prepara, firma el XDR con Cavos y reenvía el contrato al enviar", async () => {
   const red = fetchDe([
     { body: { xdr: XDR, hashPreparado: "prep", contrato: "C1" } },
-    { body: { hash: "a".repeat(64), contrato: "C1" } },
+    { body: { hash: "a".repeat(64), ledger: 9, codigo: null, contrato: "C1", estado: "SUCCESS" } },
   ]);
   const firmados: string[] = [];
-  const pago = await firmarYEnviar("fondear", " stand ", { monto: 2, accion: "liberar", xdr: "no" }, {
-    fetch: red.fetch,
-    firmar: async (xdr) => {
-      firmados.push(xdr);
-      return `  ${FIRMADO}  `;
+  const pago = await firmarYEnviar(
+    "fondear",
+    " stand ",
+    { monto: 2, firmante: "G1", contrato: "C0" },
+    {
+      fetch: red.fetch,
+      firmar: async (xdr) => {
+        firmados.push(xdr);
+        return `  ${FIRMADO}  `;
+      },
     },
-  });
+  );
 
   assert.deepEqual(firmados, [XDR]);
   assert.equal(pago.hash, "a".repeat(64));
+  assert.equal(pago.ledger, 9);
+  assert.equal(pago.estado, "SUCCESS");
   assert.equal(pago.contrato, "C1");
   assert.deepEqual(red.llamadas[0], {
     url: "/api/firma",
-    body: { monto: 2, accion: "fondear", tareaId: "stand" },
+    body: { accion: "fondear", tareaId: "stand", contrato: "C0", firmante: "G1", monto: 2 },
   });
   assert.deepEqual(red.llamadas[1], {
     url: "/api/firma/enviar",
-    body: { xdr: FIRMADO, accion: "fondear", tareaId: "stand" },
+    body: { xdr: FIRMADO, accion: "fondear", tareaId: "stand", contrato: "C1" },
   });
 });
 
-test("acepta unsignedXdr y un hash vacío no es un fallo", async () => {
-  const red = fetchDe([{ body: { unsignedXdr: XDR, contractId: "C2" } }, { body: { status: "SUCCESS", contrato: null } }]);
-  const pago = await firmarYEnviar("desplegar", "stand", {}, { fetch: red.fetch, firmar: async () => FIRMADO });
+test("desplegar solo manda la tarea y usa el contrato conocido si la respuesta no trae uno", async () => {
+  const red = fetchDe([
+    { body: { xdr: XDR, hashPreparado: "prep", contrato: null, monto: 20 } },
+    { body: { hash: null, ledger: null, codigo: null, contrato: null, estado: "SUCCESS", aviso: "guardado" } },
+  ]);
+  const pago = await firmarYEnviar(
+    "desplegar",
+    "stand",
+    { firmante: "G1", contrato: "C2", monto: 1 },
+    { fetch: red.fetch, firmar: async () => FIRMADO },
+  );
   assert.equal(pago.hash, null);
+  assert.equal(pago.aviso, "guardado");
+  assert.equal(pago.monto, 20);
   assert.equal(pago.contrato, "C2");
+  assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "stand" });
+  assert.deepEqual(red.llamadas[1]?.body, { xdr: FIRMADO, accion: "desplegar", tareaId: "stand", contrato: "C2" });
 });
 
 test("el 403 de demo, el XLM insuficiente y el rechazo usan avisos en español", async () => {
@@ -118,11 +137,11 @@ test("un fallo de red o un XDR vacío no muestran el error crudo", async () => {
   );
 });
 
-test("desplegar y fondear reenvían el contrato y se detienen si fondear falla", async () => {
+test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear falla", async () => {
   const red = fetchDe([
-    { body: { xdr: "uno", contrato: "C9" } },
-    { body: { hash: "h1", contrato: "C9" } },
-    { body: { xdr: "dos" } },
+    { body: { xdr: "uno", hashPreparado: "p1", contrato: "C9", monto: 20 } },
+    { body: { hash: "h1", ledger: 1, codigo: null, contrato: "C9", estado: "SUCCESS" } },
+    { body: { xdr: "dos", hashPreparado: "p2", contrato: "C9" } },
     { status: 502, body: { aviso: "No se pudo enviar el pago." } },
   ]);
   const vistos: string[] = [];
@@ -130,11 +149,20 @@ test("desplegar y fondear reenvían el contrato y se detienen si fondear falla",
     () =>
       firmarPasos(["desplegar", "fondear"], "tarea-1", {
         fetch: red.fetch,
+        extra: { firmante: "GORGANIZADOR", indice: 0, estado: "completed" },
         firmar: async (xdr) => xdr,
         alEmpezar: (accion) => vistos.push(accion),
       }),
     (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "No se pudo enviar el pago.",
   );
   assert.deepEqual(vistos, ["desplegar", "fondear"]);
-  assert.deepEqual(red.llamadas[2]?.body, { accion: "fondear", tareaId: "tarea-1", contrato: "C9" });
+  assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "tarea-1" });
+  assert.deepEqual(red.llamadas[1]?.body, { xdr: "uno", accion: "desplegar", tareaId: "tarea-1", contrato: "C9" });
+  assert.deepEqual(red.llamadas[2]?.body, {
+    accion: "fondear",
+    tareaId: "tarea-1",
+    contrato: "C9",
+    firmante: "GORGANIZADOR",
+    monto: 20,
+  });
 });

@@ -4,14 +4,27 @@ export const AVISO_DEMO_FIRMA = "Modo demo: las firmas están desactivadas";
 export const AVISO_XLM = "No hay XLM suficiente para la comisión.";
 export const AVISO_RECHAZO = "Rechazaste la firma.";
 export const AVISO_FIRMA = "No se pudo firmar el pago.";
+export const AVISO_SIN_CONTRATO = "El envío salió bien y Trustless no devolvió el contrato.";
 
 export type AccionCliente = "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar";
 
-export type ExtraFirma = Record<string, unknown>;
+export type ExtraFirma = {
+  contrato?: string;
+  firmante?: string;
+  monto?: number;
+  indice?: number;
+  estado?: string;
+  evidencia?: string;
+};
 
 export type PagoFirmado = {
   hash: string | null;
+  ledger: number | null;
+  codigo: string | null;
   contrato: string | null;
+  estado: string | null;
+  aviso: string | null;
+  monto: number | null;
 };
 
 export type OpcionesFirma = {
@@ -45,17 +58,19 @@ export async function firmarYEnviar(
 
   const fetchImpl = opciones.fetch ?? fetch;
   const preparado = await postJson(fetchImpl, "/api/firma", cuerpoFirma(accion, id, extra));
-  const xdr = leerXdr(preparado.cuerpo);
+  const listo = leerPreparado(preparado.cuerpo);
   let firmado: string;
   try {
-    firmado = (await (opciones.firmar ?? firmarConCavos)(xdr)).trim();
+    firmado = (await (opciones.firmar ?? firmarConCavos)(listo.xdr)).trim();
   } catch (error) {
     throw traducirFirma(error);
   }
   if (!firmado) throw new ErrorFirmaCliente(AVISO_FIRMA);
 
-  const enviado = await postJson(fetchImpl, "/api/firma/enviar", { xdr: firmado, accion, tareaId: id });
-  return leerPago(enviado.cuerpo, contratoDe(preparado.cuerpo));
+  const contrato = listo.contrato ?? texto(extra.contrato);
+  const enviado = await postJson(fetchImpl, "/api/firma/enviar", cuerpoEnvio(firmado, accion, id, contrato));
+  const pago = leerPago(enviado.cuerpo, contrato);
+  return { ...pago, monto: listo.monto };
 }
 
 export async function firmarPasos(
@@ -64,24 +79,56 @@ export async function firmarPasos(
   opciones: OpcionesFirma = {},
 ): Promise<PagoFirmado> {
   if (acciones.length === 0) throw new ErrorFirmaCliente("Falta la acción.");
-  let contrato: string | null = null;
-  let ultimo: PagoFirmado = { hash: null, contrato: null };
+  let contrato = texto(opciones.extra?.contrato);
+  let monto = opciones.extra?.monto;
+  let ultimo: PagoFirmado = vacio();
   for (const accion of acciones) {
     opciones.alEmpezar?.(accion);
-    const extra = { ...opciones.extra, ...(contrato ? { contrato } : {}) };
+    const extra: ExtraFirma = { ...opciones.extra };
+    if (accion === "desplegar") {
+      delete extra.contrato;
+      delete extra.firmante;
+      delete extra.monto;
+      delete extra.indice;
+      delete extra.estado;
+      delete extra.evidencia;
+    } else if (contrato) {
+      extra.contrato = contrato;
+    }
+    if (accion === "fondear" && typeof monto === "number") extra.monto = monto;
     ultimo = await firmarYEnviar(accion, tareaId, extra, opciones);
     contrato = ultimo.contrato ?? contrato;
+    if (accion === "desplegar") {
+      if (!contrato) throw new ErrorFirmaCliente(ultimo.aviso ?? AVISO_SIN_CONTRATO);
+      if (typeof ultimo.monto === "number") monto = ultimo.monto;
+    }
   }
-  return { hash: ultimo.hash, contrato };
+  return { ...ultimo, contrato };
 }
 
 function cuerpoFirma(accion: AccionCliente, tareaId: string, extra: ExtraFirma): Record<string, unknown> {
-  const limpio: Record<string, unknown> = {};
-  for (const [clave, valor] of Object.entries(extra)) {
-    if (clave === "accion" || clave === "tareaId" || clave === "xdr") continue;
-    limpio[clave] = valor;
+  if (accion === "desplegar") return { accion, tareaId };
+  const cuerpo: Record<string, unknown> = { accion, tareaId };
+  const contrato = texto(extra.contrato);
+  const firmante = texto(extra.firmante);
+  if (contrato) cuerpo.contrato = contrato;
+  if (firmante) cuerpo.firmante = firmante;
+  if (accion === "fondear" && typeof extra.monto === "number") cuerpo.monto = extra.monto;
+  if (accion === "marcar" || accion === "aprobar" || accion === "liberar") {
+    cuerpo.indice = Number.isInteger(extra.indice) ? extra.indice : 0;
   }
-  return { ...limpio, accion, tareaId };
+  if (accion === "marcar") {
+    cuerpo.estado = texto(extra.estado) ?? "completed";
+    const evidencia = texto(extra.evidencia);
+    if (evidencia) cuerpo.evidencia = evidencia;
+  }
+  return cuerpo;
+}
+
+function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contrato: string | null): Record<string, unknown> {
+  const cuerpo: Record<string, unknown> = { xdr, accion, tareaId };
+  if (contrato) cuerpo.contrato = contrato;
+  return cuerpo;
 }
 
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
@@ -113,30 +160,32 @@ async function postJson(
   return { cuerpo: json };
 }
 
-function leerXdr(json: unknown): string {
+function leerPreparado(json: unknown): { xdr: string; contrato: string | null; monto: number | null } {
   const datos = registro(json);
-  const xdr = texto(datos.xdr) ?? texto(datos.unsignedXdr);
+  const xdr = texto(datos.xdr);
   if (!xdr) throw new ErrorFirmaCliente("La preparación no devolvió el XDR.");
-  return xdr;
+  const monto = typeof datos.monto === "number" && Number.isFinite(datos.monto) ? datos.monto : null;
+  return { xdr, contrato: texto(datos.contrato), monto };
 }
 
 function leerPago(json: unknown, contratoPreparado: string | null): PagoFirmado {
   const datos = registro(json);
+  const ledger = typeof datos.ledger === "number" && Number.isFinite(datos.ledger) ? datos.ledger : null;
   return {
-    hash: texto(datos.hash) ?? texto(datos.txHash),
-    contrato: texto(datos.contrato) ?? texto(datos.contractId) ?? contratoPreparado,
+    hash: texto(datos.hash),
+    ledger,
+    codigo: texto(datos.codigo),
+    contrato: texto(datos.contrato) ?? contratoPreparado,
+    estado: texto(datos.estado),
+    aviso: texto(datos.aviso),
+    monto: null,
   };
-}
-
-function contratoDe(json: unknown): string | null {
-  const datos = registro(json);
-  return texto(datos.contrato) ?? texto(datos.contractId);
 }
 
 function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
   const datos = registro(json);
-  const aviso = texto(datos.aviso) ?? texto(datos.message) ?? "";
-  const codigo = texto(datos.codigo) ?? texto(datos.code) ?? "";
+  const aviso = texto(datos.aviso) ?? "";
+  const codigo = texto(datos.codigo) ?? "";
   const junto = `${aviso} ${codigo}`;
   if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
   if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado);
@@ -160,6 +209,10 @@ function esRechazo(textoError: string): boolean {
 
 function esXlm(textoError: string): boolean {
   return /insufficient|underfunded|op_underfunded|tx_insufficient|stellar_tx_insufficient/i.test(textoError);
+}
+
+function vacio(): PagoFirmado {
+  return { hash: null, ledger: null, codigo: null, contrato: null, estado: null, aviso: null, monto: null };
 }
 
 async function leerJson(respuesta: Response): Promise<unknown> {

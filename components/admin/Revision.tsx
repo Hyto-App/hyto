@@ -7,7 +7,7 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador } from "@/lib/admin/remoto";
+import { botonesRevision, cargarDetalleOrganizador, montoDeVista } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
@@ -28,6 +28,8 @@ export function Revision({ tareaId }: { tareaId: string }) {
   const [real, setReal] = useState(false);
   const [paso, setPaso] = useState<AccionCliente | null>(null);
   const [hashPaso, setHashPaso] = useState<string | null>(null);
+  const [contrato, setContrato] = useState<string | null>(null);
+  const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,12 +39,16 @@ export function Revision({ tareaId }: { tareaId: string }) {
     setFoto(null);
     setReal(false);
     setHashPaso(null);
+    setContrato(null);
+    setWallet(null);
     if (modoDemo) return;
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
       if (!viva || !detalle) return;
       setReal(true);
       setTarea(detalle.tarea);
       setFoto(detalle.foto);
+      setContrato(detalle.contratoEscrow);
+      setWallet(detalle.wallet);
     });
     return () => {
       viva = false;
@@ -61,19 +67,41 @@ export function Revision({ tareaId }: { tareaId: string }) {
   }
 
   async function correr(acciones: readonly AccionCliente[]) {
-    if (paso) return;
+    if (paso || !tarea) return;
+    const secuencia = acciones[0] === "desplegar" && contrato ? (["fondear"] as const) : acciones;
+    if (!wallet) {
+      setAviso("Esta sesión no tiene una wallet de Stellar. Entrá de nuevo para firmar.");
+      return;
+    }
+    if (secuencia[0] !== "desplegar" && !contrato) {
+      setAviso("Esta tarea todavía no tiene escrow. Desplegá y fondeá primero.");
+      return;
+    }
     setAviso(null);
     try {
-      const pago = await firmarPasos(acciones, tareaId, { alEmpezar: setPaso });
+      const pago = await firmarPasos(secuencia, tareaId, {
+        extra: {
+          firmante: wallet,
+          ...(contrato ? { contrato } : {}),
+          monto: montoDeVista(tarea) ?? undefined,
+          indice: 0,
+          estado: "completed",
+        },
+        alEmpezar: setPaso,
+      });
+      if (pago.contrato) setContrato(pago.contrato);
       setHashPaso(pago.hash);
+      if (pago.aviso) setAviso(pago.aviso);
       const fresco = await cargarDetalleOrganizador(tareaId);
       if (fresco) {
         setTarea(fresco.tarea);
         setFoto(fresco.foto);
+        setContrato(fresco.contratoEscrow ?? pago.contrato);
+        setWallet(fresco.wallet ?? wallet);
         setReal(true);
         return;
       }
-      if (acciones.includes("liberar")) {
+      if (secuencia.includes("liberar") && pago.hash) {
         setTarea((actual) => {
           if (!actual) return actual;
           const hashPago = pago.hash ?? actual.hashPago;
@@ -190,7 +218,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </p>
           ) : null}
 
-          {aviso && tarea.estado !== "pagado" ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+          {aviso ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
 
           {transaccion ? (
             <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">

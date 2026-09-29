@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador } from "./remoto";
+import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, montoDeVista } from "./remoto";
 import type { TareaAdmin } from "./tipos";
 
 const HASH = "ab".repeat(32);
@@ -57,12 +57,22 @@ test("la revisión real usa la tarea del organizador y también pide /api/tareas
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
     llamadas.push(url);
-    if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }, { id: "comida" }] });
+    if (url === "/api/tareas") {
+      return json({
+        tareas: [
+          { id: "stand", hashPago: HASH, contratoEscrow: "CSTAND" },
+          { id: "comida", hashPago: null, contratoEscrow: null },
+        ],
+      });
+    }
     if (url === "/api/revision/stand") {
       return json({
-        tarea: tarea({ hashPago: HASH, estado: "pagado" }),
+        tarea: tarea({ estado: "pagado" }),
         foto: "/api/evidencias/1/foto",
         enlacePago: `https://stellar.expert/explorer/testnet/tx/${HASH}`,
+        contratoEscrow: "CSTAND",
+        walletCobro: "GCOBRO",
+        wallet: "GORGANIZADOR",
       });
     }
     return json({ aviso: "no" }, 404);
@@ -73,6 +83,10 @@ test("la revisión real usa la tarea del organizador y también pide /api/tareas
   assert.equal(detalle?.tarea.hashPago, HASH);
   assert.equal(detalle?.tarea.estado, "pagado");
   assert.equal(detalle?.foto, "/api/evidencias/1/foto");
+  assert.equal(detalle?.contratoEscrow, "CSTAND");
+  assert.equal(detalle?.walletCobro, "GCOBRO");
+  assert.equal(detalle?.wallet, "GORGANIZADOR");
+  assert.equal(montoDeVista(tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.40" })), 12.4);
 });
 
 test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
