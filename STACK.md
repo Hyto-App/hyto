@@ -10,7 +10,11 @@ Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavo
 
 El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
 
-En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
+En el código, de Esteban (PR #14, `ce9ff7c`): Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET` y `POST /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a `qwen/qwen3.8-27b` en Groq. Si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El veredicto se guarda. La pantalla del admin no lo lee. El hash de pago es un campo vacío y ninguna ruta lo escribe. No hay columna `contractId`. No hay Acta. No hay ESLint. Si en Vercel faltan Neon, Blob o Groq, esas rutas responden 503.
+
+La billetera de Cavos es real, en testnet. La dirección queda en el navegador. El módulo de Trustless Work es real y no está unido a Fondear ni a Aprobar. El 28 de septiembre la clave configurada respondió 401 en el sitio.
+
+No hay websocket, ni SSE, ni una consulta repetida. El encabezado no dice el rol. `correoDelToken` decodifica el JWT de Cavos y no verifica la firma. No hay `middleware.ts`. Salvo `POST /api/firma` y `POST /api/firma/enviar`, las rutas de la app no piden sesión.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -26,7 +30,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
+| IA | `qwen/qwen3.8-27b` en Groq describe la foto. No es Llama 4 Scout. Laya corre en el servidor de Abdiel solo si hay `LAYA_URL`, y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo. La IA no mira el rol |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
@@ -39,7 +43,7 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
 | `DATABASE_URL` | Neon. La leen las rutas |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
-| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión usa el guion fijo |
+| `GROQ_API_KEY` | `qwen/qwen3.8-27b`. Sin ella, la revisión usa el guion fijo. El comentario de `.env.example` todavía dice Llama 4 Scout |
 | `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
 | `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
 
@@ -55,11 +59,11 @@ El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `si
 
 La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/:id` lee la foto desde Blob y no publica esa URL. La pantalla recibe `/api/evidencias/:id/foto`.
 
-1. **Qwen 3.8 27B** describe la imagen. Groq, modelo `qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Es el único modelo de esta clave que acepta foto. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo.
-2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
-3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de la foto más esas tres respuestas.
+1. **Qwen 3.8 27B** describe la imagen. Groq, modelo `qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY`. El código no llama a `meta-llama/llama-4-scout-17b-16e-instruct`. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha.
+2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta la llama solo si existe `LAYA_URL`. Esa variable no está publicada. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo. Sin esa URL, el stub deja el trabajo en `parcial`. El reembolso queda en `cumplió` solo si Qwen devolvió monto y fecha dentro del tope.
+3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La frase junta el texto de Qwen y esas tres respuestas. Se guarda en Neon. La bandeja no la muestra. La API no devuelve `origen` ni ese texto. La columna se llama `texto_scout`.
 
-Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
+Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo. En el reembolso, el guion usa US$12.40 y el 27 de septiembre de 2026. El fallo no se escribe en un registro. La IA no se entera del rol. Solo corre al subir la evidencia y al leer `GET` o `POST /api/revision/[id]`.
 
 Hay dos tipos de hito y los dos entran por la misma cámara. El de trabajo pide una foto de lo hecho. El de reembolso pide una foto de la factura o del comprobante. Qwen las describe a las dos. En la factura también extrae monto y fecha, y el código compara ese monto con el tope. Laya clasifica las dos. No hay un lector de PDF ni un flujo distinto. Subir evidencia ya es esa única pantalla; monto y fecha del reembolso solo aparecen si la API los devuelve.
 

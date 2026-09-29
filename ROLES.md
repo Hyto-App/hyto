@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de 
 
 Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
 
-## Estado al 28 de septiembre de 2026
+## Estado al 29 de septiembre de 2026
 
 | Pieza | Estado | Dueño |
 |---|---|---|
@@ -13,15 +13,13 @@ Este archivo es el contexto de trabajo para la IA de cada integrante. Léelo jun
 | Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
 | Esqueleto y admin: crear proyecto, bandeja, revisión y aprobar, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`), sobre la base del PR #1. Ejemplo de ZEEK. `/` es la bandeja. Fondear y Aprobar no firman: el módulo ya está y esos botones no lo llaman | Josué |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
-| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos. Falta cargar las variables en Vercel y migrar | En el código | Esteban |
+| Backend: rutas, Neon, Blob, revisión con `qwen/qwen3.8-27b` e ingreso con Cavos. El rol no se dibuja. Varias rutas no piden sesión. El JWT no se verifica | En el código (PR #14, `ce9ff7c`) | Esteban |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
 | Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
 | `LAYA_URL` | Pendiente | Abdiel |
 
-Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
-
-No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
+En Entrar, la dirección se guarda en pantalla solo cuando el aviso de error no existe. No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
 
 ## Producto
 
@@ -43,17 +41,19 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, hoy se recorre en local Mis tareas, subir la foto y el admin (crear proyecto, bandeja de evidencias, revisión y el informe imprimible), con el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). El módulo de firma ya está (PR #8). Fondear y Aprobar no lo llaman y no firman en Stellar. La revisión con IA y un pago en USDC no están.
+Ese guion es el objetivo. Hoy se recorre Mis tareas y subir la foto contra la API, con vuelta al ejemplo si falla o si pasan 4 segundos. El admin (crear proyecto, bandeja, revisión e informe) sigue en el ejemplo de ZEEK, en `localStorage`: tres trabajos de US$20 y un reembolso de hasta US$15. El módulo de firma ya está (PR #8). Fondear y Aprobar no lo llaman. La revisión con IA existe en el servidor y guarda el veredicto. La pantalla no lo muestra. Un pago en USDC no está. La pantalla no dice "Organizador" ni "Voluntario". No hay vista en vivo entre los dos roles.
+
+**Objetivo de la pantalla.** El encabezado dice "Organizador" o "Voluntario". Lo que hace uno, el otro lo ve. La IA reacciona al rol. Eso está pendiente. No hay websocket, ni SSE, ni consulta repetida. La IA solo corre al subir la evidencia y en `/api/revision/[id]`.
 
 ## Equipo
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
-| Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su servidor |
+| Abdiel Cole | UX, UI, frontend y Laya | Toda la estética y el frontend. Poppins y lima ya en `main` (PR #7). Su Figma es la fuente de verdad. Sigue `LAYA_URL` |
 | Esteban | Backend | Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe |
 | Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`, ya en Vercel) y la liberación del USDC. El módulo y el script ya están (PR #8) |
 | Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
-| Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
+| Raúl | Flujo del voluntario, menos el diseño | Mis tareas y subir evidencia ya en `main` (PR #1). Lo visual lo define Abdiel. Sigue la sesión, la wallet propia y el veredicto en pantalla |
 
 Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: el trabajo es en la nube, cada entrega es una rama `nombre/tarea` y un pull request. La rama nueva sale de `main` actualizado.
 
@@ -61,9 +61,15 @@ Raúl es nuevo en hackatones. Su parte se ve en el demo y tiene revisión al lad
 
 ## Abdiel Cole
 
-UX, identidad de marca, redes y comunicación del pitch.
+Dueño de toda la estética, la UX, la UI y el frontend. También la marca, las redes, el pitch y Laya.
 
-**Empieza por:** la estructura de estas pantallas, con la entrada en un solo botón.
+Abdiel tiene libertad completa de creatividad y edición sobre la UI/UX y el frontend. Puede reorganizar, rediseñar y mover cualquier elemento visual a su criterio.
+
+La app de hoy es un demo funcional. El trabajo es pulirla hasta que se vea como producto. El diseño se apoya en el flujo que ya existe. Su Figma es la fuente de verdad de UX y UI. Josué y Raúl construyen encima de ese Figma.
+
+La etiqueta de rol, la sincronía en vivo y la IA según el rol están pendientes, y son de otros. Abdiel las diseña. No asume que ya funcionan. Hoy el encabezado dice "Hyto". El voluntario se elige con botones. El admin lee un ejemplo local.
+
+**Empieza por:** el Figma sobre las pantallas que ya están, con la entrada en un solo botón.
 
 - Inicio del admin: tres números (presupuesto, pagado, pendiente) y la bandeja de lo que falta aprobar.
 - Crear proyecto: nombre, tareas con monto y un botón para fondear. Sin configurar roles del contrato en la pantalla.
@@ -78,25 +84,27 @@ La tipografía y el color ya están en `main` (PR #7): Poppins 400, 500 y 600, `
 
 Laya corre en su servidor de escritorio, el mismo de Argus, en un entorno de Python aparte y un puerto propio: `pip install "laya[serve]"`, checkpoint `laya-multilingual`. Durante el demo esa máquina queda encendida y alcanzable. La URL pública sale de Tailscale Funnel y va en `LAYA_URL`. No se despliega Laya en Vercel. Esa URL todavía no está.
 
-**Listo cuando:** el resto puede construir esas pantallas sin inventarse el flujo. Josué usa las de admin. Raúl ya usa las del integrante.
+**Listo cuando:** el demo se ve como producto, el Figma sigue siendo la referencia, y el ensayo puede llamar a `LAYA_URL`. Josué arma el admin. Raúl arma el flujo del voluntario. El diseño es de Abdiel.
 
 ## Esteban
 
 Backend. Buen nivel en servidor. Es dueño de todo el backend.
 
-**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Ninguna de esas piezas está en el repo.
+**Empieza por:** lo que el código todavía deja abierto. Los correos de la semilla son `@demo.hyto` y no reciben el código de Cavos. `correoDelToken` decodifica el JWT y no verifica la firma. No hay `middleware.ts`. `GET` y `POST /api/proyectos`, `GET` y `POST /api/revision/[id]`, las rutas de evidencias, `GET /api/tareas` y `GET /api/informe` no piden sesión. La respuesta de la revisión no trae `origen` ni el texto del modelo. Ninguna ruta escribe `hashPago`. El esquema no tiene `contractId`.
 
-La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
+Neon, Blob, las rutas, la semilla de ZEEK y el ingreso con CavosAuth ya están en el repo (PR #14). La foto va a Blob y en Neon queda el identificador.
 
-Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
+La revisión corre en el servidor. El modelo es `qwen/qwen3.8-27b` en Groq (`https://api.groq.com/openai/v1`, `GROQ_API_KEY`). Describe la foto y, si es una factura, saca monto y fecha. Después llama a Laya por `LAYA_URL`, si esa variable existe. Laya devuelve `choice`, `noul` y `score`. Sin `LAYA_URL`, el stub deja el trabajo en `parcial`. El reembolso queda en `cumplió` solo si hay monto y fecha dentro del tope. El código compara el tope. Si falta la clave o un modelo falla, responde el guion fijo y no deja registro. La columna del texto se llama `texto_scout`. El modelo no es Llama 4 Scout. El comentario de `.env.example` todavía nombra a Scout.
 
-El login real de Cavos también es suyo y se conecta a esa base. Hoy el botón Entrar de https://hyto.vercel.app falla. El diagnóstico, del 28 de septiembre de 2026, está en [PLAN.md](PLAN.md).
+Las pantallas del voluntario ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma está en [PLAN.md](PLAN.md). Si no responden en 4 segundos, la UI vuelve al ejemplo.
+
+El diagnóstico del 28 de septiembre está en [PLAN.md](PLAN.md). Esa tabla es del commit `ade63ce`. No describe el código de hoy.
 
 ### Pruebas de punta a punta (2026-09-28)
 
 El 28 de septiembre se recorrió `main` (`ade63ce`) en local y en https://hyto.vercel.app. La bandeja, Mis tareas, la revisión, el informe y subir una foto se abren con el ejemplo de ZEEK. `GET /api/tareas` y `POST /api/evidencias` responden 404. Entrar y Preparar cuentas, en el sitio, fallan con `registry lookup skipped: no login token`. `npm test`: 42 ok, 0 fallos. `npm run build` pasa en Next.js 16.3.6. La tabla está en [PLAN.md](PLAN.md).
 
-Errores verificados, para corregir. El detalle está en [PLAN.md](PLAN.md).
+Errores del 28 de septiembre (`ade63ce`). El detalle está en [PLAN.md](PLAN.md). En `ce9ff7c` las rutas ya existen, Entrar ya usa CavosAuth y `/api/firma` ya pide la sesión del organizador. El 401 de Trustless Work, el admin en `localStorage` y Fondear y Aprobar sin firma siguen abiertos.
 
 1. **Alta.** `lib/integrante/rutas.ts:122`, `:149`, `:155`. Faltan `/api/tareas` y `/api/evidencias`. Las tres llamadas responden 404 y la UI usa ZEEK. Arreglo: las rutas, Neon y Blob.
 2. **Alta.** `components/admin/Entrar.tsx:31`, `lib/integrante/preparar.ts:27`. `Cavos.connect` sin `auth`. En el sitio: `registry lookup skipped: no login token`. Arreglo: CavosAuth, pasar `auth` y leer el rol por email en Neon.
@@ -146,9 +154,9 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel. El código ya entra con CavosAuth. El encabezado no dice el rol. Fondear y Aprobar no firman en Stellar.
 
-**Sigue con:** las rutas de Esteban, y conectar Fondear y Aprobar al módulo de Sebas, ya en `main`: `POST /api/firma`, `signXdr` en el navegador y `POST /api/firma/enviar`. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. Antes, el detalle de `components/admin/Entrar.tsx:46`: `setDireccion` solo cuando `guardado.aviso` es null, para poder reintentar el guardado.
+**Empieza por:** leer la bandeja, la revisión y el informe desde `GET /api/informe` y `GET /api/revision/:id`. Hoy esas pantallas usan `hyto-admin` y el ejemplo queda fijo. En el encabezado, poner "Organizador". Consultar de nuevo la API para ver lo que sube el voluntario. No hay otra sincronía en el código. Después, Fondear y Aprobar llaman a `POST /api/firma`, el navegador firma con `signXdr` y `POST /api/firma/enviar` manda el XDR. El 30 de septiembre, subir a 16.3.7 cuando salga el parche. En Entrar, `setDireccion` ya espera a que el guardado no traiga aviso.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -158,10 +166,10 @@ El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl 
 
 App del integrante y preparación de las cuentas del demo.
 
-**Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
+**Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban. Si no responden, o si pasan de 4 segundos, muestran el ejemplo de ZEEK. El voluntario se elige con botones. La dirección vive en `localStorage`. Al subir, la wallet se manda solo si la tarea ya trae `walletCobro`.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Empieza por:** confirmar con el equipo el alcance. Es lo que no es billetera, backend ni IA, y lo que no es el frontend de Abdiel. Lo visual lo define el Figma de Abdiel. En el flujo, tres pendientes: el voluntario sale de la sesión, se manda la wallet de esa persona, y después de subir se muestra el veredicto guardado. El corte de 4 segundos lo ve con Esteban. Las cuatro cuentas de Cavos siguen en `/cuentas`. `NEXT_PUBLIC_CAVOS_APP_ID` ya está. Cada una muestra `G…` y abre la trustline de USDC. Los correos que sí reciban el código los deja Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni el diseño del admin.
 
-**Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
+**Listo cuando:** un voluntario entra con su sesión, ve su tarea, sube una foto, ve el veredicto y esa evidencia aparece en el panel de revisión.
 
 El orden completo de los cinco está en [PLAN.md](PLAN.md).

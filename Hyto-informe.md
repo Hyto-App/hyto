@@ -35,7 +35,7 @@ El mismo problema aparece en gastos operativos, pagos por entregables y reembols
 
 1. **Presupuesto con reglas.** El organizador crea un proyecto, deposita fondos en un escrow de Trustless Work y los divide por tareas, cada una con monto y condiciones. El dinero queda bloqueado.
 2. **Evidencia obligatoria.** Cada hito es trabajo o reembolso. Los dos se suben con la misma cámara: una foto de lo hecho, o una foto de la factura. La revisión es la misma.
-3. **Revisión con IA.** Qwen 3.8 27B en Groq describe la foto. Laya, en la computadora Windows de Abdiel, la clasifica con tres respuestas. El código arma cumplió, parcial o insuficiente. Ninguno mueve dinero.
+3. **Revisión con IA.** Qwen 3.8 27B (`qwen/qwen3.8-27b`) en Groq describe la foto. No es Llama 4 Scout. Laya, en la computadora Windows de Abdiel, la clasifica con tres respuestas cuando existe `LAYA_URL`. El código arma cumplió, parcial o insuficiente. Ninguno mueve dinero. En el demo de hoy el veredicto se guarda y la pantalla del organizador no lo muestra.
 4. **Aprobación humana.** El administrador puede contradecir a la IA. Si aprueba, el hito se libera y el USDC llega a la wallet. El pago es todo o nada: un cumplimiento parcial pide más evidencia o aprueba el monto completo.
 5. **Informe.** Al cerrar: presupuesto contra gasto, detalle por persona con evidencia y el enlace público de cada pago.
 
@@ -83,7 +83,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
-| IA | Qwen 3.8 27B en Groq describe la foto. Laya corre en la PC Windows de Abdiel (`LAYA_URL`) y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. |
+| IA | `qwen/qwen3.8-27b` en Groq describe la foto. Laya corre en la PC Windows de Abdiel solo si hay `LAYA_URL`, y responde categoría, si cumple la condición y qué tan completa está la evidencia. No va en Vercel. El código arma el veredicto. Si falla, un guion fijo. `LAYA_URL` sigue pendiente. |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 
@@ -105,15 +105,15 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, UI, frontend y Laya | El demo es un prototipo. Lo pule a producto. Abdiel tiene libertad completa de creatividad y edición sobre la UI/UX y el frontend. Puede reorganizar, rediseñar y mover cualquier elemento visual a su criterio. Su Figma es la fuente de verdad. Poppins y lima ya están (PR #7). Sigue `LAYA_URL` | El demo se ve como producto y puede llamar a `LAYA_URL` |
+| Esteban | Backend | Neon, Blob, rutas y CavosAuth ya están (PR #14). Siguen correos reales, la firma del token, las rutas abiertas y los campos que la API no devuelve | Un correo real entra, la sesión protege las rutas y el veredicto se puede leer |
+| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). El `appId` de Cavos ya está. Siguen una clave que Trustless acepte, el escrow, USDC de testnet y el hash | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas del admin ya están, con datos de ejemplo. Sigue cablearlas a la API, la etiqueta "Organizador", una consulta repetida, y Fondear y Aprobar con `POST /api/firma` y `signXdr` | El admin crea, revisa, aprueba en Stellar y abre el informe |
+| Raúl | Flujo del voluntario | Mis tareas y subir evidencia ya están (PR #1). Lo visual lo define Abdiel. Confirma el resto del alcance. Sigue la sesión, la wallet propia, el veredicto en pantalla y el tiempo de subida con Esteban | El voluntario entra con su sesión, sube una foto, ve el veredicto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `NEXT_PUBLIC_CAVOS_APP_ID` y `LAYA_URL` todavía no están. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Siguen en el ejemplo local. Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.) y es dueño de todo el frontend. La base de Next.js salió en el PR #1. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. `LAYA_URL` no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de pago en el repositorio. Esteban dejó el backend en el PR #14. El estado de cada paso está en [README.md](README.md).
 
 ## 8. Guion de demo
 
@@ -127,7 +127,7 @@ Evento de ZEEK. Los montos son de ejemplo.
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces.
 
-Josué cierra el guion el sábado 3 de octubre. Raúl prepara las cuentas. Sebas hace el pago en vivo.
+Ese guion es el objetivo. Hoy el organizador y el voluntario no se ven en vivo, y la IA no reacciona al rol. Josué cierra el guion el sábado 3 de octubre. Raúl prepara las cuentas. Sebas hace el pago en vivo. Abdiel deja la interfaz.
 
 **Pitch de 3 minutos.** 0:00 gancho. 0:20 problema (SINPE y WhatsApp). 0:50 solución. 1:20 demo. 2:20 por qué Stellar. 2:40 equipo, visión y siguiente paso.
 
