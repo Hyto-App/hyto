@@ -1,6 +1,7 @@
+import "./aplicar-guardia";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "./montar";
 import assert from "node:assert/strict";
-import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
+import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { createElement } from "react";
 import { Bandeja } from "../../components/admin/Bandeja";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
@@ -12,9 +13,11 @@ import { POST as evidenciasPost } from "../../app/api/evidencias/route";
 import { GET as informeGet } from "../../app/api/informe/route";
 import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
 import { GET as revisionGet } from "../../app/api/revision/[id]/route";
-import { prepararBase, soltar, tomar } from "./postgres";
+import { motivoSuiteSync } from "./guardia";
+import { prepararSuite, soltar, tomar } from "./postgres";
+import { cookieSesionPrueba } from "./sesion-prueba";
 
-const preparado = prepararBase();
+const motivo = motivoSuiteSync();
 
 describe("admin", { concurrency: false }, () => {
 describe("pantallas de admin", { concurrency: false }, () => {
@@ -151,18 +154,12 @@ describe("pantallas de admin", { concurrency: false }, () => {
   });
 });
 
-describe("flujo de admin en la base", { concurrency: false }, () => {
-  let hayBase = false;
-
+describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () => {
   before(async () => {
-    hayBase = await preparado;
+    await prepararSuite();
   });
 
-  beforeEach(async (contexto) => {
-    if (!hayBase) {
-      (contexto as TestContext).skip("no hay base local");
-      return;
-    }
+  beforeEach(async () => {
     await tomar();
   });
 
@@ -171,10 +168,11 @@ describe("flujo de admin en la base", { concurrency: false }, () => {
   });
 
   test("crear un proyecto, subir evidencia y verla en la revisión y el informe", async () => {
+    const sesion = await cookieSesionPrueba();
     const creado = await proyectosPost(
       new Request("http://local/api/proyectos", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", cookie: sesion },
         body: JSON.stringify({
           nombre: "Feria",
           tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "8", condicion: "Cajas cerradas", miembroId: "voluntario-2" }],
@@ -196,10 +194,12 @@ describe("flujo de admin en la base", { concurrency: false }, () => {
     const datos = new FormData();
     datos.set("tareaId", tareaId);
     datos.set("foto", new Blob([Uint8Array.from([4, 5, 6])], { type: "image/jpeg" }), "cajas.jpg");
-    const evidencia = await evidenciasPost(new Request("http://local/api/evidencias", { method: "POST", body: datos }));
+    const evidencia = await evidenciasPost(
+      new Request("http://local/api/evidencias", { method: "POST", body: datos, headers: { cookie: sesion } }),
+    );
     assert.equal(evidencia.status, 201);
 
-    const revision = await revisionGet(new Request(`http://local/api/revision/${tareaId}`), {
+    const revision = await revisionGet(new Request(`http://local/api/revision/${tareaId}`, { headers: { cookie: sesion } }), {
       params: Promise.resolve({ id: tareaId }),
     });
     assert.equal(revision.status, 200);

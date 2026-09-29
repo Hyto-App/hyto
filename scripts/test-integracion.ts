@@ -42,6 +42,10 @@ async function main(): Promise<void> {
           TRUSTLESS_API_KEY: "",
           BLOB_READ_WRITE_TOKEN: "",
           NEXT_PUBLIC_CAVOS_APP_ID: "",
+          CAVOS_JWT_JWK: "",
+          CAVOS_JWKS_URL: "",
+          CAVOS_JWT_ISSUER: "",
+          CAVOS_JWT_AUDIENCE: "",
         },
       },
     );

@@ -6,7 +6,8 @@ import { crearFotosMemoria } from "../../lib/blob/fotos";
 import type { Almacen } from "../../lib/db/almacen";
 import { crearAlmacenDesde, type DbAlmacen } from "../../lib/db/neon";
 import { sentencias } from "../../lib/db/sql";
-import { esHostLocal, urlLocal } from "./url-local";
+import { asegurarCerrado, planDeEntorno } from "./guardia";
+import { urlLocal } from "./url-local";
 
 type GanchoAlmacen = () => Promise<Almacen | null>;
 type GanchoFotos = () => Fotos | null;
@@ -21,9 +22,20 @@ let almacen: Almacen | null = null;
 let fotos: Fotos | null = null;
 let candado: pg.PoolClient | null = null;
 let lista = false;
+let preparación: Promise<SuiteLocal> | null = null;
+
+export type SuiteLocal = {
+  lista: boolean;
+  motivo: false | string;
+};
 
 export function baseLista(): boolean {
   return lista;
+}
+
+export function almacenDePrueba(): Almacen {
+  if (!almacen) throw new Error("No hay base local.");
+  return almacen;
 }
 
 export function usarAlmacen(gancho: GanchoAlmacen): void {
@@ -34,23 +46,19 @@ export function usarFotos(gancho: GanchoFotos): void {
   globales.__HYTO_FOTOS_PRUEBA = gancho;
 }
 
-function clavesExternasFuera(): void {
-  delete process.env.GROQ_API_KEY;
-  delete process.env.LAYA_URL;
-  delete process.env.LAYA_API_KEY;
-  delete process.env.TRUSTLESS_API_KEY;
-  delete process.env.BLOB_READ_WRITE_TOKEN;
-  delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+export function prepararSuite(): Promise<SuiteLocal> {
+  preparación ??= prepararUnaVez();
+  return preparación;
 }
 
-export async function prepararBase(): Promise<boolean> {
-  const url = urlLocal();
-  if (!esHostLocal(url)) {
-    console.log("test:integracion: la URL no apunta a una base local; se omite sin conectar.");
-    return false;
+async function prepararUnaVez(): Promise<SuiteLocal> {
+  asegurarCerrado();
+  const plan = planDeEntorno();
+  if (!plan.conectar) {
+    console.log(`test:integracion: ${plan.motivo}; se omite sin conectar.`);
+    return { lista: false, motivo: plan.motivo };
   }
-  clavesExternasFuera();
-  process.env.DATABASE_URL = url;
+  const url = urlLocal();
   pool = new pg.Pool({
     connectionString: url,
     max: 4,
@@ -64,22 +72,27 @@ export async function prepararBase(): Promise<boolean> {
     console.log("test:integracion: no hay base Postgres local; se omite.");
     await pool.end().catch(() => undefined);
     pool = null;
-    return false;
+    return { lista: false, motivo: "no hay base local" };
   }
   try {
     const sql = readFileSync("drizzle/0000_inicio.sql", "utf8");
     for (const sentencia of sentencias(sql)) {
       await cliente.query(sentencia);
     }
-  } finally {
+  } catch (error) {
     cliente.release();
+    await pool.end().catch(() => undefined);
+    pool = null;
+    throw error;
   }
+  cliente.release();
+  process.env.DATABASE_URL = url;
   almacen = crearAlmacenDesde(drizzle(pool) as unknown as DbAlmacen);
   fotos = crearFotosMemoria();
   usarAlmacen(async () => almacen);
   usarFotos(() => fotos);
   lista = true;
-  return true;
+  return { lista: true, motivo: false };
 }
 
 export async function tomar(): Promise<void> {

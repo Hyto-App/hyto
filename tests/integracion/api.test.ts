@@ -1,5 +1,6 @@
+import "./aplicar-guardia";
 import assert from "node:assert/strict";
-import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
+import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { POST as sesionPost } from "../../app/api/sesion/route";
 import { GET as tareasGet } from "../../app/api/tareas/route";
 import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
@@ -11,13 +12,15 @@ import { GET as fotoGet } from "../../app/api/evidencias/[id]/foto/route";
 import { POST as firmaPost } from "../../app/api/firma/route";
 import { POST as enviarPost } from "../../app/api/firma/enviar/route";
 import { reiniciarLimite } from "../../lib/escrow/limite";
-import { baseLista, consulta, prepararBase, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
+import { motivoSuiteSync } from "./guardia";
+import { consulta, prepararSuite, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
+import { cookieSesionPrueba } from "./sesion-prueba";
 
 const CUENTA = `G${"A".repeat(55)}`;
 const CONTRATO = `C${"A".repeat(55)}`;
 const HASH = "ab".repeat(32);
 
-const preparado = prepararBase();
+const motivo = motivoSuiteSync();
 
 type Json = Record<string, unknown>;
 
@@ -66,6 +69,10 @@ function contexto(id: string): { params: Promise<{ id: string }> } {
   return { params: Promise.resolve({ id }) };
 }
 
+function pedidoRevision(id: string, cookie: string, method = "GET"): Request {
+  return new Request(`http://local/api/revision/${id}`, { method, headers: { cookie } });
+}
+
 function proyectoNuevo() {
   return {
     nombre: "Feria",
@@ -94,18 +101,12 @@ async function conFetch(impl: typeof fetch, trabajo: () => Promise<void>): Promi
   }
 }
 
-describe("rutas de app/api contra Postgres local", { concurrency: false }, () => {
-  let hayBase = false;
-
+describe("rutas de app/api contra Postgres local", { concurrency: false, skip: motivo }, () => {
   before(async () => {
-    hayBase = await preparado;
+    await prepararSuite();
   });
 
-  beforeEach(async (contexto) => {
-    if (!hayBase) {
-      (contexto as TestContext).skip("no hay base local");
-      return;
-    }
+  beforeEach(async () => {
     await tomar();
     reiniciarLimite();
   });
@@ -184,8 +185,9 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(filas.rowCount, 0);
   });
 
-  test("POST /api/proyectos crea el proyecto sin sesión y GET devuelve el último", async () => {
-    const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo()));
+  test("POST /api/proyectos crea el proyecto con la sesión del organizador y GET devuelve el último", async () => {
+    const sesion = await cookieSesionPrueba();
+    const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo(), sesion));
     assert.equal(creado.status, 201);
     const json = (await leer(creado)) as {
       proyecto?: { nombre?: string };
@@ -215,12 +217,13 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
   });
 
   test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {
+    const sesion = await cookieSesionPrueba();
     await proyectosGet();
-    const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{"));
+    const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{", sesion));
     assert.equal(noJson.status, 400);
     assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
 
-    const vacio = await proyectosPost(pedido("http://local/api/proyectos", { nombre: "Feria", tareas: [] }));
+    const vacio = await proyectosPost(pedido("http://local/api/proyectos", { nombre: "Feria", tareas: [] }, sesion));
     assert.equal(vacio.status, 400);
     assert.equal(avisoDe(await leer(vacio)), "Escribe el nombre y al menos una tarea con monto.");
 
@@ -228,7 +231,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
       pedido("http://local/api/proyectos", {
         nombre: "Feria",
         tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "0" }],
-      }),
+      }, sesion),
     );
     assert.equal(sinMonto.status, 400);
 
@@ -236,7 +239,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
       pedido("http://local/api/proyectos", {
         nombre: "Feria",
         tareas: [{ titulo: "Cajas", tipo: "otro", monto: "8" }],
-      }),
+      }, sesion),
     );
     assert.equal(tipo.status, 400);
     const filas = await consulta<{ nombre: string }>("select nombre from proyectos");
@@ -277,7 +280,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
   });
 
   test("GET /api/revision/:id devuelve la tarea y 404 si no existe", async () => {
-    const ok = await revisionGet(new Request("http://local/api/revision/stand"), contexto("stand"));
+    const sesion = await cookieSesionPrueba();
+    const ok = await revisionGet(pedidoRevision("stand", sesion), contexto("stand"));
     assert.equal(ok.status, 200);
     const json = (await leer(ok)) as {
       tarea?: { id: string; veredicto: string | null; estado: string };
@@ -290,13 +294,14 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(json.foto, null);
     assert.equal(json.enlacePago, null);
 
-    const falta = await revisionGet(new Request("http://local/api/revision/no-existe"), contexto("no-existe"));
+    const falta = await revisionGet(pedidoRevision("no-existe", sesion), contexto("no-existe"));
     assert.equal(falta.status, 404);
     assert.equal(avisoDe(await leer(falta)), "No encontramos esa tarea.");
   });
 
   test("POST /api/evidencias guarda la foto, revisa con el guion y GET la lee", async () => {
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida")));
+    const sesion = await cookieSesionPrueba();
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), sesion));
     assert.equal(creada.status, 201);
     const json = (await leer(creada)) as { evidencia?: { id: string; monto: string; fecha: string; tareaId: string } };
     const id = json.evidencia?.id ?? "";
@@ -320,7 +325,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(foto.headers.get("content-type"), "image/jpeg");
     assert.equal((await foto.arrayBuffer()).byteLength, 4);
 
-    const revision = await revisionGet(new Request("http://local/api/revision/comida"), contexto("comida"));
+    const revision = await revisionGet(pedidoRevision("comida", sesion), contexto("comida"));
     const vista = (await leer(revision)) as {
       tarea?: { veredicto: string; estado: string; frase: string };
       foto?: string;
@@ -337,54 +342,60 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
   });
 
   test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async () => {
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9]))));
+    const sesion = await cookieSesionPrueba();
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), sesion));
     const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
     await consulta("update veredictos set veredicto = 'insuficiente', frase = 'cambiado' where evidencia_id = $1", [id]);
 
-    const lectura = await revisionGet(new Request("http://local/api/revision/stand"), contexto("stand"));
+    const lectura = await revisionGet(pedidoRevision("stand", sesion), contexto("stand"));
     const guardado = (await leer(lectura)) as { tarea?: { veredicto: string; frase: string } };
     assert.equal(guardado.tarea?.veredicto, "insuficiente");
     assert.equal(guardado.tarea?.frase, "cambiado");
 
-    const forzada = await revisionPost(new Request("http://local/api/revision/stand", { method: "POST" }), contexto("stand"));
+    const forzada = await revisionPost(pedidoRevision("stand", sesion, "POST"), contexto("stand"));
     assert.equal(forzada.status, 200);
     const otra = (await leer(forzada)) as { tarea?: { veredicto: string; frase: string }; enlacePago?: string | null };
     assert.equal(otra.tarea?.veredicto, "parcial");
     assert.match(otra.tarea?.frase ?? "", /Mesa armada/);
     assert.equal(otra.enlacePago, null);
 
-    const falta = await revisionPost(new Request("http://local/api/revision/no-existe", { method: "POST" }), contexto("no-existe"));
+    const falta = await revisionPost(pedidoRevision("no-existe", sesion, "POST"), contexto("no-existe"));
     assert.equal(falta.status, 404);
   });
 
   test("POST /api/evidencias rechaza entrada inválida, tarea ajena y foto enorme", async () => {
+    const sesion = await cookieSesionPrueba();
     const noLlego = await evidenciasPost(
-      new Request("http://local/api/evidencias", { method: "POST", body: "hola", headers: { "content-type": "text/plain" } }),
+      new Request("http://local/api/evidencias", {
+        method: "POST",
+        body: "hola",
+        headers: { "content-type": "text/plain", cookie: sesion },
+      }),
     );
     assert.equal(noLlego.status, 400);
     assert.equal(avisoDe(await leer(noLlego)), "La foto no llegó.");
 
     const incompleta = new FormData();
     incompleta.set("tareaId", "stand");
-    const sinFoto = await evidenciasPost(pedido("http://local/api/evidencias", incompleta));
+    const sinFoto = await evidenciasPost(pedido("http://local/api/evidencias", incompleta, sesion));
     assert.equal(sinFoto.status, 400);
     assert.equal(avisoDe(await leer(sinFoto)), "Faltan la tarea y la foto.");
 
     const texto = new FormData();
     texto.set("tareaId", "stand");
     texto.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
-    const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto));
+    const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto, sesion));
     assert.equal(noImagen.status, 400);
     assert.equal(avisoDe(await leer(noImagen)), "Elige una foto.");
 
-    const ajena = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("no-existe")));
+    const ajena = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("no-existe"), sesion));
     assert.equal(ajena.status, 404);
     assert.equal(avisoDe(await leer(ajena)), "No encontramos esa tarea.");
 
     const grande = new FormData();
     grande.set("tareaId", "stand");
     grande.set("foto", new Blob([new Uint8Array(8_000_001)], { type: "image/jpeg" }), "grande.jpg");
-    const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande));
+    const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande, sesion));
     assert.equal(pesada.status, 413);
     assert.equal(avisoDe(await leer(pesada)), "La foto es demasiado grande.");
   });
@@ -399,8 +410,9 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
   });
 
   test("las rutas de evidencia sin almacén de fotos responden 503", async () => {
+    const sesion = await cookieSesionPrueba();
     usarFotos(() => null);
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand")));
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand"), sesion));
     assert.equal(creada.status, 503);
     assert.equal(avisoDe(await leer(creada)), "El almacén de fotos no está configurado.");
 
