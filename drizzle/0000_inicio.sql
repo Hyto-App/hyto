@@ -53,5 +53,8 @@ CREATE TABLE IF NOT EXISTS sesiones (
   email text NOT NULL,
   usuario_id text NOT NULL,
   rol text NOT NULL,
-  expira_en text NOT NULL
+  expira_en text NOT NULL,
+  wallet text NOT NULL DEFAULT ''
 );
+
+ALTER TABLE sesiones ADD COLUMN IF NOT EXISTS wallet text NOT NULL DEFAULT '';

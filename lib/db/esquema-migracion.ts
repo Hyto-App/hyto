@@ -146,11 +146,11 @@ function aplicar(esquema: EsquemaEsperado, sentencia: string, archivo: string): 
   if (alter) {
     const tabla = alter[2];
     const cuerpo = alter[3].trim();
-    const agregar = /^add\s+column\s+(?:if\s+not\s+exists\s+)?([\s\S]+)$/i.exec(cuerpo);
+    const agregar = /^add\s+column\s+(if\s+not\s+exists\s+)?([\s\S]+)$/i.exec(cuerpo);
     if (agregar) {
       asegurarTabla(esquema, tabla);
-      const columna = parsearColumna(tabla, agregar[1].trim(), esquema.avisos);
-      if (columna) guardarColumna(esquema, columna);
+      const columna = parsearColumna(tabla, agregar[2].trim(), esquema.avisos);
+      if (columna) guardarColumna(esquema, columna, Boolean(agregar[1]));
       return;
     }
     const fk = /^add\s+constraint\s+"?[A-Za-z_][\w]*"?\s+foreign\s+key\s*\(([^)]+)\)\s+([\s\S]+)$/i.exec(cuerpo);
@@ -184,13 +184,28 @@ function asegurarTabla(esquema: EsquemaEsperado, tabla: string): string {
   return tabla;
 }
 
-function guardarColumna(esquema: EsquemaEsperado, columna: ColumnaEsperada): void {
+function guardarColumna(esquema: EsquemaEsperado, columna: ColumnaEsperada, siNoExiste = false): void {
   const previa = esquema.columnas.find((actual) => actual.tabla === columna.tabla && actual.nombre === columna.nombre);
   if (previa) {
+    if (siNoExiste && mismaColumna(previa, columna)) return;
     esquema.avisos.push(`La columna ${columna.tabla}.${columna.nombre} está repetida. Confirmar con Esteban.`);
     return;
   }
   esquema.columnas.push(columna);
+}
+
+function mismaColumna(previa: ColumnaEsperada, columna: ColumnaEsperada): boolean {
+  return (
+    previa.tipo === columna.tipo &&
+    previa.nullable === columna.nullable &&
+    previa.defecto === columna.defecto &&
+    previa.primaryKey === columna.primaryKey &&
+    previa.unique === columna.unique &&
+    previa.alBorrar === columna.alBorrar &&
+    previa.alBorrarExplicito === columna.alBorrarExplicito &&
+    previa.referencia?.tabla === columna.referencia?.tabla &&
+    previa.referencia?.columna === columna.referencia?.columna
+  );
 }
 
 function parsearColumna(tabla: string, parte: string, avisos: string[]): ColumnaEsperada | null {

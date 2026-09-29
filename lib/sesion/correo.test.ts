@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey, type KeyObject } from "node:crypto";
 import test from "node:test";
-import { correoDelToken } from "./correo";
+import { correoDelToken, walletDelToken } from "./correo";
 import { HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
 
 delete process.env.CAVOS_JWT_JWK;
@@ -73,6 +73,14 @@ test("sin clave configurada no autentica la firma", async () => {
   assert.equal(await correoDelToken(payload(claims({ email: "Organizador@demo.hyto" })), "", sinClave), null);
   assert.equal(await verificarJwt(tokenAlgNone(claims()), sinClave), null);
   assert.equal(await verificarJwt(firmar(claims(), otra.privateKey), sinClave), null);
+});
+
+test("la wallet del ingreso sale del token si es una cuenta", () => {
+  const cuenta = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  assert.equal(walletDelToken(payload({ sub: "abc", wallet: cuenta })), cuenta);
+  assert.equal(walletDelToken(payload({ sub: "abc", identity: { stellar_address: cuenta } })), cuenta);
+  assert.equal(walletDelToken(payload({ sub: "abc", email: "a@b.co" })), null);
+  assert.equal(walletDelToken(payload({ wallet: "no-es-cuenta" })), null);
 });
 
 test("el permiso de desarrollo lee el token sin firma y producción lo ignora", async () => {

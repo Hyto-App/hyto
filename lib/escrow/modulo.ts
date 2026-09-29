@@ -1,5 +1,6 @@
 import { claveDeTrustless } from "@/lib/config/entorno";
-import { baseDe, convieneFriendbot, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { baseDe, convieneFriendbot, esContrato, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { revisarResolucion } from "./resolver";
 import type { AccionFirma, CuentasDespliegue, OpcionesRed, PagoEnviado, XdrListo } from "./tipos";
 
 export class ErrorFirma extends Error {
@@ -18,10 +19,56 @@ export function reintentarConFriendbot(error: unknown): boolean {
   return error instanceof ErrorFirma && convieneFriendbot(error.codigo);
 }
 
+export function textoDeError(error: unknown): string {
+  if (error instanceof ErrorFirma) {
+    if (error.codigo === "AUTH_INVALID_FORMAT") {
+      return "La clave de Trustless Work tiene que ser id.secreto (AUTH_INVALID_FORMAT).";
+    }
+    if (error.codigo === "AUTH_INVALID_CREDENTIAL") {
+      return "Trustless Work no reconoce la clave (AUTH_INVALID_CREDENTIAL).";
+    }
+    return error.codigo ? `${error.message} (${error.codigo})` : error.message;
+  }
+  if (error instanceof Error) return error.message;
+  return "Error desconocido.";
+}
+
 export async function preparar(accion: AccionFirma, opciones: OpcionesRed = {}): Promise<XdrListo> {
-  const pedido = pedidoAccion(accion, opciones.red ?? "v2");
+  const red = opciones.red ?? "v2";
+  if (accion.accion === "resolver" && red === "v2") {
+    const fuentes: unknown[] = [await leerEscrow(accion.contrato, opciones)];
+    if (opciones.guardado !== undefined) fuentes.push(opciones.guardado);
+    const fallo = revisarResolucion(accion, fuentes);
+    if (fallo) throw new ErrorFirma(fallo.mensaje, fallo.estado, fallo.codigo);
+  }
+  const pedido = pedidoAccion(accion, red);
   if (typeof pedido === "string") throw new ErrorFirma(pedido, 400, null);
   return leerXdr(await post(pedido.ruta, pedido.cuerpo, opciones));
+}
+
+export function respuestaDeLectura(error: unknown): Response {
+  if (error instanceof ErrorFirma && error.estado !== 400 && error.estado !== 503 && error.estado !== 401) {
+    return Response.json({ aviso: error.message, codigo: error.codigo }, { status: 502 });
+  }
+  return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+}
+
+export function respuestaDeErrorFirma(error: unknown, avisoPorDefecto: string): Response {
+  if (error instanceof ErrorFirma) {
+    if (error.estado === 401) {
+      const detalle = error.codigo ? ` (${error.codigo})` : "";
+      return Response.json(
+        {
+          aviso: `Trustless Work no autorizó la clave del servidor${detalle}.`,
+          codigo: "TRUSTLESS_AUTH",
+        },
+        { status: 502 },
+      );
+    }
+    const estado = error.estado >= 400 && error.estado <= 599 ? error.estado : 502;
+    return Response.json({ aviso: error.message, codigo: error.codigo }, { status: estado });
+  }
+  return Response.json({ aviso: avisoPorDefecto }, { status: 502 });
 }
 
 export async function prepararDespliegue(cuentas: CuentasDespliegue, opciones: OpcionesRed = {}): Promise<XdrListo> {
@@ -38,7 +85,23 @@ export async function enviar(xdrFirmado: string, opciones: OpcionesRed = {}): Pr
   return leerPago(await post(ruta, { signedXdr: xdr }, opciones));
 }
 
+export async function leerEscrow(contrato: string, opciones: OpcionesRed = {}): Promise<Record<string, unknown>> {
+  if (!esContrato(contrato)) throw new ErrorFirma("El contrato del pago no es válido.", 400, null);
+  const json = await get(`/escrow/multi-release/v2/${contrato}`, { ...opciones, red: "v2" });
+  const datos = registro(json);
+  if (!texto(datos.contractId)) throw new ErrorFirma("La red no devolvió el escrow.", 502, null);
+  return datos;
+}
+
 async function post(ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promise<unknown> {
+  return pedir("POST", ruta, cuerpo, opciones);
+}
+
+async function get(ruta: string, opciones: OpcionesRed): Promise<unknown> {
+  return pedir("GET", ruta, undefined, opciones);
+}
+
+async function pedir(metodo: "GET" | "POST", ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promise<unknown> {
   const clave = (opciones.clave ?? claveDeTrustless() ?? "").trim();
   if (!clave) throw new ErrorFirma("Falta la clave de Trustless Work en el servidor.", 503, null);
   const base = (opciones.base ?? baseDe(opciones.red ?? "v2")).replace(/\/$/, "");
@@ -46,13 +109,13 @@ async function post(ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promi
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${base}${ruta}`, {
-      method: "POST",
+      method: metodo,
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(metodo === "POST" ? { "Content-Type": "application/json" } : {}),
         "x-api-key": clave,
       },
-      body: JSON.stringify(cuerpo),
+      ...(metodo === "POST" ? { body: JSON.stringify(cuerpo) } : {}),
     });
   } catch {
     throw new ErrorFirma("No se pudo hablar con Trustless Work.", 502, null);

@@ -51,6 +51,7 @@ export async function cookieSesionPrueba(rol: Rol = "organizador"): Promise<stri
     usuarioId: identidad.id,
     rol,
     expiraEn: expiracion(),
+    wallet: "",
   });
   return cookieDesdeToken(token);
 }

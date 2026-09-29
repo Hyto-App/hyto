@@ -1,5 +1,6 @@
 const VENTANA_MS = 60_000;
 const TOPE = 30;
+const TOPE_LECTURA = 120;
 const TOPE_CUERPO = 200_000;
 const TOPE_XDR = 100_000;
 
@@ -9,9 +10,9 @@ export function reiniciarLimite(): void {
   marcas.clear();
 }
 
-export function excedido(clave: string, ahora = Date.now()): boolean {
+export function excedido(clave: string, ahora = Date.now(), tope = TOPE): boolean {
   const recientes = (marcas.get(clave) ?? []).filter((marca) => ahora - marca < VENTANA_MS);
-  if (recientes.length >= TOPE) {
+  if (recientes.length >= tope) {
     marcas.set(clave, recientes);
     return true;
   }
@@ -26,9 +27,14 @@ export function clienteDe(request: Request): string {
   return ip || "local";
 }
 
-export function respuestaSiExcedido(request: Request): Response | null {
-  if (!excedido(clienteDe(request))) return null;
-  return Response.json({ aviso: "Demasiadas solicitudes de firma. Esperá un momento." }, { status: 429 });
+export function respuestaSiExcedido(request: Request, cubo: "firma" | "lectura" = "firma"): Response | null {
+  const tope = cubo === "lectura" ? TOPE_LECTURA : TOPE;
+  if (!excedido(`${cubo}:${clienteDe(request)}`, Date.now(), tope)) return null;
+  const aviso =
+    cubo === "lectura"
+      ? "Demasiadas lecturas del escrow. Esperá un momento."
+      : "Demasiadas solicitudes de firma. Esperá un momento.";
+  return Response.json({ aviso }, { status: 429 });
 }
 
 export function respuestaSiCuerpoGrande(request: Request): Response | null {

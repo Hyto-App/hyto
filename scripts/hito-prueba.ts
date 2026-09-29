@@ -8,8 +8,8 @@ import {
   Operation,
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
-import { enlacePago } from "../lib/escrow/cuerpos";
-import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot } from "../lib/escrow/modulo";
+import { claveDeV1, enlacePago } from "../lib/escrow/cuerpos";
+import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot, textoDeError } from "../lib/escrow/modulo";
 import type { AccionFirma, CuentasDespliegue, PagoEnviado, RedEscrow } from "../lib/escrow/tipos";
 import { claveDeTrustless } from "../lib/config/entorno";
 import { USDC } from "../lib/integrante/identidades";
@@ -63,14 +63,21 @@ async function main(): Promise<void> {
     guardarPago(pago);
     return;
   } catch (error) {
-    console.error(`v2 no liberó el hito: ${mensaje(error)}`);
+    console.error(`v2 no liberó el hito: ${textoDeError(error)}`);
+  }
+
+  const v1 = claveDeV1();
+  if (!("clave" in v1)) {
+    console.error(v1.aviso);
+    console.error("El Acta no se integra: no hay un pago en USDC.");
+    process.exit(1);
   }
 
   try {
-    const pago = await correr("v1", cuentas, trustline, clave);
+    const pago = await correr("v1", cuentas, trustline, v1.clave);
     guardarPago(pago);
   } catch (error) {
-    console.error(`v1 tampoco liberó el hito: ${mensaje(error)}`);
+    console.error(`v1 tampoco liberó el hito: ${textoDeError(error)}`);
     console.error("El Acta no se integra: no hay un pago en USDC.");
     process.exit(1);
   }
@@ -116,10 +123,7 @@ async function correr(
     red,
     clave,
   );
-  const pago =
-    red === "v2"
-      ? await paso({ accion: "aprobar", contrato, firmante: cuentas.organizador.public, indice: 0 }, cuentas.organizador, red, clave)
-      : await aprobarYLiberarV1(contrato, cuentas.organizador, red, clave);
+  const pago = await aprobarYLiberar(contrato, cuentas.organizador, red, clave);
   if (!pago.hash) {
     throw new Error("El envío salió bien y no hay hash para guardar el pago.");
   }
@@ -128,7 +132,7 @@ async function correr(
   return { hash: pago.hash, contrato, red };
 }
 
-async function aprobarYLiberarV1(contrato: string, organizador: Par, red: RedEscrow, clave: string): Promise<PagoEnviado> {
+async function aprobarYLiberar(contrato: string, organizador: Par, red: RedEscrow, clave: string): Promise<PagoEnviado> {
   await paso({ accion: "aprobar", contrato, firmante: organizador.public, indice: 0 }, organizador, red, clave);
   return paso({ accion: "liberar", contrato, firmante: organizador.public, indice: 0 }, organizador, red, clave);
 }
@@ -284,7 +288,7 @@ async function pedirUsdc(direccion: string): Promise<string | null> {
     if (!respuesta.ok || graphqlConError(cuerpo)) return cuerpo || `HTTP ${respuesta.status}`;
     return null;
   } catch (error) {
-    return mensaje(error);
+    return textoDeError(error);
   }
 }
 
@@ -304,13 +308,8 @@ function avisarFondeoManual(direccion: string, detalle: string): void {
   console.error(`Grifo: ${GRIFO_USDC}`);
 }
 
-function mensaje(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return "Error desconocido.";
-}
-
 main().catch((error: unknown) => {
-  console.error(mensaje(error));
+  console.error(textoDeError(error));
   console.error("El Acta no se integra: no hay un pago en USDC.");
   process.exit(1);
 });

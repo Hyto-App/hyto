@@ -62,7 +62,7 @@ export function Entrar() {
       if (resultado.direccion) {
         const guardado = guardarDireccionAdmin(resultado.direccion);
         if (!guardado.aviso) setDireccion(resultado.direccion);
-        setAviso(guardado.aviso);
+        setAviso(guardado.aviso ?? resultado.aviso);
         setFase("inicio");
         return;
       }
@@ -154,6 +154,7 @@ export function Entrar() {
       }
       setDireccion(resultado.direccion);
       setFase("inicio");
+      if (resultado.aviso) setAviso(resultado.aviso);
     } catch (error) {
       mostrarFallo(error);
     } finally {

@@ -23,6 +23,18 @@ export async function conectarStellar(auth: AuthProvider) {
   });
 }
 
+export async function fijarWallet(direccion: string): Promise<{ ok: true } | { ok: false; aviso: string }> {
+  const respuesta = await fetch("/api/sesion/wallet", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ wallet: direccion }),
+  });
+  if (respuesta.ok) return { ok: true };
+  const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
+  const aviso = json && typeof json.aviso === "string" ? json.aviso : "No se pudo guardar la wallet de la sesión.";
+  return { ok: false, aviso };
+}
+
 export async function publicarSesion(email: string, token: string | null): Promise<{ ok: true; rol: string } | { ok: false; aviso: string }> {
   if (!email || !token) return { ok: false, aviso: "No se pudo confirmar el ingreso." };
   const respuesta = await fetch("/api/sesion", {
@@ -47,6 +59,8 @@ export async function entrarConCodigo(auth: AuthProvider, email: string, codigo:
   if (billetera.chain !== "stellar" || !billetera.address) {
     return { identity, aviso: "No se pudo entrar.", direccion: null };
   }
+  const guardada = await fijarWallet(billetera.address);
+  if (!guardada.ok) return { identity, aviso: guardada.aviso, direccion: billetera.address };
   return { identity, aviso: null, direccion: billetera.address };
 }
 
@@ -72,6 +86,8 @@ export async function entrarConGoogle(auth: AuthProvider, busqueda: string, redi
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar" || !billetera.address) return { aviso: "No se pudo entrar.", direccion: null };
+  const guardada = await fijarWallet(billetera.address);
+  if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address };
   return { aviso: null, direccion: billetera.address };
 }
 
