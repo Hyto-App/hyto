@@ -5,6 +5,7 @@ import type { Almacen } from "./almacen";
 import { evidencias, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import type { Rol, TareaFila, VeredictoFila } from "./tipos";
+import { urlDeBase } from "@/lib/config/entorno";
 
 function rolDe(valor: string): Rol {
   return valor === "organizador" ? "organizador" : "voluntario";
@@ -143,8 +144,7 @@ function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
 }
 
 export function urlBase(): string | null {
-  const valor = process.env.DATABASE_URL?.trim();
-  return valor ? valor : null;
+  return urlDeBase();
 }
 
 export async function almacenNeon(): Promise<Almacen | null> {

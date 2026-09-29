@@ -1,4 +1,5 @@
 import { get, put } from "@vercel/blob";
+import { tokenDeBlob } from "@/lib/config/entorno";
 
 export type FotoLeida = {
   tipo: string;
@@ -33,7 +34,7 @@ export function fotosBlob(): Fotos | null {
     __HYTO_FOTOS_PRUEBA?: () => Fotos | null;
   };
   if (typeof tabla.__HYTO_FOTOS_PRUEBA === "function") return tabla.__HYTO_FOTOS_PRUEBA();
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  const token = tokenDeBlob();
   if (!token) return null;
   return {
     async guardar(nombre, cuerpo) {

@@ -5,11 +5,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts tests/integracion/guardia.test.ts tests/integracion/sesion-prueba.test.ts",
+    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts lib/config/*.test.ts tests/integracion/guardia.test.ts tests/integracion/sesion-prueba.test.ts",
     "test:integracion": "tsx scripts/test-integracion.ts",
     "hito": "tsx scripts/hito-prueba.ts",
     "db:migrar": "tsx scripts/migrar.ts",
-    "db:semilla": "tsx scripts/semilla.ts"
+    "db:semilla": "tsx scripts/semilla.ts",
+    "verificar:entorno": "tsx scripts/verificar-entorno.ts"
   },
   "dependencies": {
     "@cavos/kit": "0.2.5",
