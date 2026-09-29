@@ -2,7 +2,7 @@
 
 Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de octubre de 2026, 4:00 p.m. Meetup: 30 de septiembre de 2026, TEC Cartago. Demo en Stellar testnet.
 
-Este archivo reparte el trabajo. El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
+Este archivo reparte el trabajo. El contexto del código al 29 de septiembre de 2026 (`9d783b1`, 4:10 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
 
 La lista de errores de más abajo es la auditoría del 28 de septiembre sobre `ade63ce`. Varios ya no describen `main`. No los vuelvas a implementar sin mirar el código.
 
@@ -13,15 +13,17 @@ La lista de errores de más abajo es la auditoría del 28 de septiembre sobre `a
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
 | Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
-| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`). El 28, Fondear y Aprobar no firmaban. En `77a0431` la revisión sí firma: **Desplegar y fondear** y **Aprobar y pagar** | Josué |
+| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`). El 28, Fondear y Aprobar no firmaban. En `9d783b1` la revisión sí firma: **Desplegar y fondear** y **Aprobar y pagar**, si la sesión es el `organizador_id` del proyecto (PR #44) | Josué |
+| Organizador por proyecto, demo sin crear proyectos, evidencia demo y **Prepare USDC** | En `main` el 29 de septiembre por la tarde: PR #44 (1:38 p.m.), PR #47 (2:11 p.m.) y PR #50 (3:02 p.m.), hora de Costa Rica. La migración `0002` no se corrió | Josué |
+| Sesión de Cavos entre pestañas y **Sign out** | En `main` (PR #52, `9d783b1`), el 29 de septiembre a las 4:10 p.m., hora de Costa Rica. Un token vigente se reutiliza. Si venció, ofrece **Sign in again**. Salir limpia servidor y navegador. Los textos están en inglés | Josué |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
-| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos | En el código. Desde el PR #41, un correo nuevo entra como voluntario. Sin Groq queda el guion fijo; sin `LAYA_URL` queda el stub. Hacer que la IA funcione es el paso principal | Esteban |
+| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos | En el código. Desde el PR #41, un correo nuevo entra como voluntario. Sin Groq queda el guion fijo; sin `LAYA_URL` queda el stub. Hacer que la IA funcione es el paso principal. Falta aplicar la `0002` y asignar el dueño de ZEEK | Esteban |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
 | Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
 | `LAYA_URL` | Pendiente | Abdiel |
 
-Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
+El detalle de `setDireccion` en Entrar ya no está: la dirección se guarda solo si no hay aviso.
 
 No hay script `lint`. Cómo correr y el contrato de la API: [README.md](README.md) y [PLAN.md](PLAN.md).
 
@@ -45,16 +47,16 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, se recorre Mis tareas, subir la foto y el admin, con el ejemplo de ZEEK si la API no responde. En `77a0431` la revisión firma en Stellar. Falta un pago real en testnet. La revisión con IA está escrita: sin `GROQ_API_KEY` o si el modelo falla usa el guion fijo, y sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+De eso, se recorre Mis tareas, subir la foto y el admin. Con el demo encendido se ve el proyecto `demo`, no ZEEK. En `9d783b1` la revisión firma en Stellar si la sesión es el organizador del proyecto. Un token de Cavos vigente se reutiliza entre pestañas (PR #52). Falta un pago real en testnet y falta asignar el dueño de ZEEK. La revisión con IA está escrita: sin `GROQ_API_KEY` o si el modelo falla usa el guion fijo, y sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
 
 ## Equipo
 
 | Persona | Rol | Es dueño de |
 |---|---|---|
 | Abdiel Cole | UX, marca y el proceso de Laya | Poppins y lima ya en `main` (PR #7). Sigue Laya encendida en su servidor |
-| Esteban | Backend | Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe |
-| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`, ya en Vercel) y la liberación del USDC. El módulo y el script ya están (PR #8) |
-| Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe |
+| Esteban | Backend | Todo el backend: `/api/tareas`, `/api/evidencias`, Neon (usuarios con email → rol, migraciones y seed), el login real de Cavos contra la base, Vercel Blob, veredicto de la IA y el informe. La `0002` está escrita y falta correrla |
+| Sebas | Escrow y wallet | Trustless Work, Cavos (`NEXT_PUBLIC_CAVOS_APP_ID`, ya en Vercel) y la liberación del USDC. El módulo, el script y **Prepare USDC** ya están |
+| Josué | App del admin | Pantallas del organizador, ya en `main` (PR #3): crear proyecto, bandeja, revisión e informe. El 29 por la tarde también entraron el dueño por proyecto, el bloqueo del demo, la trustline y **Sign out** (PR #52, 4:10 p.m.) |
 | Raúl | App del integrante | Pantallas de tareas y de subir evidencia (ya en `main`), y las cuentas de testnet del demo |
 
 Abdiel no bloquea el código. El orden de cada lista está en [PLAN.md](PLAN.md). Cada quien avanza con datos de prueba propios y solo espera el dato marcado ahí como encuentro. Nadie sube directo a `main`: el trabajo es en la nube, cada entrega es una rama `nombre/tarea` y un pull request. La rama nueva sale de `main` actualizado.
@@ -92,7 +94,7 @@ La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
-El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `77a0431` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario.
+El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `9d783b1` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario. Quien crea un proyecto queda en `organizador_id`. Aplicar la migración `0002` y asignar el dueño de ZEEK es suyo, con el visto bueno de quien es dueño de la base.
 
 ### Pruebas de punta a punta (2026-09-28)
 
@@ -148,9 +150,9 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel. El 28 el botón fallaba y Fondear y Aprobar no firmaban. El login real lo tomó Esteban. La firma desde la revisión entró en el PR #39.
 
-**Sigue con:** el 30 de septiembre, subir a 16.3.7 cuando salga el parche. Fondear y Aprobar de la revisión ya llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`. Quedan los detalles de UX del escrow descritos en [AGENTS.md](AGENTS.md): recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Aprobar y pagar** mientras el escrow no está fondeado.
+**Sigue con:** el 30 de septiembre, subir a 16.3.7 cuando salga el parche. Fondear y Aprobar de la revisión ya llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`, y solo si la sesión es el organizador del proyecto (PR #44). El demo no crea proyectos (PR #47). El botón Fondear de Crear proyecto sigue guardando el borrador en el navegador. **Prepare USDC** ya está (PR #50) y sus textos están en inglés. Desde el PR #52 (4:10 p.m.) un token de Cavos vigente se reutiliza entre pestañas y **Sign out** cierra la sesión; **Sign out** y «Your Cavos session expired.» siguen en inglés. Quedan los detalles de UX del escrow descritos en [AGENTS.md](AGENTS.md): recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Aprobar y pagar** mientras el escrow no está fondeado. Siguen en borrador el PR #18 y el PR #45.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -162,7 +164,7 @@ App del integrante y preparación de las cuentas del demo.
 
 **Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios) para el demo en vivo. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. La trustline de USDC de una sesión real la abre **Prepare USDC** (PR #50, Josué), en la revisión y en subir evidencia. La sesión demo no tiene wallet y esa ruta responde 403. El voluntario demo sí puede subir evidencia, solo al proyecto `demo`. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 

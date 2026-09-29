@@ -2,7 +2,7 @@
 
 Informe del proyecto · 27 de septiembre de 2026
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
+El estado del código al 29 de septiembre de 2026 (`9d783b1`, 4:10 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma, y solo si la sesión es el `organizador_id` del proyecto (PR #44, Josué Valles, 1:38 p.m.). El demo no crea proyectos (PR #47, 2:11 p.m.). El voluntario demo sube evidencia al proyecto `demo` y una sesión real puede abrir la trustline de USDC con **Prepare USDC** (PR #50, 3:02 p.m.). Desde el PR #52 (4:10 p.m.) un token de Cavos que todavía no venció se reutiliza entre pestañas, y **Sign out** cierra la sesión del servidor y la del navegador. La migración `0002` no se corrió y ZEEK sigue sin dueño. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
 
 Pagos por hitos: el dinero queda comprometido antes del trabajo, cada tarea o gasto se respalda con evidencia y el informe está listo al cerrar el proyecto.
 
@@ -41,7 +41,7 @@ El mismo problema aparece en gastos operativos, pagos por entregables y reembols
 4. **Aprobación humana.** El administrador puede contradecir a la IA. Si aprueba, el hito se libera y el USDC llega a la wallet. El pago es todo o nada: un cumplimiento parcial pide más evidencia o aprueba el monto completo.
 5. **Informe.** Al cerrar: presupuesto contra gasto, detalle por persona con evidencia y el enlace público de cada pago.
 
-Modelo técnico: un escrow multi-release por proyecto. Cada hito tiene su monto y su receptor, y se paga solo. Hasta 5 direcciones por rol y 50 hitos. La foto se queda fuera de la cadena. En el hito se guarda un texto corto de evidencia, más el estado y el pago.
+Modelo técnico: en `main` hay un escrow multi-release por tarea (`tareas.contrato_escrow`). Cada hito tiene su monto y su receptor, y se paga solo. Hasta 5 direcciones por rol y 50 hitos. La foto se queda fuera de la cadena. En el hito se guarda un texto corto de evidencia, más el estado y el pago. Quien firma es el usuario de `proyectos.organizador_id`.
 
 | Rol en Trustless Work | En Hyto |
 |---|---|
@@ -81,7 +81,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `77a0431`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Falta un pago real en testnet. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `9d783b1`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión, si la sesión es el organizador del proyecto. **Prepare USDC** abre la trustline de la wallet de esa sesión (PR #50). Un token de Cavos vigente se reutiliza entre pestañas (PR #52). Falta un pago real en testnet. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
@@ -108,14 +108,14 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
 | Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya ya están. Falta aplicar la `0002`, asignar el dueño de ZEEK y que la IA mire la foto | La app en Vercel guarda un proyecto, una foto y un veredicto sacado de la foto |
+| Sebas | Escrow y wallet | El módulo, el script y **Prepare USDC** ya están. El `appId` de Cavos también. Sigue un pago en USDC, con la sesión del organizador del proyecto | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas del admin y la firma desde la revisión ya están. El 29 por la tarde entraron el dueño por proyecto, el bloqueo del demo, la trustline y **Sign out** (PR #52, 4:10 p.m.) | El admin crea, revisa, aprueba en Stellar y abre el informe. Falta el pago real y pasar al español **Prepare USDC** y **Sign out** |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. El voluntario demo sube evidencia al proyecto `demo` | El integrante ve su tarea, sube una foto y aparece en revisión. Faltan las cuatro cuentas del demo en vivo |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de un pago real en el repositorio.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3) y, el 29 por la tarde, el dueño por proyecto (PR #44, 1:38 p.m.), el bloqueo para que el demo no cree proyectos (PR #47, 2:11 p.m.), la evidencia del voluntario demo más **Prepare USDC** (PR #50, 3:02 p.m.) y la sesión de Cavos entre pestañas con **Sign out** (PR #52, 4:10 p.m.). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de un pago real en el repositorio. La migración `0002` tampoco se corrió, así que ZEEK sigue sin organizador.
 
 ## 8. Guion de demo
 
