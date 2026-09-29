@@ -92,6 +92,29 @@ Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/ev
 
 El login real de Cavos también es suyo y se conecta a esa base. Hoy el botón Entrar de https://hyto.vercel.app falla. El diagnóstico, del 28 de septiembre de 2026, está en [PLAN.md](PLAN.md).
 
+### Pruebas de punta a punta (2026-09-28)
+
+El 28 de septiembre se recorrió `main` (`ade63ce`) en local y en https://hyto.vercel.app. La bandeja, Mis tareas, la revisión, el informe y subir una foto se abren con el ejemplo de ZEEK. `GET /api/tareas` y `POST /api/evidencias` responden 404. Entrar y Preparar cuentas, en el sitio, fallan con `registry lookup skipped: no login token`. `npm test`: 42 ok, 0 fallos. `npm run build` pasa en Next.js 16.3.6. La tabla está en [PLAN.md](PLAN.md).
+
+Errores verificados, para corregir. El detalle está en [PLAN.md](PLAN.md).
+
+1. **Alta.** `lib/integrante/rutas.ts:122`, `:149`, `:155`. Faltan `/api/tareas` y `/api/evidencias`. Las tres llamadas responden 404 y la UI usa ZEEK. Arreglo: las rutas, Neon y Blob.
+2. **Alta.** `components/admin/Entrar.tsx:31`, `lib/integrante/preparar.ts:27`. `Cavos.connect` sin `auth`. En el sitio: `registry lookup skipped: no login token`. Arreglo: CavosAuth, pasar `auth` y leer el rol por email en Neon.
+3. **Alta.** `app/api/firma/route.ts:5`, `app/api/firma/enviar/route.ts:4`. POST sin sesión. Arreglo: exigir la sesión antes de preparar o enviar.
+4. **Alta.** `lib/escrow/modulo.ts:41`. En el sitio la clave de Trustless Work responde 401 `Invalid API key`. Arreglo: una clave válida, solo en el servidor.
+5. **Alta.** `components/admin/CrearProyecto.tsx:33`. Fondear no llama a `/api/firma`. Arreglo: XDR, firma en el navegador y `/api/firma/enviar`.
+6. **Alta.** `components/admin/Revision.tsx:22`. Aprobar solo marca `pagado` en el navegador. Arreglo: la misma cadena, una firma.
+7. **Alta.** `components/admin/Bandeja.tsx:16`, `Informe.tsx:14`, `Revision.tsx:17`, `lib/admin/vista.ts:150`. El admin lee `localStorage` y `ejemplo` está fijo en `true`. Arreglo: leer la API.
+8. **Alta.** `lib/admin/memoria.ts:4`, `lib/integrante/almacen.ts:3`. Dos almacenes. El informe quedó en pagado US$32.40 y Mis tareas en pendiente. Arreglo: una fuente en Neon.
+9. **Media.** `lib/escrow/limite.ts:6` y `:23`. El tope usa el primer `X-Forwarded-For` y un `Map` del proceso. Otra IP salta el 429. Arreglo: IP de Vercel y contador compartido.
+10. **Media.** `lib/escrow/limite.ts:34`. Sin `Content-Length`, un cuerpo de unos 210000 bytes no da 413. Arreglo: medir el cuerpo leído.
+11. **Media.** `app/api/firma/enviar/route.ts:13`. Un XDR que no es transacción sigue de largo. Arreglo: parsearlo con el SDK y devolver 400.
+12. **Media.** `lib/escrow/modulo.ts:60`. El 401 de Trustless Work llega al cliente como `Invalid API key`. Arreglo: aviso fijo en 401 y 403.
+13. **Media.** `lib/admin/vista.ts:77`, `components/admin/Revision.tsx:81`. Pedir otra foto deja la pastilla en "parcial". Arreglo: limpiar el veredicto.
+14. **Media.** `components/admin/Entrar.tsx:46`. `setDireccion` corre aunque el guardado falle. Arreglo: solo si `guardado.aviso` es null.
+15. **Baja.** `lib/escrow/cuerpos.ts:231`. La dirección no lleva checksum. Arreglo: `StrKey`.
+16. **Baja.** `lib/integrante/almacen.ts:42`. `setItem` sin `try`. Un fallo se ve como "No se pudo enviar." Arreglo: el aviso que ya usa el admin.
+
 El informe sale de estos datos más el hash que guarde Sebas. Esteban no firma transacciones y no pone la clave de Trustless Work en el cliente.
 
 **Listo cuando:** Josué y Raúl pueden guardar un proyecto y una evidencia llamando a su API, y Entrar resuelve el rol por email en Neon.
