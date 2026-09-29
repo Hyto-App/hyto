@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { correrComparacion } from "./correr-comparacion";
-import { construirCruce, pendientesConEsteban } from "./cruce-codigo";
+import { construirCruce, leerSchemaDrizzle, pendientesConEsteban } from "./cruce-codigo";
 import {
   CONSULTAS,
   compararEsquema,
@@ -271,6 +271,194 @@ test("el script no contiene sentencias de escritura", () => {
   assert.match(readFileSync("lib/db/diff-esquema.ts", "utf8"), /readOnly:\s*true/);
   for (const consulta of Object.values(CONSULTAS)) assert.equal(consulta.trim().toLowerCase().startsWith("select"), true);
 });
+
+test("CREATE UNIQUE INDEX no se informa como índice que falta", () => {
+  assert.doesNotMatch(CONSULTAS.indices, /indisunique/);
+  assert.match(CONSULTAS.indices, /conindid/);
+  conMigracion(
+    `CREATE TABLE cosa (
+      id text PRIMARY KEY,
+      email text NOT NULL
+    );
+    CREATE UNIQUE INDEX cosa_email_idx ON cosa (email);`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      assert.deepEqual(esperado.indices, [{ nombre: "cosa_email_idx", tabla: "cosa" }]);
+      assert.deepEqual(esperado.uniques, []);
+      assert.deepEqual(compararEsquema(esperado, observadoDesdeFilas(lecturaDesdeLote(loteDesde(esperado)))), []);
+    },
+  );
+});
+
+test("una vista no se informa como tabla de más", () => {
+  assert.match(CONSULTAS.columnas, /table_type = 'BASE TABLE'/);
+  conMigracion("CREATE TABLE cosa (id text PRIMARY KEY);", (esperado) => {
+    const lectura = lecturaDesdeLote(loteDesde(esperado));
+    lectura.columnas.push({
+      tabla: "vista_cosa",
+      columna: "id",
+      tipo_dato: "text",
+      udt: "text",
+      nulable: "NO",
+      defecto: null,
+      largo: null,
+      precision_num: null,
+      escala: null,
+    });
+    const observado = observadoDesdeFilas(lectura);
+    assert.deepEqual(observado.tablas, ["cosa"]);
+    assert.equal(
+      compararEsquema(esperado, observado).some((item) => item.mensaje.includes("vista_cosa")),
+      false,
+    );
+  });
+});
+
+test("la PK compuesta conserva el orden del PRIMARY KEY", () => {
+  conMigracion(
+    `CREATE TABLE par (
+      a text NOT NULL,
+      b text NOT NULL,
+      PRIMARY KEY (b, a)
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      assert.deepEqual(esperado.columnas.map((columna) => columna.nombre), ["a", "b"]);
+      assert.deepEqual(esperado.primaryKeys, [{ tabla: "par", columnas: ["b", "a"] }]);
+      assert.deepEqual(compararEsquema(esperado, observadoDesdeFilas(lecturaDesdeLote(loteDesde(esperado)))), []);
+      const invertida = lecturaDesdeLote(loteDesde(esperado));
+      for (const fila of invertida.restricciones) {
+        if (fila.columna === "b") fila.orden = "2";
+        if (fila.columna === "a") fila.orden = "1";
+      }
+      const mensajes = compararEsquema(esperado, observadoDesdeFilas(invertida)).map((item) => item.mensaje);
+      assert.ok(mensajes.some((mensaje) => mensaje.includes("(b, a)")));
+      assert.ok(mensajes.some((mensaje) => mensaje.includes("(a, b)")));
+    },
+  );
+});
+
+test("numeric(p) coincide con numeric(p,0) de information_schema", () => {
+  conMigracion(
+    `CREATE TABLE precios (
+      monto numeric(10),
+      tasa decimal(8)
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      assert.equal(esperado.columnas.find((columna) => columna.nombre === "monto")?.tipo, "numeric(10,0)");
+      assert.equal(esperado.columnas.find((columna) => columna.nombre === "tasa")?.tipo, "numeric(8,0)");
+      const lectura = lecturaDesdeLote(loteDesde(esperado));
+      for (const fila of lectura.columnas) {
+        const precision = fila.columna === "monto" ? 10 : 8;
+        fila.tipo_dato = "numeric";
+        fila.udt = "numeric";
+        fila.precision_num = precision;
+        fila.escala = 0;
+      }
+      assert.deepEqual(compararEsquema(esperado, observadoDesdeFilas(lectura)), []);
+    },
+  );
+});
+
+test("schema.ts lee columnas que no son text()", () => {
+  const leido = leerSchemaDrizzle(`export const tareas = pgTable("tareas", {
+  id: text("id").primaryKey(),
+  monto: integer("monto").notNull(),
+  nota: vector("nota"),
+});
+`);
+  assert.equal(leido.columnas.find((columna) => columna.columna === "monto")?.tipo, "integer");
+  assert.equal(leido.columnas.find((columna) => columna.columna === "id")?.tipo, "text");
+  assert.equal(leido.columnas.some((columna) => columna.columna === "nota"), true);
+  assert.match(leido.avisos.join("\n"), /tareas\.nota/);
+  assert.match(leido.avisos.join("\n"), /vector/);
+});
+
+test("el SQL de drizzle-kit conserva las FK con esquema public", () => {
+  conMigracion(
+    `CREATE TABLE "proyectos" (
+  "id" text PRIMARY KEY NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "tareas" (
+  "id" text PRIMARY KEY NOT NULL,
+  "proyecto_id" text NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "tareas" ADD CONSTRAINT "tareas_proyecto_id_proyectos_id_fk" FOREIGN KEY ("proyecto_id") REFERENCES "public"."proyectos"("id") ON DELETE no action ON UPDATE no action;
+--> statement-breakpoint
+CREATE TABLE "notas" (
+  "id" text PRIMARY KEY NOT NULL,
+  "proyecto_id" text REFERENCES "public"."proyectos"("id")
+);`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      assert.deepEqual(
+        esperado.fks.map((fk) => `${fk.tabla}.${fk.columnas[0]}→${fk.tablaRef}.${fk.columnasRef[0]}`),
+        ["tareas.proyecto_id→proyectos.id", "notas.proyecto_id→proyectos.id"],
+      );
+    },
+  );
+});
+
+test("ON DELETE se lee aunque ON UPDATE vaya antes", () => {
+  conMigracion(
+    `CREATE TABLE proyectos (
+      id text PRIMARY KEY
+    );
+    CREATE TABLE hijos (
+      id text PRIMARY KEY,
+      padre_id text NOT NULL,
+      CONSTRAINT hijos_padre_fk FOREIGN KEY (padre_id) REFERENCES proyectos (id) ON UPDATE CASCADE ON DELETE CASCADE
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      const fk = esperado.fks.find((item) => item.tabla === "hijos");
+      assert.equal(fk?.alBorrar, "c");
+      assert.equal(fk?.alBorrarExplicito, true);
+    },
+  );
+});
+
+test("DEFAULT now() queda leído y un default ilegible sigue en aviso", () => {
+  conMigracion(
+    `CREATE TABLE marcas (
+      id text PRIMARY KEY,
+      creado_en timestamp with time zone NOT NULL DEFAULT now()
+    );`,
+    (esperado) => {
+      assert.deepEqual(esperado.avisos, []);
+      assert.equal(esperado.columnas.find((columna) => columna.nombre === "creado_en")?.defecto, "now()");
+    },
+  );
+  conMigracion(
+    `CREATE TABLE marcas (
+      id text PRIMARY KEY,
+      marca text DEFAULT current_timestamp
+    );`,
+    (esperado) => {
+      assert.equal(esperado.columnas.find((columna) => columna.nombre === "marca")?.defecto, null);
+      assert.match(esperado.avisos.join("\n"), /Default no leído/);
+    },
+  );
+});
+
+test("la salida del script no se corta con process.exit", () => {
+  const fuente = readFileSync("scripts/backend-traspaso/comparar-esquema.ts", "utf8");
+  assert.match(fuente, /process\.exitCode/);
+  assert.doesNotMatch(fuente, /process\.exit\s*\(/);
+});
+
+function conMigracion(sql: string, comprobar: (esperado: EsquemaEsperado) => void): void {
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-esquema-"));
+  try {
+    writeFileSync(join(directorio, "0001.sql"), sql);
+    comprobar(leerMigraciones(directorio));
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+}
 
 function loteDesde(esperado: EsquemaEsperado): unknown[] {
   const tablas = esperado.tablas.map((tabla) => ({ tabla }));

@@ -13,10 +13,10 @@ correrComparacion({
   },
 })
   .then((codigo) => {
-    process.exit(codigo);
+    process.exitCode = codigo;
   })
   .catch((error: unknown) => {
     const texto = error instanceof Error ? error.message : "No se pudo comparar el esquema.";
     console.error(ocultarUrl(texto));
-    process.exit(1);
+    process.exitCode = 1;
   });

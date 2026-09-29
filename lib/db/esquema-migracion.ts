@@ -63,7 +63,7 @@ export function leerMigraciones(directorio: string): EsquemaEsperado {
   for (const nombre of nombres) {
     esquema.archivos.push(nombre);
     const crudo = readFileSync(join(directorio, nombre), "utf8");
-    const sql = crudo.replace(/\/\*[\s\S]*?\*\//g, " ");
+    const sql = crudo.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/-->\s*statement-breakpoint/gi, " ");
     for (const sentencia of sentencias(sql)) aplicar(esquema, sentencia, nombre);
   }
   cerrarGrupos(esquema);
@@ -85,6 +85,8 @@ export function normalizarTipo(tipo: string): string {
   if (limpio === "timestamptz" || limpio === "timestamp with time zone") return "timestamp with time zone";
   if (limpio === "varchar") return "character varying";
   if (limpio.startsWith("varchar(")) return `character varying${limpio.slice("varchar".length)}`;
+  const numerico = /^(?:numeric|decimal)\((\d+)(?:,(\d+))?\)$/.exec(limpio);
+  if (numerico) return `numeric(${numerico[1]},${numerico[2] ?? "0"})`;
   return limpio;
 }
 
@@ -130,14 +132,25 @@ function aplicar(esquema: EsquemaEsperado, sentencia: string, archivo: string): 
     esquema.indices.push({ nombre: indice[2], tabla: indice[4] });
     return;
   }
-  const agregar = /^alter\s+table\s+(?:only\s+)?("?)([A-Za-z_][\w]*)\1\s+add\s+column\s+(?:if\s+not\s+exists\s+)?([\s\S]+)$/i.exec(
+  const alter = /^alter\s+table\s+(?:only\s+)?(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\1\s+([\s\S]+)$/i.exec(
     sentencia,
   );
-  if (agregar) {
-    const tabla = asegurarTabla(esquema, agregar[2]);
-    const columna = parsearColumna(tabla, agregar[3].trim(), esquema.avisos);
-    if (columna) guardarColumna(esquema, columna);
-    return;
+  if (alter) {
+    const tabla = alter[2];
+    const cuerpo = alter[3].trim();
+    const agregar = /^add\s+column\s+(?:if\s+not\s+exists\s+)?([\s\S]+)$/i.exec(cuerpo);
+    if (agregar) {
+      asegurarTabla(esquema, tabla);
+      const columna = parsearColumna(tabla, agregar[1].trim(), esquema.avisos);
+      if (columna) guardarColumna(esquema, columna);
+      return;
+    }
+    const fk = /^add\s+constraint\s+"?[A-Za-z_][\w]*"?\s+foreign\s+key\s*\(([^)]+)\)\s+([\s\S]+)$/i.exec(cuerpo);
+    if (fk) {
+      asegurarTabla(esquema, tabla);
+      guardarFk(esquema, tabla, fk[1], fk[2]);
+      return;
+    }
   }
   const muestra = sentencia.replace(/\s+/g, " ").slice(0, 120);
   esquema.avisos.push(`SQL sin interpretar en ${archivo}: ${muestra}. Confirmar con Esteban.`);
@@ -230,13 +243,14 @@ function parsearColumna(tabla: string, parte: string, avisos: string[]): Columna
       continue;
     }
     if (/^references\b/i.test(resto)) {
-      const ref = /^references\s+("?)([A-Za-z_][\w]*)\1\s*\(\s*("?)([A-Za-z_][\w]*)\3\s*\)/i.exec(resto);
-      if (!ref) {
+      const ref = leerDestino(resto);
+      const remotos = ref ? nombresDe(ref.columnas) : [];
+      if (!ref || remotos.length !== 1) {
         avisos.push(`REFERENCES ilegible en ${tabla}.${nombre}. Confirmar con Esteban.`);
         break;
       }
-      columna.referencia = { tabla: ref[2], columna: ref[4] };
-      resto = resto.slice(ref[0].length).trim();
+      columna.referencia = { tabla: ref.tabla, columna: remotos[0] };
+      resto = ref.resto;
       continue;
     }
     const accion = /^(on\s+delete|on\s+update)\s+(cascade|restrict|no\s+action|set\s+null|set\s+default)\b/i.exec(resto);
@@ -262,10 +276,12 @@ function parsearRestriccion(esquema: EsquemaEsperado, tabla: string, parte: stri
   const limpio = parte.replace(/^constraint\s+"?[A-Za-z_][\w]*"?\s+/i, "").trim();
   const pk = /^primary\s+key\s*\(([^)]+)\)/i.exec(limpio);
   if (pk) {
-    for (const nombre of nombresDe(pk[1])) marcar(esquema, tabla, nombre, (columna) => {
+    const nombres = nombresDe(pk[1]);
+    for (const nombre of nombres) marcar(esquema, tabla, nombre, (columna) => {
       columna.primaryKey = true;
       columna.nullable = false;
     });
+    esquema.primaryKeys.push({ tabla, columnas: nombres });
     return;
   }
   const unico = /^unique\s*\(([^)]+)\)/i.exec(limpio);
@@ -280,22 +296,9 @@ function parsearRestriccion(esquema: EsquemaEsperado, tabla: string, parte: stri
     esquema.uniques.push({ tabla, columnas: nombres });
     return;
   }
-  const fk = /^foreign\s+key\s*\(([^)]+)\)\s+references\s+("?)([A-Za-z_][\w]*)\2\s*\(([^)]+)\)([\s\S]*)$/i.exec(limpio);
+  const fk = /^foreign\s+key\s*\(([^)]+)\)\s+([\s\S]+)$/i.exec(limpio);
   if (fk) {
-    const locales = nombresDe(fk[1]);
-    const remotos = nombresDe(fk[4]);
-    if (locales.length !== remotos.length || locales.length !== 1) {
-      esquema.avisos.push(`FK compuesta en ${tabla}. Confirmar con Esteban.`);
-      return;
-    }
-    const accion = /^on\s+delete\s+(cascade|restrict|no\s+action|set\s+null|set\s+default)\b/i.exec(fk[5].trim());
-    marcar(esquema, tabla, locales[0], (columna) => {
-      columna.referencia = { tabla: fk[3], columna: remotos[0] };
-      if (accion) {
-        columna.alBorrar = codigoAccion(accion[1]);
-        columna.alBorrarExplicito = true;
-      }
-    });
+    guardarFk(esquema, tabla, fk[1], fk[2]);
     return;
   }
   if (/^check\b/i.test(limpio)) {
@@ -314,11 +317,40 @@ function marcar(esquema: EsquemaEsperado, tabla: string, nombre: string, cambio:
   cambio(columna);
 }
 
+function guardarFk(esquema: EsquemaEsperado, tabla: string, localesTexto: string, resto: string): void {
+  const ref = leerDestino(resto.trim());
+  if (!ref) {
+    esquema.avisos.push(`REFERENCES ilegible en ${tabla}. Confirmar con Esteban.`);
+    return;
+  }
+  const locales = nombresDe(localesTexto);
+  const remotos = nombresDe(ref.columnas);
+  if (locales.length !== remotos.length || locales.length !== 1) {
+    esquema.avisos.push(`FK compuesta en ${tabla}. Confirmar con Esteban.`);
+    return;
+  }
+  const accion = /\bon\s+delete\s+(cascade|restrict|no\s+action|set\s+null|set\s+default)\b/i.exec(ref.resto);
+  marcar(esquema, tabla, locales[0], (columna) => {
+    columna.referencia = { tabla: ref.tabla, columna: remotos[0] };
+    if (accion) {
+      columna.alBorrar = codigoAccion(accion[1]);
+      columna.alBorrarExplicito = true;
+    }
+  });
+}
+
+function leerDestino(texto: string): { tabla: string; columnas: string; resto: string } | null {
+  const match = /^references\s+(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\1\s*\(([^)]+)\)/i.exec(texto);
+  if (!match) return null;
+  return { tabla: match[2], columnas: match[3], resto: texto.slice(match[0].length).trim() };
+}
+
 function cerrarGrupos(esquema: EsquemaEsperado): void {
+  const pkYa = new Set(esquema.primaryKeys.map((grupo) => grupo.tabla));
   const pk = new Map<string, string[]>();
   const unicos = new Map<string, string[]>();
   for (const columna of esquema.columnas) {
-    if (columna.primaryKey) {
+    if (columna.primaryKey && !pkYa.has(columna.tabla)) {
       const lista = pk.get(columna.tabla) ?? [];
       lista.push(columna.nombre);
       pk.set(columna.tabla, lista);
@@ -394,7 +426,9 @@ function leerDefault(resto: string): { valor: string | null; resto: string; avis
     return { valor, resto: quitarCast(cuerpo.slice(simple[0].length).trim()), aviso: false };
   }
   const funcion = /^[A-Za-z_][\w]*\([^)]*\)/.exec(cuerpo);
-  if (funcion) return { valor: funcion[0], resto: quitarCast(cuerpo.slice(funcion[0].length).trim()), aviso: true };
+  if (funcion) {
+    return { valor: funcion[0].toLowerCase(), resto: quitarCast(cuerpo.slice(funcion[0].length).trim()), aviso: false };
+  }
   return { valor: null, resto: cuerpo, aviso: true };
 }
 

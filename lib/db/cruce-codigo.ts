@@ -1,14 +1,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { EsquemaEsperado } from "./esquema-migracion";
-import { normalizarDefault } from "./esquema-migracion";
+import { normalizarDefault, normalizarTipo } from "./esquema-migracion";
 
 export type ColumnaDrizzle = {
   exportName: string;
   tabla: string;
   campo: string;
   columna: string;
-  tipo: string;
+  tipo: string | null;
   nullable: boolean;
   defecto: string | null;
   primaryKey: boolean;
@@ -71,7 +71,8 @@ const FUERA_DE_LECTURA = new Set([
 export function construirCruce(raiz: string, esperado: EsquemaEsperado): CruceCodigo {
   const schemaFuente = leer(raiz, "lib/db/schema.ts");
   const neonFuente = leer(raiz, "lib/db/neon.ts");
-  const schema = leerSchemaDrizzle(schemaFuente);
+  const schemaLeido = leerSchemaDrizzle(schemaFuente);
+  const schema = schemaLeido.columnas;
   const tocadas = tablasTocadas(neonFuente);
   const exportATabla = new Map(schema.map((columna) => [columna.exportName, columna.tabla]));
   const tablasConsulta = new Set(
@@ -102,7 +103,7 @@ export function construirCruce(raiz: string, esperado: EsquemaEsperado): CruceCo
   return {
     tablasSinConsulta,
     columnasConsultaAusentes,
-    diferenciasSchema: diferenciasSchema(schema, esperado),
+    diferenciasSchema: [...schemaLeido.avisos, ...diferenciasSchema(schema, esperado)],
     sinLector,
     hashPagoLecturas: buscar(raiz, "hashPago").filter((archivo) => !archivo.endsWith(".test.ts")),
     hashPagoEscrituras: hashEscrituras.map((item) => item.archivo),
@@ -277,9 +278,10 @@ export function pendientesConEsteban(esperado: EsquemaEsperado, cruce: CruceCodi
   return pendientes;
 }
 
-export function leerSchemaDrizzle(fuente: string): ColumnaDrizzle[] {
+export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[]; avisos: string[] } {
   const bloques = [...fuente.matchAll(/export const (\w+) = pgTable\("(\w+)", \{([\s\S]*?)\n\}\);/g)];
   const columnas: ColumnaDrizzle[] = [];
+  const avisos: string[] = [];
   for (const bloque of bloques) {
     const exportName = bloque[1];
     const tabla = bloque[2];
@@ -297,17 +299,27 @@ export function leerSchemaDrizzle(fuente: string): ColumnaDrizzle[] {
     if (actual) campos.push(actual.join("\n"));
     for (const campo of campos) {
       const texto = campo.trim().replace(/,\s*$/, "");
-      const match = texto.match(/^(\w+):\s*text\("(\w+)"\)([\s\S]*)$/);
-      if (!match) continue;
-      const resto = match[3];
+      const match = texto.match(/^(\w+):\s*([A-Za-z_][\w]*)\(\s*"(\w+)"\s*(?:,\s*(\{[\s\S]*\}))?\s*\)([\s\S]*)$/);
+      if (!match) {
+        const nombreCampo = /^(\w+)\s*:/.exec(texto);
+        avisos.push(
+          `schema.ts tiene un campo que este script no lee${nombreCampo ? ` (${tabla}.${nombreCampo[1]})` : ""}.`,
+        );
+        continue;
+      }
+      const resto = match[5];
+      const tipo = tipoDeBuilder(match[2], match[4]);
+      if (!tipo) {
+        avisos.push(`schema.ts declara ${tabla}.${match[3]} con un tipo que este script no lee (${match[2]}).`);
+      }
       const referenciaCruda = /\.references\(\(\)\s*=>\s*(\w+)\.(\w+)\)/.exec(resto);
       const defecto = /\.default\(\s*"((?:\\.|[^"\\])*)"\s*\)/.exec(resto);
       columnas.push({
         exportName,
         tabla,
         campo: match[1],
-        columna: match[2],
-        tipo: "text",
+        columna: match[3],
+        tipo,
         nullable: !/\.notNull\(\)/.test(resto) && !/\.primaryKey\(\)/.test(resto),
         defecto: defecto ? `'${defecto[1].replace(/'/g, "''")}'` : null,
         primaryKey: /\.primaryKey\(\)/.test(resto),
@@ -328,7 +340,47 @@ export function leerSchemaDrizzle(fuente: string): ColumnaDrizzle[] {
     const remota = porExport.get(columna.referencia.tabla)?.get(columna.referencia.columna);
     if (tabla && remota) columna.referencia = { tabla, columna: remota };
   }
-  return columnas;
+  return { columnas, avisos };
+}
+
+function tipoDeBuilder(builder: string, opciones: string | undefined): string | null {
+  const conocidos: Record<string, string> = {
+    text: "text",
+    integer: "integer",
+    smallint: "smallint",
+    bigint: "bigint",
+    boolean: "boolean",
+    real: "real",
+    doublePrecision: "double precision",
+    uuid: "uuid",
+    json: "json",
+    jsonb: "jsonb",
+    date: "date",
+    time: "time",
+    serial: "integer",
+    smallserial: "smallint",
+    bigserial: "bigint",
+  };
+  if (builder === "varchar") {
+    const largo = /length\s*:\s*(\d+)/.exec(opciones ?? "");
+    return normalizarTipo(largo ? `character varying(${largo[1]})` : "character varying");
+  }
+  if (builder === "char") {
+    const largo = /length\s*:\s*(\d+)/.exec(opciones ?? "");
+    return normalizarTipo(largo ? `character(${largo[1]})` : "character");
+  }
+  if (builder === "numeric" || builder === "decimal") {
+    const precision = /precision\s*:\s*(\d+)/.exec(opciones ?? "");
+    const escala = /scale\s*:\s*(\d+)/.exec(opciones ?? "");
+    if (precision && escala) return normalizarTipo(`numeric(${precision[1]},${escala[1]})`);
+    if (precision) return normalizarTipo(`numeric(${precision[1]})`);
+    return "numeric";
+  }
+  if (builder === "timestamp") {
+    return /withTimezone\s*:\s*true/.test(opciones ?? "") ? "timestamp with time zone" : "timestamp without time zone";
+  }
+  const base = conocidos[builder];
+  return base ? normalizarTipo(base) : null;
 }
 
 function diferenciasSchema(schema: ColumnaDrizzle[], esperado: EsquemaEsperado): string[] {
@@ -346,7 +398,9 @@ function diferenciasSchema(schema: ColumnaDrizzle[], esperado: EsquemaEsperado):
       diferencias.push(`schema.ts declara ${columna.tabla}.${columna.columna} y las migraciones no.`);
       continue;
     }
-    if (sql.tipo !== columna.tipo) diferencias.push(`${columna.tabla}.${columna.columna}: schema.ts dice ${columna.tipo} y las migraciones ${sql.tipo}.`);
+    if (columna.tipo != null && sql.tipo !== columna.tipo) {
+      diferencias.push(`${columna.tabla}.${columna.columna}: schema.ts dice ${columna.tipo} y las migraciones ${sql.tipo}.`);
+    }
     if (sql.nullable !== columna.nullable) diferencias.push(`${columna.tabla}.${columna.columna}: la nulabilidad de schema.ts y la de las migraciones no coinciden.`);
     if (normalizarDefault(sql.defecto) !== normalizarDefault(columna.defecto)) {
       diferencias.push(`${columna.tabla}.${columna.columna}: el default de schema.ts y el de las migraciones no coinciden.`);
