@@ -27,7 +27,7 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
       codigo: "ESCROW_MILESTONE_NOT_FOUND",
     };
   }
-  if (enDisputa(hito) === false) {
+  if (!enDisputa(hito)) {
     return {
       mensaje: "Ese hito no está en disputa.",
       estado: 422,
@@ -130,15 +130,13 @@ function hitosEn(fuente: unknown): Record<string, unknown>[] {
   return lista.filter((item): item is Record<string, unknown> => !!item && typeof item === "object");
 }
 
-function enDisputa(hito: Record<string, unknown>): boolean | null {
-  const flags = registro(hito.flags);
-  if (flags.resolved === true) return false;
-  if (typeof flags.disputed === "boolean") return flags.disputed;
-  if (typeof hito.status !== "string") return null;
-  const estado = hito.status.toLowerCase();
-  if (estado.includes("resolv")) return false;
-  if (estado.includes("disput")) return true;
-  return null;
+// GET /escrow/multi-release/v2/{contractId} trae milestones[].dispute.
+// isDisputed y resolved son el estado del protocolo. flags y status no:
+// status es texto de la app y puede decir «resuelto» con la disputa abierta.
+function enDisputa(hito: Record<string, unknown>): boolean {
+  const disputa = registro(hito.dispute);
+  if (disputa.resolved === true) return false;
+  return disputa.isDisputed === true;
 }
 
 function listaDe(valor: unknown): string[] {

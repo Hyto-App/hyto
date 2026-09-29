@@ -14,6 +14,7 @@ import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
 import { listarTareasHttp } from "./tareas";
 import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
+import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
 
 function token(email: string): string {
   return `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email })).toString("base64url")}.bbbb`;
@@ -253,7 +254,11 @@ test("resolver no arma ni envía el XDR si la wallet de la sesión no es el firm
       new Request("http://local/api/firma/enviar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ xdr: "AAAA", accion: "resolver", firmante: RESOLUTOR }),
+        body: JSON.stringify({
+          xdr: xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "resolve_dispute", firmante: FIRMANTE_XDR }),
+          accion: "resolver",
+          firmante: ORGANIZADOR,
+        }),
       }),
     );
     assert.equal(envio.status, 400);
@@ -276,7 +281,7 @@ test("la sesión cuya wallet es el resolutor prepara el XDR", async () => {
         JSON.stringify({
           contractId: CONTRATO,
           roles: { disputeResolvers: [RESOLUTOR] },
-          milestones: [{ amount: "1", status: "inDispute", flags: { disputed: true, resolved: false } }],
+          milestones: [{ amount: "1", dispute: { isDisputed: true, resolved: false } }],
         }),
         { status: 200 },
       );
@@ -308,6 +313,114 @@ test("la sesión cuya wallet es el resolutor prepara el XDR", async () => {
   }
 });
 
+test("el envío de resolve_dispute usa el firmante del XDR y el disputeResolver leído", async () => {
+  reiniciarLimite();
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  const llamadas: string[] = [];
+  globalThis.fetch = async (input, init) => {
+    const metodo = init?.method ?? "GET";
+    llamadas.push(metodo);
+    if (metodo === "GET") {
+      return new Response(
+        JSON.stringify({
+          contractId: CONTRATO_XDR,
+          roles: { disputeResolvers: [FIRMANTE_XDR] },
+          milestones: [{ amount: "1", dispute: { isDisputed: true, resolved: false } }],
+        }),
+        { status: 200 },
+      );
+    }
+    return new Response(JSON.stringify({ status: "SUCCESS", txHash: "abc" }), { status: 200 });
+  };
+  const xdr = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "resolve_dispute", firmante: FIRMANTE_XDR });
+  try {
+    const ajeno = await enviarFirmaHttp(
+      sesion("voluntario", ORGANIZADOR),
+      new Request("http://local/api/firma/enviar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ xdr, accion: "resolver", firmante: ORGANIZADOR }),
+      }),
+    );
+    assert.equal(ajeno.status, 400);
+    assert.deepEqual(llamadas, []);
+
+    const otroRol = await enviarFirmaHttp(
+      sesion("voluntario", FIRMANTE_XDR),
+      new Request("http://local/api/firma/enviar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          xdr: xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR }),
+          accion: "resolver",
+          firmante: RESOLUTOR,
+        }),
+      }),
+    );
+    assert.equal(otroRol.status, 403);
+    assert.deepEqual(llamadas, []);
+
+    const listo = await enviarFirmaHttp(
+      sesion("voluntario", FIRMANTE_XDR),
+      new Request("http://local/api/firma/enviar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ xdr, accion: "liberar", firmante: ORGANIZADOR }),
+      }),
+    );
+    assert.equal(listo.status, 200);
+    assert.deepEqual(llamadas, ["GET", "POST"]);
+  } finally {
+    globalThis.fetch = original;
+    if (anterior === undefined) delete process.env.TRUSTLESS_API_KEY;
+    else process.env.TRUSTLESS_API_KEY = anterior;
+    reiniciarLimite();
+  }
+});
+
+test("resolve_dispute no se envía si la wallet de la sesión no es disputeResolver", async () => {
+  reiniciarLimite();
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  const metodos: string[] = [];
+  globalThis.fetch = async (_input, init) => {
+    metodos.push(init?.method ?? "GET");
+    return new Response(
+      JSON.stringify({
+        contractId: CONTRATO_XDR,
+        roles: { disputeResolvers: [ORGANIZADOR] },
+        milestones: [{ dispute: { isDisputed: true, resolved: false } }],
+      }),
+      { status: 200 },
+    );
+  };
+  try {
+    const respuesta = await enviarFirmaHttp(
+      sesion("voluntario", FIRMANTE_XDR),
+      new Request("http://local/api/firma/enviar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          xdr: xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "resolve_dispute", firmante: FIRMANTE_XDR }),
+          accion: "resolver",
+          firmante: FIRMANTE_XDR,
+        }),
+      }),
+    );
+    assert.equal(respuesta.status, 403);
+    assert.equal(((await respuesta.json()) as { codigo: string }).codigo, "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE");
+    assert.deepEqual(metodos, ["GET"]);
+  } finally {
+    globalThis.fetch = original;
+    if (anterior === undefined) delete process.env.TRUSTLESS_API_KEY;
+    else process.env.TRUSTLESS_API_KEY = anterior;
+    reiniciarLimite();
+  }
+});
+
 test("la wallet de la sesión se guarda para poder resolver", async () => {
   const almacen = crearMemoria();
   await almacen.crearSesion({
@@ -328,4 +441,45 @@ test("la wallet de la sesión se guarda para poder resolver", async () => {
   );
   assert.equal(respuesta.status, 200);
   assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
+
+  const otra = await fijarWalletHttp(
+    new Request("http://local/api/sesion/wallet", {
+      method: "POST",
+      headers: { cookie: "hyto_sesion=tok-wallet", "content-type": "application/json" },
+      body: JSON.stringify({ wallet: ORGANIZADOR }),
+    }),
+    almacen,
+  );
+  assert.equal(otra.status, 400);
+  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
+});
+
+test("si el ingreso trae wallet, no se guarda otra", async () => {
+  const almacen = crearMemoria();
+  const cuenta = ORGANIZADOR;
+  const ingreso = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "organizador@demo.hyto",
+        token: `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email: "organizador@demo.hyto", wallet: cuenta })).toString("base64url")}.bbbb`,
+      }),
+    }),
+    almacen,
+  );
+  assert.equal(ingreso.status, 200);
+  const cookie = ingreso.headers.get("set-cookie") ?? "";
+  const token = /hyto_sesion=([^;]+)/.exec(cookie)?.[1] ?? "";
+  assert.equal((await almacen.leerSesion(token))?.wallet, cuenta);
+  const respuesta = await fijarWalletHttp(
+    new Request("http://local/api/sesion/wallet", {
+      method: "POST",
+      headers: { cookie: `hyto_sesion=${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ wallet: RESOLUTOR }),
+    }),
+    almacen,
+  );
+  assert.equal(respuesta.status, 400);
+  assert.equal((await almacen.leerSesion(token))?.wallet, cuenta);
 });

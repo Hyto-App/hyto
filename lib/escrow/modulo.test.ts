@@ -139,7 +139,14 @@ function escrowDisputado(monto: string | number = "1", resolutores: string[] = [
   return {
     contractId: CONTRATO,
     roles: { disputeResolvers: resolutores },
-    milestones: [{ amount: monto, status: "inDispute", flags: { disputed: true, resolved: false } }],
+    milestones: [
+      {
+        amount: monto,
+        status: "Resuelto en la app",
+        flags: { disputed: false, resolved: true },
+        dispute: { isDisputed: true, reason: "no coincide", resolved: false },
+      },
+    ],
   };
 }
 
@@ -197,10 +204,53 @@ test("resolver solo lo firma el resolutor del escrow", async () => {
   assert.equal(red.llamadas.some((llamada) => llamada.method === "POST"), false);
 });
 
+test("flags y un status con «resolv» no deciden la disputa", async () => {
+  const red = fetchResolucion({
+    contractId: CONTRATO,
+    roles: { disputeResolvers: [RESOLUTOR] },
+    milestones: [{ amount: "1", status: "inDispute", flags: { disputed: true, resolved: false }, dispute: { isDisputed: false, resolved: false } }],
+  });
+  await assert.rejects(
+    () =>
+      preparar(
+        {
+          accion: "resolver",
+          contrato: CONTRATO,
+          firmante: RESOLUTOR,
+          indice: 0,
+          distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+        },
+        { fetch: red.fetch, clave: "clave-de-prueba" },
+      ),
+    (error: unknown) => error instanceof ErrorFirma && error.codigo === "ESCROW_MILESTONE_NOT_IN_DISPUTE",
+  );
+  assert.equal(red.llamadas.some((llamada) => llamada.method === "POST"), false);
+
+  const resuelta = fetchResolucion({
+    contractId: CONTRATO,
+    roles: { disputeResolvers: [RESOLUTOR] },
+    milestones: [{ amount: "1", dispute: { isDisputed: true, resolved: true } }],
+  });
+  await assert.rejects(
+    () =>
+      preparar(
+        {
+          accion: "resolver",
+          contrato: CONTRATO,
+          firmante: RESOLUTOR,
+          indice: 0,
+          distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+        },
+        { fetch: resuelta.fetch, clave: "clave-de-prueba" },
+      ),
+    (error: unknown) => error instanceof ErrorFirma && error.codigo === "ESCROW_MILESTONE_NOT_IN_DISPUTE",
+  );
+});
+
 test("si el GET no trae roles, vale el resolutor guardado en el proyecto", async () => {
   const red = fetchResolucion({
     contractId: CONTRATO,
-    milestones: [{ amount: "1.0000000", flags: { disputed: true } }],
+    milestones: [{ amount: "1.0000000", dispute: { isDisputed: true, resolved: false } }],
   });
   await preparar(
     {

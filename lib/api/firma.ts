@@ -1,7 +1,9 @@
 import type { SesionFila } from "@/lib/db/tipos";
 import { leerEntrada } from "@/lib/escrow/cuerpos";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
-import { enviar, preparar, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { enviar, leerEscrow, preparar, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { resolutoresDe } from "@/lib/escrow/resolver";
+import { leerInvocacion } from "@/lib/escrow/xdr";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 
 export async function prepararFirmaHttp(sesion: SesionFila, request: Request): Promise<Response> {
@@ -43,10 +45,27 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request): Pro
   const envio = datosEnvio(body);
   if (!envio.xdr) return Response.json({ aviso: "Falta el XDR firmado." }, { status: 400 });
   if (xdrDemasiadoLargo(envio.xdr)) return Response.json({ aviso: "El XDR firmado es demasiado largo." }, { status: 400 });
-  // Una resolución tiene que declarar firmante. Si no es la wallet de la sesión, no se manda.
-  if (envio.accion === "resolver") {
-    const aviso = avisoSesionResolutor(sesion, envio.firmante);
-    if (aviso) return Response.json({ aviso }, { status: 400 });
+  // accion y firmante del cuerpo no autorizan el envío. La cuenta sale del XDR.
+  const invocacion = leerInvocacion(envio.xdr);
+  const wallet = (sesion.wallet ?? "").trim();
+  if (!invocacion || invocacion.firmantes.length !== 1 || invocacion.firmantes[0] !== wallet) {
+    return Response.json({ aviso: "El XDR no lo firma la wallet de esta sesión." }, { status: 400 });
+  }
+  if (invocacion.funcion === "resolve_dispute") {
+    try {
+      const escrow = await leerEscrow(invocacion.contrato);
+      if (!resolutoresDe([escrow]).includes(wallet)) {
+        return Response.json(
+          {
+            aviso: "Solo el resolutor de la disputa puede firmar esta resolución.",
+            codigo: "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE",
+          },
+          { status: 403 },
+        );
+      }
+    } catch (error) {
+      return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+    }
   } else if (sesion.rol !== "organizador") {
     return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
   }
@@ -64,11 +83,9 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request): Pro
   }
 }
 
-function datosEnvio(body: unknown): { xdr: string | null; accion: string | null; firmante: string } {
-  if (!body || typeof body !== "object") return { xdr: null, accion: null, firmante: "" };
-  const datos = body as { xdr?: unknown; accion?: unknown; firmante?: unknown };
+function datosEnvio(body: unknown): { xdr: string | null } {
+  if (!body || typeof body !== "object") return { xdr: null };
+  const datos = body as { xdr?: unknown };
   const xdr = typeof datos.xdr === "string" ? datos.xdr.trim() : "";
-  const accion = typeof datos.accion === "string" ? datos.accion : null;
-  const firmante = typeof datos.firmante === "string" ? datos.firmante.trim() : "";
-  return { xdr: xdr || null, accion, firmante };
+  return { xdr: xdr || null };
 }
