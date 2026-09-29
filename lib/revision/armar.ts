@@ -74,9 +74,8 @@ export function armarVeredicto(entrada: {
     if (!entrada.monto || !entrada.fecha || monto <= 0) return "insuficiente";
     if (tope > 0 && monto > tope) return "insuficiente";
   }
-  if (!entrada.noul) return nivel === "insuficiente" ? "insuficiente" : "parcial";
-  if (nivel === "cumplió") return "cumplió";
-  return "parcial";
+  // El sí o no de Laya no aprueba: puede salir alto con una foto que no corresponde.
+  return nivel;
 }
 
 export function fraseDe(texto: string, senales: Senales): string {

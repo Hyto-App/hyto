@@ -13,6 +13,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Arreglado
 
+- Laya recibe los tres niveles de `score` en orden. El veredicto usa el índice con mayor probabilidad: 0 insuficiente, 1 parcial, 2 cumplió. El sí o no no aprueba la evidencia. Esteban.
 - `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
 - La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban.
 
@@ -21,7 +22,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`. La migración y la semilla de ZEEK ya se corrieron en Neon.
 - Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma.
 - Raúl: las cuatro cuentas del demo, ahora con el código de cada correo.
-- Abdiel: `LAYA_URL`. Sebas: un pago en USDC. Sin ese pago no hay Acta.
+- Abdiel publicó la URL de Laya. `LAYA_API_KEY` queda solo en Vercel. Sebas: un pago en USDC. Sin ese pago no hay Acta.
 
 ## 2026-09-28
 

@@ -28,11 +28,7 @@ export function cuerpoLaya(texto: string, condicion: string): unknown {
       score: {
         type: "score",
         instructions: "Qué tan completa está la evidencia?",
-        criteria: {
-          insuficiente: "Casi no se ve lo pedido",
-          parcial: "Se ve parte y falta algo",
-          cumplió: "Se ve lo pedido",
-        },
+        criteria: ["Casi no se ve lo pedido", "Se ve parte y falta algo", "Se ve lo pedido"],
       },
     },
   };
@@ -53,9 +49,63 @@ function buscarChoice(json: unknown): string | null {
   return null;
 }
 
+const NIVELES = ["insuficiente", "parcial", "cumplió"] as const;
+
 function buscarScore(json: unknown): string | null {
+  const nodo = nodoScore(json);
+  if (nodo) {
+    const indice = indiceMayor(nodo.probabilities);
+    if (indice !== null) return NIVELES[indice];
+  }
   const directo = leerCampo(json, "score");
   if (typeof directo === "string" && directo.trim()) return directo.trim();
+  return null;
+}
+
+function nodoScore(json: unknown): Record<string, unknown> | null {
+  if (!json || typeof json !== "object" || Array.isArray(json)) return null;
+  const crudo = json as Record<string, unknown>;
+  if (crudo.type === "score" && "probabilities" in crudo) return crudo;
+  if ("probabilities" in crudo && typeof crudo.score === "number") return crudo;
+  for (const valor of Object.values(crudo)) {
+    if (!valor || typeof valor !== "object") continue;
+    const encontrado = nodoScore(valor);
+    if (encontrado) return encontrado;
+  }
+  return null;
+}
+
+function indiceMayor(probabilities: unknown): number | null {
+  const valores = listaProbabilidades(probabilities);
+  if (!valores) return null;
+  let mejor = -Infinity;
+  let indice = -1;
+  for (let i = 0; i < valores.length; i += 1) {
+    const probabilidad = valores[i];
+    if (probabilidad === null || probabilidad <= mejor) continue;
+    mejor = probabilidad;
+    indice = i;
+  }
+  if (indice < 0 || indice > 2) return null;
+  return indice;
+}
+
+function listaProbabilidades(probabilities: unknown): Array<number | null> | null {
+  if (Array.isArray(probabilities)) return probabilities.map(numero);
+  if (!probabilities || typeof probabilities !== "object") return null;
+  const crudo = probabilities as Record<string, unknown>;
+  const indices = Object.keys(crudo)
+    .map((clave) => Number(clave))
+    .filter((indice) => Number.isInteger(indice) && indice >= 0);
+  if (indices.length === 0) return null;
+  const lista: Array<number | null> = Array.from({ length: Math.max(...indices) + 1 }, () => null);
+  for (const indice of indices) lista[indice] = numero(crudo[String(indice)]);
+  return lista;
+}
+
+function numero(valor: unknown): number | null {
+  if (typeof valor === "number" && Number.isFinite(valor)) return valor;
+  if (typeof valor === "string" && valor.trim() && Number.isFinite(Number(valor))) return Number(valor);
   return null;
 }
 
