@@ -67,29 +67,34 @@ function firmantesDe(
     return sobreFirmado(tx) && esCuenta(tx.source) ? [tx.source] : null;
   }
   const vistos = new Set<string>();
+  let coincidencias = 0;
   for (const entrada of auth) {
     const raiz = entrada.rootInvocation.function;
-    if (raiz.type !== "sorobanAuthorizedFunctionTypeContractFn") return null;
-    if (raiz.contractFn.functionName.toString() !== funcion) return null;
+    if (raiz.type !== "sorobanAuthorizedFunctionTypeContractFn") continue;
+    if (raiz.contractFn.functionName.toString() !== funcion) continue;
     let contratoAuth: string;
     try {
       contratoAuth = Address.fromScAddress(raiz.contractFn.contractAddress).toString();
     } catch {
       return null;
     }
-    if (contratoAuth !== contrato) return null;
+    if (contratoAuth !== contrato) continue;
+    coincidencias += 1;
     const info = inspectAuthEntry(entrada);
+    // La cuenta que autoriza el invoke es la de la credencial (address) o,
+    // si la credencial es la cuenta origen, tx.source. No usamos una clave
+    // interna distinta ni el fee-payer cuando la credencial nombra otra G.
     if (info.address === null) {
       if (!sobreFirmado(tx) || !esCuenta(tx.source)) return null;
       vistos.add(tx.source);
       continue;
     }
-    if (!info.signed) return null;
-    const cuentas = info.signers.filter((firma) => firma.signed && esCuenta(firma.address)).map((firma) => firma.address);
-    if (cuentas.length === 0 && esCuenta(info.address)) cuentas.push(info.address);
-    if (cuentas.length === 0) return null;
-    for (const cuenta of cuentas) vistos.add(cuenta);
+    if (!esCuenta(info.address)) continue;
+    const firmada = info.signed || (sobreFirmado(tx) && tx.source === info.address);
+    if (!firmada) return null;
+    vistos.add(info.address);
   }
+  if (coincidencias === 0 || vistos.size === 0) return null;
   return [...vistos];
 }
 

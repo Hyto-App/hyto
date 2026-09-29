@@ -147,7 +147,13 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
   const detail = typeof datos.detail === "string" ? datos.detail : typeof datos.message === "string" ? datos.message : null;
   if (codigo === "STELLAR_TX_FEE_BUMP_REJECTED") {
     return {
-      detail: "El envío rechazó el fee-bump. La cuenta tiene que existir y pagar la comisión.",
+      detail: "La red v2 no acepta un fee-bump. La cuenta de Cavos tiene que pagar la comisión en XLM.",
+      codigo,
+    };
+  }
+  if (codigo === "STELLAR_TX_INSUFFICIENT_BALANCE") {
+    return {
+      detail: "La cuenta no tiene XLM suficiente para la comisión. Fondeala con Friendbot en testnet y volvé a intentar.",
       codigo,
     };
   }
@@ -175,11 +181,12 @@ function leerPago(json: unknown): PagoEnviado {
     throw new ErrorFirma(texto(datos.message) ?? "El envío del pago falló.", 502, texto(datos.code));
   }
   const ledger = typeof datos.ledger === "number" ? datos.ledger : null;
+  const escrow = registro(datos.escrow);
   return {
     hash: texto(datos.txHash) ?? texto(datos.hash),
     ledger,
     codigo: texto(datos.code),
-    contrato: texto(datos.contractId),
+    contrato: texto(datos.contractId) ?? texto(escrow.contractId),
     estado,
     mensaje: texto(datos.message),
   };

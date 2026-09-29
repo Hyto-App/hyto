@@ -9,6 +9,7 @@ export type AccionFirma =
   | { accion: "fondear"; contrato: string; firmante: string; monto: number }
   | { accion: "marcar"; contrato: string; firmante: string; indice: number; estado: string; evidencia?: string }
   | { accion: "aprobar"; contrato: string; firmante: string; indice: number }
+  | { accion: "pagar"; contrato: string; firmante: string; indice: number }
   | { accion: "liberar"; contrato: string; firmante: string; indice: number }
   | { accion: "disputar"; contrato: string; firmante: string; indice: number; motivo: string }
   | { accion: "resolver"; contrato: string; firmante: string; indice: number; distribuciones: Distribucion[] };
@@ -58,6 +59,11 @@ export type CuentasDespliegue = {
   engagementId: string;
   trustline: TrustlineDespliegue;
   comision: number;
+};
+
+export type EntradaDespliegue = {
+  accion: "desplegar";
+  tareaId: string;
 };
 
 export type Pedido = {

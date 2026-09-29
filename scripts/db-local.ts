@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { Client } from "pg";
-import { aplicarArchivo } from "../lib/db/aplicar";
+import { aplicarMigraciones } from "../lib/db/aplicar";
 import { esHostLocal } from "../lib/db/host";
 import { cerrarPools, crearAlmacenNeon } from "../lib/db/neon";
 import { asegurarSemilla } from "../lib/db/semilla";
@@ -101,7 +101,7 @@ async function main(): Promise<number> {
       return 1;
     }
     if (prueba.estado === "sin-base") await asegurarBase(url);
-    await aplicarArchivo(url);
+    await aplicarMigraciones(url);
     console.log("La base ya tiene las tablas.");
     await asegurarSemilla(crearAlmacenNeon(url));
     console.log("La semilla de ZEEK ya está.");

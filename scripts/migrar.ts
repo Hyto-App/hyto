@@ -1,5 +1,5 @@
 import { prepararBaseDe } from "../lib/config/entorno";
-import { aplicarArchivo } from "../lib/db/aplicar";
+import { aplicarMigraciones } from "../lib/db/aplicar";
 import { cargarEnvLocal } from "./cargar-env-local";
 
 const lineasOmitidas = cargarEnvLocal();
@@ -12,7 +12,8 @@ if (!preparada.ok) {
 if (preparada.aviso) console.error(preparada.aviso);
 const base = preparada.url;
 
-aplicarArchivo(base)
+// Aplica drizzle/0000_inicio.sql y el resto de drizzle/*.sql, en orden de nombre.
+aplicarMigraciones(base)
   .then(() => {
     console.log("La base ya tiene las tablas.");
   })

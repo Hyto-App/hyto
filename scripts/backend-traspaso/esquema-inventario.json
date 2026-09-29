@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "32b0eecfe52d1ff74584c9465aa86777f6f1a810bf4bcea6148eea0d4e0feb81",
+      "sha256": "ef7fde616a727584092a15f0ab5e527c4ce0e4bb4df914d5ff09e1e63c985a5e",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -66,9 +66,12 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "confirmar con Esteban",
-      "sha256": "f2aa5289c0b102bd01009cd86cbbd6a27acbfc2a513852fc794290b7a9a413ff",
+      "sha256": "6454417ce3e1081b0c57f466fc8f0f95948b3f3b476a2774e614bfa6d6b7f64d",
       "detalle": {
-        "archivosQueLee": [],
+        "archivosQueLee": [
+          "drizzle/0000_inicio.sql",
+          "drizzle/0001_contrato_escrow.sql"
+        ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
     },
@@ -91,8 +94,20 @@
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "c58d75ddee3010c0de653da708de5deccb8d734ef16923a621e9ef3097b78a83",
       "detalle": {
-        "loEjecutaMigrarTs": false,
-        "nota": "Está en drizzle/ y scripts/migrar.ts no lo lee. confirmar con Esteban"
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0001_contrato_escrow.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "1f4a87d435c9ff63fc6d006fbff086c959ffd18e30c25402b074533a45b2885b",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
       }
     }
   ],
@@ -810,6 +825,39 @@
             "archivo": "lib/db/tipos.ts",
             "tipo": "TareaFila",
             "campo": "credencialUrl",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "contrato_escrow",
+          "nombreEnDrizzle": "contratoEscrow",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "TareaFila",
+            "campo": "contratoEscrow",
             "tipoTs": "string",
             "literales": null,
             "aceptaNull": true,
@@ -1848,8 +1896,7 @@
     "tareas.miembro_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con miembro. confirmar con Esteban",
     "evidencias.blob_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con blob. confirmar con Esteban",
     "veredictos.tarea_id: Hay tareas en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban",
-    "sesiones.usuario_id: Hay usuarios en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban",
-    "drizzle/0000_inicio.sql no lo lee scripts/migrar.ts. confirmar con Esteban"
+    "sesiones.usuario_id: Hay usuarios en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban"
   ],
   "base": {
     "rama": "main",

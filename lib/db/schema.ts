@@ -28,6 +28,7 @@ export const tareas = pgTable("tareas", {
   estado: text("estado").notNull().default("pendiente"),
   hashPago: text("hash_pago"),
   credencialUrl: text("credencial_url"),
+  contratoEscrow: text("contrato_escrow"),
 });
 
 export const evidencias = pgTable("evidencias", {

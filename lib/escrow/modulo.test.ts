@@ -412,7 +412,7 @@ test("sin indice no se usa el primer hito", () => {
 test("el indice 0 sigue siendo el primer hito", () => {
   const entrada = leerEntrada({ accion: "aprobar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0 });
   assert.equal("aviso" in entrada, false);
-  if ("aviso" in entrada || entrada.accion === "fondear") return;
+  if ("aviso" in entrada || entrada.accion === "fondear" || entrada.accion === "desplegar") return;
   assert.equal(entrada.indice, 0);
 });
 

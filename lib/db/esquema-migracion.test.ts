@@ -22,9 +22,13 @@ import { leerMigraciones, normalizarDefault, normalizarTipo, type EsquemaEsperad
 test("la migración real declara las seis tablas y las relaciones que el código usa", () => {
   const esperado = leerMigraciones("drizzle");
   assert.deepEqual(esperado.avisos, []);
-  assert.deepEqual(esperado.archivos, ["0000_inicio.sql"]);
+  assert.deepEqual(esperado.archivos, ["0000_inicio.sql", "0001_contrato_escrow.sql"]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]);
-  assert.equal(esperado.columnas.length, 41);
+  assert.equal(esperado.columnas.length, 42);
+  const contrato = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "contrato_escrow");
+  assert.equal(contrato?.tipo, "text");
+  assert.equal(contrato?.nullable, true);
+  assert.equal(contrato?.defecto, null);
   assert.equal(
     esperado.columnas.some((columna) => columna.tabla === "sesiones" && columna.nombre === "wallet" && columna.nullable === false),
     true,
@@ -84,7 +88,7 @@ test("schema.ts coincide con la migración y neon no nombra columnas ausentes", 
       "veredictos.origen",
     ],
   );
-  assert.deepEqual(cruce.hashPagoEscrituras, []);
+  assert.deepEqual(cruce.hashPagoEscrituras, ["lib/api/firma.ts"]);
   assert.deepEqual(cruce.credencialEscrituras, []);
   assert.equal(cruce.firmaGuardaHash, false);
   assert.equal(cruce.actualizarAceptaHash, true);
@@ -103,7 +107,6 @@ test("los pendientes salen de hechos del repo y solo nombran columnas reales", (
     "veredicto-evidencia-unica",
     "veredicto-id-compartido",
     "veredictos-sin-lector",
-    "hash-pago-sin-escritura",
     "credencial-url-sin-escritura",
     "tipos-text",
     "on-delete",

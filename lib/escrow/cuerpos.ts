@@ -1,4 +1,4 @@
-import type { AccionFirma, CuentasDespliegue, Distribucion, Pedido, RedEscrow } from "./tipos";
+import type { AccionFirma, CuentasDespliegue, Distribucion, EntradaDespliegue, Pedido, RedEscrow } from "./tipos";
 
 export const BASE_V2 = "https://beta.api.trustlesswork.com";
 export const BASE_V1 = "https://dev.api.trustlesswork.com";
@@ -184,6 +184,16 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
       },
     };
   }
+  if (accion.accion === "pagar") {
+    return {
+      ruta: "/escrow/multi-release/v2/approve-and-release-milestones",
+      cuerpo: {
+        contractId: accion.contrato,
+        signer: accion.firmante,
+        milestoneIndexes: [accion.indice],
+      },
+    };
+  }
   if (accion.accion === "liberar") {
     return {
       ruta: "/escrow/multi-release/v2/release-funds",
@@ -219,6 +229,9 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
 function pedidoV1(accion: AccionFirma): Pedido | string {
   if (accion.accion === "disputar" || accion.accion === "resolver") {
     return "Disputar y resolver un hito usa la API v2.";
+  }
+  if (accion.accion === "pagar") {
+    return "Aprobar y liberar en un paso usa la API v2.";
   }
   if (accion.accion === "fondear") {
     return {
@@ -302,7 +315,7 @@ export function esContrato(direccion: string): boolean {
   return /^C[A-Z2-7]{55}$/.test(direccion);
 }
 
-export type EntradaLeida = AccionFirma | { aviso: string };
+export type EntradaLeida = AccionFirma | EntradaDespliegue | { aviso: string };
 
 export function leerEntrada(body: unknown): EntradaLeida {
   if (!body || typeof body !== "object") return { aviso: "El cuerpo no trae la acción." };
@@ -310,10 +323,16 @@ export function leerEntrada(body: unknown): EntradaLeida {
   const accion = datos.accion;
   const contrato = texto(datos.contrato);
   const firmante = texto(datos.firmante);
+  if (accion === "desplegar") {
+    const tareaId = texto(datos.tareaId);
+    if (!tareaId || !/^[A-Za-z0-9_-]{1,80}$/.test(tareaId)) return { aviso: "Falta la tarea que se va a desplegar." };
+    return { accion, tareaId };
+  }
   if (
     accion !== "fondear" &&
     accion !== "marcar" &&
     accion !== "aprobar" &&
+    accion !== "pagar" &&
     accion !== "liberar" &&
     accion !== "disputar" &&
     accion !== "resolver"

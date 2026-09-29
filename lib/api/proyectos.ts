@@ -76,6 +76,7 @@ function leerTarea(item: unknown, proyectoId: string): TareaFila | { aviso: stri
     walletCobro: "",
     estado: "pendiente",
     hashPago: null,
+    contratoEscrow: null,
     credencialUrl: null,
   };
 }

@@ -28,6 +28,7 @@ export type TareaFila = {
   estado: EstadoTarea;
   hashPago: string | null;
   credencialUrl: string | null;
+  contratoEscrow: string | null;
 };
 
 export type EvidenciaFila = {
