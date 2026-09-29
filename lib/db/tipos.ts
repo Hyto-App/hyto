@@ -13,6 +13,7 @@ export type Proyecto = {
   id: string;
   nombre: string;
   creadoEn: string;
+  organizadorId: string | null;
 };
 
 export type TareaFila = {

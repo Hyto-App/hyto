@@ -16,7 +16,12 @@ import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp, fijarWalletHttp } from "./sesion";
 import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
 import { listarTareasHttp } from "./tareas";
+import { asegurarSemilla } from "../db/semilla";
+import type { Visor } from "./alcance";
 import type { SesionFila } from "../db/tipos";
+
+const DUENO: Visor = { usuarioId: "organizador", demo: false };
+const VOLUNTARIO: Visor = { usuarioId: "voluntario-1", demo: false };
 import { reiniciarLimite } from "../escrow/limite";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
 
@@ -50,7 +55,10 @@ function token(email: string | null, extra: Record<string, unknown> = {}): strin
 }
 
 test("las tareas de ZEEK salen de la base", async () => {
-  const respuesta = await listarTareasHttp(crearMemoria());
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const respuesta = await listarTareasHttp(almacen, DUENO);
   assert.equal(respuesta.status, 200);
   assert.match(respuesta.headers.get("content-type") ?? "", /json/);
   const json = (await respuesta.json()) as { tareas: { id: string; tipo: string; monto: string; tope: string | null }[] };
@@ -78,11 +86,11 @@ test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
   assert.equal(json.evidencia.monto, "12.40");
   assert.equal(json.evidencia.fecha, "2026-09-27");
 
-  const lectura = await leerEvidenciaHttp(almacen, json.evidencia.id);
+  const lectura = await leerEvidenciaHttp(almacen, json.evidencia.id, VOLUNTARIO);
   const leida = (await lectura.json()) as { evidencia: { monto: string } };
   assert.equal(leida.evidencia.monto, "12.40");
 
-  const foto = await leerFotoHttp(almacen, fotos, json.evidencia.id);
+  const foto = await leerFotoHttp(almacen, fotos, json.evidencia.id, VOLUNTARIO);
   assert.equal(foto.headers.get("content-type"), "image/jpeg");
   assert.equal((await foto.arrayBuffer()).byteLength, 3);
 
@@ -155,7 +163,9 @@ test("un archivo que no es imagen no pasa", async () => {
 
 test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () => {
   const almacen = crearMemoria();
-  const vacio = await informeHttp(almacen);
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const vacio = await informeHttp(almacen, DUENO);
   assert.equal(vacio.status, 200);
   const primero = (await vacio.json()) as { nombre: string; ejemplo: boolean; tareas: { hashPago: string | null }[]; resumen: { presupuesto: string } };
   assert.equal(primero.nombre, "ZEEK");
@@ -165,7 +175,7 @@ test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () =
 
   const hash = "a".repeat(64);
   await almacen.actualizarTarea("stand", { hashPago: hash, estado: "pagado" });
-  const conPago = (await (await informeHttp(almacen)).json()) as {
+  const conPago = (await (await informeHttp(almacen, DUENO)).json()) as {
     tareas: { id: string; hashPago: string | null }[];
   };
   assert.equal(conPago.tareas.find((tarea) => tarea.id === "stand")?.hashPago, hash);
@@ -205,9 +215,13 @@ test("un proyecto nuevo entra por la ruta", async () => {
       }),
     }),
     almacen,
+    "voluntario-2",
   );
   assert.equal(respuesta.status, 201);
-  const tareas = (await (await listarTareasHttp(almacen)).json()) as { tareas: { titulo: string }[] };
+  assert.equal((await almacen.ultimoProyecto())?.organizadorId, "voluntario-2");
+  const tareas = (await (await listarTareasHttp(almacen, { usuarioId: "voluntario-2", demo: false })).json()) as {
+    tareas: { titulo: string }[];
+  };
   assert.equal(tareas.tareas.some((tarea) => tarea.titulo === "Cajas"), true);
 });
 

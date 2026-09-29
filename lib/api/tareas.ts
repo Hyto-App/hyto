@@ -1,6 +1,7 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila } from "@/lib/db/tipos";
+import { tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 
 export function tareaPublica(tarea: TareaFila) {
@@ -20,10 +21,10 @@ export function tareaPublica(tarea: TareaFila) {
   };
 }
 
-export async function listarTareasHttp(almacen: Almacen): Promise<Response> {
+export async function listarTareasHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
-    const tareas = await almacen.listarTareas();
+    const tareas = await tareasVisibles(almacen, visor);
     return json({ tareas: tareas.map(tareaPublica) });
   } catch {
     return baseNoLista();

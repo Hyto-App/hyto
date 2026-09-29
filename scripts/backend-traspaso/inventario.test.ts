@@ -19,7 +19,7 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
     ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 3);
+  assert.equal(inventario.relaciones.length, 4);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);

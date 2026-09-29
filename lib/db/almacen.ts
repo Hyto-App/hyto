@@ -6,8 +6,10 @@ export type Almacen = {
   insertarUsuario(usuario: Usuario): Promise<void>;
   guardarUsuario(usuario: Usuario): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
+  listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;
   crearProyecto(proyecto: Proyecto, tareas: TareaFila[]): Promise<void>;
+  asignarOrganizador(proyectoId: string, organizadorId: string): Promise<void>;
   listarTareas(): Promise<TareaFila[]>;
   leerTarea(id: string): Promise<TareaFila | null>;
   actualizarTarea(

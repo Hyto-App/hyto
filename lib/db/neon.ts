@@ -94,6 +94,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       const filas = await db.select().from(proyectos).where(eq(proyectos.id, id)).limit(1);
       return filas[0] ?? null;
     },
+    async listarProyectos() {
+      return db.select().from(proyectos);
+    },
     async ultimoProyecto() {
       const filas = await db.select().from(proyectos).orderBy(desc(proyectos.creadoEn)).limit(1);
       return filas[0] ?? null;
@@ -102,6 +105,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       await db.insert(proyectos).values(proyecto).onConflictDoNothing();
       if (filas.length === 0) return;
       await db.insert(tareas).values(filas).onConflictDoNothing();
+    },
+    async asignarOrganizador(proyectoId, organizadorId) {
+      await db.update(proyectos).set({ organizadorId }).where(eq(proyectos.id, proyectoId));
     },
     async listarTareas() {
       const filas = await db.select().from(tareas);
