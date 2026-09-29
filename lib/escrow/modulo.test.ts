@@ -348,7 +348,7 @@ test("marcar adjunta la referencia de la evidencia", async () => {
 });
 
 test("enviar manda el XDR firmado y devuelve el hash", async () => {
-  const red = fetchDe({ status: "SUCCESS", txHash: "deadbeef", ledger: 12, code: "STELLAR_TX_SUBMITTED" });
+  const red = fetchDe({ txHash: "deadbeef", ledger: 12, code: "STELLAR_TX_SUBMITTED", message: "ok" });
   const pago = await enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba" });
   assert.equal(pago.hash, "deadbeef");
   assert.equal(pago.ledger, 12);
@@ -384,11 +384,15 @@ test("send-transaction sin hash es un envío exitoso y no inventa el hash", asyn
   assert.deepEqual(red.llamadas[0]?.body, { signedXdr: "FIRMADO" });
 });
 
-test("send-transaction sin status no es un pago", async () => {
-  const red = fetchDe({ txHash: "deadbeef", ledger: 12, code: "STELLAR_TX_SUBMITTED" });
+test("v2 acepta el alta con contractId y rechaza un envío sin hash ni código", async () => {
+  const alta = fetchDe({ txHash: "aa".repeat(32), ledger: 4, contractId: CONTRATO, escrow: { contractId: CONTRATO } });
+  const pago = await enviar("FIRMADO", { fetch: alta.fetch, clave: "clave-de-prueba" });
+  assert.equal(pago.contrato, CONTRATO);
+  assert.equal(pago.estado, null);
+  const vacio = fetchDe({ ledger: 1, message: "no" });
   await assert.rejects(
-    () => enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba" }),
-    (error: unknown) => error instanceof ErrorFirma && /falló/.test(error.message),
+    () => enviar("FIRMADO", { fetch: vacio.fetch, clave: "clave-de-prueba" }),
+    (error: unknown) => error instanceof ErrorFirma && error.message === "no",
   );
 });
 

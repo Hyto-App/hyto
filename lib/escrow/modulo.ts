@@ -82,7 +82,7 @@ export async function enviar(xdrFirmado: string, opciones: OpcionesRed = {}): Pr
   if (!xdr) throw new ErrorFirma("Falta el XDR firmado.", 400, null);
   const red = opciones.red ?? "v2";
   const ruta = red === "v2" ? "/stellar/send-transaction" : "/helper/send-transaction";
-  return leerPago(await post(ruta, { signedXdr: xdr }, opciones));
+  return leerPago(await post(ruta, { signedXdr: xdr }, opciones), red);
 }
 
 export async function leerEscrow(contrato: string, opciones: OpcionesRed = {}): Promise<Record<string, unknown>> {
@@ -171,24 +171,35 @@ function leerXdr(json: unknown): XdrListo {
   };
 }
 
-function leerPago(json: unknown): PagoEnviado {
+const CODIGOS_V2_OK = new Set(["STELLAR_TX_SUBMITTED", "STELLAR_TX_SUBMITTED_INDEXER_LAGGING"]);
+
+// V2 /stellar/send-transaction no trae status. El alta exitosa trae contractId;
+// el resto trae code STELLAR_TX_SUBMITTED o STELLAR_TX_SUBMITTED_INDEXER_LAGGING.
+// V1 /helper/send-transaction sí usa status SUCCESS.
+export function envioConfirmado(
+  pago: Pick<PagoEnviado, "hash" | "codigo" | "contrato" | "estado">,
+  red: "v1" | "v2",
+): boolean {
+  if (red === "v1") return pago.estado === "SUCCESS";
+  if (!pago.hash) return false;
+  return (pago.codigo !== null && CODIGOS_V2_OK.has(pago.codigo)) || Boolean(pago.contrato);
+}
+
+function leerPago(json: unknown, red: "v1" | "v2"): PagoEnviado {
   const datos = registro(json);
-  const estado = texto(datos.status);
-  // Solo status SUCCESS cuenta como envío aceptado. Sin status no es éxito:
-  // un código suelto (STELLAR_TX_SUBMITTED) no alcanza para guardar el pago.
-  if (estado !== "SUCCESS") {
-    throw new ErrorFirma(texto(datos.message) ?? "El envío del pago falló.", 502, texto(datos.code));
-  }
-  const ledger = typeof datos.ledger === "number" ? datos.ledger : null;
   const escrow = registro(datos.escrow);
-  return {
+  const pago: PagoEnviado = {
     hash: texto(datos.txHash) ?? texto(datos.hash),
-    ledger,
+    ledger: typeof datos.ledger === "number" ? datos.ledger : null,
     codigo: texto(datos.code),
     contrato: texto(datos.contractId) ?? texto(escrow.contractId),
-    estado,
+    estado: texto(datos.status),
     mensaje: texto(datos.message),
   };
+  if (!envioConfirmado(pago, red)) {
+    throw new ErrorFirma(pago.mensaje ?? "El envío del pago falló.", 502, pago.codigo);
+  }
+  return pago;
 }
 
 function registro(json: unknown): Record<string, unknown> {

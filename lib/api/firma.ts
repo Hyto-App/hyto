@@ -4,7 +4,7 @@ import type { SesionFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
-import { enviar, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
@@ -207,7 +207,12 @@ async function guardarResultado(
       return { aviso: "Esta tarea ya tiene un escrow.", estadoHttp: 409 };
     }
     const contrato = contratoDeServidor(pago, tarea.id);
-    if (!contrato) return { aviso: "El envío salió bien y Trustless no devolvió el contrato.", estadoHttp: 200 };
+    if (typeof contrato !== "string") {
+      return {
+        aviso: contrato?.aviso ?? "El envío salió bien y Trustless no devolvió el contrato.",
+        estadoHttp: 200,
+      };
+    }
     await almacen.actualizarTarea(tarea.id, { contratoEscrow: contrato });
     contratosPreparados.delete(tarea.id);
     return { aviso: null, estadoHttp: 200 };
@@ -221,7 +226,7 @@ async function guardarResultado(
   if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow) || invocacion.contrato !== tarea.contratoEscrow) {
     return { aviso: "El envío no corresponde al escrow de esta tarea, así que no se marcó como pagado.", estadoHttp: 200 };
   }
-  if (pago.estado !== "SUCCESS") {
+  if (!envioConfirmado(pago, "v2")) {
     return { aviso: "El envío no quedó confirmado, así que no se marcó como pagado.", estadoHttp: 200 };
   }
   if (!pago.hash || !/^[a-fA-F0-9]{64}$/.test(pago.hash)) {
@@ -240,8 +245,14 @@ async function guardarResultado(
   return { aviso: null, estadoHttp: 200 };
 }
 
-function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | null {
+function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | { aviso: string } | null {
   if (pago.contrato && esContrato(pago.contrato)) return pago.contrato;
+  if (pago.codigo === "STELLAR_TX_SUBMITTED_INDEXER_LAGGING") {
+    return {
+      aviso:
+        "La transacción entró al ledger, pero el indexador no devolvió el contrato. No se guardó el escrow: volvé a consultar el hash en unos segundos.",
+    };
+  }
   const preparado = contratosPreparados.get(tareaId);
   return preparado && esContrato(preparado) ? preparado : null;
 }
@@ -251,6 +262,7 @@ function hitoLiberado(escrow: Record<string, unknown>): boolean {
   const hito = hitos[0];
   if (!hito || typeof hito !== "object") return false;
   const datos = hito as Record<string, unknown>;
+  if (datos.released === true) return true;
   const flags = datos.flags && typeof datos.flags === "object" ? (datos.flags as Record<string, unknown>) : null;
   return flags?.released === true;
 }

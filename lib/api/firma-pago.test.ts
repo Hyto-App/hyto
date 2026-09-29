@@ -60,12 +60,12 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     }
     if (url.endsWith("/stellar/send-transaction")) {
       return new Response(
-        JSON.stringify({ status: "SUCCESS", txHash: "cd".repeat(32), ledger: 9, contractId: CONTRATO_XDR }),
+        JSON.stringify({ txHash: "cd".repeat(32), ledger: 9, contractId: CONTRATO_XDR, escrow: { contractId: CONTRATO_XDR } }),
         { status: 200 },
       );
     }
     if (url.includes(`/escrow/multi-release/v2/${CONTRATO_XDR}`)) {
-      return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ flags: { released: true } }] }), {
+      return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ released: true }] }), {
         status: 200,
       });
     }
@@ -196,7 +196,7 @@ test("un fee-bump no se envía y el aviso habla de XLM", async () => {
   }
 });
 
-test("sin contractId en el envío se guarda el del prepare, no el del cliente", async () => {
+test("el indexador atrasado no guarda el contrato de memoria", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -213,7 +213,15 @@ test("sin contractId en el envío se guarda el del prepare, no el del cliente", 
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
     if (url.endsWith("/stellar/send-transaction")) {
-      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "ab".repeat(32), ledger: 3 }), { status: 200 });
+      return new Response(
+        JSON.stringify({
+          txHash: "ab".repeat(32),
+          ledger: 3,
+          code: "STELLAR_TX_SUBMITTED_INDEXER_LAGGING",
+          message: "indexer lagging",
+        }),
+        { status: 200 },
+      );
     }
     throw new Error(`fetch inesperado: ${url}`);
   };
@@ -227,7 +235,9 @@ test("sin contractId en el envío se guarda el del prepare, no el del cliente", 
       almacen,
     );
     assert.equal(enviado.status, 200);
-    assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, CONTRATO_XDR);
+    const json = (await enviado.json()) as { aviso: string };
+    assert.match(json.aviso, /indexador/);
+    assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, null);
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior);
@@ -257,7 +267,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
     if (url.endsWith("/stellar/send-transaction")) {
-      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "ef".repeat(32), ledger: 4, contractId: CONTRATO_XDR }), {
+      return new Response(JSON.stringify({ txHash: "ef".repeat(32), ledger: 4, contractId: CONTRATO_XDR, escrow: {} }), {
         status: 200,
       });
     }
@@ -295,9 +305,12 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
   globalThis.fetch = async (input) => {
     const url = String(input);
     if (url.endsWith("/stellar/send-transaction")) {
-      return new Response(JSON.stringify({ status: "SUCCESS", txHash: "11".repeat(32), ledger: 5 }), { status: 200 });
+      return new Response(
+        JSON.stringify({ txHash: "11".repeat(32), ledger: 5, code: "STELLAR_TX_SUBMITTED", message: "ok" }),
+        { status: 200 },
+      );
     }
-    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ flags: { released: false } }] }), {
+    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ released: false }] }), {
       status: 200,
     });
   };
@@ -311,6 +324,37 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
     assert.equal(respuesta.status, 200);
     assert.match(((await respuesta.json()) as { aviso: string }).aviso, /liberado/);
     assert.notEqual((await almacen.leerTarea("comida"))?.estado, "pagado");
+  } finally {
+    globalThis.fetch = original;
+    reiniciarLimite();
+  }
+});
+
+test("un hito v1 con flags.released también se marca pagado", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarTarea("bienvenida", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/stellar/send-transaction")) {
+      return new Response(JSON.stringify({ txHash: "22".repeat(32), ledger: 6, code: "STELLAR_TX_SUBMITTED" }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ flags: { released: true } }] }), {
+      status: 200,
+    });
+  };
+  try {
+    const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    const respuesta = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida" }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 200);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.estado, "pagado");
   } finally {
     globalThis.fetch = original;
     reiniciarLimite();
