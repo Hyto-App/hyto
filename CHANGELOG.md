@@ -6,6 +6,8 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Nuevo
 
+- La configuración del servidor quedó en un solo lugar (`lib/config`). Cada variable dice el nombre, si es pública o de servidor, si es obligatoria y para qué sirve. Si falta una opcional, el build sigue. `npm run verificar:entorno` revisa `.env.local` y no imprime los valores. Falla si hay líneas que no se pudieron leer, si falta una obligatoria o si la base no está lista para migrar. Josué Valles, PR #22.
+- Hay pruebas contra un Postgres de esta máquina. `npm run test:integracion` recorre las rutas, las pantallas del admin y el regreso de Google. Si no hay base local, o si la dirección no es de esta máquina, avisa y no conecta. El regreso de Google queda como fallo esperado: el arreglo del PR #18 no está en `main`. Josué Valles, PR #27.
 - La base ya guarda usuarios, proyectos, tareas, evidencias, el resultado de la revisión y el enlace del pago. Ese enlace sigue vacío. El correo indica el rol de cada persona. Hay una carga inicial del evento ZEEK. Las fotos van a un almacén privado y en la base queda la referencia. Esteban (Psybre), PR #14.
 - Ya se puede pedir la lista de tareas, subir una evidencia y verla (también la foto), crear un proyecto, abrir el informe y pedir la revisión. El informe abre aunque el pago no tenga enlace. Si el enlace existe, Ver pago lo usa. Esteban (Psybre), PR #14.
 - La revisión describe la foto con Qwen. Si la herramienta de Abdiel no está publicada, un reemplazo responde las tres preguntas y el sistema marca cumplió, parcial o insuficiente. Si falta la clave o el modelo falla, se usa un texto fijo de reserva. Esteban (Psybre), PR #14.
@@ -18,14 +20,17 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Cambiado
 
+- La migración, la semilla y drizzle-kit cargan `.env.local` antes de tocar la base. Se detienen si `DATABASE_URL` apunta a un host listado en `HYTO_HOST_BASE_PRODUCCION` y `HYTO_CONFIRMAR_BASE_PRODUCCION` no vale `si`. Si un host de esa lista no se puede leer, no migran ni siembran. Sin esa lista avisan y siguen. El pooler de Neon (`-pooler`) cuenta como el mismo host directo. `.env.example` deja esas dos variables vacías. El script del hito también carga `.env.local`. Si ese archivo tiene líneas que no se pudieron leer, la migración y la semilla no corren. Josué Valles, PR #22.
+- `.env.example` dice, sin valores, qué lee el código, si cada variable es obligatoria y qué pasa si falta. `NODE_ENV` no se declara ahí: lo pone Next.js. En producción la cookie de sesión lleva Secure. La clave de servidor de Cavos sigue sin nombre en el código. Josué Valles, PR #20.
+- La base y el almacén de fotos aceptan un gancho que solo usan las pruebas locales. En el servidor el camino sigue siendo Neon y el almacén privado. `npm test` también corre la guardia que impide conectar a una base que no es local. Josué Valles, PR #27.
 - Quedó escrito que la revisión de Abdiel va a correr en su servidor de escritorio y se publica con un enlace de Tailscale. Todavía no está instalada. Abdiel Cole, PR #11.
 - Quedó escrito que Esteban se encarga de la base, de las rutas y del ingreso. Josué Valles, PR #12.
 - Josué anotó el recorrido del 28 de septiembre, en la computadora y en el sitio: las pantallas seguían con el ejemplo de ZEEK, el ingreso fallaba y Fondear y Aprobar no firmaban un pago. Josué Valles, PR #13.
 
 ### Pendiente para el equipo
 
-- Esteban: cargar en el sitio la dirección de la base, la clave del almacén de fotos y la clave de la revisión de fotos, y crear el almacén privado. Las tablas y la carga de ZEEK ya se corrieron en la base. Sin eso, el sitio sigue mostrando el ejemplo.
-- Josué: conectar la bandeja, la revisión y el informe a las rutas nuevas, y Fondear y Aprobar al módulo de firma.
+- Esteban: cargar en el sitio la dirección de la base, la clave del almacén de fotos y la clave de la revisión de fotos, y crear el almacén privado. Las tablas y la carga de ZEEK ya se corrieron en la base. Sin eso, el sitio sigue mostrando el ejemplo. Para volver a migrar o sembrar un host listado como producción, `HYTO_CONFIRMAR_BASE_PRODUCCION` tiene que valer `si`.
+- Josué: conectar la bandeja, la revisión y el informe a las rutas nuevas, y Fondear y Aprobar al módulo de firma. El envío del pago devuelve el enlace y no lo guarda en la tarea. El regreso de Google pierde el ingreso si la persona navega mientras el canje sigue pendiente: es el PR #18, que no está en `main`, y la prueba lo marca como fallo esperado. El 30 de septiembre, subir Next.js a 16.3.7.
 - Raúl: dejar listas las cuatro cuentas del demo. Ahora el ingreso pide el código que llega al correo.
 - Abdiel: instalar la revisión en su servidor y publicar la dirección. Acordar con Esteban una clave, porque ese enlace es público.
 - Sebas: dejar un pago de prueba en USDC. Sin ese pago no hay Acta.
