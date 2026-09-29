@@ -21,14 +21,14 @@ export async function prepararIdentidad(identidad: IdentidadDemo, auth: AuthProv
       nombre: identidad.nombre,
       direccion: null,
       usdcListo: false,
-      detalle: "Las cuentas esperan el identificador de Cavos.",
+      detalle: "Accounts are waiting for the Cavos app id.",
     };
   }
 
   const sesion = await conectarStellar(auth);
   const billetera = sesion.wallet("stellar");
   if (billetera.chain !== "stellar") {
-    throw new Error("La cuenta no quedó en Stellar.");
+    throw new Error("The account did not land on Stellar.");
   }
 
   const lista = await asegurarCobroUsdc(billetera);

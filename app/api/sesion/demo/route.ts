@@ -8,6 +8,6 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!demoHabilitado()) return json({ aviso: "No encontrado." }, 404);
+  if (!demoHabilitado()) return json({ aviso: "Not found." }, 404);
   return conAlmacen((almacen) => crearDemoHttp(request, almacen));
 }

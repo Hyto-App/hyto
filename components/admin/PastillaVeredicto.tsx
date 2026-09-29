@@ -1,4 +1,5 @@
 import type { Veredicto } from "@/lib/admin/tipos";
+import { etiquetaVeredicto } from "@/lib/ui/etiquetas";
 
 const ESTILOS: Record<Veredicto, string> = {
   cumplió: "bg-[var(--pagado-fondo)] text-[var(--pagado-tinta)]",
@@ -9,7 +10,7 @@ const ESTILOS: Record<Veredicto, string> = {
 export function PastillaVeredicto({ veredicto }: { veredicto: Veredicto }) {
   return (
     <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${ESTILOS[veredicto]}`}>
-      {veredicto}
+      {etiquetaVeredicto(veredicto)}
     </span>
   );
 }

@@ -40,7 +40,7 @@ test("el despliegue deja al organizador en aprobar, marcar y liberar", () => {
     firmante: ORGANIZADOR,
     receptor: RECEPTOR,
     monto: 20,
-    titulo: "Montar el stand",
+    titulo: "Set up the booth",
     descripcion: "Banner visible",
     engagementId: "hyto-stand",
     roles: ROLES,
@@ -109,5 +109,5 @@ test("la plataforma no puede ser quien cobra", () => {
   });
   assert.equal("aviso" in cuentas, true);
   if (!("aviso" in cuentas)) return;
-  assert.match(cuentas.aviso, /plataforma/);
+  assert.match(cuentas.aviso, /platform/);
 });

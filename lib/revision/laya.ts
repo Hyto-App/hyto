@@ -12,28 +12,28 @@ export function urlLaya(base: string): string {
 export function cuerpoLaya(texto: string, condicion: string): unknown {
   return {
     model: "multilingual",
-    state: `${texto}\nCondición: ${condicion}`,
+    state: `${texto}\nCondition: ${condicion}`,
     questions: {
       choice: {
         type: "choice",
-        instructions: "Qué muestra la foto?",
+        instructions: "What does the photo show?",
         criteria: {
-          trabajo: "Se ve el trabajo hecho",
-          factura: "Se ve una factura o un comprobante",
-          otra: "No se distingue",
+          trabajo: "The finished work is visible",
+          factura: "An invoice or a receipt is visible",
+          otra: "It is not clear",
         },
       },
       noul: {
         type: "noul",
-        instructions: condicion ? `La foto cumple esta condición: ${condicion}` : "La foto muestra lo que se pidió",
+        instructions: condicion ? `The photo meets this condition: ${condicion}` : "The photo shows what was requested",
       },
       score: {
         type: "score",
-        instructions: "Qué tan completa está la evidencia?",
+        instructions: "How complete is the evidence?",
         criteria: {
-          insuficiente: "Casi no se ve lo pedido",
-          parcial: "Se ve parte y falta algo",
-          cumplió: "Se ve lo pedido",
+          insuficiente: "What was requested is barely visible",
+          parcial: "Part of it shows and something is missing",
+          cumplió: "What was requested is visible",
         },
       },
     },

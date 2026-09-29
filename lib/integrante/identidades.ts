@@ -8,10 +8,10 @@ export const USDC = {
 } as const;
 
 export const IDENTIDADES: IdentidadDemo[] = [
-  { id: "organizador", nombre: "Organizador", email: "organizador@demo.hyto" },
-  { id: "voluntario-1", nombre: "Voluntario 1", email: "voluntario1@demo.hyto" },
-  { id: "voluntario-2", nombre: "Voluntario 2", email: "voluntario2@demo.hyto" },
-  { id: "voluntario-3", nombre: "Voluntario 3", email: "voluntario3@demo.hyto" },
+  { id: "organizador", nombre: "Organizer", email: "organizador@demo.hyto" },
+  { id: "voluntario-1", nombre: "Volunteer 1", email: "voluntario1@demo.hyto" },
+  { id: "voluntario-2", nombre: "Volunteer 2", email: "voluntario2@demo.hyto" },
+  { id: "voluntario-3", nombre: "Volunteer 3", email: "voluntario3@demo.hyto" },
 ];
 
 export const MIEMBROS = IDENTIDADES.filter((identidad) => identidad.id !== "organizador");

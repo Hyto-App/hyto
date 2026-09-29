@@ -100,7 +100,7 @@ describe("ingreso demo", { concurrency: false }, () => {
     assert.equal(otra.status, 200);
     const filas = (await almacen.listarUsuarios()).filter((usuario) => usuario.email === "demo-organizador@hyto.demo");
     assert.equal(filas.length, 1);
-    assert.equal(filas[0]?.nombre, "Organizador (demo)");
+    assert.equal(filas[0]?.nombre, "Organizer (demo)");
   });
 
   test("la semilla deja las filas demo aunque ya haya equipo", async () => {
@@ -108,7 +108,7 @@ describe("ingreso demo", { concurrency: false }, () => {
     await almacen.insertarUsuario({
       id: "organizador",
       email: "organizador@demo.hyto",
-      nombre: "Organizador",
+      nombre: "Organizer",
       rol: "organizador",
     });
     await asegurarSemilla(almacen);

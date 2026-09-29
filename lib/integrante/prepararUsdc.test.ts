@@ -146,7 +146,7 @@ test("en demo no aparece y en la revisión real sí", async () => {
       return json({
         tarea: {
           id: "stand",
-          titulo: "Montar el stand",
+          titulo: "Set up the booth",
           tipo: "trabajo",
           monto: "20",
           condicion: "Banner",
@@ -162,7 +162,7 @@ test("en demo no aparece y en la revisión real sí", async () => {
         tareas: [
           {
             id: "stand",
-            titulo: "Montar el stand",
+            titulo: "Set up the booth",
             tipo: "trabajo",
             monto: "20",
             condicion: "Banner",

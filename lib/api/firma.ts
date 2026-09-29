@@ -25,7 +25,7 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   try {
     body = await request.json();
   } catch {
-    return Response.json({ aviso: "El cuerpo no es JSON." }, { status: 400 });
+    return Response.json({ aviso: "The body is not JSON." }, { status: 400 });
   }
   const entrada = leerEntrada(body);
   if ("aviso" in entrada) return Response.json({ aviso: entrada.aviso }, { status: 400 });
@@ -33,7 +33,7 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     const limitado = respuestaSiExcedido(request);
     if (limitado) return limitado;
     const base = almacen === undefined ? await almacenNeon() : almacen;
-    if (!base) return Response.json({ aviso: "La base no está configurada." }, { status: 503 });
+    if (!base) return Response.json({ aviso: "The database is not configured." }, { status: 503 });
     const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { tareaId: entrada.tareaId });
     if (rechazo) return rechazo;
     return prepararDespliegueHttp(sesion, entrada.tareaId, base);
@@ -52,7 +52,7 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     const listo = await preparar(entrada);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
   } catch (error) {
-    return respuestaDeErrorFirma(error, "No se pudo preparar el pago.");
+    return respuestaDeErrorFirma(error, "Could not prepare the payment.");
   }
 }
 
@@ -63,16 +63,16 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   try {
     body = await request.json();
   } catch {
-    return Response.json({ aviso: "El cuerpo no es JSON." }, { status: 400 });
+    return Response.json({ aviso: "The body is not JSON." }, { status: 400 });
   }
   const envio = datosEnvio(body);
-  if (!envio.xdr) return Response.json({ aviso: "Falta el XDR firmado." }, { status: 400 });
-  if (xdrDemasiadoLargo(envio.xdr)) return Response.json({ aviso: "El XDR firmado es demasiado largo." }, { status: 400 });
+  if (!envio.xdr) return Response.json({ aviso: "The signed XDR is missing." }, { status: 400 });
+  if (xdrDemasiadoLargo(envio.xdr)) return Response.json({ aviso: "The signed XDR is too long." }, { status: 400 });
   if (esFeeBump(envio.xdr)) {
     return Response.json(
       {
         aviso:
-          "La red v2 no acepta un fee-bump. La cuenta de Cavos tiene que pagar la comisión en XLM. Si no alcanza, fondeala con Friendbot.",
+          "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If it is short, fund it with Friendbot.",
       },
       { status: 400 },
     );
@@ -81,7 +81,7 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   const wallet = (sesion.wallet ?? "").trim();
   const invocacion = leerInvocacion(envio.xdr, wallet);
   if (!invocacion || invocacion.firmantes.length !== 1 || invocacion.firmantes[0] !== wallet) {
-    return Response.json({ aviso: "El XDR no lo firma la wallet de esta sesión." }, { status: 400 });
+    return Response.json({ aviso: "This session's wallet did not sign the XDR." }, { status: 400 });
   }
   const base = almacen === undefined ? await almacenNeon() : almacen;
   if (invocacion.funcion === "resolve_dispute") {
@@ -90,14 +90,14 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
       if (!resolutoresDe([escrow]).includes(wallet)) {
         return Response.json(
           {
-            aviso: "Solo el resolutor de la disputa puede firmar esta resolución.",
+            aviso: "Only the dispute resolver can sign this resolution.",
             codigo: "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE",
           },
           { status: 403 },
         );
       }
     } catch (error) {
-      return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+      return respuestaDeErrorFirma(error, "Could not read the escrow.");
     }
   } else {
     const despliegue = envio.accion === "desplegar" || invocacion.funcion === FUNCION_DESPLIEGUE;
@@ -110,23 +110,23 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   }
   if (envio.accion === "desplegar") {
     if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
-      return Response.json({ aviso: "La transacción no despliega el escrow." }, { status: 409 });
+      return Response.json({ aviso: "The transaction does not deploy the escrow." }, { status: 409 });
     }
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
-    if (ocupada) return Response.json({ aviso: "Esta tarea ya tiene un escrow." }, { status: 409 });
+    if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
   }
   let pago: PagoEnviado;
   try {
     pago = await enviar(envio.xdr);
   } catch (error) {
-    return respuestaDeErrorFirma(error, "No se pudo enviar el pago.");
+    return respuestaDeErrorFirma(error, "Could not submit the payment.");
   }
   const hash = pago.hash ?? hashDeXdr(envio.xdr);
   let guardado: ResultadoGuardado = { aviso: null, estadoHttp: 200 };
   try {
     guardado = await guardarResultado(sesion, envio, { ...pago, hash }, invocacion, base);
   } catch {
-    guardado = { aviso: "El envío salió bien y no se pudo guardar en la base.", estadoHttp: 200 };
+    guardado = { aviso: "The submit succeeded and it could not be saved.", estadoHttp: 200 };
   }
   return Response.json(
     {
@@ -144,7 +144,7 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
 async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almacen: Almacen): Promise<Response> {
   const wallet = sesion.wallet.trim();
   if (!esCuenta(wallet)) {
-    return Response.json({ aviso: "Esta sesión no tiene una wallet de Stellar. Entrá de nuevo para firmar." }, { status: 400 });
+    return Response.json({ aviso: "This session has no Stellar wallet. Sign in again to sign." }, { status: 400 });
   }
   const roles = rolesDeEntorno();
   if ("aviso" in roles) return Response.json({ aviso: roles.aviso }, { status: 503 });
@@ -152,15 +152,15 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   try {
     tarea = await almacen.leerTarea(tareaId);
   } catch {
-    return Response.json({ aviso: "La base no está lista." }, { status: 503 });
+    return Response.json({ aviso: "The database is not ready." }, { status: 503 });
   }
-  if (!tarea) return Response.json({ aviso: "No encontramos esa tarea." }, { status: 404 });
+  if (!tarea) return Response.json({ aviso: "We couldn't find that task." }, { status: 404 });
   if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
-    return Response.json({ aviso: "Esta tarea ya tiene un escrow." }, { status: 409 });
+    return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
   }
   if (!esCuenta(tarea.walletCobro)) {
     return Response.json(
-      { aviso: "La tarea no tiene la wallet de cobro. El voluntario tiene que subir la evidencia con su cuenta." },
+      { aviso: "The task has no payout wallet. The volunteer has to submit evidence with their account." },
       { status: 400 },
     );
   }
@@ -173,7 +173,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     }
   }
   const monto = montoDeTarea(tarea, evidencia);
-  if (monto === null) return Response.json({ aviso: "El monto del hito tiene que ser mayor que cero." }, { status: 400 });
+  if (monto === null) return Response.json({ aviso: "The milestone amount has to be greater than zero." }, { status: 400 });
   const cuentas = cuentasDeTarea({
     firmante: wallet,
     receptor: tarea.walletCobro,
@@ -189,7 +189,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto });
   } catch (error) {
-    return respuestaDeErrorFirma(error, "No se pudo preparar el pago.");
+    return respuestaDeErrorFirma(error, "Could not prepare the payment.");
   }
 }
 
@@ -211,20 +211,20 @@ async function guardarResultado(
 ): Promise<ResultadoGuardado> {
   if (!envio.tareaId) return { aviso: null, estadoHttp: 200 };
   if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
-  if (!almacen) return { aviso: "La base no está configurada y no se guardó el pago.", estadoHttp: 200 };
+  if (!almacen) return { aviso: "The database is not configured and the payment was not saved.", estadoHttp: 200 };
   const tarea = await almacen.leerTarea(envio.tareaId);
-  if (!tarea) return { aviso: "No encontramos esa tarea para guardar el pago.", estadoHttp: 200 };
+  if (!tarea) return { aviso: "We couldn't find that task to save the payment.", estadoHttp: 200 };
   if (envio.accion === "desplegar") {
     if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
-      return { aviso: "La transacción no despliega el escrow.", estadoHttp: 409 };
+      return { aviso: "The transaction does not deploy the escrow.", estadoHttp: 409 };
     }
     if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
-      return { aviso: "Esta tarea ya tiene un escrow.", estadoHttp: 409 };
+      return { aviso: "This task already has an escrow.", estadoHttp: 409 };
     }
     const contrato = contratoDeServidor(pago, tarea.id);
     if (typeof contrato !== "string") {
       return {
-        aviso: contrato?.aviso ?? "El envío salió bien y Trustless no devolvió el contrato.",
+        aviso: contrato?.aviso ?? "The submit succeeded and Trustless did not return the contract.",
         estadoHttp: 200,
       };
     }
@@ -234,27 +234,27 @@ async function guardarResultado(
   }
   if (invocacion.funcion !== FUNCION_LIBERACION) {
     return {
-      aviso: "El envío salió bien, pero la transacción no libera el hito, así que no se marcó como pagado.",
+      aviso: "The submit succeeded, but the transaction does not release the milestone, so it was not marked paid.",
       estadoHttp: 200,
     };
   }
   if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow) || invocacion.contrato !== tarea.contratoEscrow) {
-    return { aviso: "El envío no corresponde al escrow de esta tarea, así que no se marcó como pagado.", estadoHttp: 200 };
+    return { aviso: "The submit does not match this task's escrow, so it was not marked paid.", estadoHttp: 200 };
   }
   if (!envioConfirmado(pago, "v2")) {
-    return { aviso: "El envío no quedó confirmado, así que no se marcó como pagado.", estadoHttp: 200 };
+    return { aviso: "The submit was not confirmed, so it was not marked paid.", estadoHttp: 200 };
   }
   if (!pago.hash || !/^[a-fA-F0-9]{64}$/.test(pago.hash)) {
-    return { aviso: "El envío salió bien y no hay hash para guardar el pago.", estadoHttp: 200 };
+    return { aviso: "The submit succeeded and there is no hash to save the payment.", estadoHttp: 200 };
   }
   let escrow: Record<string, unknown>;
   try {
     escrow = await leerEscrow(tarea.contratoEscrow);
   } catch {
-    return { aviso: "No se pudo confirmar que el hito está liberado, así que no se marcó como pagado.", estadoHttp: 200 };
+    return { aviso: "Could not confirm the milestone is released, so it was not marked paid.", estadoHttp: 200 };
   }
   if (!hitoLiberado(escrow)) {
-    return { aviso: "El hito todavía no figura liberado, así que no se marcó como pagado.", estadoHttp: 200 };
+    return { aviso: "The milestone is not listed as released yet, so it was not marked paid.", estadoHttp: 200 };
   }
   await almacen.actualizarTarea(tarea.id, { hashPago: pago.hash, estado: "pagado" });
   return { aviso: null, estadoHttp: 200 };
@@ -265,7 +265,7 @@ function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | { avis
   if (pago.codigo === "STELLAR_TX_SUBMITTED_INDEXER_LAGGING") {
     return {
       aviso:
-        "La transacción entró al ledger, pero el indexador no devolvió el contrato. No se guardó el escrow: volvé a consultar el hash en unos segundos.",
+        "The transaction entered the ledger, but the indexer did not return the contract. The escrow was not saved: check the hash again in a few seconds.",
     };
   }
   const preparado = contratosPreparados.get(tareaId);

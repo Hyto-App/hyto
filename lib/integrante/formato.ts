@@ -14,7 +14,7 @@ function fechaDeCalendario(anio: number, mes: number, dia: number): string | nul
   if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
   const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));
   if (fecha.getUTCFullYear() !== anio || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) return null;
-  return new Intl.DateTimeFormat("es-CR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -32,7 +32,7 @@ export function formatearFecha(iso: string): string {
   }
   const fecha = new Date(limpio);
   if (Number.isNaN(fecha.getTime())) return iso;
-  return new Intl.DateTimeFormat("es-CR", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -48,7 +48,7 @@ export function acortarDireccion(direccion: string): string {
 export function montoDeTarea(tarea: { tipo: "trabajo" | "reembolso"; monto: string; tope: string | null }): string {
   if (tarea.tipo === "reembolso") {
     const tope = formatearMonto(tarea.tope ?? tarea.monto);
-    return tope ? `Hasta ${tope}` : "";
+    return tope ? `Up to ${tope}` : "";
   }
   return formatearMonto(tarea.monto);
 }

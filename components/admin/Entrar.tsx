@@ -185,12 +185,12 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     try {
       const respuesta = await fetch("/api/sesion", { method: "DELETE" });
       if (!respuesta.ok) {
-        setAviso("No se pudo salir del demo.");
+        setAviso("Could not leave demo mode.");
         return;
       }
       window.location.reload();
     } catch {
-      setAviso("No se pudo salir del demo.");
+      setAviso("Could not leave demo mode.");
     } finally {
       enCurso.current = false;
       setOcupado(null);
@@ -210,13 +210,13 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       });
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
       if (!respuesta.ok) {
-        setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "No se pudo entrar.");
+        setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in.");
         return;
       }
       const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
       window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/");
     } catch {
-      setAviso("No se pudo entrar.");
+      setAviso("Could not sign in.");
     } finally {
       enCurso.current = false;
       setOcupado(null);
@@ -250,8 +250,8 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (modoDemo) {
     const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
-    const nombreRol = rolActual === "voluntario" ? "Voluntario" : "Organizador";
-    const nombreOtro = otro === "voluntario" ? "voluntario" : "organizador";
+    const nombreRol = rolActual === "voluntario" ? "Volunteer" : "Organizer";
+    const nombreOtro = otro === "voluntario" ? "volunteer" : "organizer";
     return (
       <div className="flex w-full max-w-xs flex-col items-end gap-2">
         <p className="text-sm text-[var(--suave)]">
@@ -264,7 +264,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           disabled={ocupado !== null}
           className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {ocupado === "demo" ? "Entrando…" : `Cambiar a ${nombreOtro}`}
+          {ocupado === "demo" ? "Switching…" : `Switch to ${nombreOtro}`}
         </button>
         <button
           type="button"
@@ -272,7 +272,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           disabled={ocupado !== null}
           className="text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {ocupado === "salida" ? "Saliendo…" : "Salir del demo"}
+          {ocupado === "salida" ? "Leaving…" : "Leave demo"}
         </button>
         {aviso ? (
           <p role="status" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
@@ -305,13 +305,13 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           }}
           className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)]"
         >
-          Entrar
+          Sign in
         </button>
       ) : null}
       {fase === "correo" ? (
         <>
           <label className="sr-only" htmlFor="correo-entrar">
-            Correo
+            Email
           </label>
           <input
             id="correo-entrar"
@@ -322,7 +322,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
               setCorreo(evento.target.value);
               setAviso(null);
             }}
-            placeholder="Correo"
+            placeholder="Email"
             disabled={ocupado !== null}
             className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           />
@@ -337,7 +337,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null || espera > 0 || demo}
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
-            {ocupado === "envio" ? "Enviando…" : "Enviar código"}
+            {ocupado === "envio" ? "Sending…" : "Send code"}
           </button>
           <button
             type="button"
@@ -345,7 +345,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {ocupado === "google" ? "Abriendo Google…" : "Entrar con Google"}
+            {ocupado === "google" ? "Opening Google…" : "Sign in with Google"}
           </button>
         </>
       ) : null}
@@ -353,7 +353,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
         <>
           <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
           <label className="sr-only" htmlFor="codigo-entrar">
-            Código
+            Code
           </label>
           <input
             id="codigo-entrar"
@@ -361,7 +361,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             autoComplete="one-time-code"
             value={codigo}
             onChange={(evento) => setCodigo(evento.target.value)}
-            placeholder="Código"
+            placeholder="Code"
             disabled={ocupado !== null}
             className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           />
@@ -371,14 +371,14 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
-            {ocupado === "codigo" ? "Entrando…" : "Confirmar"}
+            {ocupado === "codigo" ? "Signing in…" : "Confirm"}
           </button>
         </>
       ) : null}
       {demoHabilitado ? (
         <>
           <label className="sr-only" htmlFor="rol-demo">
-            Rol de la sesión demo
+            Demo session role
           </label>
           <select
             id="rol-demo"
@@ -390,8 +390,8 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           >
-            <option value="organizador">Organizador</option>
-            <option value="voluntario">Voluntario</option>
+            <option value="organizador">Organizer</option>
+            <option value="voluntario">Volunteer</option>
           </select>
           <button
             type="button"
@@ -399,7 +399,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {ocupado === "demo" ? "Entrando…" : "Entrar como demo"}
+            {ocupado === "demo" ? "Signing in…" : "Enter as demo"}
           </button>
         </>
       ) : null}

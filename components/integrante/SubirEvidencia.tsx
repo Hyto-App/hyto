@@ -9,6 +9,7 @@ import { Salir } from "@/components/sesion/Salir";
 import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
+import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
@@ -75,7 +76,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     video.srcObject = streamRef.current;
     let vivo = true;
     void video.play().catch(() => {
-      if (vivo) setError("No se pudo mostrar la cámara.");
+      if (vivo) setError("Could not show the camera.");
     });
     return () => {
       vivo = false;
@@ -114,14 +115,14 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       setFase("camara");
     } catch {
       setSinCamara(true);
-      setError("No se pudo abrir la cámara.");
+      setError("Could not open the camera.");
     }
   }
 
   function tomarFoto() {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-      setError("La cámara todavía no está lista.");
+      setError("The camera is not ready yet.");
       return;
     }
     const lienzo = document.createElement("canvas");
@@ -129,14 +130,14 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     lienzo.height = video.videoHeight;
     const contexto = lienzo.getContext("2d");
     if (!contexto) {
-      setError("No se pudo tomar la foto.");
+      setError("Could not take the photo.");
       return;
     }
     contexto.drawImage(video, 0, 0);
     lienzo.toBlob(
       (blob) => {
         if (!blob) {
-          setError("No se pudo tomar la foto.");
+          setError("Could not take the photo.");
           return;
         }
         usarFoto(blob);
@@ -151,7 +152,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     evento.target.value = "";
     if (!archivo) return;
     if (archivo.type && !archivo.type.startsWith("image/")) {
-      setError("Elige una foto.");
+      setError("Choose a photo.");
       return;
     }
     usarFoto(archivo);
@@ -173,7 +174,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       }
       setFase("lista");
     } catch (err) {
-      setError(err instanceof ErrorDeSesion ? err.aviso : "No se pudo enviar. Intenta otra vez.");
+      setError(err instanceof ErrorDeSesion ? err.aviso : "Could not send. Try again.");
       setFase("foto");
     } finally {
       enviandoRef.current = false;
@@ -192,7 +193,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   if (fase === "cargando") {
     return (
       <main>
-        <p className="text-[var(--suave)]">Cargando…</p>
+        <p className="text-[var(--suave)]">Loading…</p>
       </main>
     );
   }
@@ -200,9 +201,9 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   if (fase === "faltante" || !tarea) {
     return (
       <main>
-        <p className="text-lg">No encontramos esa tarea.</p>
+        <p className="text-lg">We couldn't find that task.</p>
         <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
-          Volver a Mis tareas
+          Back to My tasks
         </Link>
       </main>
     );
@@ -211,27 +212,27 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const mostrarRevision = tarea.tipo === "reembolso" && evidencia?.monto && evidencia.fecha;
   const accion =
     fase === "camara"
-      ? "Tomar foto"
+      ? "Take photo"
       : fase === "foto"
-        ? "Enviar"
+        ? "Send"
         : fase === "enviando"
-          ? "Enviando…"
+          ? "Sending…"
           : sinCamara
-            ? "Elegir foto"
-            : "Abrir cámara";
+            ? "Choose photo"
+            : "Open camera";
 
   return (
     <main>
       <header className="mb-8">
         <p className="text-sm text-[var(--suave)]">
-          <Link href="/mis-tareas">Mis tareas</Link>
+          <Link href="/mis-tareas">My tasks</Link>
           <InsigniaDemo />
           <SalirDemo />
           <Salir className="ml-3 align-middle" />
         </p>
-        <p className="mt-4 text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{tarea.titulo}</h1>
-        {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}
+        <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
+        {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
       </header>
 
       {ejemplo ? null : (
@@ -244,12 +245,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         <div className="overflow-hidden rounded-3xl bg-[var(--papel)]">
           {fotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={fotoUrl} alt="Evidencia" className="aspect-[3/4] w-full object-cover" />
+            <img src={fotoUrl} alt="Evidence" className="aspect-[3/4] w-full object-cover" />
           ) : fase === "camara" ? (
-            <video ref={videoRef} playsInline muted aria-label="Vista previa de la cámara" className="aspect-[3/4] w-full object-cover" />
+            <video ref={videoRef} playsInline muted aria-label="Camera preview" className="aspect-[3/4] w-full object-cover" />
           ) : (
             <div className="flex aspect-[3/4] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-              {tarea.tipo === "reembolso" ? "Foto del comprobante" : "Foto de lo hecho"}
+              {tarea.tipo === "reembolso" ? "Photo of the receipt" : "Photo of the work"}
             </div>
           )}
         </div>
@@ -258,18 +259,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       {mostrarRevision ? (
         <dl className="mt-6 grid grid-cols-2 gap-4 rounded-3xl bg-[var(--papel)] p-6">
           <div>
-            <dt className="text-sm text-[var(--suave)]">Monto</dt>
+            <dt className="text-sm text-[var(--suave)]">Amount</dt>
             <dd className="mt-1 text-2xl font-semibold tracking-tight">{formatearMonto(evidencia.monto!)}</dd>
           </div>
           <div>
-            <dt className="text-sm text-[var(--suave)]">Fecha</dt>
+            <dt className="text-sm text-[var(--suave)]">Date</dt>
             <dd className="mt-1 text-2xl font-semibold tracking-tight">{formatearFecha(evidencia.fecha!)}</dd>
           </div>
         </dl>
       ) : null}
 
       {fase === "lista" ? (
-        <p className="mt-6 text-lg font-medium">Evidencia enviada</p>
+        <p className="mt-6 text-lg font-medium">Evidence sent</p>
       ) : (
         <div className="mt-6">
           <BotonPrincipal
@@ -295,12 +296,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
       {fase === "foto" || fase === "lista" ? (
         <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
-          Tomar otra
+          Take another
         </button>
       ) : null}
 
       {ejemplo ? (
-        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que las rutas respondan.</p>
+        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Example view, until the routes respond.</p>
       ) : null}
 
       <input

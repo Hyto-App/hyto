@@ -9,8 +9,8 @@ test("el guion de un trabajo queda en parcial", () => {
   assert.equal(resultado.choice, "stand");
   assert.equal(resultado.noul, true);
   assert.equal(resultado.monto, null);
-  assert.match(resultado.frase, /Mesa armada/);
-  assert.match(resultado.frase, /Categoría stand/);
+  assert.match(resultado.frase, /Table set up/);
+  assert.match(resultado.frase, /Category booth/);
 });
 
 test("el guion de un reembolso dentro del tope queda en cumplió", () => {
@@ -47,5 +47,5 @@ test("si la condición no se cumple, no queda en cumplió", () => {
 
 test("la frase junta el texto y las tres respuestas", () => {
   const guion = guionFijo("trabajo");
-  assert.match(fraseDe(guion.texto, guion), /condición cumplida, evidencia parcial/);
+  assert.match(fraseDe(guion.texto, guion), /condition met, evidence Partial/);
 });

@@ -238,7 +238,7 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
     );
     assert.equal(enviado.status, 200);
     const json = (await enviado.json()) as { aviso: string };
-    assert.match(json.aviso, /indexador/);
+    assert.match(json.aviso, /indexer/);
     assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, null);
   } finally {
     globalThis.fetch = original;
@@ -290,7 +290,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
     assert.equal(enviado.status, 200);
     const json = (await enviado.json()) as { hash: string; aviso: string };
     assert.equal(json.hash, "ef".repeat(32));
-    assert.match(json.aviso, /no se pudo guardar/);
+    assert.match(json.aviso, /could not be saved/);
     assert.equal((await base.leerTarea("bienvenida"))?.contratoEscrow, null);
   } finally {
     globalThis.fetch = original;
@@ -326,7 +326,7 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
       almacen,
     );
     assert.equal(respuesta.status, 200);
-    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /liberado/);
+    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /released/);
     assert.notEqual((await almacen.leerTarea("comida"))?.estado, "pagado");
   } finally {
     globalThis.fetch = original;

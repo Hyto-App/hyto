@@ -24,10 +24,10 @@ export async function exigirSesion(request: Request): Promise<SesionFila | Respo
 export function avisoSesionResolutor(sesion: { wallet?: string }, firmante: string): string | null {
   const wallet = (sesion.wallet ?? "").trim();
   if (!wallet || !esCuenta(wallet)) {
-    return "Esta sesión no puede resolver la disputa. Entrá con la wallet del resolutor; firmante tiene que ser esa cuenta.";
+    return "This session cannot resolve the dispute. Sign in with the resolver wallet; the signer has to be that account.";
   }
   if (wallet !== firmante) {
-    return "firmante tiene que ser la wallet de esta sesión. El XDR lo firma el resolutor, no otra cuenta.";
+    return "The signer has to be this session's wallet. The resolver signs the XDR, not another account.";
   }
   return null;
 }

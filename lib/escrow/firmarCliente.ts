@@ -1,12 +1,12 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 
-export const AVISO_DEMO_FIRMA = "Modo demo: las firmas están desactivadas";
-export const AVISO_XLM = "No hay XLM suficiente para la comisión.";
-export const AVISO_RECHAZO = "Rechazaste la firma.";
-export const AVISO_FIRMA = "No se pudo firmar el pago.";
-export const AVISO_SIN_CONTRATO = "El envío salió bien y Trustless no devolvió el contrato.";
-export const AVISO_SESION_CAVOS = "Tu sesión de Cavos se cerró. Entrá de nuevo para firmar.";
+export const AVISO_DEMO_FIRMA = "Demo mode: signatures are off";
+export const AVISO_XLM = "Not enough XLM for the fee.";
+export const AVISO_RECHAZO = "You rejected the signature.";
+export const AVISO_FIRMA = "Could not sign the payment.";
+export const AVISO_SIN_CONTRATO = "The submit succeeded and Trustless did not return the contract.";
+export const AVISO_SESION_CAVOS = "Your Cavos session closed. Sign in again to sign.";
 export const AVISO_REINGRESO = "Your Cavos session expired.";
 
 export function mensajeFirmaVisible(mensaje: string): string {
@@ -67,9 +67,9 @@ export async function firmarYEnviar(
   extra: ExtraFirma = {},
   opciones: OpcionesFirma = {},
 ): Promise<PagoFirmado> {
-  if (!ACCIONES.has(accion)) throw new ErrorFirmaCliente("Esa acción no prepara un pago.");
+  if (!ACCIONES.has(accion)) throw new ErrorFirmaCliente("That action does not prepare a payment.");
   const id = tareaId.trim();
-  if (!id) throw new ErrorFirmaCliente("Falta la tarea.");
+  if (!id) throw new ErrorFirmaCliente("The task is missing.");
 
   const fetchImpl = opciones.fetch ?? fetch;
   const preparado = await postJson(fetchImpl, "/api/firma", cuerpoFirma(accion, id, extra));
@@ -93,7 +93,7 @@ export async function firmarPasos(
   tareaId: string,
   opciones: OpcionesFirma = {},
 ): Promise<PagoFirmado> {
-  if (acciones.length === 0) throw new ErrorFirmaCliente("Falta la acción.");
+  if (acciones.length === 0) throw new ErrorFirmaCliente("The action is missing.");
   let contrato = texto(opciones.extra?.contrato);
   let monto = opciones.extra?.monto;
   let ultimo: PagoFirmado = vacio();
@@ -148,7 +148,7 @@ function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contra
 
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
   const auth = await crearAuth();
-  if (!auth) throw new ErrorFirmaCliente("Falta configurar Cavos para entrar.");
+  if (!auth) throw new ErrorFirmaCliente("Cavos is not configured for sign-in.");
   if (!asegurarIdentidadCavos(auth)) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
@@ -183,7 +183,7 @@ async function postJson(
 function leerPreparado(json: unknown): { xdr: string; contrato: string | null; monto: number | null } {
   const datos = registro(json);
   const xdr = texto(datos.xdr);
-  if (!xdr) throw new ErrorFirmaCliente("La preparación no devolvió el XDR.");
+  if (!xdr) throw new ErrorFirmaCliente("Preparation did not return the XDR.");
   const monto = typeof datos.monto === "number" && Number.isFinite(datos.monto) ? datos.monto : null;
   return { xdr, contrato: texto(datos.contrato), monto };
 }
@@ -210,7 +210,7 @@ function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
   if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
   if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado);
   if (aviso) return new ErrorFirmaCliente(aviso, estado);
-  if (estado === 403) return new ErrorFirmaCliente("Solo el organizador prepara el pago.", 403);
+  if (estado === 403) return new ErrorFirmaCliente("Only the organizer prepares the payment.", 403);
   return new ErrorFirmaCliente(AVISO_FIRMA, estado);
 }
 
@@ -220,7 +220,9 @@ export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
-  if (/demo/i.test(textoError) && /firma|desactiv/i.test(textoError)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
+  if (/demo/i.test(textoError) && /firma|desactiv|signature|disabled/i.test(textoError)) {
+    return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
+  }
   return new ErrorFirmaCliente(AVISO_FIRMA);
 }
 

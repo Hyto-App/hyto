@@ -8,9 +8,9 @@ import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { Salir } from "@/components/sesion/Salir";
 
 const ENLACES = [
-  { href: "/", etiqueta: "Bandeja" },
-  { href: "/informe", etiqueta: "Informe" },
-  { href: "/proyectos/nuevo", etiqueta: "Crear proyecto" },
+  { href: "/", etiqueta: "Inbox" },
+  { href: "/informe", etiqueta: "Report" },
+  { href: "/proyectos/nuevo", etiqueta: "Create project" },
 ];
 
 export function Marco({ children, demoHabilitado = false }: { children: ReactNode; demoHabilitado?: boolean }) {
@@ -34,7 +34,7 @@ export function Marco({ children, demoHabilitado = false }: { children: ReactNod
               );
             })}
             <Link href="/mis-tareas" className="text-[var(--suave)]">
-              Mis tareas
+              My tasks
             </Link>
           </nav>
         </div>

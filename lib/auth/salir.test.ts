@@ -65,7 +65,7 @@ test("en demo siguen el cambio de rol y Sign out", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /Salir del demo/);
+    assert.match(texto(), /Leave demo/);
     assert.match(texto(), /Sign out/);
   } finally {
     globalThis.fetch = original;
@@ -86,7 +86,7 @@ test("signin=1 abre el ingreso aunque la wallet siga guardada", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /Enviar código/);
+    assert.match(texto(), /Send code/);
     assert.doesNotMatch(texto(), /GAAA/);
   } finally {
     window.history.replaceState(null, "", "/");

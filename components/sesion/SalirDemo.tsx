@@ -25,7 +25,7 @@ export function SalirDemo() {
       disabled={saliendo}
       className="ml-3 align-middle text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:opacity-70"
     >
-      {saliendo ? "Saliendo…" : "Salir del demo"}
+      {saliendo ? "Leaving…" : "Leave demo"}
     </button>
   );
 }

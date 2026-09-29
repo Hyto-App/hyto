@@ -2,9 +2,9 @@ import { formatearMonto } from "@/lib/integrante/formato";
 import type { Resumen } from "@/lib/admin/tipos";
 
 const FILAS = [
-  { clave: "presupuesto", etiqueta: "Presupuesto" },
-  { clave: "pagado", etiqueta: "Pagado" },
-  { clave: "pendiente", etiqueta: "Pendiente" },
+  { clave: "presupuesto", etiqueta: "Budget" },
+  { clave: "pagado", etiqueta: "Paid" },
+  { clave: "pendiente", etiqueta: "Pending" },
 ] as const;
 
 export function Numeros({ resumen }: { resumen: Resumen }) {

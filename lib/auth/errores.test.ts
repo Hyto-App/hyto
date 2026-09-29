@@ -21,7 +21,7 @@ const CRUDO_429 =
 test("el 429 de Cavos cuenta los segundos y no muestra el error crudo", () => {
   const aviso = avisoDeIngreso(new Error(CRUDO_429));
   assert.equal(aviso.esperaSegundos, 19);
-  assert.equal(aviso.texto, "Esperá 19 s para pedir otro código");
+  assert.equal(aviso.texto, "Wait 19 s before requesting another code");
   assert.equal(aviso.texto.includes("kit/auth"), false);
   assert.equal(aviso.texto.includes("rate_limited"), false);
 });
@@ -43,7 +43,7 @@ test("si el límite no trae segundos, espera un rato corto", () => {
 
 test("redondea hacia arriba los segundos y arma el texto", () => {
   assert.equal(avisoDeIngreso({ error: "rate_limited", wait_seconds: 19.2 }).esperaSegundos, 20);
-  assert.equal(textoEspera(0), "Esperá 0 s para pedir otro código");
+  assert.equal(textoEspera(0), "Wait 0 s before requesting another code");
 });
 
 test("código inválido o vencido", () => {
@@ -62,7 +62,7 @@ test("red, ventana de Google y configuración", () => {
   assert.equal(avisoDeIngreso(new Error("auth/popup-closed-by-user")).texto, AVISO_GOOGLE_CERRADO);
   assert.equal(avisoDeIngreso(new Error("auth/popup-blocked")).texto, AVISO_GOOGLE_BLOQUEADO);
   assert.equal(avisoDeIngreso(new Error("Falta NEXT_PUBLIC_CAVOS_APP_ID")).texto, AVISO_CONFIG);
-  assert.equal(avisoDeIngreso(new Error("El ingreso espera el identificador de Cavos.")).texto, AVISO_CONFIG);
+  assert.equal(avisoDeIngreso(new Error("Sign-in is waiting for the Cavos app id.")).texto, AVISO_CONFIG);
 });
 
 test("un fallo desconocido no filtra el SDK", () => {
@@ -83,8 +83,8 @@ test("valida el correo y marca el dominio de demo", () => {
   assert.equal(correoValido("sin-arroba"), false);
   assert.equal(correoValido("a@b"), false);
   assert.equal(correoValido("  Ana@correo.com "), true);
-  assert.equal(esCorreoDemo("Organizador@Demo.Hyto"), true);
+  assert.equal(esCorreoDemo("Organizer@Demo.Hyto"), true);
   assert.equal(esCorreoDemo("ana@correo.com"), false);
   assert.equal(esCorreoDemo("ana@demo.hyto.evil"), false);
-  assert.equal(AVISO_CORREO.includes("Escribí"), true);
+  assert.equal(AVISO_CORREO.includes("valid email"), true);
 });

@@ -198,7 +198,7 @@ test("resolver solo lo firma el resolutor del escrow", async () => {
       assert.ok(error instanceof ErrorFirma);
       assert.equal(error.estado, 403);
       assert.equal(error.codigo, "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE");
-      assert.match(error.message, /resolutor/);
+      assert.match(error.message, /resolver/);
       return true;
     },
   );
@@ -307,7 +307,7 @@ test("el reparto tiene que sumar el monto del hito, en unidades de 10^-7", async
 test("un 401 de Trustless no se informa como sesión ausente", async () => {
   const respuesta = respuestaDeErrorFirma(
     new ErrorFirma("Invalid API key.", 401, "AUTH_INVALID_CREDENTIAL"),
-    "No se pudo leer el escrow.",
+    "Could not read the escrow.",
   );
   assert.equal(respuesta.status, 502);
   const json = (await respuesta.json()) as { aviso: string; codigo: string };
@@ -317,7 +317,7 @@ test("un 401 de Trustless no se informa como sesión ausente", async () => {
 
   const otro = respuestaDeLectura(new ErrorFirma("no está", 422, "ESCROW_MILESTONE_NOT_IN_DISPUTE"));
   assert.equal(otro.status, 502);
-  const contrato = respuestaDeLectura(new ErrorFirma("El contrato del pago no es válido.", 400, null));
+  const contrato = respuestaDeLectura(new ErrorFirma("The payment contract is not valid.", 400, null));
   assert.equal(contrato.status, 400);
 });
 
@@ -414,7 +414,7 @@ test("indice null no se convierte en el primer hito", () => {
   });
   assert.equal("aviso" in entrada, true);
   if (!("aviso" in entrada)) return;
-  assert.match(entrada.aviso, /hito/);
+  assert.match(entrada.aviso, /milestone/);
 });
 
 test("sin indice no se usa el primer hito", () => {
@@ -434,7 +434,7 @@ test("el estado de más de 50 caracteres se rechaza", () => {
     { accion: "marcar", contrato: CONTRATO, firmante: RECEPTOR, indice: 0, estado: "e".repeat(51) },
     "v2",
   );
-  assert.equal(pedido, "El estado del hito no puede pasar de 50 caracteres.");
+  assert.equal(pedido, "The milestone status cannot be longer than 50 characters.");
 });
 
 test("el estado de 50 caracteres sigue siendo válido", () => {
@@ -460,7 +460,7 @@ test("la evidencia de más de 500 caracteres se rechaza", () => {
     },
     "v2",
   );
-  assert.equal(pedido, "La evidencia no puede pasar de 500 caracteres.");
+  assert.equal(pedido, "The evidence cannot be longer than 500 characters.");
 });
 
 test("el límite de firma corta después de treinta pedidos", () => {
@@ -477,7 +477,7 @@ test("leer el escrow no gasta el cupo de la firma", async () => {
   for (let i = 0; i < 30; i += 1) assert.equal(respuestaSiExcedido(firma), null);
   const bloqueada = respuestaSiExcedido(firma);
   assert.equal(bloqueada?.status, 429);
-  assert.match(await bloqueada!.json().then((json: { aviso: string }) => json.aviso), /firma/);
+  assert.match(await bloqueada!.json().then((json: { aviso: string }) => json.aviso), /signature/);
   assert.equal(respuestaSiExcedido(lectura, "lectura"), null);
   reiniciarLimite();
 });
@@ -521,7 +521,7 @@ test("sin motivo no se disputa", () => {
     { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "m".repeat(501) },
     "v2",
   );
-  assert.equal(largo, "El motivo no puede pasar de 500 caracteres.");
+  assert.equal(largo, "The reason cannot be longer than 500 characters.");
   const justo = pedidoAccion(
     { accion: "disputar", contrato: CONTRATO, firmante: ORGANIZADOR, indice: 0, motivo: "m".repeat(500) },
     "v2",
@@ -542,7 +542,7 @@ test("resolver exige un reparto con cuentas y montos", () => {
     },
     "v2",
   );
-  assert.equal(cero, "Cada monto del reparto tiene que ser mayor que cero.");
+  assert.equal(cero, "Each split amount has to be greater than zero.");
   const demasiados = pedidoAccion(
     {
       accion: "resolver",
@@ -553,7 +553,7 @@ test("resolver exige un reparto con cuentas y montos", () => {
     },
     "v2",
   );
-  assert.equal(demasiados, "El reparto no puede pasar de 50 destinos.");
+  assert.equal(demasiados, "The split cannot have more than 50 destinations.");
 });
 
 test("disputar en v1 no arma un pedido", () => {
@@ -574,7 +574,7 @@ test("una clave inválida conserva el code de Trustless", async () => {
     (error: unknown) => {
       assert.ok(error instanceof ErrorFirma);
       assert.equal(error.codigo, "AUTH_INVALID_FORMAT");
-      assert.equal(textoDeError(error), "La clave de Trustless Work tiene que ser id.secreto (AUTH_INVALID_FORMAT).");
+      assert.equal(textoDeError(error), "The Trustless Work key has to be id.secret (AUTH_INVALID_FORMAT).");
       return true;
     },
   );

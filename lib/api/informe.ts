@@ -46,7 +46,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     tope: tarea.tope,
     condicion: tarea.condicion,
     miembroId: tarea.miembroId,
-    miembro: mapa.get(tarea.miembroId) || (tarea.miembroId ? tarea.miembroId : "Sin asignar"),
+    miembro: mapa.get(tarea.miembroId) || (tarea.miembroId ? tarea.miembroId : "Unassigned"),
     estado: tarea.estado,
     veredicto: veredicto?.origen === "error" ? null : (veredicto?.veredicto ?? null),
     frase: veredicto?.frase ?? null,

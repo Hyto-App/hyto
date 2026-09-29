@@ -18,7 +18,7 @@ export async function crearProyectoHttp(request: Request, almacen: Almacen, orga
   try {
     body = await request.json();
   } catch {
-    return json({ aviso: "El cuerpo no es JSON." }, 400);
+    return json({ aviso: "The body is not JSON." }, 400);
   }
   const proyecto = leerProyecto(body);
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
@@ -37,7 +37,7 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor): Promise<
     await asegurarSemilla(almacen);
     const proyectos = await proyectosVisibles(almacen, visor);
     const proyecto = proyectos[0] ?? null;
-    if (!proyecto) return json({ aviso: "Todavía no hay un proyecto." }, 404);
+    if (!proyecto) return json({ aviso: "There is no project yet." }, 404);
     const tareas = (await tareasVisibles(almacen, visor)).filter((tarea) => tarea.proyectoId === proyecto.id);
     return json({
       proyecto: { id: proyecto.id, nombre: proyecto.nombre },
@@ -50,11 +50,11 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor): Promise<
 }
 
 function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; creadoEn: string }; tareas: TareaFila[] } | { aviso: string } {
-  if (!body || typeof body !== "object") return { aviso: "Escribe el nombre y al menos una tarea con monto." };
+  if (!body || typeof body !== "object") return { aviso: "Enter a name and at least one task with an amount." };
   const crudo = body as Record<string, unknown>;
   const nombre = typeof crudo.nombre === "string" ? crudo.nombre.trim() : "";
   if (!nombre || !Array.isArray(crudo.tareas) || crudo.tareas.length === 0) {
-    return { aviso: "Escribe el nombre y al menos una tarea con monto." };
+    return { aviso: "Enter a name and at least one task with an amount." };
   }
   const proyectoId = crypto.randomUUID();
   const ahora = new Date().toISOString();
@@ -68,12 +68,12 @@ function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; 
 }
 
 function leerTarea(item: unknown, proyectoId: string): TareaFila | { aviso: string } {
-  if (!item || typeof item !== "object") return { aviso: "Escribe el nombre y al menos una tarea con monto." };
+  if (!item || typeof item !== "object") return { aviso: "Enter a name and at least one task with an amount." };
   const crudo = item as Record<string, unknown>;
   const titulo = typeof crudo.titulo === "string" ? crudo.titulo.trim() : "";
   const tipo: TipoTarea | null = crudo.tipo === "reembolso" ? "reembolso" : crudo.tipo === "trabajo" ? "trabajo" : null;
   const monto = typeof crudo.monto === "string" || typeof crudo.monto === "number" ? normalizarMonto(String(crudo.monto)) : null;
-  if (!titulo || !tipo || !monto) return { aviso: "Escribe el nombre y al menos una tarea con monto." };
+  if (!titulo || !tipo || !monto) return { aviso: "Enter a name and at least one task with an amount." };
   const condicion = typeof crudo.condicion === "string" ? crudo.condicion.trim() : "";
   const miembroId = typeof crudo.miembroId === "string" ? crudo.miembroId.trim() : "";
   const topeTexto = typeof crudo.tope === "string" || typeof crudo.tope === "number" ? normalizarMonto(String(crudo.tope)) : null;

@@ -23,7 +23,7 @@ test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {
     ["stand", "registro", "comida"],
   );
   assert.equal(vista.personas.length, 3);
-  assert.equal(vista.personas[0]?.miembro, "Voluntario 1");
+  assert.equal(vista.personas[0]?.miembro, "Volunteer 1");
   assert.equal(vista.personas[0]?.tareas.length, 2);
   assert.equal(vista.personas[2]?.tareas[0]?.estado, "pendiente");
 });

@@ -9,13 +9,13 @@ const HASH = "ab".repeat(32);
 function tarea(parcial: Partial<TareaAdmin> = {}): TareaAdmin {
   return {
     id: "stand",
-    titulo: "Montar el stand",
+    titulo: "Set up the booth",
     tipo: "trabajo",
     monto: "20",
     tope: null,
     condicion: "Banner",
     miembroId: "voluntario-1",
-    miembro: "Voluntario 1",
+    miembro: "Volunteer 1",
     estado: "en revisión",
     veredicto: "cumplió",
     frase: "Listo",
@@ -158,7 +158,7 @@ test("la bandeja muestra los proyectos que organiza y omite el resto", async () 
     if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }, { id: "ajena" }] });
     if (url === "/api/proyectos") return json({ proyecto: { nombre: "Feria" } });
     if (url === "/api/revision/stand") return json({ tarea: tarea(), foto: null });
-    if (url === "/api/revision/ajena") return json({ aviso: "Solo el organizador revisa." }, 403);
+    if (url === "/api/revision/ajena") return json({ aviso: "Only the organizer reviews." }, 403);
     return json({ aviso: "no" }, 404);
   };
   const vista = await cargarVistaOrganizador({ fetch: fetchImpl });
@@ -171,7 +171,7 @@ test("la bandeja muestra los proyectos que organiza y omite el resto", async () 
   const soloAjena: typeof fetch = async (input) => {
     const url = String(input);
     if (url === "/api/tareas") return json({ tareas: [{ id: "ajena" }] });
-    return json({ aviso: "Solo el organizador revisa." }, 403);
+    return json({ aviso: "Only the organizer reviews." }, 403);
   };
   assert.equal(await cargarVistaOrganizador({ fetch: soloAjena }), null);
 });

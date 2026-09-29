@@ -102,7 +102,7 @@ function filasVeredictos(idTarea: (id: string) => string, idEvidencia: (id: stri
   return tareasEjemploAdmin().flatMap((tarea) => {
     if (!tarea.veredicto || !tarea.frase) return [];
     const id = idEvidencia(tarea.id);
-    const texto = `Ejemplo. ${tarea.frase}`;
+    const texto = `Example. ${tarea.frase}`;
     return [
       {
         id,

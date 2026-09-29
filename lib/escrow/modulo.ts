@@ -22,15 +22,15 @@ export function reintentarConFriendbot(error: unknown): boolean {
 export function textoDeError(error: unknown): string {
   if (error instanceof ErrorFirma) {
     if (error.codigo === "AUTH_INVALID_FORMAT") {
-      return "La clave de Trustless Work tiene que ser id.secreto (AUTH_INVALID_FORMAT).";
+      return "The Trustless Work key has to be id.secret (AUTH_INVALID_FORMAT).";
     }
     if (error.codigo === "AUTH_INVALID_CREDENTIAL") {
-      return "Trustless Work no reconoce la clave (AUTH_INVALID_CREDENTIAL).";
+      return "Trustless Work does not recognize the key (AUTH_INVALID_CREDENTIAL).";
     }
     return error.codigo ? `${error.message} (${error.codigo})` : error.message;
   }
   if (error instanceof Error) return error.message;
-  return "Error desconocido.";
+  return "Unknown error.";
 }
 
 export async function preparar(accion: AccionFirma, opciones: OpcionesRed = {}): Promise<XdrListo> {
@@ -50,7 +50,7 @@ export function respuestaDeLectura(error: unknown): Response {
   if (error instanceof ErrorFirma && error.estado !== 400 && error.estado !== 503 && error.estado !== 401) {
     return Response.json({ aviso: error.message, codigo: error.codigo }, { status: 502 });
   }
-  return respuestaDeErrorFirma(error, "No se pudo leer el escrow.");
+  return respuestaDeErrorFirma(error, "Could not read the escrow.");
 }
 
 export function respuestaDeErrorFirma(error: unknown, avisoPorDefecto: string): Response {
@@ -79,17 +79,17 @@ export async function prepararDespliegue(cuentas: CuentasDespliegue, opciones: O
 
 export async function enviar(xdrFirmado: string, opciones: OpcionesRed = {}): Promise<PagoEnviado> {
   const xdr = xdrFirmado.trim();
-  if (!xdr) throw new ErrorFirma("Falta el XDR firmado.", 400, null);
+  if (!xdr) throw new ErrorFirma("The signed XDR is missing.", 400, null);
   const red = opciones.red ?? "v2";
   const ruta = red === "v2" ? "/stellar/send-transaction" : "/helper/send-transaction";
   return leerPago(await post(ruta, { signedXdr: xdr }, opciones), red);
 }
 
 export async function leerEscrow(contrato: string, opciones: OpcionesRed = {}): Promise<Record<string, unknown>> {
-  if (!esContrato(contrato)) throw new ErrorFirma("El contrato del pago no es válido.", 400, null);
+  if (!esContrato(contrato)) throw new ErrorFirma("The payment contract is not valid.", 400, null);
   const json = await get(`/escrow/multi-release/v2/${contrato}`, { ...opciones, red: "v2" });
   const datos = registro(json);
-  if (!texto(datos.contractId)) throw new ErrorFirma("La red no devolvió el escrow.", 502, null);
+  if (!texto(datos.contractId)) throw new ErrorFirma("The network did not return the escrow.", 502, null);
   return datos;
 }
 
@@ -103,7 +103,7 @@ async function get(ruta: string, opciones: OpcionesRed): Promise<unknown> {
 
 async function pedir(metodo: "GET" | "POST", ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promise<unknown> {
   const clave = (opciones.clave ?? claveDeTrustless() ?? "").trim();
-  if (!clave) throw new ErrorFirma("Falta la clave de Trustless Work en el servidor.", 503, null);
+  if (!clave) throw new ErrorFirma("The Trustless Work key is missing on the server.", 503, null);
   const base = (opciones.base ?? baseDe(opciones.red ?? "v2")).replace(/\/$/, "");
   const fetchImpl = opciones.fetch ?? fetch;
   let respuesta: Response;
@@ -118,7 +118,7 @@ async function pedir(metodo: "GET" | "POST", ruta: string, cuerpo: unknown, opci
       ...(metodo === "POST" ? { body: JSON.stringify(cuerpo) } : {}),
     });
   } catch {
-    throw new ErrorFirma("No se pudo hablar con Trustless Work.", 502, null);
+    throw new ErrorFirma("Could not reach Trustless Work.", 502, null);
   }
   const json = await leerJson(respuesta);
   if (!respuesta.ok) {
@@ -147,13 +147,13 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
   const detail = typeof datos.detail === "string" ? datos.detail : typeof datos.message === "string" ? datos.message : null;
   if (codigo === "STELLAR_TX_FEE_BUMP_REJECTED") {
     return {
-      detail: "La red v2 no acepta un fee-bump. La cuenta de Cavos tiene que pagar la comisión en XLM.",
+      detail: "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM.",
       codigo,
     };
   }
   if (codigo === "STELLAR_TX_INSUFFICIENT_BALANCE") {
     return {
-      detail: "La cuenta no tiene XLM suficiente para la comisión. Fondeala con Friendbot en testnet y volvé a intentar.",
+      detail: "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.",
       codigo,
     };
   }
@@ -163,7 +163,7 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
 function leerXdr(json: unknown): XdrListo {
   const datos = registro(json);
   const xdr = texto(datos.unsignedXdr) ?? texto(datos.unsignedTransaction);
-  if (!xdr) throw new ErrorFirma("La red no devolvió el XDR.", 502, null);
+  if (!xdr) throw new ErrorFirma("The network did not return the XDR.", 502, null);
   return {
     xdr,
     hashPreparado: texto(datos.txHash) ?? "",
@@ -197,7 +197,7 @@ function leerPago(json: unknown, red: "v1" | "v2"): PagoEnviado {
     mensaje: texto(datos.message),
   };
   if (!envioConfirmado(pago, red)) {
-    throw new ErrorFirma(pago.mensaje ?? "El envío del pago falló.", 502, pago.codigo);
+    throw new ErrorFirma(pago.mensaje ?? "The payment submit failed.", 502, pago.codigo);
   }
   return pago;
 }

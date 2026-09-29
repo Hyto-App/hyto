@@ -1,6 +1,7 @@
 import { centavos } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
+import { etiquetaChoice, etiquetaVeredicto } from "@/lib/ui/etiquetas";
 
 export type Senales = {
   choice: string;
@@ -24,8 +25,8 @@ export type ResultadoRevision = Descripcion &
     codigo: string | null;
   };
 
-const TEXTO_TRABAJO = "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón.";
-const TEXTO_REEMBOLSO = "Comprobante de la comida del equipo, con monto y fecha visibles.";
+const TEXTO_TRABAJO = "Table set up, ZEEK banner facing forward, three open boxes. The back of the room is not visible.";
+const TEXTO_REEMBOLSO = "Team meal receipt, with the amount and date visible.";
 
 export function guionFijo(tipo: TipoTarea): Descripcion & Senales {
   if (tipo === "reembolso") {
@@ -83,8 +84,8 @@ export function armarVeredicto(entrada: {
 }
 
 export function fraseDe(texto: string, senales: Senales): string {
-  const condicion = senales.noul ? "cumplida" : "no cumplida";
-  return `${texto.trim()} Categoría ${senales.choice.trim()}, condición ${condicion}, evidencia ${senales.score.trim()}.`;
+  const condicion = senales.noul ? "met" : "not met";
+  return `${texto.trim()} Category ${etiquetaChoice(senales.choice)}, condition ${condicion}, evidence ${etiquetaVeredicto(senales.score)}.`;
 }
 
 export function cerrar(

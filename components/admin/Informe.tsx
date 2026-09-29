@@ -8,6 +8,7 @@ import { reintentarRevision } from "@/lib/admin/remoto";
 import { bandejaDe, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, porPersona, resumir } from "@/lib/admin/vista";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
+import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 
 export function Informe() {
   const cargada = useVistaAdmin();
@@ -40,7 +41,7 @@ export function Informe() {
   }
 
   if (!vista) {
-    return <p className="text-[var(--suave)]">Cargando…</p>;
+    return <p className="text-[var(--suave)]">Loading…</p>;
   }
 
   return (
@@ -48,7 +49,7 @@ export function Informe() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Informe</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Report</h1>
           <p className="mt-2 text-lg">{vista.nombre}</p>
         </div>
         <button
@@ -56,49 +57,49 @@ export function Informe() {
           onClick={() => window.print()}
           className="flex h-14 items-center justify-center rounded-full bg-[var(--acento)] px-6 text-base font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] print:hidden"
         >
-          Imprimir
+          Print
         </button>
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold tracking-tight">Presupuesto contra gasto</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Budget against spend</h2>
         <div className="mt-4">
           <Numeros resumen={vista.resumen} />
         </div>
       </section>
 
       <section className="mt-10 space-y-8">
-        <h2 className="text-lg font-semibold tracking-tight">Detalle</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Detail</h2>
         {vista.personas.map((persona) => (
           <article key={persona.miembroId || persona.miembro}>
-            <h3 className="text-base font-semibold">{persona.miembro}</h3>
+            <h3 className="text-base font-semibold">{textoVisible(persona.miembro)}</h3>
             <div className="mt-3 space-y-3">
               {persona.tareas.map((tarea) => {
                 const pago = enlacePago(tarea.hashPago);
                 const credencial = enlaceCredencial(tarea.credencialUrl);
                 const detalle = detalleMonto(tarea);
-                const cifra = detalle.hasta ? `Hasta ${formatearMonto(detalle.cifra)}` : formatearMonto(detalle.cifra);
+                const cifra = detalle.hasta ? `Up to ${formatearMonto(detalle.cifra)}` : formatearMonto(detalle.cifra);
                 const origen = etiquetaOrigen(tarea.origen);
                 return (
                   <div key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
-                        <p className="mt-1 text-lg font-semibold tracking-tight">{tarea.titulo}</p>
+                        <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
+                        <p className="mt-1 text-lg font-semibold tracking-tight">{textoVisible(tarea.titulo)}</p>
                       </div>
                       <PastillaEstado estado={tarea.estado} />
                     </div>
                     <p className="mt-4 text-xl font-semibold tracking-tight">{cifra}</p>
                     {detalle.tope && detalle.tope !== detalle.cifra ? (
-                      <p className="mt-1 text-sm text-[var(--suave)]">Tope {formatearMonto(detalle.tope)}</p>
+                      <p className="mt-1 text-sm text-[var(--suave)]">Limit {formatearMonto(detalle.tope)}</p>
                     ) : null}
                     {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
                     {tarea.origen === "error" && tarea.frase ? (
                       <p role="alert" className="mt-3 text-sm leading-6">
-                        {tarea.frase}
+                        {textoVisible(tarea.frase)}
                       </p>
                     ) : tarea.frase ? (
-                      <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.frase}</p>
+                      <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.frase)}</p>
                     ) : null}
                     {tarea.origen === "error" && !vista.ejemplo ? (
                       <button
@@ -119,12 +120,12 @@ export function Informe() {
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">
                         {pago ? (
                           <a href={pago} className="font-semibold underline-offset-4 hover:underline">
-                            Ver pago
+                            View payment
                           </a>
                         ) : null}
                         {credencial ? (
                           <a href={credencial} className="text-[var(--suave)] underline-offset-4 hover:underline">
-                            Credencial
+                            Credential
                           </a>
                         ) : null}
                       </p>
@@ -139,7 +140,7 @@ export function Informe() {
 
       {vista.ejemplo ? (
         <p className="mt-8 text-sm leading-6 text-[var(--suave)] print:hidden">
-          Vista de ejemplo, hasta que las rutas respondan. Ver pago aparece cuando el pago ya tiene enlace.
+          Example view, until the routes respond. View payment appears when the payment already has a link.
         </p>
       ) : null}
     </main>

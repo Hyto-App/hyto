@@ -38,7 +38,7 @@ export async function leerRevisionHttp(
   try {
     await asegurarSemilla(almacen);
     const tarea = await almacen.leerTarea(tareaId);
-    if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
+    if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     if (forzar && (tarea.estado === "pagado" || Boolean(tarea.contratoEscrow?.trim()))) {
       return json({ aviso: "This task can no longer be reviewed." }, 409);
     }

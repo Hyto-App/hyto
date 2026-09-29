@@ -7,7 +7,7 @@ const BASE = "https://api.groq.com/openai/v1";
 const MAX_TOKENS = 1024;
 
 const PEDIDO =
-  "Describe la foto en una frase corta, en español. Si es una factura o un comprobante, extrae el monto en dólares (solo dígitos y hasta dos decimales, sin símbolo) y la fecha como YYYY-MM-DD. Si no es una factura, monto y fecha van null. Responde solo JSON con las claves texto, monto y fecha.";
+  "Describe the photo in one short sentence, in English. If it is an invoice or a receipt, extract the amount in dollars (digits only, up to two decimals, no symbol) and the date as YYYY-MM-DD. If it is not a receipt, amount and date are null. Reply with JSON only, using the keys texto, monto, and fecha.";
 
 export function leerDescripcion(texto: string): Descripcion | null {
   const inicio = texto.indexOf("{");

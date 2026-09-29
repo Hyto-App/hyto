@@ -59,7 +59,7 @@ export function leerMemoriaAdmin(): MemoriaAdmin {
   }
 }
 
-export const AVISO_MEMORIA = "No se pudo guardar en este navegador.";
+export const AVISO_MEMORIA = "Could not save in this browser.";
 
 export type GuardadoAdmin = {
   memoria: MemoriaAdmin;

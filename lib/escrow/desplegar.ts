@@ -58,10 +58,10 @@ export function cuentasDeTarea(opciones: {
   roles: RolesServidor;
 }): CuentasDespliegue | { aviso: string } {
   if (opciones.roles.plataforma === opciones.firmante || opciones.roles.plataforma === opciones.receptor) {
-    return { aviso: "La plataforma no puede ser el organizador ni quien cobra." };
+    return { aviso: "The platform account cannot be the organizer or the payee." };
   }
   if (opciones.roles.resolutor === opciones.firmante || opciones.roles.resolutor === opciones.receptor) {
-    return { aviso: "El resolutor no puede repetir otro rol." };
+    return { aviso: "The resolver cannot repeat another role." };
   }
   if (
     opciones.roles.admin === opciones.firmante ||
@@ -69,7 +69,7 @@ export function cuentasDeTarea(opciones: {
     opciones.roles.admin === opciones.roles.plataforma ||
     opciones.roles.admin === opciones.roles.resolutor
   ) {
-    return { aviso: "La cuenta admin no puede repetir otro rol." };
+    return { aviso: "The admin account cannot repeat another role." };
   }
   const titulo = opciones.titulo.trim().slice(0, 120) || "Tarea";
   return {

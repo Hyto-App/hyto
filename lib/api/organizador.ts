@@ -1,8 +1,8 @@
 import type { Almacen } from "@/lib/db/almacen";
 import type { TareaFila } from "@/lib/db/tipos";
 
-export const AVISO_ORGANIZADOR = "Solo el organizador prepara el pago.";
-export const AVISO_REVISION = "Solo el organizador revisa.";
+export const AVISO_ORGANIZADOR = "Only the organizer prepares the payment.";
+export const AVISO_REVISION = "Only the organizer reviews.";
 
 export async function organizaAlguno(almacen: Almacen, usuarioId: string): Promise<boolean> {
   const proyectos = await almacen.listarProyectos();

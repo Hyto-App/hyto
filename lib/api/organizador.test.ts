@@ -317,7 +317,7 @@ test("el reintento solo corre si quien llama organiza ese proyecto", async () =>
       new Request("http://local/api/revision/stand", { method: "POST", headers: { cookie: cookie(token) } });
     const ajeno = await forzarRevision(pedir("ajeno"), stand);
     assert.equal(ajeno.status, 403);
-    assert.equal(((await ajeno.json()) as { aviso: string }).aviso, "Solo el organizador revisa.");
+    assert.equal(((await ajeno.json()) as { aviso: string }).aviso, "Only the organizer reviews.");
     assert.equal(llamadas, 0);
     assert.equal((await almacen.veredictoDe(evidenciaId))?.frase, "La IA no respondió a tiempo");
 

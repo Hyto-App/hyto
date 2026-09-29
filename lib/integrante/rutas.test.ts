@@ -32,9 +32,9 @@ test("el voluntario 3 solo ve su tarea y el organizador no tiene tareas de ejemp
   const fetchImpl: typeof fetch = async () => json({ tareas: [] }, 404);
   const tres = await listarTareas({ miembroId: "voluntario-3" }, { fetch: fetchImpl });
   assert.deepEqual(tareasEjemplo().filter((t) => t.miembroId === "voluntario-3").map((t) => t.titulo), [
-    "Mesa de bienvenida",
+    "Welcome table",
   ]);
-  assert.equal(tres.tareas[0]?.titulo, "Mesa de bienvenida");
+  assert.equal(tres.tareas[0]?.titulo, "Welcome table");
 
   const organizador = await listarTareas({ miembroId: "organizador" }, { fetch: fetchImpl });
   assert.deepEqual(organizador.tareas, []);
@@ -106,7 +106,7 @@ test("un 401 no se guarda como evidencia de ejemplo", async () => {
 test("un 403 no se guarda como evidencia de ejemplo", async () => {
   const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
   assert.ok(comida);
-  const aviso = "Solo quien tiene la tarea puede enviar la evidencia.";
+  const aviso = "Only the person assigned to the task can submit evidence.";
   const fetchImpl: typeof fetch = async () => json({ aviso }, 403);
   await assert.rejects(
     () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),

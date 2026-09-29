@@ -39,25 +39,25 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
     await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
-    if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
+    if (!evidencia || acceso === "ausente") return json({ aviso: "We couldn't find that evidence." }, 404);
     if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
-    if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
+    if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     return json({ evidencia: evidenciaPublica(evidencia) });
   } catch {
     return baseNoLista();
   }
 }
 
-const MARCADOR_EJEMPLO = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" role="img" aria-label="Evidencia de ejemplo"><rect width="64" height="48" fill="#ece7dc"/></svg>`;
+const MARCADOR_EJEMPLO = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" role="img" aria-label="Sample evidence"><rect width="64" height="48" fill="#ece7dc"/></svg>`;
 
 export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
-    if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
+    if (!evidencia || acceso === "ausente") return json({ aviso: "We couldn't find that evidence." }, 404);
     if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
-    if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
+    if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
       return new Response(MARCADOR_EJEMPLO, {
         headers: { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" },
@@ -65,7 +65,7 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     }
     if (!fotos) return sinFotos();
     const foto = await fotos.leer(evidencia.blobId);
-    if (!foto) return json({ aviso: "No encontramos la foto." }, 404);
+    if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
     return new Response(Buffer.from(foto.bytes), {
       headers: { "content-type": foto.tipo || "application/octet-stream", "cache-control": "private, max-age=3600" },
     });
@@ -80,18 +80,18 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   try {
     form = await request.formData();
   } catch {
-    return json({ aviso: "La foto no llegó." }, 400);
+    return json({ aviso: "The photo did not arrive." }, 400);
   }
   const tareaId = texto(form.get("tareaId"));
   const foto = form.get("foto");
-  if (!tareaId || !(foto instanceof Blob)) return json({ aviso: "Faltan la tarea y la foto." }, 400);
-  if (foto.size > MAX_BYTES) return json({ aviso: "La foto es demasiado grande." }, 413);
-  if (!esImagen(foto)) return json({ aviso: "Elige una foto." }, 400);
+  if (!tareaId || !(foto instanceof Blob)) return json({ aviso: "The task and the photo are missing." }, 400);
+  if (foto.size > MAX_BYTES) return json({ aviso: "The photo is too large." }, 413);
+  if (!esImagen(foto)) return json({ aviso: "Choose a photo." }, 400);
 
   try {
     await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
-    if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
+    if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     const asignado = puedeFijarWallet(tarea, deps.actor);
     // La sesión demo sube evidencia a las tareas del proyecto demo, sin fijar cuenta de cobro.
     const demo = !asignado && deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
@@ -99,19 +99,19 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (deps.actor && !asignado && !demo) {
       const aviso =
         wallet && wallet !== tarea.walletCobro
-          ? "Solo quien tiene la tarea puede indicar la cuenta de cobro."
-          : "Solo quien tiene la tarea puede enviar la evidencia.";
+          ? "Only the person assigned to the task can set the payout account."
+          : "Only the person assigned to the task can submit evidence.";
       return json({ aviso }, 403);
     }
     if (wallet && wallet !== tarea.walletCobro && !asignado) {
-      return json({ aviso: "Solo quien tiene la tarea puede indicar la cuenta de cobro." }, 403);
+      return json({ aviso: "Only the person assigned to the task can set the payout account." }, 403);
     }
 
     let blobId: string;
     try {
       blobId = await deps.fotos.guardar("evidencia.jpg", foto);
     } catch {
-      return json({ aviso: "No se pudo guardar la foto." }, 502);
+      return json({ aviso: "Could not save the photo." }, 502);
     }
     const evidencia: EvidenciaFila = {
       id: crypto.randomUUID(),
