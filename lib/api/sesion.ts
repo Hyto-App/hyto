@@ -24,14 +24,14 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   try {
     body = await request.json();
   } catch {
-    return json({ aviso: "El cuerpo no es JSON." }, 400);
+    return json({ aviso: "The body is not JSON." }, 400);
   }
-  if (!body || typeof body !== "object") return json({ aviso: "Falta el correo." }, 400);
+  if (!body || typeof body !== "object") return json({ aviso: "The email is missing." }, 400);
   const crudo = body as Record<string, unknown>;
   const pedido = typeof crudo.email === "string" ? crudo.email : "";
   const token = typeof crudo.token === "string" ? crudo.token.trim() : "";
   const correo = await correoDelToken(token, pedido);
-  if (!correo) return json({ aviso: "No se pudo confirmar el ingreso." }, 400);
+  if (!correo) return json({ aviso: "Could not confirm sign-in." }, 400);
   try {
     await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
@@ -46,7 +46,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       });
       usuario = await almacen.usuarioPorEmail(email);
     }
-    if (!usuario) throw new Error("No se pudo registrar el usuario.");
+    if (!usuario) throw new Error("Could not register the user.");
     const segundos = segundosDeSesion(correo.exp);
     const sesion = tokenSesion();
     await almacen.crearSesion({
@@ -72,7 +72,7 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
   try {
     if (token) await almacen.borrarSesion(token);
   } catch {
-    return json({ aviso: "No se pudo cerrar la sesión." }, 503, { "set-cookie": encabezadoCookieCerrada() });
+    return json({ aviso: "Could not sign out." }, 503, { "set-cookie": encabezadoCookieCerrada() });
   }
   return json({ ok: true }, 200, { "set-cookie": encabezadoCookieCerrada() });
 }
@@ -84,12 +84,12 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
   try {
     body = await request.json();
   } catch {
-    return json({ aviso: "El cuerpo no es JSON." }, 400);
+    return json({ aviso: "The body is not JSON." }, 400);
   }
   const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
   const crudo = datos.wallet;
   if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
-    return json({ aviso: "La wallet no es una cuenta de Stellar." }, 400);
+    return json({ aviso: "The wallet is not a Stellar account." }, 400);
   }
   try {
     const sesion = await almacen.leerSesion(token);
@@ -103,11 +103,11 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
     const tokenIngreso = typeof datos.token === "string" ? datos.token.trim() : "";
     const delIngreso = tokenIngreso ? walletDelToken(tokenIngreso) : null;
     if (delIngreso && delIngreso !== wallet) {
-      return json({ aviso: "La wallet no es la de este ingreso." }, 400);
+      return json({ aviso: "The wallet does not match this sign-in." }, 400);
     }
     const guardada = (sesion.wallet ?? "").trim();
     if (guardada && esCuenta(guardada) && guardada !== wallet) {
-      return json({ aviso: "La wallet no es la de este ingreso." }, 400);
+      return json({ aviso: "The wallet does not match this sign-in." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
     return json({ wallet }, 200);

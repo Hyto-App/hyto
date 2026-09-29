@@ -27,7 +27,7 @@ export function InsigniaDemo() {
   if (!activo) return null;
   return (
     <span className="ml-2 inline-flex items-center rounded-full border border-[var(--linea)] px-2 py-0.5 align-middle text-xs font-medium text-[var(--suave)]">
-      Modo demo
+      Demo mode
     </span>
   );
 }

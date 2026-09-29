@@ -18,12 +18,12 @@ export async function consultarUsdc(direccion: string, fetchImpl: typeof fetch =
       signal: AbortSignal.timeout(4000),
     });
     if (respuesta.status === 404) return false;
-    if (!respuesta.ok) throw new Error("No se pudo leer la cuenta.");
+    if (!respuesta.ok) throw new Error("Could not read the account.");
     const json = (await respuesta.json()) as { balances?: Saldo[] };
     return cuentaTieneUsdc(json);
   } catch (error) {
-    if (error instanceof Error && error.message === "No se pudo leer la cuenta.") throw error;
-    throw new Error("No se pudo leer la cuenta.");
+    if (error instanceof Error && error.message === "Could not read the account.") throw error;
+    throw new Error("Could not read the account.");
   }
 }
 
@@ -35,7 +35,7 @@ export async function asegurarCobroUsdc(
     return {
       direccion: billetera.address,
       usdcListo: false,
-      detalle: "Esta sesión no puede firmar esta cuenta.",
+      detalle: "This session cannot sign for this account.",
     };
   }
 

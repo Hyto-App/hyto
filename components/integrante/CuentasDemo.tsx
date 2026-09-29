@@ -9,6 +9,7 @@ import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
+import { textoVisible } from "@/lib/ui/etiquetas";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
 import { prepararIdentidad, type CuentaPreparada } from "@/lib/integrante/preparar";
 import type { IdentidadDemo } from "@/lib/integrante/tipos";
@@ -51,7 +52,7 @@ export function CuentasDemo() {
   async function preparar() {
     if (preparandoRef.current) return;
     if (!hayApp) {
-      setAviso("Las cuentas esperan el identificador de Cavos.");
+      setAviso("Accounts are waiting for the Cavos app id.");
       return;
     }
     if (pendiente) {
@@ -66,7 +67,7 @@ export function CuentasDemo() {
     try {
       const auth = await crearAuth();
       if (!auth) {
-        setAviso("Las cuentas esperan el identificador de Cavos.");
+        setAviso("Accounts are waiting for the Cavos app id.");
         return;
       }
       await auth.sendOtp(identidad.email);
@@ -74,7 +75,7 @@ export function CuentasDemo() {
       setPendiente(identidad);
       setCodigo("");
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "No se pudo preparar la cuenta.");
+      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -107,7 +108,7 @@ export function CuentasDemo() {
       if (avisoWallet) setAviso(avisoWallet);
       else if (cuenta.detalle) setAviso(cuenta.detalle);
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "No se pudo preparar la cuenta.");
+      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -115,19 +116,19 @@ export function CuentasDemo() {
   }
 
   const falta = siguiente();
-  const etiqueta = pendiente ? "Confirmar" : preparando ? "Preparando…" : falta ? "Preparar cuentas" : "Cuentas listas";
+  const etiqueta = pendiente ? "Confirm" : preparando ? "Preparing…" : falta ? "Prepare accounts" : "Accounts ready";
 
   return (
     <main>
       <header className="mb-8">
         <p className="text-sm text-[var(--suave)]">
-          <Link href="/mis-tareas">Mis tareas</Link>
+          <Link href="/mis-tareas">My tasks</Link>
           <InsigniaDemo />
           <SalirDemo />
           <Salir className="ml-3 align-middle" />
         </p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">Cuentas del demo</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Organizador y tres voluntarios.</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight">Demo accounts</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Organizer and three volunteers.</p>
       </header>
 
       <div className="space-y-3">
@@ -135,10 +136,10 @@ export function CuentasDemo() {
           const identidad = IDENTIDADES.find((item) => item.id === cuenta.id);
           return (
             <article key={cuenta.id} className="rounded-3xl bg-[var(--papel)] p-6">
-              <h2 className="text-lg font-semibold">{cuenta.nombre}</h2>
+              <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre)}</h2>
               <p className="mt-1 text-sm text-[var(--suave)]">{identidad?.email}</p>
-              <p className="mt-3 font-mono text-sm">{cuenta.direccion ? acortarDireccion(cuenta.direccion) : "Sin dirección"}</p>
-              <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.usdcListo ? "USDC listo para cobrar" : "USDC pendiente"}</p>
+              <p className="mt-3 font-mono text-sm">{cuenta.direccion ? acortarDireccion(cuenta.direccion) : "No address"}</p>
+              <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.usdcListo ? "USDC ready to receive" : "USDC pending"}</p>
               {cuenta.detalle ? <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.detalle}</p> : null}
             </article>
           );
@@ -147,7 +148,7 @@ export function CuentasDemo() {
 
       {pendiente ? (
         <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="codigo-cuenta">
-          Código para {pendiente.nombre}
+          Code for {textoVisible(pendiente.nombre)}
           <input
             id="codigo-cuenta"
             inputMode="numeric"

@@ -1,16 +1,16 @@
 export const ESPERA_TRAS_ENVIO = 20;
 const ESPERA_SI_FALTA = 20;
 
-export const AVISO_GENERICO = "No se pudo entrar. Intentá de nuevo.";
-export const AVISO_CODIGO_INVALIDO = "Ese código no coincide. Revisá el correo e intentá de nuevo.";
-export const AVISO_CODIGO_VENCIDO = "Ese código ya venció. Pedí otro.";
-export const AVISO_RED = "No hay conexión. Revisá la red e intentá de nuevo.";
-export const AVISO_GOOGLE_CERRADO = "Cerraste la ventana de Google. Intentá de nuevo.";
-export const AVISO_GOOGLE_BLOQUEADO = "El navegador bloqueó la ventana de Google. Permitila e intentá de nuevo.";
-export const AVISO_CONFIG = "Falta configurar Cavos para entrar.";
-export const AVISO_CORREO = "Escribí un correo válido.";
-export const AVISO_DEMO = "Ese correo de demo no recibe mensajes. Usá un correo real o entrá con Google.";
-export const AVISO_SPAM = "El código llega por correo. Revisá también el spam.";
+export const AVISO_GENERICO = "Could not sign in. Try again.";
+export const AVISO_CODIGO_INVALIDO = "That code does not match. Check your email and try again.";
+export const AVISO_CODIGO_VENCIDO = "That code expired. Request another one.";
+export const AVISO_RED = "No connection. Check the network and try again.";
+export const AVISO_GOOGLE_CERRADO = "You closed the Google window. Try again.";
+export const AVISO_GOOGLE_BLOQUEADO = "The browser blocked the Google window. Allow it and try again.";
+export const AVISO_CONFIG = "Cavos is not configured for sign-in.";
+export const AVISO_CORREO = "Enter a valid email.";
+export const AVISO_DEMO = "That demo email does not receive messages. Use a real email or sign in with Google.";
+export const AVISO_SPAM = "The code arrives by email. Check spam too.";
 
 export type AvisoIngreso = {
   texto: string;
@@ -19,7 +19,7 @@ export type AvisoIngreso = {
 
 export function textoEspera(segundos: number): string {
   const n = Math.max(0, Math.ceil(segundos));
-  return `Esperá ${n} s para pedir otro código`;
+  return `Wait ${n} s before requesting another code`;
 }
 
 export function correoValido(correo: string): boolean {
@@ -122,7 +122,14 @@ function comoNumero(valor: unknown): number | null {
 
 function esConfig(texto: string, codigo: string): boolean {
   const t = `${codigo} ${texto}`.toLowerCase();
-  return t.includes("next_public_cavos_app_id") || t.includes("identificador de cavos") || t.includes("missing app id") || t.includes("app_id is required");
+  return (
+    t.includes("next_public_cavos_app_id") ||
+    t.includes("identificador de cavos") ||
+    t.includes("cavos app id") ||
+    t.includes("not configured for sign-in") ||
+    t.includes("missing app id") ||
+    t.includes("app_id is required")
+  );
 }
 
 function esPopupBloqueado(texto: string): boolean {

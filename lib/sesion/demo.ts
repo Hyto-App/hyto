@@ -1,7 +1,7 @@
 import type { SesionFila, Usuario } from "@/lib/db/tipos";
 
-export const AVISO_FIRMA_DEMO = "Modo demo: las firmas están desactivadas";
-export const AVISO_PROYECTO_DEMO = "En el modo demo no se pueden crear proyectos.";
+export const AVISO_FIRMA_DEMO = "Demo mode: signatures are off";
+export const AVISO_PROYECTO_DEMO = "Demo mode cannot create projects.";
 
 const ROLES_DEMO = ["organizador", "voluntario"] as const;
 
@@ -11,13 +11,13 @@ const FILAS: Record<RolDemo, Usuario> = {
   organizador: {
     id: "demo-organizador",
     email: "demo-organizador@hyto.demo",
-    nombre: "Organizador (demo)",
+    nombre: "Organizer (demo)",
     rol: "organizador",
   },
   voluntario: {
     id: "demo-voluntario",
     email: "demo-voluntario@hyto.demo",
-    nombre: "Voluntario (demo)",
+    nombre: "Volunteer (demo)",
     rol: "voluntario",
   },
 };

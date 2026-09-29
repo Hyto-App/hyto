@@ -66,7 +66,7 @@ test("el demo muestra el guion como simulado y no ofrece reintentar", async () =
     await new Promise((resolver) => setTimeout(resolver, 20));
   });
   assert.match(texto(), /simulated/);
-  assert.match(texto(), /Mesa armada, banner de ZEEK de frente y el salón visible/);
+  assert.match(texto(), /Table set up, ZEEK banner facing forward, and the room is visible/);
   assert.equal(texto().includes("Retry review"), false);
   assert.equal(document.querySelector("[role=alert]"), null);
   await desmontar();
@@ -148,13 +148,13 @@ test("el informe avisa si el reintento no responde", async () => {
 function tarea(parcial: Record<string, unknown>) {
   return {
     id: "stand",
-    titulo: "Montar el stand",
+    titulo: "Set up the booth",
     tipo: "trabajo",
     monto: "20",
     tope: null,
     condicion: "Banner visible",
     miembroId: "voluntario-1",
-    miembro: "Voluntario 1",
+    miembro: "Volunteer 1",
     estado: "en revisión",
     veredicto: "cumplió",
     frase: "Listo",

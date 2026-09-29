@@ -35,27 +35,27 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await montar(createElement(Bandeja), { ruta: "/" });
     const plano = texto();
     assert.match(plano, /ZEEK/);
-    assert.match(plano, /Por aprobar/);
-    assert.match(plano, /Montar el stand/);
-    assert.match(plano, /Registro de asistentes/);
-    assert.match(plano, /Comida del equipo/);
-    assert.equal(plano.includes("Mesa de bienvenida"), false);
-    assert.equal(plano.includes("Volver al ejemplo"), false);
-    assert.match(plano, /Vista de ejemplo, hasta que las rutas respondan/);
+    assert.match(plano, /To approve/);
+    assert.match(plano, /Set up the booth/);
+    assert.match(plano, /Check-in list/);
+    assert.match(plano, /Team meal/);
+    assert.equal(plano.includes("Welcome table"), false);
+    assert.equal(plano.includes("Back to the ZEEK example"), false);
+    assert.match(plano, /Example view, until the routes respond/);
   });
 
   test("crear proyecto avisa si faltan el nombre o el monto y no navega", async () => {
     const idas: string[] = [];
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await pulsar("Fondear");
-    assert.match(texto(), /Escribe el nombre y al menos una tarea con monto/);
+    await pulsar("Fund");
+    assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.deepEqual(idas, []);
 
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "0");
-    await pulsar("Fondear");
-    assert.match(texto(), /Escribe el nombre y al menos una tarea con monto/);
+    await pulsar("Fund");
+    assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -66,13 +66,13 @@ describe("pantallas de admin", { concurrency: false }, () => {
       createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
       { push: (href) => idas.push(href) },
     );
-    assert.match(texto(), /En el modo demo no se pueden crear proyectos/);
-    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Fondear"));
+    assert.match(texto(), /Demo mode cannot create projects/);
+    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Fund"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Fondear");
+    await pulsar("Fund");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -83,7 +83,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Fondear");
+    await pulsar("Fund");
     assert.deepEqual(idas, ["/"]);
     const proyecto = leerMemoriaAdmin().proyecto;
     assert.equal(proyecto?.nombre, "Feria");
@@ -99,54 +99,54 @@ describe("pantallas de admin", { concurrency: false }, () => {
     });
     await montar(createElement(Bandeja), { ruta: "/" });
     assert.match(texto(), /Feria/);
-    assert.match(texto(), /Nada por aprobar/);
-    assert.match(texto(), /Volver al ejemplo de ZEEK/);
-    await pulsar("Volver al ejemplo de ZEEK");
+    assert.match(texto(), /Nothing to approve/);
+    assert.match(texto(), /Back to the ZEEK example/);
+    await pulsar("Back to the ZEEK example");
     assert.match(texto(), /ZEEK/);
-    assert.match(texto(), /Montar el stand/);
+    assert.match(texto(), /Set up the booth/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
   });
 
   test("la revisión avisa si la tarea no existe", async () => {
     await montar(createElement(Revision, { tareaId: "no-existe" }));
-    assert.match(texto(), /No encontramos esa tarea/);
-    assert.match(texto(), /Volver a la bandeja/);
+    assert.match(texto(), /We couldn't find that task/);
+    assert.match(texto(), /Back to the inbox/);
   });
 
   test("aprobar deja la tarea pagada en la revisión y en la memoria", async () => {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    assert.match(texto(), /Aprobar/);
-    assert.match(texto(), /cumplió/);
-    await pulsar("Aprobar");
+    assert.match(texto(), /Approve/);
+    assert.match(texto(), /Met/);
+    await pulsar("Approve");
     const plano = texto();
-    assert.match(plano, /Pagado/);
-    assert.match(plano, /Vista de ejemplo, hasta que el pago esté conectado/);
+    assert.match(plano, /Paid/);
+    assert.match(plano, /Example view, until the payment is connected/);
     assert.equal(leerMemoriaAdmin().decisiones.stand, "pagado");
   });
 
   test("pedir otra foto saca la tarea de la revisión", async () => {
     await montar(createElement(Revision, { tareaId: "registro" }));
-    assert.match(texto(), /Pedir otra foto/);
-    assert.match(texto(), /parcial/);
-    await pulsar("Pedir otra foto");
+    assert.match(texto(), /Ask for another photo/);
+    assert.match(texto(), /Partial/);
+    await pulsar("Ask for another photo");
     const plano = texto();
-    assert.equal(plano.includes("Pedir otra foto"), false);
-    assert.equal(plano.includes("Aprobar"), false);
+    assert.equal(plano.includes("Ask for another photo"), false);
+    assert.equal(plano.includes("Approve"), false);
     assert.equal(leerMemoriaAdmin().decisiones.registro, "pendiente");
   });
 
   test("el informe muestra el presupuesto por persona y puede imprimir", async () => {
     await montar(createElement(Informe));
     const plano = texto();
-    assert.match(plano, /Presupuesto contra gasto/);
+    assert.match(plano, /Budget against spend/);
     assert.match(plano, /US\$75/);
     assert.match(plano, /US\$0/);
-    assert.match(plano, /Voluntario 1/);
-    assert.match(plano, /Voluntario 2/);
-    assert.match(plano, /Voluntario 3/);
+    assert.match(plano, /Volunteer 1/);
+    assert.match(plano, /Volunteer 2/);
+    assert.match(plano, /Volunteer 3/);
     let impreso = false;
     Object.defineProperty(window, "print", { configurable: true, value: () => { impreso = true; } });
-    await pulsar("Imprimir");
+    await pulsar("Print");
     assert.equal(impreso, true);
   });
 
@@ -164,7 +164,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await montar(createElement(Marco, null, createElement("p", null, "contenido")), { ruta: "/informe" });
     const plano = texto();
     assert.match(plano, /contenido/);
-    assert.match(plano, /Entrar/);
+    assert.match(plano, /Sign in/);
     const hrefs = [...document.querySelectorAll("a")].map((enlace) => enlace.getAttribute("href"));
     assert.deepEqual(hrefs, ["/", "/informe", "/proyectos/nuevo", "/mis-tareas"]);
     assert.match(document.querySelector('a[href="/informe"]')?.className ?? "", /font-semibold/);

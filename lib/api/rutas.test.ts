@@ -415,7 +415,7 @@ test("resolver no arma ni envía el XDR si la wallet de la sesión no es el firm
       }),
     );
     assert.equal(sinWallet.status, 400);
-    assert.match(((await sinWallet.json()) as { aviso: string }).aviso, /no puede resolver/);
+    assert.match(((await sinWallet.json()) as { aviso: string }).aviso, /cannot resolve/);
 
     const otra = await prepararFirmaHttp(
       sesion("organizador", ORGANIZADOR),
@@ -426,7 +426,7 @@ test("resolver no arma ni envía el XDR si la wallet de la sesión no es el firm
       }),
     );
     assert.equal(otra.status, 400);
-    assert.match(((await otra.json()) as { aviso: string }).aviso, /firmante/);
+    assert.match(((await otra.json()) as { aviso: string }).aviso, /signer/);
 
     const envio = await enviarFirmaHttp(
       sesion("organizador", ORGANIZADOR),

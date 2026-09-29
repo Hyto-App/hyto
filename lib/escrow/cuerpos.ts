@@ -52,13 +52,13 @@ export function avisoRoles(cuentas: CuentasDespliegue): string | null {
     cuentas.admin ?? "",
   ];
   if (direcciones.some((direccion) => direccion !== "" && !esCuenta(direccion))) {
-    return "Hay una dirección que no es una cuenta de Stellar.";
+    return "One address is not a Stellar account.";
   }
   if (!(cuentas.monto > 0) || !Number.isFinite(cuentas.monto)) {
-    return "El monto del hito tiene que ser mayor que cero.";
+    return "The milestone amount has to be greater than zero.";
   }
   if (cuentas.organizador === cuentas.receptor) {
-    return "El organizador y el receptor son cuentas distintas.";
+    return "The organizer and the receiver have to be different accounts.";
   }
   if (
     cuentas.resolutor === cuentas.organizador ||
@@ -66,15 +66,15 @@ export function avisoRoles(cuentas: CuentasDespliegue): string | null {
     cuentas.resolutor === cuentas.proveedor ||
     cuentas.resolutor === cuentas.plataforma
   ) {
-    return "El resolutor no puede repetir otro rol.";
+    return "The resolver cannot repeat another role.";
   }
   if (cuentas.red === "v2") {
-    if (!cuentas.admin) return "En v2 la cuenta admin es otra dirección.";
+    if (!cuentas.admin) return "In v2 the admin account is a separate address.";
     const otros = [cuentas.organizador, cuentas.receptor, cuentas.proveedor, cuentas.plataforma, cuentas.resolutor];
-    if (otros.includes(cuentas.admin)) return "La cuenta admin no puede repetir otro rol.";
-    if (!cuentas.trustline.contractId) return "En v2 el USDC se indica con el contrato del activo.";
+    if (otros.includes(cuentas.admin)) return "The admin account cannot repeat another role.";
+    if (!cuentas.trustline.contractId) return "In v2, USDC is set with the asset contract.";
   } else if (!cuentas.trustline.address) {
-    return "En v1 el USDC se indica con el emisor.";
+    return "In v1, USDC is set with the issuer.";
   }
   return null;
 }
@@ -218,7 +218,7 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
 
 function pedidoV1(accion: AccionFirma): Pedido | string {
   if (accion.accion === "disputar" || accion.accion === "resolver") {
-    return "Disputar y resolver un hito usa la API v2.";
+    return "Disputing and resolving a milestone uses the v2 API.";
   }
   if (accion.accion === "fondear") {
     return {
@@ -259,36 +259,36 @@ function pedidoV1(accion: AccionFirma): Pedido | string {
 }
 
 function avisoAccion(accion: AccionFirma): string | null {
-  if (!esContrato(accion.contrato)) return "El contrato del pago no es válido.";
-  if (!esCuenta(accion.firmante)) return "La cuenta que firma no es válida.";
+  if (!esContrato(accion.contrato)) return "The payment contract is not valid.";
+  if (!esCuenta(accion.firmante)) return "The signing account is not valid.";
   if (accion.accion === "fondear") {
-    if (!(accion.monto > 0) || !Number.isFinite(accion.monto)) return "El monto a fondear tiene que ser mayor que cero.";
+    if (!(accion.monto > 0) || !Number.isFinite(accion.monto)) return "The funding amount has to be greater than zero.";
     return null;
   }
-  if (!Number.isInteger(accion.indice) || accion.indice < 0) return "El hito no es válido.";
+  if (!Number.isInteger(accion.indice) || accion.indice < 0) return "The milestone is not valid.";
   if (accion.accion === "marcar") {
-    if (accion.estado.trim() === "") return "El estado del hito está vacío.";
-    if (accion.estado.length > 50) return "El estado del hito no puede pasar de 50 caracteres.";
-    if (accion.evidencia && accion.evidencia.length > 500) return "La evidencia no puede pasar de 500 caracteres.";
+    if (accion.estado.trim() === "") return "The milestone status is empty.";
+    if (accion.estado.length > 50) return "The milestone status cannot be longer than 50 characters.";
+    if (accion.evidencia && accion.evidencia.length > 500) return "The evidence cannot be longer than 500 characters.";
   }
   if (accion.accion === "disputar") {
     const motivo = accion.motivo.trim();
-    if (motivo === "") return "Falta el motivo de la disputa.";
-    if (motivo.length > 500) return "El motivo no puede pasar de 500 caracteres.";
+    if (motivo === "") return "The dispute reason is missing.";
+    if (motivo.length > 500) return "The reason cannot be longer than 500 characters.";
   }
   if (accion.accion === "resolver") return avisoDistribuciones(accion.distribuciones);
   return null;
 }
 
 function avisoDistribuciones(lista: Distribucion[]): string | null {
-  if (!Array.isArray(lista) || lista.length === 0) return "Falta cómo se reparte la disputa.";
-  if (lista.length > 50) return "El reparto no puede pasar de 50 destinos.";
+  if (!Array.isArray(lista) || lista.length === 0) return "The dispute split is missing.";
+  if (lista.length > 50) return "The split cannot have more than 50 destinations.";
   for (const item of lista) {
     if (!item || typeof item.direccion !== "string" || !esCuenta(item.direccion)) {
-      return "Hay un destino del reparto que no es una cuenta de Stellar.";
+      return "One split destination is not a Stellar account.";
     }
     if (typeof item.monto !== "number" || !Number.isFinite(item.monto) || !(item.monto > 0)) {
-      return "Cada monto del reparto tiene que ser mayor que cero.";
+      return "Each split amount has to be greater than zero.";
     }
   }
   return null;
@@ -305,14 +305,14 @@ export function esContrato(direccion: string): boolean {
 export type EntradaLeida = AccionFirma | EntradaDespliegue | { aviso: string };
 
 export function leerEntrada(body: unknown): EntradaLeida {
-  if (!body || typeof body !== "object") return { aviso: "El cuerpo no trae la acción." };
+  if (!body || typeof body !== "object") return { aviso: "The body does not include the action." };
   const datos = body as Record<string, unknown>;
   const accion = datos.accion;
   const contrato = texto(datos.contrato);
   const firmante = texto(datos.firmante);
   if (accion === "desplegar") {
     const tareaId = texto(datos.tareaId);
-    if (!tareaId || !/^[A-Za-z0-9_-]{1,80}$/.test(tareaId)) return { aviso: "Falta la tarea que se va a desplegar." };
+    if (!tareaId || !/^[A-Za-z0-9_-]{1,80}$/.test(tareaId)) return { aviso: "The task to deploy is missing." };
     return { accion, tareaId };
   }
   if (
@@ -323,7 +323,7 @@ export function leerEntrada(body: unknown): EntradaLeida {
     accion !== "disputar" &&
     accion !== "resolver"
   ) {
-    return { aviso: "Esa acción no prepara un pago." };
+    return { aviso: "That action does not prepare a payment." };
   }
   if (!contrato || !firmante) return { aviso: "Faltan el contrato y la cuenta que firma." };
   if (accion === "fondear") {
@@ -339,7 +339,7 @@ export function leerEntrada(body: unknown): EntradaLeida {
   }
   if (accion === "disputar") {
     const motivo = texto(datos.motivo);
-    if (!motivo) return { aviso: "Falta el motivo de la disputa." };
+    if (!motivo) return { aviso: "The dispute reason is missing." };
     return { accion, contrato, firmante, indice, motivo };
   }
   if (accion === "resolver") {
@@ -351,10 +351,10 @@ export function leerEntrada(body: unknown): EntradaLeida {
 }
 
 function leerDistribuciones(valor: unknown): Distribucion[] | string {
-  if (!Array.isArray(valor)) return "Falta cómo se reparte la disputa.";
+  if (!Array.isArray(valor)) return "The dispute split is missing.";
   const lista: Distribucion[] = [];
   for (const item of valor) {
-    if (!item || typeof item !== "object") return "Hay un destino del reparto que no es válido.";
+    if (!item || typeof item !== "object") return "One split destination is not valid.";
     const datos = item as Record<string, unknown>;
     const direccion = texto(datos.direccion) ?? "";
     const monto = typeof datos.monto === "number" ? datos.monto : Number(datos.monto);
@@ -364,9 +364,9 @@ function leerDistribuciones(valor: unknown): Distribucion[] | string {
 }
 
 function leerIndice(valor: unknown): number | string {
-  if (valor === null || valor === undefined || valor === "") return "Falta el hito.";
+  if (valor === null || valor === undefined || valor === "") return "The milestone is missing.";
   const indice = typeof valor === "number" ? valor : typeof valor === "string" ? Number(valor) : Number.NaN;
-  if (!Number.isInteger(indice) || indice < 0) return "El hito no es válido.";
+  if (!Number.isInteger(indice) || indice < 0) return "The milestone is not valid.";
   return indice;
 }
 

@@ -10,7 +10,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Hyto",
-  description: "Control de gastos y pagos por hitos",
+  description: "Expense control and milestone payments",
 };
 
 export const viewport: Viewport = {
@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={poppins.variable}>
+    <html lang="en" className={poppins.variable}>
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );

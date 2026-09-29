@@ -49,7 +49,7 @@ export function CrearProyecto() {
     const nombreLimpio = nombre.trim();
     const montosValidos = tareas.every((fila) => fila.titulo && fila.monto);
     if (!nombreLimpio || tareas.length === 0 || !montosValidos) {
-      setAviso("Escribe el nombre y al menos una tarea con monto.");
+      setAviso("Enter a name and at least one task with an amount.");
       return;
     }
 
@@ -72,12 +72,12 @@ export function CrearProyecto() {
   return (
     <main className="max-w-xl">
       <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Crear proyecto</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Nombre, tareas y el monto de cada una.</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Create project</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Name, tasks, and the amount for each one.</p>
       </header>
 
       <label className="block text-sm text-[var(--suave)]" htmlFor="nombre-proyecto">
-        Nombre
+        Name
       </label>
       <input
         id="nombre-proyecto"
@@ -89,9 +89,9 @@ export function CrearProyecto() {
       <div className="mt-8 space-y-4">
         {filas.map((fila, indice) => (
           <fieldset key={fila.clave} className="rounded-3xl bg-[var(--papel)] p-6">
-            <legend className="text-sm text-[var(--suave)]">Tarea {indice + 1}</legend>
+            <legend className="text-sm text-[var(--suave)]">Task {indice + 1}</legend>
             <label className="mt-3 block text-sm text-[var(--suave)]" htmlFor={`titulo-${fila.clave}`}>
-              Título
+              Title
             </label>
             <input
               id={`titulo-${fila.clave}`}
@@ -102,7 +102,7 @@ export function CrearProyecto() {
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm text-[var(--suave)]" htmlFor={`tipo-${fila.clave}`}>
-                  Tipo
+                  Type
                 </label>
                 <select
                   id={`tipo-${fila.clave}`}
@@ -110,13 +110,13 @@ export function CrearProyecto() {
                   onChange={(evento) => cambiar(fila.clave, { tipo: evento.target.value as TipoTarea })}
                   className="mt-2 h-12 w-full rounded-2xl bg-[var(--fondo)] px-4 outline-none"
                 >
-                  <option value="trabajo">Trabajo</option>
-                  <option value="reembolso">Reembolso</option>
+                  <option value="trabajo">Work</option>
+                  <option value="reembolso">Reimbursement</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${fila.clave}`}>
-                  Monto
+                  Amount
                 </label>
                 <input
                   id={`monto-${fila.clave}`}
@@ -133,7 +133,7 @@ export function CrearProyecto() {
                 onClick={() => setFilas((actuales) => actuales.filter((item) => item.clave !== fila.clave))}
                 className="mt-4 text-sm text-[var(--suave)]"
               >
-                Quitar
+                Remove
               </button>
             ) : null}
           </fieldset>
@@ -141,18 +141,18 @@ export function CrearProyecto() {
       </div>
 
       <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="mt-4 text-sm font-medium">
-        Agregar tarea
+        Add task
       </button>
 
       <div className="mt-8">
         <BotonPrincipal type="button" onClick={fondear} disabled={modoDemo}>
-          Fondear
+          Fund
         </BotonPrincipal>
       </div>
       {modoDemo || aviso ? (
         <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{modoDemo ? AVISO_PROYECTO_DEMO : aviso}</p>
       ) : null}
-      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que el pago esté conectado.</p>
+      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Example view, until the payment is connected.</p>
     </main>
   );
 }

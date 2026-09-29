@@ -125,7 +125,7 @@ async function correr(
   );
   const pago = await aprobarYLiberar(contrato, cuentas.organizador, red, clave);
   if (!pago.hash) {
-    throw new Error("El envío salió bien y no hay hash para guardar el pago.");
+    throw new Error("The submit succeeded and there is no hash to save the payment.");
   }
   console.log(`Pago ${red}: ${pago.hash}`);
   console.log(enlacePago(pago.hash));

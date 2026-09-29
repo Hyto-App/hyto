@@ -15,7 +15,7 @@ export async function crearAuth() {
 
 export async function conectarStellar(auth: AuthProvider) {
   const appId = appIdPublico();
-  if (!appId) throw new Error("El ingreso espera el identificador de Cavos.");
+  if (!appId) throw new Error("Sign-in is waiting for the Cavos app id.");
   const { Cavos } = await import("@cavos/kit");
   return Cavos.connect({
     chains: ["stellar"],
@@ -36,12 +36,12 @@ export async function fijarWallet(direccion: string): Promise<{ ok: true } | { o
   });
   if (respuesta.ok) return { ok: true };
   const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
-  const aviso = json && typeof json.aviso === "string" ? json.aviso : "No se pudo guardar la wallet de la sesión.";
+  const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not save this session's wallet.";
   return { ok: false, aviso };
 }
 
 export async function publicarSesion(email: string, token: string | null): Promise<{ ok: true; rol: string } | { ok: false; aviso: string }> {
-  if (!email || !token) return { ok: false, aviso: "No se pudo confirmar el ingreso." };
+  if (!email || !token) return { ok: false, aviso: "Could not confirm sign-in." };
   const respuesta = await fetch("/api/sesion", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -49,7 +49,7 @@ export async function publicarSesion(email: string, token: string | null): Promi
   });
   const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
   if (!respuesta.ok) {
-    const aviso = json && typeof json.aviso === "string" ? json.aviso : "No se pudo entrar.";
+    const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not sign in.";
     return { ok: false, aviso };
   }
   return { ok: true, rol: typeof json?.rol === "string" ? json.rol : "" };
@@ -63,7 +63,7 @@ export async function entrarConCodigo(auth: AuthProvider, email: string, codigo:
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar" || !billetera.address) {
-    return { identity, aviso: "No se pudo entrar.", direccion: null };
+    return { identity, aviso: "Could not sign in.", direccion: null };
   }
   const guardada = await fijarWallet(billetera.address);
   if (!guardada.ok) return { identity, aviso: guardada.aviso, direccion: billetera.address };
@@ -92,7 +92,7 @@ export async function entrarConGoogle(auth: AuthProvider, busqueda: string, redi
   if (!sesion.ok) return { aviso: sesion.aviso, direccion: null as string | null };
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
-  if (billetera.chain !== "stellar" || !billetera.address) return { aviso: "No se pudo entrar.", direccion: null };
+  if (billetera.chain !== "stellar" || !billetera.address) return { aviso: "Could not sign in.", direccion: null };
   const guardada = await fijarWallet(billetera.address);
   if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address };
   return { aviso: null, direccion: billetera.address };

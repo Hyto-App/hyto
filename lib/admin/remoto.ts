@@ -242,7 +242,7 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     tope: texto(datos.tope),
     condicion: texto(datos.condicion) ?? "",
     miembroId: texto(datos.miembroId) ?? "",
-    miembro: texto(datos.miembro) ?? "Sin asignar",
+    miembro: texto(datos.miembro) ?? "Unassigned",
     estado: estadoDe(datos.estado),
     veredicto: veredictoDe(datos.veredicto),
     frase: texto(datos.frase),

@@ -31,7 +31,7 @@ async function atender(
     const estado = await estadoOrganizadorTarea(almacen, sesion.usuarioId, id);
     if (estado === "ausente") {
       if (await organizaAlguno(almacen, sesion.usuarioId)) {
-        return json({ aviso: "No encontramos esa tarea." }, 404);
+        return json({ aviso: "We couldn't find that task." }, 404);
       }
       return json({ aviso: AVISO_REVISION }, 403);
     }

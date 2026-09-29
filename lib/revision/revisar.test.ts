@@ -26,7 +26,7 @@ test("si Scout responde y no hay Laya, el stub arma el veredicto", async () => {
   assert.equal(resultado.codigo, null);
   assert.equal(resultado.veredicto, "parcial");
   assert.match(resultado.frase, /Banner de ZEEK de frente/);
-  assert.match(resultado.frase, /Categoría stand/);
+  assert.match(resultado.frase, /Category booth/);
 });
 
 test("si Scout falla, no entra el guion fijo", async () => {

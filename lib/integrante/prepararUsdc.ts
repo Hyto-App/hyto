@@ -76,7 +76,7 @@ function traducir(error: unknown): string {
     if (error.message === AVISO_XLM) return "Not enough XLM for the fee.";
     if (error.message === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
     if (error.message === AVISO_DEMO_FIRMA) return "Demo mode cannot prepare USDC.";
-    if (error.message === "Falta configurar Cavos para entrar.") return "Cavos is not configured.";
+    if (error.message === "Cavos is not configured for sign-in.") return "Cavos is not configured.";
     return "Could not sign the USDC trustline.";
   }
   if (error instanceof Error && error.message.trim()) return error.message;

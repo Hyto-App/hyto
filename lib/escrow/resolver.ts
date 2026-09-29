@@ -14,7 +14,7 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
   const resolutores = resolutoresDe(fuentes);
   if (!resolutores.includes(accion.firmante)) {
     return {
-      mensaje: "Solo el resolutor de la disputa puede firmar esta resolución.",
+      mensaje: "Only the dispute resolver can sign this resolution.",
       estado: 403,
       codigo: "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE",
     };

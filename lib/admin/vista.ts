@@ -134,7 +134,7 @@ function desdeCreada(tarea: TareaCreada, decision: "pagado" | "pendiente" | unde
       tope: tarea.tipo === "reembolso" ? tarea.monto : null,
       condicion: "",
       miembroId: "",
-      miembro: "Sin asignar",
+      miembro: "Unassigned",
       estado: "pendiente",
       veredicto: null,
       frase: null,

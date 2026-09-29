@@ -41,7 +41,7 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.veredicto, "parcial");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.veredicto, "cumplió");
   assert.equal(
-    veredictos.every((veredicto) => veredicto.frase.startsWith("Ejemplo.")),
+    veredictos.every((veredicto) => veredicto.frase.startsWith("Example.")),
     true,
   );
 });
@@ -80,7 +80,7 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   };
   assert.equal(json.tarea.estado, "pendiente");
   assert.equal(json.tarea.veredicto, "cumplió");
-  assert.match(json.tarea.frase, /^Ejemplo\./);
+  assert.match(json.tarea.frase, /^Example\./);
   assert.equal(json.foto, null);
 
   const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand", { usuarioId: "voluntario-1", demo: false });

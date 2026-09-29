@@ -13,14 +13,15 @@ import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin 
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, mensajeFirmaVisible, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
 const PASO: Record<AccionCliente, string> = {
-  desplegar: "Desplegando…",
-  fondear: "Fondeando…",
-  marcar: "Marcando…",
-  aprobar: "Aprobando…",
-  liberar: "Liberando…",
+  desplegar: "Deploying…",
+  fondear: "Funding…",
+  marcar: "Marking…",
+  aprobar: "Approving…",
+  liberar: "Releasing…",
 };
 
 export function Revision({ tareaId }: { tareaId: string }) {
@@ -113,11 +114,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
   async function correr(acciones: readonly AccionCliente[]) {
     if (paso || !tarea) return;
     if (!wallet) {
-      setAviso("Esta sesión no tiene una wallet de Stellar. Entrá de nuevo para firmar.");
+      setAviso("This session has no Stellar wallet. Sign in again to sign.");
       return;
     }
     if (acciones[0] !== "desplegar" && !contrato) {
-      setAviso("Esta tarea todavía no tiene escrow. Desplegá y fondeá primero.");
+      setAviso("This task has no escrow yet. Deploy and fund it first.");
       return;
     }
     setAviso(null);
@@ -169,15 +170,15 @@ export function Revision({ tareaId }: { tareaId: string }) {
   }
 
   if (tarea === undefined) {
-    return <p className="text-[var(--suave)]">Cargando…</p>;
+    return <p className="text-[var(--suave)]">Loading…</p>;
   }
 
   if (!tarea) {
     return (
       <main>
-        <p className="text-lg">No encontramos esa tarea.</p>
+        <p className="text-lg">We couldn't find that task.</p>
         <Link href="/" className="mt-6 inline-block text-sm font-medium">
-          Volver a la bandeja
+          Back to the inbox
         </Link>
       </main>
     );
@@ -193,7 +194,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
   return (
     <main>
       <Link href="/" className="text-sm text-[var(--suave)] print:hidden">
-        Bandeja
+        Inbox
       </Link>
       <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <figure className="overflow-hidden rounded-3xl bg-[var(--papel)]">
@@ -201,22 +202,22 @@ export function Revision({ tareaId }: { tareaId: string }) {
             <img src={foto} alt="" className="aspect-[4/3] w-full object-cover" />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/3] flex-col justify-end bg-[var(--fondo)] p-8">
-              <p className="text-sm text-[var(--suave)]">Evidencia de ejemplo</p>
-              <p className="mt-2 text-lg font-medium leading-7">{tarea.titulo}</p>
+              <p className="text-sm text-[var(--suave)]">Sample evidence</p>
+              <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo)}</p>
             </div>
           ) : (
             <div className="flex aspect-[4/3] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-              Sin evidencia
+              No evidence
             </div>
           )}
         </figure>
 
         <section className="rounded-3xl bg-[var(--papel)] p-6 sm:p-8">
-          <p className="text-sm capitalize text-[var(--suave)]">
-            {tarea.tipo} · {tarea.miembro}
+          <p className="text-sm text-[var(--suave)]">
+            {etiquetaTipo(tarea.tipo)} · {textoVisible(tarea.miembro)}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{tarea.titulo}</h1>
-          {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
+          {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
           <p className="mt-6 text-2xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -225,10 +226,10 @@ export function Revision({ tareaId }: { tareaId: string }) {
           </div>
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-4 text-base leading-7">
-              {tarea.frase}
+              {textoVisible(tarea.frase)}
             </p>
           ) : tarea.frase ? (
-            <p className="mt-4 text-base leading-7">{tarea.frase}</p>
+            <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase)}</p>
           ) : null}
           {tarea.origen === "error" && real ? (
             <button type="button" onClick={() => void reintentar()} disabled={reintentando} className="mt-4 text-sm text-[var(--suave)]">
@@ -239,11 +240,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
           {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (
             <dl className="mt-6 grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-sm text-[var(--suave)]">Monto</dt>
+                <dt className="text-sm text-[var(--suave)]">Amount</dt>
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearMonto(tarea.montoRevisado)}</dd>
               </div>
               <div>
-                <dt className="text-sm text-[var(--suave)]">Fecha</dt>
+                <dt className="text-sm text-[var(--suave)]">Date</dt>
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
@@ -258,14 +259,14 @@ export function Revision({ tareaId }: { tareaId: string }) {
           {botones.aprobarLocal ? (
             <div className="mt-8">
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
-                Aprobar
+                Approve
               </BotonPrincipal>
             </div>
           ) : null}
 
           {botones.pedirOtra ? (
             <button type="button" onClick={() => decidir("pendiente")} className="mt-4 text-sm text-[var(--suave)]">
-              Pedir otra foto
+              Ask for another photo
             </button>
           ) : null}
 
@@ -273,17 +274,17 @@ export function Revision({ tareaId }: { tareaId: string }) {
             <div className="mt-8 space-y-3">
               {botones.desplegar ? (
                 <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
-                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : "Desplegar y fondear"}
+                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : "Deploy and fund"}
                 </BotonPrincipal>
               ) : null}
               {botones.fondear ? (
                 <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["fondear"])}>
-                  {paso === "fondear" ? PASO.fondear : "Fondear"}
+                  {paso === "fondear" ? PASO.fondear : "Fund"}
                 </BotonPrincipal>
               ) : null}
               {botones.pagar ? (
                 <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
-                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : "Aprobar y pagar"}
+                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : "Approve and pay"}
                 </BotonPrincipal>
               ) : null}
             </div>
@@ -299,25 +300,25 @@ export function Revision({ tareaId }: { tareaId: string }) {
 
           {transaccion ? (
             <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">
-              Ver transacción
+              View transaction
             </a>
           ) : null}
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">Pagado {formatearMonto(detalleMonto(tarea).cifra)}</p>
+              <p className="text-lg font-medium">Paid {formatearMonto(detalleMonto(tarea).cifra)}</p>
               {pago ? (
                 <a href={pago} className="inline-block text-sm font-semibold underline-offset-4 hover:underline">
-                  Ver pago
+                  View payment
                 </a>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {real ? "El pago quedó registrado. El enlace aparece cuando hay hash." : "Vista de ejemplo, hasta que el pago esté conectado."}
+                  {real ? "The payment is recorded. The link appears when there is a hash." : "Example view, until the payment is connected."}
                 </p>
               )}
               {credencial ? (
                 <a href={credencial} className="block text-sm text-[var(--suave)] underline-offset-4 hover:underline">
-                  Credencial
+                  Credential
                 </a>
               ) : null}
             </div>

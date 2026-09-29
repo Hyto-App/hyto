@@ -32,15 +32,15 @@ export function respuestaSiExcedido(request: Request, cubo: "firma" | "lectura" 
   if (!excedido(`${cubo}:${clienteDe(request)}`, Date.now(), tope)) return null;
   const aviso =
     cubo === "lectura"
-      ? "Demasiadas lecturas del escrow. Esperá un momento."
-      : "Demasiadas solicitudes de firma. Esperá un momento.";
+      ? "Too many escrow reads. Wait a moment."
+      : "Too many signature requests. Wait a moment.";
   return Response.json({ aviso }, { status: 429 });
 }
 
 export function respuestaSiCuerpoGrande(request: Request): Response | null {
   const largo = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(largo) || largo <= TOPE_CUERPO) return null;
-  return Response.json({ aviso: "El cuerpo es demasiado grande." }, { status: 413 });
+  return Response.json({ aviso: "The body is too large." }, { status: 413 });
 }
 
 export function xdrDemasiadoLargo(xdr: string): boolean {

@@ -137,7 +137,7 @@ test("un fallo de red o un XDR vacío no muestran el error crudo", async () => {
   const vacio = fetchDe([{ body: { hashPreparado: "x" } }]);
   await assert.rejects(
     () => firmarYEnviar("marcar", "stand", {}, { fetch: vacio.fetch, firmar: async () => FIRMADO }),
-    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "La preparación no devolvió el XDR.",
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "Preparation did not return the XDR.",
   );
 });
 
@@ -146,7 +146,7 @@ test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear
     { body: { xdr: "uno", hashPreparado: "p1", contrato: "C9", monto: 20 } },
     { body: { hash: "h1", ledger: 1, codigo: null, contrato: "C9", estado: "SUCCESS" } },
     { body: { xdr: "dos", hashPreparado: "p2", contrato: "C9" } },
-    { status: 502, body: { aviso: "No se pudo enviar el pago." } },
+    { status: 502, body: { aviso: "Could not submit the payment." } },
   ]);
   const vistos: string[] = [];
   await assert.rejects(
@@ -157,7 +157,7 @@ test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear
         firmar: async (xdr) => xdr,
         alEmpezar: (accion) => vistos.push(accion),
       }),
-    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "No se pudo enviar el pago.",
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "Could not submit the payment.",
   );
   assert.deepEqual(vistos, ["desplegar", "fondear"]);
   assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "tarea-1" });

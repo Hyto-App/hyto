@@ -14,26 +14,26 @@ export async function crearDemoHttp(
   almacen: Almacen,
   env: NodeJS.ProcessEnv | { HYTO_DEMO_LOGIN?: string } = process.env,
 ): Promise<Response> {
-  if (!demoHabilitado(env)) return json({ aviso: "No encontrado." }, 404);
+  if (!demoHabilitado(env)) return json({ aviso: "Not found." }, 404);
   if (excedido(`demo:${clienteDe(request)}`)) {
-    return json({ aviso: "Demasiadas entradas demo. Esperá un momento." }, 429);
+    return json({ aviso: "Too many demo sign-ins. Wait a moment." }, 429);
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return json({ aviso: "El cuerpo no es JSON." }, 400);
+    return json({ aviso: "The body is not JSON." }, 400);
   }
   const rol = rolPedido(body);
-  if (!rol) return json({ aviso: "El rol no está permitido." }, 400);
+  if (!rol) return json({ aviso: "That role is not allowed." }, 400);
 
   try {
     await asegurarSemilla(almacen);
     const fijo = usuarioDemo(rol);
     await almacen.guardarUsuario(fijo);
     const usuario = await almacen.usuarioPorEmail(fijo.email);
-    if (!usuario || usuario.rol !== rol) return json({ aviso: "No se pudo abrir la sesión demo." }, 500);
+    if (!usuario || usuario.rol !== rol) return json({ aviso: "Could not open the demo session." }, 500);
     const previa = leerCookie(request, COOKIE_SESION);
     if (previa) {
       const sesionPrevia = await almacen.leerSesion(previa);

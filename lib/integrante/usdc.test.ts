@@ -80,12 +80,12 @@ test("horizon sin la cuenta no cuenta como USDC y un error no se toma como saldo
   assert.equal(await consultarUsdc("GDEMO", ausente), false);
 
   const caido: typeof fetch = async () => new Response("no", { status: 500 });
-  await assert.rejects(() => consultarUsdc("GDEMO", caido), /No se pudo leer la cuenta/);
+  await assert.rejects(() => consultarUsdc("GDEMO", caido), /Could not read the account/);
 
   const red: typeof fetch = async () => {
     throw new Error("red");
   };
-  await assert.rejects(() => consultarUsdc("GDEMO", red), /No se pudo leer la cuenta/);
+  await assert.rejects(() => consultarUsdc("GDEMO", red), /Could not read the account/);
 });
 
 test("el saldo de USDC del emisor de testnet cuenta como listo", () => {
