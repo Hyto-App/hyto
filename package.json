@@ -12,6 +12,7 @@
     "db:semilla": "tsx scripts/semilla.ts",
     "db:local": "tsx scripts/db-local.ts",
     "db:esquema": "tsx scripts/backend-traspaso/generar-esquema.ts",
+    "db:comparar-esquema": "tsx scripts/backend-traspaso/comparar-esquema.ts",
     "verificar:entorno": "tsx scripts/verificar-entorno.ts"
   },
   "dependencies": {
