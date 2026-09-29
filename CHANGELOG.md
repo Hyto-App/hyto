@@ -11,9 +11,13 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - La revisión describe la foto con Llama 4 Scout. Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
 - Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban.
 
+### Arreglado
+
+- `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
+
 ### Pendiente para el equipo
 
-- Esteban: poner en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`, y correr `npm run db:migrar` y `npm run db:semilla`.
+- Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`. La migración y la semilla de ZEEK ya se corrieron en Neon.
 - Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma.
 - Raúl: las cuatro cuentas del demo, ahora con el código de cada correo.
 - Abdiel: `LAYA_URL`. Sebas: un pago en USDC. Sin ese pago no hay Acta.
