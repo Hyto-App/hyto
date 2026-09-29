@@ -17,17 +17,20 @@ import {
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { appIdPublico } from "@/lib/integrante/identidades";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 
 type Fase = "inicio" | "correo" | "codigo";
-type Ocupado = "envio" | "google" | "codigo";
+type Ocupado = "envio" | "google" | "codigo" | "demo";
 
 const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
 
-export function Entrar() {
+export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
+  const modoDemo = useModoDemo();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>("inicio");
   const [correo, setCorreo] = useState("");
   const [codigo, setCodigo] = useState("");
+  const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
@@ -163,6 +166,32 @@ export function Entrar() {
     }
   }
 
+  async function entrarDemo() {
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setAviso(null);
+    setOcupado("demo");
+    try {
+      const respuesta = await fetch("/api/sesion/demo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ rol: rolDemo }),
+      });
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
+      if (!respuesta.ok) {
+        setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "No se pudo entrar.");
+        return;
+      }
+      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolDemo;
+      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/");
+    } catch {
+      setAviso("No se pudo entrar.");
+    } finally {
+      enCurso.current = false;
+      setOcupado(null);
+    }
+  }
+
   async function google() {
     if (enCurso.current) return;
     enCurso.current = true;
@@ -187,6 +216,8 @@ export function Entrar() {
       }
     }
   }
+
+  if (modoDemo) return null;
 
   const demo = esCorreoDemo(correo);
   const mensaje = mostrarEspera && espera > 0 ? textoEspera(espera) : aviso;
@@ -277,6 +308,34 @@ export function Entrar() {
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
             {ocupado === "codigo" ? "Entrando…" : "Confirmar"}
+          </button>
+        </>
+      ) : null}
+      {demoHabilitado ? (
+        <>
+          <label className="sr-only" htmlFor="rol-demo">
+            Rol de la sesión demo
+          </label>
+          <select
+            id="rol-demo"
+            value={rolDemo}
+            onChange={(evento) => {
+              const valor = evento.target.value;
+              if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
+            }}
+            disabled={ocupado !== null}
+            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
+          >
+            <option value="organizador">Organizador</option>
+            <option value="voluntario">Voluntario</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void entrarDemo()}
+            disabled={ocupado !== null}
+            className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {ocupado === "demo" ? "Entrando…" : "Entrar como demo"}
           </button>
         </>
       ) : null}

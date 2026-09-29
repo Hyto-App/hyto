@@ -4,6 +4,7 @@ export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
   insertarUsuario(usuario: Usuario): Promise<void>;
+  guardarUsuario(usuario: Usuario): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
   ultimoProyecto(): Promise<Proyecto | null>;
   crearProyecto(proyecto: Proyecto, tareas: TareaFila[]): Promise<void>;

@@ -82,7 +82,6 @@ test("schema.ts coincide con la migración y neon no nombra columnas ausentes", 
       "veredictos.noul",
       "veredictos.score",
       "veredictos.origen",
-      "sesiones.email",
     ],
   );
   assert.deepEqual(cruce.hashPagoEscrituras, []);
@@ -101,7 +100,6 @@ test("los pendientes salen de hechos del repo y solo nombran columnas reales", (
     "fk-veredictos-tarea",
     "fk-tareas-miembro",
     "fk-sesiones-usuario",
-    "sesiones-email",
     "veredicto-evidencia-unica",
     "veredicto-id-compartido",
     "veredictos-sin-lector",
