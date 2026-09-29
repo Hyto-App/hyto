@@ -22,15 +22,12 @@ ORDER BY table_name`,
   c.character_maximum_length AS largo,
   c.numeric_precision AS precision_num,
   c.numeric_scale AS escala
-FROM information_schema.columns AS c
+FROM information_schema.columns c
+JOIN information_schema.tables t
+  ON t.table_schema = c.table_schema
+ AND t.table_name = c.table_name
 WHERE c.table_schema = 'public'
-  AND EXISTS (
-    SELECT 1
-    FROM information_schema.tables AS t
-    WHERE t.table_schema = 'public'
-      AND t.table_type = 'BASE TABLE'
-      AND t.table_name = c.table_name
-  )
+  AND t.table_type = 'BASE TABLE'
 ORDER BY c.table_name, c.ordinal_position`,
   restricciones: `SELECT
   con.contype AS tipo,

@@ -120,12 +120,14 @@ function vacio(): EsquemaEsperado {
 }
 
 function aplicar(esquema: EsquemaEsperado, sentencia: string, archivo: string): void {
-  const crear = /^create\s+table\s+(?:if\s+not\s+exists\s+)?("?)([A-Za-z_][\w]*)\1\s*\(([\s\S]*)\)\s*$/i.exec(sentencia);
+  const crear = /^create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\1\s*\(([\s\S]*)\)\s*$/i.exec(
+    sentencia,
+  );
   if (crear) {
     crearTabla(esquema, crear[2], crear[3]);
     return;
   }
-  const indice = /^create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?("?)([A-Za-z_][\w]*)\1\s+on\s+("?)([A-Za-z_][\w]*)\3\b/i.exec(
+  const indice = /^create\s+(?:unique\s+)?index\s+(?:if\s+not\s+exists\s+)?("?)([A-Za-z_][\w]*)\1\s+on\s+(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\3\b/i.exec(
     sentencia,
   );
   if (indice) {
@@ -239,7 +241,10 @@ function parsearColumna(tabla: string, parte: string, avisos: string[]): Columna
       }
       columna.defecto = leido.valor;
       resto = leido.resto;
-      if (leido.aviso) avisos.push(`Default no leído en ${tabla}.${nombre}. Confirmar con Esteban.`);
+      if (leido.aviso) {
+        avisos.push(`Default no leído en ${tabla}.${nombre}. Confirmar con Esteban.`);
+        break;
+      }
       continue;
     }
     if (/^references\b/i.test(resto)) {
@@ -276,12 +281,14 @@ function parsearRestriccion(esquema: EsquemaEsperado, tabla: string, parte: stri
   const limpio = parte.replace(/^constraint\s+"?[A-Za-z_][\w]*"?\s+/i, "").trim();
   const pk = /^primary\s+key\s*\(([^)]+)\)/i.exec(limpio);
   if (pk) {
-    const nombres = nombresDe(pk[1]);
-    for (const nombre of nombres) marcar(esquema, tabla, nombre, (columna) => {
+    const columnas = nombresDe(pk[1]);
+    for (const nombre of columnas) marcar(esquema, tabla, nombre, (columna) => {
       columna.primaryKey = true;
       columna.nullable = false;
     });
-    esquema.primaryKeys.push({ tabla, columnas: nombres });
+    if (!esquema.primaryKeys.some((grupo) => grupo.tabla === tabla)) {
+      esquema.primaryKeys.push({ tabla, columnas });
+    }
     return;
   }
   const unico = /^unique\s*\(([^)]+)\)/i.exec(limpio);

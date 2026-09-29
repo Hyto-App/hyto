@@ -8,7 +8,7 @@ export type ColumnaDrizzle = {
   tabla: string;
   campo: string;
   columna: string;
-  tipo: string | null;
+  tipo: string;
   nullable: boolean;
   defecto: string | null;
   primaryKey: boolean;
@@ -73,6 +73,9 @@ export function construirCruce(raiz: string, esperado: EsquemaEsperado): CruceCo
   const neonFuente = leer(raiz, "lib/db/neon.ts");
   const schemaLeido = leerSchemaDrizzle(schemaFuente);
   const schema = schemaLeido.columnas;
+  for (const aviso of schemaLeido.avisos) {
+    if (!esperado.avisos.includes(aviso)) esperado.avisos.push(aviso);
+  }
   const tocadas = tablasTocadas(neonFuente);
   const exportATabla = new Map(schema.map((columna) => [columna.exportName, columna.tabla]));
   const tablasConsulta = new Set(
@@ -299,18 +302,18 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
     if (actual) campos.push(actual.join("\n"));
     for (const campo of campos) {
       const texto = campo.trim().replace(/,\s*$/, "");
-      const match = texto.match(/^(\w+):\s*([A-Za-z_][\w]*)\(\s*"(\w+)"\s*(?:,\s*(\{[\s\S]*\}))?\s*\)([\s\S]*)$/);
+      const match = texto.match(/^(\w+):\s*([A-Za-z_][\w]*)\(\s*"(\w+)"\s*(?:,\s*(\{[\s\S]*?\}))?\s*\)([\s\S]*)$/);
       if (!match) {
         const nombreCampo = /^(\w+)\s*:/.exec(texto);
-        avisos.push(
-          `schema.ts tiene un campo que este script no lee${nombreCampo ? ` (${tabla}.${nombreCampo[1]})` : ""}.`,
-        );
+        if (nombreCampo) {
+          avisos.push(`No se reconoció la columna ${tabla}.${nombreCampo[1]} en schema.ts. Confirmar con Esteban.`);
+        }
         continue;
       }
       const resto = match[5];
       const tipo = tipoDeBuilder(match[2], match[4]);
       if (!tipo) {
-        avisos.push(`schema.ts declara ${tabla}.${match[3]} con un tipo que este script no lee (${match[2]}).`);
+        avisos.push(`No se reconoció el builder ${match[2]}() de ${tabla}.${match[3]} en schema.ts. Confirmar con Esteban.`);
       }
       const referenciaCruda = /\.references\(\(\)\s*=>\s*(\w+)\.(\w+)\)/.exec(resto);
       const defecto = /\.default\(\s*"((?:\\.|[^"\\])*)"\s*\)/.exec(resto);
@@ -319,7 +322,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         tabla,
         campo: match[1],
         columna: match[3],
-        tipo,
+        tipo: tipo ?? "",
         nullable: !/\.notNull\(\)/.test(resto) && !/\.primaryKey\(\)/.test(resto),
         defecto: defecto ? `'${defecto[1].replace(/'/g, "''")}'` : null,
         primaryKey: /\.primaryKey\(\)/.test(resto),
@@ -398,7 +401,7 @@ function diferenciasSchema(schema: ColumnaDrizzle[], esperado: EsquemaEsperado):
       diferencias.push(`schema.ts declara ${columna.tabla}.${columna.columna} y las migraciones no.`);
       continue;
     }
-    if (columna.tipo != null && sql.tipo !== columna.tipo) {
+    if (columna.tipo && sql.tipo !== columna.tipo) {
       diferencias.push(`${columna.tabla}.${columna.columna}: schema.ts dice ${columna.tipo} y las migraciones ${sql.tipo}.`);
     }
     if (sql.nullable !== columna.nullable) diferencias.push(`${columna.tabla}.${columna.columna}: la nulabilidad de schema.ts y la de las migraciones no coinciden.`);

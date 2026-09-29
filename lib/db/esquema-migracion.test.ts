@@ -17,7 +17,7 @@ import {
   ocultarUrl,
   ORDEN_CONSULTAS,
 } from "./diff-esquema";
-import { leerMigraciones, normalizarDefault, type EsquemaEsperado } from "./esquema-migracion";
+import { leerMigraciones, normalizarDefault, normalizarTipo, type EsquemaEsperado } from "./esquema-migracion";
 
 test("la migración real declara las seis tablas y las relaciones que el código usa", () => {
   const esperado = leerMigraciones("drizzle");
@@ -268,8 +268,13 @@ test("el script no contiene sentencias de escritura", () => {
   const fuente = readFileSync("scripts/backend-traspaso/comparar-esquema.ts", "utf8");
   assert.match(fuente, /consultarLoteReadOnly/);
   assert.doesNotMatch(fuente, /\b(INSERT|UPDATE|DELETE|DROP|TRUNCATE|ALTER|CREATE)\b/);
+  assert.match(fuente, /process\.exitCode/);
+  assert.doesNotMatch(fuente, /process\.exit\s*\(/);
   assert.match(readFileSync("lib/db/diff-esquema.ts", "utf8"), /readOnly:\s*true/);
   for (const consulta of Object.values(CONSULTAS)) assert.equal(consulta.trim().toLowerCase().startsWith("select"), true);
+  assert.match(CONSULTAS.columnas, /BASE TABLE/);
+  assert.doesNotMatch(CONSULTAS.indices, /indisunique\s*=\s*false/);
+  assert.match(CONSULTAS.indices, /NOT EXISTS/);
 });
 
 test("CREATE UNIQUE INDEX no se informa como índice que falta", () => {
@@ -458,6 +463,163 @@ function conMigracion(sql: string, comprobar: (esperado: EsquemaEsperado) => voi
   } finally {
     rmSync(directorio, { recursive: true });
   }
+}
+
+test("un índice único que no es constraint se conserva y una vista no es tabla de más", () => {
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-indice-"));
+  try {
+    writeFileSync(
+      join(directorio, "0001.sql"),
+      "CREATE TABLE usuarios (id text PRIMARY KEY, email text);\nCREATE UNIQUE INDEX usuarios_email_idx ON usuarios (email);\n",
+    );
+    const esperado = leerMigraciones(directorio);
+    assert.deepEqual(esperado.avisos, []);
+    assert.deepEqual(esperado.indices, [{ nombre: "usuarios_email_idx", tabla: "usuarios" }]);
+    assert.deepEqual(esperado.uniques, []);
+    const observado = observadoDesdeFilas({
+      tablas: [{ tabla: "usuarios" }],
+      columnas: [
+        { ...filaColumna("usuarios", "id", "text"), nulable: "NO" },
+        filaColumna("usuarios", "email", "text"),
+        filaColumna("usuarios_v", "email", "text"),
+      ],
+      restricciones: [restriccion("p", "usuarios_pkey", "usuarios", "id", 1, null, null, null)],
+      indices: [{ tabla: "usuarios", indice: "usuarios_email_idx" }],
+    });
+    assert.deepEqual(observado.tablas, ["usuarios"]);
+    assert.deepEqual(compararEsquema(esperado, observado), []);
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+});
+
+test("la llave primaria compuesta respeta el orden del PRIMARY KEY", () => {
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-pk-"));
+  try {
+    writeFileSync(
+      join(directorio, "0001.sql"),
+      "CREATE TABLE pareja (a integer NOT NULL, b integer NOT NULL, PRIMARY KEY (b, a));\n",
+    );
+    const esperado = leerMigraciones(directorio);
+    assert.deepEqual(esperado.avisos, []);
+    assert.deepEqual(esperado.primaryKeys, [{ tabla: "pareja", columnas: ["b", "a"] }]);
+    const alReves = observadoDesdeFilas({
+      tablas: [{ tabla: "pareja" }],
+      columnas: [filaColumna("pareja", "a", "integer"), filaColumna("pareja", "b", "integer")],
+      restricciones: [
+        restriccion("p", "pareja_pkey", "pareja", "a", 1, null, null, null),
+        restriccion("p", "pareja_pkey", "pareja", "b", 2, null, null, null),
+      ],
+      indices: [],
+    });
+    const mensajes = compararEsquema(esperado, alReves).map((item) => item.mensaje);
+    assert.ok(mensajes.some((mensaje) => mensaje.includes("(b, a)")));
+    assert.ok(mensajes.some((mensaje) => mensaje.includes("(a, b)")));
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+});
+
+test("numeric(10) y decimal(10) se comparan como numeric(10,0)", () => {
+  assert.equal(normalizarTipo("numeric(10)"), "numeric(10,0)");
+  assert.equal(normalizarTipo("decimal(10)"), "numeric(10,0)");
+  assert.equal(normalizarTipo("decimal(10, 2)"), "numeric(10,2)");
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-num-"));
+  try {
+    writeFileSync(join(directorio, "0001.sql"), "CREATE TABLE precios (monto numeric(10) NOT NULL, tasa decimal(8));\n");
+    const esperado = leerMigraciones(directorio);
+    assert.deepEqual(esperado.avisos, []);
+    assert.equal(esperado.columnas.find((columna) => columna.nombre === "monto")?.tipo, "numeric(10,0)");
+    assert.equal(esperado.columnas.find((columna) => columna.nombre === "tasa")?.tipo, "numeric(8,0)");
+    const observado = observadoDesdeFilas({
+      tablas: [{ tabla: "precios" }],
+      columnas: [
+        { ...filaColumna("precios", "monto", "numeric"), tipo_dato: "numeric", precision_num: 10, escala: 0, nulable: "NO" },
+        { ...filaColumna("precios", "tasa", "numeric"), tipo_dato: "numeric", precision_num: 8, escala: 0 },
+      ],
+      restricciones: [],
+      indices: [],
+    });
+    assert.deepEqual(compararEsquema(esperado, observado), []);
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+});
+
+test("schema.ts lee otros builders y avisa si no reconoce uno", () => {
+  const leido = leerSchemaDrizzle(`
+export const tareas = pgTable("tareas", {
+  id: text("id").primaryKey(),
+  monto: integer("monto").notNull(),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull(),
+  raro: vector("raro"),
+});
+`);
+  assert.deepEqual(
+    leido.columnas.map((columna) => `${columna.columna}:${columna.tipo}`),
+    ["id:text", "monto:integer", "creado_en:timestamp with time zone", "raro:"],
+  );
+  assert.equal(leido.avisos.length, 1);
+  assert.match(leido.avisos[0] ?? "", /vector\(\)/);
+  assert.match(leido.avisos[0] ?? "", /Confirmar con Esteban/);
+});
+
+test("el SQL de drizzle-kit acepta public y la FK de ALTER TABLE, con ON DELETE después de ON UPDATE", () => {
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-fk-"));
+  try {
+    writeFileSync(
+      join(directorio, "0001.sql"),
+      `CREATE TABLE "public"."proyectos" ("id" text PRIMARY KEY);
+CREATE TABLE "public"."tareas" ("id" text PRIMARY KEY, "proyecto_id" text NOT NULL);
+ALTER TABLE "public"."tareas" ADD CONSTRAINT "tareas_proyecto_fk" FOREIGN KEY ("proyecto_id") REFERENCES "public"."proyectos"("id") ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE TABLE hijo (padre text NOT NULL, FOREIGN KEY (padre) REFERENCES public.proyectos (id) ON UPDATE CASCADE ON DELETE SET NULL);
+`,
+    );
+    const esperado = leerMigraciones(directorio);
+    assert.deepEqual(esperado.avisos, []);
+    const porTabla = new Map(esperado.fks.map((fk) => [fk.tabla, fk]));
+    assert.equal(porTabla.get("tareas")?.tablaRef, "proyectos");
+    assert.deepEqual(porTabla.get("tareas")?.columnas, ["proyecto_id"]);
+    assert.equal(porTabla.get("tareas")?.alBorrar, "c");
+    assert.equal(porTabla.get("tareas")?.alBorrarExplicito, true);
+    assert.equal(porTabla.get("hijo")?.alBorrar, "n");
+    assert.equal(porTabla.get("hijo")?.alBorrarExplicito, true);
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+});
+
+test("DEFAULT now() queda leído y no genera aviso", () => {
+  const directorio = mkdtempSync(join(tmpdir(), "hyto-default-"));
+  try {
+    writeFileSync(
+      join(directorio, "0001.sql"),
+      "CREATE TABLE marcas (id text PRIMARY KEY, creado timestamp with time zone DEFAULT now() NOT NULL);\n",
+    );
+    const esperado = leerMigraciones(directorio);
+    assert.deepEqual(esperado.avisos, []);
+    assert.equal(esperado.columnas.find((columna) => columna.nombre === "creado")?.defecto, "now()");
+    writeFileSync(join(directorio, "0002.sql"), "ALTER TABLE marcas ADD COLUMN nota text DEFAULT current_timestamp;\n");
+    const conHueco = leerMigraciones(directorio);
+    assert.equal(conHueco.avisos.length, 1);
+    assert.match(conHueco.avisos[0] ?? "", /Default no leído/);
+  } finally {
+    rmSync(directorio, { recursive: true });
+  }
+});
+
+function filaColumna(tabla: string, columna: string, tipo: string): Record<string, unknown> {
+  return {
+    tabla,
+    columna,
+    tipo_dato: tipo,
+    udt: tipo,
+    nulable: "YES",
+    defecto: null,
+    largo: null,
+    precision_num: null,
+    escala: null,
+  };
 }
 
 function loteDesde(esperado: EsquemaEsperado): unknown[] {
