@@ -1,0 +1,538 @@
+import assert from "node:assert/strict";
+import { beforeEach, afterEach, describe, test } from "node:test";
+import { POST as sesionPost } from "../../app/api/sesion/route";
+import { GET as tareasGet } from "../../app/api/tareas/route";
+import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
+import { GET as informeGet } from "../../app/api/informe/route";
+import { GET as revisionGet, POST as revisionPost } from "../../app/api/revision/[id]/route";
+import { POST as evidenciasPost } from "../../app/api/evidencias/route";
+import { GET as evidenciaGet } from "../../app/api/evidencias/[id]/route";
+import { GET as fotoGet } from "../../app/api/evidencias/[id]/foto/route";
+import { POST as firmaPost } from "../../app/api/firma/route";
+import { POST as enviarPost } from "../../app/api/firma/enviar/route";
+import { reiniciarLimite } from "../../lib/escrow/limite";
+import { baseLista, consulta, prepararBase, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
+
+const CUENTA = `G${"A".repeat(55)}`;
+const CONTRATO = `C${"A".repeat(55)}`;
+const HASH = "ab".repeat(32);
+
+const hayBase = await prepararBase();
+
+type Json = Record<string, unknown>;
+
+async function leer(respuesta: Response): Promise<Json> {
+  return (await respuesta.json()) as Json;
+}
+
+function avisoDe(json: Json): string {
+  return typeof json.aviso === "string" ? json.aviso : "";
+}
+
+function tokenCavos(email: string, claims: Record<string, unknown> = {}): string {
+  const cuerpo = Buffer.from(JSON.stringify({ sub: "sub-prueba", email, ...claims })).toString("base64url");
+  return `aaaa.${cuerpo}.bbbb`;
+}
+
+function cookieDe(respuesta: Response): string {
+  const cruda = respuesta.headers.get("set-cookie") ?? "";
+  const par = cruda.split(";")[0]?.trim() ?? "";
+  if (!par.startsWith("hyto_sesion=")) throw new Error(`Sin cookie de sesión: ${cruda}`);
+  return par;
+}
+
+async function entrar(email: string): Promise<Response> {
+  return sesionPost(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, token: tokenCavos(email) }),
+    }),
+  );
+}
+
+function pedido(url: string, body: unknown, cookie?: string, extra?: HeadersInit): Request {
+  const headers = new Headers(extra);
+  if (!(body instanceof FormData)) headers.set("content-type", "application/json");
+  if (cookie) headers.set("cookie", cookie);
+  return new Request(url, {
+    method: "POST",
+    headers,
+    body: body instanceof FormData ? body : typeof body === "string" ? body : JSON.stringify(body),
+  });
+}
+
+function contexto(id: string): { params: Promise<{ id: string }> } {
+  return { params: Promise.resolve({ id }) };
+}
+
+function proyectoNuevo() {
+  return {
+    nombre: "Feria",
+    tareas: [
+      { titulo: "Cajas", tipo: "trabajo", monto: "8", condicion: "Cajas cerradas", miembroId: "voluntario-2" },
+      { titulo: "Comida extra", tipo: "reembolso", monto: "15", miembroId: "voluntario-1" },
+    ],
+  };
+}
+
+function fotoDe(tareaId: string, tipo = "image/jpeg", bytes = Uint8Array.from([1, 2, 3, 4])): FormData {
+  const datos = new FormData();
+  datos.set("tareaId", tareaId);
+  datos.set("foto", new Blob([bytes], { type: tipo }), "evidencia.jpg");
+  datos.set("wallet", CUENTA);
+  return datos;
+}
+
+async function conFetch(impl: typeof fetch, trabajo: () => Promise<void>): Promise<void> {
+  const previo = globalThis.fetch;
+  globalThis.fetch = impl;
+  try {
+    await trabajo();
+  } finally {
+    globalThis.fetch = previo;
+  }
+}
+
+describe("rutas de app/api contra Postgres local", { skip: hayBase ? false : "no hay base local", concurrency: false }, () => {
+  beforeEach(async () => {
+    await tomar();
+    reiniciarLimite();
+  });
+
+  afterEach(async () => {
+    await soltar();
+  });
+
+  test("la migración crea las tablas", async () => {
+    const resultado = await consulta<{ table_name: string }>(
+      "select table_name from information_schema.tables where table_schema = 'public'",
+    );
+    const nombres = resultado.rows.map((fila) => fila.table_name);
+    for (const tabla of ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]) {
+      assert.ok(nombres.includes(tabla), tabla);
+    }
+  });
+
+  test("GET /api/tareas devuelve la semilla de ZEEK sin sesión", async () => {
+    const respuesta = await tareasGet();
+    assert.equal(respuesta.status, 200);
+    assert.match(respuesta.headers.get("content-type") ?? "", /json/);
+    const json = (await leer(respuesta)) as { tareas?: { id: string; monto: string; tipo: string; tope: string | null }[] };
+    assert.deepEqual(
+      json.tareas?.map((tarea) => tarea.id),
+      ["stand", "registro", "bienvenida", "comida"],
+    );
+    assert.equal(json.tareas?.[0]?.monto, "20");
+    assert.equal(json.tareas?.[3]?.tipo, "reembolso");
+    assert.equal(json.tareas?.[3]?.tope, "15");
+  });
+
+  test("GET /api/tareas sin base responde 503", async () => {
+    usarAlmacen(async () => null);
+    const respuesta = await tareasGet();
+    assert.equal(respuesta.status, 503);
+    assert.equal(avisoDe(await leer(respuesta)), "La base no está configurada.");
+  });
+
+  test("POST /api/sesion abre la sesión del organizador y la guarda", async () => {
+    const respuesta = await entrar("organizador@demo.hyto");
+    assert.equal(respuesta.status, 200);
+    const json = await leer(respuesta);
+    assert.equal(json.rol, "organizador");
+    assert.equal(json.email, "organizador@demo.hyto");
+    assert.equal(json.nombre, "Organizador");
+    assert.match(respuesta.headers.get("set-cookie") ?? "", /hyto_sesion=/);
+    const filas = await consulta<{ email: string; rol: string }>("select email, rol from sesiones");
+    assert.equal(filas.rows.length, 1);
+    assert.equal(filas.rows[0]?.email, "organizador@demo.hyto");
+    assert.equal(filas.rows[0]?.rol, "organizador");
+  });
+
+  test("POST /api/sesion rechaza JSON inválido, token ajeno y correo fuera del equipo", async () => {
+    const noJson = await sesionPost(pedido("http://local/api/sesion", "{"));
+    assert.equal(noJson.status, 400);
+    assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
+
+    const sinCorreo = await sesionPost(pedido("http://local/api/sesion", { token: tokenCavos("organizador@demo.hyto") }));
+    assert.equal(sinCorreo.status, 400);
+    assert.equal(avisoDe(await leer(sinCorreo)), "No se pudo confirmar el ingreso.");
+
+    const otro = await sesionPost(
+      pedido("http://local/api/sesion", {
+        email: "organizador@demo.hyto",
+        token: tokenCavos("otro@demo.hyto"),
+      }),
+    );
+    assert.equal(otro.status, 400);
+    assert.equal(avisoDe(await leer(otro)), "No se pudo confirmar el ingreso.");
+
+    const ajeno = await entrar("nadie@demo.hyto");
+    assert.equal(ajeno.status, 403);
+    assert.equal(avisoDe(await leer(ajeno)), "Este correo no está en el equipo.");
+    const filas = await consulta("select token from sesiones");
+    assert.equal(filas.rowCount, 0);
+  });
+
+  test("POST /api/proyectos crea el proyecto sin sesión y GET devuelve el último", async () => {
+    const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo()));
+    assert.equal(creado.status, 201);
+    const json = (await leer(creado)) as {
+      proyecto?: { nombre?: string };
+      tareas?: { titulo: string; tipo: string; tope: string | null; estado: string; monto: string }[];
+    };
+    assert.equal(json.proyecto?.nombre, "Feria");
+    const reembolso = json.tareas?.find((tarea) => tarea.tipo === "reembolso");
+    const trabajo = json.tareas?.find((tarea) => tarea.tipo === "trabajo");
+    assert.equal(trabajo?.titulo, "Cajas");
+    assert.equal(trabajo?.estado, "pendiente");
+    assert.equal(trabajo?.tope, null);
+    assert.equal(reembolso?.tope, "15");
+    assert.equal(reembolso?.monto, "15");
+
+    const lectura = await proyectosGet();
+    assert.equal(lectura.status, 200);
+    const actual = (await leer(lectura)) as { proyecto?: { nombre?: string }; tareas?: { titulo: string }[] };
+    assert.equal(actual.proyecto?.nombre, "Feria");
+    assert.deepEqual(
+      actual.tareas?.map((tarea) => tarea.titulo),
+      ["Cajas", "Comida extra"],
+    );
+
+    const tareas = (await leer(await tareasGet())) as { tareas?: { titulo: string }[] };
+    assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Cajas"), true);
+    assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Montar el stand"), true);
+  });
+
+  test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {
+    const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{"));
+    assert.equal(noJson.status, 400);
+    assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
+
+    const vacio = await proyectosPost(pedido("http://local/api/proyectos", { nombre: "Feria", tareas: [] }));
+    assert.equal(vacio.status, 400);
+    assert.equal(avisoDe(await leer(vacio)), "Escribe el nombre y al menos una tarea con monto.");
+
+    const sinMonto = await proyectosPost(
+      pedido("http://local/api/proyectos", {
+        nombre: "Feria",
+        tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "0" }],
+      }),
+    );
+    assert.equal(sinMonto.status, 400);
+
+    const tipo = await proyectosPost(
+      pedido("http://local/api/proyectos", {
+        nombre: "Feria",
+        tareas: [{ titulo: "Cajas", tipo: "otro", monto: "8" }],
+      }),
+    );
+    assert.equal(tipo.status, 400);
+    const filas = await consulta<{ nombre: string }>("select nombre from proyectos");
+    assert.deepEqual(
+      filas.rows.map((fila) => fila.nombre),
+      ["ZEEK"],
+    );
+  });
+
+  test("GET /api/informe abre ZEEK sin hash y la bandeja sigue vacía hasta la evidencia", async () => {
+    const respuesta = await informeGet();
+    assert.equal(respuesta.status, 200);
+    const json = (await leer(respuesta)) as {
+      nombre?: string;
+      ejemplo?: boolean;
+      bandeja?: unknown[];
+      resumen?: { presupuesto: string; pagado: string };
+      tareas?: { id: string; estado: string; hashPago: string | null }[];
+    };
+    assert.equal(json.nombre, "ZEEK");
+    assert.equal(json.ejemplo, false);
+    assert.equal(json.resumen?.presupuesto, "75");
+    assert.equal(json.resumen?.pagado, "0");
+    assert.equal(json.bandeja?.length, 0);
+    assert.equal(json.tareas?.every((tarea) => tarea.estado === "pendiente" && tarea.hashPago === null), true);
+  });
+
+  test("GET /api/informe muestra el hash cuando la tarea ya está pagada", async () => {
+    await tareasGet();
+    await consulta("update tareas set hash_pago = $1, estado = 'pagado' where id = 'stand'", [HASH]);
+    const json = (await leer(await informeGet())) as {
+      resumen?: { pagado: string };
+      tareas?: { id: string; hashPago: string | null; estado: string }[];
+    };
+    assert.equal(json.tareas?.find((tarea) => tarea.id === "stand")?.hashPago, HASH);
+    assert.equal(json.tareas?.find((tarea) => tarea.id === "stand")?.estado, "pagado");
+    assert.equal(json.resumen?.pagado, "20");
+  });
+
+  test("GET /api/revision/:id devuelve la tarea y 404 si no existe", async () => {
+    const ok = await revisionGet(new Request("http://local/api/revision/stand"), contexto("stand"));
+    assert.equal(ok.status, 200);
+    const json = (await leer(ok)) as {
+      tarea?: { id: string; veredicto: string | null; estado: string };
+      foto?: string | null;
+      enlacePago?: string | null;
+    };
+    assert.equal(json.tarea?.id, "stand");
+    assert.equal(json.tarea?.estado, "pendiente");
+    assert.equal(json.tarea?.veredicto, null);
+    assert.equal(json.foto, null);
+    assert.equal(json.enlacePago, null);
+
+    const falta = await revisionGet(new Request("http://local/api/revision/no-existe"), contexto("no-existe"));
+    assert.equal(falta.status, 404);
+    assert.equal(avisoDe(await leer(falta)), "No encontramos esa tarea.");
+  });
+
+  test("POST /api/evidencias guarda la foto, revisa con el guion y GET la lee", async () => {
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida")));
+    assert.equal(creada.status, 201);
+    const json = (await leer(creada)) as { evidencia?: { id: string; monto: string; fecha: string; tareaId: string } };
+    const id = json.evidencia?.id ?? "";
+    assert.equal(json.evidencia?.monto, "12.40");
+    assert.equal(json.evidencia?.fecha, "2026-09-27");
+    assert.equal(json.evidencia?.tareaId, "comida");
+
+    const tarea = await consulta<{ estado: string; wallet_cobro: string }>(
+      "select estado, wallet_cobro from tareas where id = 'comida'",
+    );
+    assert.equal(tarea.rows[0]?.estado, "en revisión");
+    assert.equal(tarea.rows[0]?.wallet_cobro, CUENTA);
+
+    const lectura = await evidenciaGet(new Request(`http://local/api/evidencias/${id}`), contexto(id));
+    assert.equal(lectura.status, 200);
+    const leida = (await leer(lectura)) as { evidencia?: { monto: string } };
+    assert.equal(leida.evidencia?.monto, "12.40");
+
+    const foto = await fotoGet(new Request(`http://local/api/evidencias/${id}/foto`), contexto(id));
+    assert.equal(foto.status, 200);
+    assert.equal(foto.headers.get("content-type"), "image/jpeg");
+    assert.equal((await foto.arrayBuffer()).byteLength, 4);
+
+    const revision = await revisionGet(new Request("http://local/api/revision/comida"), contexto("comida"));
+    const vista = (await leer(revision)) as {
+      tarea?: { veredicto: string; estado: string; frase: string };
+      foto?: string;
+    };
+    assert.equal(vista.tarea?.veredicto, "cumplió");
+    assert.equal(vista.tarea?.estado, "en revisión");
+    assert.match(vista.tarea?.frase ?? "", /Comprobante/);
+    assert.equal(vista.foto, `/api/evidencias/${id}/foto`);
+
+    const informe = (await leer(await informeGet())) as {
+      bandeja?: { id: string; veredicto: string }[];
+    };
+    assert.equal(informe.bandeja?.some((tarea) => tarea.id === "comida" && tarea.veredicto === "cumplió"), true);
+  });
+
+  test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async () => {
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9]))));
+    const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
+    await consulta("update veredictos set veredicto = 'insuficiente', frase = 'cambiado' where evidencia_id = $1", [id]);
+
+    const lectura = await revisionGet(new Request("http://local/api/revision/stand"), contexto("stand"));
+    const guardado = (await leer(lectura)) as { tarea?: { veredicto: string; frase: string } };
+    assert.equal(guardado.tarea?.veredicto, "insuficiente");
+    assert.equal(guardado.tarea?.frase, "cambiado");
+
+    const forzada = await revisionPost(new Request("http://local/api/revision/stand", { method: "POST" }), contexto("stand"));
+    assert.equal(forzada.status, 200);
+    const otra = (await leer(forzada)) as { tarea?: { veredicto: string; frase: string }; enlacePago?: string | null };
+    assert.equal(otra.tarea?.veredicto, "parcial");
+    assert.match(otra.tarea?.frase ?? "", /Mesa armada/);
+    assert.equal(otra.enlacePago, null);
+
+    const falta = await revisionPost(new Request("http://local/api/revision/no-existe", { method: "POST" }), contexto("no-existe"));
+    assert.equal(falta.status, 404);
+  });
+
+  test("POST /api/evidencias rechaza entrada inválida, tarea ajena y foto enorme", async () => {
+    const noLlego = await evidenciasPost(
+      new Request("http://local/api/evidencias", { method: "POST", body: "hola", headers: { "content-type": "text/plain" } }),
+    );
+    assert.equal(noLlego.status, 400);
+    assert.equal(avisoDe(await leer(noLlego)), "La foto no llegó.");
+
+    const incompleta = new FormData();
+    incompleta.set("tareaId", "stand");
+    const sinFoto = await evidenciasPost(pedido("http://local/api/evidencias", incompleta));
+    assert.equal(sinFoto.status, 400);
+    assert.equal(avisoDe(await leer(sinFoto)), "Faltan la tarea y la foto.");
+
+    const texto = new FormData();
+    texto.set("tareaId", "stand");
+    texto.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
+    const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto));
+    assert.equal(noImagen.status, 400);
+    assert.equal(avisoDe(await leer(noImagen)), "Elige una foto.");
+
+    const ajena = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("no-existe")));
+    assert.equal(ajena.status, 404);
+    assert.equal(avisoDe(await leer(ajena)), "No encontramos esa tarea.");
+
+    const grande = new FormData();
+    grande.set("tareaId", "stand");
+    grande.set("foto", new Blob([new Uint8Array(8_000_001)], { type: "image/jpeg" }), "grande.jpg");
+    const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande));
+    assert.equal(pesada.status, 413);
+    assert.equal(avisoDe(await leer(pesada)), "La foto es demasiado grande.");
+  });
+
+  test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {
+    const evidencia = await evidenciaGet(new Request("http://local/api/evidencias/no-existe"), contexto("no-existe"));
+    assert.equal(evidencia.status, 404);
+    assert.equal(avisoDe(await leer(evidencia)), "No encontramos esa evidencia.");
+
+    const foto = await fotoGet(new Request("http://local/api/evidencias/no-existe/foto"), contexto("no-existe"));
+    assert.equal(foto.status, 404);
+  });
+
+  test("las rutas de evidencia sin almacén de fotos responden 503", async () => {
+    usarFotos(() => null);
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand")));
+    assert.equal(creada.status, 503);
+    assert.equal(avisoDe(await leer(creada)), "El almacén de fotos no está configurado.");
+
+    await tareasGet();
+    const id = "ev-prueba";
+    await consulta(
+      "insert into evidencias (id, tarea_id, blob_id, creada_en) values ($1, 'stand', 'blob-inexistente', $2)",
+      [id, new Date().toISOString()],
+    );
+    const foto = await fotoGet(new Request(`http://local/api/evidencias/${id}/foto`), contexto(id));
+    assert.equal(foto.status, 503);
+  });
+
+  test("POST /api/firma y /api/firma/enviar exigen sesión de organizador", async () => {
+    const sinFirma = await firmaPost(pedido("http://local/api/firma", {}));
+    assert.equal(sinFirma.status, 401);
+    assert.equal(avisoDe(await leer(sinFirma)), "Entra para continuar.");
+
+    const sinEnvio = await enviarPost(pedido("http://local/api/firma/enviar", {}));
+    assert.equal(sinEnvio.status, 401);
+
+    const ajena = await firmaPost(pedido("http://local/api/firma", {}, "hyto_sesion=token-que-no-existe"));
+    assert.equal(ajena.status, 401);
+
+    const voluntario = cookieDe(await entrar("voluntario1@demo.hyto"));
+    const prohibida = await firmaPost(pedido("http://local/api/firma", {}, voluntario));
+    assert.equal(prohibida.status, 403);
+    assert.equal(avisoDe(await leer(prohibida)), "Solo el organizador prepara el pago.");
+    const envioProhibido = await enviarPost(pedido("http://local/api/firma/enviar", { xdr: "AAAA" }, voluntario));
+    assert.equal(envioProhibido.status, 403);
+
+    const organizador = cookieDe(await entrar("organizador@demo.hyto"));
+    const token = decodeURIComponent(organizador.slice("hyto_sesion=".length));
+    await consulta("update sesiones set expira_en = '2000-01-01T00:00:00.000Z' where token = $1", [token]);
+    const vencida = await firmaPost(pedido("http://local/api/firma", {}, organizador));
+    assert.equal(vencida.status, 401);
+    assert.equal(avisoDe(await leer(vencida)), "Entra para continuar.");
+  });
+
+  test("POST /api/firma rechaza el cuerpo y prepara el XDR del organizador sin salir a la red", async () => {
+    const cookie = cookieDe(await entrar("organizador@demo.hyto"));
+    const noJson = await firmaPost(pedido("http://local/api/firma", "{", cookie));
+    assert.equal(noJson.status, 400);
+    assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
+
+    const accion = await firmaPost(pedido("http://local/api/firma", { accion: "borrar" }, cookie));
+    assert.equal(accion.status, 400);
+    assert.equal(avisoDe(await leer(accion)), "Esa acción no prepara un pago.");
+
+    const liberar = await firmaPost(
+      pedido("http://local/api/firma", { accion: "liberar", contrato: CONTRATO, firmante: CUENTA, indice: 0 }, cookie),
+    );
+    assert.equal(liberar.status, 400);
+    assert.equal(avisoDe(await leer(liberar)), "En v2 aprobar ya libera el hito.");
+
+    const grande = await firmaPost(
+      pedido("http://local/api/firma", {}, cookie, { "content-length": "200001" }),
+    );
+    assert.equal(grande.status, 413);
+    assert.equal(avisoDe(await leer(grande)), "El cuerpo es demasiado grande.");
+
+    const sinClave = await firmaPost(
+      pedido("http://local/api/firma", { accion: "aprobar", contrato: CONTRATO, firmante: CUENTA, indice: 0 }, cookie),
+    );
+    assert.equal(sinClave.status, 503);
+    assert.equal(avisoDe(await leer(sinClave)), "Falta la clave de Trustless Work en el servidor.");
+
+    process.env.TRUSTLESS_API_KEY = "clave-prueba";
+    let destino = "";
+    try {
+      await conFetch(async (input) => {
+        destino = String(input);
+        if (!destino.startsWith("https://beta.api.trustlesswork.com/")) throw new Error(`fetch inesperado: ${destino}`);
+        return Response.json({ unsignedXdr: "XDR-PRUEBA", txHash: "hash-preparado", contractId: CONTRATO });
+      }, async () => {
+        const lista = await firmaPost(
+          pedido("http://local/api/firma", { accion: "aprobar", contrato: CONTRATO, firmante: CUENTA, indice: 0 }, cookie),
+        );
+        assert.equal(lista.status, 200);
+        const json = await leer(lista);
+        assert.equal(json.xdr, "XDR-PRUEBA");
+        assert.equal(json.hashPreparado, "hash-preparado");
+        assert.equal(json.contrato, CONTRATO);
+      });
+    } finally {
+      delete process.env.TRUSTLESS_API_KEY;
+    }
+    assert.equal(destino, "https://beta.api.trustlesswork.com/escrow/multi-release/v2/approve-and-release-milestones");
+  });
+
+  test("POST /api/firma/enviar rechaza el XDR y devuelve el hash simulado", async () => {
+    const cookie = cookieDe(await entrar("organizador@demo.hyto"));
+    const noJson = await enviarPost(pedido("http://local/api/firma/enviar", "{", cookie));
+    assert.equal(noJson.status, 400);
+    assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
+
+    const falta = await enviarPost(pedido("http://local/api/firma/enviar", { xdr: "   " }, cookie));
+    assert.equal(falta.status, 400);
+    assert.equal(avisoDe(await leer(falta)), "Falta el XDR firmado.");
+
+    const largo = await enviarPost(pedido("http://local/api/firma/enviar", { xdr: "A".repeat(100_001) }, cookie));
+    assert.equal(largo.status, 400);
+    assert.equal(avisoDe(await leer(largo)), "El XDR firmado es demasiado largo.");
+
+    process.env.TRUSTLESS_API_KEY = "clave-prueba";
+    try {
+      await conFetch(async (input) => {
+        const destino = String(input);
+        if (destino !== "https://beta.api.trustlesswork.com/stellar/send-transaction") {
+          throw new Error(`fetch inesperado: ${destino}`);
+        }
+        return Response.json({ status: "SUCCESS", txHash: HASH, ledger: 42, contractId: CONTRATO });
+      }, async () => {
+        const enviada = await enviarPost(pedido("http://local/api/firma/enviar", { xdr: "AAAA" }, cookie));
+        assert.equal(enviada.status, 200);
+        const json = await leer(enviada);
+        assert.equal(json.hash, HASH);
+        assert.equal(json.ledger, 42);
+        assert.equal(json.estado, "SUCCESS");
+        assert.equal(json.contrato, CONTRATO);
+      });
+    } finally {
+      delete process.env.TRUSTLESS_API_KEY;
+    }
+
+    const pago = await consulta<{ hash_pago: string | null }>("select hash_pago from tareas");
+    assert.equal(pago.rows.every((fila) => fila.hash_pago === null), true);
+  });
+
+  test("POST /api/firma/enviar corta el exceso de solicitudes", async () => {
+    const cookie = cookieDe(await entrar("organizador@demo.hyto"));
+    let ultimo = 0;
+    for (let i = 0; i < 31; i += 1) {
+      const respuesta = await enviarPost(
+        pedido("http://local/api/firma/enviar", {}, cookie, { "x-forwarded-for": "203.0.113.9" }),
+      );
+      ultimo = respuesta.status;
+      if (i < 30) assert.equal(respuesta.status, 400);
+    }
+    assert.equal(ultimo, 429);
+  });
+});
+
+if (!hayBase) {
+  test("Postgres local", { skip: "no hay base local" }, () => undefined);
+}
