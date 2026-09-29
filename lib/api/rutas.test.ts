@@ -6,7 +6,6 @@ import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
 import { POST as crearProyecto } from "../../app/api/proyectos/route";
 import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
-import { EMISOR_CAVOS } from "../sesion/jwt";
 import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
@@ -16,25 +15,25 @@ import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp } from "./sesion";
 import { listarTareasHttp } from "./tareas";
 
+const EMISOR_PRUEBA = "https://emisor.prueba";
 const par = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const jwk = par.publicKey.export({ format: "jwk" }) as JsonWebKey;
 jwk.kid = "prueba";
 jwk.alg = "RS256";
 jwk.use = "sig";
 process.env.CAVOS_JWT_JWK = JSON.stringify(jwk);
-process.env.CAVOS_JWT_ISSUER = EMISOR_CAVOS;
+process.env.CAVOS_JWT_ISSUER = EMISOR_PRUEBA;
 delete process.env.CAVOS_JWT_AUDIENCE;
-delete process.env.CAVOS_GOOGLE_CLIENT_ID;
-delete process.env.CAVOS_FIREBASE_PROJECT_ID;
+delete process.env.CAVOS_JWKS_URL;
 
-function token(email: string, extra: Record<string, unknown> = {}): string {
+function token(email: string | null, extra: Record<string, unknown> = {}): string {
   const encabezado = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "prueba" })).toString("base64url");
   const cuerpo = Buffer.from(
     JSON.stringify({
       sub: "cavos-1",
-      email,
-      iss: EMISOR_CAVOS,
+      iss: EMISOR_PRUEBA,
       exp: Math.floor(Date.now() / 1000) + 3600,
+      ...(email ? { email } : {}),
       ...extra,
     }),
   ).toString("base64url");
@@ -169,6 +168,26 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
     almacen,
   );
   assert.equal(falso.status, 400);
+
+  const sinEmail = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "organizador@demo.hyto", token: token(null) }),
+    }),
+    almacen,
+  );
+  assert.equal(sinEmail.status, 400);
+
+  const otroCorreo = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "organizador@demo.hyto", token: token("voluntario1@demo.hyto") }),
+    }),
+    almacen,
+  );
+  assert.equal(otroCorreo.status, 400);
 
   const ajeno = await crearSesionHttp(
     new Request("http://local/api/sesion", {

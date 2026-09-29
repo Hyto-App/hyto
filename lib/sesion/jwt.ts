@@ -1,19 +1,12 @@
 import { createPublicKey, createVerify, type JsonWebKey } from "node:crypto";
 
 /**
- * Emisor del JWT que Cavos firma para el código de correo.
- * `@cavos/kit` 0.2.5 lo reconoce en `providerFromClaims` (`https://cavos.app/firebase`).
+ * La doc de Cavos (https://docs.cavos.xyz) no publica JWKS, emisor, audience
+ * ni un endpoint para verificar este JWT. La firma RS256, el `iss`, el `aud`
+ * y el vencimiento solo se comprueban si `CAVOS_JWT_JWK` o `CAVOS_JWKS_URL`
+ * están definidos. Esos valores quedan pendientes de confirmar con Cavos.
+ * Sin ellos el payload se lee, pero la firma no se autentica.
  */
-export const EMISOR_CAVOS = "https://cavos.app/firebase";
-
-/** JWKS publicado por el backend de Cavos (`CavosAuth` usa `https://cavos.xyz`). */
-export const JWKS_CAVOS = "https://cavos.xyz/.well-known/jwks.json";
-
-const JWKS_GOOGLE = "https://www.googleapis.com/oauth2/v3/certs";
-const JWKS_FIREBASE = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
-const EMISORES_GOOGLE = new Set(["https://accounts.google.com", "accounts.google.com"]);
-
-/** Segundos de margen al leer `exp` y `nbf`. */
 export const HOLGURA_JWT_SEGUNDOS = 60;
 
 const TTL_MS = 10 * 60 * 1000;
@@ -21,24 +14,22 @@ const cache = new Map<string, { hasta: number; claves: JsonWebKey[] }>();
 
 export type AjustesJwt = {
   ahora?: number;
-  emisorCavos?: string;
-  audienciaCavos?: string | null;
-  clavesCavos?: JsonWebKey[];
-  clienteGoogle?: string | null;
-  clavesGoogle?: JsonWebKey[];
-  proyectoFirebase?: string | null;
-  clavesFirebase?: JsonWebKey[];
+  /** `null` no comprueba `iss`. Ausente: se lee `CAVOS_JWT_ISSUER`. */
+  emisor?: string | null;
+  /** `null` no comprueba `aud`. Ausente: se lee `CAVOS_JWT_AUDIENCE`. */
+  audiencia?: string | null;
+  /** Ausente: se lee el entorno. Arreglo vacío: hay verificación y ninguna clave sirve. */
+  claves?: JsonWebKey[];
+  /** `null` no descarga JWKS. Ausente: se lee `CAVOS_JWKS_URL`. */
+  jwksUrl?: string | null;
 };
 
 type Ajustes = {
   ahora: number;
-  emisorCavos: string;
-  audienciaCavos: string | null;
-  clavesCavos?: JsonWebKey[];
-  clienteGoogle: string | null;
-  clavesGoogle?: JsonWebKey[];
-  proyectoFirebase: string | null;
-  clavesFirebase?: JsonWebKey[];
+  emisor: string | null;
+  audiencia: string | null;
+  claves?: JsonWebKey[];
+  jwksUrl: string | null;
 };
 
 export async function verificarJwt(token: string, parcial?: AjustesJwt): Promise<Record<string, unknown> | null> {
@@ -53,65 +44,37 @@ async function comprobar(token: string, ajustes: Ajustes): Promise<Record<string
   if (!token || token.length > 16_000) return null;
   const partes = token.split(".");
   if (partes.length !== 3 || !partes[0] || !partes[1] || !partes[2]) return null;
-  const encabezado = leerParte(partes[0]);
   const claims = leerParte(partes[1]);
-  if (!encabezado || !claims) return null;
-  if (encabezado.alg !== "RS256" || "crit" in encabezado) return null;
+  if (!claims) return null;
+  const claves = await clavesEfectivas(ajustes);
+  if (claves === null) return claims;
+  const encabezado = leerParte(partes[0]);
+  if (!encabezado || encabezado.alg !== "RS256" || "crit" in encabezado) return null;
   const kid = typeof encabezado.kid === "string" ? encabezado.kid : null;
-  const emisor = typeof claims.iss === "string" ? claims.iss : "";
-  const claves = await clavesPara(emisor, ajustes);
   const elegidas = elegir(claves, kid);
   if (!elegidas.length || !firmaValida(partes[0], partes[1], partes[2], elegidas)) return null;
   if (!tiempos(claims, ajustes.ahora)) return null;
-  if (!audiencia(emisor, claims, ajustes)) return null;
+  if (ajustes.emisor && claims.iss !== ajustes.emisor) return null;
+  if (ajustes.audiencia && !audCoincide(claims.aud, ajustes.audiencia)) return null;
   return claims;
 }
 
 function resolver(parcial?: AjustesJwt): Ajustes {
   return {
     ahora: parcial?.ahora ?? Date.now(),
-    emisorCavos: parcial?.emisorCavos?.trim() || process.env.CAVOS_JWT_ISSUER?.trim() || EMISOR_CAVOS,
-    audienciaCavos: parcial && parcial.audienciaCavos !== undefined ? parcial.audienciaCavos : textoEnv(process.env.CAVOS_JWT_AUDIENCE),
-    clavesCavos: parcial?.clavesCavos,
-    clienteGoogle: parcial && parcial.clienteGoogle !== undefined ? parcial.clienteGoogle : textoEnv(process.env.CAVOS_GOOGLE_CLIENT_ID),
-    clavesGoogle: parcial?.clavesGoogle,
-    proyectoFirebase:
-      parcial && parcial.proyectoFirebase !== undefined ? parcial.proyectoFirebase : textoEnv(process.env.CAVOS_FIREBASE_PROJECT_ID),
-    clavesFirebase: parcial?.clavesFirebase,
+    emisor: parcial && parcial.emisor !== undefined ? parcial.emisor : textoEnv(process.env.CAVOS_JWT_ISSUER),
+    audiencia: parcial && parcial.audiencia !== undefined ? parcial.audiencia : textoEnv(process.env.CAVOS_JWT_AUDIENCE),
+    claves: parcial?.claves,
+    jwksUrl: parcial && parcial.jwksUrl !== undefined ? parcial.jwksUrl : textoEnv(process.env.CAVOS_JWKS_URL),
   };
 }
 
-async function clavesPara(emisor: string, ajustes: Ajustes): Promise<JsonWebKey[]> {
-  if (emisor === ajustes.emisorCavos) {
-    if (ajustes.clavesCavos !== undefined) return ajustes.clavesCavos;
-    const fijo = jwkDeEntorno(process.env.CAVOS_JWT_JWK);
-    if (fijo) return fijo;
-    return descargar(process.env.CAVOS_JWKS_URL?.trim() || JWKS_CAVOS);
-  }
-  if (EMISORES_GOOGLE.has(emisor)) {
-    if (!ajustes.clienteGoogle) return [];
-    if (ajustes.clavesGoogle !== undefined) return ajustes.clavesGoogle;
-    return descargar(process.env.CAVOS_GOOGLE_JWKS_URL?.trim() || JWKS_GOOGLE);
-  }
-  const proyecto = ajustes.proyectoFirebase;
-  if (proyecto && emisor === `https://securetoken.google.com/${proyecto}`) {
-    if (ajustes.clavesFirebase !== undefined) return ajustes.clavesFirebase;
-    return descargar(process.env.CAVOS_FIREBASE_JWKS_URL?.trim() || JWKS_FIREBASE);
-  }
-  return [];
-}
-
-function audiencia(emisor: string, claims: Record<string, unknown>, ajustes: Ajustes): boolean {
-  if (emisor === ajustes.emisorCavos) {
-    return !ajustes.audienciaCavos || audCoincide(claims.aud, ajustes.audienciaCavos);
-  }
-  if (EMISORES_GOOGLE.has(emisor)) {
-    return Boolean(ajustes.clienteGoogle) && audCoincide(claims.aud, ajustes.clienteGoogle ?? "");
-  }
-  if (ajustes.proyectoFirebase && emisor === `https://securetoken.google.com/${ajustes.proyectoFirebase}`) {
-    return audCoincide(claims.aud, ajustes.proyectoFirebase);
-  }
-  return false;
+async function clavesEfectivas(ajustes: Ajustes): Promise<JsonWebKey[] | null> {
+  if (ajustes.claves !== undefined) return ajustes.claves;
+  const fijo = jwkDeEntorno(process.env.CAVOS_JWT_JWK);
+  if (fijo !== null) return fijo;
+  if (ajustes.jwksUrl) return descargar(ajustes.jwksUrl);
+  return null;
 }
 
 function audCoincide(aud: unknown, esperado: string): boolean {
@@ -166,7 +129,9 @@ function jwkDeEntorno(valor: string | undefined): JsonWebKey[] | null {
       json && typeof json === "object" && Array.isArray((json as { keys?: unknown }).keys)
         ? (json as { keys: unknown[] }).keys
         : [json];
-    return lista.map((item) => (item && typeof item === "object" ? soloPublica(item as JsonWebKey) : null)).filter((item): item is JsonWebKey => item !== null);
+    return lista
+      .map((item) => (item && typeof item === "object" ? soloPublica(item as JsonWebKey) : null))
+      .filter((item): item is JsonWebKey => item !== null);
   } catch {
     return [];
   }

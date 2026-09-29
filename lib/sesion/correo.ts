@@ -10,10 +10,10 @@ export async function correoDelToken(token: string, correoPedido: string, ajuste
   if (!claims) return null;
   const sub = texto(claims.sub) || texto(claims.user_id) || texto(claims.uid);
   if (!sub) return null;
-  const pedido = correoPedido.trim().toLowerCase();
-  if (!pedido.includes("@")) return null;
   const claim = texto(claims.email).toLowerCase();
-  if (!claim || claim !== pedido) return null;
+  if (!claim.includes("@")) return null;
+  const pedido = correoPedido.trim().toLowerCase();
+  if (pedido && pedido !== claim) return null;
   return { correo: claim, sub };
 }
 
