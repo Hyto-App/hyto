@@ -160,7 +160,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(filas.rows[0]?.rol, "organizador");
   });
 
-  test("POST /api/sesion rechaza JSON inválido, token ajeno y correo fuera del equipo", async () => {
+  test("POST /api/sesion rechaza JSON inválido y un token que no coincide, y registra un correo nuevo", async () => {
     const noJson = await sesionPost(pedido("http://local/api/sesion", "{"));
     assert.equal(noJson.status, 400);
     assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
@@ -178,11 +178,54 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(otro.status, 400);
     assert.equal(avisoDe(await leer(otro)), "No se pudo confirmar el ingreso.");
 
+    const vacio = await consulta("select token from sesiones");
+    assert.equal(vacio.rowCount, 0);
+
     const ajeno = await entrar("nadie@demo.hyto");
-    assert.equal(ajeno.status, 403);
-    assert.equal(avisoDe(await leer(ajeno)), "Este correo no está en el equipo.");
-    const filas = await consulta("select token from sesiones");
-    assert.equal(filas.rowCount, 0);
+    assert.equal(ajeno.status, 200);
+    const json = await leer(ajeno);
+    assert.equal(json.rol, "voluntario");
+    assert.equal(json.email, "nadie@demo.hyto");
+    assert.equal(json.nombre, "nadie");
+    assert.match(String(json.usuarioId), /^u-/);
+    const sesiones = await consulta<{ email: string; rol: string }>("select email, rol from sesiones");
+    assert.equal(sesiones.rows.length, 1);
+    assert.equal(sesiones.rows[0]?.email, "nadie@demo.hyto");
+    assert.equal(sesiones.rows[0]?.rol, "voluntario");
+    const usuarios = await consulta<{ email: string; rol: string; nombre: string }>(
+      "select email, rol, nombre from usuarios where email = $1",
+      ["nadie@demo.hyto"],
+    );
+    assert.equal(usuarios.rowCount, 1);
+    assert.equal(usuarios.rows[0]?.rol, "voluntario");
+    assert.equal(usuarios.rows[0]?.nombre, "nadie");
+  });
+
+  test("un segundo ingreso del mismo correo no duplica el usuario ni cambia roles", async () => {
+    const primero = await entrar("nueva@demo.hyto");
+    assert.equal(primero.status, 200);
+    const primeroJson = await leer(primero);
+    assert.equal(primeroJson.rol, "voluntario");
+
+    const segundo = await entrar("nueva@demo.hyto");
+    assert.equal(segundo.status, 200);
+    const segundoJson = await leer(segundo);
+    assert.equal(segundoJson.rol, "voluntario");
+    assert.equal(segundoJson.usuarioId, primeroJson.usuarioId);
+
+    const usuarios = await consulta<{ id: string; rol: string }>("select id, rol from usuarios where email = $1", [
+      "nueva@demo.hyto",
+    ]);
+    assert.equal(usuarios.rowCount, 1);
+    assert.equal(usuarios.rows[0]?.id, primeroJson.usuarioId);
+    assert.equal(usuarios.rows[0]?.rol, "voluntario");
+
+    const org = await entrar("organizador@demo.hyto");
+    assert.equal(org.status, 200);
+    assert.equal((await leer(org)).rol, "organizador");
+    const filasOrg = await consulta<{ rol: string }>("select rol from usuarios where email = $1", ["organizador@demo.hyto"]);
+    assert.equal(filasOrg.rowCount, 1);
+    assert.equal(filasOrg.rows[0]?.rol, "organizador");
   });
 
   test("POST /api/proyectos crea el proyecto con la sesión del organizador y GET devuelve el último", async () => {

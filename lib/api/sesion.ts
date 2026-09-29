@@ -20,8 +20,19 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   if (!correo) return json({ aviso: "No se pudo confirmar el ingreso." }, 400);
   try {
     await asegurarSemilla(almacen);
-    const usuario = await almacen.usuarioPorEmail(correo.correo);
-    if (!usuario) return json({ aviso: "Este correo no está en el equipo." }, 403);
+    const email = correo.correo.trim().toLowerCase();
+    let usuario = await almacen.usuarioPorEmail(email);
+    if (!usuario) {
+      const local = email.split("@")[0] ?? "";
+      await almacen.insertarUsuario({
+        id: `u-${crypto.randomUUID()}`,
+        email,
+        nombre: local || email,
+        rol: "voluntario",
+      });
+      usuario = await almacen.usuarioPorEmail(email);
+    }
+    if (!usuario) throw new Error("No se pudo registrar el usuario.");
     const sesion = tokenSesion();
     await almacen.crearSesion({
       token: sesion,

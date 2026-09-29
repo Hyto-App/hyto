@@ -254,7 +254,35 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
     }),
     almacen,
   );
-  assert.equal(ajeno.status, 403);
+  assert.equal(ajeno.status, 200);
+  const cuerpoAjeno = (await ajeno.json()) as { rol: string; email: string; nombre: string; usuarioId: string };
+  assert.equal(cuerpoAjeno.rol, "voluntario");
+  assert.equal(cuerpoAjeno.email, "nadie@demo.hyto");
+  assert.equal(cuerpoAjeno.nombre, "nadie");
+  assert.match(cuerpoAjeno.usuarioId, /^u-/);
+
+  const repetido = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "nadie@demo.hyto", token: token("nadie@demo.hyto") }),
+    }),
+    almacen,
+  );
+  assert.equal(repetido.status, 200);
+  const cuerpoRepetido = (await repetido.json()) as { rol: string; usuarioId: string };
+  assert.equal(cuerpoRepetido.rol, "voluntario");
+  assert.equal(cuerpoRepetido.usuarioId, cuerpoAjeno.usuarioId);
+  await almacen.insertarUsuario({
+    id: "u-carrera",
+    email: "  Nadie@demo.hyto  ",
+    nombre: "otro",
+    rol: "organizador",
+  });
+  const filasNadie = (await almacen.listarUsuarios()).filter((usuario) => usuario.email === "nadie@demo.hyto");
+  assert.equal(filasNadie.length, 1);
+  assert.equal(filasNadie[0]?.id, cuerpoAjeno.usuarioId);
+  assert.equal(filasNadie[0]?.rol, "voluntario");
 
   const propia = await crearSesionHttp(
     new Request("http://local/api/sesion", {
@@ -266,8 +294,12 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
   );
   assert.equal(propia.status, 200);
   assert.match(propia.headers.get("set-cookie") ?? "", /hyto_sesion=/);
-  const cuerpo = (await propia.json()) as { rol: string };
+  const cuerpo = (await propia.json()) as { rol: string; usuarioId: string };
   assert.equal(cuerpo.rol, "organizador");
+  assert.equal(cuerpo.usuarioId, "organizador");
+  const organizadores = (await almacen.listarUsuarios()).filter((usuario) => usuario.email === "organizador@demo.hyto");
+  assert.equal(organizadores.length, 1);
+  assert.equal(organizadores[0]?.rol, "organizador");
 
   const sinSesion = await prepararFirma(new Request("http://local/api/firma", { method: "POST", body: "{}" }));
   assert.equal(sinSesion.status, 401);
