@@ -3,11 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle } from "@/lib/auth/cliente";
+import {
+  AVISO_CONFIG,
+  AVISO_CORREO,
+  AVISO_DEMO,
+  AVISO_GENERICO,
+  AVISO_SPAM,
+  ESPERA_TRAS_ENVIO,
+  avisoDeIngreso,
+  correoValido,
+  esCorreoDemo,
+  textoEspera,
+} from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 
 type Fase = "inicio" | "correo" | "codigo";
+type Ocupado = "envio" | "google" | "codigo" | "demo";
 
 const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
 
@@ -18,13 +31,27 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const [correo, setCorreo] = useState("");
   const [codigo, setCodigo] = useState("");
   const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
-  const [entrando, setEntrando] = useState(false);
+  const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [espera, setEspera] = useState(0);
+  const [mostrarEspera, setMostrarEspera] = useState(false);
   const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
+  const enCurso = useRef(false);
+  const esperaRef = useRef(0);
 
   useEffect(() => {
     setDireccion(leerMemoriaAdmin().direccion);
   }, []);
+
+  useEffect(() => {
+    esperaRef.current = espera;
+    if (espera <= 0) {
+      setMostrarEspera(false);
+      return;
+    }
+    const id = window.setTimeout(() => setEspera((actual) => Math.max(0, actual - 1)), 1000);
+    return () => window.clearTimeout(id);
+  }, [espera]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -49,48 +76,78 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     };
   }, []);
 
+  function iniciarEspera(segundos: number, visible: boolean) {
+    const n = Math.max(1, Math.ceil(segundos));
+    esperaRef.current = n;
+    setEspera(n);
+    setMostrarEspera(visible);
+  }
+
+  function mostrarFallo(error: unknown) {
+    console.error(error);
+    const resultado = avisoDeIngreso(error);
+    if (resultado.esperaSegundos) {
+      iniciarEspera(resultado.esperaSegundos, true);
+      setAviso(null);
+      return;
+    }
+    setAviso(resultado.texto);
+  }
+
   async function enviarCodigo() {
-    const appId = appIdPublico();
-    if (!appId) {
-      setAviso("El ingreso espera el identificador de Cavos.");
+    if (enCurso.current) return;
+    if (esperaRef.current > 0) {
+      setMostrarEspera(true);
+      return;
+    }
+    if (!appIdPublico()) {
+      console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+      setAviso(AVISO_CONFIG);
       return;
     }
     const email = correo.trim().toLowerCase();
-    if (!email.includes("@")) {
-      setAviso("Escribe el correo del equipo.");
+    if (!correoValido(email)) {
+      setAviso(AVISO_CORREO);
       return;
     }
+    if (esCorreoDemo(email)) return;
+    enCurso.current = true;
     setAviso(null);
-    setEntrando(true);
+    setOcupado("envio");
     try {
       const auth = await crearAuth();
       if (!auth) {
-        setAviso("El ingreso espera el identificador de Cavos.");
+        console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+        setAviso(AVISO_CONFIG);
         return;
       }
       await auth.sendOtp(email);
       authRef.current = auth;
       setCorreo(email);
       setFase("codigo");
+      iniciarEspera(ESPERA_TRAS_ENVIO, false);
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "No se pudo entrar.");
+      mostrarFallo(error);
     } finally {
-      setEntrando(false);
+      enCurso.current = false;
+      setOcupado(null);
     }
   }
 
   async function confirmar() {
+    if (enCurso.current) return;
     const auth = authRef.current;
     if (!auth) {
       setFase("correo");
       return;
     }
+    enCurso.current = true;
     setAviso(null);
-    setEntrando(true);
+    setOcupado("codigo");
     try {
       const resultado = await entrarConCodigo(auth, correo, codigo.trim());
       if (!resultado.direccion) {
-        setAviso(resultado.aviso ?? "No se pudo entrar.");
+        setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
       }
       const guardado = guardarDireccionAdmin(resultado.direccion);
@@ -101,15 +158,18 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       setDireccion(resultado.direccion);
       setFase("inicio");
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "No se pudo entrar.");
+      mostrarFallo(error);
     } finally {
-      setEntrando(false);
+      enCurso.current = false;
+      setOcupado(null);
     }
   }
 
   async function entrarDemo() {
+    if (enCurso.current) return;
+    enCurso.current = true;
     setAviso(null);
-    setEntrando(true);
+    setOcupado("demo");
     try {
       const respuesta = await fetch("/api/sesion/demo", {
         method: "POST",
@@ -126,26 +186,40 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     } catch {
       setAviso("No se pudo entrar.");
     } finally {
-      setEntrando(false);
+      enCurso.current = false;
+      setOcupado(null);
     }
   }
 
   async function google() {
-    const auth = await crearAuth();
-    if (!auth) {
-      setAviso("El ingreso espera el identificador de Cavos.");
-      return;
-    }
-    setEntrando(true);
+    if (enCurso.current) return;
+    enCurso.current = true;
+    setAviso(null);
+    setOcupado("google");
+    let salio = false;
     try {
+      const auth = await crearAuth();
+      if (!auth) {
+        console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+        setAviso(AVISO_CONFIG);
+        return;
+      }
       window.location.href = await urlGoogle(auth, redirectLimpio());
+      salio = true;
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "No se pudo entrar.");
-      setEntrando(false);
+      mostrarFallo(error);
+    } finally {
+      if (!salio) {
+        enCurso.current = false;
+        setOcupado(null);
+      }
     }
   }
 
   if (modoDemo) return null;
+
+  const demo = esCorreoDemo(correo);
+  const mensaje = mostrarEspera && espera > 0 ? textoEspera(espera) : aviso;
 
   if (direccion) {
     return (
@@ -179,25 +253,40 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             type="email"
             autoComplete="email"
             value={correo}
-            onChange={(evento) => setCorreo(evento.target.value)}
+            onChange={(evento) => {
+              setCorreo(evento.target.value);
+              setAviso(null);
+            }}
             placeholder="Correo"
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none"
+            disabled={ocupado !== null}
+            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           />
+          {demo ? (
+            <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_DEMO}</p>
+          ) : (
+            <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
+          )}
           <button
             type="button"
             onClick={() => void enviarCodigo()}
-            disabled={entrando}
+            disabled={ocupado !== null || espera > 0 || demo}
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
-            {entrando ? "Enviando…" : "Enviar código"}
+            {ocupado === "envio" ? "Enviando…" : "Enviar código"}
           </button>
-          <button type="button" onClick={() => void google()} className="text-sm text-[var(--suave)]">
-            Entrar con Google
+          <button
+            type="button"
+            onClick={() => void google()}
+            disabled={ocupado !== null}
+            className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {ocupado === "google" ? "Abriendo Google…" : "Entrar con Google"}
           </button>
         </>
       ) : null}
       {fase === "codigo" ? (
         <>
+          <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
           <label className="sr-only" htmlFor="codigo-entrar">
             Código
           </label>
@@ -208,15 +297,16 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             value={codigo}
             onChange={(evento) => setCodigo(evento.target.value)}
             placeholder="Código"
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none"
+            disabled={ocupado !== null}
+            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           />
           <button
             type="button"
             onClick={() => void confirmar()}
-            disabled={entrando}
+            disabled={ocupado !== null}
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
-            {entrando ? "Entrando…" : "Confirmar"}
+            {ocupado === "codigo" ? "Entrando…" : "Confirmar"}
           </button>
         </>
       ) : null}
@@ -232,7 +322,8 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
               const valor = evento.target.value;
               if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
             }}
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none"
+            disabled={ocupado !== null}
+            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
           >
             <option value="organizador">Organizador</option>
             <option value="voluntario">Voluntario</option>
@@ -240,14 +331,18 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           <button
             type="button"
             onClick={() => void entrarDemo()}
-            disabled={entrando}
-            className="text-sm text-[var(--suave)] disabled:opacity-70"
+            disabled={ocupado !== null}
+            className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Entrar como demo
+            {ocupado === "demo" ? "Entrando…" : "Entrar como demo"}
           </button>
         </>
       ) : null}
-      {aviso ? <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {mensaje ? (
+        <p role="status" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+          {mensaje}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -255,11 +350,15 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 function iniciarGoogle(codigo: string): Promise<{ aviso: string | null; direccion: string | null }> {
   return (async () => {
     const auth = await crearAuth();
-    if (!auth) return { aviso: "El ingreso espera el identificador de Cavos.", direccion: null };
+    if (!auth) {
+      console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+      return { aviso: AVISO_CONFIG, direccion: null };
+    }
     try {
       return await entrarConGoogle(auth, window.location.search, redirectLimpio());
     } catch (error) {
-      return { aviso: error instanceof Error ? error.message : "No se pudo entrar.", direccion: null };
+      console.error(error);
+      return { aviso: avisoDeIngreso(error).texto, direccion: null };
     }
   })();
 }

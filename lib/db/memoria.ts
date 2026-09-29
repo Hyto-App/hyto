@@ -51,6 +51,7 @@ export function crearMemoria(): Almacen {
       tareas.set(id, { ...actual, ...cambio });
     },
     async crearEvidencia(evidencia) {
+      if (evidencias.has(evidencia.id)) return;
       evidencias.set(evidencia.id, evidencia);
     },
     async leerEvidencia(id) {

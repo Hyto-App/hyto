@@ -6,22 +6,29 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ### Nuevo
 
-- La base guarda usuarios, proyectos, tareas, evidencias, veredictos y el hash de pago, que sigue vacío. El correo mapea al rol. Hay migración y semilla del evento ZEEK. Las fotos van a un almacén privado y en la base queda el identificador. Esteban.
-- Las pantallas ya pueden llamar `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. También están `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. El informe abre aunque el pago no tenga hash. Ver pago usa el hash cuando exista. Esteban.
-- La revisión describe la foto con Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`). Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
-- Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban.
+- La base ya guarda usuarios, proyectos, tareas, evidencias, el resultado de la revisión y el enlace del pago. Ese enlace sigue vacío. El correo indica el rol de cada persona. Hay una carga inicial del evento ZEEK. Las fotos van a un almacén privado y en la base queda la referencia. Esteban (Psybre), PR #14.
+- Ya se puede pedir la lista de tareas, subir una evidencia y verla (también la foto), crear un proyecto, abrir el informe y pedir la revisión. El informe abre aunque el pago no tenga enlace. Si el enlace existe, Ver pago lo usa. Esteban (Psybre), PR #14.
+- La revisión describe la foto con Qwen. Si la herramienta de Abdiel no está publicada, un reemplazo responde las tres preguntas y el sistema marca cumplió, parcial o insuficiente. Si falta la clave o el modelo falla, se usa un texto fijo de reserva. Esteban (Psybre), PR #14.
+- Entrar pide un código al correo, o Google, y la base dice el rol. Preparar las cuentas de prueba hace lo mismo, una a la vez. Preparar y enviar un pago solo siguen si el organizador ya entró. Esteban (Psybre), PR #14.
 
 ### Arreglado
 
-- `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
-- La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban.
+- Los comandos para armar la base y cargar el evento ZEEK ya corren. Esteban (Psybre), PR #14.
+- La foto ya no se envía a un modelo que respondía que no existe. Se usa el que sí puede ver imágenes. Si falla, queda el texto de reserva. Esteban (Psybre), PR #14.
+
+### Cambiado
+
+- Quedó escrito que la revisión de Abdiel va a correr en su servidor de escritorio y se publica con un enlace de Tailscale. Todavía no está instalada. Abdiel Cole, PR #11.
+- Quedó escrito que Esteban se encarga de la base, de las rutas y del ingreso. Josué Valles, PR #12.
+- Josué anotó el recorrido del 28 de septiembre, en la computadora y en el sitio: las pantallas seguían con el ejemplo de ZEEK, el ingreso fallaba y Fondear y Aprobar no firmaban un pago. Josué Valles, PR #13.
 
 ### Pendiente para el equipo
 
-- Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`. La migración y la semilla de ZEEK ya se corrieron en Neon.
-- Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma.
-- Raúl: las cuatro cuentas del demo, ahora con el código de cada correo.
-- Abdiel: `LAYA_URL`. Sebas: un pago en USDC. Sin ese pago no hay Acta.
+- Esteban: cargar en el sitio la dirección de la base, la clave del almacén de fotos y la clave de la revisión de fotos, y crear el almacén privado. Las tablas y la carga de ZEEK ya se corrieron en la base. Sin eso, el sitio sigue mostrando el ejemplo.
+- Josué: conectar la bandeja, la revisión y el informe a las rutas nuevas, y Fondear y Aprobar al módulo de firma.
+- Raúl: dejar listas las cuatro cuentas del demo. Ahora el ingreso pide el código que llega al correo.
+- Abdiel: instalar la revisión en su servidor y publicar la dirección. Acordar con Esteban una clave, porque ese enlace es público.
+- Sebas: dejar un pago de prueba en USDC. Sin ese pago no hay Acta.
 
 ## 2026-09-28
 
