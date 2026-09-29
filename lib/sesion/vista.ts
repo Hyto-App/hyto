@@ -1,19 +1,23 @@
 import { cookies } from "next/headers";
 import { almacenNeon } from "@/lib/db/neon";
 import { COOKIE_SESION, vigente } from "./cookie";
-import { sesionEsDemo } from "./demo";
+import { rolDemoDe, sesionEsDemo, type RolDemo } from "./demo";
 
-export async function leerModoDemo(): Promise<boolean> {
+export async function leerRolDemo(): Promise<RolDemo | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE_SESION)?.value?.trim();
-  if (!token) return false;
+  if (!token) return null;
   try {
     const almacen = await almacenNeon();
-    if (!almacen) return false;
+    if (!almacen) return null;
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return false;
-    return sesionEsDemo(sesion);
+    if (!sesion || !vigente(sesion.expiraEn) || !sesionEsDemo(sesion)) return null;
+    return rolDemoDe(sesion.rol);
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function leerModoDemo(): Promise<boolean> {
+  return (await leerRolDemo()) !== null;
 }

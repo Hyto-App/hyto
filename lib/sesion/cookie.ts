@@ -12,6 +12,11 @@ export function encabezadoCookie(token: string): string {
   return `${COOKIE_SESION}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SEGUNDOS}${segura}`;
 }
 
+export function encabezadoCookieCerrada(): string {
+  const segura = enProduccion() ? "; Secure" : "";
+  return `${COOKIE_SESION}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${segura}`;
+}
+
 export function leerCookie(request: Request, nombre: string): string | null {
   const header = request.headers.get("cookie");
   if (!header) return null;
