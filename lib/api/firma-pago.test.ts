@@ -109,12 +109,12 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
 
     const pago = xdrDeInvocacion({
       contrato: CONTRATO_XDR,
-      funcion: "approve_and_release_milestones",
+      funcion: "release_funds",
       firmante: FIRMANTE_XDR,
     });
     const pagado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "pagar", tareaId: "stand" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "stand" }),
       almacen,
     );
     assert.equal(pagado.status, 200);

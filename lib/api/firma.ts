@@ -163,7 +163,7 @@ async function guardarResultado(
   almacen: Almacen | null,
 ): Promise<string | null> {
   if (sesion.rol !== "organizador" || !envio.tareaId) return null;
-  if (envio.accion !== "desplegar" && envio.accion !== "liberar" && envio.accion !== "pagar") return null;
+  if (envio.accion !== "desplegar" && envio.accion !== "liberar") return null;
   if (!almacen) return "La base no está configurada y no se guardó el pago.";
   const tarea = await almacen.leerTarea(envio.tareaId);
   if (!tarea) return "No encontramos esa tarea para guardar el pago.";
