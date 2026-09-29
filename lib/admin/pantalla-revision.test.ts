@@ -113,6 +113,38 @@ test("el informe muestra el origen y el error", async () => {
   }
 });
 
+test("el informe avisa si el reintento no responde", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (init?.method === "POST") return json({ aviso: "no" }, 500);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }] });
+    if (url === "/api/proyectos") return json({ proyecto: { nombre: "ZEEK" } });
+    if (url.startsWith("/api/revision/")) {
+      return json({
+        tarea: tarea({ origen: "error", codigo: "tiempo", veredicto: null, frase: "La IA no respondió a tiempo" }),
+        foto: null,
+      });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+
+  try {
+    await montar(createElement(Informe));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 40));
+    });
+    await pulsar("Reintentar revisión");
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /No se pudo reintentar la revisión/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function tarea(parcial: Record<string, unknown>) {
   return {
     id: "stand",

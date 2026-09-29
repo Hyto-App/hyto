@@ -31,7 +31,8 @@ test("el pedido apaga el razonamiento y sube el tope de tokens", async () => {
   assert.equal(cuerpo.model, "qwen/qwen3.8-27b");
   assert.equal(cuerpo.reasoning_effort, "none");
   assert.equal(cuerpo.reasoning_format, "hidden");
-  assert.equal(typeof cuerpo.max_tokens === "number" && cuerpo.max_tokens >= 1024, true);
+  assert.equal(typeof cuerpo.max_completion_tokens === "number" && cuerpo.max_completion_tokens >= 1024, true);
+  assert.equal(cuerpo.max_tokens, undefined);
 });
 
 test("sin clave de Groq no llama a la red", async () => {
@@ -69,6 +70,19 @@ test("un 500 es error del proveedor y no deja la clave en el mensaje", async () 
   assert.equal(error.code, "proveedor");
   assert.equal(error.status, 500);
   assert.equal(error.providerMessage.includes(clave), false);
+});
+
+test("un fallo de red es error del proveedor", async () => {
+  const error = await falloDe(async () => {
+    throw new TypeError("fetch failed");
+  });
+  assert.equal(error.code, "proveedor");
+});
+
+test("un 400 de contexto largo no es cupo", async () => {
+  const error = await falloDe(async () => new Response("context too long; tokens limit", { status: 400 }));
+  assert.equal(error.code, "proveedor");
+  assert.equal(error.status, 400);
 });
 
 test("un tiempo de espera no es una respuesta vacía", async () => {

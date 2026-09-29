@@ -13,6 +13,7 @@ export function Informe() {
   const cargada = useVistaAdmin();
   const [parche, setParche] = useState<VistaAdmin | null>(null);
   const [reintento, setReintento] = useState<string | null>(null);
+  const [avisoId, setAvisoId] = useState<string | null>(null);
   const vista = parche ?? cargada;
 
   useEffect(() => {
@@ -22,9 +23,13 @@ export function Informe() {
   async function reintentar(id: string) {
     if (reintento) return;
     setReintento(id);
+    setAvisoId(null);
     try {
       const detalle = await reintentarRevision(id);
-      if (!detalle) return;
+      if (!detalle) {
+        setAvisoId(id);
+        return;
+      }
       setParche((actual) => {
         const base = actual ?? cargada;
         return base ? conTarea(base, detalle.tarea) : base;
@@ -104,6 +109,11 @@ export function Informe() {
                       >
                         Reintentar revisión
                       </button>
+                    ) : null}
+                    {avisoId === tarea.id ? (
+                      <p role="alert" className="mt-3 text-sm leading-6">
+                        No se pudo reintentar la revisión.
+                      </p>
                     ) : null}
                     {pago || credencial ? (
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">

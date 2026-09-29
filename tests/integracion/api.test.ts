@@ -406,12 +406,18 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
       tarea?: { veredicto: string | null; frase: string; origen: string; codigo: string | null };
       enlacePago?: string | null;
     };
-    assert.equal(otra.tarea?.veredicto, null);
-    assert.equal(otra.tarea?.origen, "error");
-    assert.equal(otra.tarea?.codigo, "sin_clave");
-    assert.match(otra.tarea?.frase ?? "", /no está configurada/);
-    assert.equal((otra.tarea?.frase ?? "").includes("Mesa armada"), false);
+    assert.equal(otra.tarea?.veredicto, "insuficiente");
+    assert.equal(otra.tarea?.frase, "cambiado");
+    assert.equal(otra.tarea?.origen, "scout");
     assert.equal(otra.enlacePago, null);
+
+    await consulta("update veredictos set origen = 'error', frase = 'La IA no está configurada' where evidencia_id = $1", [id]);
+    const reintento = await revisionPost(pedidoRevision("stand", sesion, "POST"), contexto("stand"));
+    assert.equal(reintento.status, 200);
+    const fallida = (await leer(reintento)) as { tarea?: { origen: string; codigo: string | null; frase: string } };
+    assert.equal(fallida.tarea?.origen, "error");
+    assert.equal(fallida.tarea?.codigo, "sin_clave");
+    assert.match(fallida.tarea?.frase ?? "", /no está configurada/);
 
     const falta = await revisionPost(pedidoRevision("no-existe", sesion, "POST"), contexto("no-existe"));
     assert.equal(falta.status, 404);

@@ -361,6 +361,48 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
   }
 });
 
+test("un reembolso sin monto o con la revisión fallida no se despliega", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.actualizarTarea("comida", { walletCobro: RECEPTOR });
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("no hay que desplegar");
+  };
+  try {
+    await almacen.actualizarEvidencia("ejemplo-comida", { monto: null, fecha: null });
+    const sinMonto = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(sinMonto.status, 409);
+    assert.equal(((await sinMonto.json()) as { aviso: string }).aviso, "Revisión pendiente");
+
+    await almacen.actualizarEvidencia("ejemplo-comida", { monto: "12.40", fecha: "2026-09-27" });
+    const guardado = await almacen.veredictoDe("ejemplo-comida");
+    assert.ok(guardado);
+    await almacen.guardarVeredicto({ ...guardado, origen: "error", choice: "sin_clave", frase: "La IA no está configurada" });
+    const fallida = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(fallida.status, 409);
+    assert.equal(((await fallida.json()) as { aviso: string }).aviso, "Revisión pendiente");
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
 function restaurar(nombre: string, valor: string | undefined): void {
   if (valor === undefined) delete process.env[nombre];
   else process.env[nombre] = valor;

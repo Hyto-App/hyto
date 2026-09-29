@@ -157,6 +157,13 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     );
   }
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
+  if (tarea.tipo === "reembolso") {
+    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+    const sinMonto = !evidencia?.monto?.trim();
+    if (veredicto?.origen === "error" || sinMonto) {
+      return Response.json({ aviso: "Revisión pendiente" }, { status: 409 });
+    }
+  }
   const monto = montoDeTarea(tarea, evidencia);
   if (monto === null) return Response.json({ aviso: "El monto del hito tiene que ser mayor que cero." }, { status: 400 });
   const cuentas = cuentasDeTarea({

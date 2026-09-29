@@ -68,7 +68,7 @@ export async function describirFoto(
       body: JSON.stringify({
         model: MODELO,
         temperature: 0,
-        max_tokens: MAX_TOKENS,
+        max_completion_tokens: MAX_TOKENS,
         reasoning_effort: "none",
         reasoning_format: "hidden",
         messages: [

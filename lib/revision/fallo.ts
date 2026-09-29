@@ -51,8 +51,8 @@ export function registrarFallo(fallo: FalloRevision): void {
 export function falloDeExcepcion(error: unknown, fuente: FuenteRevision, secreto?: string | null): FalloRevision {
   if (error instanceof FalloRevision) return error;
   const texto = error instanceof Error ? error.message : "";
+  if (error instanceof TypeError) return new FalloRevision("proveedor", { fuente, providerMessage: texto, secreto });
   if (esTiempo(error)) return new FalloRevision("tiempo", { fuente, providerMessage: texto, secreto });
-  if (error instanceof TypeError) return new FalloRevision("tiempo", { fuente, providerMessage: texto, secreto });
   return new FalloRevision("proveedor", { fuente, providerMessage: texto || "error", secreto });
 }
 
@@ -73,9 +73,7 @@ export function esTiempo(error: unknown): boolean {
 
 export function esCupo(status: number, cuerpo: string): boolean {
   if (status === 429) return true;
-  return /rate[\s_-]*limit|too many requests|\bquota\b|insufficient_quota|exceeded\b.{0,40}\btokens?\b|\btokens?\b.{0,40}\b(quota|limit|agot)/i.test(
-    cuerpo,
-  );
+  return /rate[\s_-]*limit|too many requests|\bquota\b|insufficient_quota/i.test(cuerpo);
 }
 
 function mensajeProveedor(crudo: string): string {

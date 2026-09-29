@@ -7,6 +7,27 @@ import { guardarRevision } from "./evidencias";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
+const ESPERA_REVISION_MS = 30_000;
+const revisionEnCurso = new Set<string>();
+const revisionEsperaHasta = new Map<string, number>();
+
+export function reservarRevision(tareaId: string, ahora = Date.now()): boolean {
+  if (revisionEnCurso.has(tareaId)) return false;
+  if ((revisionEsperaHasta.get(tareaId) ?? 0) > ahora) return false;
+  revisionEnCurso.add(tareaId);
+  return true;
+}
+
+export function liberarRevision(tareaId: string, ahora = Date.now()): void {
+  revisionEnCurso.delete(tareaId);
+  revisionEsperaHasta.set(tareaId, ahora + ESPERA_REVISION_MS);
+}
+
+export function reiniciarCandadosRevision(): void {
+  revisionEnCurso.clear();
+  revisionEsperaHasta.clear();
+}
+
 export async function leerRevisionHttp(
   almacen: Almacen,
   fotos: Fotos | null,
@@ -18,12 +39,26 @@ export async function leerRevisionHttp(
     await asegurarSemilla(almacen);
     const tarea = await almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
+    if (forzar && (tarea.estado === "pagado" || Boolean(tarea.contratoEscrow?.trim()))) {
+      return json({ aviso: "Esta tarea ya no se puede volver a revisar." }, 409);
+    }
     const evidencia = await almacen.ultimaEvidencia(tareaId);
     const blobReal = evidencia !== null && !esBlobEjemplo(evidencia.blobId);
-    if (evidencia && blobReal && fotos && (forzar || !(await almacen.veredictoDe(evidencia.id)))) {
-      const foto = await fotos.leer(evidencia.blobId);
-      const resultado = await revisar(tarea, foto, contextoDesdeEntorno());
-      await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
+    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+    const puedeForzar = !veredicto || veredicto.origen === "error";
+    if (evidencia && blobReal && fotos && (forzar ? puedeForzar : !veredicto)) {
+      let reservado = false;
+      if (forzar) {
+        if (!reservarRevision(tareaId)) return json({ aviso: "Esperá un momento para volver a revisar." }, 429);
+        reservado = true;
+      }
+      try {
+        const foto = await fotos.leer(evidencia.blobId);
+        const resultado = await revisar(tarea, foto, contextoDesdeEntorno());
+        await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
+      } finally {
+        if (reservado) liberarRevision(tareaId);
+      }
     }
     const actual = (await almacen.leerTarea(tareaId)) ?? tarea;
     const vista = await tareaAdmin(almacen, actual);

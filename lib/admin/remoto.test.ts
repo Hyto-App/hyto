@@ -66,6 +66,21 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null }).fondear, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).desplegar, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).fondear, false);
+  const error = botonesRevision(tarea({ origen: "error", veredicto: null }), true, conContrato);
+  assert.equal(error.desplegar, false);
+  assert.equal(error.fondear, false);
+  assert.equal(error.pagar, false);
+  const sinMonto = botonesRevision(tarea({ tipo: "reembolso", montoRevisado: null, origen: "scout" }), true, conContrato);
+  assert.equal(sinMonto.desplegar, false);
+  assert.equal(sinMonto.fondear, false);
+  assert.equal(sinMonto.pagar, false);
+  const conMonto = botonesRevision(
+    tarea({ tipo: "reembolso", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+    true,
+    conContrato,
+  );
+  assert.equal(conMonto.fondear, true);
+  assert.equal(conMonto.pagar, true);
 });
 
 test("la revisión real usa la tarea del organizador y también pide /api/tareas", async () => {
