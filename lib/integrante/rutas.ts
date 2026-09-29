@@ -167,7 +167,7 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
 
   try {
     const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
-    if (respuesta.status === 401) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
+    if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
     if (!creada) throw new Error("forma");

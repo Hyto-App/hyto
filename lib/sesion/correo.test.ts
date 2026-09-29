@@ -181,6 +181,34 @@ test("cada URL de JWKS verifica el emisor que le corresponde", async () => {
   }
 });
 
+test("un JWKS que falla no anula las claves del otro emisor", async () => {
+  const original = globalThis.fetch;
+  const urlCavos = "https://jwks.prueba.example/cavos-falla";
+  const urlGoogle = "https://jwks.prueba.example/google-sigue";
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url === urlCavos) return new Response("no", { status: 500 });
+    return new Response(JSON.stringify({ keys: [google.jwk] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+  try {
+    const ajustes: AjustesJwt = {
+      ahora: AHORA,
+      emisor: `${EMISOR_CAVOS},${EMISOR_GOOGLE}`,
+      audiencia: null,
+      jwksUrl: `${urlCavos}, ${urlGoogle}`,
+    };
+    const codigo = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
+    const conGoogle = firmar(claims({ iss: EMISOR_GOOGLE, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
+    assert.equal(await correoDelToken(codigo, "voluntario1@demo.hyto", ajustes), null);
+    assert.equal((await correoDelToken(conGoogle, "voluntario1@demo.hyto", ajustes))?.correo, "voluntario1@demo.hyto");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("un JWKS vacío o sin claves usables no queda en caché", async () => {
   const original = globalThis.fetch;
   const vacio = "https://jwks.prueba.example/vacio";

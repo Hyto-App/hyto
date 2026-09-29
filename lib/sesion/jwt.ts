@@ -198,7 +198,7 @@ function soloPublica(clave: JsonWebKey): JsonWebKey | null {
 
 async function descargarTodas(valor: string, emisores: string[] | null): Promise<ClavePublica[]> {
   const urls = valor.split(",").map((item) => item.trim()).filter(Boolean);
-  const listas = await Promise.all(urls.map((url) => descargar(url)));
+  const listas = await Promise.all(urls.map((url) => descargar(url).catch(() => [] as ClavePublica[])));
   const emparejar = Boolean(emisores && emisores.length === urls.length && urls.length > 1);
   return listas.flatMap((claves, indice) =>
     claves.map((clave) => ({

@@ -103,6 +103,28 @@ test("un 401 no se guarda como evidencia de ejemplo", async () => {
   );
 });
 
+test("un 403 no se guarda como evidencia de ejemplo", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const aviso = "Solo quien tiene la tarea puede enviar la evidencia.";
+  const fetchImpl: typeof fetch = async () => json({ aviso }, 403);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorDeSesion);
+      assert.equal(error.aviso, aviso);
+      assert.equal(error.message, aviso);
+      return true;
+    },
+  );
+
+  const sinCuerpo: typeof fetch = async () => new Response("no", { status: 403 });
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: sinCuerpo }),
+    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Entra para continuar.",
+  );
+});
+
 test("la evidencia real no inventa monto ni fecha", async () => {
   const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
   assert.ok(comida);
