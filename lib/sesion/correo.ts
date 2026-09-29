@@ -4,6 +4,7 @@ import { verificarJwt, type AjustesJwt } from "./jwt";
 export type CorreoToken = {
   correo: string;
   sub: string;
+  exp: number | null;
 };
 
 const CLAVES_WALLET = ["wallet", "stellarAddress", "stellar_address", "address"];
@@ -17,7 +18,8 @@ export async function correoDelToken(token: string, correoPedido: string, ajuste
   if (!claim.includes("@")) return null;
   const pedido = correoPedido.trim().toLowerCase();
   if (pedido && pedido !== claim) return null;
-  return { correo: claim, sub };
+  const exp = typeof claims.exp === "number" && Number.isFinite(claims.exp) ? claims.exp : null;
+  return { correo: claim, sub, exp };
 }
 
 // Si el JWT del ingreso trae una G…, es la wallet de ese login.

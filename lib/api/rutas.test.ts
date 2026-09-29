@@ -17,6 +17,7 @@ import { crearSesionHttp, fijarWalletHttp } from "./sesion";
 import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
 import { listarTareasHttp } from "./tareas";
 import { asegurarSemilla } from "../db/semilla";
+import { TOPE_SESION_SEGUNDOS } from "../sesion/cookie";
 import type { Visor } from "./alcance";
 import type { SesionFila } from "../db/tipos";
 
@@ -662,6 +663,45 @@ test("si el ingreso trae wallet, no se guarda otra", async () => {
   assert.equal((await almacen.leerSesion(sesion))?.wallet, cuenta);
 });
 
+test("la sesión dura lo que el JWT y no pasa de 24 h", async () => {
+  const almacen = crearMemoria();
+  const ahora = Math.floor(Date.now() / 1000);
+  const corta = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "organizador@demo.hyto", token: token("organizador@demo.hyto", { exp: ahora + 2 * 60 * 60 }) }),
+    }),
+    almacen,
+  );
+  assert.equal(corta.status, 200);
+  const cookieCorta = corta.headers.get("set-cookie") ?? "";
+  const edadCorta = Number(/Max-Age=(\d+)/.exec(cookieCorta)?.[1]);
+  assert.ok(edadCorta <= 2 * 60 * 60 && edadCorta >= 2 * 60 * 60 - 2);
+  const tokenCorto = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(cookieCorta)?.[1] ?? "");
+  const filaCorta = await almacen.leerSesion(tokenCorto);
+  assert.ok(filaCorta);
+  assert.ok(Math.abs(Date.parse(filaCorta.expiraEn) - (ahora + edadCorta) * 1000) < 2000);
+
+  const larga = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "organizador@demo.hyto",
+        token: token("organizador@demo.hyto", { exp: ahora + 10 * 24 * 60 * 60 }),
+      }),
+    }),
+    almacen,
+  );
+  assert.equal(larga.status, 200);
+  assert.equal(Number(/Max-Age=(\d+)/.exec(larga.headers.get("set-cookie") ?? "")?.[1]), TOPE_SESION_SEGUNDOS);
+  const tokenLargo = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(larga.headers.get("set-cookie") ?? "")?.[1] ?? "");
+  const filaLarga = await almacen.leerSesion(tokenLargo);
+  assert.ok(filaLarga);
+  assert.ok(Math.abs(Date.parse(filaLarga.expiraEn) - (ahora + TOPE_SESION_SEGUNDOS) * 1000) < 2000);
+});
+
 test("las rutas que escriben responden 401 sin sesión", async () => {
   const contexto = { params: Promise.resolve({ id: "stand" }) };
   const rutas = [
@@ -676,6 +716,6 @@ test("las rutas que escriben responden 401 sin sesión", async () => {
     const respuesta = await pendiente;
     assert.equal(respuesta.status, 401);
     const cuerpo = (await respuesta.json()) as { aviso: string };
-    assert.equal(cuerpo.aviso, "Entra para continuar.");
+    assert.equal(cuerpo.aviso, "Sign in to continue.");
   }
 });

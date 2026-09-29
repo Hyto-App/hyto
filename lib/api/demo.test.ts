@@ -8,6 +8,7 @@ import { asegurarSemilla } from "../db/semilla";
 import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_FIRMA_DEMO } from "../sesion/demo";
+import { SESION_SIN_EXP_SEGUNDOS } from "../sesion/cookie";
 import { crearDemoHttp, estadoDemoHttp } from "./demo";
 import { cerrarSesionHttp, leerSesionHttp } from "./sesion";
 
@@ -87,7 +88,7 @@ describe("ingreso demo", { concurrency: false }, () => {
     assert.equal(voluntario.usuarioId, "demo-voluntario");
     assert.match(voluntario.nombre, /demo/i);
     assert.equal(voluntario.demo, true);
-    assert.match(ajeno.headers.get("set-cookie") ?? "", /hyto_sesion=/);
+    assert.match(ajeno.headers.get("set-cookie") ?? "", new RegExp(`hyto_sesion=.*Max-Age=${SESION_SIN_EXP_SEGUNDOS}`));
 
     const organizador = await crearDemoHttp(pedido("organizador", "203.0.113.12"), almacen, ENV_ON);
     assert.equal(organizador.status, 200);

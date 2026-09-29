@@ -518,7 +518,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   test("POST /api/firma y /api/firma/enviar exigen sesión de organizador", async () => {
     const sinFirma = await firmaPost(pedido("http://local/api/firma", {}));
     assert.equal(sinFirma.status, 401);
-    assert.equal(avisoDe(await leer(sinFirma)), "Entra para continuar.");
+    assert.equal(avisoDe(await leer(sinFirma)), "Sign in to continue.");
 
     const sinEnvio = await enviarPost(pedido("http://local/api/firma/enviar", {}));
     assert.equal(sinEnvio.status, 401);
@@ -538,7 +538,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     await consulta("update sesiones set expira_en = '2000-01-01T00:00:00.000Z' where token = $1", [token]);
     const vencida = await firmaPost(pedido("http://local/api/firma", {}, organizador));
     assert.equal(vencida.status, 401);
-    assert.equal(avisoDe(await leer(vencida)), "Entra para continuar.");
+    assert.equal(avisoDe(await leer(vencida)), "Sign in to continue.");
   });
 
   test("POST /api/firma rechaza el cuerpo y prepara el XDR del organizador sin salir a la red", async () => {

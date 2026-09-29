@@ -94,7 +94,7 @@ test("el permiso de desarrollo lee el token sin firma y producción lo ignora", 
     restaurar("NODE_ENV", "development");
     delete process.env.VERCEL_ENV;
     const correo = await correoDelToken(payload(claims({ email: "Organizador@demo.hyto" })), "", sinClave);
-    assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc" });
+    assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc", exp: Math.floor(AHORA / 1000) + 3600 });
     assert.equal(await correoDelToken(payload(claims({ email: undefined })), "organizador@demo.hyto", sinClave), null);
     assert.equal(await correoDelToken(payload(claims()), "otro@demo.hyto", sinClave), null);
 
@@ -251,7 +251,7 @@ test("un JWKS vacío o sin claves usables no queda en caché", async () => {
 
 test("con clave configurada exige firma, emisor y plazo", async () => {
   const correo = await correoDelToken(firmar(claims({ email: "Organizador@demo.hyto" })), "organizador@demo.hyto", conClave);
-  assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc" });
+  assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc", exp: Math.floor(AHORA / 1000) + 3600 });
   assert.equal(await correoDelToken(payload(claims()), "organizador@demo.hyto", conClave), null);
   assert.equal(await correoDelToken(firmar(claims(), otra.privateKey), "organizador@demo.hyto", conClave), null);
   assert.equal(await correoDelToken(firmar(claims({ iss: "https://otro.example" })), "organizador@demo.hyto", conClave), null);

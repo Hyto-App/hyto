@@ -1,7 +1,7 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { clienteDe, excedido } from "@/lib/escrow/limite";
-import { COOKIE_SESION, encabezadoCookie, expiracion, leerCookie, tokenSesion } from "@/lib/sesion/cookie";
+import { COOKIE_SESION, SESION_SIN_EXP_SEGUNDOS, encabezadoCookie, expiracion, leerCookie, tokenSesion } from "@/lib/sesion/cookie";
 import { demoHabilitado, rolDemoDe, sesionEsDemo, usuarioDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json } from "./json";
 
@@ -45,13 +45,13 @@ export async function crearDemoHttp(
       email: usuario.email,
       usuarioId: usuario.id,
       rol: usuario.rol,
-      expiraEn: expiracion(),
+      expiraEn: expiracion(SESION_SIN_EXP_SEGUNDOS),
       wallet: "",
     });
     return json(
       { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, demo: true },
       200,
-      { "set-cookie": encabezadoCookie(sesion) },
+      { "set-cookie": encabezadoCookie(sesion, SESION_SIN_EXP_SEGUNDOS) },
     );
   } catch {
     return baseNoLista();
