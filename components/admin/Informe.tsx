@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
+import { useVistaAdmin } from "@/components/admin/usarVista";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { detalleMonto, enlaceCredencial, enlacePago } from "@/lib/admin/vista";
 import { formatearMonto } from "@/lib/integrante/formato";
-import type { VistaAdmin } from "@/lib/admin/tipos";
 
 export function Informe() {
-  const [vista, setVista] = useState<VistaAdmin | null>(null);
-
-  useEffect(() => {
-    setVista(vistaAdmin(leerMemoriaAdmin()));
-  }, []);
+  const vista = useVistaAdmin();
 
   if (!vista) {
     return <p className="text-[var(--suave)]">Cargando…</p>;
