@@ -1,6 +1,6 @@
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "./montar";
 import assert from "node:assert/strict";
-import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
+import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { createElement } from "react";
 import { Bandeja } from "../../components/admin/Bandeja";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
@@ -158,11 +158,8 @@ describe("flujo de admin en la base", { concurrency: false }, () => {
     hayBase = await preparado;
   });
 
-  beforeEach(async (contexto) => {
-    if (!hayBase) {
-      (contexto as TestContext).skip("no hay base local");
-      return;
-    }
+  beforeEach(async () => {
+    if (!hayBase) return;
     await tomar();
   });
 
@@ -170,7 +167,11 @@ describe("flujo de admin en la base", { concurrency: false }, () => {
     await soltar();
   });
 
-  test("crear un proyecto, subir evidencia y verla en la revisión y el informe", async () => {
+  test("crear un proyecto, subir evidencia y verla en la revisión y el informe", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const creado = await proyectosPost(
       new Request("http://local/api/proyectos", {
         method: "POST",

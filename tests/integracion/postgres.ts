@@ -43,10 +43,17 @@ function clavesExternasFuera(): void {
   delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
 }
 
+function dejarSinSalida(): void {
+  clavesExternasFuera();
+  usarAlmacen(async () => null);
+  usarFotos(() => null);
+}
+
 export async function prepararBase(): Promise<boolean> {
   const url = urlLocal();
   if (!esHostLocal(url)) {
     console.log("test:integracion: la URL no apunta a una base local; se omite sin conectar.");
+    dejarSinSalida();
     return false;
   }
   clavesExternasFuera();
@@ -64,6 +71,7 @@ export async function prepararBase(): Promise<boolean> {
     console.log("test:integracion: no hay base Postgres local; se omite.");
     await pool.end().catch(() => undefined);
     pool = null;
+    dejarSinSalida();
     return false;
   }
   try {

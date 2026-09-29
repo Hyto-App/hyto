@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
+import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { POST as sesionPost } from "../../app/api/sesion/route";
 import { GET as tareasGet } from "../../app/api/tareas/route";
 import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
@@ -101,11 +101,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     hayBase = await preparado;
   });
 
-  beforeEach(async (contexto) => {
-    if (!hayBase) {
-      (contexto as TestContext).skip("no hay base local");
-      return;
-    }
+  beforeEach(async () => {
+    if (!hayBase) return;
     await tomar();
     reiniciarLimite();
   });
@@ -114,7 +111,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     await soltar();
   });
 
-  test("la migración crea las tablas", async () => {
+  test("la migración crea las tablas", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const resultado = await consulta<{ table_name: string }>(
       "select table_name from information_schema.tables where table_schema = 'public'",
     );
@@ -124,7 +125,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     }
   });
 
-  test("GET /api/tareas devuelve la semilla de ZEEK sin sesión", async () => {
+  test("GET /api/tareas devuelve la semilla de ZEEK sin sesión", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const respuesta = await tareasGet();
     assert.equal(respuesta.status, 200);
     assert.match(respuesta.headers.get("content-type") ?? "", /json/);
@@ -138,14 +143,22 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(json.tareas?.[3]?.tope, "15");
   });
 
-  test("GET /api/tareas sin base responde 503", async () => {
+  test("GET /api/tareas sin base responde 503", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     usarAlmacen(async () => null);
     const respuesta = await tareasGet();
     assert.equal(respuesta.status, 503);
     assert.equal(avisoDe(await leer(respuesta)), "La base no está configurada.");
   });
 
-  test("POST /api/sesion abre la sesión del organizador y la guarda", async () => {
+  test("POST /api/sesion abre la sesión del organizador y la guarda", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const respuesta = await entrar("organizador@demo.hyto");
     assert.equal(respuesta.status, 200);
     const json = await leer(respuesta);
@@ -159,7 +172,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(filas.rows[0]?.rol, "organizador");
   });
 
-  test("POST /api/sesion rechaza JSON inválido, token ajeno y correo fuera del equipo", async () => {
+  test("POST /api/sesion rechaza JSON inválido, token ajeno y correo fuera del equipo", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const noJson = await sesionPost(pedido("http://local/api/sesion", "{"));
     assert.equal(noJson.status, 400);
     assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
@@ -184,7 +201,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(filas.rowCount, 0);
   });
 
-  test("POST /api/proyectos crea el proyecto sin sesión y GET devuelve el último", async () => {
+  test("POST /api/proyectos crea el proyecto sin sesión y GET devuelve el último", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo()));
     assert.equal(creado.status, 201);
     const json = (await leer(creado)) as {
@@ -214,7 +235,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Montar el stand"), true);
   });
 
-  test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {
+  test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     await proyectosGet();
     const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{"));
     assert.equal(noJson.status, 400);
@@ -246,7 +271,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     );
   });
 
-  test("GET /api/informe abre ZEEK sin hash y la bandeja sigue vacía hasta la evidencia", async () => {
+  test("GET /api/informe abre ZEEK sin hash y la bandeja sigue vacía hasta la evidencia", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const respuesta = await informeGet();
     assert.equal(respuesta.status, 200);
     const json = (await leer(respuesta)) as {
@@ -264,7 +293,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(json.tareas?.every((tarea) => tarea.estado === "pendiente" && tarea.hashPago === null), true);
   });
 
-  test("GET /api/informe muestra el hash cuando la tarea ya está pagada", async () => {
+  test("GET /api/informe muestra el hash cuando la tarea ya está pagada", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     await tareasGet();
     await consulta("update tareas set hash_pago = $1, estado = 'pagado' where id = 'stand'", [HASH]);
     const json = (await leer(await informeGet())) as {
@@ -276,7 +309,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(json.resumen?.pagado, "20");
   });
 
-  test("GET /api/revision/:id devuelve la tarea y 404 si no existe", async () => {
+  test("GET /api/revision/:id devuelve la tarea y 404 si no existe", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const ok = await revisionGet(new Request("http://local/api/revision/stand"), contexto("stand"));
     assert.equal(ok.status, 200);
     const json = (await leer(ok)) as {
@@ -295,7 +332,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(avisoDe(await leer(falta)), "No encontramos esa tarea.");
   });
 
-  test("POST /api/evidencias guarda la foto, revisa con el guion y GET la lee", async () => {
+  test("POST /api/evidencias guarda la foto, revisa con el guion y GET la lee", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida")));
     assert.equal(creada.status, 201);
     const json = (await leer(creada)) as { evidencia?: { id: string; monto: string; fecha: string; tareaId: string } };
@@ -336,7 +377,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(informe.bandeja?.some((tarea) => tarea.id === "comida" && tarea.veredicto === "cumplió"), true);
   });
 
-  test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async () => {
+  test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9]))));
     const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
     await consulta("update veredictos set veredicto = 'insuficiente', frase = 'cambiado' where evidencia_id = $1", [id]);
@@ -357,7 +402,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(falta.status, 404);
   });
 
-  test("POST /api/evidencias rechaza entrada inválida, tarea ajena y foto enorme", async () => {
+  test("POST /api/evidencias rechaza entrada inválida, tarea ajena y foto enorme", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const noLlego = await evidenciasPost(
       new Request("http://local/api/evidencias", { method: "POST", body: "hola", headers: { "content-type": "text/plain" } }),
     );
@@ -389,7 +438,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(avisoDe(await leer(pesada)), "La foto es demasiado grande.");
   });
 
-  test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {
+  test("GET /api/evidencias/:id y la foto responden 404 si no están", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const evidencia = await evidenciaGet(new Request("http://local/api/evidencias/no-existe"), contexto("no-existe"));
     assert.equal(evidencia.status, 404);
     assert.equal(avisoDe(await leer(evidencia)), "No encontramos esa evidencia.");
@@ -398,7 +451,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(foto.status, 404);
   });
 
-  test("las rutas de evidencia sin almacén de fotos responden 503", async () => {
+  test("las rutas de evidencia sin almacén de fotos responden 503", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     usarFotos(() => null);
     const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand")));
     assert.equal(creada.status, 503);
@@ -414,7 +471,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(foto.status, 503);
   });
 
-  test("POST /api/firma y /api/firma/enviar exigen sesión de organizador", async () => {
+  test("POST /api/firma y /api/firma/enviar exigen sesión de organizador", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const sinFirma = await firmaPost(pedido("http://local/api/firma", {}));
     assert.equal(sinFirma.status, 401);
     assert.equal(avisoDe(await leer(sinFirma)), "Entra para continuar.");
@@ -440,7 +501,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(avisoDe(await leer(vencida)), "Entra para continuar.");
   });
 
-  test("POST /api/firma rechaza el cuerpo y prepara el XDR del organizador sin salir a la red", async () => {
+  test("POST /api/firma rechaza el cuerpo y prepara el XDR del organizador sin salir a la red", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const cookie = cookieDe(await entrar("organizador@demo.hyto"));
     const noJson = await firmaPost(pedido("http://local/api/firma", "{", cookie));
     assert.equal(noJson.status, 400);
@@ -491,7 +556,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(destino, "https://beta.api.trustlesswork.com/escrow/multi-release/v2/approve-and-release-milestones");
   });
 
-  test("POST /api/firma/enviar rechaza el XDR y devuelve el hash simulado", async () => {
+  test("POST /api/firma/enviar rechaza el XDR y devuelve el hash simulado", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const cookie = cookieDe(await entrar("organizador@demo.hyto"));
     const noJson = await enviarPost(pedido("http://local/api/firma/enviar", "{", cookie));
     assert.equal(noJson.status, 400);
@@ -530,7 +599,11 @@ describe("rutas de app/api contra Postgres local", { concurrency: false }, () =>
     assert.equal(pago.rows.every((fila) => fila.hash_pago === null), true);
   });
 
-  test("POST /api/firma/enviar corta el exceso de solicitudes", async () => {
+  test("POST /api/firma/enviar corta el exceso de solicitudes", async (t) => {
+    if (!hayBase) {
+      t.skip("no hay base local");
+      return;
+    }
     const cookie = cookieDe(await entrar("organizador@demo.hyto"));
     let ultimo = 0;
     for (let i = 0; i < 31; i += 1) {
