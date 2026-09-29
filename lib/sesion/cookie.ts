@@ -1,3 +1,5 @@
+import { enProduccion } from "@/lib/config/entorno";
+
 export const COOKIE_SESION = "hyto_sesion";
 const SEGUNDOS = 14 * 24 * 60 * 60;
 
@@ -6,7 +8,7 @@ export function tokenSesion(): string {
 }
 
 export function encabezadoCookie(token: string): string {
-  const segura = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  const segura = enProduccion() ? "; Secure" : "";
   return `${COOKIE_SESION}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SEGUNDOS}${segura}`;
 }
 
