@@ -8,11 +8,11 @@ El contexto para trabajar, incluido el de los agentes, está en [AGENTS.md](AGEN
 
 ## Estado al 29 de septiembre de 2026
 
-`main` está en `77a0431`. Entran el esqueleto (PR #1), el admin (PR #3), la marca (PR #7), la auditoría del integrante (PR #4), el módulo de firma (PR #8), el backend de Neon, Blob y Cavos, el modo demo, el escrow V2 en la revisión (desplegar, fondear, aprobar y liberar) y el alta automática: desde el PR #41, un correo con login de Cavos válido que no existe se registra como voluntario. El rol organizador solo queda si ya está escrito en la base.
+`main` está en `3778747`. Entran el esqueleto (PR #1), el admin (PR #3), la marca (PR #7), la auditoría del integrante (PR #4), el módulo de firma (PR #8), el backend de Neon, Blob y Cavos, el modo demo, el escrow V2 en la revisión (desplegar, fondear, aprobar y liberar), el alta automática del PR #41 y, desde el PR #44 de Josué Valles (29 de septiembre de 2026, 1:38 p.m., hora de Costa Rica), el organizador de cada proyecto. Un correo con login de Cavos válido que no existe se registra como voluntario. Quien crea un proyecto, con sesión real, queda en `proyectos.organizador_id`, aunque su rol sea voluntario. El rol de la tabla `usuarios` ya no abre el escrow ni la revisión. ZEEK nace sin dueño. Desde el PR #47 de Josué Valles (2:10 p.m., hora de Costa Rica), una sesión demo no crea proyectos.
 
-La bandeja, la revisión y el informe leen la API cuando hay sesión y no es demo. Si la API no responde, siguen el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). **Desplegar y fondear** y **Aprobar y pagar** están en la revisión y firman con Cavos. El botón Fondear de crear proyecto sigue guardando el borrador en el navegador.
+La bandeja, la revisión y el informe leen la API cuando hay sesión y no es demo. Si la API no responde, siguen el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). **Desplegar y fondear** y **Aprobar y pagar** están en la revisión y firman con Cavos. Fuera del demo, el botón Fondear de crear proyecto sigue guardando el borrador en el navegador. En el modo demo está deshabilitado, muestra «En el modo demo no se pueden crear proyectos.» y no guarda.
 
-El paso principal que sigue es hacer que la IA revise la foto de verdad e integrar Laya. Antes, hay que probar el pago completo en testnet. El detalle y el orden están en [AGENTS.md](AGENTS.md). `CAVOS_JWT_AUDIENCE` está vacío. En el repo no hay hash de un pago real.
+El paso principal que sigue es hacer que la IA revise la foto de verdad e integrar Laya. Antes, Esteban aplica `drizzle/0002_organizador_proyecto.sql`, asigna el dueño de ZEEK y se prueba el pago completo en testnet. El detalle y el orden están en [AGENTS.md](AGENTS.md). `CAVOS_JWT_AUDIENCE` está vacío. En el repo no hay hash de un pago real.
 
 | Hecho | Dueño |
 |---|---|
@@ -22,16 +22,19 @@ El paso principal que sigue es hacer que la IA revise la foto de verdad e integr
 | Botón Entrar. Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. El ingreso pide el código al correo, o Google, y guarda la dirección solo si no hay aviso | Josué, ingreso de Esteban |
 | Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C` | Abdiel |
 | Módulo de firma (`lib/escrow`), `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]` y `npm run hito`. El hash de un pago real no está en el repositorio | Sebas |
-| Neon con Drizzle, Blob privado, rutas de tareas, evidencias, informe, proyectos y revisión. Semilla de ZEEK. La revisión llama a Qwen y, sin `LAYA_URL`, al stub. Sin Groq, usa el guion fijo. Desde el PR #41, un correo nuevo entra como voluntario | Esteban |
+| Neon con Drizzle, Blob privado, rutas de tareas, evidencias, informe, proyectos y revisión. Semilla de ZEEK. La revisión llama a Qwen y, sin `LAYA_URL`, al stub. Sin Groq, usa el guion fijo. Desde el PR #41, un correo nuevo entra como voluntario. Desde el PR #44, cada proyecto tiene su organizador | Esteban, organizador por proyecto de Josué |
 | Auditoría del integrante: no mezcla tareas, no inventa US$0 ni corre el día de una fecha, abre USDC si la cuenta ya existe, y cierra fallos de la cámara | Josué (coautor), PR #4 |
 | `npm ci`, `npm test` y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
 
 | Pendiente | Dueño |
 |---|---|
-| Probar en testnet, con wallet real de Cavos, **Desplegar y fondear** y **Aprobar y pagar**, y guardar el hash. La wallet del organizador necesita XLM y USDC de testnet. El Acta solo después de ese pago | Sebas |
+| Aplicar `drizzle/0002_organizador_proyecto.sql` y asignar `organizador_id` por email. La migración solo agrega la columna y no se corrió. ZEEK queda sin dueño hasta ese `UPDATE`. Sin dueño, la revisión y el pago responden 403 | Esteban |
+| Cargar en el sitio la base, el almacén de fotos, la clave de la revisión y una de `CAVOS_JWT_JWK` o `CAVOS_JWKS_URL`. Si se usan código y Google, `CAVOS_JWT_ISSUER` lista los dos emisores. Correr `drizzle/0001_contrato_escrow.sql` si falta `contrato_escrow` | Esteban |
+| Probar en testnet, con wallet real de Cavos, **Desplegar y fondear** y **Aprobar y pagar**, y guardar el hash. La wallet de quien organiza ese proyecto necesita XLM y USDC de testnet. El Acta solo después de ese pago. Hacen falta `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER` y `HYTO_ESCROW_ADMIN` | Sebas |
 | Hacer que la IA funcione. Es el paso principal. Groq (`qwen/qwen3.8-27b`) pide `GROQ_API_KEY`; si falla, `desdeGuion` entra en silencio y la UI no muestra `origen`. `LAYA_URL` no está: el stub deja las tareas de trabajo en `parcial`. Falta confirmar Groq en producción, mostrar `origen`, publicar Laya (Tailscale Funnel) y cerrar el PR #15 | Esteban, Abdiel |
+| Dejar las cuatro cuentas de Cavos, con dirección `G…` y trustline de USDC. Un correo nuevo entra como voluntario y no hace falta cargarlo antes. Ese rol no lo hace dueño de ZEEK | Raúl |
+| Fuera del demo, crear proyecto sigue en el navegador y no llama a `POST /api/proyectos`. En el modo demo, el PR #47 ya lo impide. Disputar y resolver no tienen botón. Los PR #18 y #45 siguen en borrador. El 30 de septiembre, subir Next.js a 16.3.7 cuando salga el parche | Josué |
 | `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud` | Esteban |
-| El 30 de septiembre, subir Next.js a 16.3.7 cuando salga el parche | Josué |
 
 `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C`, en `app/globals.css`. La tipografía es Poppins.
 
@@ -48,7 +51,7 @@ npm run db:migrar
 npm run db:semilla
 ```
 
-`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/`, `scripts/backend-traspaso` y dos archivos de `tests/integracion` con `tsx`. `npx tsc --noEmit` revisa los tipos. `npm run hito` ejecuta `scripts/hito-prueba.ts`. Sin `TRUSTLESS_API_KEY` no paga. `npm run db:migrar` aplica `drizzle/*.sql` en orden. `npm run db:semilla` carga ZEEK. Las dos necesitan `DATABASE_URL` y el visto bueno de quien es dueño de la base. No hay `npm run lint`.
+`npm run dev` abre Next.js. `npm test` corre las pruebas de `lib/`, `scripts/backend-traspaso` y dos archivos de `tests/integracion` con `tsx`. `npx tsc --noEmit` revisa los tipos. `npm run hito` ejecuta `scripts/hito-prueba.ts`. Sin `TRUSTLESS_API_KEY` no paga. `npm run db:migrar` aplica `drizzle/*.sql` en orden, incluida `0002_organizador_proyecto.sql`. `npm run db:semilla` carga ZEEK sin dueño y, si el demo está prendido, el proyecto `demo`. Las dos necesitan `DATABASE_URL` y el visto bueno de quien es dueño de la base. No hay `npm run lint`.
 
 ## Variables de entorno
 

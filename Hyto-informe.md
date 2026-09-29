@@ -2,7 +2,7 @@
 
 Informe del proyecto · 27 de septiembre de 2026
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
+El estado del código al 29 de septiembre de 2026 (`3778747`, PR #47 de Josué Valles, 2:10 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma, y solo la firma el usuario de `proyectos.organizador_id`. ZEEK nace sin dueño hasta que alguien lo asigne. Una sesión demo no crea proyectos. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
 
 Pagos por hitos: el dinero queda comprometido antes del trabajo, cada tarea o gasto se respalda con evidencia y el informe está listo al cerrar el proyecto.
 
@@ -47,7 +47,7 @@ Modelo técnico: un escrow multi-release por proyecto. Cada hito tiene su monto 
 |---|---|
 | Fondeador | Organizador. Deposita el presupuesto. No es un rol del contrato. |
 | Admin del contrato | Otra dirección. Despliega y edita hitos solo antes de fondear. No aprueba, no libera y no cobra. |
-| Aprobador y firmante de liberación | Organizador, en las dos listas. Una firma de `approve-and-release` hace las dos cosas. |
+| Aprobador y firmante de liberación | El organizador de ese proyecto (`proyectos.organizador_id`, PR #44). En la revisión, aprobar y liberar son dos pasos. |
 | Proveedor | Integrante. Marca el estado y adjunta la referencia de la evidencia. Hasta 5. El demo usa 3. |
 | Receptor del hito | La wallet de quien cobra esa tarea. Necesita trustline de USDC. |
 | Resolución de disputas | Cuenta aparte, sin coincidir con los roles de arriba. El MVP no la usa. |
@@ -81,7 +81,7 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `77a0431`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Falta un pago real en testnet. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `3778747`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión, y solo si la sesión es el `organizador_id` de ese proyecto (PR #44). Una sesión demo no crea proyectos (PR #47). Falta un pago real en testnet. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
@@ -108,10 +108,10 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
 | Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya ya están. Falta cargar las variables, correr `0002` y asignar el dueño de ZEEK por email. El paso principal de su parte es la IA | La app en Vercel guarda un proyecto, una foto y un veredicto, y ZEEK tiene organizador |
+| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). El `appId` de Cavos ya está. Siguen un pago en USDC y las tres cuentas `HYTO_ESCROW_*` | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas del admin ya están y la revisión ya firma (PR #39). El dueño es por proyecto (PR #44). Fuera del demo, crear proyecto sigue en el navegador. En el demo, el PR #47 ya lo impide. Los PR #18 y #45 siguen en borrador. El 30 de septiembre, Next.js 16.3.7 | El admin crea, revisa, aprueba en Stellar y abre el informe |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Faltan las cuatro cuentas, con dirección y trustline. Un correo nuevo entra como voluntario (PR #41) y eso no lo hace dueño de ZEEK | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
