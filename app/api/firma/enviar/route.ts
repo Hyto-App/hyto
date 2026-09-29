@@ -1,5 +1,4 @@
-import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
-import { ErrorFirma, enviar } from "@/lib/escrow/modulo";
+import { enviarFirmaHttp } from "@/lib/api/firma";
 import type { SesionFila } from "@/lib/db/tipos";
 import { rechazarFirmaDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
@@ -12,42 +11,5 @@ export async function atenderEnviar(request: Request, sesion: SesionFila | Respo
   if (sesion instanceof Response) return sesion;
   const demo = rechazarFirmaDemo(sesion);
   if (demo) return demo;
-  if (sesion.rol !== "organizador") {
-    return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
-  }
-  const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
-  if (limitado) return limitado;
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ aviso: "El cuerpo no es JSON." }, { status: 400 });
-  }
-  const xdr = xdrDe(body);
-  if (!xdr) return Response.json({ aviso: "Falta el XDR firmado." }, { status: 400 });
-  if (xdrDemasiadoLargo(xdr)) return Response.json({ aviso: "El XDR firmado es demasiado largo." }, { status: 400 });
-  try {
-    const pago = await enviar(xdr);
-    return Response.json({
-      hash: pago.hash,
-      ledger: pago.ledger,
-      codigo: pago.codigo,
-      contrato: pago.contrato,
-      estado: pago.estado,
-    });
-  } catch (error) {
-    if (error instanceof ErrorFirma) {
-      const estado = error.estado >= 400 && error.estado <= 599 ? error.estado : 502;
-      return Response.json({ aviso: error.message, codigo: error.codigo }, { status: estado });
-    }
-    return Response.json({ aviso: "No se pudo enviar el pago." }, { status: 502 });
-  }
-}
-
-function xdrDe(body: unknown): string | null {
-  if (!body || typeof body !== "object") return null;
-  const xdr = (body as { xdr?: unknown }).xdr;
-  if (typeof xdr !== "string") return null;
-  const limpio = xdr.trim();
-  return limpio ? limpio : null;
+  return enviarFirmaHttp(sesion, request);
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
-import { crearAuth, publicarSesion } from "@/lib/auth/cliente";
+import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
@@ -94,10 +94,16 @@ export function CuentasDemo() {
         return;
       }
       const cuenta = await prepararIdentidad(identidad, auth);
+      let avisoWallet: string | null = null;
+      if (cuenta.direccion) {
+        const guardada = await fijarWallet(cuenta.direccion);
+        if (!guardada.ok) avisoWallet = guardada.aviso;
+      }
       setCuentas((actuales) => actuales.map((item) => (item.id === cuenta.id ? cuenta : item)));
       setPendiente(null);
       setCodigo("");
-      if (cuenta.detalle) setAviso(cuenta.detalle);
+      if (avisoWallet) setAviso(avisoWallet);
+      else if (cuenta.detalle) setAviso(cuenta.detalle);
     } catch (error) {
       setAviso(error instanceof Error ? error.message : "No se pudo preparar la cuenta.");
     } finally {

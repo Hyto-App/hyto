@@ -28,6 +28,7 @@ function sesion(parcial: Partial<SesionFila> = {}): SesionFila {
     usuarioId: "demo-organizador",
     rol: "organizador",
     expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    wallet: "",
     ...parcial,
   };
 }

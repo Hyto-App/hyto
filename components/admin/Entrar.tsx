@@ -65,7 +65,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       if (resultado.direccion) {
         const guardado = guardarDireccionAdmin(resultado.direccion);
         if (!guardado.aviso) setDireccion(resultado.direccion);
-        setAviso(guardado.aviso);
+        setAviso(guardado.aviso ?? resultado.aviso);
         setFase("inicio");
         return;
       }
@@ -157,6 +157,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       }
       setDireccion(resultado.direccion);
       setFase("inicio");
+      if (resultado.aviso) setAviso(resultado.aviso);
     } catch (error) {
       mostrarFallo(error);
     } finally {

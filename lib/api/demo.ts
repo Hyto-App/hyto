@@ -41,6 +41,7 @@ export async function crearDemoHttp(
       usuarioId: usuario.id,
       rol: usuario.rol,
       expiraEn: expiracion(),
+      wallet: "",
     });
     return json(
       { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, demo: true },
