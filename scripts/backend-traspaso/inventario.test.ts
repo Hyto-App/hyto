@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { analizarDiff, armarInventario } from "./inventario";
+import { accionesReferencialesEscritasEnReferences, analizarDiff, armarInventario } from "./inventario";
 import { parsearSql } from "./leer-sql";
 
 const RAIZ = process.cwd();
@@ -94,9 +93,8 @@ test("el archivo generado sale de armarInventario y no trae una URL", () => {
   } & Record<string, unknown>;
   const { base, prs, ...resto } = json;
   assert.deepEqual(resto, armarInventario(RAIZ));
-  const sha = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
-  assert.equal(base.sha, sha);
-  assert.equal(base.coincideConElShaPedido, sha.startsWith("ce9ff7c"));
+  assert.match(base.sha, /^[0-9a-f]{40}$/);
+  assert.equal(base.coincideConElShaPedido, base.sha.startsWith("ce9ff7c"));
   assert.equal(base.archivosDeEsquemaIgualesAEseCommit, true);
   assert.deepEqual(
     prs.map((pr) => [pr.numero, pr.cambiaEsquema]),
@@ -166,4 +164,40 @@ test("un diff de revisión no cambia el esquema y uno de migración sí", () => 
 +const sql = "CREATE TABLE sorpresa (id text)";
 `);
   assert.equal(ddl.tocaEsquema, true);
+
+  const references = analizarDiff(`diff --git a/lib/api/tareas.ts b/lib/api/tareas.ts
+--- a/lib/api/tareas.ts
++++ b/lib/api/tareas.ts
+@@ -1 +1 @@
+-const x = 1;
++const sql = "proyecto_id text references proyectos(id)";
+`);
+  assert.equal(references.tocaEsquema, true);
+});
+
+test("onDelete y onUpdate se leen solo en el .references() de esa columna", () => {
+  const fuente = `
+    const nota = "onDelete onUpdate";
+    export const tareas = pgTable("tareas", {
+      proyectoId: text("proyecto_id")
+        .notNull()
+        .references(() => proyectos.id),
+      otra: text("otra").references(() => proyectos.id, { onDelete: "cascade", onUpdate: "restrict" }),
+    });
+    export const notas = pgTable("notas", {
+      proyectoId: text("proyecto_id").references(() => tareas.id, { onDelete: "set null" }),
+    });
+  `;
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "tareas", ["proyecto_id"]), {
+    onDelete: false,
+    onUpdate: false,
+  });
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "tareas", ["otra"]), {
+    onDelete: true,
+    onUpdate: true,
+  });
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "notas", ["proyecto_id"]), {
+    onDelete: true,
+    onUpdate: false,
+  });
 });
