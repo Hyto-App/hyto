@@ -8,7 +8,7 @@ import { Revision } from "@/components/admin/Revision";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
-const MENSAJE = "La IA no está configurada";
+const MENSAJE = "AI review is not configured";
 
 test("la revisión muestra el error y reintenta con POST", async () => {
   const llamadas: { url: string; method: string }[] = [];
@@ -43,7 +43,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.equal(alerta?.textContent, MENSAJE);
     assert.match(texto(), /error/);
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
-    await pulsar("Reintentar revisión");
+    await pulsar("Retry review");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
@@ -51,7 +51,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
       llamadas.some((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/stand"),
       true,
     );
-    assert.match(texto(), /IA/);
+    assert.match(texto(), /AI/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
   } finally {
@@ -65,9 +65,9 @@ test("el demo muestra el guion como simulado y no ofrece reintentar", async () =
   await act(async () => {
     await new Promise((resolver) => setTimeout(resolver, 20));
   });
-  assert.match(texto(), /simulado/);
+  assert.match(texto(), /simulated/);
   assert.match(texto(), /Mesa armada, banner de ZEEK de frente y el salón visible/);
-  assert.equal(texto().includes("Reintentar revisión"), false);
+  assert.equal(texto().includes("Retry review"), false);
   assert.equal(document.querySelector("[role=alert]"), null);
   await desmontar();
 });
@@ -86,7 +86,7 @@ test("el informe muestra el origen y el error", async () => {
     if (url === "/api/proyectos") return json({ proyecto: { nombre: "ZEEK" } });
     if (url.startsWith("/api/revision/")) {
       return json({
-        tarea: tarea({ origen: "error", codigo: "tiempo", veredicto: null, frase: "La IA no respondió a tiempo" }),
+        tarea: tarea({ origen: "error", codigo: "tiempo", veredicto: null, frase: "The AI did not respond in time" }),
         foto: null,
       });
     }
@@ -98,13 +98,13 @@ test("el informe muestra el origen y el error", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.equal(document.querySelector("[role=alert]")?.textContent, "La IA no respondió a tiempo");
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "The AI did not respond in time");
     assert.match(texto(), /error/);
-    await pulsar("Reintentar revisión");
+    await pulsar("Retry review");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /IA/);
+    assert.match(texto(), /AI/);
     assert.match(texto(), /Listo de verdad/);
     assert.equal(document.querySelector("[role=alert]"), null);
   } finally {
@@ -122,7 +122,7 @@ test("el informe avisa si el reintento no responde", async () => {
     if (url === "/api/proyectos") return json({ proyecto: { nombre: "ZEEK" } });
     if (url.startsWith("/api/revision/")) {
       return json({
-        tarea: tarea({ origen: "error", codigo: "tiempo", veredicto: null, frase: "La IA no respondió a tiempo" }),
+        tarea: tarea({ origen: "error", codigo: "tiempo", veredicto: null, frase: "The AI did not respond in time" }),
         foto: null,
       });
     }
@@ -134,11 +134,11 @@ test("el informe avisa si el reintento no responde", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    await pulsar("Reintentar revisión");
+    await pulsar("Retry review");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /No se pudo reintentar la revisión/);
+    assert.match(texto(), /The review could not be retried/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

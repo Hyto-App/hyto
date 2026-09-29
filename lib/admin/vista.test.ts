@@ -5,10 +5,10 @@ import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
 
-test("el origen de la revisión se lee como IA, simulado o error", () => {
-  assert.equal(etiquetaOrigen("scout"), "IA");
-  assert.equal(etiquetaOrigen("stub"), "simulado");
-  assert.equal(etiquetaOrigen("guion"), "simulado");
+test("el origen de la revisión se lee como AI, simulated o error", () => {
+  assert.equal(etiquetaOrigen("scout"), "AI");
+  assert.equal(etiquetaOrigen("stub"), "simulated");
+  assert.equal(etiquetaOrigen("guion"), "simulated");
   assert.equal(etiquetaOrigen("error"), "error");
   assert.equal(etiquetaOrigen(null), null);
 });

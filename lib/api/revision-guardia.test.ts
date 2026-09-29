@@ -97,7 +97,7 @@ describe("reintentar la revisión", { concurrency: false }, () => {
     await almacen.actualizarTarea("stand", { estado: "pagado" });
     const pagada = await leerRevisionHttp(almacen, fotos, "stand", true);
     assert.equal(pagada.status, 409);
-    assert.equal(((await pagada.json()) as { aviso: string }).aviso, "Esta tarea ya no se puede volver a revisar.");
+    assert.equal(((await pagada.json()) as { aviso: string }).aviso, "This task can no longer be reviewed.");
 
     await almacen.actualizarTarea("stand", { estado: "en revisión", contratoEscrow: "CSTAND" });
     const conContrato = await leerRevisionHttp(almacen, fotos, "stand", true);
@@ -136,7 +136,7 @@ describe("reintentar la revisión", { concurrency: false }, () => {
       await adentro;
       const segundo = await leerRevisionHttp(almacen, fotos, "stand", true);
       assert.equal(segundo.status, 429);
-      assert.match(((await segundo.json()) as { aviso: string }).aviso, /Esperá/);
+      assert.match(((await segundo.json()) as { aviso: string }).aviso, /Wait a moment/);
       soltar();
       assert.equal((await primero).status, 200);
       const tercero = await leerRevisionHttp(almacen, fotos, "stand", true);

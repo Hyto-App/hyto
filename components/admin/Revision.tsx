@@ -5,11 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin } from "@/lib/admin/vista";
-import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
+import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
+import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, mensajeFirmaVisible, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
@@ -95,7 +97,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
     try {
       const detalle = await reintentarRevision(tareaId);
       if (!detalle) {
-        setAviso("No se pudo reintentar la revisión.");
+        setAviso("The review could not be retried.");
         return;
       }
       setReal(true);
@@ -160,7 +162,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
       }
     } catch (error) {
       if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
-      setAviso(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA);
+      setAviso(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA));
     } finally {
       setPaso(null);
     }
@@ -230,7 +232,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
           ) : null}
           {tarea.origen === "error" && real ? (
             <button type="button" onClick={() => void reintentar()} disabled={reintentando} className="mt-4 text-sm text-[var(--suave)]">
-              Reintentar revisión
+              Retry review
             </button>
           ) : null}
 
@@ -245,6 +247,12 @@ export function Revision({ tareaId }: { tareaId: string }) {
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
+          ) : null}
+
+          {real ? (
+            <div className="mt-8">
+              <PrepararUsdc />
+            </div>
           ) : null}
 
           {botones.aprobarLocal ? (
@@ -287,7 +295,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </p>
           ) : null}
 
-          {aviso ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+          {aviso ? <AvisoFirma mensaje={aviso} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
 
           {transaccion ? (
             <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">

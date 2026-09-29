@@ -52,7 +52,7 @@ test("un 429 es cupo agotado", async () => {
   const error = await falloDe(async () => new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 }));
   assert.equal(error.code, "cupo");
   assert.equal(error.status, 429);
-  assert.match(error.mensaje, /cupo/);
+  assert.match(error.mensaje, /quota/);
   assert.match(error.providerMessage, /Rate limit/);
 });
 
@@ -90,7 +90,7 @@ test("un tiempo de espera no es una respuesta vacía", async () => {
     throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
   });
   assert.equal(error.code, "tiempo");
-  assert.match(error.mensaje, /no respondió a tiempo/);
+  assert.match(error.mensaje, /did not respond in time/);
 });
 
 test("un JSON cortado no se lee como descripción", async () => {

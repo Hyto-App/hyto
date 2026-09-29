@@ -210,7 +210,7 @@ test("la revisión de un trabajo sin clave guarda el error y no el guion", async
     assert.equal(json.tarea.origen, "error");
     assert.equal(json.tarea.codigo, "sin_clave");
     assert.equal(json.tarea.estado, "en revisión");
-    assert.match(json.tarea.frase, /no está configurada/);
+    assert.match(json.tarea.frase, /not configured/);
     assert.equal(json.tarea.frase.includes("Mesa armada"), false);
     assert.match(json.foto, /^\/api\/evidencias\/.+\/foto$/);
     assert.equal(json.enlacePago, null);

@@ -1,6 +1,7 @@
 import type { SesionFila, Usuario } from "@/lib/db/tipos";
 
 export const AVISO_FIRMA_DEMO = "Modo demo: las firmas están desactivadas";
+export const AVISO_PROYECTO_DEMO = "En el modo demo no se pueden crear proyectos.";
 
 const ROLES_DEMO = ["organizador", "voluntario"] as const;
 

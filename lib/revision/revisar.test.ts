@@ -71,28 +71,28 @@ test("cada fallo de una evidencia real deja el error y no el guion", async () =>
   const casos: { codigo: string; frase: RegExp; fetchImpl?: typeof fetch; clave?: string | null; foto?: typeof FOTO | null }[] = [
     {
       codigo: "cupo",
-      frase: /cupo/,
+      frase: /quota/,
       fetchImpl: async () => new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 }),
     },
     {
       codigo: "tiempo",
-      frase: /no respondió a tiempo/,
+      frase: /did not respond in time/,
       fetchImpl: async () => {
         throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
       },
     },
     {
       codigo: "proveedor",
-      frase: /no pudo completar/,
+      frase: /could not finish/,
       fetchImpl: async () => new Response("mal", { status: 500 }),
     },
     {
       codigo: "respuesta",
-      frase: /no se pudo leer/,
+      frase: /could not be read/,
       fetchImpl: async () => Response.json({ choices: [{ finish_reason: "length", message: { content: '{"texto":' } }] }),
     },
-    { codigo: "sin_clave", frase: /no está configurada/, clave: null },
-    { codigo: "sin_foto", frase: /No hay foto/, foto: null },
+    { codigo: "sin_clave", frase: /not configured/, clave: null },
+    { codigo: "sin_foto", frase: /no photo/i, foto: null },
   ];
   for (const caso of casos) {
     const logs: unknown[][] = [];

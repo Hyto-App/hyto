@@ -3,12 +3,12 @@ export type CodigoFalloRevision = "sin_clave" | "cupo" | "tiempo" | "proveedor" 
 export type FuenteRevision = "groq" | "laya" | "revision";
 
 const MENSAJES: Record<CodigoFalloRevision, string> = {
-  sin_clave: "La IA no está configurada",
-  cupo: "Se agotó el cupo de la IA (tokens)",
-  tiempo: "La IA no respondió a tiempo",
-  proveedor: "La IA no pudo completar la revisión",
-  respuesta: "La IA devolvió una respuesta que no se pudo leer",
-  sin_foto: "No hay foto para revisar",
+  sin_clave: "AI review is not configured",
+  cupo: "The AI quota is used up",
+  tiempo: "The AI did not respond in time",
+  proveedor: "The AI could not finish the review",
+  respuesta: "The AI returned a response that could not be read",
+  sin_foto: "There is no photo to review",
 };
 
 export class FalloRevision extends Error {

@@ -169,7 +169,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
     const sinMonto = !evidencia?.monto?.trim();
     if (veredicto?.origen === "error" || sinMonto) {
-      return Response.json({ aviso: "Revisión pendiente" }, { status: 409 });
+      return Response.json({ aviso: "Review pending" }, { status: 409 });
     }
   }
   const monto = montoDeTarea(tarea, evidencia);

@@ -40,7 +40,7 @@ export async function leerRevisionHttp(
     const tarea = await almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
     if (forzar && (tarea.estado === "pagado" || Boolean(tarea.contratoEscrow?.trim()))) {
-      return json({ aviso: "Esta tarea ya no se puede volver a revisar." }, 409);
+      return json({ aviso: "This task can no longer be reviewed." }, 409);
     }
     const evidencia = await almacen.ultimaEvidencia(tareaId);
     const blobReal = evidencia !== null && !esBlobEjemplo(evidencia.blobId);
@@ -49,7 +49,7 @@ export async function leerRevisionHttp(
     if (evidencia && blobReal && fotos && (forzar ? puedeForzar : !veredicto)) {
       let reservado = false;
       if (forzar) {
-        if (!reservarRevision(tareaId)) return json({ aviso: "Esperá un momento para volver a revisar." }, 429);
+        if (!reservarRevision(tareaId)) return json({ aviso: "Wait a moment before reviewing again." }, 429);
         reservado = true;
       }
       try {

@@ -36,7 +36,7 @@ test("una respuesta sin las tres señales no se usa", () => {
 test("sin URL Laya no está configurada", async () => {
   const error = await falloLaya("", async () => new Response("no"));
   assert.equal(error.code, "sin_clave");
-  assert.match(error.mensaje, /no está configurada/);
+  assert.match(error.mensaje, /not configured/);
 });
 
 test("un tiempo de Laya es tiempo", async () => {

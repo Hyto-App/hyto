@@ -390,7 +390,7 @@ test("un reembolso sin monto o con la revisión fallida no se despliega", async 
     await almacen.actualizarEvidencia("ejemplo-comida", { monto: null, fecha: null });
     const sinMonto = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
     assert.equal(sinMonto.status, 409);
-    assert.equal(((await sinMonto.json()) as { aviso: string }).aviso, "Revisión pendiente");
+    assert.equal(((await sinMonto.json()) as { aviso: string }).aviso, "Review pending");
 
     await almacen.actualizarEvidencia("ejemplo-comida", { monto: "12.40", fecha: "2026-09-27" });
     const guardado = await almacen.veredictoDe("ejemplo-comida");
@@ -398,7 +398,7 @@ test("un reembolso sin monto o con la revisión fallida no se despliega", async 
     await almacen.guardarVeredicto({ ...guardado, origen: "error", choice: "sin_clave", frase: "La IA no está configurada" });
     const fallida = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
     assert.equal(fallida.status, 409);
-    assert.equal(((await fallida.json()) as { aviso: string }).aviso, "Revisión pendiente");
+    assert.equal(((await fallida.json()) as { aviso: string }).aviso, "Review pending");
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior.clave);

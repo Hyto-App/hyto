@@ -107,12 +107,12 @@ export function Informe() {
                         disabled={reintento === tarea.id}
                         className="mt-3 text-sm font-semibold underline-offset-4 hover:underline"
                       >
-                        Reintentar revisión
+                        Retry review
                       </button>
                     ) : null}
                     {avisoId === tarea.id ? (
                       <p role="alert" className="mt-3 text-sm leading-6">
-                        No se pudo reintentar la revisión.
+                        The review could not be retried.
                       </p>
                     ) : null}
                     {pago || credencial ? (

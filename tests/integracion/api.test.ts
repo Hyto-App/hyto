@@ -397,7 +397,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(vista.tarea?.origen, "error");
     assert.equal(vista.tarea?.codigo, "sin_clave");
     assert.equal(vista.tarea?.estado, "en revisión");
-    assert.match(vista.tarea?.frase ?? "", /no está configurada/);
+    assert.match(vista.tarea?.frase ?? "", /not configured/);
     assert.equal(vista.foto, `/api/evidencias/${id}/foto`);
 
     const informe = (await leer(await informeGet(pedirGet("http://local/api/informe", sesion)))) as {
@@ -445,7 +445,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const fallida = (await leer(reintento)) as { tarea?: { origen: string; codigo: string | null; frase: string } };
     assert.equal(fallida.tarea?.origen, "error");
     assert.equal(fallida.tarea?.codigo, "sin_clave");
-    assert.match(fallida.tarea?.frase ?? "", /no está configurada/);
+    assert.match(fallida.tarea?.frase ?? "", /not configured/);
 
     const falta = await revisionPost(pedidoRevision("no-existe", sesion, "POST"), contexto("no-existe"));
     assert.equal(falta.status, 404);

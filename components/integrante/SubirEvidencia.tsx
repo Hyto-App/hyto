@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
+import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
+import { Salir } from "@/components/sesion/Salir";
 import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
@@ -225,11 +227,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           <Link href="/mis-tareas">Mis tareas</Link>
           <InsigniaDemo />
           <SalirDemo />
+          <Salir className="ml-3 align-middle" />
         </p>
         <p className="mt-4 text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">{tarea.titulo}</h1>
         {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}
       </header>
+
+      {ejemplo ? null : (
+        <div className="mb-6">
+          <PrepararUsdc />
+        </div>
+      )}
 
       {fase === "lista" && !fotoUrl ? null : (
         <div className="overflow-hidden rounded-3xl bg-[var(--papel)]">

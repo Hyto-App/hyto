@@ -9,6 +9,7 @@ import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
+import { AVISO_PROYECTO_DEMO } from "../sesion/demo";
 import { reiniciarCandadosRevision } from "./revision";
 import { crearProyectoHttp } from "./proyectos";
 
@@ -27,6 +28,74 @@ function usar(almacen: Almacen): void {
 function cookie(token: string): string {
   return `hyto_sesion=${token}`;
 }
+
+test("POST /api/proyectos rechaza el demo y la petición sin sesión", async () => {
+  const almacen = crearMemoria();
+  const expiraEn = new Date(Date.now() + 60_000).toISOString();
+  await almacen.crearSesion({
+    token: "demo-org",
+    email: "demo-organizador@hyto.demo",
+    usuarioId: "demo-organizador",
+    rol: "organizador",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "demo-vol",
+    email: "persona@ejemplo.com",
+    usuarioId: "demo-voluntario",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "demo-correo",
+    email: "demo-voluntario@hyto.demo",
+    usuarioId: "otra-persona",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "real",
+    email: "ana@hyto.app",
+    usuarioId: "ana",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  const anterior = gancho();
+  usar(almacen);
+  const cuerpo = JSON.stringify({ nombre: "Basura", tareas: [{ titulo: "Nada", tipo: "trabajo", monto: "1" }] });
+  function pedido(token?: string): Request {
+    return new Request("http://local/api/proyectos", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { cookie: cookie(token) } : {}),
+      },
+      body: cuerpo,
+    });
+  }
+  try {
+    const sinSesion = await crearProyecto(pedido());
+    assert.equal(sinSesion.status, 401);
+    assert.equal(((await sinSesion.json()) as { aviso: string }).aviso, "Entra para continuar.");
+
+    for (const token of ["demo-org", "demo-vol", "demo-correo"]) {
+      const demo = await crearProyecto(pedido(token));
+      assert.equal(demo.status, 403);
+      assert.equal(((await demo.json()) as { aviso: string }).aviso, AVISO_PROYECTO_DEMO);
+    }
+    assert.equal((await almacen.listarProyectos()).some((proyecto) => proyecto.nombre === "Basura"), false);
+
+    const real = await crearProyecto(pedido("real"));
+    assert.equal(real.status, 201);
+    assert.equal((await almacen.listarProyectos()).find((proyecto) => proyecto.nombre === "Basura")?.organizadorId, "ana");
+  } finally {
+    (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = anterior;
+  }
+});
 
 test("quien crea el proyecto es su organizador aunque su rol sea voluntario", async () => {
   const almacen = crearMemoria();
