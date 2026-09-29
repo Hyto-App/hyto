@@ -1,20 +1,26 @@
 import { createPublicKey, createVerify, type JsonWebKey } from "node:crypto";
 
 /**
- * La doc de Cavos (https://docs.cavos.xyz) no publica JWKS, emisor, audience
- * ni un endpoint para verificar este JWT. La firma RS256, el `iss`, el `aud`
- * y el vencimiento solo se comprueban si `CAVOS_JWT_JWK` o `CAVOS_JWKS_URL`
- * están definidos. Esos valores quedan pendientes de confirmar con Cavos.
- * Sin ellos el payload se lee, pero la firma no se autentica.
+ * La doc de Cavos (https://docs.cavos.xyz) no publica JWKS, emisor ni audience.
+ * La firma RS256, el `iss`, el `aud` y el vencimiento se comprueban con
+ * `CAVOS_JWT_JWK` o `CAVOS_JWKS_URL`. Sin esas claves no hay sesión.
+ * `HYTO_PERMITIR_JWT_SIN_FIRMA=1` lee el payload sin firma solo fuera de
+ * producción (`NODE_ENV` y `VERCEL_ENV` distintos de `production`).
+ * `CAVOS_JWT_ISSUER` acepta varios emisores separados por coma.
  */
 export const HOLGURA_JWT_SEGUNDOS = 60;
 
 const TTL_MS = 10 * 60 * 1000;
-const cache = new Map<string, { hasta: number; claves: JsonWebKey[] }>();
+const cache = new Map<string, { hasta: number; claves: ClavePublica[] }>();
+
+type ClavePublica = {
+  jwk: JsonWebKey;
+  emisor: string | null;
+};
 
 export type AjustesJwt = {
   ahora?: number;
-  /** `null` no comprueba `iss`. Ausente: se lee `CAVOS_JWT_ISSUER`. */
+  /** `null` no comprueba `iss`. Ausente: se lee `CAVOS_JWT_ISSUER` (lista separada por coma). */
   emisor?: string | null;
   /** `null` no comprueba `aud`. Ausente: se lee `CAVOS_JWT_AUDIENCE`. */
   audiencia?: string | null;
@@ -47,14 +53,14 @@ async function comprobar(token: string, ajustes: Ajustes): Promise<Record<string
   const claims = leerParte(partes[1]);
   if (!claims) return null;
   const claves = await clavesEfectivas(ajustes);
-  if (claves === null) return claims;
+  if (claves === null) return bypassSinFirma() ? claims : null;
   const encabezado = leerParte(partes[0]);
   if (!encabezado || encabezado.alg !== "RS256" || "crit" in encabezado) return null;
   const kid = typeof encabezado.kid === "string" ? encabezado.kid : null;
-  const elegidas = elegir(claves, kid);
+  const elegidas = elegir(claves, kid, claims.iss);
   if (!elegidas.length || !firmaValida(partes[0], partes[1], partes[2], elegidas)) return null;
   if (!tiempos(claims, ajustes.ahora)) return null;
-  if (ajustes.emisor && claims.iss !== ajustes.emisor) return null;
+  if (!emisorPermitido(claims.iss, ajustes.emisor)) return null;
   if (ajustes.audiencia && !audCoincide(claims.aud, ajustes.audiencia)) return null;
   return claims;
 }
@@ -69,12 +75,33 @@ function resolver(parcial?: AjustesJwt): Ajustes {
   };
 }
 
-async function clavesEfectivas(ajustes: Ajustes): Promise<JsonWebKey[] | null> {
-  if (ajustes.claves !== undefined) return ajustes.claves;
+async function clavesEfectivas(ajustes: Ajustes): Promise<ClavePublica[] | null> {
+  if (ajustes.claves !== undefined) return ajustes.claves.map((clave) => publicar(clave)).filter((clave): clave is ClavePublica => clave !== null);
   const fijo = jwkDeEntorno(process.env.CAVOS_JWT_JWK);
   if (fijo !== null) return fijo;
-  if (ajustes.jwksUrl) return descargar(ajustes.jwksUrl);
+  if (ajustes.jwksUrl) return descargarTodas(ajustes.jwksUrl, listaEmisores(ajustes.emisor));
   return null;
+}
+
+function entornoEsProduccion(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+}
+
+function bypassSinFirma(): boolean {
+  if (entornoEsProduccion()) return false;
+  return process.env.HYTO_PERMITIR_JWT_SIN_FIRMA?.trim() === "1";
+}
+
+function emisorPermitido(iss: unknown, esperado: string | null): boolean {
+  const permitidos = listaEmisores(esperado);
+  if (!permitidos) return true;
+  return typeof iss === "string" && permitidos.includes(iss);
+}
+
+function listaEmisores(valor: string | null): string[] | null {
+  if (!valor) return null;
+  const lista = [...new Set(valor.split(",").map((item) => item.trim()).filter(Boolean))];
+  return lista.length ? lista : null;
 }
 
 function audCoincide(aud: unknown, esperado: string): boolean {
@@ -91,10 +118,11 @@ function tiempos(claims: Record<string, unknown>, ahoraMs: number): boolean {
   return ahora + HOLGURA_JWT_SEGUNDOS >= claims.nbf;
 }
 
-function elegir(claves: JsonWebKey[], kid: string | null): JsonWebKey[] {
-  const firmantes = claves.map(soloPublica).filter((clave): clave is JsonWebKey => clave !== null);
-  if (!kid) return firmantes;
-  return firmantes.filter((clave) => clave.kid === kid);
+function elegir(claves: ClavePublica[], kid: string | null, iss: unknown): JsonWebKey[] {
+  const emisor = typeof iss === "string" ? iss : null;
+  const delEmisor = claves.filter((clave) => !clave.emisor || clave.emisor === emisor);
+  if (!kid) return delEmisor.map((clave) => clave.jwk);
+  return delEmisor.filter((clave) => clave.jwk.kid === kid).map((clave) => clave.jwk);
 }
 
 function firmaValida(encabezado: string, cuerpo: string, firma: string, claves: JsonWebKey[]): boolean {
@@ -120,21 +148,38 @@ function firmaValida(encabezado: string, cuerpo: string, firma: string, claves: 
   return false;
 }
 
-function jwkDeEntorno(valor: string | undefined): JsonWebKey[] | null {
+function jwkDeEntorno(valor: string | undefined): ClavePublica[] | null {
   const texto = valor?.trim();
   if (!texto) return null;
   try {
-    const json = JSON.parse(texto) as unknown;
-    const lista =
-      json && typeof json === "object" && Array.isArray((json as { keys?: unknown }).keys)
-        ? (json as { keys: unknown[] }).keys
-        : [json];
-    return lista
-      .map((item) => (item && typeof item === "object" ? soloPublica(item as JsonWebKey) : null))
-      .filter((item): item is JsonWebKey => item !== null);
+    return interpretarClaves(JSON.parse(texto) as unknown);
   } catch {
     return [];
   }
+}
+
+function interpretarClaves(json: unknown, emisorForzado: string | null = null): ClavePublica[] {
+  if (!json || typeof json !== "object") return [];
+  if (Array.isArray((json as { keys?: unknown }).keys)) {
+    return (json as { keys: unknown[] }).keys.flatMap((item) => interpretarClaves(item, emisorForzado));
+  }
+  if ("kty" in json) {
+    const publicada = publicar(json as JsonWebKey, emisorForzado);
+    return publicada ? [publicada] : [];
+  }
+  const salida: ClavePublica[] = [];
+  for (const [emisor, valor] of Object.entries(json as Record<string, unknown>)) {
+    if (!emisor.trim()) continue;
+    salida.push(...interpretarClaves(valor, emisor.trim()));
+  }
+  return salida;
+}
+
+function publicar(clave: JsonWebKey, emisorForzado: string | null = null): ClavePublica | null {
+  const publica = soloPublica(clave);
+  if (!publica) return null;
+  const propio = typeof (clave as { iss?: unknown }).iss === "string" ? (clave as { iss: string }).iss.trim() : "";
+  return { jwk: publica, emisor: emisorForzado || propio || null };
 }
 
 function soloPublica(clave: JsonWebKey): JsonWebKey | null {
@@ -151,7 +196,19 @@ function soloPublica(clave: JsonWebKey): JsonWebKey | null {
   };
 }
 
-async function descargar(url: string): Promise<JsonWebKey[]> {
+async function descargarTodas(valor: string, emisores: string[] | null): Promise<ClavePublica[]> {
+  const urls = valor.split(",").map((item) => item.trim()).filter(Boolean);
+  const listas = await Promise.all(urls.map((url) => descargar(url)));
+  const emparejar = Boolean(emisores && emisores.length === urls.length && urls.length > 1);
+  return listas.flatMap((claves, indice) =>
+    claves.map((clave) => ({
+      jwk: clave.jwk,
+      emisor: clave.emisor ?? (emparejar ? emisores![indice] : null),
+    })),
+  );
+}
+
+async function descargar(url: string): Promise<ClavePublica[]> {
   const segura = urlHttps(url);
   if (!segura) return [];
   const ahora = Date.now();
@@ -165,9 +222,11 @@ async function descargar(url: string): Promise<JsonWebKey[]> {
   if (!respuesta.ok) throw new Error("jwks");
   const json = (await respuesta.json()) as { keys?: unknown };
   const lista = Array.isArray(json.keys) ? json.keys : [];
-  const claves = lista
-    .map((item) => (item && typeof item === "object" ? soloPublica(item as JsonWebKey) : null))
-    .filter((item): item is JsonWebKey => item !== null);
+  const claves = lista.flatMap((item) => (item && typeof item === "object" ? interpretarClaves(item) : []));
+  if (claves.length === 0) {
+    cache.delete(segura);
+    return [];
+  }
   cache.set(segura, { hasta: ahora + TTL_MS, claves });
   return claves;
 }

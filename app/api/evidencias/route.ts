@@ -10,6 +10,7 @@ export async function POST(request: Request): Promise<Response> {
     publicarEvidenciaHttp(request, {
       almacen,
       fotos,
+      actor: { usuarioId: sesion.usuarioId, rol: sesion.rol },
       continuar: (trabajo) => {
         after(() => trabajo);
       },

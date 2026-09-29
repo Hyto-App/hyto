@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
-import { leerTarea, listarTareas, subirEvidencia } from "./rutas";
+import { ErrorDeSesion, leerTarea, listarTareas, subirEvidencia } from "./rutas";
 import type { Tarea } from "./tipos";
 
 function json(body: unknown, status = 200): Response {
@@ -80,6 +80,27 @@ test("un reembolso de ejemplo trae monto y fecha; un trabajo no", async () => {
   assert.equal(trabajo.evidencia.monto, null);
   assert.equal(trabajo.evidencia.fecha, null);
   assert.deepEqual(trabajo.evidencia, evidenciaEjemplo(stand));
+});
+
+test("un 401 no se guarda como evidencia de ejemplo", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const fetchImpl: typeof fetch = async () => json({ aviso: "Entra para continuar." }, 401);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorDeSesion);
+      assert.equal(error.aviso, "Entra para continuar.");
+      assert.equal(error.message, "Entra para continuar.");
+      return true;
+    },
+  );
+
+  const sinCuerpo: typeof fetch = async () => new Response("no", { status: 401 });
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: sinCuerpo }),
+    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Entra para continuar.",
+  );
 });
 
 test("la evidencia real no inventa monto ni fecha", async () => {

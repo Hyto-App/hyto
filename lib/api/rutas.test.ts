@@ -85,6 +85,58 @@ test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
   assert.equal(tarea?.estado, "en revisión");
 });
 
+test("solo el voluntario asignado fija la cuenta de cobro", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const propia = "G" + "A".repeat(55);
+  const ajena = "G" + "B".repeat(55);
+  const pedir = (wallet: string) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("wallet", wallet);
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+
+  const otro = await publicarEvidenciaHttp(pedir(ajena), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+  });
+  assert.equal(otro.status, 403);
+  const sinWallet = new FormData();
+  sinWallet.set("tareaId", "stand");
+  sinWallet.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+  const otroSinWallet = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: sinWallet }), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+  });
+  assert.equal(otroSinWallet.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+
+  const organizador = await publicarEvidenciaHttp(pedir(ajena), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "organizador", rol: "organizador" },
+  });
+  assert.equal(organizador.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+
+  const sinActor = await publicarEvidenciaHttp(pedir(propia), { almacen, fotos });
+  assert.equal(sinActor.status, 403);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+
+  const asignado = await publicarEvidenciaHttp(pedir(propia), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-1", rol: "voluntario" },
+  });
+  assert.equal(asignado.status, 201);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+});
+
 test("un archivo que no es imagen no pasa", async () => {
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
