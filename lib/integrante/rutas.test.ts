@@ -85,13 +85,13 @@ test("un reembolso de ejemplo trae monto y fecha; un trabajo no", async () => {
 test("un 401 no se guarda como evidencia de ejemplo", async () => {
   const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
   assert.ok(comida);
-  const fetchImpl: typeof fetch = async () => json({ aviso: "Entra para continuar." }, 401);
+  const fetchImpl: typeof fetch = async () => json({ aviso: "Sign in to continue." }, 401);
   await assert.rejects(
     () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
     (error: unknown) => {
       assert.ok(error instanceof ErrorDeSesion);
-      assert.equal(error.aviso, "Entra para continuar.");
-      assert.equal(error.message, "Entra para continuar.");
+      assert.equal(error.aviso, "Sign in to continue.");
+      assert.equal(error.message, "Sign in to continue.");
       return true;
     },
   );
@@ -99,7 +99,7 @@ test("un 401 no se guarda como evidencia de ejemplo", async () => {
   const sinCuerpo: typeof fetch = async () => new Response("no", { status: 401 });
   await assert.rejects(
     () => subirEvidencia(comida, new Blob(["foto"]), { fetch: sinCuerpo }),
-    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Entra para continuar.",
+    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Sign in to continue.",
   );
 });
 
@@ -121,7 +121,7 @@ test("un 403 no se guarda como evidencia de ejemplo", async () => {
   const sinCuerpo: typeof fetch = async () => new Response("no", { status: 403 });
   await assert.rejects(
     () => subirEvidencia(comida, new Blob(["foto"]), { fetch: sinCuerpo }),
-    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Entra para continuar.",
+    (error: unknown) => error instanceof ErrorDeSesion && error.aviso === "Sign in to continue.",
   );
 });
 

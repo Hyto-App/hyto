@@ -2,16 +2,17 @@ import { baseNoLista, json, sinBase } from "@/lib/api/json";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila } from "@/lib/db/tipos";
 import { esCuenta } from "@/lib/escrow/cuerpos";
+import { AVISO_ENTRAR } from "./avisos";
 import { COOKIE_SESION, leerCookie, vigente } from "./cookie";
 
 export async function exigirSesion(request: Request): Promise<SesionFila | Response> {
   const token = leerCookie(request, COOKIE_SESION);
-  if (!token) return json({ aviso: "Entra para continuar." }, 401);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   const almacen = await almacenNeon();
   if (!almacen) return sinBase();
   try {
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: "Entra para continuar." }, 401);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
     return { ...sesion, wallet: sesion.wallet ?? "" };
   } catch {
     return baseNoLista();
