@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
+import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
@@ -13,7 +13,8 @@ export async function leerRevisionHttp(almacen: Almacen, fotos: Fotos | null, ta
     const tarea = await almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
     const evidencia = await almacen.ultimaEvidencia(tareaId);
-    if (evidencia && fotos && (forzar || !(await almacen.veredictoDe(evidencia.id)))) {
+    const blobReal = evidencia !== null && !esBlobEjemplo(evidencia.blobId);
+    if (evidencia && blobReal && fotos && (forzar || !(await almacen.veredictoDe(evidencia.id)))) {
       const foto = await fotos.leer(evidencia.blobId);
       const resultado = await revisar(tarea, foto, contextoDesdeEntorno());
       await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
@@ -22,7 +23,7 @@ export async function leerRevisionHttp(almacen: Almacen, fotos: Fotos | null, ta
     const vista = await tareaAdmin(almacen, actual);
     return json({
       tarea: vista,
-      foto: evidencia ? `/api/evidencias/${evidencia.id}/foto` : null,
+      foto: evidencia && blobReal ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
     });
   } catch {

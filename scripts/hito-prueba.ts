@@ -11,7 +11,9 @@ import {
 import { enlacePago } from "../lib/escrow/cuerpos";
 import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot } from "../lib/escrow/modulo";
 import type { AccionFirma, CuentasDespliegue, PagoEnviado, RedEscrow } from "../lib/escrow/tipos";
+import { claveDeTrustless } from "../lib/config/entorno";
 import { USDC } from "../lib/integrante/identidades";
+import { cargarEnvLocal } from "./cargar-env-local";
 
 const ARCHIVO_CUENTAS = ".sebas-cuentas.json";
 const ARCHIVO_PAGO = "lib/escrow/pago-prueba.json";
@@ -27,7 +29,8 @@ type Cuentas = Record<Rol, Par>;
 const server = new Horizon.Server(HORIZON_URL);
 
 async function main(): Promise<void> {
-  const clave = process.env.TRUSTLESS_API_KEY?.trim();
+  cargarEnvLocal();
+  const clave = claveDeTrustless();
   if (!clave) {
     console.error("Falta TRUSTLESS_API_KEY en el servidor. Sin esa clave no se despliega ni se libera el hito.");
     console.error("NEXT_PUBLIC_CAVOS_APP_ID sigue sin publicarse: en este entorno no hay app de Cavos ni proyecto Hyto en Vercel.");
