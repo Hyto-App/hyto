@@ -41,7 +41,7 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     nombre: "GROQ_API_KEY",
     ambito: "servidor",
     requerida: false,
-    para: "Clave de Groq para describir la foto. Sin ella, la revisión usa el guion fijo.",
+    para: "Groq key used to describe the photo. Without it, the review reports that AI review is not configured.",
   },
   {
     nombre: "LAYA_URL",

@@ -66,6 +66,11 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
   return "parcial";
 }
 
+export function origenDeFila(valor: string): VeredictoFila["origen"] {
+  if (valor === "guion" || valor === "stub" || valor === "error" || valor === "scout") return valor;
+  return "scout";
+}
+
 export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   return {
     async listarUsuarios() {
@@ -166,7 +171,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         ...fila,
         veredicto: veredictoDe(fila.veredicto),
         noul: fila.noul === "si" ? "si" : "no",
-        origen: fila.origen === "guion" ? "guion" : "scout",
+        origen: origenDeFila(fila.origen),
       };
     },
     async crearSesion(sesion) {

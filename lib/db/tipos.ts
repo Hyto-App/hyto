@@ -51,7 +51,7 @@ export type VeredictoFila = {
   choice: string;
   noul: "si" | "no";
   score: string;
-  origen: "scout" | "guion";
+  origen: "scout" | "guion" | "stub" | "error";
 };
 
 export type SesionFila = {

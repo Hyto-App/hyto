@@ -4,7 +4,7 @@ import { GET as evidenciaGet } from "../../app/api/evidencias/[id]/route";
 import { GET as fotoGet } from "../../app/api/evidencias/[id]/foto/route";
 import { GET as informeGet } from "../../app/api/informe/route";
 import { GET as proyectosGet } from "../../app/api/proyectos/route";
-import { GET as revisionGet } from "../../app/api/revision/[id]/route";
+import { GET as revisionGet, POST as revisionPost } from "../../app/api/revision/[id]/route";
 import { GET as tareasGet } from "../../app/api/tareas/route";
 import type { Almacen } from "../db/almacen";
 import { crearMemoria } from "../db/memoria";
@@ -240,6 +240,10 @@ test("una sesión demo no lee ZEEK y el dueño real sí", async () => {
     assert.equal(informeDemo.nombre, "Demo");
     assert.equal(
       (await revisionGet(pedir("http://local/api/revision/stand", "demo-org"), { params: Promise.resolve({ id: "stand" }) })).status,
+      403,
+    );
+    assert.equal(
+      (await revisionPost(pedir("http://local/api/revision/stand", "demo-org"), { params: Promise.resolve({ id: "stand" }) })).status,
       403,
     );
     assert.equal(

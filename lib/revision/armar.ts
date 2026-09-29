@@ -14,11 +14,14 @@ export type Descripcion = {
   fecha: string | null;
 };
 
+export type OrigenRevision = "scout" | "guion" | "stub" | "error";
+
 export type ResultadoRevision = Descripcion &
   Senales & {
     veredicto: Veredicto;
     frase: string;
-    origen: "scout" | "guion";
+    origen: OrigenRevision;
+    codigo: string | null;
   };
 
 const TEXTO_TRABAJO = "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón.";
@@ -89,7 +92,7 @@ export function cerrar(
   tope: string | null,
   descripcion: Descripcion,
   senales: Senales,
-  origen: "scout" | "guion",
+  origen: Exclude<OrigenRevision, "error">,
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
@@ -103,6 +106,22 @@ export function cerrar(
     veredicto,
     frase: fraseDe(descripcion.texto, senales),
     origen,
+    codigo: null,
+  };
+}
+
+export function desdeFallo(fallo: { code: string; mensaje: string }): ResultadoRevision {
+  return {
+    texto: fallo.mensaje,
+    monto: null,
+    fecha: null,
+    choice: fallo.code,
+    noul: false,
+    score: "error",
+    veredicto: "insuficiente",
+    frase: fallo.mensaje,
+    origen: "error",
+    codigo: fallo.code,
   };
 }
 
@@ -115,6 +134,7 @@ export function desdeGuion(tipo: TipoTarea, tope: string | null): ResultadoRevis
       veredicto: "parcial",
       frase: fraseDe(guion.texto, guion),
       origen: "guion",
+      codigo: null,
     };
   }
   return cerrado;

@@ -70,10 +70,11 @@ export function botonesRevision(
   }
   const abierto = tarea.estado !== "pagado";
   const conContrato = Boolean(escrow.contrato);
+  const bloqueado = tarea.origen === "error" || (tarea.tipo === "reembolso" && !tarea.montoRevisado);
   return {
-    desplegar: abierto && !conContrato,
-    fondear: abierto && conContrato && escrow.fondeado === false,
-    pagar: tarea.estado === "en revisión",
+    desplegar: !bloqueado && abierto && !conContrato,
+    fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
+    pagar: !bloqueado && tarea.estado === "en revisión",
     aprobarLocal: false,
     pedirOtra: false,
   };
@@ -245,6 +246,8 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     estado: estadoDe(datos.estado),
     veredicto: veredictoDe(datos.veredicto),
     frase: texto(datos.frase),
+    origen: origenDe(datos.origen),
+    codigo: texto(datos.codigo),
     montoRevisado: texto(datos.montoRevisado),
     fecha: texto(datos.fecha),
     hashPago: pago.hashPago,
@@ -271,6 +274,28 @@ function estadoDe(valor: unknown): EstadoTarea {
 function veredictoDe(valor: unknown): TareaAdmin["veredicto"] {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
   return null;
+}
+
+function origenDe(valor: unknown): TareaAdmin["origen"] {
+  if (valor === "scout" || valor === "guion" || valor === "stub" || valor === "error") return valor;
+  return null;
+}
+
+export async function reintentarRevision(tareaId: string, opciones: OpcionesRemoto = {}): Promise<DetalleRevision | null> {
+  const fetchImpl = opciones.fetch ?? fetch;
+  const id = tareaId.trim();
+  if (!id) return null;
+  try {
+    const revision = await fetchImpl(`/api/revision/${encodeURIComponent(id)}`, {
+      method: "POST",
+      cache: "no-store",
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!revision.ok) return null;
+    return detalleDe(await revision.json());
+  } catch {
+    return null;
+  }
 }
 
 function saldoPositivo(valor: unknown): boolean | null {

@@ -1605,10 +1605,12 @@
             "archivo": "lib/db/tipos.ts",
             "tipo": "VeredictoFila",
             "campo": "origen",
-            "tipoTs": "\"scout\" | \"guion\"",
+            "tipoTs": "\"scout\" | \"guion\" | \"stub\" | \"error\"",
             "literales": [
               "scout",
-              "guion"
+              "guion",
+              "stub",
+              "error"
             ],
             "aceptaNull": false,
             "esCheckDeLaBase": false,
@@ -2006,11 +2008,11 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "33cf975cde12d29e2e772f4f978dc77e77ee9174",
+    "sha": "9fc7c949ce5657072859b196b9b332075ecacc64",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "docs: contexto del repo para el equipo y los agentes (#43)",
-    "archivosDeEsquemaIgualesAEseCommit": false,
+    "asunto": "feat: el organizador es de cada proyecto (#44)",
+    "archivosDeEsquemaIgualesAEseCommit": true,
     "archivosComparados": [
       {
         "ruta": "drizzle/0000_inicio.sql",
@@ -2018,7 +2020,7 @@
       },
       {
         "ruta": "lib/db/schema.ts",
-        "igual": false
+        "igual": true
       },
       {
         "ruta": "drizzle.config.ts",

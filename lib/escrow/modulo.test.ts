@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "../integrante/identidades";
+import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { BASE_V1, BASE_V2, claveDeV1, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
 import { excedido, reiniciarLimite, respuestaSiExcedido } from "./limite";
 import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, respuestaDeErrorFirma, respuestaDeLectura, textoDeError } from "./modulo";
@@ -312,7 +313,7 @@ test("un 401 de Trustless no se informa como sesión ausente", async () => {
   const json = (await respuesta.json()) as { aviso: string; codigo: string };
   assert.equal(json.codigo, "TRUSTLESS_AUTH");
   assert.match(json.aviso, /AUTH_INVALID_CREDENTIAL/);
-  assert.equal(json.aviso.includes("Entra para continuar"), false);
+  assert.equal(json.aviso.includes(AVISO_ENTRAR), false);
 
   const otro = respuestaDeLectura(new ErrorFirma("no está", 422, "ESCROW_MILESTONE_NOT_IN_DISPUTE"));
   assert.equal(otro.status, 502);

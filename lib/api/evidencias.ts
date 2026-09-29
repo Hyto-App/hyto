@@ -168,6 +168,7 @@ export async function guardarRevision(
     origen: resultado.origen,
   };
   await almacen.guardarVeredicto(veredicto);
+  if (resultado.origen === "error") return;
   await almacen.actualizarEvidencia(evidenciaId, { monto: resultado.monto, fecha: resultado.fecha });
 }
 

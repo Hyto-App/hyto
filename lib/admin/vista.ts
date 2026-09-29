@@ -99,6 +99,13 @@ export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
   return orden.map((clave) => grupos.get(clave)!);
 }
 
+export function etiquetaOrigen(origen: TareaAdmin["origen"]): "AI" | "simulated" | "error" | null {
+  if (origen === "scout") return "AI";
+  if (origen === "guion" || origen === "stub") return "simulated";
+  if (origen === "error") return "error";
+  return null;
+}
+
 export function enlacePago(hash: string | null | undefined): string | null {
   const limpio = hash?.trim() ?? "";
   if (!/^[a-fA-F0-9]{64}$/.test(limpio)) return null;
@@ -131,6 +138,8 @@ function desdeCreada(tarea: TareaCreada, decision: "pagado" | "pendiente" | unde
       estado: "pendiente",
       veredicto: null,
       frase: null,
+      origen: null,
+      codigo: null,
       montoRevisado: null,
       fecha: null,
       hashPago: null,

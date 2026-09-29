@@ -360,15 +360,15 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     assert.equal(avisoDe(await leer(falta)), "No encontramos esa tarea.");
   });
 
-  test("POST /api/evidencias guarda la foto, revisa con el guion y GET la lee", async () => {
+  test("POST /api/evidencias guarda la foto, deja el error de la IA y GET la lee", async () => {
     const sesion = await cookieSesionPrueba();
     await duenoZeek(sesion);
     const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), sesion));
     assert.equal(creada.status, 201);
-    const json = (await leer(creada)) as { evidencia?: { id: string; monto: string; fecha: string; tareaId: string } };
+    const json = (await leer(creada)) as { evidencia?: { id: string; monto: string | null; fecha: string | null; tareaId: string } };
     const id = json.evidencia?.id ?? "";
-    assert.equal(json.evidencia?.monto, "12.40");
-    assert.equal(json.evidencia?.fecha, "2026-09-27");
+    assert.equal(json.evidencia?.monto, null);
+    assert.equal(json.evidencia?.fecha, null);
     assert.equal(json.evidencia?.tareaId, "comida");
 
     const tarea = await consulta<{ estado: string; wallet_cobro: string }>(
@@ -379,8 +379,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
     const lectura = await evidenciaGet(pedirGet(`http://local/api/evidencias/${id}`, sesion), contexto(id));
     assert.equal(lectura.status, 200);
-    const leida = (await leer(lectura)) as { evidencia?: { monto: string } };
-    assert.equal(leida.evidencia?.monto, "12.40");
+    const leida = (await leer(lectura)) as { evidencia?: { monto: string | null } };
+    assert.equal(leida.evidencia?.monto, null);
 
     await duenoZeek(sesion);
     const foto = await fotoGet(pedirGet(`http://local/api/evidencias/${id}/foto`, sesion), contexto(id));
@@ -390,37 +390,62 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
     const revision = await revisionGet(pedidoRevision("comida", sesion), contexto("comida"));
     const vista = (await leer(revision)) as {
-      tarea?: { veredicto: string; estado: string; frase: string };
+      tarea?: { veredicto: string | null; estado: string; frase: string; origen: string; codigo: string | null };
       foto?: string;
     };
-    assert.equal(vista.tarea?.veredicto, "cumplió");
+    assert.equal(vista.tarea?.veredicto, null);
+    assert.equal(vista.tarea?.origen, "error");
+    assert.equal(vista.tarea?.codigo, "sin_clave");
     assert.equal(vista.tarea?.estado, "en revisión");
-    assert.match(vista.tarea?.frase ?? "", /Comprobante/);
+    assert.match(vista.tarea?.frase ?? "", /not configured/);
     assert.equal(vista.foto, `/api/evidencias/${id}/foto`);
 
     const informe = (await leer(await informeGet(pedirGet("http://local/api/informe", sesion)))) as {
-      bandeja?: { id: string; veredicto: string }[];
+      bandeja?: { id: string; veredicto: string | null; origen: string | null }[];
     };
-    assert.equal(informe.bandeja?.some((tarea) => tarea.id === "comida" && tarea.veredicto === "cumplió"), true);
+    assert.equal(informe.bandeja?.some((tarea) => tarea.id === "comida" && tarea.veredicto === null && tarea.origen === "error"), true);
   });
 
   test("POST /api/revision/:id vuelve a revisar y GET conserva el veredicto guardado", async () => {
     const sesion = await cookieSesionPrueba();
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), sesion));
+    const voluntario = await cookieSesionPrueba("voluntario");
+    await duenoZeek(sesion);
+    const creada = await evidenciasPost(
+      pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), voluntario),
+    );
     const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
-    await consulta("update veredictos set veredicto = 'insuficiente', frase = 'cambiado' where evidencia_id = $1", [id]);
+    await consulta(
+      "update veredictos set veredicto = 'insuficiente', frase = 'cambiado', origen = 'scout' where evidencia_id = $1",
+      [id],
+    );
 
     const lectura = await revisionGet(pedidoRevision("stand", sesion), contexto("stand"));
     const guardado = (await leer(lectura)) as { tarea?: { veredicto: string; frase: string } };
     assert.equal(guardado.tarea?.veredicto, "insuficiente");
     assert.equal(guardado.tarea?.frase, "cambiado");
 
+    const ajena = await revisionPost(pedidoRevision("stand", voluntario, "POST"), contexto("stand"));
+    assert.equal(ajena.status, 403);
+    assert.equal(avisoDe(await leer(ajena)), "Solo el organizador revisa.");
+
     const forzada = await revisionPost(pedidoRevision("stand", sesion, "POST"), contexto("stand"));
     assert.equal(forzada.status, 200);
-    const otra = (await leer(forzada)) as { tarea?: { veredicto: string; frase: string }; enlacePago?: string | null };
-    assert.equal(otra.tarea?.veredicto, "parcial");
-    assert.match(otra.tarea?.frase ?? "", /Mesa armada/);
+    const otra = (await leer(forzada)) as {
+      tarea?: { veredicto: string | null; frase: string; origen: string; codigo: string | null };
+      enlacePago?: string | null;
+    };
+    assert.equal(otra.tarea?.veredicto, "insuficiente");
+    assert.equal(otra.tarea?.frase, "cambiado");
+    assert.equal(otra.tarea?.origen, "scout");
     assert.equal(otra.enlacePago, null);
+
+    await consulta("update veredictos set origen = 'error', frase = 'La IA no está configurada' where evidencia_id = $1", [id]);
+    const reintento = await revisionPost(pedidoRevision("stand", sesion, "POST"), contexto("stand"));
+    assert.equal(reintento.status, 200);
+    const fallida = (await leer(reintento)) as { tarea?: { origen: string; codigo: string | null; frase: string } };
+    assert.equal(fallida.tarea?.origen, "error");
+    assert.equal(fallida.tarea?.codigo, "sin_clave");
+    assert.match(fallida.tarea?.frase ?? "", /not configured/);
 
     const falta = await revisionPost(pedidoRevision("no-existe", sesion, "POST"), contexto("no-existe"));
     assert.equal(falta.status, 404);

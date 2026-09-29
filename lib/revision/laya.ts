@@ -1,6 +1,7 @@
 import { claveDeLaya } from "@/lib/config/entorno";
 import type { Senales } from "./armar";
 import { nivelScore } from "./armar";
+import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 
 export function urlLaya(base: string): string {
   const limpia = base.trim().replace(/\/$/, "");
@@ -94,17 +95,33 @@ export async function preguntarLaya(
   condicion: string,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
-): Promise<Senales | null> {
+): Promise<Senales> {
   const clave = claveDeLaya();
-  const respuesta = await fetchImpl(urlLaya(base), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(clave ? { authorization: `Bearer ${clave}` } : {}),
-    },
-    body: JSON.stringify(cuerpoLaya(texto, condicion)),
-    signal,
-  });
-  if (!respuesta.ok) return null;
-  return leerLaya(await respuesta.json());
+  if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
+  let respuesta: Response;
+  try {
+    respuesta = await fetchImpl(urlLaya(base), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(clave ? { authorization: `Bearer ${clave}` } : {}),
+      },
+      body: JSON.stringify(cuerpoLaya(texto, condicion)),
+      signal,
+    });
+  } catch (error) {
+    throw falloDeExcepcion(error, "laya", clave);
+  }
+  if (!respuesta.ok) throw await falloHttp(respuesta, "laya", clave);
+  let json: unknown;
+  try {
+    json = await respuesta.json();
+  } catch {
+    throw new FalloRevision("respuesta", { fuente: "laya", status: respuesta.status, providerMessage: "json", secreto: clave });
+  }
+  const senales = leerLaya(json);
+  if (!senales) {
+    throw new FalloRevision("respuesta", { fuente: "laya", status: respuesta.status, providerMessage: "json", secreto: clave });
+  }
+  return senales;
 }

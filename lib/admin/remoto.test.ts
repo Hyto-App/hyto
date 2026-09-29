@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista } from "./remoto";
+import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista, reintentarRevision } from "./remoto";
 import type { TareaAdmin } from "./tipos";
 
 const HASH = "ab".repeat(32);
@@ -18,6 +19,8 @@ function tarea(parcial: Partial<TareaAdmin> = {}): TareaAdmin {
     estado: "en revisión",
     veredicto: "cumplió",
     frase: "Listo",
+    origen: null,
+    codigo: null,
     montoRevisado: null,
     fecha: null,
     hashPago: null,
@@ -64,6 +67,21 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null }).fondear, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).desplegar, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).fondear, false);
+  const error = botonesRevision(tarea({ origen: "error", veredicto: null }), true, conContrato);
+  assert.equal(error.desplegar, false);
+  assert.equal(error.fondear, false);
+  assert.equal(error.pagar, false);
+  const sinMonto = botonesRevision(tarea({ tipo: "reembolso", montoRevisado: null, origen: "scout" }), true, conContrato);
+  assert.equal(sinMonto.desplegar, false);
+  assert.equal(sinMonto.fondear, false);
+  assert.equal(sinMonto.pagar, false);
+  const conMonto = botonesRevision(
+    tarea({ tipo: "reembolso", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+    true,
+    conContrato,
+  );
+  assert.equal(conMonto.fondear, true);
+  assert.equal(conMonto.pagar, true);
 });
 
 test("la revisión real usa la tarea del organizador y también pide /api/tareas", async () => {
@@ -126,7 +144,7 @@ test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
     if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }] });
-    return json({ aviso: "Entra para continuar." }, 401);
+    return json({ aviso: AVISO_ENTRAR }, 401);
   };
   assert.equal(await cargarDetalleOrganizador("stand", { fetch: fetchImpl }), null);
 
@@ -189,4 +207,24 @@ test("la vista real arma Ver pago con el hash de cada revisión", async () => {
     vista?.bandeja.map((item) => item.id),
     ["comida"],
   );
+});
+
+test("reintentar revisión hace POST a la tarea", async () => {
+  const llamadas: { url: string; method: string }[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = String(input);
+    llamadas.push({ url, method: init?.method ?? "GET" });
+    return json({
+      tarea: tarea({ origen: "scout", codigo: null, frase: "Banner de ZEEK." }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      walletCobro: null,
+      wallet: "GORGANIZADOR",
+    });
+  };
+  const detalle = await reintentarRevision("stand", { fetch: fetchImpl });
+  assert.deepEqual(llamadas, [{ url: "/api/revision/stand", method: "POST" }]);
+  assert.equal(detalle?.tarea.origen, "scout");
+  assert.equal(detalle?.tarea.frase, "Banner de ZEEK.");
+  assert.equal(await reintentarRevision("  ", { fetch: fetchImpl }), null);
 });

@@ -5,10 +5,12 @@ import { POST as crearProyecto } from "../../app/api/proyectos/route";
 import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
 import type { Almacen } from "../db/almacen";
+import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_PROYECTO_DEMO } from "../sesion/demo";
+import { reiniciarCandadosRevision } from "./revision";
 import { crearProyectoHttp } from "./proyectos";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -244,5 +246,96 @@ test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", as
     if (clave === undefined) delete process.env.TRUSTLESS_API_KEY;
     else process.env.TRUSTLESS_API_KEY = clave;
     reiniciarLimite();
+  }
+});
+
+test("el reintento solo corre si quien llama organiza ese proyecto", async () => {
+  reiniciarCandadosRevision();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const fotos = crearFotosMemoria();
+  const blobId = await fotos.guardar("evidencia.jpg", new Blob([Uint8Array.from([1])], { type: "image/jpeg" }));
+  const evidenciaId = "foto-stand";
+  await almacen.crearEvidencia({
+    id: evidenciaId,
+    tareaId: "stand",
+    blobId,
+    monto: null,
+    fecha: null,
+    creadaEn: "2099-01-01T00:00:00.000Z",
+  });
+  await almacen.guardarVeredicto({
+    id: evidenciaId,
+    evidenciaId,
+    tareaId: "stand",
+    veredicto: "insuficiente",
+    frase: "La IA no respondió a tiempo",
+    textoScout: "La IA no respondió a tiempo",
+    choice: "tiempo",
+    noul: "no",
+    score: "error",
+    origen: "error",
+  });
+  const expiraEn = new Date(Date.now() + 60_000).toISOString();
+  await almacen.crearSesion({
+    token: "ajeno",
+    email: "voluntario2@demo.hyto",
+    usuarioId: "voluntario-2",
+    rol: "voluntario",
+    expiraEn,
+    wallet: "",
+  });
+  await almacen.crearSesion({
+    token: "global",
+    email: "organizador@demo.hyto",
+    usuarioId: "organizador",
+    rol: "organizador",
+    expiraEn,
+    wallet: "",
+  });
+  const anterior = gancho();
+  const tabla = globalThis as typeof globalThis & { __HYTO_FOTOS_PRUEBA?: () => ReturnType<typeof crearFotosMemoria> | null };
+  const fotosPrevias = tabla.__HYTO_FOTOS_PRUEBA;
+  tabla.__HYTO_FOTOS_PRUEBA = () => fotos;
+  usar(almacen);
+  const clave = process.env.GROQ_API_KEY;
+  const laya = process.env.LAYA_URL;
+  process.env.GROQ_API_KEY = "clave-de-prueba";
+  delete process.env.LAYA_URL;
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  const previo = console.error;
+  console.error = () => undefined;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response("no", { status: 500 });
+  };
+  try {
+    const stand = { params: Promise.resolve({ id: "stand" }) };
+    const pedir = (token: string) =>
+      new Request("http://local/api/revision/stand", { method: "POST", headers: { cookie: cookie(token) } });
+    const ajeno = await forzarRevision(pedir("ajeno"), stand);
+    assert.equal(ajeno.status, 403);
+    assert.equal(((await ajeno.json()) as { aviso: string }).aviso, "Solo el organizador revisa.");
+    assert.equal(llamadas, 0);
+    assert.equal((await almacen.veredictoDe(evidenciaId))?.frase, "La IA no respondió a tiempo");
+
+    const propio = await forzarRevision(pedir("global"), stand);
+    assert.equal(propio.status, 200);
+    assert.equal(llamadas, 1);
+    const vista = (await propio.json()) as { tarea: { origen: string; codigo: string | null } };
+    assert.equal(vista.tarea.origen, "error");
+    assert.equal(vista.tarea.codigo, "proveedor");
+  } finally {
+    console.error = previo;
+    globalThis.fetch = original;
+    tabla.__HYTO_FOTOS_PRUEBA = fotosPrevias;
+    (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = anterior;
+    if (clave === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = clave;
+    if (laya === undefined) delete process.env.LAYA_URL;
+    else process.env.LAYA_URL = laya;
+    reiniciarCandadosRevision();
   }
 });

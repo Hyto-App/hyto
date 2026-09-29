@@ -1,13 +1,43 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { detalleMonto, enlaceCredencial, enlacePago } from "@/lib/admin/vista";
+import { reintentarRevision } from "@/lib/admin/remoto";
+import { bandejaDe, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, porPersona, resumir } from "@/lib/admin/vista";
+import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
 
 export function Informe() {
-  const vista = useVistaAdmin();
+  const cargada = useVistaAdmin();
+  const [parche, setParche] = useState<VistaAdmin | null>(null);
+  const [reintento, setReintento] = useState<string | null>(null);
+  const [avisoId, setAvisoId] = useState<string | null>(null);
+  const vista = parche ?? cargada;
+
+  useEffect(() => {
+    setParche(null);
+  }, [cargada]);
+
+  async function reintentar(id: string) {
+    if (reintento) return;
+    setReintento(id);
+    setAvisoId(null);
+    try {
+      const detalle = await reintentarRevision(id);
+      if (!detalle) {
+        setAvisoId(id);
+        return;
+      }
+      setParche((actual) => {
+        const base = actual ?? cargada;
+        return base ? conTarea(base, detalle.tarea) : base;
+      });
+    } finally {
+      setReintento(null);
+    }
+  }
 
   if (!vista) {
     return <p className="text-[var(--suave)]">Cargando…</p>;
@@ -48,6 +78,7 @@ export function Informe() {
                 const credencial = enlaceCredencial(tarea.credencialUrl);
                 const detalle = detalleMonto(tarea);
                 const cifra = detalle.hasta ? `Hasta ${formatearMonto(detalle.cifra)}` : formatearMonto(detalle.cifra);
+                const origen = etiquetaOrigen(tarea.origen);
                 return (
                   <div key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -61,7 +92,29 @@ export function Informe() {
                     {detalle.tope && detalle.tope !== detalle.cifra ? (
                       <p className="mt-1 text-sm text-[var(--suave)]">Tope {formatearMonto(detalle.tope)}</p>
                     ) : null}
-                    {tarea.frase ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.frase}</p> : null}
+                    {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
+                    {tarea.origen === "error" && tarea.frase ? (
+                      <p role="alert" className="mt-3 text-sm leading-6">
+                        {tarea.frase}
+                      </p>
+                    ) : tarea.frase ? (
+                      <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.frase}</p>
+                    ) : null}
+                    {tarea.origen === "error" && !vista.ejemplo ? (
+                      <button
+                        type="button"
+                        onClick={() => void reintentar(tarea.id)}
+                        disabled={reintento === tarea.id}
+                        className="mt-3 text-sm font-semibold underline-offset-4 hover:underline"
+                      >
+                        Retry review
+                      </button>
+                    ) : null}
+                    {avisoId === tarea.id ? (
+                      <p role="alert" className="mt-3 text-sm leading-6">
+                        The review could not be retried.
+                      </p>
+                    ) : null}
                     {pago || credencial ? (
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">
                         {pago ? (
@@ -91,4 +144,15 @@ export function Informe() {
       ) : null}
     </main>
   );
+}
+
+function conTarea(vista: VistaAdmin, tarea: TareaAdmin): VistaAdmin {
+  const tareas = vista.tareas.map((item) => (item.id === tarea.id ? tarea : item));
+  return {
+    ...vista,
+    tareas,
+    bandeja: bandejaDe(tareas),
+    resumen: resumir(tareas),
+    personas: porPersona(tareas),
+  };
 }

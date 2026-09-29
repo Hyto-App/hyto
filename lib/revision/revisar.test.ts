@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { tareasSemilla } from "../db/semilla";
+import { guionFijo } from "./armar";
 import { preguntarLaya } from "./laya";
 import { revisar } from "./revisar";
 
@@ -21,25 +22,30 @@ test("si Scout responde y no hay Laya, el stub arma el veredicto", async () => {
       return groq("Banner de ZEEK de frente.");
     },
   });
-  assert.equal(resultado.origen, "scout");
+  assert.equal(resultado.origen, "stub");
+  assert.equal(resultado.codigo, null);
   assert.equal(resultado.veredicto, "parcial");
   assert.match(resultado.frase, /Banner de ZEEK de frente/);
   assert.match(resultado.frase, /Categoría stand/);
 });
 
-test("si Scout falla, entra el guion fijo", async () => {
+test("si Scout falla, no entra el guion fijo", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "stand");
   assert.ok(tarea);
-  const resultado = await revisar(tarea, FOTO, {
-    claveGroq: "clave",
-    layaUrl: "https://laya.example",
-    fetchImpl: async () => new Response("no", { status: 500 }),
-  });
-  assert.equal(resultado.origen, "guion");
-  assert.match(resultado.texto, /Mesa armada/);
+  const resultado = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: "clave-super-secreta",
+      layaUrl: "https://laya.example",
+      fetchImpl: async () => new Response("no", { status: 500 }),
+    }),
+  );
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "proveedor");
+  assert.notEqual(resultado.texto, guionFijo("trabajo").texto);
+  assert.equal(resultado.frase.includes("clave-super-secreta"), false);
 });
 
-test("si Laya falla, entra el guion fijo", async () => {
+test("si Laya falla, no entra el guion fijo", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "comida");
   assert.ok(tarea);
   let paso = 0;
@@ -52,9 +58,77 @@ test("si Laya falla, entra el guion fijo", async () => {
       return new Response("no", { status: 502 });
     },
   });
-  assert.equal(resultado.origen, "guion");
-  assert.equal(resultado.monto, "12.40");
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "proveedor");
+  assert.equal(resultado.monto, null);
+  assert.notEqual(resultado.texto, guionFijo("reembolso").texto);
 });
+
+test("cada fallo de una evidencia real deja el error y no el guion", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  const guion = guionFijo("trabajo");
+  const casos: { codigo: string; frase: RegExp; fetchImpl?: typeof fetch; clave?: string | null; foto?: typeof FOTO | null }[] = [
+    {
+      codigo: "cupo",
+      frase: /quota/,
+      fetchImpl: async () => new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 }),
+    },
+    {
+      codigo: "tiempo",
+      frase: /did not respond in time/,
+      fetchImpl: async () => {
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    },
+    {
+      codigo: "proveedor",
+      frase: /could not finish/,
+      fetchImpl: async () => new Response("mal", { status: 500 }),
+    },
+    {
+      codigo: "respuesta",
+      frase: /could not be read/,
+      fetchImpl: async () => Response.json({ choices: [{ finish_reason: "length", message: { content: '{"texto":' } }] }),
+    },
+    { codigo: "sin_clave", frase: /not configured/, clave: null },
+    { codigo: "sin_foto", frase: /no photo/i, foto: null },
+  ];
+  for (const caso of casos) {
+    const logs: unknown[][] = [];
+    const previo = console.error;
+    console.error = (...args: unknown[]) => {
+      logs.push(args);
+    };
+    try {
+      const resultado = await revisar(tarea, caso.foto === undefined ? FOTO : caso.foto, {
+        claveGroq: caso.clave === undefined ? "clave-super-secreta" : caso.clave,
+        layaUrl: "https://laya.example",
+        fetchImpl: caso.fetchImpl ?? (async () => new Response("no")),
+      });
+      assert.equal(resultado.origen, "error", caso.codigo);
+      assert.equal(resultado.codigo, caso.codigo);
+      assert.match(resultado.frase, caso.frase);
+      assert.notEqual(resultado.texto, guion.texto);
+      assert.equal(resultado.frase.includes("Mesa armada"), false);
+      assert.equal(JSON.stringify(logs).includes("clave-super-secreta"), false);
+      assert.equal(logs.length > 0, true);
+      assert.match(JSON.stringify(logs[0]), new RegExp(caso.codigo));
+    } finally {
+      console.error = previo;
+    }
+  }
+});
+
+async function conLog<T>(trabajo: () => Promise<T>): Promise<T> {
+  const previo = console.error;
+  console.error = () => undefined;
+  try {
+    return await trabajo();
+  } finally {
+    console.error = previo;
+  }
+}
 
 test("la clave de Laya viaja solo si está configurada", async () => {
   const previa = process.env.LAYA_API_KEY;

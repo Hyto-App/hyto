@@ -16,6 +16,8 @@ export type TareaAdmin = {
   estado: EstadoTarea;
   veredicto: Veredicto | null;
   frase: string | null;
+  origen: "scout" | "guion" | "stub" | "error" | null;
+  codigo: string | null;
   montoRevisado: string | null;
   fecha: string | null;
   hashPago: string | null;
