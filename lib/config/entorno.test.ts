@@ -226,15 +226,16 @@ test("preparar la base local exige DATABASE_URL y respeta la salvaguarda", () =>
 });
 
 test("la cookie solo marca Secure en producción", () => {
-  const anterior = process.env.NODE_ENV;
+  const env = process.env as { NODE_ENV?: string };
+  const anterior = env.NODE_ENV;
   try {
-    process.env.NODE_ENV = "production";
+    env.NODE_ENV = "production";
     assert.match(encabezadoCookie("abc"), /; Secure/);
-    process.env.NODE_ENV = "development";
+    env.NODE_ENV = "development";
     assert.equal(encabezadoCookie("abc").includes("Secure"), false);
   } finally {
-    if (anterior === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = anterior;
+    if (anterior === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = anterior;
   }
 });
 
