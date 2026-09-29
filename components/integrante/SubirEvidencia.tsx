@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
+import { guardarEstado, guardarEvidencia, leerMemoria, olvidarEvidencia } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
-import { leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
+import { evidenciaLocalSirve, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
 type Fase = "cargando" | "inicio" | "camara" | "foto" | "enviando" | "lista" | "faltante";
@@ -40,8 +40,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       setTarea(resultado.tarea);
       setEjemplo(resultado.ejemplo);
       const guardada = memoria.evidencias[resultado.tarea.id];
-      if (guardada) {
-        setEvidencia(guardada);
+      if (evidenciaLocalSirve(guardada, resultado.ejemplo)) {
+        setEvidencia(guardada ?? null);
         setFase("lista");
         return;
       }
@@ -146,7 +146,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo) return;
-    if (archivo.type && !archivo.type.startsWith("image/")) {
+    if (archivo.type.split(";")[0]?.trim().toLowerCase() === "image/svg+xml" || (archivo.type && !archivo.type.startsWith("image/"))) {
       setError("Elige una foto.");
       return;
     }
@@ -162,14 +162,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       const resultado = await subirEvidencia(tarea, foto);
       setEvidencia(resultado.evidencia);
       setEjemplo(resultado.ejemplo);
-      if (resultado.ejemplo) {
-        guardarEvidencia(resultado.evidencia);
-        guardarEstado(tarea.id, "en revisión");
-        setTarea({ ...tarea, estado: "en revisión" });
-      }
+      const avisoGuardado = guardarEvidencia(resultado.evidencia) ?? guardarEstado(tarea.id, "en revisión");
+      setTarea({ ...tarea, estado: "en revisión" });
       setFase("lista");
-    } catch {
-      setError("No se pudo enviar. Intenta otra vez.");
+      if (avisoGuardado) setError(avisoGuardado);
+    } catch (error) {
+      setError(error instanceof Error && error.name === "ErrorEnvio" ? error.message : "No se pudo enviar. Intenta otra vez.");
       setFase("foto");
     } finally {
       enviandoRef.current = false;
@@ -177,6 +175,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   }
 
   function tomarOtra() {
+    if (tarea) setError(olvidarEvidencia(tarea.id));
     setEvidencia(null);
     setFoto(null);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);

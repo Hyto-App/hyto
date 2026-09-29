@@ -21,9 +21,13 @@ export function excedido(clave: string, ahora = Date.now()): boolean {
 }
 
 export function clienteDe(request: Request): string {
-  const encabezado = request.headers.get("x-forwarded-for") ?? "";
-  const ip = encabezado.split(",")[0]?.trim();
-  return ip || "local";
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const partes = (request.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((parte) => parte.trim())
+    .filter(Boolean);
+  return partes.at(-1) || "local";
 }
 
 export function respuestaSiExcedido(request: Request): Response | null {
@@ -32,9 +36,48 @@ export function respuestaSiExcedido(request: Request): Response | null {
 }
 
 export function respuestaSiCuerpoGrande(request: Request): Response | null {
-  const largo = Number(request.headers.get("content-length") ?? "0");
+  const crudo = request.headers.get("content-length");
+  if (!crudo) return null;
+  const largo = Number(crudo);
   if (!Number.isFinite(largo) || largo <= TOPE_CUERPO) return null;
+  return cuerpoGrande();
+}
+
+function cuerpoGrande(): Response {
   return Response.json({ aviso: "El cuerpo es demasiado grande." }, { status: 413 });
+}
+
+export async function leerJsonAcotado(request: Request): Promise<{ json: unknown } | Response> {
+  const porLargo = respuestaSiCuerpoGrande(request);
+  if (porLargo) return porLargo;
+  const texto = await leerTextoAcotado(request);
+  if (texto instanceof Response) return texto;
+  try {
+    return { json: JSON.parse(texto) as unknown };
+  } catch {
+    return Response.json({ aviso: "El cuerpo no es JSON." }, { status: 400 });
+  }
+}
+
+async function leerTextoAcotado(request: Request): Promise<string | Response> {
+  const lector = request.body?.getReader();
+  if (!lector) return "";
+  const decoder = new TextDecoder();
+  let texto = "";
+  let total = 0;
+  while (true) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > TOPE_CUERPO) {
+      await lector.cancel();
+      return cuerpoGrande();
+    }
+    texto += decoder.decode(value, { stream: true });
+  }
+  texto += decoder.decode();
+  return texto;
 }
 
 export function xdrDemasiadoLargo(xdr: string): boolean {

@@ -59,6 +59,9 @@ async function post(ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promi
   const json = await leerJson(respuesta);
   if (!respuesta.ok) {
     const problema = problemaDe(json);
+    if (respuesta.status === 401 || respuesta.status === 403) {
+      throw new ErrorFirma("No se pudo autorizar el pago.", respuesta.status, problema.codigo);
+    }
     throw new ErrorFirma(problema.detail, respuesta.status, problema.codigo);
   }
   return json;

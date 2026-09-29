@@ -65,6 +65,15 @@ test("un archivo que no es imagen no pasa", async () => {
     { almacen: crearMemoria(), fotos: crearFotosMemoria() },
   );
   assert.equal(respuesta.status, 400);
+
+  const svg = new FormData();
+  svg.set("tareaId", "stand");
+  svg.set("foto", new Blob(["<svg xmlns='http://www.w3.org/2000/svg'/>"], { type: "image/svg+xml" }), "dibujo.svg");
+  const rechazado = await publicarEvidenciaHttp(
+    new Request("http://local/api/evidencias", { method: "POST", body: svg }),
+    { almacen: crearMemoria(), fotos: crearFotosMemoria() },
+  );
+  assert.equal(rechazado.status, 400);
 });
 
 test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () => {

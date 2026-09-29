@@ -71,7 +71,11 @@ export function Bandeja() {
         </div>
       </section>
 
-      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {aviso ? (
+        <p role="alert" className="mt-8 text-sm leading-6 text-[var(--suave)]">
+          {aviso}
+        </p>
+      ) : null}
 
       {vista.ejemplo ? (
         <p className="mt-8 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que las rutas respondan.</p>

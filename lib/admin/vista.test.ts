@@ -26,6 +26,9 @@ test("aprobar y pedir otra foto cambian el resumen sin inventar un pago", () => 
     decisiones: { stand: "pagado", comida: "pagado", registro: "pendiente" },
   });
   assert.deepEqual(aprobada.resumen, { presupuesto: "75", pagado: "32.40", pendiente: "42.60" });
+  assert.equal(aprobada.tareas.find((tarea) => tarea.id === "registro")?.estado, "pendiente");
+  assert.equal(aprobada.tareas.find((tarea) => tarea.id === "registro")?.veredicto, null);
+  assert.equal(aprobada.tareas.find((tarea) => tarea.id === "stand")?.veredicto, "cumplió");
   assert.deepEqual(
     aprobada.bandeja.map((tarea) => tarea.id),
     [],

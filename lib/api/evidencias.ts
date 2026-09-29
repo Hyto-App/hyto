@@ -46,7 +46,11 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "No encontramos la foto." }, 404);
     return new Response(Buffer.from(foto.bytes), {
-      headers: { "content-type": foto.tipo || "application/octet-stream", "cache-control": "private, max-age=3600" },
+      headers: {
+        "content-type": tipoServido(foto.tipo),
+        "cache-control": "private, max-age=3600",
+        "x-content-type-options": "nosniff",
+      },
     });
   } catch {
     return baseNoLista();
@@ -55,6 +59,10 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
 
 export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidencia): Promise<Response> {
   if (!deps.fotos) return sinFotos();
+  const largo = Number(request.headers.get("content-length") ?? "");
+  if (Number.isFinite(largo) && largo > MAX_BYTES + 1_000_000) {
+    return json({ aviso: "La foto es demasiado grande." }, 413);
+  }
   let form: FormData;
   try {
     form = await request.formData();
@@ -157,9 +165,19 @@ function texto(valor: FormDataEntryValue | null): string {
   return typeof valor === "string" ? valor.trim() : "";
 }
 
+function esSvg(tipo: string): boolean {
+  return tipo.split(";")[0]?.trim().toLowerCase() === "image/svg+xml";
+}
+
 function esImagen(foto: Blob): boolean {
+  if (esSvg(foto.type)) return false;
   if (foto.type.startsWith("image/")) return true;
   return foto.type === "" && foto.size > 0;
+}
+
+function tipoServido(tipo: string): string {
+  if (!tipo || esSvg(tipo) || !tipo.startsWith("image/")) return "application/octet-stream";
+  return tipo;
 }
 
 function direccion(valor: string): string | null {

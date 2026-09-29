@@ -16,6 +16,7 @@ export function MisTareas() {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [ejemplo, setEjemplo] = useState(false);
   const [lista, setLista] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
     const memoria = leerMemoria();
@@ -41,7 +42,7 @@ export function MisTareas() {
 
   function elegir(id: string) {
     if (id === miembroId) return;
-    guardarMiembro(id);
+    setAviso(guardarMiembro(id));
     setMiembroId(id);
     setLista(false);
   }
@@ -67,6 +68,11 @@ export function MisTareas() {
           ))}
         </div>
         {direccion ? <p className="mt-3 font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p> : null}
+        {aviso ? (
+          <p role="alert" className="mt-3 text-sm leading-6 text-[var(--suave)]">
+            {aviso}
+          </p>
+        ) : null}
       </header>
 
       {!lista ? (

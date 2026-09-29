@@ -1,20 +1,16 @@
 import { leerEntrada } from "@/lib/escrow/cuerpos";
-import { respuestaSiCuerpoGrande, respuestaSiExcedido } from "@/lib/escrow/limite";
+import { leerJsonAcotado, respuestaSiExcedido } from "@/lib/escrow/limite";
 import { ErrorFirma, preparar } from "@/lib/escrow/modulo";
 import { exigirOrganizador } from "@/lib/sesion/exigir";
 
 export async function POST(request: Request): Promise<Response> {
   const sesion = await exigirOrganizador(request);
   if (sesion) return sesion;
-  const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
+  const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ aviso: "El cuerpo no es JSON." }, { status: 400 });
-  }
-  const entrada = leerEntrada(body);
+  const cuerpo = await leerJsonAcotado(request);
+  if (cuerpo instanceof Response) return cuerpo;
+  const entrada = leerEntrada(cuerpo.json);
   if ("aviso" in entrada) return Response.json({ aviso: entrada.aviso }, { status: 400 });
   if (entrada.accion === "liberar") {
     return Response.json({ aviso: "En v2 aprobar ya libera el hito." }, { status: 400 });

@@ -23,7 +23,12 @@ export function Marco({ children }: { children: ReactNode }) {
             {ENLACES.map((enlace) => {
               const activo = enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
               return (
-                <Link key={enlace.href} href={enlace.href} className={activo ? "font-semibold" : "text-[var(--suave)]"}>
+                <Link
+                  key={enlace.href}
+                  href={enlace.href}
+                  aria-current={activo ? "page" : undefined}
+                  className={activo ? "font-semibold" : "text-[var(--suave)]"}
+                >
                   {enlace.etiqueta}
                 </Link>
               );

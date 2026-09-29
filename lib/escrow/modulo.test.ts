@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "../integrante/identidades";
 import { BASE_V1, BASE_V2, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
-import { excedido, reiniciarLimite } from "./limite";
+import { clienteDe, excedido, leerJsonAcotado, reiniciarLimite } from "./limite";
 import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbot } from "./modulo";
 import type { CuentasDespliegue } from "./tipos";
 
@@ -170,6 +170,52 @@ test("la evidencia de más de 500 caracteres se rechaza", () => {
     "v2",
   );
   assert.equal(pedido, "La evidencia no puede pasar de 500 caracteres.");
+});
+
+test("un 401 de Trustless no copia el detalle", async () => {
+  const red = fetchDe({ detail: "Invalid API key", code: "AUTH_INVALID_CREDENTIAL" }, 401);
+  await assert.rejects(
+    () => enviar("FIRMADO", { fetch: red.fetch, clave: "clave-de-prueba" }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorFirma);
+      assert.equal(error.message, "No se pudo autorizar el pago.");
+      assert.equal(error.codigo, "AUTH_INVALID_CREDENTIAL");
+      return true;
+    },
+  );
+});
+
+test("el límite usa la IP de Vercel y no la primera del encabezado", () => {
+  const conReal = new Request("http://local/api/firma", {
+    headers: { "x-forwarded-for": "1.1.1.1, 2.2.2.2", "x-real-ip": "203.0.113.10" },
+  });
+  assert.equal(clienteDe(conReal), "203.0.113.10");
+  const sinReal = new Request("http://local/api/firma", { headers: { "x-forwarded-for": "1.1.1.1, 2.2.2.2" } });
+  assert.equal(clienteDe(sinReal), "2.2.2.2");
+});
+
+test("un cuerpo por encima del tope responde 413", async () => {
+  const largo = new Request("http://local/api/firma", { method: "POST", body: "x".repeat(200_001) });
+  const porLargo = await leerJsonAcotado(largo);
+  assert.ok(porLargo instanceof Response);
+  if (!(porLargo instanceof Response)) return;
+  assert.equal(porLargo.status, 413);
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(200_001));
+      controller.close();
+    },
+  });
+  const fragmentado = new Request("http://local/api/firma", {
+    method: "POST",
+    body: stream,
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+  const porStream = await leerJsonAcotado(fragmentado);
+  assert.ok(porStream instanceof Response);
+  if (!(porStream instanceof Response)) return;
+  assert.equal(porStream.status, 413);
 });
 
 test("el límite de firma corta después de treinta pedidos", () => {

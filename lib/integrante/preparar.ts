@@ -32,12 +32,12 @@ export async function prepararIdentidad(identidad: IdentidadDemo, auth: AuthProv
   }
 
   const lista = await asegurarCobroUsdc(billetera);
-  guardarCuenta(identidad.id, { direccion: lista.direccion, usdcListo: lista.usdcListo });
+  const aviso = guardarCuenta(identidad.id, { direccion: lista.direccion, usdcListo: lista.usdcListo });
   return {
     id: identidad.id,
     nombre: identidad.nombre,
     direccion: lista.direccion,
     usdcListo: lista.usdcListo,
-    detalle: lista.detalle,
+    detalle: aviso ?? lista.detalle,
   };
 }

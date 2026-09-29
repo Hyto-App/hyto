@@ -109,7 +109,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </button>
           ) : null}
 
-          {aviso && tarea.estado !== "pagado" ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+          {aviso && tarea.estado !== "pagado" ? (
+            <p role="alert" className="mt-4 text-sm leading-6 text-[var(--suave)]">
+              {aviso}
+            </p>
+          ) : null}
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
-import { leerTarea, listarTareas, subirEvidencia } from "./rutas";
+import { ErrorEnvio, evidenciaLocalSirve, leerTarea, listarTareas, subirEvidencia } from "./rutas";
 import type { Tarea } from "./tipos";
 
 function json(body: unknown, status = 200): Response {
@@ -141,6 +141,53 @@ test("un monto que no viene no se inventa como cero", async () => {
   const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl });
   assert.equal(lista.ejemplo, false);
   assert.equal(lista.tareas[0]?.monto, "");
+});
+
+test("una foto de más de 8 MB no se manda ni se inventa el reembolso", async () => {
+  let llamadas = 0;
+  const fetchImpl: typeof fetch = async () => {
+    llamadas += 1;
+    return json({}, 201);
+  };
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob([new Uint8Array(8_000_001)]), { fetch: fetchImpl }),
+    (error: unknown) => error instanceof ErrorEnvio && /grande/.test(error.message),
+  );
+  assert.equal(llamadas, 0);
+});
+
+test("si la ruta rechaza la foto, no se inventa el monto", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const fetchImpl: typeof fetch = async () => json({ aviso: "La foto es demasiado grande." }, 413);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => error instanceof ErrorEnvio && error.message === "La foto es demasiado grande.",
+  );
+});
+
+test("si el envío se corta, no se inventa la evidencia", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const fetchImpl: typeof fetch = async () => {
+    const error = new Error("tiempo");
+    error.name = "TimeoutError";
+    throw error;
+  };
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => error instanceof ErrorEnvio && /No se pudo enviar/.test(error.message),
+  );
+});
+
+test("la evidencia de ejemplo no tapa la tarea cuando la ruta responde", () => {
+  const ejemplo = evidenciaEjemplo(tareasEjemplo()[0]!);
+  assert.equal(evidenciaLocalSirve(ejemplo, true), true);
+  assert.equal(evidenciaLocalSirve(ejemplo, false), false);
+  assert.equal(evidenciaLocalSirve({ ...ejemplo, id: "ev-real" }, false), true);
+  assert.equal(evidenciaLocalSirve(undefined, false), false);
 });
 
 test("el estado local de ejemplo pisa el pendiente", async () => {

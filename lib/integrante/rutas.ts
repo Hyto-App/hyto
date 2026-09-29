@@ -100,8 +100,40 @@ function listaDesdeJson(json: unknown): Tarea[] | null {
   return crudo.map(normalizarTarea).filter((tarea): tarea is Tarea => tarea !== null);
 }
 
-async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {
-  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(4000) });
+const MAX_FOTO = 8_000_000;
+const ESPERA_LISTA_MS = 4000;
+const ESPERA_ENVIO_MS = 20_000;
+
+export class ErrorEnvio extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = "ErrorEnvio";
+  }
+}
+
+export function evidenciaLocalSirve(evidencia: Evidencia | undefined, ejemplo: boolean): boolean {
+  if (!evidencia) return false;
+  if (ejemplo) return true;
+  return !evidencia.id.startsWith("ejemplo-");
+}
+
+async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch, ms = ESPERA_LISTA_MS): Promise<Response> {
+  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(ms) });
+}
+
+async function avisoDe(respuesta: Response): Promise<string | null> {
+  const tipo = respuesta.headers.get("content-type") ?? "";
+  if (!tipo.includes("json")) return null;
+  try {
+    const json = (await respuesta.json()) as { aviso?: unknown };
+    return typeof json.aviso === "string" && json.aviso.trim() ? json.aviso : null;
+  } catch {
+    return null;
+  }
+}
+
+function esCorte(error: unknown): boolean {
+  return error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
 }
 
 async function leerJson(respuesta: Response): Promise<unknown> {
@@ -137,6 +169,7 @@ export async function leerTarea(id: string, filtro: FiltroTareas, opciones: Opci
 }
 
 export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: OpcionesRuta = {}): Promise<FotoEnviada> {
+  if (foto.size > MAX_FOTO) throw new ErrorEnvio("La foto es demasiado grande.");
   const fetchImpl = opciones.fetch ?? fetch;
   const base = opciones.baseUrl ?? "";
   const cuerpo = new FormData();
@@ -146,8 +179,14 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
   if (tarea.walletCobro) cuerpo.set("wallet", tarea.walletCobro);
 
   try {
-    const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
-    if (!respuesta.ok) throw new Error(String(respuesta.status));
+    const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl, ESPERA_ENVIO_MS);
+    if (!respuesta.ok) {
+      if (respuesta.status !== 503) {
+        const aviso = await avisoDe(respuesta);
+        if (aviso) throw new ErrorEnvio(aviso);
+      }
+      throw new Error(String(respuesta.status));
+    }
     const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
     if (!creada) throw new Error("forma");
 
@@ -159,7 +198,9 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
     } catch {
       return { evidencia: creada, ejemplo: false };
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ErrorEnvio) throw error;
+    if (esCorte(error)) throw new ErrorEnvio("No se pudo enviar. Intenta otra vez.");
     return { evidencia: evidenciaEjemplo(tarea), ejemplo: true };
   }
 }

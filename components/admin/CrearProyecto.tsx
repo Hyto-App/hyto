@@ -123,6 +123,7 @@ export function CrearProyecto() {
             {filas.length > 1 ? (
               <button
                 type="button"
+                aria-label={`Quitar tarea ${indice + 1}`}
                 onClick={() => setFilas((actuales) => actuales.filter((item) => item.clave !== fila.clave))}
                 className="mt-4 text-sm text-[var(--suave)]"
               >
@@ -142,7 +143,11 @@ export function CrearProyecto() {
           Fondear
         </BotonPrincipal>
       </div>
-      {aviso ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {aviso ? (
+        <p role="alert" className="mt-4 text-sm leading-6 text-[var(--suave)]">
+          {aviso}
+        </p>
+      ) : null}
       <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que el pago esté conectado.</p>
     </main>
   );

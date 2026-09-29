@@ -37,31 +37,44 @@ export function leerMemoria(): Memoria {
   }
 }
 
-function escribir(memoria: Memoria) {
-  if (!puedeGuardar()) return;
-  window.localStorage.setItem(CLAVE, JSON.stringify(memoria));
+export const AVISO_GUARDADO = "No se pudo guardar en este navegador.";
+
+function escribir(memoria: Memoria): string | null {
+  if (!puedeGuardar()) return AVISO_GUARDADO;
+  try {
+    window.localStorage.setItem(CLAVE, JSON.stringify(memoria));
+    return null;
+  } catch {
+    return AVISO_GUARDADO;
+  }
 }
 
-export function guardarMiembro(miembroId: string) {
+export function guardarMiembro(miembroId: string): string | null {
   const memoria = leerMemoria();
   memoria.miembroId = miembroId;
-  escribir(memoria);
+  return escribir(memoria);
 }
 
-export function guardarEstado(tareaId: string, estado: EstadoTarea) {
+export function guardarEstado(tareaId: string, estado: EstadoTarea): string | null {
   const memoria = leerMemoria();
   memoria.estados[tareaId] = estado;
-  escribir(memoria);
+  return escribir(memoria);
 }
 
-export function guardarEvidencia(evidencia: Evidencia) {
+export function guardarEvidencia(evidencia: Evidencia): string | null {
   const memoria = leerMemoria();
   memoria.evidencias[evidencia.tareaId] = evidencia;
-  escribir(memoria);
+  return escribir(memoria);
 }
 
-export function guardarCuenta(id: string, cuenta: { direccion: string; usdcListo: boolean }) {
+export function olvidarEvidencia(tareaId: string): string | null {
+  const memoria = leerMemoria();
+  delete memoria.evidencias[tareaId];
+  return escribir(memoria);
+}
+
+export function guardarCuenta(id: string, cuenta: { direccion: string; usdcListo: boolean }): string | null {
   const memoria = leerMemoria();
   memoria.cuentas[id] = cuenta;
-  escribir(memoria);
+  return escribir(memoria);
 }

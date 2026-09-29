@@ -192,7 +192,11 @@ export function Entrar() {
           </button>
         </>
       ) : null}
-      {aviso ? <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+      {aviso ? (
+        <p role="alert" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+          {aviso}
+        </p>
+      ) : null}
     </div>
   );
 }
