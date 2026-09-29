@@ -12,6 +12,7 @@ const PLAZO_MS = 2800;
 export type DepsEvidencia = {
   almacen: Almacen;
   fotos: Fotos | null;
+  usuarioId: string;
   revisarTarea?: (tarea: TareaFila, foto: Awaited<ReturnType<Fotos["leer"]>>) => Promise<ResultadoRevision>;
   continuar?: (trabajo: Promise<void>) => void;
 };
@@ -71,6 +72,9 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
+    if (!deps.usuarioId || tarea.miembroId !== deps.usuarioId) {
+      return json({ aviso: "Esta tarea no es tuya." }, 403);
+    }
 
     let blobId: string;
     try {
@@ -88,8 +92,6 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     };
     await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
-    const wallet = direccion(texto(form.get("wallet")));
-    if (wallet) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
 
     const leida = await deps.fotos.leer(blobId);
     const trabajo = (deps.revisarTarea ?? revisarPorDefecto)(tarea, leida);
@@ -160,9 +162,4 @@ function texto(valor: FormDataEntryValue | null): string {
 function esImagen(foto: Blob): boolean {
   if (foto.type.startsWith("image/")) return true;
   return foto.type === "" && foto.size > 0;
-}
-
-function direccion(valor: string): string | null {
-  if (!/^G[A-Z2-7]{55}$/.test(valor)) return null;
-  return valor;
 }

@@ -52,21 +52,22 @@ function firmar(cuerpo: Record<string, unknown>, clave: KeyObject = privateKey, 
   return `${datos}.${firma.sign(clave).toString("base64url")}`;
 }
 
-test("sin clave configurada el correo sale del token y no del cliente", async () => {
-  const correo = await correoDelToken(payload(claims({ email: "Organizador@demo.hyto" })), "", sinClave);
-  assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc" });
+test("sin clave configurada el correo no sale del token ni del cliente", async () => {
+  assert.equal(await correoDelToken(payload(claims({ email: "Organizador@demo.hyto" })), "", sinClave), null);
   assert.equal(await correoDelToken(payload(claims({ email: undefined })), "organizador@demo.hyto", sinClave), null);
   assert.equal(await correoDelToken(payload(claims()), "otro@demo.hyto", sinClave), null);
 });
 
 test("sin clave configurada no autentica la firma", async () => {
-  const correo = await correoDelToken(payload(claims()), "organizador@demo.hyto", sinClave);
-  assert.equal(correo?.correo, "organizador@demo.hyto");
+  assert.equal(await correoDelToken(payload(claims()), "organizador@demo.hyto", sinClave), null);
+  assert.equal(await correoDelToken(firmar(claims()), "organizador@demo.hyto", sinClave), null);
 });
 
 test("con clave configurada exige firma, emisor y plazo", async () => {
-  const correo = await correoDelToken(firmar(claims({ email: "Organizador@demo.hyto" })), "organizador@demo.hyto", conClave);
+  const correo = await correoDelToken(firmar(claims({ email: "Organizador@demo.hyto" })), "", conClave);
   assert.deepEqual(correo, { correo: "organizador@demo.hyto", sub: "abc" });
+  assert.equal(await correoDelToken(firmar(claims({ email: undefined })), "organizador@demo.hyto", conClave), null);
+  assert.equal(await correoDelToken(firmar(claims()), "otro@demo.hyto", conClave), null);
   assert.equal(await correoDelToken(payload(claims()), "organizador@demo.hyto", conClave), null);
   assert.equal(await correoDelToken(firmar(claims(), otra.privateKey), "organizador@demo.hyto", conClave), null);
   assert.equal(await correoDelToken(firmar(claims({ iss: "https://otro.example" })), "organizador@demo.hyto", conClave), null);
@@ -82,6 +83,65 @@ test("la audiencia solo se comprueba si está configurada", async () => {
   assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "hyto" }))?.correo, "organizador@demo.hyto");
   assert.equal(await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "otra" }), null);
   assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: null }))?.correo, "organizador@demo.hyto");
+});
+
+test("cada emisor usa su clave y su kid", async () => {
+  const google = "https://accounts.google.com";
+  const ajustes: AjustesJwt = {
+    ahora: AHORA,
+    emisor: [EMISOR, google],
+    audiencia: null,
+    jwksUrl: null,
+    claves: [
+      { ...jwk, iss: EMISOR },
+      { ...otra.jwk, iss: google },
+    ],
+  };
+  assert.equal((await correoDelToken(firmar(claims()), "organizador@demo.hyto", ajustes))?.correo, "organizador@demo.hyto");
+  const tokenGoogle = firmar(claims({ iss: google }), otra.privateKey, "otra");
+  assert.equal((await correoDelToken(tokenGoogle, "organizador@demo.hyto", ajustes))?.correo, "organizador@demo.hyto");
+  assert.equal(await correoDelToken(firmar(claims({ iss: google })), "organizador@demo.hyto", ajustes), null);
+  assert.equal(await correoDelToken(firmar(claims({ iss: "https://otro.example" })), "organizador@demo.hyto", ajustes), null);
+});
+
+test("las listas del entorno emparejan emisor y clave", async () => {
+  const google = "https://accounts.google.com";
+  process.env.CAVOS_JWT_ISSUER = `${EMISOR},${google}`;
+  process.env.CAVOS_JWT_JWK = JSON.stringify({ [EMISOR]: jwk, [google]: otra.jwk });
+  try {
+    const ajustes: AjustesJwt = { ahora: AHORA, audiencia: null, jwksUrl: null };
+    assert.equal((await correoDelToken(firmar(claims()), "organizador@demo.hyto", ajustes))?.correo, "organizador@demo.hyto");
+    const tokenGoogle = firmar(claims({ iss: google }), otra.privateKey, "otra");
+    assert.equal((await correoDelToken(tokenGoogle, "organizador@demo.hyto", ajustes))?.correo, "organizador@demo.hyto");
+    assert.equal(await correoDelToken(firmar(claims({ iss: google })), "organizador@demo.hyto", ajustes), null);
+  } finally {
+    delete process.env.CAVOS_JWT_ISSUER;
+    delete process.env.CAVOS_JWT_JWK;
+  }
+});
+
+test("un JWKS vacío no queda en caché", async () => {
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.startsWith("https://jwks.prueba/vacio")) {
+      llamadas += 1;
+      return new Response(JSON.stringify({ keys: [{ kty: "oct" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return original(input, init);
+  };
+  try {
+    const ajustes: AjustesJwt = { ahora: AHORA, emisor: null, audiencia: null, jwksUrl: "https://jwks.prueba/vacio" };
+    assert.equal(await correoDelToken(firmar(claims()), "organizador@demo.hyto", ajustes), null);
+    assert.equal(await correoDelToken(firmar(claims()), "organizador@demo.hyto", ajustes), null);
+    assert.equal(llamadas, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 
 test("rechaza un token sin sujeto", async () => {

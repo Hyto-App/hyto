@@ -25,6 +25,13 @@ export type FotoEnviada = {
   ejemplo: boolean;
 };
 
+export class AvisoSesion extends Error {
+  constructor(aviso: string) {
+    super(aviso);
+    this.name = "AvisoSesion";
+  }
+}
+
 function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | undefined): Tarea[] {
   if (!estados) return tareas;
   return tareas.map((tarea) => (estados[tarea.id] ? { ...tarea, estado: estados[tarea.id] } : tarea));
@@ -147,6 +154,7 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
 
   try {
     const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
+    if (respuesta.status === 401) throw new AvisoSesion(await avisoDe(respuesta));
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
     if (!creada) throw new Error("forma");
@@ -159,7 +167,18 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
     } catch {
       return { evidencia: creada, ejemplo: false };
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof AvisoSesion) throw error;
     return { evidencia: evidenciaEjemplo(tarea), ejemplo: true };
   }
+}
+
+async function avisoDe(respuesta: Response): Promise<string> {
+  try {
+    const cuerpo = (await respuesta.json()) as { aviso?: unknown };
+    if (typeof cuerpo?.aviso === "string" && cuerpo.aviso.trim()) return cuerpo.aviso.trim();
+  } catch {
+    /* sin aviso en el cuerpo */
+  }
+  return "Entra para continuar.";
 }

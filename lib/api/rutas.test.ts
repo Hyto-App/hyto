@@ -67,6 +67,7 @@ test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
   const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
     almacen,
     fotos,
+    usuarioId: "voluntario-1",
   });
   assert.equal(creada.status, 201);
   const json = (await creada.json()) as { evidencia: { id: string; monto: string; fecha: string; blobId: string } };
@@ -85,13 +86,44 @@ test("la foto queda guardada y el reembolso trae monto y fecha", async () => {
   assert.equal(tarea?.estado, "en revisión");
 });
 
+test("la evidencia ajena se rechaza y el formulario no cambia la wallet", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const wallet = `G${"A".repeat(55)}`;
+  const cuerpo = new FormData();
+  cuerpo.set("tareaId", "comida");
+  cuerpo.set("wallet", wallet);
+  cuerpo.set("foto", new Blob([Uint8Array.from([1, 2, 3])], { type: "image/jpeg" }), "evidencia.jpg");
+  const ajena = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
+    almacen,
+    fotos,
+    usuarioId: "voluntario-2",
+  });
+  assert.equal(ajena.status, 403);
+  assert.equal(((await ajena.json()) as { aviso: string }).aviso, "Esta tarea no es tuya.");
+  assert.equal((await almacen.leerTarea("comida"))?.walletCobro, "");
+  assert.equal((await almacen.leerTarea("comida"))?.estado, "pendiente");
+
+  const propia = new FormData();
+  propia.set("tareaId", "comida");
+  propia.set("wallet", wallet);
+  propia.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+  const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: propia }), {
+    almacen,
+    fotos,
+    usuarioId: "voluntario-1",
+  });
+  assert.equal(creada.status, 201);
+  assert.equal((await almacen.leerTarea("comida"))?.walletCobro, "");
+});
+
 test("un archivo que no es imagen no pasa", async () => {
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
   cuerpo.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
   const respuesta = await publicarEvidenciaHttp(
     new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }),
-    { almacen: crearMemoria(), fotos: crearFotosMemoria() },
+    { almacen: crearMemoria(), fotos: crearFotosMemoria(), usuarioId: "voluntario-1" },
   );
   assert.equal(respuesta.status, 400);
 });
@@ -123,7 +155,11 @@ test("la revisión de un trabajo sin clave usa el guion", async () => {
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
   cuerpo.set("foto", new Blob([Uint8Array.from([9])], { type: "image/png" }), "evidencia.jpg");
-  await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), { almacen, fotos });
+  await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
+    almacen,
+    fotos,
+    usuarioId: "voluntario-1",
+  });
   const json = (await (await leerRevisionHttp(almacen, fotos, "stand")).json()) as {
     tarea: { veredicto: string; frase: string; estado: string };
     foto: string;

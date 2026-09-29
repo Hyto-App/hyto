@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
-import { leerTarea, listarTareas, subirEvidencia } from "./rutas";
+import { AvisoSesion, leerTarea, listarTareas, subirEvidencia } from "./rutas";
 import type { Tarea } from "./tipos";
 
 function json(body: unknown, status = 200): Response {
@@ -80,6 +80,16 @@ test("un reembolso de ejemplo trae monto y fecha; un trabajo no", async () => {
   assert.equal(trabajo.evidencia.monto, null);
   assert.equal(trabajo.evidencia.fecha, null);
   assert.deepEqual(trabajo.evidencia, evidenciaEjemplo(stand));
+});
+
+test("un 401 al subir muestra el aviso y no guarda el ejemplo", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const fetchImpl: typeof fetch = async () => json({ aviso: "Entra para continuar." }, 401);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => error instanceof AvisoSesion && error.message === "Entra para continuar.",
+  );
 });
 
 test("la evidencia real no inventa monto ni fecha", async () => {

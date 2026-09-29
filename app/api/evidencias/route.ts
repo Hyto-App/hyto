@@ -10,6 +10,7 @@ export async function POST(request: Request): Promise<Response> {
     publicarEvidenciaHttp(request, {
       almacen,
       fotos,
+      usuarioId: sesion.usuarioId,
       continuar: (trabajo) => {
         after(() => trabajo);
       },
