@@ -65,12 +65,10 @@
       "rol": "aplicador",
       "presente": true,
       "lenguaje": "TypeScript",
-      "ormOSql": "SQL ejecutado con @neondatabase/serverless. No usa drizzle-kit migrate.",
-      "sha256": "2c6c17e658d8afc6527a1f84e04afce6e5cb6f92c04827e5f24f63047b615f3c",
+      "ormOSql": "confirmar con Esteban",
+      "sha256": "f2aa5289c0b102bd01009cd86cbbd6a27acbfc2a513852fc794290b7a9a413ff",
       "detalle": {
-        "archivosQueLee": [
-          "drizzle/0000_inicio.sql"
-        ],
+        "archivosQueLee": [],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
     },
@@ -93,8 +91,8 @@
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "2aa201d5f63be87a4bf4e49ae857e341b8d92951fefb4025939ded8d0dc00177",
       "detalle": {
-        "loEjecutaMigrarTs": true,
-        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+        "loEjecutaMigrarTs": false,
+        "nota": "Está en drizzle/ y scripts/migrar.ts no lo lee. confirmar con Esteban"
       }
     }
   ],
@@ -1817,14 +1815,15 @@
     "tareas.miembro_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con miembro. confirmar con Esteban",
     "evidencias.blob_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con blob. confirmar con Esteban",
     "veredictos.tarea_id: Hay tareas en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban",
-    "sesiones.usuario_id: Hay usuarios en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban"
+    "sesiones.usuario_id: Hay usuarios en el esquema y esta columna no tiene REFERENCES. confirmar con Esteban",
+    "drizzle/0000_inicio.sql no lo lee scripts/migrar.ts. confirmar con Esteban"
   ],
   "base": {
     "rama": "main",
-    "sha": "7c64a5437b3c294bb163e07f59bb9b5f43d2904f",
+    "sha": "9508e0c0cfb109909babd4419186c487cf3fa9b3",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "feat: configuración central de entorno y salvaguarda de la base (#22)",
+    "asunto": "fix: Postgres local, migración y semilla de ejemplo (#21)",
     "archivosDeEsquemaIgualesAEseCommit": true,
     "archivosComparados": [
       {
