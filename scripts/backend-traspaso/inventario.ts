@@ -402,61 +402,106 @@ function buscarForaneaDrizzle(tabla: TablaDrizzle | undefined, columnas: string[
   return tabla.foraneas.find((clave) => mismoConjunto(clave.columnas, columnas)) ?? null;
 }
 
-function escaparRegExp(valor: string): string {
-  return valor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function desenvainar(expresion: ts.Expression): ts.Expression {
+  let actual = expresion;
+  while (
+    ts.isParenthesizedExpression(actual) ||
+    ts.isAsExpression(actual) ||
+    ts.isSatisfiesExpression(actual) ||
+    ts.isNonNullExpression(actual)
+  ) {
+    actual = actual.expression;
+  }
+  return actual;
 }
 
-function extraerBalanceado(texto: string, inicio: number, abre: string, cierra: string): string {
-  if (texto[inicio] !== abre) return "";
-  let profundidad = 0;
-  for (let i = inicio; i < texto.length; i++) {
-    if (texto[i] === abre) profundidad++;
-    else if (texto[i] === cierra) {
-      profundidad--;
-      if (profundidad === 0) return texto.slice(inicio, i + 1);
+function argumentoTexto(llamada: ts.CallExpression, indice: number): string | null {
+  const argumento = llamada.arguments[indice];
+  return argumento && ts.isStringLiteral(argumento) ? argumento.text : null;
+}
+
+function nombreColumnaDeLaCadena(expresion: ts.Expression): string | null {
+  let actual: ts.Expression | null = expresion;
+  while (actual) {
+    const nodo = desenvainar(actual);
+    if (ts.isCallExpression(nodo)) {
+      const callee = desenvainar(nodo.expression);
+      if (ts.isIdentifier(callee) && callee.text === "text") return argumentoTexto(nodo, 0);
+      actual = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
+      continue;
     }
+    actual = ts.isPropertyAccessExpression(nodo) ? nodo.expression : null;
   }
-  return texto.slice(inicio);
+  return null;
 }
 
-function cuerpoDeColumnas(fuenteSchema: string, tabla: string): string {
-  const patron = new RegExp(`pgTable\\(\\s*["']${escaparRegExp(tabla)}["']`);
-  const coincidencia = patron.exec(fuenteSchema);
-  if (!coincidencia) return "";
-  const llave = fuenteSchema.indexOf("{", coincidencia.index + coincidencia[0].length);
-  if (llave < 0) return "";
-  return extraerBalanceado(fuenteSchema, llave, "{", "}");
-}
-
-function cadenaDeLaColumna(bloque: string, desde: number): string {
-  let profundidad = 0;
-  for (let i = desde; i < bloque.length; i++) {
-    const caracter = bloque[i];
-    if (caracter === "(" || caracter === "{" || caracter === "[") profundidad++;
-    else if (caracter === ")" || caracter === "}" || caracter === "]") {
-      profundidad--;
-      if (profundidad < 0) return bloque.slice(desde, i);
-    } else if (caracter === "," && profundidad === 0) return bloque.slice(desde, i);
+function llamadaReferencesDeLaCadena(expresion: ts.Expression): ts.CallExpression | null {
+  let actual: ts.Expression | null = expresion;
+  while (actual) {
+    const nodo = desenvainar(actual);
+    if (ts.isCallExpression(nodo)) {
+      const callee = desenvainar(nodo.expression);
+      if (ts.isPropertyAccessExpression(callee) && callee.name.text === "references") return nodo;
+      actual = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
+      continue;
+    }
+    actual = ts.isPropertyAccessExpression(nodo) ? nodo.expression : null;
   }
-  return bloque.slice(desde);
+  return null;
 }
 
-export function fragmentoDeColumnaEnSchema(fuenteSchema: string, tabla: string, columna: string): string {
-  const cuerpo = cuerpoDeColumnas(fuenteSchema, tabla);
-  const patron = new RegExp(`\\b\\w+\\(\\s*["']${escaparRegExp(columna)}["']`);
-  const coincidencia = patron.exec(cuerpo);
-  if (!coincidencia) return "";
-  return cadenaDeLaColumna(cuerpo, coincidencia.index);
+function objetoDePgTable(fuente: ts.SourceFile, tabla: string): ts.ObjectLiteralExpression | null {
+  let encontrado: ts.ObjectLiteralExpression | null = null;
+  const visitar = (nodo: ts.Node): void => {
+    if (
+      ts.isCallExpression(nodo) &&
+      ts.isIdentifier(nodo.expression) &&
+      nodo.expression.text === "pgTable" &&
+      argumentoTexto(nodo, 0) === tabla &&
+      nodo.arguments[1] &&
+      ts.isObjectLiteralExpression(nodo.arguments[1])
+    ) {
+      encontrado = nodo.arguments[1];
+    }
+    ts.forEachChild(nodo, visitar);
+  };
+  visitar(fuente);
+  return encontrado;
 }
 
-export function accionesEscritasEnColumna(fuenteSchema: string, tabla: string, columna: string): { onDelete: boolean; onUpdate: boolean } {
-  const fragmento = fragmentoDeColumnaEnSchema(fuenteSchema, tabla, columna);
-  return { onDelete: fragmento.includes("onDelete"), onUpdate: fragmento.includes("onUpdate") };
+function accionesEnReferences(fuente: ts.SourceFile, tabla: string, columnas: string[]): { onDelete: boolean; onUpdate: boolean } {
+  const objeto = objetoDePgTable(fuente, tabla);
+  const pedidas = new Set(columnas);
+  const textos: string[] = [];
+  for (const propiedad of objeto?.properties ?? []) {
+    if (!ts.isPropertyAssignment(propiedad)) continue;
+    const nombre = nombreColumnaDeLaCadena(propiedad.initializer);
+    if (!nombre || !pedidas.has(nombre)) continue;
+    const llamada = llamadaReferencesDeLaCadena(propiedad.initializer);
+    if (llamada) textos.push(llamada.getText(fuente));
+  }
+  const texto = textos.join("\n");
+  return { onDelete: texto.includes("onDelete"), onUpdate: texto.includes("onUpdate") };
 }
 
-function foraneaInventario(sql: ClaveForaneaSql, drizzle: ForaneaDrizzle | null, fuenteSchema: string, tablaOrigen: string): ClaveForaneaInventario {
+export function accionesReferencialesEscritasEnReferences(
+  fuenteSchema: string,
+  tabla: string,
+  columnas: string[],
+): { onDelete: boolean; onUpdate: boolean } {
+  const archivo = ts.createSourceFile("lib/db/schema.ts", fuenteSchema, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
+  return accionesEnReferences(archivo, tabla, columnas);
+}
+
+function foraneaInventario(
+  sql: ClaveForaneaSql,
+  drizzle: ForaneaDrizzle | null,
+  fuenteSchema: string,
+  fuenteTs: ts.SourceFile,
+  tabla: string,
+): ClaveForaneaInventario {
   const nombreDrizzle = drizzle?.nombre ?? null;
-  const acciones = sql.columnas.map((columna) => accionesEscritasEnColumna(fuenteSchema, tablaOrigen, columna));
+  const acciones = accionesEnReferences(fuenteTs, tabla, sql.columnas);
   return {
     columnas: sql.columnas,
     tabla: sql.tabla,
@@ -466,8 +511,8 @@ function foraneaInventario(sql: ClaveForaneaSql, drizzle: ForaneaDrizzle | null,
     onUpdateEnSql: sql.onUpdate,
     onDeleteEnDrizzle: drizzle?.onDelete ?? null,
     onUpdateEnDrizzle: drizzle?.onUpdate ?? null,
-    onDeleteEscritoEnSchemaTs: acciones.some((accion) => accion.onDelete),
-    onUpdateEscritoEnSchemaTs: acciones.some((accion) => accion.onUpdate),
+    onDeleteEscritoEnSchemaTs: acciones.onDelete,
+    onUpdateEscritoEnSchemaTs: acciones.onUpdate,
     nombreEnSql: sql.nombre,
     nombreGeneradoPorDrizzleOrm: nombreDrizzle,
     nombreEscritoEnSchemaTs: nombreDrizzle ? fuenteSchema.includes(nombreDrizzle) : false,
@@ -601,6 +646,7 @@ export function armarInventario(raiz: string): Inventario {
   const pkg = leerJson(raiz, "package.json");
   const lock = leerJson(raiz, "package-lock.json");
   const fuenteSchema = readFileSync(path.join(raiz, "lib/db/schema.ts"), "utf8");
+  const fuenteSchemaTs = ts.createSourceFile("lib/db/schema.ts", fuenteSchema, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
   const fuenteConfig = readFileSync(path.join(raiz, "drizzle.config.ts"), "utf8");
   const fuenteMigrar = readFileSync(path.join(raiz, "scripts/migrar.ts"), "utf8");
   const config = leerDrizzleConfig(fuenteConfig);
@@ -724,7 +770,7 @@ export function armarInventario(raiz: string): Inventario {
       const columnaDrizzle = par?.columnas.find((item) => item.nombre === columna.nombre);
       const foraneaSql = columna.claveForanea;
       const foraneaDrizzle = foraneaSql ? buscarForaneaDrizzle(par, foraneaSql.columnas) : null;
-      const foranea = foraneaSql ? foraneaInventario(foraneaSql, foraneaDrizzle, fuenteSchema, tabla.nombre) : null;
+      const foranea = foraneaSql ? foraneaInventario(foraneaSql, foraneaDrizzle, fuenteSchema, fuenteSchemaTs, tabla.nombre) : null;
       return columnaInventario(
         columna,
         columnaDrizzle,

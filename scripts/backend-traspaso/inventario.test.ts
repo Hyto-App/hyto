@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { accionesEscritasEnColumna, analizarDiff, armarInventario } from "./inventario";
+import { accionesReferencialesEscritasEnReferences, analizarDiff, armarInventario } from "./inventario";
 import { parsearSql } from "./leer-sql";
 
 const RAIZ = process.cwd();
@@ -166,35 +166,39 @@ test("un diff de revisión no cambia el esquema y uno de migración sí", () => 
 `);
   assert.equal(ddl.tocaEsquema, true);
 
-  const referencesMinusculas = analizarDiff(`diff --git a/lib/api/tareas.ts b/lib/api/tareas.ts
+  const references = analizarDiff(`diff --git a/lib/api/tareas.ts b/lib/api/tareas.ts
 --- a/lib/api/tareas.ts
 +++ b/lib/api/tareas.ts
 @@ -1 +1 @@
 -const x = 1;
-+const sql = "references proyectos (id)";
++const sql = "proyecto_id text references proyectos (id)";
 `);
-  assert.equal(referencesMinusculas.tocaEsquema, true);
+  assert.equal(references.tocaEsquema, true);
 });
 
-test("onDelete y onUpdate se leen en la columna, no en el archivo", () => {
+test("onDelete y onUpdate se leen solo en el .references() de esa columna", () => {
   const fuente = `
-    // onDelete y onUpdate sueltos no cuentan
-    export const proyectos = pgTable("proyectos", {
-      id: text("id").primaryKey(),
-    });
+    const nota = "onDelete onUpdate";
     export const tareas = pgTable("tareas", {
-      id: text("id").primaryKey(),
       proyectoId: text("proyecto_id")
         .notNull()
         .references(() => proyectos.id),
-      otroId: text("otro_id").notNull().references(() => proyectos.id, { onDelete: "cascade", onUpdate: "restrict" }),
+      otra: text("otra").references(() => proyectos.id, { onDelete: "cascade", onUpdate: "restrict" }),
     });
-    export const evidencias = pgTable("evidencias", {
-      proyectoId: text("proyecto_id").references(() => proyectos.id, { onDelete: "set null" }),
+    export const notas = pgTable("notas", {
+      proyectoId: text("proyecto_id").references(() => tareas.id, { onDelete: "set null" }),
     });
   `;
-  assert.deepEqual(accionesEscritasEnColumna(fuente, "tareas", "proyecto_id"), { onDelete: false, onUpdate: false });
-  assert.deepEqual(accionesEscritasEnColumna(fuente, "tareas", "otro_id"), { onDelete: true, onUpdate: true });
-  assert.deepEqual(accionesEscritasEnColumna(fuente, "evidencias", "proyecto_id"), { onDelete: true, onUpdate: false });
-  assert.deepEqual(accionesEscritasEnColumna(fuente, "proyectos", "id"), { onDelete: false, onUpdate: false });
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "tareas", ["proyecto_id"]), {
+    onDelete: false,
+    onUpdate: false,
+  });
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "tareas", ["otra"]), {
+    onDelete: true,
+    onUpdate: true,
+  });
+  assert.deepEqual(accionesReferencialesEscritasEnReferences(fuente, "notas", ["proyecto_id"]), {
+    onDelete: true,
+    onUpdate: false,
+  });
 });
