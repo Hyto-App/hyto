@@ -448,7 +448,7 @@ test("el envío de resolve_dispute usa el firmante del XDR y el disputeResolver 
         { status: 200 },
       );
     }
-    return new Response(JSON.stringify({ status: "SUCCESS", txHash: "abc" }), { status: 200 });
+    return new Response(JSON.stringify({ txHash: "ab".repeat(32), ledger: 8, code: "STELLAR_TX_SUBMITTED" }), { status: 200 });
   };
   const xdr = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "resolve_dispute", firmante: FIRMANTE_XDR });
   try {

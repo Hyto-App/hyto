@@ -60,6 +60,11 @@ export type CuentasDespliegue = {
   comision: number;
 };
 
+export type EntradaDespliegue = {
+  accion: "desplegar";
+  tareaId: string;
+};
+
 export type Pedido = {
   ruta: string;
   cuerpo: Record<string, unknown>;

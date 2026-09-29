@@ -62,6 +62,24 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Clave de Trustless Work. Sin ella no hay pago: la firma responde 503 y el script del hito no corre.",
   },
   {
+    nombre: "HYTO_ESCROW_PLATFORM",
+    ambito: "servidor",
+    requerida: false,
+    para: "Cuenta G de la plataforma del escrow v2. Cobra la comisión (en Hyto es 0) y no puede repetir otro rol.",
+  },
+  {
+    nombre: "HYTO_ESCROW_RESOLVER",
+    ambito: "servidor",
+    requerida: false,
+    para: "Cuenta G que resuelve disputas. V2 no deja que repita approver, proveedor, liberador, plataforma ni quien cobra.",
+  },
+  {
+    nombre: "HYTO_ESCROW_ADMIN",
+    ambito: "servidor",
+    requerida: false,
+    para: "Cuenta G admin del escrow v2. El contrato rechaza que coincida con cualquier otro rol, incluida la plataforma.",
+  },
+  {
     nombre: HOST_BASE_PRODUCCION,
     ambito: "servidor",
     requerida: false,

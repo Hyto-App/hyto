@@ -243,8 +243,10 @@ function archivosSql(raiz: string): string[] {
     .map((nombre) => path.posix.join("drizzle", nombre));
 }
 
-function archivosQueLeeMigrar(texto: string): string[] {
-  return [...texto.matchAll(/readFileSync\(\s*["']([^"']+)["']/g)].map((coincidencia) => coincidencia[1] ?? "").filter(Boolean);
+function archivosQueLeeMigrar(texto: string, raiz: string): string[] {
+  const literales = [...texto.matchAll(/readFileSync\(\s*["']([^"']+)["']/g)].map((coincidencia) => coincidencia[1] ?? "").filter(Boolean);
+  if (!texto.includes("aplicarMigraciones")) return literales;
+  return [...new Set([...literales, ...archivosSql(raiz)])];
 }
 
 function valorDefaultDrizzle(valor: unknown): { valor: string | number | boolean | null; opaco: boolean } {
@@ -650,7 +652,7 @@ export function armarInventario(raiz: string): Inventario {
   const fuenteConfig = readFileSync(path.join(raiz, "drizzle.config.ts"), "utf8");
   const fuenteMigrar = readFileSync(path.join(raiz, "scripts/migrar.ts"), "utf8");
   const config = leerDrizzleConfig(fuenteConfig);
-  const leidosPorMigrar = archivosQueLeeMigrar(fuenteMigrar);
+  const leidosPorMigrar = archivosQueLeeMigrar(fuenteMigrar, raiz);
   const usaNeon = fuenteMigrar.includes('from "@neondatabase/serverless"');
   const drizzle = leerTablasDrizzle();
   const tipos = leerTiposAplicacion(raiz);

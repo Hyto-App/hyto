@@ -35,6 +35,7 @@ export function tareasSemilla(): TareaFila[] {
     walletCobro: "",
     estado: "pendiente",
     hashPago: tarea.hashPago,
+    contratoEscrow: null,
     credencialUrl: tarea.credencialUrl,
   }));
 }

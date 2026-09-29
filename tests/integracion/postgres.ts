@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Fotos } from "../../lib/blob/fotos";
@@ -75,9 +76,12 @@ async function prepararUnaVez(): Promise<SuiteLocal> {
     return { lista: false, motivo: "no hay base local" };
   }
   try {
-    const sql = readFileSync("drizzle/0000_inicio.sql", "utf8");
-    for (const sentencia of sentencias(sql)) {
-      await cliente.query(sentencia);
+    const nombres = readdirSync("drizzle")
+      .filter((nombre) => nombre.endsWith(".sql"))
+      .sort((a, b) => a.localeCompare(b));
+    for (const nombre of nombres) {
+      const sql = readFileSync(join("drizzle", nombre), "utf8");
+      for (const sentencia of sentencias(sql)) await cliente.query(sentencia);
     }
   } catch (error) {
     cliente.release();

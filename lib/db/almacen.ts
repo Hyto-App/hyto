@@ -10,7 +10,10 @@ export type Almacen = {
   crearProyecto(proyecto: Proyecto, tareas: TareaFila[]): Promise<void>;
   listarTareas(): Promise<TareaFila[]>;
   leerTarea(id: string): Promise<TareaFila | null>;
-  actualizarTarea(id: string, cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago">>): Promise<void>;
+  actualizarTarea(
+    id: string,
+    cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow">>,
+  ): Promise<void>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(id: string, cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha">>): Promise<void>;

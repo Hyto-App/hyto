@@ -25,7 +25,7 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.ok(tarea);
   assert.deepEqual(
     tarea.columnas.map((columna) => columna.nombre),
-    ["id", "proyecto_id", "titulo", "tipo", "monto", "tope", "condicion", "miembro_id", "wallet_cobro", "estado", "hash_pago", "credencial_url"],
+    ["id", "proyecto_id", "titulo", "tipo", "monto", "tope", "condicion", "miembro_id", "wallet_cobro", "estado", "hash_pago", "credencial_url", "contrato_escrow"],
   );
   assert.deepEqual(
     tarea.columnas.filter((columna) => columna.defaultDeclaradoEnSql).map((columna) => [columna.nombre, columna.defaultSql]),
