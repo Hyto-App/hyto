@@ -128,14 +128,17 @@ test("una semilla vieja en revisión vuelve a pendiente sin pago ni foto real", 
     fecha: null,
     creadaEn: "2026-09-28T12:00:00.000Z",
   });
+  await almacen.actualizarTarea("comida", { estado: "pagado" });
   await asegurarSemilla(almacen);
   assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
   assert.equal((await almacen.leerTarea("bienvenida"))?.estado, "pendiente");
-  assert.equal((await almacen.leerTarea("comida"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("comida"))?.estado, "pagado");
   assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
   await asegurarSemilla(almacen);
   assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
   assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("comida"))?.estado, "pagado");
+  assert.equal((await almacen.leerTarea("comida"))?.hashPago, null);
 });
 
 test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {

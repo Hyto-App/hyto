@@ -108,7 +108,7 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {
   for (const tarea of await almacen.listarTareas()) {
-    if (tarea.hashPago || tarea.estado === "pendiente") continue;
+    if (tarea.estado !== "en revisión" || tarea.hashPago) continue;
     const evidencia = await almacen.ultimaEvidencia(tarea.id);
     if (evidencia && !esBlobEjemplo(evidencia.blobId)) continue;
     await almacen.actualizarTarea(tarea.id, { estado: "pendiente" });
