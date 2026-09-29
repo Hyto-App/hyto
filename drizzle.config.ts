@@ -1,11 +1,17 @@
 import { defineConfig } from "drizzle-kit";
-import { urlDeBase } from "./lib/config/entorno";
+import { prepararBaseDe } from "./lib/config/entorno";
+
+const preparada = prepararBaseDe(process.env);
+if (!preparada.ok) {
+  throw new Error(preparada.mensaje);
+}
+if (preparada.aviso) console.error(preparada.aviso);
 
 export default defineConfig({
   schema: "./lib/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: urlDeBase() ?? "",
+    url: preparada.url,
   },
 });

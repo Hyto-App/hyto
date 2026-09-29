@@ -284,10 +284,13 @@ export function prepararBaseDe(env: Entorno): PreparacionBase {
 
 function hostsDeConfiguracion(valor: string | null): { hosts: string[]; ilegible: boolean } {
   if (!valor?.trim()) return { hosts: [], ilegible: false };
-  const hosts = valor
-    .split(",")
-    .map((token) => hostDeToken(token))
-    .filter((host): host is string => Boolean(host));
+  const hosts: string[] = [];
+  for (const token of valor.split(",")) {
+    if (!token.trim()) continue;
+    const host = hostDeToken(token);
+    if (!host) return { hosts: [], ilegible: true };
+    hosts.push(host);
+  }
   return { hosts, ilegible: hosts.length === 0 };
 }
 

@@ -13,6 +13,7 @@ import { ErrorFirma, enviar, preparar, prepararDespliegue, reintentarConFriendbo
 import type { AccionFirma, CuentasDespliegue, PagoEnviado, RedEscrow } from "../lib/escrow/tipos";
 import { claveDeTrustless } from "../lib/config/entorno";
 import { USDC } from "../lib/integrante/identidades";
+import { cargarEnvLocal } from "./cargar-env-local";
 
 const ARCHIVO_CUENTAS = ".sebas-cuentas.json";
 const ARCHIVO_PAGO = "lib/escrow/pago-prueba.json";
@@ -28,6 +29,7 @@ type Cuentas = Record<Rol, Par>;
 const server = new Horizon.Server(HORIZON_URL);
 
 async function main(): Promise<void> {
+  cargarEnvLocal();
   const clave = claveDeTrustless();
   if (!clave) {
     console.error("Falta TRUSTLESS_API_KEY en el servidor. Sin esa clave no se despliega ni se libera el hito.");

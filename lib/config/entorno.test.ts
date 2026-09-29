@@ -195,6 +195,26 @@ test("un host mal escrito detiene la migración sin repetir el texto", () => {
   }
 });
 
+test("un token ilegible invalida toda la lista y la coma final vacía no", () => {
+  const mezclada = revisarBaseLocal(
+    URL_PRODUCCION,
+    `ep-prod.us-east-2.aws.neon.tech/${SECRETO}, db.produccion.ejemplo`,
+    "si",
+  );
+  assert.equal(mezclada.ok, false);
+  if (!mezclada.ok) {
+    assert.match(mezclada.mensaje, new RegExp(HOST_BASE_PRODUCCION));
+    assert.equal(mezclada.mensaje.includes(SECRETO), false);
+    assert.equal(mezclada.mensaje.includes("ep-prod"), false);
+    assert.equal(mezclada.mensaje.includes("db.produccion.ejemplo"), false);
+  }
+  const comaFinal = revisarBaseLocal(URL_PRODUCCION, "db.produccion.ejemplo,", null);
+  assert.equal(comaFinal.ok, false);
+  const otra = revisarBaseLocal(URL_LOCAL, "db.produccion.ejemplo, ,", null);
+  assert.equal(otra.ok, true);
+  if (otra.ok) assert.equal(otra.aviso, null);
+});
+
 test("una URL ilegible no se migra y no se imprime", () => {
   const preparada = prepararBaseDe({ DATABASE_URL: `no-es-url-${SECRETO}` });
   assert.equal(preparada.ok, false);
