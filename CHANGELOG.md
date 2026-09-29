@@ -2,6 +2,27 @@
 
 Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
 
+## 2026-09-29
+
+### Nuevo
+
+- La base guarda usuarios, proyectos, tareas, evidencias, veredictos y el hash de pago, que sigue vacío. El correo mapea al rol. Hay migración y semilla del evento ZEEK. Las fotos van a un almacén privado y en la base queda el identificador. Esteban.
+- Las pantallas ya pueden llamar `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. También están `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. El informe abre aunque el pago no tenga hash. Ver pago usa el hash cuando exista. Esteban.
+- La revisión describe la foto con Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`). Si no hay dirección de Laya, un sustituto responde las tres preguntas y el código arma cumplió, parcial o insuficiente. Si falta la clave o un modelo falla, entra el guion fijo. Esteban.
+- Entrar pide un código al correo, o Google, y la base dice el rol. Preparar cuentas hace lo mismo, una cuenta a la vez. Preparar y enviar un pago piden que el organizador haya entrado. Esteban.
+
+### Arreglado
+
+- `npm run db:migrar` y `npm run db:semilla` ya corren. Esteban.
+- La foto ya no se manda a `meta-llama/llama-4-scout-17b-16e-instruct`, que responde 404. Con esta clave de Groq el único modelo que ve imágenes es `qwen/qwen3.8-27b`. Esteban.
+
+### Pendiente para el equipo
+
+- Esteban: guardar en Vercel `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN` y `GROQ_API_KEY`. La migración y la semilla de ZEEK ya se corrieron en Neon.
+- Josué: conectar la bandeja, la revisión y el informe a esas rutas, y Fondear y Aprobar al módulo de firma.
+- Raúl: las cuatro cuentas del demo, ahora con el código de cada correo.
+- Abdiel: `LAYA_URL`. Sebas: un pago en USDC. Sin ese pago no hay Acta.
+
 ## 2026-09-28
 
 ### Nuevo
@@ -28,7 +49,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - Se alineó el orden del trabajo de cada persona y quedó claro que el Acta entra solo después de un pago. Josué Valles (entró directo, sin pull request).
 - Se sacaron del contexto del proyecto herramientas que el equipo no va a usar. Josué Valles (entró directo, sin pull request).
 
-### Pendiente para el equipo
+### Pendiente ese día
 
 - Sebas: publicar el identificador de Cavos. Sin eso, las cuentas de prueba no se preparan y el botón Entrar avisa que lo está esperando.
 - Sebas: con `TRUSTLESS_API_KEY` en el servidor, correr `npm run hito` hasta dejar un pago en USDC. El módulo y el script ya están (PR #8). Sin ese pago no hay Acta. El hash no está en el repositorio.
