@@ -1,6 +1,7 @@
 import {
   AVISO_DEMO_FIRMA,
   AVISO_RECHAZO,
+  AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
   AVISO_XLM,
   ErrorFirmaCliente,
@@ -73,7 +74,7 @@ function traducir(error: unknown): string {
   if (error instanceof ErrorFirmaCliente) {
     if (error.message === AVISO_RECHAZO) return "You rejected the signature.";
     if (error.message === AVISO_XLM) return "Not enough XLM for the fee.";
-    if (error.message === AVISO_SESION_CAVOS) return "Your Cavos session expired. Sign in again.";
+    if (error.message === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
     if (error.message === AVISO_DEMO_FIRMA) return "Demo mode cannot prepare USDC.";
     if (error.message === "Falta configurar Cavos para entrar.") return "Cavos is not configured.";
     return "Could not sign the USDC trustline.";

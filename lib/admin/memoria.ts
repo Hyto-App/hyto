@@ -99,3 +99,9 @@ export function guardarDireccionAdmin(direccion: string): GuardadoAdmin {
   memoria.direccion = direccion;
   return { memoria, aviso: escribir(memoria) };
 }
+
+export function olvidarDireccionAdmin(): GuardadoAdmin {
+  const memoria = leerMemoriaAdmin();
+  memoria.direccion = null;
+  return { memoria, aviso: escribir(memoria) };
+}

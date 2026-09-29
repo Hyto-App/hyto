@@ -28,6 +28,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
   const [direccion, setDireccion] = useState<string | null>(null);
+  const [pedirIngreso, setPedirIngreso] = useState(false);
   const [fase, setFase] = useState<Fase>("inicio");
   const [correo, setCorreo] = useState("");
   const [codigo, setCodigo] = useState("");
@@ -41,6 +42,11 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const esperaRef = useRef(0);
 
   useEffect(() => {
+    const ingreso = new URLSearchParams(window.location.search).get("signin") === "1";
+    if (ingreso) {
+      setPedirIngreso(true);
+      setFase("correo");
+    }
     setDireccion(leerMemoriaAdmin().direccion);
   }, []);
 
@@ -65,7 +71,10 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       if (!vivo) return;
       if (resultado.direccion) {
         const guardado = guardarDireccionAdmin(resultado.direccion);
-        if (!guardado.aviso) setDireccion(resultado.direccion);
+        if (!guardado.aviso) {
+          setDireccion(resultado.direccion);
+          setPedirIngreso(false);
+        }
         setAviso(guardado.aviso ?? resultado.aviso);
         setFase("inicio");
         return;
@@ -157,6 +166,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
         return;
       }
       setDireccion(resultado.direccion);
+      setPedirIngreso(false);
       setFase("inicio");
       if (resultado.aviso) setAviso(resultado.aviso);
     } catch (error) {
@@ -276,7 +286,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const demo = esCorreoDemo(correo);
   const mensaje = mostrarEspera && espera > 0 ? textoEspera(espera) : aviso;
 
-  if (direccion) {
+  if (direccion && !pedirIngreso) {
     return (
       <div className="flex flex-col items-end gap-2">
         <p className="font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p>

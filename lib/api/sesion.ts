@@ -3,7 +3,20 @@ import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
+import { sesionEsDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json } from "./json";
+
+export async function leerSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
+  const token = leerCookie(request, COOKIE_SESION);
+  if (!token) return json({ aviso: "Sign in to continue." }, 401);
+  try {
+    const sesion = await almacen.leerSesion(token);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: "Sign in to continue." }, 401);
+    return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) });
+  } catch {
+    return baseNoLista();
+  }
+}
 
 export async function crearSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
   let body: unknown;

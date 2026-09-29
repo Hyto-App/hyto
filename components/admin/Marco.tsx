@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Entrar } from "@/components/admin/Entrar";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
+import { Salir } from "@/components/sesion/Salir";
 
 const ENLACES = [
   { href: "/", etiqueta: "Bandeja" },
@@ -37,7 +38,10 @@ export function Marco({ children, demoHabilitado = false }: { children: ReactNod
             </Link>
           </nav>
         </div>
-        <Entrar demoHabilitado={demoHabilitado} />
+        <div className="flex flex-col items-end gap-2">
+          <Entrar demoHabilitado={demoHabilitado} />
+          <Salir />
+        </div>
       </header>
       {children}
     </>
