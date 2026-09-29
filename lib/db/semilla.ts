@@ -1,7 +1,7 @@
 import { tareasEjemploAdmin } from "@/lib/admin/ejemplo";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { IDENTIDADES } from "@/lib/integrante/identidades";
-import { usuariosDemo } from "@/lib/sesion/demo";
+import { demoHabilitado, usuarioDemo, usuariosDemo } from "@/lib/sesion/demo";
 import type { Almacen } from "./almacen";
 import type { EvidenciaFila, Proyecto, TareaFila, Usuario, VeredictoFila } from "./tipos";
 
@@ -9,7 +9,7 @@ export const PROYECTO_ZEEK: Proyecto = {
   id: "zeek",
   nombre: "ZEEK",
   creadoEn: "2026-09-27T12:00:00.000Z",
-  organizadorId: "organizador",
+  organizadorId: null,
 };
 
 export const MARCA_EJEMPLO = "ejemplo";
@@ -97,6 +97,7 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
   if (!proyecto) {
     await almacen.crearProyecto(PROYECTO_ZEEK, tareasSemilla());
   }
+  await duenoDemo(almacen);
   for (const evidencia of evidenciasSemilla()) {
     if (await almacen.leerEvidencia(evidencia.id)) continue;
     try {
@@ -110,6 +111,13 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
     await almacen.guardarVeredicto(veredicto);
   }
   await reponerPendientes(almacen);
+}
+
+async function duenoDemo(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
+  const proyecto = await almacen.leerProyecto(PROYECTO_ZEEK.id);
+  if (!proyecto || proyecto.organizadorId) return;
+  await almacen.asignarOrganizador(proyecto.id, usuarioDemo("organizador").id);
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {

@@ -46,13 +46,14 @@ test("quien crea el proyecto es su organizador aunque su rol sea voluntario", as
   assert.equal(proyecto?.nombre, "Feria");
   const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto?.id);
   assert.equal(tareas.length, 1);
-  assert.equal((await almacen.leerProyecto("zeek"))?.organizadorId, "organizador");
+  assert.equal((await almacen.leerProyecto("zeek"))?.organizadorId, null);
 });
 
 test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
   await almacen.actualizarTarea("stand", { contratoEscrow: CONTRATO });
   const expiraEn = new Date(Date.now() + 60_000).toISOString();
   await almacen.crearSesion({

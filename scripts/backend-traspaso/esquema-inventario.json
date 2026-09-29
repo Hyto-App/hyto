@@ -117,7 +117,7 @@
       "presente": true,
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
-      "sha256": "6ea33295288b20fc3f7bdaf8f872f766a275a911b04d85e62fb6a96fd917d960",
+      "sha256": "4e0609d33c83b95ac92e382a36961183ba8fab9974538a758a47a0ffc183bd62",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -2006,10 +2006,10 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "77a04319df47fefc1d9d5fd378ff78166fa76255",
+    "sha": "33cf975cde12d29e2e772f4f978dc77e77ee9174",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "feat: registrar como voluntario cualquier correo con login de Cavos (#41)",
+    "asunto": "docs: contexto del repo para el equipo y los agentes (#43)",
     "archivosDeEsquemaIgualesAEseCommit": false,
     "archivosComparados": [
       {

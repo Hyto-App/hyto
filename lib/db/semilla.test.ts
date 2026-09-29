@@ -49,7 +49,8 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
 test("el informe de ejemplo arma la bandeja de admin", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
-  const informe = await armarInforme(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const informe = await armarInforme(almacen, { usuarioId: "organizador", demo: false });
   assert.equal(informe.nombre, "ZEEK");
   assert.equal(informe.ejemplo, false);
   assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
@@ -82,7 +83,7 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   assert.match(json.tarea.frase, /^Ejemplo\./);
   assert.equal(json.foto, null);
 
-  const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand");
+  const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand", { usuarioId: "voluntario-1", demo: false });
   assert.equal(marcador.status, 200);
   assert.match(marcador.headers.get("content-type") ?? "", /image\/svg\+xml/);
 
@@ -98,6 +99,27 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   assert.equal(reembolso.tarea.veredicto, "cumplió");
   assert.equal(reembolso.tarea.montoRevisado, "12.40");
   assert.equal(reembolso.tarea.fecha, "2026-09-27");
+});
+
+test("sin demo el ejemplo no tiene dueño y con demo lo toma demo-organizador", async () => {
+  const anterior = process.env.HYTO_DEMO_LOGIN;
+  try {
+    const vacio = crearMemoria();
+    delete process.env.HYTO_DEMO_LOGIN;
+    await asegurarSemilla(vacio);
+    assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, null);
+    await vacio.asignarOrganizador("zeek", "ana");
+    process.env.HYTO_DEMO_LOGIN = "1";
+    await asegurarSemilla(vacio);
+    assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, "ana");
+
+    const demo = crearMemoria();
+    await asegurarSemilla(demo);
+    assert.equal((await demo.leerProyecto("zeek"))?.organizadorId, "demo-organizador");
+  } finally {
+    if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = anterior;
+  }
 });
 
 test("sembrar dos veces no duplica ni pisa un pago", async () => {

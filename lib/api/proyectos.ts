@@ -1,8 +1,9 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import type { Proyecto, TareaFila } from "@/lib/db/tipos";
+import type { TareaFila } from "@/lib/db/tipos";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
 
@@ -25,21 +26,21 @@ export async function crearProyectoHttp(request: Request, almacen: Almacen, orga
   }
 }
 
-export async function leerProyectoHttp(almacen: Almacen, usuarioId: string | null = null): Promise<Response> {
+export async function leerProyectoHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
-    const proyecto = usuarioId ? await ultimoDe(almacen, usuarioId) : await almacen.ultimoProyecto();
+    const proyectos = await proyectosVisibles(almacen, visor);
+    const proyecto = proyectos[0] ?? null;
     if (!proyecto) return json({ aviso: "Todavía no hay un proyecto." }, 404);
-    const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto.id);
-    return json({ proyecto: { id: proyecto.id, nombre: proyecto.nombre }, tareas: tareas.map(tareaPublica) });
+    const tareas = (await tareasVisibles(almacen, visor)).filter((tarea) => tarea.proyectoId === proyecto.id);
+    return json({
+      proyecto: { id: proyecto.id, nombre: proyecto.nombre },
+      proyectos: proyectos.map((item) => ({ id: item.id, nombre: item.nombre })),
+      tareas: tareas.map(tareaPublica),
+    });
   } catch {
     return baseNoLista();
   }
-}
-
-async function ultimoDe(almacen: Almacen, usuarioId: string): Promise<Proyecto | null> {
-  const propios = (await almacen.listarProyectos()).filter((proyecto) => proyecto.organizadorId === usuarioId);
-  return propios.sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))[0] ?? null;
 }
 
 function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; creadoEn: string }; tareas: TareaFila[] } | { aviso: string } {

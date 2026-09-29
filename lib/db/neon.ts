@@ -106,6 +106,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       if (filas.length === 0) return;
       await db.insert(tareas).values(filas).onConflictDoNothing();
     },
+    async asignarOrganizador(proyectoId, organizadorId) {
+      await db.update(proyectos).set({ organizadorId }).where(eq(proyectos.id, proyectoId));
+    },
     async listarTareas() {
       const filas = await db.select().from(tareas);
       return filas.map(tareaDesde);

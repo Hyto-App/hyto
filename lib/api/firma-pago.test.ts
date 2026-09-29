@@ -39,6 +39,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
   await almacen.actualizarTarea("stand", { walletCobro: RECEPTOR });
   const anterior = {
     clave: process.env.TRUSTLESS_API_KEY,
@@ -200,6 +201,7 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
   await almacen.actualizarTarea("registro", { walletCobro: RECEPTOR });
   const anterior = process.env.TRUSTLESS_API_KEY;
   process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
@@ -249,6 +251,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
   reiniciarLimite();
   const base = crearMemoria();
   await asegurarSemilla(base);
+  await base.asignarOrganizador("zeek", "organizador");
   await base.actualizarTarea("bienvenida", { walletCobro: RECEPTOR });
   const almacen = {
     ...base,
@@ -299,6 +302,7 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
   await almacen.actualizarTarea("comida", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
   process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
   const original = globalThis.fetch;
@@ -334,6 +338,7 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
   await almacen.actualizarTarea("bienvenida", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
   process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
   const original = globalThis.fetch;

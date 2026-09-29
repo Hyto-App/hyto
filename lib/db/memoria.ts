@@ -43,6 +43,11 @@ export function crearMemoria(): Almacen {
       proyectos.set(proyecto.id, proyecto);
       for (const tarea of filas) tareas.set(tarea.id, tarea);
     },
+    async asignarOrganizador(proyectoId, organizadorId) {
+      const actual = proyectos.get(proyectoId);
+      if (!actual) return;
+      proyectos.set(proyectoId, { ...actual, organizadorId });
+    },
     async listarTareas() {
       return [...tareas.values()];
     },

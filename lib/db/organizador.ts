@@ -1,30 +1,28 @@
-const DEMO_ORGANIZADOR = "demo-organizador";
-
-export type UsuarioParaRelleno = {
+export type UsuarioCorreo = {
   id: string;
-  rol: string;
+  email: string;
 };
 
-export type ProyectoParaRelleno = {
+export type ProyectoConOrganizador = {
   id: string;
   organizadorId: string | null;
 };
 
-// Misma regla que drizzle/0002_organizador_proyecto.sql: el id más chico
-// entre los usuarios con rol organizador, sin la cuenta fija del demo.
-export function idOrganizadorGlobal(usuarios: UsuarioParaRelleno[]): string | null {
-  const ids = usuarios
-    .filter((usuario) => usuario.rol === "organizador" && usuario.id !== DEMO_ORGANIZADOR)
-    .map((usuario) => usuario.id)
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  return ids[0] ?? null;
-}
-
-export function aplicarRellenoOrganizador<T extends ProyectoParaRelleno>(proyectos: T[], usuarios: UsuarioParaRelleno[]): T[] {
-  const organizadorId = idOrganizadorGlobal(usuarios);
-  if (!organizadorId) return proyectos.map((proyecto) => ({ ...proyecto }));
-  return proyectos.map((proyecto) => ({
-    ...proyecto,
-    organizadorId: proyecto.organizadorId ?? organizadorId,
-  }));
+// Asigna el usuario de ese email solo a proyectos que todavía no tienen dueño.
+// Si el email no existe, no cambia nada y no lanza.
+export function asignarOrganizadorPorEmail<T extends ProyectoConOrganizador>(
+  proyectos: T[],
+  usuarios: UsuarioCorreo[],
+  email: string,
+  proyectoIds?: readonly string[],
+): T[] {
+  const buscado = email.trim().toLowerCase();
+  const usuario = buscado ? usuarios.find((item) => item.email.trim().toLowerCase() === buscado) : undefined;
+  if (!usuario) return proyectos.map((proyecto) => ({ ...proyecto }));
+  const filtro = proyectoIds ? new Set(proyectoIds) : null;
+  return proyectos.map((proyecto) => {
+    if (proyecto.organizadorId) return { ...proyecto };
+    if (filtro && !filtro.has(proyecto.id)) return { ...proyecto };
+    return { ...proyecto, organizadorId: usuario.id };
+  });
 }
