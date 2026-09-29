@@ -2,24 +2,30 @@
 
 Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de octubre de 2026, 4:00 p.m. Meetup: 30 de septiembre de 2026, TEC Cartago. Demo en Stellar testnet.
 
-Este archivo reparte el trabajo. El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
+Este archivo reparte el trabajo. El contexto del código al 29 de septiembre de 2026 (`7d1f0a0`, 4:37 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
 
 La lista de errores de más abajo es la auditoría del 28 de septiembre sobre `ade63ce`. Varios ya no describen `main`. No los vuelvas a implementar sin mirar el código.
 
-## Estado al 28 de septiembre de 2026
+## Estado al 29 de septiembre de 2026
+
+`main` está en `7d1f0a0`. La tabla de abajo mezcla lo que ya estaba el 28 con lo que cerró Josué Valles el 29. El detalle operativo está en [AGENTS.md](AGENTS.md). La interfaz y los avisos de la API están en inglés desde el PR #56 (4:37 p.m.). Los valores guardados siguen en español y se traducen al dibujar.
 
 | Pieza | Estado | Dueño |
 |---|---|---|
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
-| Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
-| Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
-| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`). El 28, Fondear y Aprobar no firmaban. En `77a0431` la revisión sí firma: **Desplegar y fondear** y **Aprobar y pagar** | Josué |
+| Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK. El voluntario demo sube evidencia solo al proyecto demo (PR #50, 3:02 p.m.) | Raúl, el tope del demo lo cerró Josué |
+| Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Falta dejar listas las cuatro cuentas del demo | Raúl |
+| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Sign in | Hecho en `main` (PR #3, `b2451a6`). La revisión firma: **Deploy and fund** y **Approve and pay**. El demo no crea proyectos (PR #47, 2:10 p.m.). La copia visible está en inglés (PR #56, 4:37 p.m.) | Josué |
+| Organizador de cada proyecto | En `main` (PR #44, 1:38 p.m.). `proyectos.organizador_id` nace vacío. El dueño de un proyecto viejo se asigna a mano | Josué. Asignarlo en Neon: Esteban, con el visto bueno de quien es dueño de la base |
+| Sesión | La cookie sigue el `exp` del JWT, tope 24 horas; sin `exp`, 8 horas (PR #54, 4:18 p.m.). **Sign out** cierra servidor, Cavos y wallet local (PR #52, 4:10 p.m.) | Josué |
+| Trustline de USDC | `GET` y `POST /api/usdc` preparan el `changeTrust` de la wallet de la sesión. El demo recibe 403 (PR #50) | Josué |
+| Revisión con IA | Si Groq o Laya fallan, origen `error`, mensaje en pantalla y **Retry review** (PR #45, 4:22 p.m.). Sin `LAYA_URL` queda el stub. El guion fijo ya no cubre ese fallo | Esteban escribió la ruta. Josué cerró el error visible |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
-| Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos | En el código. Desde el PR #41, un correo nuevo entra como voluntario. Sin Groq queda el guion fijo; sin `LAYA_URL` queda el stub. Hacer que la IA funcione es el paso principal | Esteban |
+| Backend: rutas, Neon, Blob e ingreso con Cavos | En el código. Desde el PR #41, un correo nuevo entra como voluntario | Esteban |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
 | Acta | Pendiente. Solo entra después de un pago en USDC. El `appId` de Cavos ya está en Vercel | Sebas |
 | Poppins y `--acento` `#B7EE34` | En `main` (PR #7, `cff4512`), el 28 de septiembre a las 2:58 p.m., hora de Costa Rica | Abdiel |
-| `LAYA_URL` | Pendiente | Abdiel |
+| `LAYA_URL` | Pendiente. El borrador #49 (buzón entre IAs) tampoco está en `main` | Abdiel |
 
 Queda un detalle menor de auditoría: en `components/admin/Entrar.tsx:46`, `setDireccion` solo debe llamarse cuando `guardado.aviso` es null, para que se pueda reintentar el guardado.
 
@@ -45,7 +51,7 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, se recorre Mis tareas, subir la foto y el admin, con el ejemplo de ZEEK si la API no responde. En `77a0431` la revisión firma en Stellar. Falta un pago real en testnet. La revisión con IA está escrita: sin `GROQ_API_KEY` o si el modelo falla usa el guion fijo, y sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+De eso, se recorre My tasks, subir la foto y el admin, con el ejemplo de ZEEK si la API no responde. En `7d1f0a0` la revisión firma en Stellar y la interfaz está en inglés (PR #56, Josué Valles). Falta un pago real en testnet. Si Groq o Laya fallan, el origen queda `error` y aparece **Retry review** (PR #45, Josué Valles). Sin `LAYA_URL`, después de Groq se usa el stub. Publicar Laya sigue siendo de Abdiel.
 
 ## Equipo
 
@@ -72,7 +78,7 @@ UX, identidad de marca, redes y comunicación del pitch.
 - Mis tareas, en el móvil: una tarea, un monto, un estado. Ya está en `main`.
 - Subir evidencia: cámara y enviar. El reembolso muestra monto y fecha ya rellenados. Ya está en `main`; monto y fecha salen cuando la API los trae.
 - Revisión: foto, tarjeta corta de la IA y un botón Aprobar.
-- Informe: presupuesto contra gasto, y enlaces de "Ver pago" y de la credencial si ya existe.
+- Informe: presupuesto contra gasto, y enlaces de **View payment** y de la credencial si ya existe.
 
 La app se ve como Ramp, no como una billetera. No pidas frase semilla, extensión ni firma a la vista. La primera vez es entrar con Cavos y caer en la tarea o en la bandeja. Fondo claro, Poppins, un acento, una acción principal por pantalla.
 
@@ -86,13 +92,13 @@ Laya corre en su servidor de escritorio, el mismo de Argus, en un entorno de Pyt
 
 Backend. Buen nivel en servidor. Es dueño de todo el backend.
 
-**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Esas piezas ya están en el repo. El paso principal que sigue, en su parte, es que la revisión mire la foto de verdad y que Laya responda, en vez del guion fijo y del stub.
+**Empieza por:** Drizzle sobre Neon (`DATABASE_URL`) con proyecto, tarea, evidencia y veredicto, y la tabla de usuarios (el email mapea al rol), con migraciones y seed. La foto se sube a Vercel Blob (`BLOB_READ_WRITE_TOKEN`) y en Neon se guarda el identificador. Nada de eso vive en el disco de Vercel. Esas piezas ya están en el repo. Lo que sigue, en su parte, es confirmar Groq en producción y cerrar el PR #15 (el `score` con `probabilities` no está en `main`). Si Groq o Laya fallan, el origen queda `error` (PR #45, Josué Valles): ya no entra el guion fijo. Sin `LAYA_URL` sigue el stub, y publicar esa URL es de Abdiel. `CAVOS_JWT_AUDIENCE` sigue vacío. `organizador_id` (PR #44) nace vacío: asignarlo a mano en los proyectos reales, con el visto bueno de quien es dueño de la base.
 
-La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, responde el guion fijo. La base es Neon y las fotos están en Vercel Blob.
+La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, `GROQ_API_KEY`) describe la foto leída desde Blob y, si es una factura, saca monto y fecha. Después la ruta llama a Laya en el servidor de Abdiel, por `LAYA_URL`. Laya devuelve `choice`, `noul` y `score`. El código compara el tope de dinero y arma `cumplió`, `parcial` o `insuficiente`. La justificación es el texto de Scout más esas tres respuestas. Si falta la clave, el servidor de Abdiel está apagado o un modelo falla, el origen queda `error` y la pantalla ofrece **Retry review**. La base es Neon y las fotos están en Vercel Blob.
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
-El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `77a0431` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario.
+El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `7d1f0a0` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario. La cookie sigue el `exp` del JWT, con tope de 24 horas (PR #54, Josué Valles). El botón se llama **Sign in**.
 
 ### Pruebas de punta a punta (2026-09-28)
 
@@ -148,9 +154,11 @@ Acta va después de ese pago, no antes. Es viable como una sola credencial en el
 
 App del administrador en Next.js.
 
-**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
+**Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. **Sign in** llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel. El login real lo tomó Esteban. **Deploy and fund** y **Approve and pay** firman en Stellar desde la revisión.
 
-**Sigue con:** el 30 de septiembre, subir a 16.3.7 cuando salga el parche. Fondear y Aprobar de la revisión ya llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`. Quedan los detalles de UX del escrow descritos en [AGENTS.md](AGENTS.md): recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Aprobar y pagar** mientras el escrow no está fondeado.
+**Hecho el 29 de septiembre**, hora de Costa Rica: organizador por proyecto (PR #44, 1:38 p.m.), el demo no crea proyectos (PR #47, 2:10 p.m.), evidencia del demo y trustline de USDC (PR #50, 3:02 p.m.), **Sign out** (PR #52, 4:10 p.m.), cookie de hasta 24 horas (PR #54, 4:18 p.m.), **Retry review** cuando la IA falla (PR #45, 4:22 p.m.) y la interfaz en inglés (PR #56, 4:37 p.m.). Los valores guardados siguen en español y `lib/ui/etiquetas.ts` los traduce al dibujar.
+
+**Sigue con:** el 30 de septiembre, subir a 16.3.7 cuando salga el parche. El borrador #18 (no perder el ingreso al volver de Google) sigue abierto. Quedan los detalles de UX del escrow descritos en [AGENTS.md](AGENTS.md): recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Approve and pay** mientras el escrow no está fondeado. Esos botones ya se ocultan si el origen es `error` o si el reembolso no tiene monto revisado.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -162,7 +170,7 @@ App del integrante y preparación de las cuentas del demo.
 
 **Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…`. Una sesión real prepara la trustline de USDC en la app (PR #50, Josué Valles); el demo recibe 403. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 

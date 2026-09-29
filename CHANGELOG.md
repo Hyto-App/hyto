@@ -4,11 +4,53 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 
 ## 2026-09-29
 
+Lo de abajo, hasta el cierre de las 4:37 p.m. (hora de Costa Rica), entró después del changelog del PR #19 (9:22 a.m.). El autor de estos pull requests es Josué Valles. El PR #14 y los documentos #11, #12 y #13 ya estaban anotados y no se repiten.
+
 ### Nuevo
+
+- Cada proyecto guarda a su organizador en `proyectos.organizador_id`. Quien lo crea queda como dueño. Escrow, revisión, bandeja, tareas e informe muestran lo que esa persona organiza o tiene asignado. La migración `0002` solo agrega la columna, vacía: el dueño de un proyecto viejo se asigna a mano por email. La semilla no escribe dueño en ZEEK. Con el demo prendido, el proyecto demo es de `demo-organizador`, y una lectura sin sesión o de una sesión demo solo ve ese proyecto. Josué Valles, PR #44, 1:38 p.m.
+- Una sesión real puede preparar la trustline de USDC de testnet de su propia wallet. `GET` y `POST /api/usdc` arman y envían el `changeTrust`. El navegador lo firma con el mismo `signXdr` del escrow. El demo recibe 403. Josué Valles, PR #50, 3:02 p.m.
+- El voluntario demo puede subir evidencia, solo en tareas del proyecto demo. La wallet de cobro que mande se ignora. Josué Valles, PR #50, 3:02 p.m.
+- Un correo con login de Cavos válido que no está en `usuarios` se registra solo, con rol voluntario. El rol organizador no sale de ese alta. Josué Valles, PR #41, 12:51 p.m.
+- En la revisión, **Desplegar y fondear** y **Aprobar y pagar** firman en el navegador con Cavos y envían el XDR. El hash, cuando existe, queda en la tarea. Josué Valles, PR #39, 12:42 p.m.
+- El servidor prepara el escrow V2 de cada tarea: desplegar, fondear, marcar, aprobar y liberar, con el contrato en `tareas.contrato_escrow`. Josué Valles, PR #38, 12:38 p.m.
+- `POST /api/firma` acepta aprobar, liberar, disputar y resolver, y `GET /api/escrow/[contrato]` lee el saldo. Solo el organizador. Josué Valles, PR #26, 11:28 a.m.
+- Con `HYTO_DEMO_LOGIN=1` se puede entrar como organizador o voluntario de demo, sin Cavos y sin billetera. Esa sesión no firma. Josué Valles, PR #30, 11:30 a.m.
+- La configuración de entorno quedó en un solo lugar, y migrar o sembrar una base de producción exige el visto bueno explícito. Josué Valles, PR #22, 9:50 a.m.
+
+### Arreglado
+
+- Si Groq o Laya fallan, la revisión ya no usa el guion fijo. Guarda origen `error`, un código y el mensaje del fallo, lo escribe en el log y la pantalla lo muestra con **Retry review**. Un error no borra monto ni fecha. Desplegar, fondear y pagar quedan ocultos, y el servidor responde 409. El reintento solo corre si el veredicto es un error, se niega si la tarea está pagada o tiene escrow, y espera 30 segundos. El pedido a Groq usa `max_completion_tokens` 1024 y apaga el pensamiento del modelo. Josué Valles, PR #45, 4:22 p.m.
+- La cookie `hyto_sesion` y `sesiones.expira_en` siguen el `exp` del JWT de Cavos, con tope de 24 horas. Si falta `exp`, duran 8 horas. El demo usa esas 8 horas. Una sesión vencida responde 401, `Sign in to continue.`, y abre el formulario de ingreso. Josué Valles, PR #54, 4:18 p.m.
+- Preparar USDC y firmar reutilizan un token de Cavos todavía válido. Si no se puede renovar, la pantalla pide entrar de nuevo. **Sign out** cierra la sesión del servidor, la de Cavos y la wallet local, aunque la sesión ya esté vencida. Josué Valles, PR #52, 4:10 p.m.
+- El modo demo ya no puede crear proyectos. `POST /api/proyectos` sin sesión tampoco. La pantalla avisa y no guarda. Josué Valles, PR #47, 2:10 p.m.
+- Salir del demo y cambiar de rol ya no deja la sesión atrapada. Josué Valles, PR #36, 11:48 a.m.
+- El JWT de Cavos se verifica, y escribir en la API exige sesión. Josué Valles, PR #23, 10:45 a.m.
+- Si el ingreso falla, el aviso dice qué pasó. Josué Valles, PR #28, 10:14 a.m.
+- Postgres local, la migración y la semilla de ejemplo ya corren con `npm run db:local`, `db:migrar` y `db:semilla`. Josué Valles, PR #21, 10:03 a.m.
+
+### Cambiado
+
+- Lo que ve la persona, y los avisos que devuelve la API, quedó en inglés. Los valores guardados (`pendiente`, `en revisión`, `pagado`, `cumplió`, `parcial`, `insuficiente`, `trabajo`, `reembolso`) y los textos conocidos de la semilla vieja se traducen al dibujar, en `lib/ui/etiquetas.ts`, sin migración. El veredicto se muestra Met, Partial o Insufficient. El estado se muestra Pending, In review o Paid. `<html lang="en">`. Fechas y montos usan `en-US`. Las rutas, las columnas, los comentarios y la salida de los scripts siguen como estaban. En la revisión los botones son **Deploy and fund**, **Fund**, **Approve and pay** y **View payment**. Josué Valles, PR #56, 4:37 p.m.
+- El contexto del repo para el equipo y los agentes quedó en `AGENTS.md`, contra `77a0431`. Josué Valles, PR #43, 12:59 p.m.
+- Hay pruebas de integración contra Postgres local. Josué Valles, PR #27, 9:44 a.m.
+- El esquema declarado se cruzó con las consultas, sin escribir en la base. Josué Valles, PR #25, 10:13 a.m.
+- Quedó el inventario del esquema de Postgres. Josué Valles, PR #24, 10:10 a.m.
+- `.env.example` lista los nombres que el código lee, sin valores. Josué Valles, PR #20, 9:16 a.m.
+
+### Pendiente al cierre
+
+- Sebas: un pago real en testnet, con hash en `tareas.hash_pago`. El Acta solo después de ese pago.
+- Esteban: confirmar Groq en producción. Cerrar el PR #15 (borrador): el `score` de Laya con `probabilities` todavía no está en `main`. `CAVOS_JWT_AUDIENCE` sigue vacío. Asignar a mano el `organizador_id` de los proyectos reales. La migración no se corre sola.
+- Abdiel: publicar Laya con Tailscale Funnel y dejar `LAYA_URL`. El borrador #49 (buzón entre IAs) no está en `main`.
+- Josué: el 30 de septiembre, Next.js 16.3.7. El borrador #18 (no perder el ingreso al volver de Google) sigue abierto. En la revisión, si desplegar sale bien y fondear falla, la pantalla puede seguir ofreciendo **Deploy and fund**. **Approve and pay** sigue visible sin fondeo, salvo que la revisión sea un error o el reembolso no tenga monto. La interfaz en inglés ya está (PR #56).
+- Raúl: las cuatro cuentas del demo en `/cuentas`.
+
+### Nuevo, ya anotado a la mañana
 
 - La base ya guarda usuarios, proyectos, tareas, evidencias, el resultado de la revisión y el enlace del pago. Ese enlace sigue vacío. El correo indica el rol de cada persona. Hay una carga inicial del evento ZEEK. Las fotos van a un almacén privado y en la base queda la referencia. Esteban (Psybre), PR #14.
 - Ya se puede pedir la lista de tareas, subir una evidencia y verla (también la foto), crear un proyecto, abrir el informe y pedir la revisión. El informe abre aunque el pago no tenga enlace. Si el enlace existe, Ver pago lo usa. Esteban (Psybre), PR #14.
-- La revisión describe la foto con Qwen. Si la herramienta de Abdiel no está publicada, un reemplazo responde las tres preguntas y el sistema marca cumplió, parcial o insuficiente. Si falta la clave o el modelo falla, se usa un texto fijo de reserva. Esteban (Psybre), PR #14.
+- La revisión describe la foto con Qwen. Si la herramienta de Abdiel no está publicada, un reemplazo responde las tres preguntas y el sistema marca cumplió, parcial o insuficiente. Si falta la clave o el modelo falla, se usa un texto fijo de reserva. Esteban (Psybre), PR #14. El PR #45, anotado arriba, dejó de usar ese texto fijo cuando Groq o Laya fallan.
 - Entrar pide un código al correo, o Google, y la base dice el rol. Preparar las cuentas de prueba hace lo mismo, una a la vez. Preparar y enviar un pago solo siguen si el organizador ya entró. Esteban (Psybre), PR #14.
 
 ### Arreglado
@@ -22,7 +64,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - Quedó escrito que Esteban se encarga de la base, de las rutas y del ingreso. Josué Valles, PR #12.
 - Josué anotó el recorrido del 28 de septiembre, en la computadora y en el sitio: las pantallas seguían con el ejemplo de ZEEK, el ingreso fallaba y Fondear y Aprobar no firmaban un pago. Josué Valles, PR #13.
 
-### Pendiente para el equipo
+### Pendiente a la mañana, antes de los PR de arriba
 
 - Esteban: cargar en el sitio la dirección de la base, la clave del almacén de fotos y la clave de la revisión de fotos, y crear el almacén privado. Las tablas y la carga de ZEEK ya se corrieron en la base. Sin eso, el sitio sigue mostrando el ejemplo.
 - Josué: conectar la bandeja, la revisión y el informe a las rutas nuevas, y Fondear y Aprobar al módulo de firma.
