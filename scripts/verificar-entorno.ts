@@ -1,5 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
-import { informeEntorno, mensajeLineasOmitidas, parsearEnv, prepararBaseDe, validarEntorno } from "../lib/config/entorno";
+import {
+  aplicarEnvLocal,
+  informeEntorno,
+  mensajeLineasOmitidas,
+  parsearEnv,
+  prepararBaseDe,
+  validarEntorno,
+} from "../lib/config/entorno";
 
 const RUTA = ".env.local";
 
@@ -22,7 +29,9 @@ function main(): number {
   if (parseo.lineasOmitidas > 0) console.error(mensajeLineasOmitidas(parseo.lineasOmitidas));
   const resultado = validarEntorno(parseo.valores);
   console.log(informeEntorno(resultado));
-  const preparada = prepararBaseDe(parseo.valores);
+  const entorno = { ...process.env };
+  aplicarEnvLocal(parseo.valores, entorno);
+  const preparada = prepararBaseDe(entorno);
   if (!preparada.ok) console.error(preparada.mensaje);
   else if (preparada.aviso) console.error(preparada.aviso);
   if (resultado.errores.length > 0 || parseo.lineasOmitidas > 0 || !preparada.ok) {
