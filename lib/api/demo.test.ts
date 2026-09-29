@@ -9,7 +9,7 @@ import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_FIRMA_DEMO } from "../sesion/demo";
 import { crearDemoHttp, estadoDemoHttp } from "./demo";
-import { cerrarSesionHttp } from "./sesion";
+import { cerrarSesionHttp, leerSesionHttp } from "./sesion";
 
 const ENV_ON = { HYTO_DEMO_LOGIN: "1" };
 const ENV_OFF = { HYTO_DEMO_LOGIN: "" };
@@ -150,6 +150,33 @@ describe("ingreso demo", { concurrency: false }, () => {
     const vacia = await cerrarSesionHttp(new Request("http://local/api/sesion", { method: "DELETE" }), almacen);
     assert.equal(vacia.status, 200);
     assert.match(vacia.headers.get("set-cookie") ?? "", /Max-Age=0/);
+
+    await almacen.crearSesion(sesion({ token: "tok-vieja", expiraEn: new Date(Date.now() - 1000).toISOString() }));
+    const lectura = await leerSesionHttp(
+      new Request("http://local/api/sesion", { headers: { cookie: "hyto_sesion=tok-vieja" } }),
+      almacen,
+    );
+    assert.equal(lectura.status, 401);
+    assert.equal((await lectura.json()).aviso, "Sign in to continue.");
+    const borrada = await cerrarSesionHttp(
+      new Request("http://local/api/sesion", { method: "DELETE", headers: { cookie: "hyto_sesion=tok-vieja" } }),
+      almacen,
+    );
+    assert.equal(borrada.status, 200);
+    assert.equal(await almacen.leerSesion("tok-vieja"), null);
+
+    const viva = await leerSesionHttp(
+      new Request("http://local/api/sesion", { headers: { cookie: "hyto_sesion=tok-viva" } }),
+      almacen,
+    );
+    assert.equal(viva.status, 401);
+    await almacen.crearSesion(sesion({ token: "tok-viva", email: "organizador@demo.hyto", usuarioId: "organizador" }));
+    const activa = await leerSesionHttp(
+      new Request("http://local/api/sesion", { headers: { cookie: "hyto_sesion=tok-viva" } }),
+      almacen,
+    );
+    assert.equal(activa.status, 200);
+    assert.deepEqual(await activa.json(), { ok: true, rol: "organizador", demo: false });
   });
 
   test("cambiar de rol invalida la sesión demo anterior", async () => {

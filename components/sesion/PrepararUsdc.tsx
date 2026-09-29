@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
 
@@ -69,8 +70,10 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
 
   return (
     <div>
-      {mensaje ? (
-        <p className="text-sm text-[var(--suave)]" role={estado === "error" ? "alert" : "status"}>
+      {estado === "error" && aviso ? (
+        <AvisoFirma mensaje={aviso} className="text-sm text-[var(--suave)]" />
+      ) : mensaje ? (
+        <p className="text-sm text-[var(--suave)]" role="status">
           {mensaje}
         </p>
       ) : null}

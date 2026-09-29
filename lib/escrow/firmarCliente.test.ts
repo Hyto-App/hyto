@@ -4,11 +4,13 @@ import {
   AVISO_DEMO_FIRMA,
   AVISO_FIRMA,
   AVISO_RECHAZO,
+  AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
   AVISO_XLM,
   ErrorFirmaCliente,
   firmarPasos,
   firmarYEnviar,
+  mensajeFirmaVisible,
   pasosDesde,
 } from "./firmarCliente";
 
@@ -193,6 +195,21 @@ test("sin identidad de Cavos restaurada no autentica ni envía", async () => {
   }
 });
 
+test("un token vencido de la bóveda se muestra como sesión de Cavos cerrada", async () => {
+  const red = fetchDe([{ body: { xdr: XDR } }]);
+  await assert.rejects(
+    () =>
+      firmarYEnviar("fondear", "stand", {}, {
+        fetch: red.fetch,
+        firmar: async () => {
+          throw new Error("registry lookup failed: 401 token expired");
+        },
+      }),
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_SESION_CAVOS,
+  );
+  assert.equal(mensajeFirmaVisible(AVISO_SESION_CAVOS), AVISO_REINGRESO);
+});
+
 test("con identidad en sessionStorage pasa restoreIdentity y no dice que la sesión se cerró", async () => {
   const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
   process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-test";
@@ -230,3 +247,80 @@ test("con identidad en sessionStorage pasa restoreIdentity y no dice que la sesi
     else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
   }
 });
+
+test("un token vigente en otra pestaña reconstruye la identidad antes de firmar", async () => {
+  const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+  process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-test";
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const token = jwt({ sub: "usuario-1", email: "ana@hyto.app", exp });
+  const local = new Map<string, string>([["hyto:cavos-token:app-test", token]]);
+  const sesion = new Map<string, string>();
+  const almacenamiento = (datos: Map<string, string>) => ({
+    getItem: (clave: string) => datos.get(clave) ?? null,
+    setItem: (clave: string, valor: string) => {
+      datos.set(clave, valor);
+    },
+    removeItem: (clave: string) => {
+      datos.delete(clave);
+    },
+  });
+  const global = globalThis as { window?: unknown; fetch?: typeof fetch };
+  const fetchPrevio = global.fetch;
+  global.window = { sessionStorage: almacenamiento(sesion), localStorage: almacenamiento(local) };
+  global.fetch = async () => {
+    throw new Error("red cortada");
+  };
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  try {
+    await assert.rejects(
+      () => firmarYEnviar("fondear", "stand", { contrato: "C1", firmante: "G1" }, { fetch: red.fetch }),
+      (error: unknown) => error instanceof ErrorFirmaCliente && error.message !== AVISO_SESION_CAVOS,
+    );
+    assert.equal(sesion.get("cavos-kit:token:app-test"), token);
+    assert.match(local.get("cavos-kit:identity:app-test") ?? "", /usuario-1/);
+  } finally {
+    delete global.window;
+    global.fetch = fetchPrevio;
+    if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+    else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
+  }
+});
+
+test("un token vencido y sin identidad no se puede refrescar", async () => {
+  const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+  process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-test";
+  const exp = Math.floor(Date.now() / 1000) - 120;
+  const token = jwt({ sub: "usuario-1", exp });
+  const local = new Map<string, string>([["hyto:cavos-token:app-test", token]]);
+  const sesion = new Map<string, string>([["cavos-kit:token:app-test", token]]);
+  const almacenamiento = (datos: Map<string, string>) => ({
+    getItem: (clave: string) => datos.get(clave) ?? null,
+    setItem: (clave: string, valor: string) => {
+      datos.set(clave, valor);
+    },
+    removeItem: (clave: string) => {
+      datos.delete(clave);
+    },
+  });
+  const global = globalThis as { window?: unknown };
+  global.window = { sessionStorage: almacenamiento(sesion), localStorage: almacenamiento(local) };
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  try {
+    await assert.rejects(
+      () => firmarYEnviar("fondear", "stand", { contrato: "C1" }, { fetch: red.fetch }),
+      (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_SESION_CAVOS,
+    );
+    assert.equal(sesion.has("cavos-kit:token:app-test"), false);
+    assert.equal(local.has("hyto:cavos-token:app-test"), false);
+    assert.equal(red.llamadas.length, 1);
+  } finally {
+    delete global.window;
+    if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+    else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
+  }
+});
+
+function jwt(payload: Record<string, unknown>): string {
+  const parte = (valor: Record<string, unknown>) => Buffer.from(JSON.stringify(valor)).toString("base64url");
+  return `${parte({ alg: "none" })}.${parte(payload)}.x`;
+}

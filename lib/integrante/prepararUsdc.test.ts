@@ -7,7 +7,7 @@ import { Revision } from "../../components/admin/Revision";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { PrepararUsdc } from "../../components/sesion/PrepararUsdc";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
-import { AVISO_RECHAZO, ErrorFirmaCliente } from "../escrow/firmarCliente";
+import { AVISO_RECHAZO, AVISO_REINGRESO, ErrorFirmaCliente } from "../escrow/firmarCliente";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { prepararUsdcDeSesion } from "./prepararUsdc";
 
@@ -114,6 +114,22 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
     await pulsar("Prepare USDC");
     assert.match(texto(), /Could not submit the USDC trustline/);
     assert.match(texto(), /Prepare USDC/);
+    assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
+
+    await montar(
+      createElement(PrepararUsdc, {
+        consultar: async () => false,
+        preparar: async () => {
+          throw new Error(AVISO_REINGRESO);
+        },
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await pulsar("Prepare USDC");
+    assert.match(texto(), /Your Cavos session expired/);
+    assert.equal(document.querySelector('a[href="/?signin=1"]')?.textContent, "Sign in again");
   } finally {
     await desmontar();
     limpiarPantalla();

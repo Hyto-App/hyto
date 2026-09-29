@@ -1,3 +1,4 @@
+import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 
 export const AVISO_DEMO_FIRMA = "Modo demo: las firmas están desactivadas";
@@ -6,6 +7,12 @@ export const AVISO_RECHAZO = "Rechazaste la firma.";
 export const AVISO_FIRMA = "No se pudo firmar el pago.";
 export const AVISO_SIN_CONTRATO = "El envío salió bien y Trustless no devolvió el contrato.";
 export const AVISO_SESION_CAVOS = "Tu sesión de Cavos se cerró. Entrá de nuevo para firmar.";
+export const AVISO_REINGRESO = "Your Cavos session expired.";
+
+export function mensajeFirmaVisible(mensaje: string): string {
+  if (mensaje === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
+  return mensaje;
+}
 
 const PAGO: readonly AccionCliente[] = ["marcar", "aprobar", "liberar"];
 
@@ -142,8 +149,7 @@ function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contra
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
   const auth = await crearAuth();
   if (!auth) throw new ErrorFirmaCliente("Falta configurar Cavos para entrar.");
-  // persistSession:false deja la identidad en sessionStorage, no en la instancia nueva.
-  if (!auth.restoreIdentity()) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  if (!asegurarIdentidadCavos(auth)) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar") throw new ErrorFirmaCliente(AVISO_FIRMA);
@@ -213,8 +219,17 @@ export function traducirFirma(error: unknown): ErrorFirmaCliente {
   const textoError = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
+  if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   if (/demo/i.test(textoError) && /firma|desactiv/i.test(textoError)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
   return new ErrorFirmaCliente(AVISO_FIRMA);
+}
+
+function esSesionCavos(textoError: string): boolean {
+  return (
+    /registry lookup skipped: no login token/i.test(textoError) ||
+    /registry lookup failed: 401/i.test(textoError) ||
+    /kit\/auth: no identity/i.test(textoError)
+  );
 }
 
 function esRechazo(textoError: string): boolean {
