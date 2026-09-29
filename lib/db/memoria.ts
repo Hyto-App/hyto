@@ -21,6 +21,14 @@ export function crearMemoria(): Almacen {
       if ([...usuarios.values()].some((actual) => actual.email === usuario.email)) return;
       usuarios.set(usuario.id, usuario);
     },
+    async guardarUsuario(usuario) {
+      const email = usuario.email.trim().toLowerCase();
+      const guardado = { ...usuario, email };
+      for (const actual of usuarios.values()) {
+        if (actual.email === email && actual.id !== usuario.id) usuarios.delete(actual.id);
+      }
+      usuarios.set(usuario.id, guardado);
+    },
     async leerProyecto(id) {
       return proyectos.get(id) ?? null;
     },

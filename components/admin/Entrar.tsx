@@ -5,16 +5,19 @@ import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle } from "@/lib/auth/cliente";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { appIdPublico } from "@/lib/integrante/identidades";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 
 type Fase = "inicio" | "correo" | "codigo";
 
 const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
 
-export function Entrar() {
+export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
+  const modoDemo = useModoDemo();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>("inicio");
   const [correo, setCorreo] = useState("");
   const [codigo, setCodigo] = useState("");
+  const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [entrando, setEntrando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
@@ -104,6 +107,29 @@ export function Entrar() {
     }
   }
 
+  async function entrarDemo() {
+    setAviso(null);
+    setEntrando(true);
+    try {
+      const respuesta = await fetch("/api/sesion/demo", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ rol: rolDemo }),
+      });
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
+      if (!respuesta.ok) {
+        setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "No se pudo entrar.");
+        return;
+      }
+      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolDemo;
+      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/");
+    } catch {
+      setAviso("No se pudo entrar.");
+    } finally {
+      setEntrando(false);
+    }
+  }
+
   async function google() {
     const auth = await crearAuth();
     if (!auth) {
@@ -118,6 +144,8 @@ export function Entrar() {
       setEntrando(false);
     }
   }
+
+  if (modoDemo) return null;
 
   if (direccion) {
     return (
@@ -189,6 +217,33 @@ export function Entrar() {
             className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
           >
             {entrando ? "Entrando…" : "Confirmar"}
+          </button>
+        </>
+      ) : null}
+      {demoHabilitado ? (
+        <>
+          <label className="sr-only" htmlFor="rol-demo">
+            Rol de la sesión demo
+          </label>
+          <select
+            id="rol-demo"
+            value={rolDemo}
+            onChange={(evento) => {
+              const valor = evento.target.value;
+              if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
+            }}
+            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none"
+          >
+            <option value="organizador">Organizador</option>
+            <option value="voluntario">Voluntario</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void entrarDemo()}
+            disabled={entrando}
+            className="text-sm text-[var(--suave)] disabled:opacity-70"
+          >
+            Entrar como demo
           </button>
         </>
       ) : null}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
+import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
 import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
@@ -219,9 +220,10 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   return (
     <main>
       <header className="mb-8">
-        <Link href="/mis-tareas" className="text-sm text-[var(--suave)]">
-          Mis tareas
-        </Link>
+        <p className="text-sm text-[var(--suave)]">
+          <Link href="/mis-tareas">Mis tareas</Link>
+          <InsigniaDemo />
+        </p>
         <p className="mt-4 text-sm capitalize text-[var(--suave)]">{tarea.tipo}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">{tarea.titulo}</h1>
         {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{tarea.condicion}</p> : null}

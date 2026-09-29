@@ -40,6 +40,16 @@ export function crearAlmacenNeon(url: string): Almacen {
     async insertarUsuario(usuario) {
       await db.insert(usuarios).values(usuario).onConflictDoNothing();
     },
+    async guardarUsuario(usuario) {
+      const email = usuario.email.trim().toLowerCase();
+      await db
+        .insert(usuarios)
+        .values({ ...usuario, email })
+        .onConflictDoUpdate({
+          target: usuarios.email,
+          set: { nombre: usuario.nombre, rol: usuario.rol },
+        });
+    },
     async leerProyecto(id) {
       const filas = await db.select().from(proyectos).where(eq(proyectos.id, id)).limit(1);
       return filas[0] ?? null;

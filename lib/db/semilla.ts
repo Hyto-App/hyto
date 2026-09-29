@@ -1,5 +1,6 @@
 import { IDENTIDADES } from "@/lib/integrante/identidades";
 import { tareasEjemplo } from "@/lib/integrante/ejemplos";
+import { usuariosDemo } from "@/lib/sesion/demo";
 import type { Almacen } from "./almacen";
 import type { Proyecto, TareaFila, Usuario } from "./tipos";
 
@@ -41,6 +42,9 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
     for (const usuario of usuariosSemilla()) {
       await almacen.insertarUsuario(usuario);
     }
+  }
+  for (const usuario of usuariosDemo()) {
+    await almacen.guardarUsuario(usuario);
   }
   const proyecto = await almacen.leerProyecto(PROYECTO_ZEEK.id);
   if (!proyecto) {

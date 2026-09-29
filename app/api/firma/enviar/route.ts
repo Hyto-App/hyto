@@ -1,10 +1,20 @@
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { ErrorFirma, enviar } from "@/lib/escrow/modulo";
-import { exigirOrganizador } from "@/lib/sesion/exigir";
+import type { SesionFila } from "@/lib/db/tipos";
+import { rechazarFirmaDemo } from "@/lib/sesion/demo";
+import { exigirSesion } from "@/lib/sesion/exigir";
 
 export async function POST(request: Request): Promise<Response> {
-  const sesion = await exigirOrganizador(request);
-  if (sesion) return sesion;
+  return atenderEnviar(request, await exigirSesion(request));
+}
+
+export async function atenderEnviar(request: Request, sesion: SesionFila | Response): Promise<Response> {
+  if (sesion instanceof Response) return sesion;
+  const demo = rechazarFirmaDemo(sesion);
+  if (demo) return demo;
+  if (sesion.rol !== "organizador") {
+    return Response.json({ aviso: "Solo el organizador prepara el pago." }, { status: 403 });
+  }
   const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
   if (limitado) return limitado;
   let body: unknown;
