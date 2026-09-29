@@ -32,7 +32,6 @@ export function tareasSemilla(): TareaFila[] {
     condicion: tarea.condicion,
     miembroId: tarea.miembroId,
     walletCobro: "",
-    // El ejemplo del admin nace «en revisión». Acá quedan pendientes para que el voluntario pueda subir evidencia.
     estado: "pendiente",
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
@@ -94,12 +93,27 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
   }
   for (const evidencia of evidenciasSemilla()) {
     if (await almacen.leerEvidencia(evidencia.id)) continue;
-    await almacen.crearEvidencia(evidencia);
+    try {
+      await almacen.crearEvidencia(evidencia);
+    } catch (error) {
+      if (!esClaveDuplicada(error)) throw error;
+    }
   }
   for (const veredicto of veredictosSemilla()) {
     if (await almacen.veredictoDe(veredicto.evidenciaId)) continue;
     await almacen.guardarVeredicto(veredicto);
   }
+}
+
+function esClaveDuplicada(error: unknown): boolean {
+  const visto = new Set<unknown>();
+  let actual: unknown = error;
+  while (actual && typeof actual === "object" && !visto.has(actual)) {
+    visto.add(actual);
+    if ("code" in actual && actual.code === "23505") return true;
+    actual = "cause" in actual ? actual.cause : undefined;
+  }
+  return false;
 }
 
 function idEjemplo(tareaId: string): string {

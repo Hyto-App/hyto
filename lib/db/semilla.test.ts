@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { armarInforme } from "../api/informe";
-import { leerRevisionHttp } from "../api/revision";
 import { leerFotoHttp } from "../api/evidencias";
+import { leerRevisionHttp } from "../api/revision";
+import type { Almacen } from "./almacen";
 import { crearMemoria } from "./memoria";
 import { asegurarSemilla, evidenciasSemilla, MARCA_EJEMPLO, tareasSemilla, veredictosSemilla } from "./semilla";
 
@@ -126,4 +127,24 @@ test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {
     creadaEn: "2026-09-27T12:00:00.000Z",
   });
   assert.equal((await almacen.leerEvidencia("ejemplo-stand"))?.monto, "9");
+});
+
+test("un insert simultáneo de la evidencia de ejemplo no corta la semilla", async () => {
+  const base = crearMemoria();
+  const error = Object.assign(new Error("llave duplicada"), { code: "23505" });
+  let intentos = 0;
+  const almacen: Almacen = {
+    ...base,
+    async leerEvidencia() {
+      return null;
+    },
+    async crearEvidencia() {
+      intentos += 1;
+      throw error;
+    },
+  };
+  await asegurarSemilla(almacen);
+  assert.equal(intentos, 3);
+  assert.equal((await base.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await base.veredictoDe("ejemplo-stand"))?.veredicto, "cumplió");
 });
