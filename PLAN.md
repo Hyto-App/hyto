@@ -1,6 +1,6 @@
 # Plan para empezar a codear Hyto
 
-El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Lo que sigue es el plan del 27 y 28 de septiembre. Donde diga que Fondear y Aprobar no firman, o que el backend no está en el repo, ya no describe `main`: la revisión firma, y un correo nuevo con Cavos entra como voluntario. El paso principal que sigue es la IA (Groq `qwen/qwen3.8-27b`, fallback silencioso a `desdeGuion`, Laya sin `LAYA_URL`, PR #15). El orden está en [AGENTS.md](AGENTS.md).
+El contexto del código al 29 de septiembre de 2026 (`7f41011`, 4:22 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Lo que sigue es el plan del 27 y 28 de septiembre. Donde diga que Fondear y Aprobar no firman, o que el backend no está en el repo, ya no describe `main`: la revisión firma, un correo nuevo con Cavos entra como voluntario, cada proyecto tiene `organizador_id` (PR #44), el demo no crea proyectos (PR #47), hay trustline de USDC para una sesión real (PR #50), la cookie dura como máximo 24 horas (PR #54) y, si Groq o Laya fallan, el origen queda `error` con **Retry review** (PR #45). `desdeGuion()` ya no cubre ese fallo. Siguen pendientes el pago real en testnet, `LAYA_URL` y el PR #15. El orden está en [AGENTS.md](AGENTS.md).
 
 El contrato está en [STACK.md](STACK.md) y [ROLES.md](ROLES.md). Cada quien avanza su lista en orden. No espera a otra persona salvo el único dato marcado como encuentro.
 
@@ -20,9 +20,9 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 ## Qué puede hacerse solo
 
 - **Sebas** ya dejó en `main` el módulo de firma y el script del hito (PR #8). No necesita la app, Neon ni las pantallas. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel y es el correcto. Los orígenes permitidos de Cavos también. `TRUSTLESS_API_KEY` tiene nombre y se queda en el servidor; sin esa clave el script no paga. En el repositorio no hay hash de un pago en USDC, así que el Acta sigue sin hacerse.
-- **Esteban** es dueño de todo el backend: `/api/tareas`, `/api/evidencias`, Neon Postgres (tabla de usuarios, email → rol, migraciones y seed) y el login real de Cavos contra esa base. No necesita el escrow ni Laya encendida. La revisión usa un stub de Laya y el guion fijo hasta que exista `LAYA_URL`. Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
+- **Esteban** es dueño de todo el backend: `/api/tareas`, `/api/evidencias`, Neon Postgres (tabla de usuarios, email → rol, migraciones y seed) y el login real de Cavos contra esa base. No necesita el escrow ni Laya encendida. Sin `LAYA_URL`, después de Groq se usa el stub. Si Groq o Laya fallan, el origen queda `error` (PR #45, Josué Valles). Las pantallas de Raúl ya llaman sus rutas y caen al ejemplo si no responden.
 - **Abdiel** no necesita el escrow ni las rutas. La marca ya está en `main` (PR #7): Poppins y `--acento` `#B7EE34`. Sigue Laya en su servidor. `LAYA_URL` todavía no está.
-- **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos son el ejemplo de ZEEK. Fondear y Aprobar no firman: el módulo de Sebas ya está y esos botones todavía no lo llaman. El `appId` ya está. Entrar falla por el token de login: lo toma Esteban.
+- **Josué** ya dejó el esqueleto y las pantallas del admin en `main` (PR #3). No recreó el proyecto: usa la base del PR #1. Los datos de ejemplo son ZEEK. **Desplegar y fondear** y **Aprobar y pagar** firman desde la revisión. El 29 de septiembre también entraron el organizador por proyecto, el tope del demo, la trustline de USDC, **Sign out**, la cookie de 24 horas y **Retry review**. El `appId` ya está. El login real lo tomó Esteban. Sigue Next.js 16.3.7 y el borrador #18.
 - **Raúl** ya dejó Mis tareas, Subir evidencia y `/cuentas` en `main` (PR #1). El `appId` ya está. El login real contra Neon es de Esteban.
 
 ## Sebas, en este orden
@@ -40,7 +40,7 @@ El demo a mostrar sigue siendo el de ZEEK: 3 tareas de trabajo, 1 reembolso, un 
 1. Neon y Blob privado. `DATABASE_URL` y `BLOB_READ_WRITE_TOKEN`. Tabla de usuarios: el email mapea al rol. Migraciones y seed.
 2. Tablas: proyecto, tarea (trabajo o reembolso, monto, tope, condición, wallet de cobro), evidencia (id de Blob), veredicto y hash de pago (campo vacío hasta que Sebas lo tenga). Usuarios, aparte: email y rol.
 3. Rutas que las pantallas ya llaman. El contrato está más abajo. Mientras no respondan, la UI sigue con el ejemplo de ZEEK.
-4. Ruta de revisión. Lee la foto en Blob. Groq `qwen/qwen3.8-27b` en `https://api.groq.com/openai/v1` describe la foto. Si es reembolso, saca monto y fecha y el código compara el tope. Llama a `LAYA_URL` si existe. Si no, un stub devuelve `choice`, `noul` y `score`. El código arma `cumplió`, `parcial` o `insuficiente`. Sin `GROQ_API_KEY` o si Groq falla, guion fijo. La justificación es el texto de Scout más las tres respuestas.
+4. Ruta de revisión. Lee la foto en Blob. Groq `qwen/qwen3.8-27b` en `https://api.groq.com/openai/v1` describe la foto. Si es reembolso, saca monto y fecha y el código compara el tope. Llama a `LAYA_URL` si existe. Si no, un stub devuelve `choice`, `noul` y `score`. El código arma `cumplió`, `parcial` o `insuficiente`. En `main` (`7f41011`), sin `GROQ_API_KEY` o si Groq o Laya fallan, el origen queda `error` y no entra el guion fijo (PR #45). La justificación es el texto de Scout más las tres respuestas.
 5. Ruta del informe leyendo esas tablas. El enlace "Ver pago" usa el hash cuando exista; si no, el informe igual se abre.
 6. Pendiente, 2026-09-28. Login real de Cavos, conectado a Neon. En https://hyto.vercel.app, Entrar falla con `registry lookup skipped: no login token`. `components/admin/Entrar.tsx` y `lib/integrante/preparar.ts` llaman `Cavos.connect` con `vault: true` y una `identity` fija de `lib/integrante/identidades.ts`, sin `auth`. `@cavos/kit` 0.2.5 exige un token de un login real (CavosAuth: email con `sendOtp` y `verifyOtp`, o Google con `handleCallback`). Arreglo: entrar con CavosAuth, pasar `auth` a `Cavos.connect` y, en el servidor, buscar el rol por email en Neon. Los orígenes permitidos de Cavos ya están. `NEXT_PUBLIC_CAVOS_APP_ID` en Vercel es el correcto. Alternativa solo para el demo, sin probar: `vault: false` y `InMemoryWalletRegistry`.
 
@@ -142,12 +142,12 @@ Josué firma en el navegador con `signXdr` y no ve la clave. Los botones Fondear
 
 1. La base Next.js 16.3.6, TypeScript, Tailwind y App Router ya está en `main` (PR #1). No la recrees. El 30 de septiembre, subir a 16.3.7.
 2. Hecho en el PR #3: layout del admin y las pantallas con datos fijos de ZEEK. `/` es la bandeja. El acento es el lima del PR #7.
-3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). El `appId` ya está en Vercel. Hoy falla con `registry lookup skipped: no login token`. El login real lo hace Esteban (su paso 6).
-4. Cambiar los datos fijos por las rutas de Esteban. Sigue pendiente.
-5. Fondear y Aprobar tienen que llamar al módulo de Sebas, ya en `main` (PR #8): `POST /api/firma` arma el XDR, el navegador lo firma con `signXdr` y `POST /api/firma/enviar` lo manda. Una firma en Aprobar. Hoy esos botones solo guardan el ejemplo en el navegador.
+3. El botón Entrar ya está (`network: "testnet"`, `appSalt` fijo `hyto`). El `appId` ya está en Vercel. El login real lo hizo Esteban. La cookie sigue el `exp` del JWT, con tope de 24 horas (PR #54). **Sign out** está en `main` (PR #52).
+4. Hecho: la bandeja, la revisión y el informe leen las rutas cuando hay sesión y no es demo.
+5. Hecho: **Desplegar y fondear** y **Aprobar y pagar** llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`. Queda recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Aprobar y pagar** mientras no haya fondeo. Esos botones ya se ocultan si el origen es `error` o el reembolso no tiene monto (PR #45).
 6. Hecho en el PR #3: informe imprimible. Presupuesto contra gasto, detalle por persona, "Ver pago", y la credencial de Acta solo si el enlace existe.
 
-El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Esteban. El módulo de firma de Sebas ya está; falta conectarlo a Fondear y Aprobar.
+El esqueleto, el admin y la firma desde la revisión ya están en `main`. Sigue el parche de Next.js el 30 de septiembre y el borrador #18.
 
 ## Raúl, en este orden
 
@@ -157,17 +157,63 @@ El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Es
 
 ## Lo único que hay que pasar de una persona a otra
 
-- El `appId` ya está en Vercel. Esteban conecta el login real a Neon. Raúl crea las cuatro cuentas del demo.
-- Esteban publica las rutas. Josué y Raúl dejan los datos de ejemplo.
-- El módulo de firma ya está en `main` (PR #8). Josué lo conecta a Fondear y Aprobar. El `appId` ya está. Cuando el script deje un pago, Sebas pasa el hash para el informe.
-- Abdiel publica `LAYA_URL`. Esteban cambia el stub por esa URL. La URL sale de Tailscale Funnel.
-- El hash que guarda Sebas llena el campo que Esteban ya dejó en el informe.
+- El `appId` ya está en Vercel. Esteban ya conectó el login real a Neon. Raúl crea las cuatro cuentas del demo.
+- Esteban ya publicó las rutas. La bandeja usa la API cuando hay sesión y no es demo.
+- El módulo de firma ya está en `main` (PR #8) y la revisión ya lo llama. Cuando haya un pago, Sebas pasa el hash para el informe.
+- Abdiel publica `LAYA_URL`. Sin ella, después de Groq sigue el stub. La URL sale de Tailscale Funnel.
+- El hash que guarda Sebas llena el campo que Esteban ya dejó en el informe. Esteban asigna a mano el `organizador_id` de los proyectos reales.
 
 ## Bitácora
 
 ### 2026-09-29
 
-El backend de Esteban quedó en la rama `esteban/backend`. Neon con Drizzle (usuarios con correo y rol, proyecto, tarea, evidencia, veredicto y hash de pago vacío), migración en `drizzle/0000_inicio.sql` y semilla de ZEEK. Blob privado. Rutas `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`, `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. La revisión llama a `qwen/qwen3.8-27b`; sin `LAYA_URL` usa el stub; sin `GROQ_API_KEY` o si un modelo falla, el guion fijo. El informe abre sin hash. Entrar y Preparar cuentas pasan `auth` de CavosAuth. `POST /api/firma` y `POST /api/firma/enviar` exigen la sesión del organizador. Falta cargar las variables en Vercel y correr la migración. Josué sigue conectando las pantallas. No hay Acta.
+Horas de Costa Rica. El autor de los pull request de este día, salvo el #14, es Josué Valles. `main` cierra en `7f41011`.
+
+PR #14 de Esteban (Psybre) mergeado (squash `ce9ff7c`), el 28 de septiembre a las 11:40 p.m. Neon con Drizzle, Blob privado, rutas de tareas, evidencias, informe, proyectos y revisión, y el ingreso con CavosAuth. En ese momento, si Groq o Laya fallaban, la revisión usaba el guion fijo. El PR #45 lo cambió el mismo 29, a las 4:22 p.m.
+
+9:16 a.m. PR #20. `.env.example` lista los nombres que el código lee, sin valores.
+
+9:44 a.m. PR #27. Pruebas de integración contra Postgres local.
+
+9:50 a.m. PR #22. Configuración central de entorno y salvaguarda para no migrar ni sembrar producción sin un `si` explícito.
+
+10:03 a.m. PR #21. Postgres local, migración y semilla de ejemplo.
+
+10:10 a.m. PR #24. Inventario del esquema de Postgres.
+
+10:13 a.m. PR #25. Cruce del esquema declarado contra las consultas, sin escribir en la base.
+
+10:14 a.m. PR #28. Avisos claros cuando falla el ingreso.
+
+10:45 a.m. PR #23. Se verifica el JWT de Cavos y escribir exige sesión.
+
+11:28 a.m. PR #26. Acciones V2 para aprobar, liberar, disputar, resolver y leer el escrow.
+
+11:30 a.m. PR #30. Ingreso demo sin Cavos, para el pitch. Esa sesión no firma.
+
+11:48 a.m. PR #36. Salir del demo y cambiar de rol ya no deja la sesión atrapada.
+
+12:38 p.m. PR #38. Backend de escrow V2 para desplegar y pagar. El contrato queda en la tarea.
+
+12:42 p.m. PR #39. La revisión firma el pago en el navegador.
+
+12:51 p.m. PR #41. Un correo con login de Cavos que no existe se registra como voluntario.
+
+12:59 p.m. PR #43. `AGENTS.md` queda como contexto del repo, contra `77a0431`.
+
+1:38 p.m. PR #44. El organizador es de cada proyecto (`proyectos.organizador_id`). La migración solo agrega la columna, vacía. La semilla no escribe dueño en ZEEK. Con el demo prendido, el proyecto demo es de `demo-organizador`.
+
+2:10 p.m. PR #47. El modo demo, y un pedido sin sesión, no pueden crear proyectos.
+
+3:02 p.m. PR #50. El voluntario demo sube evidencia solo al proyecto demo, y la wallet de cobro que mande se ignora. Una sesión real prepara la trustline de USDC de testnet con `GET` y `POST /api/usdc`. El demo recibe 403.
+
+4:10 p.m. PR #52. Preparar USDC y firmar reutilizan un token de Cavos todavía válido. **Sign out** cierra la sesión del servidor, la de Cavos y la wallet local.
+
+4:18 p.m. PR #54. La cookie y `sesiones.expira_en` siguen el `exp` del JWT, con tope de 24 horas. Sin `exp`, 8 horas. El demo usa esas 8 horas. Una sesión vencida responde 401, `Sign in to continue.`
+
+4:22 p.m. PR #45 (`7f41011`). Si Groq o Laya fallan, la revisión guarda origen `error`, muestra el mensaje y **Retry review**. No usa el guion fijo. No borra monto ni fecha. Oculta desplegar, fondear y pagar, y el servidor responde 409. El reintento espera 30 segundos y se niega si la tarea está pagada o tiene escrow. Groq pide `max_completion_tokens` 1024 y apaga el pensamiento del modelo.
+
+Al cierre sigue pendiente: Sebas, el pago real en testnet y el Acta después. Esteban, Groq en producción, el PR #15 y asignar `organizador_id` a mano. Abdiel, `LAYA_URL` y el borrador #49. Josué, Next.js 16.3.7 el 30 de septiembre, el borrador #18, y los dos detalles de UX del escrow (recargar si fondear falla, ocultar pagar sin fondeo). Raúl, las cuatro cuentas del demo.
 
 ### 2026-09-28
 
