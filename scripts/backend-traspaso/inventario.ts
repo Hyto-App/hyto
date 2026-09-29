@@ -402,8 +402,61 @@ function buscarForaneaDrizzle(tabla: TablaDrizzle | undefined, columnas: string[
   return tabla.foraneas.find((clave) => mismoConjunto(clave.columnas, columnas)) ?? null;
 }
 
-function foraneaInventario(sql: ClaveForaneaSql, drizzle: ForaneaDrizzle | null, fuenteSchema: string): ClaveForaneaInventario {
+function escaparRegExp(valor: string): string {
+  return valor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extraerBalanceado(texto: string, inicio: number, abre: string, cierra: string): string {
+  if (texto[inicio] !== abre) return "";
+  let profundidad = 0;
+  for (let i = inicio; i < texto.length; i++) {
+    if (texto[i] === abre) profundidad++;
+    else if (texto[i] === cierra) {
+      profundidad--;
+      if (profundidad === 0) return texto.slice(inicio, i + 1);
+    }
+  }
+  return texto.slice(inicio);
+}
+
+function cuerpoDeColumnas(fuenteSchema: string, tabla: string): string {
+  const patron = new RegExp(`pgTable\\(\\s*["']${escaparRegExp(tabla)}["']`);
+  const coincidencia = patron.exec(fuenteSchema);
+  if (!coincidencia) return "";
+  const llave = fuenteSchema.indexOf("{", coincidencia.index + coincidencia[0].length);
+  if (llave < 0) return "";
+  return extraerBalanceado(fuenteSchema, llave, "{", "}");
+}
+
+function cadenaDeLaColumna(bloque: string, desde: number): string {
+  let profundidad = 0;
+  for (let i = desde; i < bloque.length; i++) {
+    const caracter = bloque[i];
+    if (caracter === "(" || caracter === "{" || caracter === "[") profundidad++;
+    else if (caracter === ")" || caracter === "}" || caracter === "]") {
+      profundidad--;
+      if (profundidad < 0) return bloque.slice(desde, i);
+    } else if (caracter === "," && profundidad === 0) return bloque.slice(desde, i);
+  }
+  return bloque.slice(desde);
+}
+
+export function fragmentoDeColumnaEnSchema(fuenteSchema: string, tabla: string, columna: string): string {
+  const cuerpo = cuerpoDeColumnas(fuenteSchema, tabla);
+  const patron = new RegExp(`\\b\\w+\\(\\s*["']${escaparRegExp(columna)}["']`);
+  const coincidencia = patron.exec(cuerpo);
+  if (!coincidencia) return "";
+  return cadenaDeLaColumna(cuerpo, coincidencia.index);
+}
+
+export function accionesEscritasEnColumna(fuenteSchema: string, tabla: string, columna: string): { onDelete: boolean; onUpdate: boolean } {
+  const fragmento = fragmentoDeColumnaEnSchema(fuenteSchema, tabla, columna);
+  return { onDelete: fragmento.includes("onDelete"), onUpdate: fragmento.includes("onUpdate") };
+}
+
+function foraneaInventario(sql: ClaveForaneaSql, drizzle: ForaneaDrizzle | null, fuenteSchema: string, tablaOrigen: string): ClaveForaneaInventario {
   const nombreDrizzle = drizzle?.nombre ?? null;
+  const acciones = sql.columnas.map((columna) => accionesEscritasEnColumna(fuenteSchema, tablaOrigen, columna));
   return {
     columnas: sql.columnas,
     tabla: sql.tabla,
@@ -413,8 +466,8 @@ function foraneaInventario(sql: ClaveForaneaSql, drizzle: ForaneaDrizzle | null,
     onUpdateEnSql: sql.onUpdate,
     onDeleteEnDrizzle: drizzle?.onDelete ?? null,
     onUpdateEnDrizzle: drizzle?.onUpdate ?? null,
-    onDeleteEscritoEnSchemaTs: fuenteSchema.includes("onDelete"),
-    onUpdateEscritoEnSchemaTs: fuenteSchema.includes("onUpdate"),
+    onDeleteEscritoEnSchemaTs: acciones.some((accion) => accion.onDelete),
+    onUpdateEscritoEnSchemaTs: acciones.some((accion) => accion.onUpdate),
     nombreEnSql: sql.nombre,
     nombreGeneradoPorDrizzleOrm: nombreDrizzle,
     nombreEscritoEnSchemaTs: nombreDrizzle ? fuenteSchema.includes(nombreDrizzle) : false,
@@ -671,7 +724,7 @@ export function armarInventario(raiz: string): Inventario {
       const columnaDrizzle = par?.columnas.find((item) => item.nombre === columna.nombre);
       const foraneaSql = columna.claveForanea;
       const foraneaDrizzle = foraneaSql ? buscarForaneaDrizzle(par, foraneaSql.columnas) : null;
-      const foranea = foraneaSql ? foraneaInventario(foraneaSql, foraneaDrizzle, fuenteSchema) : null;
+      const foranea = foraneaSql ? foraneaInventario(foraneaSql, foraneaDrizzle, fuenteSchema, tabla.nombre) : null;
       return columnaInventario(
         columna,
         columnaDrizzle,
@@ -869,7 +922,7 @@ const PATRONES_DDL: { nombre: string; expresion: RegExp }[] = [
   { nombre: "CREATE TYPE", expresion: /\bCREATE\s+TYPE\b/i },
   { nombre: "pgTable", expresion: /\bpgTable\s*\(/ },
   { nombre: ".references(", expresion: /\.references\s*\(/ },
-  { nombre: "REFERENCES", expresion: /\bREFERENCES\s+[A-Za-z_"]/ },
+  { nombre: "REFERENCES", expresion: /\bREFERENCES\s+[A-Za-z_"]/i },
 ];
 
 export function esRutaDeEsquema(ruta: string): boolean {

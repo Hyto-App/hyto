@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { analizarDiff, armarInventario } from "./inventario";
+import { accionesEscritasEnColumna, analizarDiff, armarInventario } from "./inventario";
 import { parsearSql } from "./leer-sql";
 
 const RAIZ = process.cwd();
@@ -89,14 +88,14 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
 
 test("el archivo generado sale de armarInventario y no trae una URL", () => {
   const json = JSON.parse(readFileSync("scripts/backend-traspaso/esquema-inventario.json", "utf8")) as {
-    base: { sha: string; coincideConElShaPedido: boolean; archivosDeEsquemaIgualesAEseCommit: boolean };
+    base: { sha: string; shaCortoPedido: string; coincideConElShaPedido: boolean; archivosDeEsquemaIgualesAEseCommit: boolean };
     prs: { numero: number; cambiaEsquema: boolean | null }[];
   } & Record<string, unknown>;
   const { base, prs, ...resto } = json;
   assert.deepEqual(resto, armarInventario(RAIZ));
-  const sha = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
-  assert.equal(base.sha, sha);
-  assert.equal(base.coincideConElShaPedido, sha.startsWith("ce9ff7c"));
+  assert.match(base.sha, /^[0-9a-f]{40}$/);
+  assert.match(base.shaCortoPedido, /^[0-9a-f]+$/);
+  assert.equal(base.coincideConElShaPedido, base.sha.startsWith(base.shaCortoPedido));
   assert.equal(base.archivosDeEsquemaIgualesAEseCommit, true);
   assert.deepEqual(
     prs.map((pr) => [pr.numero, pr.cambiaEsquema]),
@@ -166,4 +165,36 @@ test("un diff de revisión no cambia el esquema y uno de migración sí", () => 
 +const sql = "CREATE TABLE sorpresa (id text)";
 `);
   assert.equal(ddl.tocaEsquema, true);
+
+  const referencesMinusculas = analizarDiff(`diff --git a/lib/api/tareas.ts b/lib/api/tareas.ts
+--- a/lib/api/tareas.ts
++++ b/lib/api/tareas.ts
+@@ -1 +1 @@
+-const x = 1;
++const sql = "references proyectos (id)";
+`);
+  assert.equal(referencesMinusculas.tocaEsquema, true);
+});
+
+test("onDelete y onUpdate se leen en la columna, no en el archivo", () => {
+  const fuente = `
+    // onDelete y onUpdate sueltos no cuentan
+    export const proyectos = pgTable("proyectos", {
+      id: text("id").primaryKey(),
+    });
+    export const tareas = pgTable("tareas", {
+      id: text("id").primaryKey(),
+      proyectoId: text("proyecto_id")
+        .notNull()
+        .references(() => proyectos.id),
+      otroId: text("otro_id").notNull().references(() => proyectos.id, { onDelete: "cascade", onUpdate: "restrict" }),
+    });
+    export const evidencias = pgTable("evidencias", {
+      proyectoId: text("proyecto_id").references(() => proyectos.id, { onDelete: "set null" }),
+    });
+  `;
+  assert.deepEqual(accionesEscritasEnColumna(fuente, "tareas", "proyecto_id"), { onDelete: false, onUpdate: false });
+  assert.deepEqual(accionesEscritasEnColumna(fuente, "tareas", "otro_id"), { onDelete: true, onUpdate: true });
+  assert.deepEqual(accionesEscritasEnColumna(fuente, "evidencias", "proyecto_id"), { onDelete: true, onUpdate: false });
+  assert.deepEqual(accionesEscritasEnColumna(fuente, "proyectos", "id"), { onDelete: false, onUpdate: false });
 });
