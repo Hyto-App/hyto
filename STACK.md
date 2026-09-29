@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+El estado del código al 29 de septiembre de 2026 (`e145f93`, 3:02 p.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. El 29 por la tarde, Josué Valles dejó el dueño en `proyectos.organizador_id` (PR #44, 1:38 p.m.), impidió que el demo cree proyectos (PR #47, 2:11 p.m.) y dejó la evidencia del voluntario demo más **Prepare USDC** (PR #50, 3:02 p.m.). Hay un contrato por tarea. La migración `0002` no se aplicó. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
@@ -26,7 +26,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
-| Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
+| Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema y la semilla de ZEEK ya están. `proyectos.organizador_id` está en `drizzle/0002_organizador_proyecto.sql` y esa migración no se corrió. ZEEK nace sin dueño |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
 | IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
@@ -69,10 +69,10 @@ Ejemplo, stand de ZEEK. La tarea pide banner visible y mesa armada. Qwen dice: "
 
 ## Reglas que este stack cierra
 
-- **Un escrow multi-release por proyecto, un hito por tarea.** Cada hito tiene monto y receptor propios. Hasta 5 direcciones por rol y 50 hitos. El demo cabe: 3 voluntarios y 1 reembolso.
+- **Un escrow multi-release por tarea.** En el código hay un contrato por tarea (`tareas.contrato_escrow`), con su monto y su receptor. El plan del 27 hablaba de un escrow por proyecto; `main` no está así. Hasta 5 direcciones por rol y 50 hitos. El demo cabe: 3 voluntarios y 1 reembolso.
 - **Pago todo o nada.** Liberar un hito paga su monto completo, menos comisiones. Un parcial pide más evidencia o aprueba el monto entero. Partir el monto solo existe en una disputa, y eso queda fuera del MVP.
 - **El admin de Hyto puede contradecir a la IA.** La IA no tiene rol en el contrato y no firma.
-- **Quien aprueba y quien libera es el organizador**, en las dos listas. v2 permite `approve-and-release`: una sola firma hace las dos cosas. El estado del hito lo marca el proveedor, no el organizador.
+- **Quien aprueba y quien libera es el organizador del proyecto** (`proyectos.organizador_id`), no cualquier sesión con rol `organizador`. v2 permite `approve-and-release`: una sola firma hace las dos cosas. El estado del hito lo marca el proveedor, no el organizador. Si `organizador_id` está vacío, nadie firma ese proyecto.
 - **La cuenta Admin del contrato es otra dirección.** No puede ser aprobador, proveedor, firmante de liberación ni resolutor de disputas. El resolutor tampoco puede coincidir con esos roles, con Platform ni con el receptor. Los hitos no se editan después de fondear.
 
 ## Acta, en el demo

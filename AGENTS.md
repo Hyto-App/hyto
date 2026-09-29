@@ -1,6 +1,6 @@
 # Hyto — contexto para el equipo y para agentes
 
-Leé esto antes de tocar el repo. Está escrito contra el código de `main` en `77a0431` (29 de septiembre de 2026). Si un documento más viejo dice otra cosa, manda este archivo y el código.
+Leé esto antes de tocar el repo. Está escrito contra el código de `main` en `e145f93` (29 de septiembre de 2026, 3:02 p.m., hora de Costa Rica). Si un documento más viejo dice otra cosa, manda este archivo y el código.
 
 La app en producción es Next.js en Vercel: https://hyto.vercel.app
 
@@ -10,10 +10,10 @@ Hyto es control de gastos y pagos por hitos sobre Stellar. El organizador deja e
 
 El demo es un evento de ZEEK: tres tareas de trabajo de US$20 y un reembolso de comida de hasta US$15. Esos montos viven en la semilla y en el ejemplo local. Organización: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
 
-Hay dos roles de producto, en la tabla `usuarios.rol`:
+Hay dos roles de producto, en la tabla `usuarios.rol`, y un dueño por proyecto:
 
-- **Organizador.** Crea el proyecto, ve la bandeja (`/`), la revisión (`/revision/[id]`) y el informe (`/informe`). Despliega y fondea el escrow, y aprueba y paga. El código asume un organizador por despliegue: `proyectos` no tiene dueño, y cualquier sesión con ese rol puede desplegar y liberar (`lib/db/schema.ts`).
-- **Voluntario.** Ve sus tareas (`/mis-tareas`), sube la evidencia (`/tareas/[id]`) y, en `/cuentas`, prepara la wallet. La cuenta de cobro de la tarea (`wallet_cobro`) la fija el voluntario asignado al subir la foto.
+- **Organizador del proyecto.** Quien crea el proyecto queda en `proyectos.organizador_id` (PR #44, Josué Valles). También puede ser un voluntario: al crear, esa persona queda como dueña. Ve la bandeja (`/`), la revisión (`/revision/[id]`) y el informe (`/informe`) de sus proyectos. Despliega, fondea, aprueba y paga solo si su usuario es el `organizador_id` de ese proyecto. Si la columna está vacía, nadie tiene ese derecho. El rol global `usuarios.rol` no autoriza el escrow ni la revisión (`lib/db/schema.ts`). Resolver una disputa es la excepción: la comprueba la cuenta resolutora, no el dueño del proyecto.
+- **Voluntario.** Ve sus tareas (`/mis-tareas`), sube la evidencia (`/tareas/[id]`) y, en `/cuentas`, prepara la wallet. La cuenta de cobro de la tarea (`wallet_cobro`) la fija el voluntario asignado al subir la foto. En el demo, esa wallet se ignora.
 
 La IA no firma ni mueve dinero. El pago de un hito es el monto completo.
 
@@ -25,7 +25,7 @@ La IA no firma ni mueve dinero. El pago de un hito es el monto completo.
 | Pantallas | Admin en `app/(admin)`: `/`, `/proyectos/nuevo`, `/revision/[id]`, `/informe`. Integrante en `app/(integrante)`: `/mis-tareas`, `/tareas/[id]`, `/cuentas`. |
 | Marca | Poppins 400, 500 y 600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. La fuente de verdad de la UI es el Figma de Abdiel. |
 | API | Route Handlers en `app/api`. |
-| Datos | Neon Postgres con Drizzle. El esquema declarado está en `lib/db/schema.ts`. Las migraciones son SQL en `drizzle/` (`0000_inicio.sql`, `0001_contrato_escrow.sql`). `npm run db:migrar` las aplica en orden de nombre (`lib/db/aplicar.ts`). |
+| Datos | Neon Postgres con Drizzle. El esquema declarado está en `lib/db/schema.ts`. Las migraciones son SQL en `drizzle/` (`0000_inicio.sql`, `0001_contrato_escrow.sql`, `0002_organizador_proyecto.sql`). `npm run db:migrar` las aplica en orden de nombre (`lib/db/aplicar.ts`). La `0002` agrega `proyectos.organizador_id` y no se corrió contra la base al entrar el PR #44. |
 | Fotos | Vercel Blob, almacén privado (`access: "private"` en `lib/blob/fotos.ts`). En la base se guarda el identificador, no la URL pública. La pantalla recibe `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` fijo `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work V2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). Las llamadas salen del servidor con `TRUSTLESS_API_KEY`. El navegador solo firma el XDR. |
@@ -41,6 +41,7 @@ Rutas:
 - `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
 - `GET` y `POST /api/revision/:id` — el POST vuelve a revisar.
 - `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]`.
+- `GET` y `POST /api/usdc` — trustline de USDC de testnet para la wallet de la sesión.
 
 ## Almacén: Neon y memoria
 
@@ -48,7 +49,7 @@ Rutas:
 
 - **Neon.** `almacenNeon()` y `crearAlmacenNeon()` en `lib/db/neon.ts`. Si el host es Neon, usa el cliente HTTP. Si no, usa `pg` (Postgres local). Las rutas de producción entran por `conAlmacen` (`lib/api/base.ts`). Sin `DATABASE_URL` responden que la base no está configurada.
 - **Memoria de servidor.** `crearMemoria()` en `lib/db/memoria.ts` guarda todo en `Map`. La usan las pruebas. No es el almacén de producción.
-- **Memoria del navegador.** `lib/admin/memoria.ts` y `lib/integrante/almacen.ts` escriben en `localStorage`. La bandeja y Mis tareas arrancan con el ejemplo de ZEEK y, si la API responde y no es modo demo, lo reemplazan (`components/admin/usarVista.ts`). Crear proyecto (`components/admin/CrearProyecto.tsx`) todavía guarda el borrador en ese `localStorage`. El despliegue real del escrow no sale de ese botón: sale de la revisión.
+- **Memoria del navegador.** `lib/admin/memoria.ts` y `lib/integrante/almacen.ts` escriben en `localStorage`. La bandeja y Mis tareas arrancan con el ejemplo de ZEEK y, si la API responde y no es modo demo, lo reemplazan (`components/admin/usarVista.ts`). Crear proyecto (`components/admin/CrearProyecto.tsx`) todavía guarda el borrador en ese `localStorage` y no llama a `POST /api/proyectos`. En el demo, Fondear queda desactivado (PR #47). El despliegue real del escrow no sale de ese botón: sale de la revisión.
 
 Las fotos de prueba usan `crearFotosMemoria()`. En el servidor, `fotosBlob()` exige `BLOB_READ_WRITE_TOKEN`.
 
@@ -66,7 +67,13 @@ La wallet del JWT, si viene, se guarda en la sesión. Si el JWT no trae la `G…
 
 `HYTO_DEMO_LOGIN=1` enciende el demo (`lib/sesion/demo.ts`). Cualquier otro valor lo apaga y `POST /api/sesion/demo` responde 404.
 
-Con el interruptor en 1, el ingreso muestra **Entrar como demo** y un selector de organizador o voluntario. La sesión usa `demo-organizador@hyto.demo` o `demo-voluntario@hyto.demo`, sin billetera. Dentro del demo, los botones son **Cambiar a organizador** o **Cambiar a voluntario**, y **Salir del demo** (`components/admin/Entrar.tsx`, `components/sesion/SalirDemo.tsx`). Esa sesión no firma: `/api/firma` y `/api/firma/enviar` responden 403, «Modo demo: las firmas están desactivadas».
+Con el interruptor en 1, el ingreso muestra **Entrar como demo** y un selector de organizador o voluntario. La sesión usa `demo-organizador@hyto.demo` o `demo-voluntario@hyto.demo`, sin billetera. Dentro del demo, los botones son **Cambiar a organizador** o **Cambiar a voluntario**, y **Salir del demo** (`components/admin/Entrar.tsx`, `components/sesion/SalirDemo.tsx`). Esa sesión no firma: `/api/firma` y `/api/firma/enviar` responden 403, «Modo demo: las firmas están desactivadas». `GET` y `POST /api/usdc` responden 403.
+
+La semilla, si el demo está encendido, crea un proyecto aparte con id `demo` (tareas `demo-stand`, `demo-registro`, `demo-bienvenida` y `demo-comida`). El dueño es `demo-organizador`, y solo al crear esa fila. No escribe `organizador_id` de ZEEK ni de ningún otro proyecto. Sin sesión, o con sesión demo, las lecturas ven solo ese proyecto.
+
+Desde el PR #47 (Josué Valles, 2:11 p.m.), `POST /api/proyectos` rechaza la sesión demo con 403, «En el modo demo no se pueden crear proyectos.» Sin sesión responde 401. En Crear proyecto, Fondear queda desactivado y se muestra ese aviso.
+
+Desde el PR #50 (Josué Valles, 3:02 p.m.), el voluntario demo puede subir evidencia solo a tareas del proyecto `demo`. Una wallet de cobro que mande esa sesión se ignora. Subir a otro proyecto sigue en 403.
 
 ## Escrow en Stellar testnet
 
@@ -84,7 +91,13 @@ En la revisión, el organizador ve este orden (`components/admin/Revision.tsx`):
 
 `npm run hito` (`scripts/hito-prueba.ts`) es un script aparte. No sustituye este flujo en el navegador.
 
-Para probar el flujo a mano en testnet, la wallet del organizador necesita XLM de testnet (la comisión) y USDC de testnet (el fondeo). Quien cobra necesita trustline de ese USDC.
+Para probar el flujo a mano en testnet, la wallet del organizador necesita XLM de testnet (la comisión) y USDC de testnet (el fondeo). Quien cobra necesita trustline de ese USDC. La sesión que firma tiene que ser el `organizador_id` del proyecto. ZEEK de semilla nace con esa columna vacía: hasta que alguien la asigne en la base, nadie despliega ni revisa ese proyecto.
+
+## Trustline de USDC
+
+`GET` y `POST /api/usdc` (`lib/api/usdc.ts`, PR #50) leen y preparan la trustline del USDC de testnet solo para `sesiones.wallet`. El servidor arma el `changeTrust`, el navegador lo firma con el mismo `wallet.signXdr` del escrow y el servidor lo manda a Horizon de testnet. La sesión demo recibe 403. Si la sesión no tiene una cuenta `G…`, responde 400.
+
+El botón **Prepare USDC** está en la revisión (`/revision/[id]`, arriba de desplegar y fondear, cuando la tarea viene de la API) y en subir evidencia (`/tareas/[id]`, bajo el título, cuando la tarea no es el ejemplo local). Los textos de ese control están en inglés: Checking USDC…, USDC ready, Preparing…, USDC trustline added. El resto de la interfaz sigue en español.
 
 ## Variables de entorno
 
@@ -145,12 +158,13 @@ Antes de mergear, se lee el diff a mano y se corren las pruebas. El merge es squ
 
 ## Estado actual y próximos pasos
 
-`main` está en `77a0431`. El ingreso con Cavos, el alta automática como voluntario, el modo demo, el Blob, Neon, las rutas y el flujo de firma en la revisión ya están en el código. En el repositorio no hay un hash de un pago real en testnet. `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud`.
+`main` está en `e145f93`. El ingreso con Cavos, el alta automática como voluntario, el modo demo, el Blob, Neon, las rutas y el flujo de firma en la revisión ya están en el código. Desde el mediodía del 29 entraron, todos de Josué Valles: el organizador por proyecto (PR #44, 1:38 p.m.), el bloqueo para que el demo no cree proyectos (PR #47, 2:11 p.m.) y la evidencia del voluntario demo más la trustline de USDC (PR #50, 3:02 p.m.). En el repositorio no hay un hash de un pago real en testnet. `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud`. La migración `0002` está en el repo y no se aplicó a la base.
 
 El paso principal que sigue es hacer que la IA funcione de verdad. Los próximos pasos, en este orden:
 
-1. **Probar el escrow completo en testnet, con una wallet real de Cavos.** La wallet del organizador tiene que tener XLM de testnet y USDC de testnet. En la revisión: **Desplegar y fondear**, después **Aprobar y pagar**, y quedarse con el hash. Ese hash es el que llena `tareas.hash_pago` y habilita **Ver pago**. Hasta que ese pago exista, el Acta no entra.
-2. **Seguir el código de la IA hasta que revise la foto de verdad.** Este es el paso principal. La revisión tiene que mirar la evidencia y recomendar si alcanza o no, e integrar Laya. Hoy el código hace esto:
+1. **Aplicar `drizzle/0002_organizador_proyecto.sql` y asignar el dueño de los proyectos que siguen con `organizador_id` vacío.** Lo deja escrito Josué en el PR #44. La corre quien es dueño de la base, con `HYTO_CONFIRMAR_BASE_PRODUCCION=si`. ZEEK nace en NULL. Sin ese dueño, desplegar y revisar ese proyecto responden 403. El proyecto `demo` no sale de esa migración: lo crea la semilla si `HYTO_DEMO_LOGIN=1`.
+2. **Probar el escrow completo en testnet, con una wallet real de Cavos.** La wallet del organizador tiene que tener XLM de testnet y USDC de testnet, y la sesión tiene que ser el `organizador_id` del proyecto. **Prepare USDC** abre la trustline si la cuenta ya existe en testnet. En la revisión: **Desplegar y fondear**, después **Aprobar y pagar**, y quedarse con el hash. Ese hash es el que llena `tareas.hash_pago` y habilita **Ver pago**. Hasta que ese pago exista, el Acta no entra.
+3. **Seguir el código de la IA hasta que revise la foto de verdad.** Este es el paso principal. La revisión tiene que mirar la evidencia y recomendar si alcanza o no, e integrar Laya. Hoy el código hace esto:
 
    Al subir la foto (`lib/api/evidencias.ts`) y al abrir o forzar la revisión (`GET` y `POST /api/revision/:id`) se llama a `revisar()` (`lib/revision/revisar.ts`).
 
@@ -169,9 +183,18 @@ El paso principal que sigue es hacer que la IA funcione de verdad. Los próximos
    - Levantar Laya: el servidor de Abdiel, publicado con Tailscale Funnel, y después poner `LAYA_URL`.
    - Cerrar el PR #15 (borrador, `esteban/laya-ajustes`). Cambia cómo se lee el `score` de Laya: si vienen `probabilities`, el veredicto sale del índice más alto (0 insuficiente, 1 parcial, 2 cumplió). En `main` eso todavía no está.
 
-Quedan cuatro detalles de la UX del escrow, visibles en el código:
+Quedan estos detalles de la UX, visibles en el código. Son de Josué:
 
 - Si **desplegar** sale bien y **fondear** falla, `firmarPasos` lanza antes de recargar el detalle (`components/admin/Revision.tsx`). La pantalla puede seguir ofreciendo **Desplegar y fondear** aunque el contrato ya exista.
 - **Aprobar y pagar** se muestra con la tarea `en revisión`, sin exigir que el escrow esté fondeado (`botonesRevision` en `lib/admin/remoto.ts`). Hay que ocultarlo mientras no haya fondeo.
 - El saldo se lee de `GET /api/escrow/[contrato]`. El indexador de Trustless no es inmediato: `balance` puede seguir en 0 un momento, y `fondeado` queda `null` si el número no se lee. En la misma sesión, un fondeo exitoso fuerza el estado; al recargar, manda lo que diga el indexador.
 - `contratosPreparados` en `lib/api/firma.ts` es un `Map` del proceso. Si el envío cae en otra instancia, o el proceso se reinicia, se pierde el id que el prepare había guardado para cuando Trustless no devuelve el contrato.
+- **Prepare USDC** está en inglés (`components/sesion/PrepararUsdc.tsx`). El resto de la app está en español.
+
+Pendiente por persona, al cierre del 29 de septiembre:
+
+- **Esteban.** Aplicar la `0002` cuando quien es dueño de la base lo confirme, y asignar `organizador_id` de los proyectos que siguen vacíos (ZEEK nace así). Hacer que la IA revise la foto de verdad: Groq en producción, registrar el fallback a `desdeGuion`, mostrar `origen` y cerrar el PR #15. `CAVOS_JWT_AUDIENCE` sigue vacío.
+- **Abdiel.** Publicar Laya en su servidor con Tailscale Funnel y dejar `LAYA_URL`. Acordar con Esteban una clave, porque ese enlace es público. Poppins y el lima ya están (PR #7).
+- **Sebas.** Un pago real en testnet con wallet de Cavos: XLM para la comisión, USDC para el fondeo, y la sesión tiene que ser el organizador del proyecto. **Prepare USDC** abre la trustline si la cuenta ya existe. Después, el hash en `tareas.hash_pago`. El Acta solo después de ese pago.
+- **Josué.** El 30 de septiembre, subir Next.js a 16.3.7. Los detalles de UX del escrow y el texto en inglés de **Prepare USDC**. En Crear proyecto, Fondear sigue guardando el borrador en el navegador: no llama a `POST /api/proyectos`. La firma desde la revisión, el organizador por proyecto, el bloqueo del demo y la trustline ya entraron (PR #39, #44, #47 y #50). Siguen en borrador el PR #18 (no perder el ingreso al volver de Google) y el PR #45 (mostrar el error real si falla la revisión).
+- **Raúl.** Dejar listas las cuatro cuentas del demo en vivo. Mis tareas, subir evidencia y `/cuentas` ya están. La trustline de una sesión real sale del botón de Josué; la sesión demo no la prepara.
