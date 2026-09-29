@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { conAlmacen } from "@/lib/api/base";
 import { publicarEvidenciaHttp } from "@/lib/api/evidencias";
+import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
 
 export async function POST(request: Request): Promise<Response> {
@@ -10,7 +11,7 @@ export async function POST(request: Request): Promise<Response> {
     publicarEvidenciaHttp(request, {
       almacen,
       fotos,
-      actor: { usuarioId: sesion.usuarioId, rol: sesion.rol },
+      actor: { usuarioId: sesion.usuarioId, rol: sesion.rol, demo: demoHabilitado() && sesionEsDemo(sesion) },
       continuar: (trabajo) => {
         after(() => trabajo);
       },

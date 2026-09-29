@@ -9,6 +9,7 @@ import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -211,6 +212,12 @@ export function Revision({ tareaId }: { tareaId: string }) {
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
+          ) : null}
+
+          {real ? (
+            <div className="mt-8">
+              <PrepararUsdc />
+            </div>
           ) : null}
 
           {botones.aprobarLocal ? (
