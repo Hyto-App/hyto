@@ -1,10 +1,38 @@
 import { neon } from "@neondatabase/serverless";
 import { desc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import type { Almacen } from "./almacen";
+import { esHostNeon } from "./host";
 import { evidencias, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import type { Rol, TareaFila, VeredictoFila } from "./tipos";
+
+const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
+
+type Base = NeonHttpDatabase<typeof schema>;
+
+const poolsGlobales = globalThis as typeof globalThis & { __hytoPools?: Map<string, Pool> };
+
+function pools(): Map<string, Pool> {
+  if (!poolsGlobales.__hytoPools) poolsGlobales.__hytoPools = new Map();
+  return poolsGlobales.__hytoPools;
+}
+
+function poolDe(url: string): Pool {
+  const existente = pools().get(url);
+  if (existente) return existente;
+  const pool = new Pool({ connectionString: url, max: 5, allowExitOnIdle: true });
+  pools().set(url, pool);
+  return pool;
+}
+
+export async function cerrarPools(): Promise<void> {
+  const abiertos = [...pools().values()];
+  pools().clear();
+  await Promise.all(abiertos.map((pool) => pool.end()));
+}
 
 function rolDe(valor: string): Rol {
   return valor === "organizador" ? "organizador" : "voluntario";
@@ -24,9 +52,7 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
   return "parcial";
 }
 
-export function crearAlmacenNeon(url: string): Almacen {
-  const db = drizzle(neon(url), { schema: { usuarios, proyectos, tareas, evidencias, veredictos, sesiones } });
-
+function crearAlmacen(db: Base): Almacen {
   return {
     async listarUsuarios() {
       const filas = await db.select().from(usuarios);
@@ -130,6 +156,12 @@ function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
     tipo: tipoDe(fila.tipo),
     estado: estadoDe(fila.estado),
   };
+}
+
+export function crearAlmacenNeon(url: string): Almacen {
+  if (esHostNeon(url)) return crearAlmacen(drizzleNeon(neon(url), { schema }));
+  // node-postgres habla el protocolo local y usa las mismas consultas.
+  return crearAlmacen(drizzlePg(poolDe(url), { schema }) as unknown as Base);
 }
 
 export function urlBase(): string | null {
