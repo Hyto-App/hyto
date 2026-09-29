@@ -156,6 +156,28 @@ test("un fragmento del host no cuenta como producción", () => {
   if (revision.ok) assert.equal(revision.aviso, null);
 });
 
+test("el pooler de Neon es el mismo compute que el host directo", () => {
+  const directo = "ep-abc123.us-east-2.aws.neon.tech";
+  const pooler = "ep-abc123-pooler.us-east-2.aws.neon.tech";
+  const urlDirecta = `postgresql://usuario:${SECRETO}@${directo}/hyto`;
+  const urlPooler = `postgresql://usuario:${SECRETO}@${pooler}/hyto`;
+  const poolerContraDirecto = revisarBaseLocal(urlPooler, directo, null);
+  const directoContraPooler = revisarBaseLocal(urlDirecta, pooler, null);
+  assert.equal(poolerContraDirecto.ok, false);
+  assert.equal(directoContraPooler.ok, false);
+  for (const revision of [poolerContraDirecto, directoContraPooler]) {
+    if (revision.ok) continue;
+    assert.equal(revision.mensaje.includes(SECRETO), false);
+    assert.equal(revision.mensaje.includes("postgresql://"), false);
+    assert.equal(revision.mensaje.includes(directo), false);
+    assert.equal(revision.mensaje.includes(pooler), false);
+    assert.equal(revision.mensaje.includes("neon.tech"), false);
+  }
+  const otro = revisarBaseLocal(urlPooler, "ep-otro.us-east-2.aws.neon.tech", null);
+  assert.equal(otro.ok, true);
+  if (otro.ok) assert.equal(otro.aviso, null);
+});
+
 test("si el host coincide, hace falta la confirmación explícita", () => {
   const sinConfirmar = revisarBaseLocal(URL_PRODUCCION, "db.produccion.ejemplo", null);
   assert.equal(sinConfirmar.ok, false);

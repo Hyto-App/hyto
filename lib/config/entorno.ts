@@ -261,7 +261,9 @@ export function revisarBaseLocal(
       aviso: `No está ${HOST_BASE_PRODUCCION}. No se puede saber si DATABASE_URL apunta a producción.`,
     };
   }
-  if (!configurados.hosts.includes(host)) return { ok: true, aviso: null };
+  const comparable = hostComparable(host);
+  const coincide = configurados.hosts.some((configurado) => hostComparable(configurado) === comparable);
+  if (!coincide) return { ok: true, aviso: null };
   if (confirmacion?.trim().toLowerCase() === CONFIRMACION_BASE_PRODUCCION) {
     return {
       ok: true,
@@ -292,6 +294,18 @@ function hostsDeConfiguracion(valor: string | null): { hosts: string[]; ilegible
     hosts.push(host);
   }
   return { hosts, ilegible: hosts.length === 0 };
+}
+
+// Neon usa el mismo compute en dos hostnames: ep-xxx y ep-xxx-pooler. El sufijo
+// va al final de la primera etiqueta; no se busca en el resto del nombre.
+function hostComparable(host: string): string {
+  const corte = host.indexOf(".");
+  const primera = corte < 0 ? host : host.slice(0, corte);
+  const sufijo = "-pooler";
+  if (!primera.endsWith(sufijo)) return host;
+  const base = primera.slice(0, -sufijo.length);
+  if (!base) return host;
+  return corte < 0 ? base : base + host.slice(corte);
 }
 
 function hostDeToken(token: string): string | null {

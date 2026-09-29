@@ -4,7 +4,8 @@ import { prepararBaseDe } from "../lib/config/entorno";
 import { sentencias } from "../lib/db/sql";
 import { cargarEnvLocal } from "./cargar-env-local";
 
-cargarEnvLocal();
+const lineasOmitidas = cargarEnvLocal();
+if (lineasOmitidas > 0) process.exit(1);
 const preparada = prepararBaseDe(process.env);
 if (!preparada.ok) {
   console.error(preparada.mensaje);
