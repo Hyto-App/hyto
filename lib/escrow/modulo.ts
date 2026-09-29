@@ -1,3 +1,4 @@
+import { claveDeTrustless } from "@/lib/config/entorno";
 import { baseDe, convieneFriendbot, esContrato, pedidoAccion, pedidoDespliegue } from "./cuerpos";
 import { revisarResolucion } from "./resolver";
 import type { AccionFirma, CuentasDespliegue, OpcionesRed, PagoEnviado, XdrListo } from "./tipos";
@@ -101,7 +102,7 @@ async function get(ruta: string, opciones: OpcionesRed): Promise<unknown> {
 }
 
 async function pedir(metodo: "GET" | "POST", ruta: string, cuerpo: unknown, opciones: OpcionesRed): Promise<unknown> {
-  const clave = (opciones.clave ?? process.env.TRUSTLESS_API_KEY ?? "").trim();
+  const clave = (opciones.clave ?? claveDeTrustless() ?? "").trim();
   if (!clave) throw new ErrorFirma("Falta la clave de Trustless Work en el servidor.", 503, null);
   const base = (opciones.base ?? baseDe(opciones.red ?? "v2")).replace(/\/$/, "");
   const fetchImpl = opciones.fetch ?? fetch;

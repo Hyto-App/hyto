@@ -16,7 +16,4 @@ export const IDENTIDADES: IdentidadDemo[] = [
 
 export const MIEMBROS = IDENTIDADES.filter((identidad) => identidad.id !== "organizador");
 
-export function appIdPublico(): string | null {
-  const valor = process.env.NEXT_PUBLIC_CAVOS_APP_ID?.trim();
-  return valor ? valor : null;
-}
+export { appIdPublico } from "@/lib/config/publico";

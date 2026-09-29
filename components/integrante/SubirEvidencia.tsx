@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
-import { leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
+import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
 type Fase = "cargando" | "inicio" | "camara" | "foto" | "enviando" | "lista" | "faltante";
@@ -168,8 +168,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         setTarea({ ...tarea, estado: "en revisión" });
       }
       setFase("lista");
-    } catch {
-      setError("No se pudo enviar. Intenta otra vez.");
+    } catch (err) {
+      setError(err instanceof ErrorDeSesion ? err.aviso : "No se pudo enviar. Intenta otra vez.");
       setFase("foto");
     } finally {
       enviandoRef.current = false;
