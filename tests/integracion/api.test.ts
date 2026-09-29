@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { beforeEach, afterEach, describe, test } from "node:test";
+import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
 import { POST as sesionPost } from "../../app/api/sesion/route";
 import { GET as tareasGet } from "../../app/api/tareas/route";
 import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
@@ -17,7 +17,7 @@ const CUENTA = `G${"A".repeat(55)}`;
 const CONTRATO = `C${"A".repeat(55)}`;
 const HASH = "ab".repeat(32);
 
-const hayBase = await prepararBase();
+const preparado = prepararBase();
 
 type Json = Record<string, unknown>;
 
@@ -94,8 +94,18 @@ async function conFetch(impl: typeof fetch, trabajo: () => Promise<void>): Promi
   }
 }
 
-describe("rutas de app/api contra Postgres local", { skip: hayBase ? false : "no hay base local", concurrency: false }, () => {
-  beforeEach(async () => {
+describe("rutas de app/api contra Postgres local", { concurrency: false }, () => {
+  let hayBase = false;
+
+  before(async () => {
+    hayBase = await preparado;
+  });
+
+  beforeEach(async (contexto) => {
+    if (!hayBase) {
+      (contexto as TestContext).skip("no hay base local");
+      return;
+    }
     await tomar();
     reiniciarLimite();
   });
@@ -205,6 +215,7 @@ describe("rutas de app/api contra Postgres local", { skip: hayBase ? false : "no
   });
 
   test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {
+    await proyectosGet();
     const noJson = await proyectosPost(pedido("http://local/api/proyectos", "{"));
     assert.equal(noJson.status, 400);
     assert.equal(avisoDe(await leer(noJson)), "El cuerpo no es JSON.");
@@ -532,7 +543,3 @@ describe("rutas de app/api contra Postgres local", { skip: hayBase ? false : "no
     assert.equal(ultimo, 429);
   });
 });
-
-if (!hayBase) {
-  test("Postgres local", { skip: "no hay base local" }, () => undefined);
-}

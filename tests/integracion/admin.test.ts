@@ -1,6 +1,6 @@
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "./montar";
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, test } from "node:test";
+import { afterEach, before, beforeEach, describe, test, type TestContext } from "node:test";
 import { createElement } from "react";
 import { Bandeja } from "../../components/admin/Bandeja";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
@@ -12,9 +12,9 @@ import { POST as evidenciasPost } from "../../app/api/evidencias/route";
 import { GET as informeGet } from "../../app/api/informe/route";
 import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyectos/route";
 import { GET as revisionGet } from "../../app/api/revision/[id]/route";
-import { baseLista, prepararBase, soltar, tomar } from "./postgres";
+import { prepararBase, soltar, tomar } from "./postgres";
 
-const hayBase = await prepararBase();
+const preparado = prepararBase();
 
 describe("admin", { concurrency: false }, () => {
 describe("pantallas de admin", { concurrency: false }, () => {
@@ -151,8 +151,18 @@ describe("pantallas de admin", { concurrency: false }, () => {
   });
 });
 
-describe("flujo de admin en la base", { skip: hayBase && baseLista() ? false : "no hay base local", concurrency: false }, () => {
-  beforeEach(async () => {
+describe("flujo de admin en la base", { concurrency: false }, () => {
+  let hayBase = false;
+
+  before(async () => {
+    hayBase = await preparado;
+  });
+
+  beforeEach(async (contexto) => {
+    if (!hayBase) {
+      (contexto as TestContext).skip("no hay base local");
+      return;
+    }
     await tomar();
   });
 
