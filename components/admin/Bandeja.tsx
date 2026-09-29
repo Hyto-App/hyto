@@ -1,27 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
-import { leerMemoriaAdmin, volverAlEjemplo } from "@/lib/admin/memoria";
+import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { vistaAdmin } from "@/lib/admin/vista";
 import { montoDeTarea } from "@/lib/integrante/formato";
+import { useVistaAdmin } from "@/components/admin/usarVista";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 
 export function Bandeja() {
-  const [vista, setVista] = useState<VistaAdmin | null>(null);
+  const base = useVistaAdmin();
+  const [elegida, setElegida] = useState<VistaAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-
-  useEffect(() => {
-    setVista(vistaAdmin(leerMemoriaAdmin()));
-  }, []);
+  const vista = elegida ?? base;
 
   function usarEjemplo() {
     const guardado = volverAlEjemplo();
     setAviso(guardado.aviso);
     if (guardado.aviso) return;
-    setVista(vistaAdmin(guardado.memoria));
+    setElegida(vistaAdmin(guardado.memoria));
   }
 
   if (!vista) {

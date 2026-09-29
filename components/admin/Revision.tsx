@@ -5,19 +5,49 @@ import { useEffect, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
+import { botonesRevision, cargarDetalleOrganizador } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, vistaAdmin } from "@/lib/admin/vista";
+import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, type AccionCliente } from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
+const PASO: Record<AccionCliente, string> = {
+  desplegar: "Desplegando…",
+  fondear: "Fondeando…",
+  marcar: "Marcando…",
+  aprobar: "Aprobando…",
+  liberar: "Liberando…",
+};
+
 export function Revision({ tareaId }: { tareaId: string }) {
+  const modoDemo = useModoDemo();
   const [tarea, setTarea] = useState<TareaAdmin | null | undefined>(undefined);
+  const [foto, setFoto] = useState<string | null>(null);
+  const [real, setReal] = useState(false);
+  const [paso, setPaso] = useState<AccionCliente | null>(null);
+  const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
-    const vista = vistaAdmin(leerMemoriaAdmin());
-    setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
-  }, [tareaId]);
+    let viva = true;
+    const local = vistaAdmin(leerMemoriaAdmin()).tareas.find((item) => item.id === tareaId) ?? null;
+    setTarea(local);
+    setFoto(null);
+    setReal(false);
+    setHashPaso(null);
+    if (modoDemo) return;
+    void cargarDetalleOrganizador(tareaId).then((detalle) => {
+      if (!viva || !detalle) return;
+      setReal(true);
+      setTarea(detalle.tarea);
+      setFoto(detalle.foto);
+    });
+    return () => {
+      viva = false;
+    };
+  }, [tareaId, modoDemo]);
 
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
@@ -28,6 +58,33 @@ export function Revision({ tareaId }: { tareaId: string }) {
     setAviso(null);
     const vista = vistaAdmin(guardado.memoria);
     setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
+  }
+
+  async function correr(acciones: readonly AccionCliente[]) {
+    if (paso) return;
+    setAviso(null);
+    try {
+      const pago = await firmarPasos(acciones, tareaId, { alEmpezar: setPaso });
+      setHashPaso(pago.hash);
+      const fresco = await cargarDetalleOrganizador(tareaId);
+      if (fresco) {
+        setTarea(fresco.tarea);
+        setFoto(fresco.foto);
+        setReal(true);
+        return;
+      }
+      if (acciones.includes("liberar")) {
+        setTarea((actual) => {
+          if (!actual) return actual;
+          const hashPago = pago.hash ?? actual.hashPago;
+          return { ...actual, estado: "pagado", hashPago };
+        });
+      }
+    } catch (error) {
+      setAviso(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA);
+    } finally {
+      setPaso(null);
+    }
   }
 
   if (tarea === undefined) {
@@ -45,10 +102,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
     );
   }
 
+  const botones = botonesRevision(tarea, real);
   const pago = enlacePago(tarea.hashPago);
+  const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
-  const puedeDecidir = tarea.estado === "en revisión" && tarea.veredicto !== null;
-  const pedirOtra = puedeDecidir && tarea.veredicto !== "cumplió";
+  const ocupado = paso !== null;
 
   return (
     <main>
@@ -57,7 +115,9 @@ export function Revision({ tareaId }: { tareaId: string }) {
       </Link>
       <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <figure className="overflow-hidden rounded-3xl bg-[var(--papel)]">
-          {tarea.frase ? (
+          {foto ? (
+            <img src={foto} alt="" className="aspect-[4/3] w-full object-cover" />
+          ) : tarea.frase ? (
             <div className="flex aspect-[4/3] flex-col justify-end bg-[var(--fondo)] p-8">
               <p className="text-sm text-[var(--suave)]">Evidencia de ejemplo</p>
               <p className="mt-2 text-lg font-medium leading-7">{tarea.titulo}</p>
@@ -95,7 +155,7 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </dl>
           ) : null}
 
-          {puedeDecidir ? (
+          {botones.aprobarLocal ? (
             <div className="mt-8">
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
                 Aprobar
@@ -103,13 +163,40 @@ export function Revision({ tareaId }: { tareaId: string }) {
             </div>
           ) : null}
 
-          {pedirOtra ? (
+          {botones.pedirOtra ? (
             <button type="button" onClick={() => decidir("pendiente")} className="mt-4 text-sm text-[var(--suave)]">
               Pedir otra foto
             </button>
           ) : null}
 
+          {botones.desplegar || botones.pagar ? (
+            <div className="mt-8 space-y-3">
+              {botones.desplegar ? (
+                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
+                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : "Desplegar y fondear"}
+                </BotonPrincipal>
+              ) : null}
+              {botones.pagar ? (
+                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["marcar", "aprobar", "liberar"])}>
+                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : "Aprobar y pagar"}
+                </BotonPrincipal>
+              ) : null}
+            </div>
+          ) : null}
+
+          {paso ? (
+            <p className="mt-4 text-sm text-[var(--suave)]" aria-live="polite">
+              {PASO[paso]}
+            </p>
+          ) : null}
+
           {aviso && tarea.estado !== "pagado" ? <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
+
+          {transaccion ? (
+            <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">
+              Ver transacción
+            </a>
+          ) : null}
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
@@ -119,7 +206,9 @@ export function Revision({ tareaId }: { tareaId: string }) {
                   Ver pago
                 </a>
               ) : (
-                <p className="text-sm leading-6 text-[var(--suave)]">Vista de ejemplo, hasta que el pago esté conectado.</p>
+                <p className="text-sm leading-6 text-[var(--suave)]">
+                  {real ? "El pago quedó registrado. El enlace aparece cuando hay hash." : "Vista de ejemplo, hasta que el pago esté conectado."}
+                </p>
               )}
               {credencial ? (
                 <a href={credencial} className="block text-sm text-[var(--suave)] underline-offset-4 hover:underline">
