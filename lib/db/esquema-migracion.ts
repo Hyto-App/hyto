@@ -450,12 +450,14 @@ function leerDefault(resto: string): { valor: string | null; resto: string; avis
 }
 
 function quitarCast(resto: string): string {
-  return resto
-    .replace(
-      /^::\s*(?:character\s+varying|timestamp\s+without\s+time\s+zone|timestamp\s+with\s+time\s+zone|double\s+precision|"[^"]+"|[A-Za-z_][\w]*)(?:\s*\([^)]*\))?/i,
-      "",
-    )
-    .trim();
+  const marca = /^::\s*/.exec(resto);
+  if (!marca) return resto;
+  const despues = resto.slice(marca[0].length);
+  const tipo = leerTipo(despues);
+  if (tipo) return tipo.resto;
+  const simple = /^(?:"[^"]+"|[A-Za-z_][\w]*)(?:\s*\([^)]*\))?/.exec(despues);
+  if (!simple) return resto;
+  return despues.slice(simple[0].length).trim();
 }
 
 function codigoAccion(accion: string): string {

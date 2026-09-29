@@ -600,7 +600,8 @@ test("un cast en el DEFAULT no se traga NOT NULL ni UNIQUE", () => {
       id integer PRIMARY KEY,
       estado text DEFAULT 'pendiente'::text NOT NULL UNIQUE,
       nota character varying(20) DEFAULT 'ok'::character varying NOT NULL,
-      creado timestamp DEFAULT now()::timestamp without time zone NOT NULL
+      creado timestamp DEFAULT now()::timestamp without time zone NOT NULL,
+      preciso timestamp(3) with time zone DEFAULT now()::timestamp(3) with time zone NOT NULL
     );`,
     (esperado) => {
       assert.deepEqual(esperado.avisos, []);
@@ -616,6 +617,10 @@ test("un cast en el DEFAULT no se traga NOT NULL ni UNIQUE", () => {
       assert.equal(creado?.defecto, "now()");
       assert.equal(creado?.nullable, false);
       assert.equal(creado?.tipo, "timestamp without time zone");
+      const preciso = esperado.columnas.find((columna) => columna.nombre === "preciso");
+      assert.equal(preciso?.defecto, "now()");
+      assert.equal(preciso?.nullable, false);
+      assert.equal(preciso?.tipo, "timestamp with time zone");
     },
   );
 });
