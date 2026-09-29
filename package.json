@@ -5,11 +5,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts",
+    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts lib/config/*.test.ts tests/integracion/guardia.test.ts tests/integracion/sesion-prueba.test.ts",
+    "test:integracion": "tsx scripts/test-integracion.ts",
     "hito": "tsx scripts/hito-prueba.ts",
     "db:migrar": "tsx scripts/migrar.ts",
     "db:semilla": "tsx scripts/semilla.ts",
-    "db:local": "tsx scripts/db-local.ts"
+    "db:local": "tsx scripts/db-local.ts",
+    "verificar:entorno": "tsx scripts/verificar-entorno.ts"
   },
   "dependencies": {
     "@cavos/kit": "0.2.5",
@@ -29,6 +31,7 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "drizzle-kit": "^0.31.11",
+    "happy-dom": "^20.14.5",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"

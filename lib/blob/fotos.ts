@@ -1,4 +1,5 @@
 import { get, put } from "@vercel/blob";
+import { tokenDeBlob } from "@/lib/config/entorno";
 
 export type FotoLeida = {
   tipo: string;
@@ -28,7 +29,12 @@ export function crearFotosMemoria(): Fotos {
 }
 
 export function fotosBlob(): Fotos | null {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  // Lo definen las pruebas locales. En el servidor no existe y sigue el Blob.
+  const tabla = globalThis as typeof globalThis & {
+    __HYTO_FOTOS_PRUEBA?: () => Fotos | null;
+  };
+  if (typeof tabla.__HYTO_FOTOS_PRUEBA === "function") return tabla.__HYTO_FOTOS_PRUEBA();
+  const token = tokenDeBlob();
   if (!token) return null;
   return {
     async guardar(nombre, cuerpo) {

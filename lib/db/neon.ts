@@ -8,10 +8,11 @@ import { esHostNeon } from "./host";
 import { evidencias, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import type { Rol, TareaFila, VeredictoFila } from "./tipos";
+import { urlDeBase } from "@/lib/config/entorno";
 
 const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
 
-type Base = NeonHttpDatabase<typeof schema>;
+export type DbAlmacen = NeonHttpDatabase<typeof schema>;
 
 const poolsGlobales = globalThis as typeof globalThis & { __hytoPools?: Map<string, Pool> };
 
@@ -65,7 +66,7 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
   return "parcial";
 }
 
-function crearAlmacen(db: Base): Almacen {
+export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   return {
     async listarUsuarios() {
       const filas = await db.select().from(usuarios);
@@ -172,17 +173,21 @@ function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
 }
 
 export function crearAlmacenNeon(url: string): Almacen {
-  if (esHostNeon(url)) return crearAlmacen(drizzleNeon(neon(url), { schema }));
+  if (esHostNeon(url)) return crearAlmacenDesde(drizzleNeon(neon(url), { schema }));
   // node-postgres habla el protocolo local y usa las mismas consultas.
-  return crearAlmacen(drizzlePg(poolDe(url), { schema }) as unknown as Base);
+  return crearAlmacenDesde(drizzlePg(poolDe(url), { schema }) as unknown as DbAlmacen);
 }
 
 export function urlBase(): string | null {
-  const valor = process.env.DATABASE_URL?.trim();
-  return valor ? valor : null;
+  return urlDeBase();
 }
 
 export async function almacenNeon(): Promise<Almacen | null> {
+  // Lo definen las pruebas de Postgres local. En el servidor no existe.
+  const tabla = globalThis as typeof globalThis & {
+    __HYTO_ALMACEN_PRUEBA?: () => Promise<Almacen | null>;
+  };
+  if (typeof tabla.__HYTO_ALMACEN_PRUEBA === "function") return tabla.__HYTO_ALMACEN_PRUEBA();
   const url = urlBase();
   if (!url) return null;
   return crearAlmacenNeon(url);
