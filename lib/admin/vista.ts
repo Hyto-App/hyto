@@ -74,11 +74,13 @@ export function resumir(tareas: TareaAdmin[]): Resumen {
 export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendiente" | undefined): TareaAdmin {
   if (!decision) return tarea;
   if (decision === "pagado") return { ...tarea, estado: "pagado" };
-  return { ...tarea, estado: "pendiente" };
+  return { ...tarea, estado: "pendiente", veredicto: null };
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
-  return tareas.filter((tarea) => tarea.estado === "en revisión");
+  return tareas.filter(
+    (tarea) => tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado"),
+  );
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
