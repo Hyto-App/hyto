@@ -1,11 +1,52 @@
 import { neon } from "@neondatabase/serverless";
 import { desc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import type { Almacen } from "./almacen";
+import { esHostNeon } from "./host";
 import { evidencias, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import type { Rol, TareaFila, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
+
+const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
+
+export type DbAlmacen = NeonHttpDatabase<typeof schema>;
+
+const poolsGlobales = globalThis as typeof globalThis & { __hytoPools?: Map<string, Pool> };
+
+function pools(): Map<string, Pool> {
+  if (!poolsGlobales.__hytoPools) poolsGlobales.__hytoPools = new Map();
+  return poolsGlobales.__hytoPools;
+}
+
+function escucharErrores(pool: Pool): void {
+  if (pool.listenerCount("error") > 0) return;
+  // Sin este listener, un cliente ocioso que se cae emite `error` y Node cierra el proceso.
+  pool.on("error", (error: Error) => {
+    const mensaje = error instanceof Error ? error.message : "error";
+    console.error("Postgres cerró una conexión ociosa.", mensaje);
+  });
+}
+
+function poolDe(url: string): Pool {
+  const existente = pools().get(url);
+  if (existente) {
+    escucharErrores(existente);
+    return existente;
+  }
+  const pool = new Pool({ connectionString: url, max: 5, allowExitOnIdle: true });
+  escucharErrores(pool);
+  pools().set(url, pool);
+  return pool;
+}
+
+export async function cerrarPools(): Promise<void> {
+  const abiertos = [...pools().values()];
+  pools().clear();
+  await Promise.all(abiertos.map((pool) => pool.end()));
+}
 
 function rolDe(valor: string): Rol {
   return valor === "organizador" ? "organizador" : "voluntario";
@@ -24,14 +65,6 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
   if (valor === "cumplió" || valor === "insuficiente") return valor;
   return "parcial";
 }
-
-const esquema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
-
-function abrirNeon(url: string) {
-  return drizzle(neon(url), { schema: esquema });
-}
-
-export type DbAlmacen = ReturnType<typeof abrirNeon>;
 
 export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   return {
@@ -72,7 +105,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       await db.update(tareas).set(cambio).where(eq(tareas.id, id));
     },
     async crearEvidencia(evidencia) {
-      await db.insert(evidencias).values(evidencia);
+      await db.insert(evidencias).values(evidencia).onConflictDoNothing();
     },
     async leerEvidencia(id) {
       const filas = await db.select().from(evidencias).where(eq(evidencias.id, id)).limit(1);
@@ -131,16 +164,18 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   };
 }
 
-export function crearAlmacenNeon(url: string): Almacen {
-  return crearAlmacenDesde(abrirNeon(url));
-}
-
 function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
   return {
     ...fila,
     tipo: tipoDe(fila.tipo),
     estado: estadoDe(fila.estado),
   };
+}
+
+export function crearAlmacenNeon(url: string): Almacen {
+  if (esHostNeon(url)) return crearAlmacenDesde(drizzleNeon(neon(url), { schema }));
+  // node-postgres habla el protocolo local y usa las mismas consultas.
+  return crearAlmacenDesde(drizzlePg(poolDe(url), { schema }) as unknown as DbAlmacen);
 }
 
 export function urlBase(): string | null {

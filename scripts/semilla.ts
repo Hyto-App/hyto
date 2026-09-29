@@ -1,5 +1,5 @@
 import { prepararBaseDe } from "../lib/config/entorno";
-import { crearAlmacenNeon } from "../lib/db/neon";
+import { cerrarPools, crearAlmacenNeon } from "../lib/db/neon";
 import { asegurarSemilla } from "../lib/db/semilla";
 import { cargarEnvLocal } from "./cargar-env-local";
 
@@ -13,17 +13,20 @@ if (!preparada.ok) {
 if (preparada.aviso) console.error(preparada.aviso);
 const base = preparada.url;
 
-async function main(): Promise<void> {
+async function main(): Promise<number> {
   try {
     await asegurarSemilla(crearAlmacenNeon(base));
     console.log("La semilla de ZEEK ya está.");
-  } catch {
-    console.error("No se pudo sembrar. Corre npm run db:migrar si faltan las tablas.");
-    process.exit(1);
+    return 0;
+  } catch (error: unknown) {
+    const detalle = error instanceof Error ? error.message : "";
+    console.error(detalle ? `No se pudo sembrar. ${detalle}` : "No se pudo sembrar. Corre npm run db:migrar si faltan las tablas.");
+    return 1;
+  } finally {
+    await cerrarPools();
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : "No se pudo sembrar.");
-  process.exit(1);
+main().then((codigo) => {
+  process.exit(codigo);
 });
