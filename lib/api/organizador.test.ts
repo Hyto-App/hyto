@@ -78,7 +78,7 @@ test("POST /api/proyectos rechaza el demo y la petición sin sesión", async () 
   try {
     const sinSesion = await crearProyecto(pedido());
     assert.equal(sinSesion.status, 401);
-    assert.equal(((await sinSesion.json()) as { aviso: string }).aviso, "Entra para continuar.");
+    assert.equal(((await sinSesion.json()) as { aviso: string }).aviso, "Sign in to continue.");
 
     for (const token of ["demo-org", "demo-vol", "demo-correo"]) {
       const demo = await crearProyecto(pedido(token));

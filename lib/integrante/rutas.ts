@@ -117,7 +117,7 @@ async function avisoDeAuth(respuesta: Response): Promise<string> {
   } catch {
     // cuerpo vacío o no JSON
   }
-  return "Entra para continuar.";
+  return "Sign in to continue.";
 }
 
 async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {

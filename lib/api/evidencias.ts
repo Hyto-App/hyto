@@ -40,7 +40,7 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
     if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
-    if (acceso === "entrar") return json({ aviso: "Entra para continuar." }, 401);
+    if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
     if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
     return json({ evidencia: evidenciaPublica(evidencia) });
   } catch {
@@ -56,7 +56,7 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
     if (!evidencia || acceso === "ausente") return json({ aviso: "No encontramos esa evidencia." }, 404);
-    if (acceso === "entrar") return json({ aviso: "Entra para continuar." }, 401);
+    if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
     if (acceso === "no") return json({ aviso: "No puedes ver esa evidencia." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
       return new Response(MARCADOR_EJEMPLO, {

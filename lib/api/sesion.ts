@@ -1,17 +1,18 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
-import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, tokenSesion, vigente } from "@/lib/sesion/cookie";
+import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json } from "./json";
 
 export async function leerSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
-  if (!token) return json({ aviso: "Sign in to continue." }, 401);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   try {
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: "Sign in to continue." }, 401);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
     return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) });
   } catch {
     return baseNoLista();
@@ -46,19 +47,20 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       usuario = await almacen.usuarioPorEmail(email);
     }
     if (!usuario) throw new Error("No se pudo registrar el usuario.");
+    const segundos = segundosDeSesion(correo.exp);
     const sesion = tokenSesion();
     await almacen.crearSesion({
       token: sesion,
       email: usuario.email,
       usuarioId: usuario.id,
       rol: usuario.rol,
-      expiraEn: expiracion(),
+      expiraEn: expiracion(segundos),
       wallet: walletDelToken(token) ?? "",
     });
     return json(
       { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre },
       200,
-      { "set-cookie": encabezadoCookie(sesion) },
+      { "set-cookie": encabezadoCookie(sesion, segundos) },
     );
   } catch {
     return baseNoLista();
@@ -77,7 +79,7 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
 
 export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
-  if (!token) return json({ aviso: "Entra para continuar." }, 401);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   let body: unknown;
   try {
     body = await request.json();
@@ -91,7 +93,7 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
   }
   try {
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: "Entra para continuar." }, 401);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
     const wallet = crudo.trim();
     // Límite: Cavos firma en el dispositivo y el JWT de login no trae la G….
     // Si ese token (o el que acompaña este pedido) sí trae una cuenta, tiene que ser esta.
