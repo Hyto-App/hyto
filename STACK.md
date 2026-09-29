@@ -10,7 +10,7 @@ Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavo
 
 El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
 
-Aún no está en el código: Drizzle, Neon, Vercel Blob, `GET /api/tareas`, `POST /api/evidencias`, Groq, Laya y el Acta. El `appId` de Cavos no está definido. No hay un hash de pago guardado. No hay ESLint.
+En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Scout y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Scout o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -24,7 +24,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
-| Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. Todavía no está cableado |
+| Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
 | IA | Scout (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
@@ -36,10 +36,10 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`.
 
 | Nombre | Uso |
 |---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Vacía hoy |
-| `DATABASE_URL` | Neon. La pondrá Esteban |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob. La pondrá Esteban |
-| `GROQ_API_KEY` | Scout. La pondrá Esteban |
+| `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
+| `DATABASE_URL` | Neon. La leen las rutas |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
+| `GROQ_API_KEY` | Scout. Sin ella, la revisión usa el guion fijo |
 | `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
 | `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
 
@@ -53,7 +53,7 @@ La dirección es una cuenta Stellar normal, así que puede ser rol de Trustless 
 
 El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia, hasta 500 caracteres). La foto se sube a Vercel Blob y en Neon se guarda su identificador. El script del hito ya está (`npm run hito`, PR #8). Si hay pago, el hash se escribiría en `lib/escrow/pago-prueba.json`; ese archivo no está en el repositorio.
 
-La revisión son dos modelos. Ninguno firma ni mueve fondos. La ruta en Vercel lee la foto desde Blob y no publica esa URL. Esa ruta todavía no existe.
+La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/:id` lee la foto desde Blob y no publica esa URL. La pantalla recibe `/api/evidencias/:id/foto`.
 
 1. **Llama 4 Scout** describe la imagen. Groq, modelo `meta-llama/llama-4-scout-17b-16e-instruct`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo (unas 1.000 solicitudes al día).
 2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de Scout más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.

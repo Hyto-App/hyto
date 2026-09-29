@@ -1,5 +1,7 @@
+import type { AuthProvider } from "@cavos/kit";
+import { conectarStellar } from "@/lib/auth/cliente";
 import { guardarCuenta } from "./almacen";
-import { APP_SALT, appIdPublico, IDENTIDADES } from "./identidades";
+import { appIdPublico } from "./identidades";
 import type { IdentidadDemo } from "./tipos";
 import { asegurarCobroUsdc } from "./usdc";
 
@@ -11,7 +13,7 @@ export type CuentaPreparada = {
   detalle: string | null;
 };
 
-export async function prepararIdentidad(identidad: IdentidadDemo): Promise<CuentaPreparada> {
+export async function prepararIdentidad(identidad: IdentidadDemo, auth: AuthProvider): Promise<CuentaPreparada> {
   const appId = appIdPublico();
   if (!appId) {
     return {
@@ -23,16 +25,7 @@ export async function prepararIdentidad(identidad: IdentidadDemo): Promise<Cuent
     };
   }
 
-  const { Cavos } = await import("@cavos/kit");
-  const sesion = await Cavos.connect({
-    chains: ["stellar"],
-    defaultChain: "stellar",
-    network: "testnet",
-    appSalt: APP_SALT,
-    appId,
-    vault: true,
-    identity: { userId: identidad.id, email: identidad.email },
-  });
+  const sesion = await conectarStellar(auth);
   const billetera = sesion.wallet("stellar");
   if (billetera.chain !== "stellar") {
     throw new Error("La cuenta no quedó en Stellar.");
@@ -47,28 +40,4 @@ export async function prepararIdentidad(identidad: IdentidadDemo): Promise<Cuent
     usdcListo: lista.usdcListo,
     detalle: lista.detalle,
   };
-}
-
-export async function prepararCuentasDemo(
-  alActualizar: (cuenta: CuentaPreparada) => void,
-): Promise<CuentaPreparada[]> {
-  const cuentas: CuentaPreparada[] = [];
-  for (const identidad of IDENTIDADES) {
-    try {
-      const cuenta = await prepararIdentidad(identidad);
-      cuentas.push(cuenta);
-      alActualizar(cuenta);
-    } catch (error) {
-      const cuenta: CuentaPreparada = {
-        id: identidad.id,
-        nombre: identidad.nombre,
-        direccion: null,
-        usdcListo: false,
-        detalle: error instanceof Error ? error.message : "No se pudo preparar la cuenta.",
-      };
-      cuentas.push(cuenta);
-      alActualizar(cuenta);
-    }
-  }
-  return cuentas;
 }

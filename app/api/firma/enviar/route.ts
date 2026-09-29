@@ -1,7 +1,10 @@
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { ErrorFirma, enviar } from "@/lib/escrow/modulo";
+import { exigirOrganizador } from "@/lib/sesion/exigir";
 
 export async function POST(request: Request): Promise<Response> {
+  const sesion = await exigirOrganizador(request);
+  if (sesion) return sesion;
   const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
   if (limitado) return limitado;
   let body: unknown;
