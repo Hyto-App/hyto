@@ -15,7 +15,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   const crudo = body as Record<string, unknown>;
   const pedido = typeof crudo.email === "string" ? crudo.email : "";
   const token = typeof crudo.token === "string" ? crudo.token.trim() : "";
-  const correo = correoDelToken(token, pedido);
+  const correo = await correoDelToken(token, pedido);
   if (!correo) return json({ aviso: "No se pudo confirmar el ingreso." }, 400);
   try {
     await asegurarSemilla(almacen);

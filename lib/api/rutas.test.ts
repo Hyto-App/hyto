@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
 import test from "node:test";
+import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
+import { POST as crearProyecto } from "../../app/api/proyectos/route";
+import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
+import { EMISOR_CAVOS } from "../sesion/jwt";
 import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
@@ -11,8 +16,33 @@ import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp } from "./sesion";
 import { listarTareasHttp } from "./tareas";
 
-function token(email: string): string {
-  return `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email })).toString("base64url")}.bbbb`;
+const par = generateKeyPairSync("rsa", { modulusLength: 2048 });
+const jwk = par.publicKey.export({ format: "jwk" }) as JsonWebKey;
+jwk.kid = "prueba";
+jwk.alg = "RS256";
+jwk.use = "sig";
+process.env.CAVOS_JWT_JWK = JSON.stringify(jwk);
+process.env.CAVOS_JWT_ISSUER = EMISOR_CAVOS;
+delete process.env.CAVOS_JWT_AUDIENCE;
+delete process.env.CAVOS_GOOGLE_CLIENT_ID;
+delete process.env.CAVOS_FIREBASE_PROJECT_ID;
+
+function token(email: string, extra: Record<string, unknown> = {}): string {
+  const encabezado = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "prueba" })).toString("base64url");
+  const cuerpo = Buffer.from(
+    JSON.stringify({
+      sub: "cavos-1",
+      email,
+      iss: EMISOR_CAVOS,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      ...extra,
+    }),
+  ).toString("base64url");
+  const datos = `${encabezado}.${cuerpo}`;
+  const firma = createSign("RSA-SHA256");
+  firma.update(datos);
+  firma.end();
+  return `${datos}.${firma.sign(par.privateKey).toString("base64url")}`;
 }
 
 test("las tareas de ZEEK salen de la base", async () => {
@@ -125,11 +155,25 @@ test("un proyecto nuevo entra por la ruta", async () => {
   assert.equal(tareas.tareas.some((tarea) => tarea.titulo === "Cajas"), true);
 });
 
-test("la sesión sale del correo y el pago exige al organizador", async () => {
+test("la sesión sale del correo firmado y el pago exige al organizador", async () => {
   const almacen = crearMemoria();
+  const falso = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "organizador@demo.hyto",
+        token: `aaaa.${Buffer.from(JSON.stringify({ sub: "cavos-1", email: "organizador@demo.hyto" })).toString("base64url")}.bbbb`,
+      }),
+    }),
+    almacen,
+  );
+  assert.equal(falso.status, 400);
+
   const ajeno = await crearSesionHttp(
     new Request("http://local/api/sesion", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "nadie@demo.hyto", token: token("nadie@demo.hyto") }),
     }),
     almacen,
@@ -139,6 +183,7 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   const propia = await crearSesionHttp(
     new Request("http://local/api/sesion", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "organizador@demo.hyto", token: token("organizador@demo.hyto") }),
     }),
     almacen,
@@ -152,4 +197,22 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   assert.equal(sinSesion.status, 401);
   const envio = await enviarFirma(new Request("http://local/api/firma/enviar", { method: "POST", body: "{}" }));
   assert.equal(envio.status, 401);
+});
+
+test("las rutas que escriben responden 401 sin sesión", async () => {
+  const contexto = { params: Promise.resolve({ id: "stand" }) };
+  const rutas = [
+    crearProyecto(new Request("http://local/api/proyectos", { method: "POST", body: "{}" })),
+    publicarEvidencia(new Request("http://local/api/evidencias", { method: "POST" })),
+    leerRevision(new Request("http://local/api/revision/stand"), contexto),
+    forzarRevision(new Request("http://local/api/revision/stand", { method: "POST" }), contexto),
+    prepararFirma(new Request("http://local/api/firma", { method: "POST", body: "{}" })),
+    enviarFirma(new Request("http://local/api/firma/enviar", { method: "POST", body: "{}" })),
+  ];
+  for (const pendiente of rutas) {
+    const respuesta = await pendiente;
+    assert.equal(respuesta.status, 401);
+    const cuerpo = (await respuesta.json()) as { aviso: string };
+    assert.equal(cuerpo.aviso, "Entra para continuar.");
+  }
 });
