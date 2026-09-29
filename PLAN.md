@@ -1,5 +1,7 @@
 # Plan para empezar a codear Hyto
 
+El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Lo que sigue es el plan del 27 y 28 de septiembre. Donde diga que Fondear y Aprobar no firman, o que el backend no está en el repo, ya no describe `main`: la revisión firma, y un correo nuevo con Cavos entra como voluntario. El paso principal que sigue es la IA (Groq `qwen/qwen3.8-27b`, fallback silencioso a `desdeGuion`, Laya sin `LAYA_URL`, PR #15). El orden está en [AGENTS.md](AGENTS.md).
+
 El contrato está en [STACK.md](STACK.md) y [ROLES.md](ROLES.md). Cada quien avanza su lista en orden. No espera a otra persona salvo el único dato marcado como encuentro.
 
 Nadie sube directo a `main`. Todo el trabajo se hace en la nube (agentes de Cursor Cloud o Claude Code en la web). Cada entrega va en una rama `nombre/tarea` y entra por pull request. Ejemplos: `sebas/escrow`, `esteban/neon-blob`, `abdiel/pantallas`, `josue/admin`, `raul/cuentas`. Cuando esa parte se mergea, la siguiente tarea abre otra rama desde `main` actualizado:
