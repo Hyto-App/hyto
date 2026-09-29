@@ -28,7 +28,7 @@ test("aprobar y pedir otra foto cambian el resumen sin inventar un pago", () => 
   assert.deepEqual(aprobada.resumen, { presupuesto: "75", pagado: "32.40", pendiente: "42.60" });
   assert.deepEqual(
     aprobada.bandeja.map((tarea) => tarea.id),
-    [],
+    ["registro"],
   );
   assert.equal(aprobada.tareas.find((tarea) => tarea.id === "stand")?.hashPago, null);
   assert.equal(enlacePago(aprobada.tareas[0]?.hashPago), null);

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { armarInforme } from "../api/informe";
 import { leerRevisionHttp } from "../api/revision";
+import type { Almacen } from "./almacen";
 import { crearMemoria } from "./memoria";
 import { asegurarSemilla, evidenciasSemilla, MARCA_EJEMPLO, tareasSemilla, veredictosSemilla } from "./semilla";
 
@@ -11,7 +12,7 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
     tareas.map((tarea) => tarea.id),
     ["stand", "registro", "bienvenida", "comida"],
   );
-  assert.equal(tareas.find((tarea) => tarea.id === "stand")?.estado, "en revisión");
+  assert.equal(tareas.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
   assert.equal(tareas.find((tarea) => tarea.id === "bienvenida")?.estado, "pendiente");
   assert.equal(
     tareas.every((tarea) => tarea.hashPago === null),
@@ -69,10 +70,10 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
     tarea: { veredicto: string; frase: string; estado: string };
     foto: string | null;
   };
-  assert.equal(json.tarea.estado, "en revisión");
+  assert.equal(json.tarea.estado, "pendiente");
   assert.equal(json.tarea.veredicto, "cumplió");
   assert.match(json.tarea.frase, /^Ejemplo\./);
-  assert.equal(json.foto, "/api/evidencias/ejemplo-stand/foto");
+  assert.equal(json.foto, null);
 
   const sinEvidencia = await leerRevisionHttp(almacen, null, "bienvenida");
   const vacia = (await sinEvidencia.json()) as { tarea: { veredicto: string | null; estado: string }; foto: string | null };
@@ -100,4 +101,24 @@ test("sembrar dos veces no duplica ni pisa un pago", async () => {
   assert.equal(stand?.hashPago, hash);
   assert.equal((await almacen.ultimaEvidencia("stand"))?.id, "ejemplo-stand");
   assert.equal((await almacen.ultimaEvidencia("bienvenida")), null);
+});
+
+test("un insert simultáneo de la evidencia de ejemplo no corta la semilla", async () => {
+  const base = crearMemoria();
+  const error = Object.assign(new Error("llave duplicada"), { code: "23505" });
+  let intentos = 0;
+  const almacen: Almacen = {
+    ...base,
+    async leerEvidencia() {
+      return null;
+    },
+    async crearEvidencia() {
+      intentos += 1;
+      throw error;
+    },
+  };
+  await asegurarSemilla(almacen);
+  assert.equal(intentos, 3);
+  assert.equal((await base.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await base.veredictoDe("ejemplo-stand"))?.veredicto, "cumplió");
 });

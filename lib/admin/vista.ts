@@ -78,7 +78,9 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
-  return tareas.filter((tarea) => tarea.estado === "en revisión");
+  return tareas.filter(
+    (tarea) => tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado"),
+  );
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {

@@ -7,6 +7,7 @@ test("una URL de esta máquina no es Neon", () => {
   assert.equal(esHostNeon(local), false);
   assert.equal(esHostLocal(local), true);
   assert.equal(esHostLocal("postgres://hyto:hyto@localhost:5432/hyto"), true);
+  assert.equal(esHostLocal("postgres://hyto:hyto@[::1]:5432/hyto"), true);
   assert.equal(esHostNeon("postgres://u:p@ep-ejemplo.us-east-1.aws.neon.tech/neondb"), true);
   assert.equal(esHostLocal("postgres://u:p@ep-ejemplo.us-east-1.aws.neon.tech/neondb"), false);
 });
