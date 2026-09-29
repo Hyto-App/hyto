@@ -9,11 +9,33 @@ export function xdrDeInvocacion(opciones: {
   firmante: string;
   firmada?: boolean;
   fuente?: string;
+  extras?: { contrato: string; funcion: string; firmante: string }[];
 }): string {
   const fuente = Keypair.random();
   const firmante = opciones.firmante;
   const firma = opciones.firmada === false ? xdr.ScVal.scvVoid() : xdr.ScVal.scvBytes(new Uint8Array([9, 9, 9]));
-  const auth = new xdr.SorobanAuthorizationEntry({
+  const auth = entradaAuth(opciones.contrato, opciones.funcion, firmante, firma);
+  const extras = (opciones.extras ?? []).map((extra) => entradaAuth(extra.contrato, extra.funcion, extra.firmante, firma));
+  const tx = new TransactionBuilder(new Account(fuente.publicKey(), "1"), {
+    fee: "100",
+    networkPassphrase: Networks.TESTNET,
+  })
+    .addOperation(
+      Operation.invokeContractFunction({
+        contract: opciones.contrato,
+        function: opciones.funcion,
+        args: [],
+        auth: [auth, ...extras],
+        source: opciones.fuente,
+      }),
+    )
+    .setTimeout(30)
+    .build();
+  return tx.toXDR();
+}
+
+function entradaAuth(contrato: string, funcion: string, firmante: string, firma: xdr.ScVal): xdr.SorobanAuthorizationEntry {
+  return new xdr.SorobanAuthorizationEntry({
     credentials: xdr.SorobanCredentials.sorobanCredentialsAddress(
       new xdr.SorobanAddressCredentials({
         address: new Address(firmante).toScAddress(),
@@ -25,28 +47,12 @@ export function xdrDeInvocacion(opciones: {
     rootInvocation: new xdr.SorobanAuthorizedInvocation({
       function: xdr.SorobanAuthorizedFunction.sorobanAuthorizedFunctionTypeContractFn(
         new xdr.InvokeContractArgs({
-          contractAddress: new Address(opciones.contrato).toScAddress(),
-          functionName: opciones.funcion,
+          contractAddress: new Address(contrato).toScAddress(),
+          functionName: funcion,
           args: [],
         }),
       ),
       subInvocations: [],
     }),
   });
-  const tx = new TransactionBuilder(new Account(fuente.publicKey(), "1"), {
-    fee: "100",
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(
-      Operation.invokeContractFunction({
-        contract: opciones.contrato,
-        function: opciones.funcion,
-        args: [],
-        auth: [auth],
-        source: opciones.fuente,
-      }),
-    )
-    .setTimeout(30)
-    .build();
-  return tx.toXDR();
 }

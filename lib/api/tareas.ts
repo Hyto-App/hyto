@@ -15,6 +15,8 @@ export function tareaPublica(tarea: TareaFila) {
     miembroId: tarea.miembroId,
     walletCobro: tarea.walletCobro,
     estado: tarea.estado,
+    hashPago: tarea.hashPago,
+    contratoEscrow: tarea.contratoEscrow,
   };
 }
 

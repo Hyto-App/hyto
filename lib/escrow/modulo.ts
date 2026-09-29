@@ -82,7 +82,7 @@ export async function enviar(xdrFirmado: string, opciones: OpcionesRed = {}): Pr
   if (!xdr) throw new ErrorFirma("Falta el XDR firmado.", 400, null);
   const red = opciones.red ?? "v2";
   const ruta = red === "v2" ? "/stellar/send-transaction" : "/helper/send-transaction";
-  return leerPago(await post(ruta, { signedXdr: xdr }, opciones));
+  return leerPago(await post(ruta, { signedXdr: xdr }, opciones), red);
 }
 
 export async function leerEscrow(contrato: string, opciones: OpcionesRed = {}): Promise<Record<string, unknown>> {
@@ -147,7 +147,13 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
   const detail = typeof datos.detail === "string" ? datos.detail : typeof datos.message === "string" ? datos.message : null;
   if (codigo === "STELLAR_TX_FEE_BUMP_REJECTED") {
     return {
-      detail: "El envío rechazó el fee-bump. La cuenta tiene que existir y pagar la comisión.",
+      detail: "La red v2 no acepta un fee-bump. La cuenta de Cavos tiene que pagar la comisión en XLM.",
+      codigo,
+    };
+  }
+  if (codigo === "STELLAR_TX_INSUFFICIENT_BALANCE") {
+    return {
+      detail: "La cuenta no tiene XLM suficiente para la comisión. Fondeala con Friendbot en testnet y volvé a intentar.",
       codigo,
     };
   }
@@ -165,24 +171,35 @@ function leerXdr(json: unknown): XdrListo {
   };
 }
 
-function leerPago(json: unknown): PagoEnviado {
+const CODIGOS_V2_OK = new Set(["STELLAR_TX_SUBMITTED", "STELLAR_TX_SUBMITTED_INDEXER_LAGGING"]);
+
+// V2 /stellar/send-transaction no trae status. El alta exitosa trae contractId;
+// el resto trae code STELLAR_TX_SUBMITTED o STELLAR_TX_SUBMITTED_INDEXER_LAGGING.
+// V1 /helper/send-transaction sí usa status SUCCESS.
+export function envioConfirmado(
+  pago: Pick<PagoEnviado, "hash" | "codigo" | "contrato" | "estado">,
+  red: "v1" | "v2",
+): boolean {
+  if (red === "v1") return pago.estado === "SUCCESS";
+  if (!pago.hash) return false;
+  return (pago.codigo !== null && CODIGOS_V2_OK.has(pago.codigo)) || Boolean(pago.contrato);
+}
+
+function leerPago(json: unknown, red: "v1" | "v2"): PagoEnviado {
   const datos = registro(json);
-  const estado = texto(datos.status);
-  // docs.trustlesswork.com: SendTransactionResponse es { status, message }.
-  // status vale SUCCESS o FAILED. El hash no forma parte de esa respuesta.
-  // En el alta, el SDK admite leer también contractId (InitializeEscrowResponse).
-  if (estado && estado !== "SUCCESS") {
-    throw new ErrorFirma(texto(datos.message) ?? "El envío del pago falló.", 502, texto(datos.code));
-  }
-  const ledger = typeof datos.ledger === "number" ? datos.ledger : null;
-  return {
+  const escrow = registro(datos.escrow);
+  const pago: PagoEnviado = {
     hash: texto(datos.txHash) ?? texto(datos.hash),
-    ledger,
+    ledger: typeof datos.ledger === "number" ? datos.ledger : null,
     codigo: texto(datos.code),
-    contrato: texto(datos.contractId),
-    estado,
+    contrato: texto(datos.contractId) ?? texto(escrow.contractId),
+    estado: texto(datos.status),
     mensaje: texto(datos.message),
   };
+  if (!envioConfirmado(pago, red)) {
+    throw new ErrorFirma(pago.mensaje ?? "El envío del pago falló.", 502, pago.codigo);
+  }
+  return pago;
 }
 
 function registro(json: unknown): Record<string, unknown> {

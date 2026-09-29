@@ -7,7 +7,13 @@ import { guardarRevision } from "./evidencias";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
-export async function leerRevisionHttp(almacen: Almacen, fotos: Fotos | null, tareaId: string, forzar = false): Promise<Response> {
+export async function leerRevisionHttp(
+  almacen: Almacen,
+  fotos: Fotos | null,
+  tareaId: string,
+  forzar = false,
+  wallet = "",
+): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
     const tarea = await almacen.leerTarea(tareaId);
@@ -25,6 +31,9 @@ export async function leerRevisionHttp(almacen: Almacen, fotos: Fotos | null, ta
       tarea: vista,
       foto: evidencia && blobReal ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
+      contratoEscrow: actual.contratoEscrow,
+      walletCobro: actual.walletCobro,
+      wallet,
     });
   } catch {
     return baseNoLista();
