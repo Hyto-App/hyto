@@ -13,18 +13,22 @@ WHERE table_schema = 'public'
   AND table_type = 'BASE TABLE'
 ORDER BY table_name`,
   columnas: `SELECT
-  table_name AS tabla,
-  column_name AS columna,
-  data_type AS tipo_dato,
-  udt_name AS udt,
-  is_nullable AS nulable,
-  column_default AS defecto,
-  character_maximum_length AS largo,
-  numeric_precision AS precision_num,
-  numeric_scale AS escala
-FROM information_schema.columns
-WHERE table_schema = 'public'
-ORDER BY table_name, ordinal_position`,
+  c.table_name AS tabla,
+  c.column_name AS columna,
+  c.data_type AS tipo_dato,
+  c.udt_name AS udt,
+  c.is_nullable AS nulable,
+  c.column_default AS defecto,
+  c.character_maximum_length AS largo,
+  c.numeric_precision AS precision_num,
+  c.numeric_scale AS escala
+FROM information_schema.columns c
+JOIN information_schema.tables t
+  ON t.table_schema = c.table_schema
+ AND t.table_name = c.table_name
+WHERE c.table_schema = 'public'
+  AND t.table_type = 'BASE TABLE'
+ORDER BY c.table_name, c.ordinal_position`,
   restricciones: `SELECT
   con.contype AS tipo,
   con.conname AS nombre,
@@ -52,7 +56,6 @@ JOIN pg_class t ON t.oid = ix.indrelid
 JOIN pg_namespace nsp ON nsp.oid = t.relnamespace
 WHERE nsp.nspname = 'public'
   AND ix.indisprimary = false
-  AND ix.indisunique = false
   AND NOT EXISTS (
     SELECT 1
     FROM pg_constraint con
@@ -159,9 +162,8 @@ export function observadoDesdeFilas(lectura: LecturaEsquema): EsquemaObservado {
     }
   }
   const indices = lectura.indices.map((fila) => ({ tabla: texto(fila, "tabla"), nombre: texto(fila, "indice") }));
-  const presentes = new Set<string>([...tablas, ...columnas.map((columna) => columna.tabla)]);
   return {
-    tablas: [...presentes].sort((a, b) => a.localeCompare(b)),
+    tablas: [...tablas].sort((a, b) => a.localeCompare(b)),
     columnas,
     primaryKeys,
     uniques,
