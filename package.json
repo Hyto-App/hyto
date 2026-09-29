@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts",
+    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/auth/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts",
     "hito": "tsx scripts/hito-prueba.ts",
     "db:migrar": "tsx scripts/migrar.ts",
     "db:semilla": "tsx scripts/semilla.ts"
