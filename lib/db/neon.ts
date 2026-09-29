@@ -25,9 +25,15 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
   return "parcial";
 }
 
-export function crearAlmacenNeon(url: string): Almacen {
-  const db = drizzle(neon(url), { schema: { usuarios, proyectos, tareas, evidencias, veredictos, sesiones } });
+const esquema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
 
+function abrirNeon(url: string) {
+  return drizzle(neon(url), { schema: esquema });
+}
+
+export type DbAlmacen = ReturnType<typeof abrirNeon>;
+
+export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   return {
     async listarUsuarios() {
       const filas = await db.select().from(usuarios);
@@ -125,6 +131,10 @@ export function crearAlmacenNeon(url: string): Almacen {
   };
 }
 
+export function crearAlmacenNeon(url: string): Almacen {
+  return crearAlmacenDesde(abrirNeon(url));
+}
+
 function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
   return {
     ...fila,
@@ -138,6 +148,11 @@ export function urlBase(): string | null {
 }
 
 export async function almacenNeon(): Promise<Almacen | null> {
+  // Lo definen las pruebas de Postgres local. En el servidor no existe.
+  const tabla = globalThis as typeof globalThis & {
+    __HYTO_ALMACEN_PRUEBA?: () => Promise<Almacen | null>;
+  };
+  if (typeof tabla.__HYTO_ALMACEN_PRUEBA === "function") return tabla.__HYTO_ALMACEN_PRUEBA();
   const url = urlBase();
   if (!url) return null;
   return crearAlmacenNeon(url);
