@@ -126,7 +126,7 @@ export function construirCruce(raiz: string, esperado: EsquemaEsperado): CruceCo
     todasText: esperado.columnas.length > 0 && esperado.columnas.every((columna) => columna.tipo === "text"),
     sinIndices: esperado.indices.length === 0,
     sinJournal: !existsSync(join(raiz, "drizzle/meta")),
-    migrarLeeSql: leer(raiz, "scripts/migrar.ts").includes("drizzle/0000_inicio.sql"),
+    migrarLeeSql: migracionEjecutaSql(raiz),
     sinCheck: !/\bcheck\b/i.test(sql),
     emailUnicoTexto: esperado.columnas.some((columna) => columna.tabla === "usuarios" && columna.nombre === "email" && columna.unique && columna.tipo === "text"),
     emailEnMinusculas: neonFuente.includes("toLowerCase()"),
@@ -502,6 +502,12 @@ function fuentes(raiz: string): string[] {
 
 function leer(raiz: string, relativa: string): string {
   return readFileSync(join(raiz, relativa), "utf8");
+}
+
+function migracionEjecutaSql(raiz: string): boolean {
+  const migrar = leer(raiz, "scripts/migrar.ts");
+  if (migrar.includes("drizzle/0000_inicio.sql")) return true;
+  return migrar.includes("aplicarArchivo") && leer(raiz, "lib/db/aplicar.ts").includes("drizzle/0000_inicio.sql");
 }
 
 function rel(raiz: string, archivo: string): string {
