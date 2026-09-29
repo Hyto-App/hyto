@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
+import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
@@ -13,6 +13,7 @@ const PLAZO_MS = 2800;
 export type ActorEvidencia = {
   usuarioId: string;
   rol: Rol;
+  demo?: boolean;
 };
 
 export type DepsEvidencia = {
@@ -91,9 +92,11 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "No encontramos esa tarea." }, 404);
-    const wallet = direccion(texto(form.get("wallet")));
     const asignado = puedeFijarWallet(tarea, deps.actor);
-    if (deps.actor && !asignado) {
+    // La sesión demo sube evidencia a las tareas del proyecto demo, sin fijar cuenta de cobro.
+    const demo = !asignado && deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
+    const wallet = demo ? null : direccion(texto(form.get("wallet")));
+    if (deps.actor && !asignado && !demo) {
       const aviso =
         wallet && wallet !== tarea.walletCobro
           ? "Solo quien tiene la tarea puede indicar la cuenta de cobro."

@@ -268,3 +268,44 @@ test("una sesión demo no lee ZEEK y el dueño real sí", async () => {
     else process.env.HYTO_DEMO_LOGIN = demo;
   }
 });
+
+test("la sesión demo sube evidencia a una tarea demo, sin fijar cobro, y no a ZEEK", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const demo = process.env.HYTO_DEMO_LOGIN;
+  process.env.HYTO_DEMO_LOGIN = "1";
+  try {
+    await asegurarSemilla(almacen);
+    const actor = { usuarioId: "demo-voluntario", rol: "voluntario" as const, demo: true };
+    const subir = (tareaId: string) => {
+      const cuerpo = new FormData();
+      cuerpo.set("tareaId", tareaId);
+      cuerpo.set("wallet", "G" + "A".repeat(55));
+      cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+      return publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
+        almacen,
+        fotos,
+        actor,
+      });
+    };
+    const creada = await subir("demo-comida");
+    assert.equal(creada.status, 201);
+    assert.ok(await almacen.ultimaEvidencia("demo-comida"));
+    assert.equal((await almacen.leerTarea("demo-comida"))?.walletCobro, "");
+    assert.equal((await subir("comida")).status, 403);
+    assert.equal((await subir("demo-stand")).status, 201);
+    const ajeno = await publicarEvidenciaHttp(
+      (() => {
+        const cuerpo = new FormData();
+        cuerpo.set("tareaId", "demo-registro");
+        cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+        return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+      })(),
+      { almacen, fotos, actor: { ...actor, demo: false } },
+    );
+    assert.equal(ajeno.status, 403);
+  } finally {
+    if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = demo;
+  }
+});
