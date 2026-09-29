@@ -103,6 +103,16 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
     if (await almacen.veredictoDe(veredicto.evidenciaId)) continue;
     await almacen.guardarVeredicto(veredicto);
   }
+  await reponerPendientes(almacen);
+}
+
+async function reponerPendientes(almacen: Almacen): Promise<void> {
+  for (const tarea of await almacen.listarTareas()) {
+    if (tarea.hashPago || tarea.estado === "pendiente") continue;
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    if (evidencia && !esBlobEjemplo(evidencia.blobId)) continue;
+    await almacen.actualizarTarea(tarea.id, { estado: "pendiente" });
+  }
 }
 
 function esClaveDuplicada(error: unknown): boolean {

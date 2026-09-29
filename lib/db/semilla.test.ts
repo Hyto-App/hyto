@@ -114,6 +114,30 @@ test("sembrar dos veces no duplica ni pisa un pago", async () => {
   assert.equal((await almacen.ultimaEvidencia("bienvenida")), null);
 });
 
+test("una semilla vieja en revisión vuelve a pendiente sin pago ni foto real", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  for (const id of ["stand", "registro", "bienvenida", "comida"]) {
+    await almacen.actualizarTarea(id, { estado: "en revisión" });
+  }
+  await almacen.crearEvidencia({
+    id: "foto-real",
+    tareaId: "registro",
+    blobId: "blob/registro.jpg",
+    monto: null,
+    fecha: null,
+    creadaEn: "2026-09-28T12:00:00.000Z",
+  });
+  await asegurarSemilla(almacen);
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("bienvenida"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("comida"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
+  await asegurarSemilla(almacen);
+  assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+});
+
 test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
