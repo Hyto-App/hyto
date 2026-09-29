@@ -586,18 +586,18 @@ test("si el ingreso trae wallet, no se guarda otra", async () => {
   );
   assert.equal(ingreso.status, 200);
   const cookie = ingreso.headers.get("set-cookie") ?? "";
-  const token = /hyto_sesion=([^;]+)/.exec(cookie)?.[1] ?? "";
-  assert.equal((await almacen.leerSesion(token))?.wallet, cuenta);
+  const sesion = /hyto_sesion=([^;]+)/.exec(cookie)?.[1] ?? "";
+  assert.equal((await almacen.leerSesion(sesion))?.wallet, cuenta);
   const respuesta = await fijarWalletHttp(
     new Request("http://local/api/sesion/wallet", {
       method: "POST",
-      headers: { cookie: `hyto_sesion=${token}`, "content-type": "application/json" },
+      headers: { cookie: `hyto_sesion=${sesion}`, "content-type": "application/json" },
       body: JSON.stringify({ wallet: RESOLUTOR }),
     }),
     almacen,
   );
   assert.equal(respuesta.status, 400);
-  assert.equal((await almacen.leerSesion(token))?.wallet, cuenta);
+  assert.equal((await almacen.leerSesion(sesion))?.wallet, cuenta);
 });
 
 test("las rutas que escriben responden 401 sin sesión", async () => {
