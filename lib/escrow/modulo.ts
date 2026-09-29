@@ -1,4 +1,5 @@
 import { baseDe, convieneFriendbot, esContrato, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { revisarResolucion } from "./resolver";
 import type { AccionFirma, CuentasDespliegue, OpcionesRed, PagoEnviado, XdrListo } from "./tipos";
 
 export class ErrorFirma extends Error {
@@ -32,9 +33,34 @@ export function textoDeError(error: unknown): string {
 }
 
 export async function preparar(accion: AccionFirma, opciones: OpcionesRed = {}): Promise<XdrListo> {
-  const pedido = pedidoAccion(accion, opciones.red ?? "v2");
+  const red = opciones.red ?? "v2";
+  if (accion.accion === "resolver" && red === "v2") {
+    const fuentes: unknown[] = [await leerEscrow(accion.contrato, opciones)];
+    if (opciones.guardado !== undefined) fuentes.push(opciones.guardado);
+    const fallo = revisarResolucion(accion, fuentes);
+    if (fallo) throw new ErrorFirma(fallo.mensaje, fallo.estado, fallo.codigo);
+  }
+  const pedido = pedidoAccion(accion, red);
   if (typeof pedido === "string") throw new ErrorFirma(pedido, 400, null);
   return leerXdr(await post(pedido.ruta, pedido.cuerpo, opciones));
+}
+
+export function respuestaDeErrorFirma(error: unknown, avisoPorDefecto: string): Response {
+  if (error instanceof ErrorFirma) {
+    if (error.estado === 401) {
+      const detalle = error.codigo ? ` (${error.codigo})` : "";
+      return Response.json(
+        {
+          aviso: `Trustless Work no autorizó la clave del servidor${detalle}.`,
+          codigo: "TRUSTLESS_AUTH",
+        },
+        { status: 502 },
+      );
+    }
+    const estado = error.estado >= 400 && error.estado <= 599 ? error.estado : 502;
+    return Response.json({ aviso: error.message, codigo: error.codigo }, { status: estado });
+  }
+  return Response.json({ aviso: avisoPorDefecto }, { status: 502 });
 }
 
 export async function prepararDespliegue(cuentas: CuentasDespliegue, opciones: OpcionesRed = {}): Promise<XdrListo> {

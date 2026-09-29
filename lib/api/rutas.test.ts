@@ -155,7 +155,7 @@ test("la sesión sale del correo y el pago exige al organizador", async () => {
   assert.equal(envio.status, 401);
 });
 
-test("liberar, aprobar, disputar, resolver y leer el escrow exigen al organizador", async () => {
+test("sin sesión no se prepara la firma ni se lee el escrow", async () => {
   let llamadas = 0;
   const original = globalThis.fetch;
   globalThis.fetch = async () => {

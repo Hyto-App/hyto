@@ -1,10 +1,10 @@
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
-import { ErrorFirma, enviar } from "@/lib/escrow/modulo";
-import { exigirOrganizador } from "@/lib/sesion/exigir";
+import { enviar, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { exigirSesion } from "@/lib/sesion/exigir";
 
 export async function POST(request: Request): Promise<Response> {
-  const sesion = await exigirOrganizador(request);
-  if (sesion) return sesion;
+  const sesion = await exigirSesion(request);
+  if (sesion instanceof Response) return sesion;
   const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
   if (limitado) return limitado;
   let body: unknown;
@@ -26,11 +26,7 @@ export async function POST(request: Request): Promise<Response> {
       estado: pago.estado,
     });
   } catch (error) {
-    if (error instanceof ErrorFirma) {
-      const estado = error.estado >= 400 && error.estado <= 599 ? error.estado : 502;
-      return Response.json({ aviso: error.message, codigo: error.codigo }, { status: estado });
-    }
-    return Response.json({ aviso: "No se pudo enviar el pago." }, { status: 502 });
+    return respuestaDeErrorFirma(error, "No se pudo enviar el pago.");
   }
 }
 

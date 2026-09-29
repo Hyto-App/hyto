@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "../integrante/identidades";
 import { BASE_V1, BASE_V2, claveDeV1, enlacePago, leerEntrada, pedidoAccion, pedidoDespliegue } from "./cuerpos";
-import { excedido, reiniciarLimite } from "./limite";
-import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, textoDeError } from "./modulo";
+import { excedido, reiniciarLimite, respuestaSiExcedido } from "./limite";
+import { ErrorFirma, enviar, leerEscrow, preparar, prepararDespliegue, reintentarConFriendbot, respuestaDeErrorFirma, textoDeError } from "./modulo";
 import type { CuentasDespliegue } from "./tipos";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -115,8 +115,36 @@ test("disputar en v2 manda el motivo", async () => {
   });
 });
 
+function fetchResolucion(escrow: Record<string, unknown>): {
+  fetch: typeof fetch;
+  llamadas: { url: string; method: string; body: unknown; clave: string }[];
+} {
+  const llamadas: { url: string; method: string; body: unknown; clave: string }[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const crudo = init?.body;
+    const method = init?.method ?? "GET";
+    llamadas.push({
+      url: String(input),
+      method,
+      body: typeof crudo === "string" ? (JSON.parse(crudo) as unknown) : null,
+      clave: new Headers(init?.headers).get("x-api-key") ?? "",
+    });
+    const cuerpo = method === "GET" ? escrow : { unsignedXdr: XDR, txHash: "abc" };
+    return new Response(JSON.stringify(cuerpo), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  return { fetch: fetchImpl, llamadas };
+}
+
+function escrowDisputado(monto: string | number = "1", resolutores: string[] = [RESOLUTOR]): Record<string, unknown> {
+  return {
+    contractId: CONTRATO,
+    roles: { disputeResolvers: resolutores },
+    milestones: [{ amount: monto, status: "inDispute", flags: { disputed: true, resolved: false } }],
+  };
+}
+
 test("resolver en v2 reparte el hito en disputa", async () => {
-  const red = fetchDe({ unsignedXdr: XDR, txHash: "abc" });
+  const red = fetchResolucion(escrowDisputado("1"));
   await preparar(
     {
       accion: "resolver",
@@ -130,8 +158,10 @@ test("resolver en v2 reparte el hito en disputa", async () => {
     },
     { fetch: red.fetch, clave: "clave-de-prueba" },
   );
-  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/resolve-dispute`);
-  assert.deepEqual(red.llamadas[0]?.body, {
+  assert.equal(red.llamadas[0]?.method, "GET");
+  assert.equal(red.llamadas[0]?.url, `${BASE_V2}/escrow/multi-release/v2/${CONTRATO}`);
+  assert.equal(red.llamadas[1]?.url, `${BASE_V2}/escrow/multi-release/v2/resolve-dispute`);
+  assert.deepEqual(red.llamadas[1]?.body, {
     contractId: CONTRATO,
     disputeResolver: RESOLUTOR,
     milestoneIndexes: [0],
@@ -140,6 +170,99 @@ test("resolver en v2 reparte el hito en disputa", async () => {
       { address: ORGANIZADOR, amount: 0.4 },
     ],
   });
+});
+
+test("resolver solo lo firma el resolutor del escrow", async () => {
+  const red = fetchResolucion(escrowDisputado("1"));
+  await assert.rejects(
+    () =>
+      preparar(
+        {
+          accion: "resolver",
+          contrato: CONTRATO,
+          firmante: ORGANIZADOR,
+          indice: 0,
+          distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+        },
+        { fetch: red.fetch, clave: "clave-de-prueba" },
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorFirma);
+      assert.equal(error.estado, 403);
+      assert.equal(error.codigo, "ESCROW_ONLY_DISPUTE_RESOLVER_CAN_EXECUTE");
+      assert.match(error.message, /resolutor/);
+      return true;
+    },
+  );
+  assert.equal(red.llamadas.some((llamada) => llamada.method === "POST"), false);
+});
+
+test("si el GET no trae roles, vale el resolutor guardado en el proyecto", async () => {
+  const red = fetchResolucion({
+    contractId: CONTRATO,
+    milestones: [{ amount: "1.0000000", flags: { disputed: true } }],
+  });
+  await preparar(
+    {
+      accion: "resolver",
+      contrato: CONTRATO,
+      firmante: RESOLUTOR,
+      indice: 0,
+      distribuciones: [{ direccion: RECEPTOR, monto: 1 }],
+    },
+    { fetch: red.fetch, clave: "clave-de-prueba", guardado: { roles: { disputeResolver: RESOLUTOR } } },
+  );
+  assert.equal(red.llamadas[1]?.method, "POST");
+});
+
+test("el reparto tiene que sumar el monto del hito, en unidades de 10^-7", async () => {
+  const corto = fetchResolucion(escrowDisputado("1"));
+  await assert.rejects(
+    () =>
+      preparar(
+        {
+          accion: "resolver",
+          contrato: CONTRATO,
+          firmante: RESOLUTOR,
+          indice: 0,
+          distribuciones: [
+            { direccion: RECEPTOR, monto: 0.6 },
+            { direccion: ORGANIZADOR, monto: 0.3 },
+          ],
+        },
+        { fetch: corto.fetch, clave: "clave-de-prueba" },
+      ),
+    (error: unknown) => error instanceof ErrorFirma && error.codigo === "ESCROW_DISTRIBUTIONS_MUST_EQUAL_BALANCE",
+  );
+  assert.equal(corto.llamadas.some((llamada) => llamada.method === "POST"), false);
+
+  const centavos = fetchResolucion(escrowDisputado("0.3"));
+  await preparar(
+    {
+      accion: "resolver",
+      contrato: CONTRATO,
+      firmante: RESOLUTOR,
+      indice: 0,
+      distribuciones: [
+        { direccion: RECEPTOR, monto: 0.1 },
+        { direccion: ORGANIZADOR, monto: 0.2 },
+      ],
+    },
+    { fetch: centavos.fetch, clave: "clave-de-prueba" },
+  );
+  assert.equal(centavos.llamadas.at(-1)?.method, "POST");
+});
+
+test("un 401 de Trustless no se informa como sesión ausente", async () => {
+  const respuesta = respuestaDeErrorFirma(
+    new ErrorFirma("Invalid API key.", 401, "AUTH_INVALID_CREDENTIAL"),
+    "No se pudo leer el escrow.",
+  );
+  assert.equal(respuesta.status, 502);
+  const json = (await respuesta.json()) as { aviso: string; codigo: string };
+  assert.equal(json.codigo, "TRUSTLESS_AUTH");
+  assert.match(json.aviso, /AUTH_INVALID_CREDENTIAL/);
+  assert.equal(json.aviso.includes("Entra para continuar"), false);
 });
 
 test("leer el escrow es un GET del contrato en v2", async () => {
@@ -276,6 +399,18 @@ test("el límite de firma corta después de treinta pedidos", () => {
   reiniciarLimite();
   for (let i = 0; i < 30; i += 1) assert.equal(excedido("prueba"), false);
   assert.equal(excedido("prueba"), true);
+  reiniciarLimite();
+});
+
+test("leer el escrow no gasta el cupo de la firma", async () => {
+  reiniciarLimite();
+  const firma = new Request("http://local/api/firma", { headers: { "x-forwarded-for": "10.1.1.1" } });
+  const lectura = new Request("http://local/api/escrow/c", { headers: { "x-forwarded-for": "10.1.1.1" } });
+  for (let i = 0; i < 30; i += 1) assert.equal(respuestaSiExcedido(firma), null);
+  const bloqueada = respuestaSiExcedido(firma);
+  assert.equal(bloqueada?.status, 429);
+  assert.match(await bloqueada!.json().then((json: { aviso: string }) => json.aviso), /firma/);
+  assert.equal(respuestaSiExcedido(lectura, "lectura"), null);
   reiniciarLimite();
 });
 

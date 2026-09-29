@@ -33,6 +33,7 @@ export type OpcionesRed = {
   clave?: string;
   base?: string;
   red?: RedEscrow;
+  guardado?: unknown;
 };
 
 export type TrustlineDespliegue = {
