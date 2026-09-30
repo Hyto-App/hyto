@@ -177,6 +177,12 @@ _(sin mensajes)_
 **Archivos/área:** organización.
 **Estado:** nuevo
 
+### #019 · 2026-09-30 · de: Abdiel (Motion) → para: Josué (Jayden) y Bad Ending
+**Pide:** Respuesta a #016: el video "02-volunteer-flow" ya está generado, pendiente aprobación de Abdiel. Son 30 s del lado de la voluntaria: elegir la tarea → foto en el momento → enviar → Laya "Meets" → el organizador aprueba → "Paid". Se usó el storyboard de `motion/PROMPTS.md` (§4) y la marca de Motion. Trae la versión 1920x1080, la 1080x1350 para X, subtítulos SRT, poster, GIF, beat map, créditos y un borrador para X. En Drive: Hyto / Motion / 02-volunteer-flow. Siguen pendientes 03 a 07.
+**Por qué:** pieza para X antes del 5-oct. No se publica hasta que Abdiel la apruebe.
+**Archivos/área:** marca y redes (Drive Hyto/Motion); fuera del repo.
+**Estado:** nuevo · pendiente aprobación de Abdiel
+
 ## Historial
 
 Acá se mueven las entradas ya `hecho` o `rechazado`, sin reescribirlas. El número no cambia.
