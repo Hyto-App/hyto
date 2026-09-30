@@ -2,7 +2,53 @@
 
 Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
 
-## 2026-09-29
+## 2026-09-30
+
+### Nuevo
+
+- Para una presentación se puede entrar como demo, de organizador o de voluntario, sin correo ni Google. La pantalla marca que es el modo demo. En ese modo los pagos no se firman. Josué Valles, PR #30.
+- El servidor prepara aprobar un hito, soltar el pago, abrir o cerrar una disputa, y consultar el saldo del depósito. Josué Valles, PR #26.
+- Cada tarea puede tener su depósito en la red de pruebas. El enlace del pago se guarda solo cuando la red confirma que el dinero salió. Josué Valles, PR #38.
+- En la revisión, el organizador firma desde el navegador: primero deja el dinero en el depósito y después aprueba y paga. La bandeja y el informe leen las tareas del servidor. El demo sigue con el ejemplo guardado en el navegador. Josué Valles, PR #39.
+- Quien entra con Cavos y todavía no está en el equipo queda registrado como voluntario. Entrar conserva el rol de quien ya estaba cargado. Josué Valles, PR #41.
+- Cada proyecto guarda a su organizador, la persona que lo crea. Esa persona revisa, arma el depósito y paga ese proyecto. El voluntario ve sus tareas. El demo usa un proyecto aparte. Josué Valles, PR #44.
+- Quien ya entró, fuera del demo, puede dejar su cuenta lista para recibir USDC de prueba, desde la revisión o al subir la evidencia. Josué Valles, PR #50.
+- Hay un botón para salir. Cierra la sesión del servidor y la de Cavos. Josué Valles, PR #52.
+
+### Arreglado
+
+- Migrar y cargar el ejemplo de ZEEK funciona contra Postgres en la computadora. Las tareas de ejemplo quedan pendientes, listas para subir evidencia. Josué Valles, PR #21.
+- El ingreso comprueba que el código de Cavos sea auténtico. Sin las claves del servidor no se abre sesión. Solo el voluntario de esa tarea sube la foto y fija la cuenta donde cobra. Josué Valles, PR #23.
+- Si el ingreso falla, la pantalla muestra un aviso corto. Si se piden demasiados códigos, hay una espera y el botón queda en pausa. Josué Valles, PR #28.
+- En el demo se puede salir y pasar de organizador a voluntario, o al revés. Josué Valles, PR #36.
+- Una sesión demo, o una visita sin entrar, recibe un aviso al crear un proyecto y el formulario no se guarda. Josué Valles, PR #47.
+- El voluntario del demo sube evidencia en las tareas del proyecto demo. Una cuenta de cobro enviada por esa sesión se deja de lado. Josué Valles, PR #50.
+- Preparar el USDC y firmar recuperan la sesión de Cavos aunque se abra otra pestaña. Si esa sesión venció de verdad, la pantalla pide entrar de nuevo. Josué Valles, PR #52.
+- La sesión dura lo que dura el ingreso de Cavos, con un tope de 24 horas. Si el ingreso no trae vencimiento, y también en el demo, dura 8 horas. Al vencer, hay que entrar otra vez. Josué Valles, PR #54.
+- Si la revisión de una foto real falla, se ve el motivo y un botón para reintentar. El monto y la fecha ya guardados se conservan, y el pago queda oculto mientras esa revisión esté fallida. Josué Valles, PR #45.
+- Cuando la revisión de Abdiel responde con varias probabilidades, el resultado es la más alta: no alcanza, parcial o cumplió. Un reembolso sin monto, sin fecha, o por encima del tope, queda en no alcanza. Josué Valles, PR #59.
+
+### Cambiado
+
+- El ejemplo de variables quedó al día: para qué sirve cada una y qué pasa si falta, sin valores. Josué Valles, PR #20.
+- Migrar o cargar datos se detiene cuando la dirección es la de producción y nadie lo confirmó. Un comando lista qué nombres faltan, sin mostrar secretos. Josué Valles, PR #22.
+- Quedó un inventario de las tablas, leído del código, sin abrir la base. Josué Valles, PR #24.
+- Hay un comando para comparar esas tablas con una copia de la base, sin escribir en ella. Josué Valles, PR #25.
+- Hay pruebas que corren contra Postgres en la computadora y dejan la base de producción quieta. Josué Valles, PR #27.
+- El contexto del proyecto para el equipo y para los agentes quedó en un solo documento. Josué Valles, PR #43.
+- Los textos que ve la gente pasaron a inglés. Lo guardado en español se sigue leyendo, sin cambiar la base. Josué Valles, PR #56.
+- El diseño de Abdiel en Figma, en la página «Nuevo diseño», quedó como la referencia de la interfaz. Josué Valles, PR #58.
+
+### Pendiente para el equipo
+
+- Hay que aplicar en la base la columna del organizador y asignar a mano el dueño de los proyectos que ya existen. ZEEK sigue sin dueño hasta ese paso. Josué Valles, PR #44.
+- Abdiel: publicar su revisión y dejar la dirección en el servidor. Sin esa dirección, un trabajo se revisa con un reemplazo.
+- Esteban: el borrador PR #15 sigue abierto. El mismo ajuste ya entró en el PR #59.
+- Sigue sin haber un pago de prueba guardado en el proyecto. Hace falta una wallet real, con XLM y USDC de la red de pruebas: dejar el dinero en el depósito, aprobar y pagar, y conservar el enlace. Sin ese enlace no entra el Acta. Josué Valles, PR #43. El recorrido de firma ya está en los PR #38 y #39.
+- Josué: al volver de Google, el ingreso se puede perder. El arreglo sigue en el borrador PR #18. Las pruebas lo tienen marcado como fallo esperado. Josué Valles, PR #27.
+- El documento de contexto (PR #43) todavía describe la revisión anterior: el texto fijo en silencio y el ajuste de Laya fuera de main. Eso ya cambió en los PR #45 y #59.
+
+
 
 ### Nuevo
 
