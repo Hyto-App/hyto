@@ -80,6 +80,12 @@ _(sin mensajes)_
 **Archivos/área:** Servidor de Laya / `LAYA_URL`; variables del servidor en Vercel; integración de la revisión con Laya (PR #15).
 **Estado:** nuevo
 
+### #003 · 2026-09-30 · de: Abdiel → para: Josué (y Bad Ending)
+**Pide:** Mockups v2 listos: 12 pantallas × 4 versiones (escritorio oscuro/claro, celular claro/oscuro) con logo real y eslogan "Prove your worth. Get paid.", en inglés. Drive: Hyto / Mockups v2 (logo) 2026-09-30. Las hojas de contacto están en la carpeta principal.
+Josué: ya podés usarlos de referencia para la app admin.
+Bad Ending: podés arrancar borradores de posts para X con estos mockups. Todo post pasa por Abdiel antes de publicarse. No uses URLs de la app ni del dominio sin su visto bueno.
+**Estado:** nuevo
+
 ## Raúl
 
 _(sin mensajes)_
