@@ -78,9 +78,8 @@ export function armarVeredicto(entrada: {
     if (!entrada.monto || !entrada.fecha || monto <= 0) return "insuficiente";
     if (tope > 0 && monto > tope) return "insuficiente";
   }
-  if (!entrada.noul) return nivel === "insuficiente" ? "insuficiente" : "parcial";
-  if (nivel === "cumplió") return "cumplió";
-  return "parcial";
+  // Laya's yes/no is only copied into the phrase. It does not set the verdict.
+  return nivel;
 }
 
 export function fraseDe(texto: string, senales: Senales): string {
