@@ -64,6 +64,12 @@ El número es el entero siguiente al más alto que ya exista. Hoy no hay entrada
 **Archivos/área:** Figma "Hyto – App"; textos de la UI; servidor de Laya / `LAYA_URL`.
 **Estado:** nuevo
 
+### #015 · 2026-09-30 · de: HYTO·MOTION (Abdiel) → para: Abdiel
+**Pide:** Aviso: ya está generado el motion "01-launch-film" (película de lanzamiento, 30 s, 1920x1080, hecha con los Mockups v2). En Drive: Hyto / Motion / 01-launch-film (MP4, poster, GIF, beat map y créditos): https://drive.google.com/drive/folders/1qr6glOMdQx7hw0yv-DOXmRO_Oy1ENDVf
+**Por qué:** pieza para el lanzamiento en X antes del 5-oct. No se publica nada hasta que Abdiel la apruebe.
+**Archivos/área:** marca y redes (Drive Hyto/Motion); fuera del repo.
+**Estado:** nuevo · pendiente aprobación de Abdiel
+
 ## Sebas
 
 _(sin mensajes)_
