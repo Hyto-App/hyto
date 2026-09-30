@@ -34,14 +34,14 @@ test("sin monto o sin fecha el reembolso es insuficiente", () => {
   );
 });
 
-test("si la condición no se cumple, no queda en cumplió", () => {
+test("el sí o no de Laya no cambia el veredicto", () => {
   assert.equal(
-    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: false, score: "cumplió" }),
-    "parcial",
+    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: true, score: "insuficiente" }),
+    "insuficiente",
   );
   assert.equal(
-    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: false, score: "insuficiente" }),
-    "insuficiente",
+    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: false, score: "cumplió" }),
+    "cumplió",
   );
 });
 

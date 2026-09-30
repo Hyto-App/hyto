@@ -68,8 +68,48 @@ async function falloLaya(base: string, fetchImpl: typeof fetch): Promise<FalloRe
 }
 
 test("el pedido nombra las tres preguntas", () => {
-  const cuerpo = cuerpoLaya("Mesa armada", "Banner visible") as { questions: Record<string, { type: string }> };
+  const cuerpo = cuerpoLaya("Mesa armada", "Banner visible") as {
+    questions: { choice: { type: string }; noul: { type: string }; score: { type: string; criteria: string[] } };
+  };
   assert.equal(cuerpo.questions.choice?.type, "choice");
   assert.equal(cuerpo.questions.noul?.type, "noul");
   assert.equal(cuerpo.questions.score?.type, "score");
+  assert.deepEqual(cuerpo.questions.score.criteria, [
+    "The requested item is barely visible",
+    "Part of it is visible, something is missing",
+    "The requested item is clearly visible",
+  ]);
+});
+
+test("el score usa el índice con mayor probabilidad", () => {
+  const senales = leerLaya({
+    answers: {
+      choice: { choice: "otra" },
+      noul: { noul: 0.91 },
+      score: { type: "score", score: 1.2, probabilities: { "0": 0.1, "1": 0.7, "2": 0.2 } },
+    },
+  });
+  assert.equal(senales?.noul, true);
+  assert.equal(senales?.score, "parcial");
+});
+
+test("el índice más alto en dos es cumplió", () => {
+  const senales = leerLaya({
+    answers: {
+      choice: { choice: "trabajo" },
+      noul: { noul: 0.1 },
+      score: { type: "score", score: 1.6, probabilities: { "0": "0.1", "1": "0.2", "2": "0.7" } },
+    },
+  });
+  assert.equal(senales?.noul, false);
+  assert.equal(senales?.score, "cumplió");
+});
+
+test("si el dos empata con el cero, queda el nivel más bajo", () => {
+  const senales = leerLaya({
+    choice: "trabajo",
+    noul: false,
+    score: { score: 1, probabilities: [0.4, 0.2, 0.4] },
+  });
+  assert.equal(senales?.score, "insuficiente");
 });

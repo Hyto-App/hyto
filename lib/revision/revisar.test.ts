@@ -60,8 +60,30 @@ test("si Laya falla, no entra el guion fijo", async () => {
   });
   assert.equal(resultado.origen, "error");
   assert.equal(resultado.codigo, "proveedor");
+  assert.equal(resultado.veredicto, "insuficiente");
   assert.equal(resultado.monto, null);
   assert.notEqual(resultado.texto, guionFijo("reembolso").texto);
+});
+
+test("si Laya no responde a tiempo, queda el error y no un pago", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let paso = 0;
+  const resultado = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: "clave",
+      layaUrl: "https://laya.example",
+      fetchImpl: async () => {
+        paso += 1;
+        if (paso === 1) return groq("Banner visible");
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    }),
+  );
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "tiempo");
+  assert.equal(resultado.veredicto, "insuficiente");
+  assert.match(resultado.frase, /did not respond in time/);
 });
 
 test("cada fallo de una evidencia real deja el error y no el guion", async () => {
