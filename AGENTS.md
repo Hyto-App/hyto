@@ -26,6 +26,13 @@ Full report: [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) (against `main
 
 - Per-person task prompts for coding agents: [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md)
 
+## Task ownership (rule for everyone)
+
+- Task owners (in the Kanban, the audit prompts and docs/AGENT-PROMPTS-2026-09-30.md) are suggestions, not exclusive assignments. Nobody owns a task alone.
+- Anyone who can take or help with a task may work on it.
+- Whoever works on a task that was suggested for someone else must leave an entry in the mailbox (BUZON.md on the `buzon` branch) saying what they did, the PR/branch, and what's left, so the other person has the context.
+- All coordination about tasks goes through the mailbox.
+
 ## Qué es Hyto
 
 Hyto es control de gastos y pagos por hitos sobre Stellar. El organizador deja el presupuesto en un escrow multi-release de Trustless Work (V2, testnet). Cada tarea es un hito. El voluntario sube una foto. Una IA recomienda si la evidencia alcanzó. El organizador aprueba y el pago sale en USDC de testnet. Al cerrar, el informe compara presupuesto contra gasto y, si ya hay hash, enlaza el pago en Stellar.
