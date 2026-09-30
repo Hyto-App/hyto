@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+El estado del código al 29 de septiembre de 2026, 7:46 p.m., hora de Costa Rica (`687dc3d`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después, en `main`: la revisión firma **Deploy and fund** y **Approve and pay**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario (PR #41); cada proyecto tiene `organizador_id` (PR #44, Josué Valles); `HYTO_DEMO_LOGIN=1` enciende el demo y el demo no crea proyectos (PR #47); la UI está en inglés (PR #56); un fallo de Groq o de Laya queda en `origen` `error` con **Retry review** (PR #45); el veredicto de Laya sale del índice de `score.probabilities` (PR #59, Josué Valles). Sigue sin un pago real en el repositorio. Sin `LAYA_URL` se usa el stub. Publicar esa URL, y el pago en testnet, es lo que sigue.
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
@@ -12,7 +12,7 @@ Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavo
 
 El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
 
-En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
+En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Al 28, sin `GROQ_API_KEY` o si Groq o Laya fallaban, respondía el guion fijo. Desde el PR #45 ese fallo es `origen` `error`. El hash de pago sigue vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
 
 El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 
@@ -28,7 +28,7 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
+| IA | Qwen 3.8 27B (Groq) describe la foto. Laya, si hay `LAYA_URL`, responde `choice`, `noul` y `score`. Desde el PR #59 el veredicto es el índice más alto de `probabilities`. Si Groq o Laya fallan, `origen` `error` y **Retry review**. Sin `LAYA_URL`, el stub |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
@@ -41,7 +41,7 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`. La 
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
 | `DATABASE_URL` | Neon. La leen las rutas |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
-| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión usa el guion fijo |
+| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, una revisión real queda en `origen` `error` |
 | `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
 | `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
 
@@ -58,10 +58,10 @@ El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `si
 La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/:id` lee la foto desde Blob y no publica esa URL. La pantalla recibe `/api/evidencias/:id/foto`.
 
 1. **Qwen 3.8 27B** describe la imagen. Groq, modelo `qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Es el único modelo de esta clave que acepta foto. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo.
-2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
-3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de la foto más esas tres respuestas.
+2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo. `score.criteria` es una lista ordenada. Si vienen `probabilities`, el veredicto guardado es el índice más alto: 0 `insuficiente`, 1 `parcial`, 2 `cumplió` (PR #59, Josué Valles). El sí o no solo entra en la frase.
+3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. En pantalla se ven como Met, Partial e Insufficient. La justificación es el texto de la foto más esas tres respuestas.
 
-Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
+Sin `GROQ_API_KEY`, o si Groq o Laya fallan, el resultado es `origen` `error` y la pantalla ofrece **Retry review** (PR #45, Josué Valles). Sin `LAYA_URL`, y con la foto ya descrita, responde el stub. El guion fijo queda para la vista de ejemplo.
 
 Hay dos tipos de hito y los dos entran por la misma cámara. El de trabajo pide una foto de lo hecho. El de reembolso pide una foto de la factura o del comprobante. Qwen las describe a las dos. En la factura también extrae monto y fecha, y el código compara ese monto con el tope. Laya clasifica las dos. No hay un lector de PDF ni un flujo distinto. Subir evidencia ya es esa única pantalla; monto y fecha del reembolso solo aparecen si la API los devuelve.
 

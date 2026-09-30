@@ -2,7 +2,7 @@
 
 Informe del proyecto · 27 de septiembre de 2026
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
+El estado del código al 29 de septiembre de 2026, 7:46 p.m., hora de Costa Rica (`687dc3d`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma (**Deploy and fund**, **Approve and pay**). La UI está en inglés (PR #56, Josué Valles). El veredicto de Laya sale del índice de `probabilities` (PR #59, Josué Valles). Lo que sigue es un pago real en testnet y publicar `LAYA_URL`.
 
 Pagos por hitos: el dinero queda comprometido antes del trabajo, cada tarea o gasto se respalda con evidencia y el informe está listo al cerrar el proyecto.
 
@@ -62,7 +62,7 @@ Modelo técnico: un escrow multi-release por proyecto. Cada hito tiene su monto 
 
 Para el demo, el stack cuesta $0. Trustless Work en testnet es gratis: API, API key y escrows de prueba, sin mensualidad. El 0,3 % se cobra solo en mainnet, cuando un hito se libera con dinero real. La comisión de plataforma de Hyto va en 0. En testnet, el XLM de las comisiones de red lo da Friendbot.
 
-La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Qwen 3.8 27B en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde o esa PC está apagada, el veredicto sale de un guion fijo y el resto de la web sigue. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
+La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Qwen 3.8 27B en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde o esa PC está apagada, la revisión queda en `origen` `error`, con **Retry review**, y el resto de la web sigue. Sin `LAYA_URL` se usa el stub. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
 
 ## 5. Referencias
 
@@ -81,11 +81,11 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 | App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `77a0431`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Falta un pago real en testnet. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `687dc3d`, **Deploy and fund** y **Approve and pay** salen de la revisión. Falta un pago real en testnet. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
-| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falla, `desdeGuion` entra en silencio y la pantalla no muestra `origen`. Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y el stub deja el trabajo en `parcial`. El detalle está en [AGENTS.md](AGENTS.md). |
+| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falla, el resultado es `origen` `error` y la pantalla ofrece **Retry review** (PR #45, Josué Valles). Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y el stub deja el trabajo en `parcial`. Con Laya, el veredicto es el índice más alto de `probabilities` (PR #59). El detalle está en [AGENTS.md](AGENTS.md). |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 
@@ -107,15 +107,15 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, marca y Laya | Poppins, lima `#B7EE34` y el Figma ya están (PR #7 y #58). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
+| Esteban | Backend | Neon, Blob, rutas, ingreso y la lectura del índice de Laya ya están. Sigue confirmar Groq en producción y asignar `organizador_id` a mano | La app en Vercel guarda un proyecto, una foto y un veredicto que no sea el stub |
+| Sebas | Escrow y wallet | El módulo, el script y el `appId` de Cavos ya están. Sigue un pago en USDC | Hay un pago de prueba en testnet. El Acta va después de ese pago |
+| Josué | App del admin | Pantallas, firma en la revisión, inglés y el veredicto de Laya (PR #59) ya están. Sigue Next.js 16.3.7 y dos detalles de la UX del escrow | El admin crea, revisa, aprueba en Stellar y abre el informe, con un hash real |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Siguen las cuatro cuentas del demo | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
-Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de un pago real en el repositorio.
+Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de un pago real en el repositorio. El 29 de septiembre a las 7:46 p.m., hora de Costa Rica, Josué Valles dejó en `main` el veredicto de Laya por índice de probabilidad (PR #59, `687dc3d`).
 
 ## 8. Guion de demo
 
