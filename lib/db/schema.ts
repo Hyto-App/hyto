@@ -41,9 +41,9 @@ export const evidencias = pgTable("evidencias", {
     .references(() => tareas.id),
   blobId: text("blob_id").notNull(),
   monto: text("monto"),
-  montoConfirmado: text("monto_confirmado"),
   fecha: text("fecha"),
   creadaEn: text("creada_en").notNull(),
+  montoConfirmado: text("monto_confirmado"),
 });
 
 export const veredictos = pgTable("veredictos", {
