@@ -190,3 +190,11 @@ Quedan cuatro detalles de la UX del escrow, visibles en el código:
 - **Aprobar y pagar** se muestra con la tarea `en revisión`, sin exigir que el escrow esté fondeado (`botonesRevision` en `lib/admin/remoto.ts`). Hay que ocultarlo mientras no haya fondeo.
 - El saldo se lee de `GET /api/escrow/[contrato]`. El indexador de Trustless no es inmediato: `balance` puede seguir en 0 un momento, y `fondeado` queda `null` si el número no se lee. En la misma sesión, un fondeo exitoso fuerza el estado; al recargar, manda lo que diga el indexador.
 - `contratosPreparados` en `lib/api/firma.ts` es un `Map` del proceso. Si el envío cae en otra instancia, o el proceso se reinicia, se pierde el id que el prepare había guardado para cuando Trustless no devuelve el contrato.
+
+## Sugerencias del equipo (no son compromisos)
+
+Ideas para considerar más adelante; no son trabajo planificado. Las decisiones y los pendientes viven en `BUZON.md` de la rama `buzon` (#005–#014).
+
+- **Decisión (#005):** el MVP se queda en pagos con escrow; no se agregan features nuevas hasta que lo existente funcione.
+- **Sugerencias:** auditar el código con IA y armar un plan de trabajo (#010); tema oscuro y animaciones con las plantillas de Abdiel (#011); después del MVP, integrar Luma, insignias y Stellar Passport (#013); Kanban en Notion (#014).
+- **Preguntas abiertas a evaluar:** lógica de validación con IA (Grok describe, Laya decide; puntaje del organizador) (#006); foto de evidencia solo con cámara y riesgo de fraude (#012); simplificar el flujo para gente sin experiencia en crypto (#007).
