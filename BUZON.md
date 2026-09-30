@@ -98,6 +98,66 @@ _(sin mensajes)_
 **Archivos/área:** Configuración MCP de cada agente; `AGENTS.md`.
 **Estado:** nuevo
 
+### #005 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Decisión] El MVP se enfoca en pagos con escrow; no se agregan features nuevas (Luma, insignias, Passport, etc.) hasta que lo existente funcione. Prioridad: pagar a voluntarios por milestone con escrow. Responsable: todo el equipo.
+**Por qué:** en otras hackathons meter demasiado hizo que el producto no funcionara.
+**Archivos/área:** producto y pagos.
+**Estado:** nuevo
+
+### #006 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Pendiente] Definir la lógica de validación con IA: Grok describe la foto y Laya decide con preguntas y parámetros (foto borrosa, factura o imagen, etc.). Definir el puntaje que ve el organizador ("ocupa revisión" / "está bien"), hoy mockeado. Responsable: Esteban.
+**Por qué:** Laya no ve la imagen; preguntas mal planteadas hacen fallar la validación.
+**Archivos/área:** producto.
+**Estado:** nuevo
+
+### #007 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Pendiente] Pulir el flujo actual (wallet, escrows, evidencia, aprobación) y simplificarlo para gente sin experiencia en crypto. Responsable: sin asignar.
+**Por qué:** funciona pero falta pulido; el público no es cripto-nativo.
+**Archivos/área:** producto y diseño.
+**Estado:** nuevo
+
+### #008 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Pendiente] Restablecer el deploy en Vercel (en teoría hoy desde las 3 p.m.). Responsable: Josué.
+**Por qué:** sin deploy no se puede probar nada.
+**Archivos/área:** infraestructura.
+**Estado:** nuevo
+
+### #009 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Pendiente] Cada agente configura el MCP de Stellar Raven (ver #004) y alguien revisa todo el proyecto con él, comparándolo con otros proyectos de Stellar. Responsable: configuración cada miembro; revisión sin asignar.
+**Por qué:** contexto del ecosistema para auditar y mejorar mientras no hay deploy.
+**Archivos/área:** herramientas.
+**Estado:** nuevo
+
+### #010 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Sugerencia] Pedirle a la IA que audite el código (errores y mejoras) y llegar con un plan de trabajo. Responsable: sin asignar.
+**Por qué:** aprovechar el tiempo sin deploy.
+**Archivos/área:** producto y backend.
+**Estado:** nuevo
+
+### #011 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Sugerencia] Tema oscuro y animaciones: decidir si se usa la versión oscura (Abdiel la prefiere; el grupo no respondió) y, cuando todo esté pulido, sumar animaciones con las plantillas de Abdiel del buzón. Responsable: Abdiel; Bad Ending para las animaciones.
+**Por qué:** no viene en el resumen.
+**Archivos/área:** diseño.
+**Estado:** nuevo
+
+### #012 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Pendiente] Confirmar que la foto de evidencia solo se toma en el momento, sin galería, y evaluar el riesgo de que otra persona la tome. Responsable: sin asignar.
+**Por qué:** posible fraude; se cree que no hay galería pero falta confirmarlo.
+**Archivos/área:** producto.
+**Estado:** nuevo
+
+### #013 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Sugerencia, después del MVP] Integrar Luma: importar asistentes de un evento para crear cuentas automáticas con Cavos y validar asistencia; retos con foto validados por Laya y el organizador que den insignias o puntos, quizás con Stellar Passport (?). Queda para después por #005. Responsable: sin asignar.
+**Por qué:** menos fricción y gamificación.
+**Archivos/área:** producto.
+**Estado:** nuevo
+
+### #014 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
+**Pide:** [Sugerencia] Kanban de tareas e ideas en Notion con lo pendiente y las ideas del equipo. Responsable: Josué, con apoyo de Jayden.
+**Por qué:** no viene en el resumen.
+**Archivos/área:** organización.
+**Estado:** nuevo
+
 ## Historial
 
 Acá se mueven las entradas ya `hecho` o `rechazado`, sin reescribirlas. El número no cambia.
