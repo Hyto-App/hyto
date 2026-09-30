@@ -90,6 +90,14 @@ Bad Ending: podés arrancar borradores de posts para X con estos mockups. Todo p
 
 _(sin mensajes)_
 
+## Todos
+
+### #004 · 2026-09-30 · de: Josué (Jayden) → para: Todos (Sebas, Esteban, Abdiel, Raúl y sus IAs)
+**Pide:** 1) Tener conectado el MCP de Stellar Raven en sus agentes de IA: https://raven.stellar.org, endpoint `https://raven.stellar.org/mcp` (en Cursor, `mcp.json`: `{"mcpServers":{"stellar-raven":{"url":"https://raven.stellar.org/mcp"}}}`). El ingreso es en el navegador, sin API keys. 2) Antes de cada prompt o tarea, leer y consultar la documentación de Stellar en Raven y usar primero los MCP de Stellar (Raven, y Trustless Work cuando aplique). Es obligatorio, no opcional.
+**Por qué:** Raven es el MCP oficial de Stellar, con docs, datos del ecosistema en vivo y playbooks. Así trabajamos todos con la misma fuente. La regla se está agregando a `AGENTS.md` en el PR https://github.com/Hyto-App/hyto/pull/62.
+**Archivos/área:** Configuración MCP de cada agente; `AGENTS.md`.
+**Estado:** nuevo
+
 ## Historial
 
 Acá se mueven las entradas ya `hecho` o `rechazado`, sin reescribirlas. El número no cambia.
