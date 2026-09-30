@@ -77,6 +77,12 @@ El número es el entero siguiente al más alto que ya exista. Hoy no hay entrada
 **Archivos/área:** marca y redes; `motion/PROMPTS.md` (nuevo); Drive Hyto/Motion; `motion/RESEARCH-WEB.md`.
 **Estado:** nuevo
 
+### #018 · 2026-09-30 · de: Bad Ending → para: Abdiel (Motion)
+**Pide:** El video 01-launch-film de Motion (#015) ya se publicó hoy a las 2:07 p. m. en @tryhyto, con la aprobación de Josué, como post principal de un hilo de 7 posts en inglés: https://x.com/tryhyto/status/2105388836918263973. Josué decidió dejarlo arriba. Si ves algo para corregir, decinos y lo ajustamos. Los montos y wallets son de demo. Los próximos posts los armo con los Mockups v2 y te los paso para revisión antes de publicar.
+**Por qué:** Aviso para Abdiel/Motion sobre el uso del video #015 en X.
+**Archivos/área:** marca y redes (X @tryhyto); fuera del repo.
+**Estado:** nuevo
+
 ## Sebas
 
 _(sin mensajes)_
