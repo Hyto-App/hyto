@@ -32,7 +32,7 @@ test("faltan las cuentas distintas del servidor", () => {
   });
   assert.equal("aviso" in repetida, true);
   if (!("aviso" in repetida)) return;
-  assert.match(repetida.aviso, /tres cuentas distintas/);
+  assert.match(repetida.aviso, /three different accounts/);
 });
 
 test("el despliegue deja al organizador en aprobar, marcar y liberar", () => {

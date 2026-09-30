@@ -79,19 +79,19 @@ export function esConsultaSoloLectura(consulta: string): boolean {
 export function exigirDatabaseUrl(valor: string | undefined): { ok: true; url: string } | { ok: false; mensaje: string } {
   const url = valor?.trim() ?? "";
   if (!url) {
-    return { ok: false, mensaje: "Falta DATABASE_URL. Sin esa variable este script no corre y no toca la base." };
+    return { ok: false, mensaje: "DATABASE_URL is missing. Without it this script does not run and does not touch the database." };
   }
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    return { ok: false, mensaje: "DATABASE_URL no es una URL. No se consulta la base." };
+    return { ok: false, mensaje: "DATABASE_URL is not a URL. The database is not queried." };
   }
   if (parsed.protocol !== "postgres:" && parsed.protocol !== "postgresql:") {
-    return { ok: false, mensaje: "DATABASE_URL tiene que ser postgres o postgresql. No se consulta la base." };
+    return { ok: false, mensaje: "DATABASE_URL has to be postgres or postgresql. The database is not queried." };
   }
   if (!parsed.username || !parsed.hostname || parsed.pathname === "" || parsed.pathname === "/") {
-    return { ok: false, mensaje: "DATABASE_URL no tiene el formato postgresql://usuario@host/base. No se consulta la base." };
+    return { ok: false, mensaje: "DATABASE_URL is not in the form postgresql://user@host/db. The database is not queried." };
   }
   return { ok: true, url };
 }
@@ -177,10 +177,10 @@ export function compararEsquema(esperado: EsquemaEsperado, observado: EsquemaObs
   const tablasEsperadas = new Set(esperado.tablas);
   const tablasVistas = new Set(observado.tablas);
   for (const tabla of esperado.tablas) {
-    if (!tablasVistas.has(tabla)) diferencias.push({ mensaje: `Falta en la base la tabla ${tabla}.` });
+    if (!tablasVistas.has(tabla)) diferencias.push({ mensaje: `The database is missing table ${tabla}.` });
   }
   for (const tabla of observado.tablas) {
-    if (!tablasEsperadas.has(tabla)) diferencias.push({ mensaje: `La base tiene la tabla ${tabla}, que las migraciones no declaran.` });
+    if (!tablasEsperadas.has(tabla)) diferencias.push({ mensaje: `The database has table ${tabla}, which the migrations do not declare.` });
   }
   for (const tabla of esperado.tablas) {
     if (!tablasVistas.has(tabla)) continue;
@@ -190,33 +190,33 @@ export function compararEsquema(esperado: EsquemaEsperado, observado: EsquemaObs
     for (const columna of esperadas) {
       const vista = porNombre.get(columna.nombre);
       if (!vista) {
-        diferencias.push({ mensaje: `Falta en la base la columna ${tabla}.${columna.nombre}.` });
+        diferencias.push({ mensaje: `The database is missing column ${tabla}.${columna.nombre}.` });
         continue;
       }
       porNombre.delete(columna.nombre);
       if (vista.tipo !== columna.tipo) {
         diferencias.push({
-          mensaje: `${tabla}.${columna.nombre}: la base tiene tipo ${vista.tipo} y las migraciones ${columna.tipo}.`,
+          mensaje: `${tabla}.${columna.nombre}: the database has type ${vista.tipo} and the migrations have ${columna.tipo}.`,
         });
       }
       if (vista.nullable !== columna.nullable) {
         diferencias.push({
           mensaje: vista.nullable
-            ? `${tabla}.${columna.nombre}: en la base acepta null y en las migraciones es NOT NULL.`
-            : `${tabla}.${columna.nombre}: en la base es NOT NULL y en las migraciones acepta null.`,
+            ? `${tabla}.${columna.nombre}: the database allows null and the migrations say NOT NULL.`
+            : `${tabla}.${columna.nombre}: the database says NOT NULL and the migrations allow null.`,
         });
       }
       const defectoEsperado = normalizarDefault(columna.defecto);
       if (vista.defecto !== defectoEsperado) {
         diferencias.push({
-          mensaje: `${tabla}.${columna.nombre}: default en la base ${mostrarDefault(vista.defecto)} y en las migraciones ${mostrarDefault(defectoEsperado)}.`,
+          mensaje: `${tabla}.${columna.nombre}: default in the database is ${mostrarDefault(vista.defecto)} and in the migrations ${mostrarDefault(defectoEsperado)}.`,
         });
       }
     }
     for (const extra of porNombre.values()) {
-      diferencias.push({ mensaje: `La base tiene la columna ${tabla}.${extra.nombre}, que las migraciones no declaran.` });
+      diferencias.push({ mensaje: `The database has column ${tabla}.${extra.nombre}, which the migrations do not declare.` });
     }
-    compararGrupos(diferencias, "llave primaria", tabla, esperado.primaryKeys, observado.primaryKeys);
+    compararGrupos(diferencias, "primary key", tabla, esperado.primaryKeys, observado.primaryKeys);
     compararGrupos(diferencias, "UNIQUE", tabla, esperado.uniques, observado.uniques);
   }
   compararFks(diferencias, esperado.fks, observado.fks);
@@ -263,11 +263,11 @@ function compararGrupos(
   const quiere = esperados.filter((grupo) => grupo.tabla === tabla).map(clave).sort();
   const tiene = observados.filter((grupo) => grupo.tabla === tabla).map(clave).sort();
   for (const grupo of quiere) {
-    if (!tiene.includes(grupo)) diferencias.push({ mensaje: `Falta en la base ${etiqueta} de ${tabla} (${grupo}).` });
+    if (!tiene.includes(grupo)) diferencias.push({ mensaje: `The database is missing ${etiqueta} on ${tabla} (${grupo}).` });
   }
   for (const grupo of tiene) {
     if (!quiere.includes(grupo)) {
-      diferencias.push({ mensaje: `La base tiene ${etiqueta} de ${tabla} (${grupo}), que las migraciones no declaran.` });
+      diferencias.push({ mensaje: `The database has ${etiqueta} on ${tabla} (${grupo}), which the migrations do not declare.` });
     }
   }
 }
@@ -280,18 +280,18 @@ function compararFks(diferencias: Diferencia[], esperadas: FkEsperada[], observa
     const id = clave(fk);
     const vista = vistas.get(id);
     if (!vista) {
-      diferencias.push({ mensaje: `Falta en la base la FK ${id}.` });
+      diferencias.push({ mensaje: `The database is missing foreign key ${id}.` });
       continue;
     }
     vistas.delete(id);
     if (vista.alBorrar !== fk.alBorrar) {
       diferencias.push({
-        mensaje: `La FK ${id} en la base usa ON DELETE ${nombreAccion(vista.alBorrar)} y las migraciones ${fk.alBorrarExplicito ? nombreAccion(fk.alBorrar) : "no lo declaran (Postgres queda en NO ACTION)"}. Confirmar con Esteban.`,
+        mensaje: `Foreign key ${id} uses ON DELETE ${nombreAccion(vista.alBorrar)} in the database and the migrations ${fk.alBorrarExplicito ? nombreAccion(fk.alBorrar) : "do not declare it (Postgres stays on NO ACTION)"}. Check with Esteban.`,
       });
     }
   }
   for (const id of vistas.keys()) {
-    diferencias.push({ mensaje: `La base tiene la FK ${id}, que las migraciones no declaran.` });
+    diferencias.push({ mensaje: `The database has foreign key ${id}, which the migrations do not declare.` });
   }
 }
 
@@ -299,11 +299,11 @@ function compararIndices(diferencias: Diferencia[], esperado: EsquemaEsperado, o
   const quiere = new Set(esperado.indices.map((indice) => indice.nombre));
   const tiene = new Map(observado.indices.map((indice) => [indice.nombre, indice]));
   for (const indice of esperado.indices) {
-    if (!tiene.has(indice.nombre)) diferencias.push({ mensaje: `Falta en la base el índice ${indice.nombre} de ${indice.tabla}.` });
+    if (!tiene.has(indice.nombre)) diferencias.push({ mensaje: `The database is missing index ${indice.nombre} on ${indice.tabla}.` });
   }
   for (const [nombre, indice] of tiene) {
     if (!quiere.has(nombre)) {
-      diferencias.push({ mensaje: `La base tiene el índice secundario ${nombre} en ${indice.tabla}, que las migraciones no declaran.` });
+      diferencias.push({ mensaje: `The database has secondary index ${nombre} on ${indice.tabla}, which the migrations do not declare.` });
     }
   }
 }
@@ -375,7 +375,7 @@ function nombreAccion(codigo: string): string {
   if (codigo === "c") return "CASCADE";
   if (codigo === "n") return "SET NULL";
   if (codigo === "d") return "SET DEFAULT";
-  if (!codigo) return "una acción que no vino en la lectura";
+  if (!codigo) return "an action missing from the read";
   return codigo;
 }
 

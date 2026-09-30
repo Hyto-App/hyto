@@ -241,7 +241,7 @@ test("una URL ilegible no se migra y no se imprime", () => {
   const preparada = prepararBaseDe({ DATABASE_URL: `no-es-url-${SECRETO}` });
   assert.equal(preparada.ok, false);
   if (!preparada.ok) {
-    assert.match(preparada.mensaje, /no se puede leer como URL/);
+    assert.match(preparada.mensaje, /cannot be read as a URL/);
     assert.equal(preparada.mensaje.includes(SECRETO), false);
     assert.equal("url" in preparada, false);
   }

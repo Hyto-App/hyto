@@ -228,12 +228,12 @@ test("informa columna, tipo, FK, índice y ON DELETE, y oculta la URL si la lect
   if (evidencia) evidencia.al_borrar = "c";
   lectura.indices.push({ tabla: "tareas", indice: "tareas_proyecto_idx" });
   const mensajes = compararEsquema(esperado, observadoDesdeFilas(lectura)).map((item) => item.mensaje);
-  assert.ok(mensajes.some((mensaje) => mensaje.includes("Falta en la base la columna tareas.hash_pago")));
+  assert.ok(mensajes.some((mensaje) => mensaje.includes("missing column tareas.hash_pago")));
   assert.ok(mensajes.some((mensaje) => mensaje.includes("tareas.nota")));
   assert.ok(mensajes.some((mensaje) => mensaje.includes("usuarios.rol") && mensaje.includes("integer")));
   assert.ok(mensajes.some((mensaje) => mensaje.includes("tareas.estado") && mensaje.includes("default")));
   assert.ok(mensajes.some((mensaje) => mensaje.includes("tareas (proyecto_id) → proyectos (id)")));
-  assert.ok(mensajes.some((mensaje) => mensaje.includes("CASCADE") && mensaje.includes("Confirmar con Esteban")));
+  assert.ok(mensajes.some((mensaje) => mensaje.includes("CASCADE") && mensaje.includes("Check with Esteban")));
   assert.ok(mensajes.some((mensaje) => mensaje.includes("tareas_proyecto_idx")));
 
   const errores: string[] = [];

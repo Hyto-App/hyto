@@ -264,19 +264,19 @@ export function revisarBaseLocal(
 ): { ok: true; aviso: string | null } | { ok: false; mensaje: string } {
   const host = hostDeDatabaseUrl(databaseUrl);
   if (!host) {
-    return { ok: false, mensaje: "DATABASE_URL no se puede leer como URL. No se migra ni se siembra." };
+    return { ok: false, mensaje: "DATABASE_URL cannot be read as a URL. Migration and seed are skipped." };
   }
   const configurados = hostsDeConfiguracion(hostProduccion);
   if (configurados.ilegible) {
     return {
       ok: false,
-      mensaje: `${HOST_BASE_PRODUCCION} no tiene un host legible. No se migra ni se siembra.`,
+      mensaje: `${HOST_BASE_PRODUCCION} does not have a readable host. Migration and seed are skipped.`,
     };
   }
   if (configurados.hosts.length === 0) {
     return {
       ok: true,
-      aviso: `No está ${HOST_BASE_PRODUCCION}. No se puede saber si DATABASE_URL apunta a producción.`,
+      aviso: `${HOST_BASE_PRODUCCION} is not set. This script cannot tell whether DATABASE_URL points at production.`,
     };
   }
   const comparable = hostComparable(host);
@@ -285,12 +285,12 @@ export function revisarBaseLocal(
   if (confirmacion?.trim().toLowerCase() === CONFIRMACION_BASE_PRODUCCION) {
     return {
       ok: true,
-      aviso: `DATABASE_URL coincide con un host de ${HOST_BASE_PRODUCCION} y ${CONFIRMAR_BASE_PRODUCCION} está en ${CONFIRMACION_BASE_PRODUCCION}. Se continúa.`,
+      aviso: `DATABASE_URL matches a host in ${HOST_BASE_PRODUCCION} and ${CONFIRMAR_BASE_PRODUCCION} is ${CONFIRMACION_BASE_PRODUCCION}. Continuing.`,
     };
   }
   return {
     ok: false,
-    mensaje: `DATABASE_URL apunta a un host listado en ${HOST_BASE_PRODUCCION}. Para migrar o sembrar esa base, ${CONFIRMAR_BASE_PRODUCCION} tiene que valer ${CONFIRMACION_BASE_PRODUCCION}.`,
+    mensaje: `DATABASE_URL points at a host listed in ${HOST_BASE_PRODUCCION}. To migrate or seed that database, ${CONFIRMAR_BASE_PRODUCCION} has to be ${CONFIRMACION_BASE_PRODUCCION}.`,
   };
 }
 
