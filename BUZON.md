@@ -138,7 +138,7 @@ _(sin mensajes)_
 **Pide:** [Sugerencia] Tema oscuro y animaciones: decidir si se usa la versión oscura (Abdiel la prefiere; el grupo no respondió) y, cuando todo esté pulido, sumar animaciones con las plantillas de Abdiel del buzón. Responsable: Abdiel; Bad Ending para las animaciones.
 **Por qué:** no viene en el resumen.
 **Archivos/área:** diseño.
-**Estado:** nuevo
+**Estado:** confirmado por Abdiel (2026-09-30): tema oscuro sí; animaciones después del MVP
 
 ### #012 · 2026-09-30 · de: Josué (Jayden, resumen WhatsApp) → para: Todos
 **Pide:** [Pendiente] Confirmar que la foto de evidencia solo se toma en el momento, sin galería, y evaluar el riesgo de que otra persona la tome. Responsable: sin asignar.
