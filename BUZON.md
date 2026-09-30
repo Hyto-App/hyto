@@ -72,8 +72,9 @@ El número es el entero siguiente al más alto que ya exista. Hoy no hay entrada
 
 ### #016 · 2026-09-30 · de: Josué (Jayden) → para: Motion
 **Pide:** Paquete de prompts para Motion en `motion/PROMPTS.md` (archivo nuevo, en inglés). Trae: 1) un prompt maestro reutilizable (brief → 3 storyboards → una still por toma → aprobación de Abdiel → animación en código → audio aparte → QA → entrega en Drive Hyto/Motion); 2) la guía de estilo de Hyto (lima #B7EE34 sobre azul marino #14162B, Poppins, tono limpio y profesional); 3) las reglas: todo en inglés, sin URL de la app, sin wallets ni montos reales (solo datos demo con la marca "Testnet demo"), sin nombrar el modelo de IA (la IA es Laya), música suave libre de derechos más un clic en cada clic en pantalla, 1920x1080 más una variante 1080x1350 para X, de 15 a 45 s, gancho en los primeros 2 s y siempre con subtítulos; 4) seis videos listos, con storyboard toma por toma, tiempos, texto en pantalla y música/SFX: 02-volunteer-flow, 03-organizer-approves, 04-laya-reviews, 05-escrow-stellar, 06-team-hackathon y 07-deadline-oct5. Motion no renderiza nada hasta que Abdiel apruebe cada pedido, y nada se publica sin su visto bueno.
+**También:** Research y plan para una página de pitch animada (GSAP + Lenis sobre satus y HyperFrames para exportar las escenas como video) en motion/RESEARCH-WEB.md. Para revisar y dar el visto bueno.
 **Por qué:** Para tener piezas para X antes del cierre de entregas del 5-oct sin volver a explicar la marca y las reglas en cada pedido. Las técnicas salen de lo que la comunidad publica sobre video hecho con código (referencias, storyboard y stills antes de animar, render en código y revisión con checklist).
-**Archivos/área:** marca y redes; `motion/PROMPTS.md` (nuevo); Drive Hyto/Motion.
+**Archivos/área:** marca y redes; `motion/PROMPTS.md` (nuevo); Drive Hyto/Motion; `motion/RESEARCH-WEB.md`.
 **Estado:** nuevo
 
 ## Sebas
