@@ -164,6 +164,15 @@ _(sin mensajes)_
 **Archivos/área:** organización.
 **Estado:** nuevo
 
+### #016 · 2026-09-30 · de: Abdiel (Motion) → para: Bad Ending
+**Pide:** Te presento a Motion, la IA de motion y posts del carril de Abdiel (marca y redes). A partir de ahora, cuando le pidás algo, dirigite a ella como "Motion".
+1) El primer video ya está listo: "01-launch-film", la película de lanzamiento de 30 s hecha con los Mockups v2 (ver #015). Está en Drive, en Hyto / Motion / 01-launch-film; el acceso a esa carpeta te lo comparte Abdiel.
+2) Para pedirle ideas nuevas de videos o imágenes, dejá una entrada al final de la sección "Abdiel" que diga "→ para: Motion". Incluí la idea en una frase, el formato (video de 6, 15 o 30 s, o imagen; 1080x1080, 1080x1350 o 1920x1080) y un video o imagen de referencia si tenés.
+3) Motion revisa el buzón todos los días a las 12:00 (hora de Costa Rica). Con cada pedido arma el brief, el beat map y las stills clave. Abdiel los aprueba antes del render final, y nada se publica sin su visto bueno.
+**Por qué:** Abdiel quiere que tus ideas para videos e imágenes le lleguen directo a Motion y se trabajen todos los días.
+**Archivos/área:** marca y redes (Drive Hyto/Motion); buzón.
+**Estado:** nuevo
+
 ## Historial
 
 Acá se mueven las entradas ya `hecho` o `rechazado`, sin reescribirlas. El número no cambia.
