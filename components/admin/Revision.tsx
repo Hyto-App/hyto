@@ -8,8 +8,9 @@ import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
-import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin } from "@/lib/admin/vista";
+import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
+import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
+import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import {
   AVISO_FIRMA,
@@ -53,6 +54,8 @@ export function Revision({
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [reintentando, setReintentando] = useState(false);
+  const [borrador, setBorrador] = useState("");
+  const [confirmando, setConfirmando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
 
   useEffect(() => {
@@ -97,6 +100,12 @@ export function Revision({
     };
   }, [modoDemo, real, contrato]);
 
+  const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
+  useEffect(() => {
+    if (!tarea || tarea.tipo !== "reembolso") return;
+    setBorrador(tarea.montoConfirmado ?? tarea.montoRevisado ?? "");
+  }, [claveMonto, tarea]);
+
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
     if (guardado.aviso) {
@@ -125,6 +134,33 @@ export function Revision({
       setWallet(detalle.wallet);
     } finally {
       setReintentando(false);
+    }
+  }
+
+  async function confirmar() {
+    if (confirmando || !tarea || tarea.tipo !== "reembolso") return;
+    const normal = normalizarMonto(borrador);
+    if (!normal) {
+      setAviso(AVISO_MONTO_INVALIDO);
+      return;
+    }
+    const tope = normalizarMonto(tarea.tope ?? "") ?? normalizarMonto(tarea.monto);
+    if (!tope || centavos(normal) > centavos(tope)) {
+      setAviso(AVISO_MONTO_TOPE);
+      return;
+    }
+    setConfirmando(true);
+    setAviso(null);
+    try {
+      const resultado = await confirmarMonto(tareaId, normal);
+      if ("aviso" in resultado) {
+        setAviso(resultado.aviso);
+        return;
+      }
+      setBorrador(resultado.montoConfirmado);
+      setTarea((actual) => (actual ? { ...actual, montoConfirmado: resultado.montoConfirmado } : actual));
+    } finally {
+      setConfirmando(false);
     }
   }
 
@@ -208,6 +244,16 @@ export function Revision({
   }
 
   const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const esperaConfirmacion =
+    real &&
+    tarea.tipo === "reembolso" &&
+    !contrato &&
+    tarea.estado !== "pagado" &&
+    tarea.origen !== "error" &&
+    Boolean(tarea.montoRevisado);
+  const borradorNormal = normalizarMonto(borrador);
+  const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
+  const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
   const origen = etiquetaOrigen(tarea.origen);
   const pago = enlacePago(tarea.hashPago);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
@@ -282,7 +328,7 @@ export function Revision({
           {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (
             <dl className="mt-6 grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-sm text-[var(--suave)]">Amount</dt>
+                <dt className="text-sm text-[var(--suave)]">Amount on the receipt</dt>
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearMonto(tarea.montoRevisado)}</dd>
               </div>
               <div>
@@ -290,6 +336,46 @@ export function Revision({
                 <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
+          ) : null}
+
+          {esperaConfirmacion ? (
+            <form
+              className="mt-6"
+              onSubmit={(evento) => {
+                evento.preventDefault();
+                void confirmar();
+              }}
+            >
+              <label htmlFor="monto-confirmado" className="text-sm text-[var(--suave)]">
+                Amount to pay
+              </label>
+              <input
+                id="monto-confirmado"
+                name="monto-confirmado"
+                inputMode="decimal"
+                required
+                aria-describedby="monto-confirmado-ayuda"
+                value={borrador}
+                onChange={(evento) => setBorrador(evento.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl bg-[var(--fondo)] px-4 text-base outline-none"
+              />
+              <p id="monto-confirmado-ayuda" className="mt-2 text-sm leading-6 text-[var(--suave)]">
+                Up to {formatearMonto(tarea.tope ?? tarea.monto)}. Confirm this amount before deploying.
+              </p>
+              <button
+                type="button"
+                disabled={confirmando || coincide}
+                onClick={() => void confirmar()}
+                className="mt-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {coincide ? "Amount confirmed" : confirmando ? "Confirming…" : "Confirm amount"}
+              </button>
+            </form>
+          ) : tarea.tipo === "reembolso" && tarea.montoConfirmado ? (
+            <p className="mt-6 text-sm text-[var(--suave)]">
+              Amount to pay{" "}
+              <span className="text-xl font-semibold tracking-tight text-[var(--tinta)]">{formatearMonto(tarea.montoConfirmado)}</span>
+            </p>
           ) : null}
 
           {real ? (
@@ -312,14 +398,19 @@ export function Revision({
             </button>
           ) : null}
 
-          {botones.desplegar || botones.fondear || botones.pagar ? (
+          {puedeDesplegar || esperaConfirmacion || botones.fondear || botones.pagar ? (
             <div className="mt-8 space-y-3">
-              {botones.desplegar ? (
+              {puedeDesplegar || esperaConfirmacion ? (
                 <>
                   <p className="text-sm leading-6 text-[var(--suave)]">
                     This sets aside {montoDeTarea(tarea)} for this task. You'll confirm it once.
                   </p>
-                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
+                  <BotonPrincipal
+                    type="button"
+                    disabled={ocupado || !puedeDesplegar}
+                    aria-busy={ocupado}
+                    onClick={() => void correr(["desplegar", "fondear"])}
+                  >
                     {paso === "desplegar" || paso === "fondear" ? PASO[paso] : TEXTO.lockBudget}
                   </BotonPrincipal>
                 </>

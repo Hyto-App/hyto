@@ -158,6 +158,7 @@ test("una semilla vieja en revisión vuelve a pendiente sin pago ni foto real", 
     tareaId: "registro",
     blobId: "blob/registro.jpg",
     monto: null,
+    montoConfirmado: null,
     fecha: null,
     creadaEn: "2026-09-28T12:00:00.000Z",
   });
@@ -183,6 +184,7 @@ test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {
     tareaId: "stand",
     blobId: "ejemplo/stand",
     monto: "1",
+    montoConfirmado: null,
     fecha: null,
     creadaEn: "2026-09-27T12:00:00.000Z",
   });

@@ -409,6 +409,93 @@ test("un reembolso sin monto o con la revisión fallida no se despliega", async 
   }
 });
 
+test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro del tope", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("comida", { walletCobro: RECEPTOR });
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const montos: number[] = [];
+  const fondeos: number[] = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    const cuerpo = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      const hitos = cuerpo?.milestones as { amount?: number }[] | undefined;
+      montos.push(hitos?.[0]?.amount ?? Number.NaN);
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
+    }
+    if (url.endsWith("/escrow/multi-release/v2/fund")) {
+      fondeos.push(typeof cuerpo?.amount === "number" ? cuerpo.amount : Number.NaN);
+      return new Response(JSON.stringify({ unsignedXdr: "BBBB", txHash: "def" }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    await almacen.actualizarEvidencia("ejemplo-comida", { monto: "20", montoConfirmado: null });
+    const bloqueado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(bloqueado.status, 409);
+    assert.equal(
+      ((await bloqueado.json()) as { aviso: string }).aviso,
+      "Confirm an amount within the limit before deploying.",
+    );
+    assert.equal(montos.length, 0);
+    assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.monto, "20");
+
+    await almacen.actualizarEvidencia("ejemplo-comida", { montoConfirmado: "16" });
+    const alto = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(alto.status, 409);
+    assert.equal(montos.length, 0);
+
+    await almacen.actualizarEvidencia("ejemplo-comida", { montoConfirmado: "12.40" });
+    const listo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(listo.status, 200);
+    const json = (await listo.json()) as { monto: number };
+    assert.equal(json.monto, 12.4);
+    assert.equal(montos.at(-1), 12.4);
+    assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.monto, "20");
+
+    await almacen.actualizarTarea("comida", { contratoEscrow: CONTRATO });
+    const fondeoAlto = await prepararFirmaHttp(
+      sesion(ORGANIZADOR),
+      pedido({ accion: "fondear", tareaId: "comida", contrato: CONTRATO, firmante: ORGANIZADOR, monto: 99 }),
+      almacen,
+    );
+    assert.equal(fondeoAlto.status, 200);
+    assert.equal(fondeos.at(-1), 12.4);
+
+    await almacen.actualizarEvidencia("ejemplo-comida", { montoConfirmado: null });
+    const fondeoBloqueado = await prepararFirmaHttp(
+      sesion(ORGANIZADOR),
+      pedido({ accion: "fondear", tareaId: "comida", contrato: CONTRATO, firmante: ORGANIZADOR, monto: 99 }),
+      almacen,
+    );
+    assert.equal(fondeoBloqueado.status, 409);
+    assert.equal(
+      ((await fondeoBloqueado.json()) as { aviso: string }).aviso,
+      "Confirm an amount within the limit before funding.",
+    );
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
 function restaurar(nombre: string, valor: string | undefined): void {
   if (valor === undefined) delete process.env[nombre];
   else process.env[nombre] = valor;

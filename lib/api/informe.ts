@@ -53,6 +53,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     origen: veredicto?.origen ?? null,
     codigo: veredicto?.origen === "error" ? veredicto.choice : null,
     montoRevisado: evidencia?.monto ?? null,
+    montoConfirmado: evidencia?.montoConfirmado ?? null,
     fecha: evidencia?.fecha ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,

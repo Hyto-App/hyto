@@ -19,6 +19,7 @@ export type TareaAdmin = {
   origen: "scout" | "guion" | "stub" | "error" | null;
   codigo: string | null;
   montoRevisado: string | null;
+  montoConfirmado: string | null;
   fecha: string | null;
   hashPago: string | null;
   credencialUrl: string | null;

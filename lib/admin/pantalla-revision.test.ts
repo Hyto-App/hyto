@@ -6,7 +6,7 @@ import { act } from "react";
 import { Informe } from "@/components/admin/Informe";
 import { Revision } from "@/components/admin/Revision";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
-import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { desmontar, escribir, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 const MENSAJE = "AI review is not configured";
 
@@ -211,6 +211,65 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
   }
 });
 
+test("un reembolso pide confirmar el monto antes de desplegar", async () => {
+  const llamadas: { url: string; method: string; body: string | null }[] = [];
+  const anterior = globalThis.fetch;
+  const comida = {
+    id: "comida",
+    titulo: "Team meal",
+    tipo: "reembolso",
+    monto: "15",
+    tope: "15",
+    condicion: "Photo of the meal receipt",
+    miembroId: "voluntario-1",
+    miembro: "Volunteer 1",
+    estado: "en revisión",
+    veredicto: "cumplió",
+    frase: "Receipt visible.",
+    origen: "scout",
+    codigo: null,
+    montoRevisado: "20",
+    montoConfirmado: null,
+    fecha: "2026-09-27",
+    hashPago: null,
+    credencialUrl: null,
+  };
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    llamadas.push({ url, method, body: typeof init?.body === "string" ? init.body : null });
+    if (method === "POST" && url === "/api/revision/comida/monto") return json({ montoConfirmado: "12.40" });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({ tarea: comida, foto: null, contratoEscrow: null, wallet: "GORGANIZADOR" });
+  }) as typeof fetch;
+
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /Amount on the receipt/);
+    assert.match(texto(), /Amount to pay/);
+    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    assert.ok(bloqueado instanceof HTMLButtonElement);
+    assert.equal(bloqueado.disabled, true);
+    await escribir("#monto-confirmado", "12.40");
+    await pulsar("Confirm amount");
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    const post = llamadas.find((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/comida/monto");
+    assert.equal(post?.body, JSON.stringify({ monto: "12.40" }));
+    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    assert.ok(listo instanceof HTMLButtonElement);
+    assert.equal(listo.disabled, false);
+    assert.match(texto(), /Amount confirmed/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function rotulo(textoBoton: string): boolean {
   return [...document.querySelectorAll("button")].some((item) => item.textContent?.trim() === textoBoton);
 }
@@ -241,6 +300,7 @@ function tarea(parcial: Record<string, unknown>) {
     origen: "guion",
     codigo: null,
     montoRevisado: null,
+    montoConfirmado: null,
     fecha: null,
     hashPago: null,
     credencialUrl: null,

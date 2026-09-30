@@ -37,6 +37,7 @@ export type EvidenciaFila = {
   tareaId: string;
   blobId: string;
   monto: string | null;
+  montoConfirmado: string | null;
   fecha: string | null;
   creadaEn: string;
 };

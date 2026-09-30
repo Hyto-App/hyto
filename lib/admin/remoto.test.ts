@@ -22,6 +22,7 @@ function tarea(parcial: Partial<TareaAdmin> = {}): TareaAdmin {
     origen: null,
     codigo: null,
     montoRevisado: null,
+    montoConfirmado: null,
     fecha: null,
     hashPago: null,
     credencialUrl: null,
@@ -76,8 +77,23 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(sinMonto.desplegar, false);
   assert.equal(sinMonto.fondear, false);
   assert.equal(sinMonto.pagar, false);
+  const soloLectura = botonesRevision(
+    tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+    true,
+    conContrato,
+  );
+  assert.equal(soloLectura.desplegar, false);
+  assert.equal(soloLectura.fondear, false);
   const conMonto = botonesRevision(
-    tarea({ tipo: "reembolso", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+    tarea({
+      tipo: "reembolso",
+      monto: "15",
+      tope: "15",
+      montoRevisado: "12.40",
+      montoConfirmado: "12.40",
+      origen: "scout",
+      estado: "en revisión",
+    }),
     true,
     conContrato,
   );
@@ -85,12 +101,33 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(conMonto.pagar, false);
   assert.equal(
     botonesRevision(
-      tarea({ tipo: "reembolso", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+      tarea({
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        montoRevisado: "12.40",
+        montoConfirmado: "12.40",
+        origen: "scout",
+        estado: "en revisión",
+      }),
       true,
       { contrato: "CSTAND", fondeado: true },
     ).pagar,
     true,
   );
+  const sobreTope = botonesRevision(
+    tarea({
+      tipo: "reembolso",
+      monto: "15",
+      tope: "15",
+      montoRevisado: "20",
+      montoConfirmado: "20",
+      origen: "scout",
+    }),
+    true,
+    { contrato: null, fondeado: null },
+  );
+  assert.equal(sobreTope.desplegar, false);
 });
 
 test("la revisión real usa la tarea del organizador y también pide /api/tareas", async () => {
@@ -127,8 +164,15 @@ test("la revisión real usa la tarea del organizador y también pide /api/tareas
   assert.equal(detalle?.contratoEscrow, "CSTAND");
   assert.equal(detalle?.walletCobro, "GCOBRO");
   assert.equal(detalle?.wallet, "GORGANIZADOR");
-  assert.equal(montoDeVista(tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.40" })), 12.4);
-  assert.equal(montoDeVista(tarea({ tipo: "reembolso", monto: "20", tope: "15", montoRevisado: "20" })), 15);
+  assert.equal(montoDeVista(tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.40" })), null);
+  assert.equal(
+    montoDeVista(tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "20", montoConfirmado: "12.40" })),
+    12.4,
+  );
+  assert.equal(
+    montoDeVista(tarea({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.40", montoConfirmado: "20" })),
+    null,
+  );
 });
 
 test("fondear solo aparece si el escrow desplegado todavía no tiene saldo", async () => {

@@ -3,10 +3,11 @@ import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
+import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
-import type { PagoEnviado } from "@/lib/escrow/tipos";
+import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
@@ -38,6 +39,7 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     if (rechazo) return rechazo;
     return prepararDespliegueHttp(sesion, entrada.tareaId, base);
   }
+  let preparada: AccionFirma = entrada;
   if (entrada.accion === "resolver") {
     const aviso = avisoSesionResolutor(sesion, entrada.firmante);
     if (aviso) return Response.json({ aviso }, { status: 400 });
@@ -45,11 +47,16 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     const base = almacen === undefined ? await almacenNeon() : almacen;
     const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato });
     if (rechazo) return rechazo;
+    if (entrada.accion === "fondear") {
+      const ajustada = await montoFondeoDeReembolso(base, entrada, idTarea(body));
+      if (ajustada instanceof Response) return ajustada;
+      preparada = ajustada;
+    }
   }
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
   try {
-    const listo = await preparar(entrada);
+    const listo = await preparar(preparada);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
@@ -141,6 +148,33 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
   );
 }
 
+function idTarea(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const id = (body as { tareaId?: unknown }).tareaId;
+  if (typeof id !== "string") return null;
+  const limpio = id.trim();
+  return /^[A-Za-z0-9_-]{1,80}$/.test(limpio) ? limpio : null;
+}
+
+async function montoFondeoDeReembolso(
+  almacen: Almacen | null,
+  entrada: Extract<AccionFirma, { accion: "fondear" }>,
+  tareaId: string | null,
+): Promise<AccionFirma | Response> {
+  if (!almacen) return entrada;
+  const porId = tareaId ? await almacen.leerTarea(tareaId) : null;
+  const porContrato = (await almacen.listarTareas()).find((item) => item.contratoEscrow === entrada.contrato) ?? null;
+  if (porId && porContrato && porId.id !== porContrato.id) {
+    return Response.json({ aviso: "The payment does not match this task." }, { status: 409 });
+  }
+  const tarea = porId ?? porContrato;
+  if (!tarea || tarea.tipo !== "reembolso") return entrada;
+  const evidencia = await almacen.ultimaEvidencia(tarea.id);
+  const monto = montoDeTarea(tarea, evidencia);
+  if (monto === null) return Response.json({ aviso: AVISO_CONFIRMAR_FONDEO }, { status: 409 });
+  return { ...entrada, monto };
+}
+
 async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almacen: Almacen): Promise<Response> {
   const wallet = sesion.wallet.trim();
   if (!esCuenta(wallet)) {
@@ -170,6 +204,9 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     const sinMonto = !evidencia?.monto?.trim();
     if (veredicto?.origen === "error" || sinMonto) {
       return Response.json({ aviso: "Review pending" }, { status: 409 });
+    }
+    if (montoDeTarea(tarea, evidencia) === null) {
+      return Response.json({ aviso: AVISO_CONFIRMAR_MONTO }, { status: 409 });
     }
   }
   const monto = montoDeTarea(tarea, evidencia);
