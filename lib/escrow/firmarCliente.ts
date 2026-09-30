@@ -53,11 +53,13 @@ const ACCIONES = new Set<AccionCliente>(["desplegar", "fondear", "marcar", "apro
 
 export class ErrorFirmaCliente extends Error {
   estado: number | null;
+  contrato: string | null;
 
-  constructor(mensaje: string, estado: number | null = null) {
+  constructor(mensaje: string, estado: number | null = null, contrato: string | null = null) {
     super(mensaje);
     this.name = "ErrorFirmaCliente";
     this.estado = estado;
+    this.contrato = contrato;
   }
 }
 
@@ -111,7 +113,12 @@ export async function firmarPasos(
       extra.contrato = contrato;
     }
     if (accion === "fondear" && typeof monto === "number") extra.monto = monto;
-    ultimo = await firmarYEnviar(accion, tareaId, extra, opciones);
+    try {
+      ultimo = await firmarYEnviar(accion, tareaId, extra, opciones);
+    } catch (error) {
+      if (error instanceof ErrorFirmaCliente && contrato && !error.contrato) error.contrato = contrato;
+      throw error;
+    }
     contrato = ultimo.contrato ?? contrato;
     if (accion === "desplegar") {
       if (!contrato) throw new ErrorFirmaCliente(ultimo.aviso ?? AVISO_SIN_CONTRATO);

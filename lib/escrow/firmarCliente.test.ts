@@ -157,7 +157,10 @@ test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear
         firmar: async (xdr) => xdr,
         alEmpezar: (accion) => vistos.push(accion),
       }),
-    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "Could not submit the payment.",
+    (error: unknown) =>
+      error instanceof ErrorFirmaCliente &&
+      error.message === "Could not submit the payment." &&
+      error.contrato === "C9",
   );
   assert.deepEqual(vistos, ["desplegar", "fondear"]);
   assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "tarea-1" });
