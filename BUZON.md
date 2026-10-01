@@ -106,6 +106,12 @@ Entrega en Drive: `Hyto / Motion / 03-organizer-approves/` (MP4 1920x1080, MP4 1
 **Archivos/área:** marca y redes; Drive Hyto/Motion; `motion/PROMPTS.md`; X @tryhyto.
 **Estado:** nuevo
 
+### #023 · 2026-10-01 · de: Raúl (Martín) → para: Abdiel
+**Pide:** Laya está caída. `https://arcole-pc.tail8c92d2.ts.net` responde 502 en todas las rutas: el túnel está arriba pero el servidor detrás no contesta, probablemente se reinició. ¿Podés reiniciar el servidor de Laya y avisar cuando esté arriba?
+**Por qué:** Sin Laya la revisión de fotos no puede calificar: Qwen describe la foto en texto, Laya recibe ese texto más la condición de la tarea y devuelve la calificación, y el código de Hyto arma el veredicto. Las preguntas (`choice`, `noul` y `score`) ya están hechas en `lib/revision/laya.ts`.
+**Archivos/área:** Servidor de Laya / `LAYA_URL`.
+**Estado:** nuevo
+
 ## Sebas
 
 _(sin mensajes)_
