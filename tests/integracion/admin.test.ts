@@ -67,7 +67,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
       createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
       { push: (href) => idas.push(href) },
     );
-    assert.match(texto(), /Demo mode cannot create projects/);
+    assert.match(texto(), /Demo mode cannot create events/);
     const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create event"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");
@@ -171,9 +171,8 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await montar(createElement(Marco, null, createElement("p", null, "contenido")), { ruta: "/eventos" });
     const plano = texto();
     assert.match(plano, /contenido/);
-    assert.match(plano, /Sign in/);
     const hrefs = [...document.querySelectorAll("a")].map((enlace) => enlace.getAttribute("href"));
-    assert.deepEqual(hrefs, ["/eventos", "/mis-tareas", "/eventos/nuevo", "/join", "/cuentas"]);
+    assert.deepEqual(hrefs, ["/eventos", "/mis-tareas", "/cuentas"]);
     assert.match(document.querySelector('a[href="/eventos"]')?.className ?? "", /font-semibold/);
     assert.match(document.querySelector('a[href="/mis-tareas"]')?.className ?? "", /suave/);
   });

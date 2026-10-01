@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { claseBoton } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { leerMemoria } from "@/lib/integrante/almacen";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { listarTareas } from "@/lib/integrante/rutas";
@@ -24,40 +23,48 @@ function suma(tareas: Tarea[], estado: EstadoTarea): number {
 }
 
 export function MisTareas() {
-  const [miembroId, setMiembroId] = useState("voluntario-1");
-  const [direccion, setDireccion] = useState<string | null>(null);
+  const demo = useModoDemo();
   const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [nombres, setNombres] = useState<Record<string, string>>({});
   const [ejemplo, setEjemplo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lista, setLista] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("all");
-  const [selId, setSelId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const memoria = leerMemoria();
-    setMiembroId(memoria.miembroId);
-  }, []);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let activo = true;
-    const memoria = leerMemoria();
-    setDireccion(memoria.cuentas[miembroId]?.direccion ?? null);
-    listarTareas({ miembroId, wallet: memoria.cuentas[miembroId]?.direccion }, { estados: memoria.estados }).then(
-      (resultado) => {
-        if (!activo) return;
-        setTareas(resultado.tareas);
-        setEjemplo(resultado.ejemplo);
-        setLista(true);
-      },
-    );
+    setLista(false);
+    setError(null);
+    listarTareas({ miembroId: "" }, { muestra: demo }).then((resultado) => {
+      if (!activo) return;
+      setTareas(resultado.tareas);
+      setEjemplo(resultado.ejemplo);
+      setError(resultado.error);
+      setLista(true);
+    });
+    void fetch("/api/proyectos")
+      .then(async (respuesta) => (respuesta.ok ? respuesta.json() : null))
+      .then((cuerpo: { proyectos?: { id: string; nombre: string }[] } | null) => {
+        if (!activo || !cuerpo?.proyectos) return;
+        const mapa: Record<string, string> = {};
+        for (const evento of cuerpo.proyectos) mapa[evento.id] = evento.nombre;
+        setNombres(mapa);
+      })
+      .catch(() => undefined);
     return () => {
       activo = false;
     };
-  }, [miembroId]);
+  }, [demo, intento]);
 
-  const siguiente = lista ? (tareas.find((tarea) => tarea.estado === "pendiente") ?? null) : null;
   const visibles = filtro === "all" ? tareas : tareas.filter((tarea) => tarea.estado === filtro);
-  const seleccion = visibles.find((tarea) => tarea.id === selId) ?? siguiente ?? visibles[0] ?? null;
   const cuenta = (estado: EstadoTarea) => tareas.filter((tarea) => tarea.estado === estado).length;
+  const porEvento = new Map<string, Tarea[]>();
+  for (const tarea of visibles) {
+    const clave = tarea.proyectoId || "event";
+    porEvento.set(clave, [...(porEvento.get(clave) ?? []), tarea]);
+  }
+  const pendientes = cuenta("pendiente");
 
   return (
     <main className="hyto-page">
@@ -77,7 +84,9 @@ export function MisTareas() {
             </article>
             <article>
               <p className="text-sm text-[var(--suave)]">To do</p>
-              <p className="hyto-amount mt-2 text-xl">{cuenta("pendiente")} tasks</p>
+              <p className="hyto-amount mt-2 text-xl">
+                {pendientes} {pendientes === 1 ? "task" : "tasks"}
+              </p>
             </article>
           </div>
         ) : null}
@@ -89,7 +98,18 @@ export function MisTareas() {
         </p>
       ) : null}
 
-      {lista && tareas.length === 0 ? (
+      {lista && error ? (
+        <div className="hyto-card px-6 py-10">
+          <p role="alert" className="text-lg font-semibold">
+            {error}
+          </p>
+          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
+            Try again
+          </button>
+        </div>
+      ) : null}
+
+      {lista && !error && tareas.length === 0 ? (
         <div className="hyto-card px-6 py-10">
           <p className="text-lg font-semibold">No tasks yet.</p>
           <p className="mt-2 text-sm leading-6 text-[var(--suave)]">Join an event with a code.</p>
@@ -115,53 +135,38 @@ export function MisTareas() {
               </button>
             ))}
           </div>
-          <div className="hyto-split">
-            <div className="grid gap-3">
-              {visibles.map((tarea) => {
-                const esSiguiente = siguiente?.id === tarea.id;
-                const activo = seleccion?.id === tarea.id;
-                return (
-                  <Link key={tarea.id} href={`/tareas/${tarea.id}`} className={`hyto-card block p-5 ${activo ? "is-on" : ""}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
-                        <h2 className="mt-1 text-xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h2>
+          <div className="grid gap-8">
+            {[...porEvento.entries()].map(([proyectoId, grupo]) => (
+              <section key={proyectoId}>
+                <h2 className="text-sm font-semibold text-[var(--suave)]">{nombres[proyectoId] ?? "Event"}</h2>
+                <div className="mt-3 grid gap-3">
+                  {grupo.map((tarea) => (
+                    <article key={tarea.id} className="hyto-card p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
+                          <h3 className="mt-1 text-xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h3>
+                        </div>
+                        <p className="hyto-amount text-lg">{montoDeTarea(tarea)}</p>
                       </div>
-                      <p className="hyto-amount text-lg">{montoDeTarea(tarea)}</p>
-                    </div>
-                    <div className="mt-4">
-                      <PastillaEstado estado={tarea.estado} />
-                    </div>
-                    {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
-                  </Link>
-                );
-              })}
-            </div>
-            {seleccion ? (
-              <aside className="hyto-panel">
-                <p className="text-sm text-[var(--suave)]">{seleccion.id === siguiente?.id ? "Next up" : etiquetaTipo(seleccion.tipo)}</p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo)}</h2>
-                <p className="hyto-amount mt-4 text-3xl">{montoDeTarea(seleccion)}</p>
-                <p className="mt-1 text-sm text-[var(--suave)]">Held until the organizer approves the photo.</p>
-                {seleccion.condicion ? (
-                  <>
-                    <p className="mt-5 text-sm font-medium">Your photo must show</p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(seleccion.condicion)}</p>
-                  </>
-                ) : null}
-                <p className="mt-5 text-sm leading-6 text-[var(--suave)]">Laya checks your photo, then the organizer approves.</p>
-              </aside>
-            ) : null}
+                      <div className="mt-4">
+                        <PastillaEstado estado={tarea.estado} />
+                      </div>
+                      {tarea.estado === "pendiente" ? (
+                        <Link href={`/tareas/${tarea.id}`} className="hyto-btn mt-4">
+                          Open camera
+                        </Link>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         </>
       ) : null}
 
-      {siguiente ? (
-        <Link href={`/tareas/${siguiente.id}`} aria-label={`Upload evidence for ${textoVisible(siguiente.titulo)}`} className={`${claseBoton} mt-6`}>
-          Upload evidence
-        </Link>
-      ) : null}
-
+      {ejemplo ? <p className="mt-6 text-sm text-[var(--suave)]">Sample</p> : null}
     </main>
   );
 }

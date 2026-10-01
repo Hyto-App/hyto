@@ -266,7 +266,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
           set usos = usos + 1
           where secreto_hash = ${pedido.secretoHash}
             and usos < max_usos
-            and (expira_en is null or expira_en > ${pedido.ahora})
+            and expira_en > ${pedido.ahora}
             and (tipo <> 'direct' or lower(coalesce(email, '')) = lower(${pedido.email}))
           returning proyecto_id, rol
         )
@@ -290,7 +290,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         .limit(1);
       const actual = invitacion[0];
       if (!actual) return { ok: false, motivo: "missing" };
-      if (actual.expiraEn && actual.expiraEn <= pedido.ahora) return { ok: false, motivo: "expired" };
+      if (!actual.expiraEn || actual.expiraEn <= pedido.ahora) return { ok: false, motivo: "expired" };
       if (actual.usos >= actual.maxUsos) return { ok: false, motivo: "used" };
       if (actual.tipo === "direct" && (actual.email ?? "").toLowerCase() !== pedido.email.trim().toLowerCase()) {
         return { ok: false, motivo: "email" };

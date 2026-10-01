@@ -77,7 +77,7 @@ export type ProyectoInvitacion = {
   rol: RolInvitacion;
   maxUsos: number;
   usos: number;
-  expiraEn: string | null;
+  expiraEn: string;
   creadoPor: string;
   creadoEn: string;
 };

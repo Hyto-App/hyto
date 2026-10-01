@@ -7,7 +7,7 @@ import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
-import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
+import { enviarFirmaHttp, prepararFirmaHttp, registrarPreparado } from "./firma";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -126,6 +126,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, null);
 
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "stand", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO }),
@@ -152,6 +153,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.notEqual((await almacen.leerTarea("stand"))?.estado, "pagado");
 
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "stand", monto: null });
     const pagado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: pago, accion: "liberar", tareaId: "stand" }),
@@ -247,6 +249,7 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
     const preparado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
     assert.equal(preparado.status, 200);
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "registro", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO }),
@@ -306,6 +309,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
       200,
     );
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "bienvenida", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida" }),
@@ -344,6 +348,7 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
   };
   try {
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "comida", monto: null });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: pago, accion: "liberar", tareaId: "comida" }),
@@ -377,6 +382,7 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
   };
   try {
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "bienvenida", monto: null });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida" }),
@@ -524,6 +530,35 @@ test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro 
     restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
     restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
     restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
+test("un XDR que el servidor no preparó no se envía", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const contrato = Address.contract(new Uint8Array(32).fill(9)).toString();
+  await almacen.actualizarTarea("stand", { contratoEscrow: contrato, walletCobro: RECEPTOR });
+  const xdr = xdrDeInvocacion({ contrato, funcion: "release_funds", firmante: FIRMANTE_XDR });
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    throw new Error("no hay que enviar");
+  };
+  try {
+    const respuesta = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand" }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 409);
+    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /not prepared/);
+    assert.equal(llamadas, 0);
+  } finally {
+    globalThis.fetch = original;
     reiniciarLimite();
   }
 });

@@ -87,7 +87,7 @@ export const proyectoInvitaciones = pgTable("proyecto_invitaciones", {
   rol: text("rol").notNull(),
   maxUsos: integer("max_usos").notNull().default(1),
   usos: integer("usos").notNull().default(0),
-  expiraEn: text("expira_en"),
+  expiraEn: text("expira_en").notNull(),
   creadoPor: text("creado_por").notNull().references(() => usuarios.id),
   creadoEn: text("creado_en").notNull(),
 });

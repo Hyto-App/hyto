@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { proyectosVisibles, puedeVerTarea, visorSesion, type Visor } from "@/lib/api/alcance";
+import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { sesionEsDemo } from "./demo";
@@ -32,4 +33,26 @@ export async function exigirTarea(id: string): Promise<TareaFila> {
   if (!tarea) notFound();
   if (!(await puedeVerTarea(almacen, visorDeSesion(sesion), tarea))) notFound();
   return tarea;
+}
+
+export async function exigirOrganizadorDeTarea(id: string): Promise<TareaFila> {
+  const sesion = await exigirPagina();
+  const almacen = await almacenNeon();
+  if (!almacen) notFound();
+  const tarea = await almacen.leerTarea(id);
+  if (!tarea) notFound();
+  if (!(await organizaEvento(almacen, sesion.usuarioId, tarea.proyectoId))) notFound();
+  return tarea;
+}
+
+export async function exigirOrganizadorEvento(id: string): Promise<void> {
+  const sesion = await exigirPagina();
+  const almacen = await almacenNeon();
+  if (!almacen) notFound();
+  if (!(await organizaEvento(almacen, sesion.usuarioId, id))) notFound();
+}
+
+async function organizaEvento(almacen: Almacen, usuarioId: string, proyectoId: string): Promise<boolean> {
+  const miembros = await almacen.listarMiembros(proyectoId);
+  return miembros.some((miembro) => miembro.usuarioId === usuarioId && miembro.rol === "organizer" && miembro.estado === "active");
 }

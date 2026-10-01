@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Almacen } from "@/lib/db/almacen";
 import type { ProyectoInvitacion, RolInvitacion, TipoInvitacion } from "@/lib/db/tipos";
+import { anotarFalloCanje, canjeBloqueado, clienteDe } from "@/lib/escrow/limite";
 import { json } from "./json";
 
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -12,7 +13,7 @@ export function hashSecreto(secreto: string): string {
 }
 
 export function codigoHumano(): string {
-  const bytes = randomBytes(6);
+  const bytes = randomBytes(12);
   let cuerpo = "";
   for (const byte of bytes) cuerpo += ALFABETO[byte % ALFABETO.length];
   return `HYTO-${cuerpo}`;
@@ -73,13 +74,20 @@ export async function canjearInvitacionHttp(request: Request, almacen: Almacen, 
   }
   const secreto = secretoDe(body);
   if (!secreto) return json({ aviso: "That code is not valid." }, 400);
+  const claves = [`canje:user:${usuarioId}`, `canje:ip:${clienteDe(request)}`];
+  if (claves.some((clave) => canjeBloqueado(clave))) {
+    return json({ aviso: "Too many failed codes. Wait 15 minutes and try again." }, 429);
+  }
   const resultado = await almacen.canjearInvitacion({
     secretoHash: hashSecreto(secreto),
     usuarioId,
     email,
     ahora: new Date().toISOString(),
   });
-  if (!resultado.ok) return json({ aviso: avisoCanje(resultado.motivo) }, 400);
+  if (!resultado.ok) {
+    for (const clave of claves) anotarFalloCanje(clave);
+    return json({ aviso: avisoCanje(resultado.motivo) }, 400);
+  }
   return json({ proyectoId: resultado.proyectoId, rol: resultado.rol });
 }
 

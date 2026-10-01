@@ -25,6 +25,10 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "Hay un CHECK en proyecto_miembros que este script no compara. Confirmar con Esteban.",
     "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
     "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
   ]);
   assert.deepEqual(esperado.archivos, [
     "0000_inicio.sql",

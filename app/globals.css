@@ -391,12 +391,14 @@ a {
 }
 
 .hyto-tabs {
+  display: flex;
   gap: 18px;
   border-bottom: 1px solid var(--linea);
   margin-bottom: 16px;
 }
 
-.hyto-tabs button {
+.hyto-tabs button,
+.hyto-tabs a {
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   padding: 8px 0;
@@ -404,13 +406,17 @@ a {
   color: var(--suave);
 }
 
-.hyto-tabs button[aria-pressed="true"] {
+.hyto-tabs button[aria-pressed="true"],
+.hyto-tabs button[aria-selected="true"],
+.hyto-tabs a[aria-selected="true"],
+.hyto-tabs a[aria-current="page"] {
   border-bottom-color: var(--tinta);
   font-weight: 600;
   color: var(--tinta);
 }
 
 .hyto-chips {
+  display: flex;
   gap: 8px;
   overflow-x: auto;
   margin-bottom: 16px;
@@ -426,7 +432,8 @@ a {
   color: var(--suave);
 }
 
-.hyto-chips button[aria-pressed="true"] {
+.hyto-chips button[aria-pressed="true"],
+.hyto-chips button[aria-selected="true"] {
   border-color: transparent;
   background: var(--tinta);
   font-weight: 600;
@@ -660,9 +667,22 @@ a {
     display: grid;
     gap: 8px;
     margin-top: 20px;
+    border: 1px solid var(--linea);
     border-radius: 20px;
-    background: color-mix(in srgb, var(--fondo) 92%, transparent);
-    padding-top: 8px;
+    background: var(--papel);
+    padding: 12px;
+  }
+
+  .hyto-shell-foco .hyto-side {
+    display: none;
+  }
+
+  .hyto-shell-foco .hyto-actions {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .hyto-shell-foco .hyto-main {
+    padding-bottom: 140px;
   }
 
   .hyto-kpis {

@@ -6,7 +6,7 @@ import { Numeros } from "@/components/admin/Numeros";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { vistaAdmin } from "@/lib/admin/vista";
-import { formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { iniciales } from "@/components/ui/Marca";
@@ -21,8 +21,15 @@ const FILTROS: { id: Filtro; etiqueta: string }[] = [
   { id: "insuficiente", etiqueta: etiquetaVeredicto("insuficiente") },
 ];
 
-export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
-  const base = useVistaAdmin(proyectoId);
+export function Bandeja({
+  proyectoId,
+  miembros = [],
+}: {
+  proyectoId?: string;
+  miembros?: { usuarioId: string; email: string }[];
+} = {}) {
+  const estado = useVistaAdmin(proyectoId);
+  const base = estado.vista;
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("all");
@@ -35,6 +42,17 @@ export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
     if (guardado.aviso) return;
     setElegida(vistaAdmin(guardado.memoria));
     setSelId(null);
+  }
+
+  if (estado.error) {
+    return (
+      <main className="hyto-page">
+        <p role="alert">{estado.error}</p>
+        <button type="button" className="hyto-btn mt-4 max-w-xs" onClick={estado.reintentar}>
+          Try again
+        </button>
+      </main>
+    );
   }
 
   if (!vista) {
@@ -58,38 +76,26 @@ export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
 
   const visibles = filtro === "all" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
-  const presupuesto = Number(vista.resumen.presupuesto) || 0;
-  const pagado = Number(vista.resumen.pagado) || 0;
-  const ancho = presupuesto > 0 ? Math.min(100, (pagado / presupuesto) * 100) : 0;
-
   return (
     <main className="hyto-page">
-      <header className="hyto-page-head">
-        <div>
-          <p className="text-sm font-semibold">{vista.nombre}</p>
-          <h1 className="hyto-title mt-2">Inbox</h1>
-          <p className="hyto-sub">
-            {vista.bandeja.length === 0
-              ? "No submissions yet."
-              : `${vista.bandeja.length} submission${vista.bandeja.length === 1 ? "" : "s"} waiting for your review`}
-          </p>
-          {vista.propio ? (
-            <button type="button" onClick={usarEjemplo} className="mt-3 text-sm text-[var(--suave)]">
-              Back to the ZEEK example
-            </button>
-          ) : null}
-        </div>
-        <div className="min-w-[220px] flex-1 sm:max-w-sm">
-          <div className="mb-2 flex items-center justify-between text-sm text-[var(--suave)]">
-            <span>
-              Paid {formatearMonto(String(pagado))} of {formatearMonto(String(presupuesto))}
-            </span>
+      {proyectoId ? null : (
+        <header className="hyto-page-head">
+          <div>
+            <p className="text-sm font-semibold">{vista.nombre}</p>
+            <h1 className="hyto-title mt-2">Inbox</h1>
+            <p className="hyto-sub">
+              {vista.bandeja.length === 0
+                ? "No submissions yet."
+                : `${vista.bandeja.length} submission${vista.bandeja.length === 1 ? "" : "s"} waiting for your review`}
+            </p>
+            {vista.propio ? (
+              <button type="button" onClick={usarEjemplo} className="mt-3 text-sm text-[var(--suave)]">
+                Back to the ZEEK example
+              </button>
+            ) : null}
           </div>
-          <div className="hyto-bar" aria-hidden="true">
-            <span style={{ width: `${ancho}%` }} />
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       <Numeros resumen={vista.resumen} />
 
@@ -108,9 +114,15 @@ export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
           <div className="hyto-card mt-4 px-6 py-10 text-center">
             <p className="text-lg font-semibold">Nothing to approve</p>
             <p className="mt-2 text-[var(--suave)]">When someone sends a photo, it shows up here.</p>
-            <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
-              Create event
-            </Link>
+            {proyectoId ? (
+              <button type="button" className="hyto-btn mx-auto mt-6 max-w-xs" onClick={() => document.getElementById("invitar")?.click()}>
+                Invite
+              </button>
+            ) : (
+              <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
+                Create event
+              </Link>
+            )}
           </div>
         ) : (
           <div className="hyto-inbox">
@@ -154,6 +166,30 @@ export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo)}</h3>
                   <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion)}</p>
                   {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase)}</p> : null}
+                  {proyectoId && miembros.length > 0 ? (
+                    <label className="mt-4 block text-sm" htmlFor={`asignar-${seleccion.id}`}>
+                      Assign
+                      <select
+                        id={`asignar-${seleccion.id}`}
+                        className="hyto-input mt-2"
+                        value={seleccion.miembroId}
+                        onChange={(evento) => {
+                          const usuarioId = evento.target.value;
+                          void fetch(`/api/tareas/${encodeURIComponent(seleccion.id)}/asignar`, {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({ usuarioId }),
+                          }).then(() => estado.reintentar());
+                        }}
+                      >
+                        {miembros.map((persona) => (
+                          <option key={persona.usuarioId} value={persona.usuarioId}>
+                            {persona.email}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                   <Link href={`/revision/${seleccion.id}`} className="hyto-btn mt-5">
                     Review
                   </Link>

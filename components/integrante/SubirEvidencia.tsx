@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -28,14 +28,21 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sinCamara, setSinCamara] = useState(false);
+  const [cargaError, setCargaError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
+  const demo = useModoDemo();
 
   useEffect(() => {
     let activo = true;
     const memoria = leerMemoria();
-    leerTarea(tareaId, { miembroId: memoria.miembroId, wallet: memoria.cuentas[memoria.miembroId]?.direccion }, {
-      estados: memoria.estados,
-    }).then((resultado) => {
+    setCargaError(null);
+    leerTarea(tareaId, { miembroId: "" }, { estados: demo ? memoria.estados : undefined, muestra: demo }).then((resultado) => {
       if (!activo) return;
+      if (resultado.error) {
+        setCargaError(resultado.error);
+        setFase("faltante");
+        return;
+      }
       if (!resultado.tarea) {
         setFase("faltante");
         return;
@@ -56,7 +63,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     return () => {
       activo = false;
     };
-  }, [tareaId]);
+  }, [tareaId, demo, intento]);
 
   useEffect(() => {
     montadoRef.current = true;
@@ -199,10 +206,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   if (fase === "faltante" || !tarea) {
     return (
       <main className="hyto-page">
-        <p className="text-lg">We couldn't find that task.</p>
-        <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
-          Back to My tasks
-        </Link>
+        <p className="text-lg" role="alert">
+          {cargaError ?? "We couldn't find that task."}
+        </p>
+        {cargaError ? (
+          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
+            Try again
+          </button>
+        ) : (
+          <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
+            Back to My tasks
+          </Link>
+        )}
       </main>
     );
   }
@@ -240,12 +255,6 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             : "Photograph the finished work. The organizer checks it and sends the payment."}
         </p>
       </header>
-
-      {ejemplo || cerrada ? null : (
-        <div className="mb-6">
-          <PrepararUsdc />
-        </div>
-      )}
 
       {enviada ? (
         <div className="text-center">

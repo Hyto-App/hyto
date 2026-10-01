@@ -25,7 +25,7 @@ export type Almacen = {
   leerTarea(id: string): Promise<TareaFila | null>;
   actualizarTarea(
     id: string,
-    cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow">>,
+    cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow" | "miembroId">>,
   ): Promise<void>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;

@@ -18,11 +18,15 @@ CREATE TABLE IF NOT EXISTS proyecto_invitaciones (
   rol text NOT NULL,
   max_usos integer NOT NULL DEFAULT 1,
   usos integer NOT NULL DEFAULT 0,
-  expira_en text,
+  expira_en text NOT NULL,
   creado_por text NOT NULL REFERENCES usuarios (id),
   creado_en text NOT NULL,
   CHECK (tipo IN ('direct', 'code')),
-  CHECK (rol IN ('team', 'volunteer'))
+  CHECK (rol IN ('team', 'volunteer')),
+  CHECK (max_usos > 0),
+  CHECK (usos >= 0),
+  CHECK (usos <= max_usos),
+  CHECK (tipo <> 'direct' OR email IS NOT NULL)
 );
 
 INSERT INTO proyecto_miembros (proyecto_id, usuario_id, rol, estado, creado_en)

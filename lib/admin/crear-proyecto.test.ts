@@ -15,7 +15,7 @@ test("en modo demo CrearProyecto no guarda y muestra el aviso", async () => {
       createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
       { push: (href) => idas.push(href) },
     );
-    assert.match(texto(), /Demo mode cannot create projects/);
+    assert.match(texto(), /Demo mode cannot create events/);
     const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create event"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");

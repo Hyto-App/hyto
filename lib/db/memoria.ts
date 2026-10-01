@@ -172,7 +172,7 @@ export function crearMemoria(): Almacen {
     async canjearInvitacion(pedido) {
       const invitacion = invitaciones.get(pedido.secretoHash) ?? null;
       if (!invitacion) return { ok: false, motivo: "missing" };
-      if (invitacion.expiraEn && invitacion.expiraEn <= pedido.ahora) return { ok: false, motivo: "expired" };
+      if (!invitacion.expiraEn || invitacion.expiraEn <= pedido.ahora) return { ok: false, motivo: "expired" };
       if (invitacion.usos >= invitacion.maxUsos) return { ok: false, motivo: "used" };
       const email = pedido.email.trim().toLowerCase();
       if (invitacion.tipo === "direct" && (invitacion.email ?? "").toLowerCase() !== email) {

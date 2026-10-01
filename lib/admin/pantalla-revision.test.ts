@@ -60,16 +60,30 @@ test("la revisión muestra el error y reintenta con POST", async () => {
   }
 });
 
-test("el demo muestra el guion como simulado y no ofrece reintentar", async () => {
-  await montar(createElement(ProveedorModoDemo, { activo: true, children: createElement(Revision, { tareaId: "stand" }) }));
-  await act(async () => {
-    await new Promise((resolver) => setTimeout(resolver, 20));
-  });
-  assert.match(texto(), /Sample recommendation/);
-  assert.match(texto(), /Table set up, ZEEK banner facing forward, and the room is visible/);
-  assert.equal(texto().includes("Retry review"), false);
-  assert.equal(document.querySelector("[role=alert]"), null);
-  await desmontar();
+test("el demo carga la revisión remota y marca el guion como muestra", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "guion", codigo: null, veredicto: "cumplió", frase: "Table set up, ZEEK banner facing forward." }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: true, children: createElement(Revision, { tareaId: "stand" }) }));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /Sample recommendation/);
+    assert.match(texto(), /Table set up, ZEEK banner facing forward/);
+    assert.equal(texto().includes("Retry review"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
 });
 
 test("el informe muestra el origen y el error", async () => {

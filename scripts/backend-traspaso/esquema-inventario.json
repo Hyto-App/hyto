@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "ad078d6f36ffd189e0422e7211285daa2b64613b0776a3383768933ed4d46347",
+      "sha256": "c224c9391ff7ead664697f97f9e30f955be53350ac1eeb620032127beb67a163",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -145,7 +145,7 @@
       "presente": true,
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
-      "sha256": "a8bf4a2c885ae9b60c30d5ca7a93ed71a23c18a2c18c3902e964e7f6a80d5000",
+      "sha256": "510e589708c0519eb08865fa711755d38be5ad3cc294c6bcb85f8df5c3885485",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -2522,9 +2522,9 @@
           "tipoSql": "text",
           "tipoDrizzle": "text",
           "claseDrizzle": "PgText",
-          "aceptaNull": true,
-          "aceptaNullEnDrizzle": true,
-          "notNullExplicitoEnSql": false,
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
           "esLlavePrimaria": false,
           "esUnico": false,
           "nombreUnicoEnSql": null,
@@ -2544,7 +2544,7 @@
             "campo": "expiraEn",
             "tipoTs": "string",
             "literales": null,
-            "aceptaNull": true,
+            "aceptaNull": false,
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
@@ -2705,6 +2705,26 @@
         {
           "nombre": null,
           "expresion": "(rolIN('team','volunteer'))",
+          "origen": "sql"
+        },
+        {
+          "nombre": null,
+          "expresion": "(max_usos>0)",
+          "origen": "sql"
+        },
+        {
+          "nombre": null,
+          "expresion": "(usos>=0)",
+          "origen": "sql"
+        },
+        {
+          "nombre": null,
+          "expresion": "(usos<=max_usos)",
+          "origen": "sql"
+        },
+        {
+          "nombre": null,
+          "expresion": "(tipo<>'direct'ORemailISNOTNULL)",
           "origen": "sql"
         }
       ]

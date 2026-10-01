@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila } from "@/lib/db/tipos";
@@ -19,6 +20,42 @@ const FUNCION_LIBERACION = "release_funds";
 
 // contractId que devolvió el prepare de esta tarea. No viene del cliente.
 const contratosPreparados = new Map<string, string>();
+
+type MetaPreparado = {
+  usuarioId: string;
+  accion: string | null;
+  tareaId: string | null;
+  monto: string | null;
+};
+
+const xdrPreparados = new Map<string, MetaPreparado>();
+
+export function huellaDeXdr(xdr: string): string {
+  for (const red of [Networks.TESTNET, Networks.PUBLIC]) {
+    try {
+      const tx = TransactionBuilder.fromXDR(xdr, red);
+      const inner = tx instanceof FeeBumpTransaction ? tx.innerTransaction : tx;
+      if (inner instanceof Transaction) return Buffer.from(inner.hash()).toString("hex");
+    } catch {
+      continue;
+    }
+  }
+  return createHash("sha256").update(xdr).digest("hex");
+}
+
+export function registrarPreparado(xdr: string, meta: MetaPreparado): void {
+  xdrPreparados.set(huellaDeXdr(xdr), meta);
+}
+
+function anotarPreparado(
+  xdr: string,
+  sesion: SesionFila,
+  accion: string,
+  tareaId: string | null,
+  monto: string | null,
+): void {
+  registrarPreparado(xdr, { usuarioId: sesion.usuarioId, accion, tareaId, monto });
+}
 
 export async function prepararFirmaHttp(sesion: SesionFila, request: Request, almacen?: Almacen | null): Promise<Response> {
   const grande = respuestaSiCuerpoGrande(request);
@@ -62,6 +99,8 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   if (limitado) return limitado;
   try {
     const listo = await preparar(preparada);
+    const monto = preparada.accion === "fondear" ? String(preparada.monto) : null;
+    anotarPreparado(listo.xdr, sesion, preparada.accion, idTarea(body), monto);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
@@ -126,6 +165,20 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     }
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
     if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
+  }
+  const preparado = xdrPreparados.get(huellaDeXdr(envio.xdr));
+  if (!preparado || preparado.usuarioId !== sesion.usuarioId) {
+    return Response.json({ aviso: "This signature was not prepared by the server." }, { status: 409 });
+  }
+  if (preparado.accion && envio.accion && preparado.accion !== envio.accion) {
+    return Response.json({ aviso: "This signature does not match the prepared payment." }, { status: 409 });
+  }
+  if (preparado.tareaId && envio.tareaId && preparado.tareaId !== envio.tareaId) {
+    return Response.json({ aviso: "This signature does not match the prepared task." }, { status: 409 });
+  }
+  if (preparado.monto !== null) {
+    const fondos = await rechazoSiFondos(wallet, preparado.monto);
+    if (fondos) return fondos;
   }
   let pago: PagoEnviado;
   try {
@@ -231,6 +284,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   try {
     const listo = await prepararDespliegue(cuentas);
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
+    anotarPreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto));
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");

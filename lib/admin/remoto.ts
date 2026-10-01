@@ -116,17 +116,19 @@ export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Pro
   }
 
   if (filas.length === 0) {
-    if (!(await esOrganizador(fetchImpl))) return null;
-    return armarVista([], await nombreProyecto(fetchImpl));
+    return armarVista([], await nombreProyecto(fetchImpl, opciones.proyectoId));
   }
 
   const detalles = await Promise.all(filas.map((fila) => leerUna(fetchImpl, fila.id)));
-  if (detalles.some((item) => item === "ajeno")) return null;
+  if (detalles.some((item) => item === "ajeno" || item === "fallo")) return null;
   const porId = new Map(filas.map((fila) => [fila.id, fila]));
   const tareas = detalles.flatMap((item) => {
     if (!item || item === "ajeno" || item === "omitida" || item === "fallo") return [];
     return [cruzarLista(item, porId.get(item.tarea.id) ?? null).tarea];
   });
+  if (tareas.length === 0 && detalles.some((item) => item === "omitida")) {
+    return armarVista([], await nombreProyecto(fetchImpl, opciones.proyectoId));
+  }
   if (tareas.length === 0) return null;
   return armarVista(tareas, await nombreProyecto(fetchImpl, opciones.proyectoId));
 }
@@ -148,15 +150,6 @@ async function leerUna(fetchImpl: typeof fetch, id: string): Promise<DetalleRevi
     return detalleDe(await revision.json()) ?? "fallo";
   } catch {
     return "fallo";
-  }
-}
-
-async function esOrganizador(fetchImpl: typeof fetch): Promise<boolean> {
-  try {
-    const revision = await pedir(fetchImpl, "/api/revision/hyto-sin-tarea");
-    return revision.status === 404;
-  } catch {
-    return false;
   }
 }
 

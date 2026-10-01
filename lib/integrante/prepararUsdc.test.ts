@@ -191,7 +191,8 @@ test("en demo no aparece y en la revisión real sí", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Get ready to be paid/);
+    assert.doesNotMatch(texto(), /Get ready to be paid/);
+    assert.match(texto(), /Lock budget/);
 
     await montar(
       createElement(ProveedorModoDemo, {
@@ -209,7 +210,8 @@ test("en demo no aparece y en la revisión real sí", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Get ready to be paid/);
+    assert.doesNotMatch(texto(), /Get ready to be paid/);
+    assert.match(texto(), /Open camera/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
-import { Salir } from "@/components/sesion/Salir";
-import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
@@ -127,8 +125,6 @@ export function CuentasDemo() {
           <p className="hyto-crumb">
             <Link href="/mis-tareas">My tasks</Link>
             <InsigniaDemo />
-            <SalirDemo />
-            <Salir className="ml-3 align-middle" />
           </p>
           <h1 className="hyto-title mt-3">Accounts & wallet</h1>
           <p className="hyto-sub">

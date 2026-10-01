@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
@@ -84,7 +85,7 @@ export function CrearProyecto() {
   return (
     <main className="hyto-page">
       <p className="hyto-crumb">
-        <span>Events</span>
+        <Link href="/eventos">Events</Link>
         <span aria-hidden="true">/</span>
         <span>New event</span>
       </p>

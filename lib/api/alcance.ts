@@ -1,6 +1,6 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { esProyectoDemo } from "@/lib/db/semilla";
-import type { EvidenciaFila, Proyecto, TareaFila } from "@/lib/db/tipos";
+import type { EvidenciaFila, Proyecto, RolEvento, TareaFila } from "@/lib/db/tipos";
 import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
 
@@ -25,19 +25,38 @@ export function visorSesion(usuarioId: string): Visor {
 
 export async function tareasVisibles(almacen: Almacen, visor: Visor): Promise<TareaFila[]> {
   const todas = await almacen.listarTareas();
-  if (visor.demo) {
-    const permitidos = new Set(
-      (await almacen.listarProyectos()).filter((proyecto) => esProyectoDemo(proyecto)).map((proyecto) => proyecto.id),
-    );
+  if (visor.demo && !visor.usuarioId) {
+    const permitidos = await idsDemo(almacen);
     return todas.filter((tarea) => permitidos.has(tarea.proyectoId));
   }
   if (!visor.usuarioId) return [];
-  return tareasDeUsuario(almacen, visor.usuarioId, todas);
+  const propias = await tareasDeUsuario(almacen, visor.usuarioId, todas);
+  if (!visor.demo) return propias;
+  const permitidos = await idsDemo(almacen);
+  return propias.filter((tarea) => permitidos.has(tarea.proyectoId));
+}
+
+export async function tareasPropias(almacen: Almacen, visor: Visor): Promise<TareaFila[]> {
+  const visibles = await tareasVisibles(almacen, visor);
+  if (!visor.usuarioId) return visibles;
+  return visibles.filter((tarea) => tarea.miembroId === visor.usuarioId);
+}
+
+async function idsDemo(almacen: Almacen): Promise<Set<string>> {
+  return new Set((await almacen.listarProyectos()).filter((proyecto) => esProyectoDemo(proyecto)).map((proyecto) => proyecto.id));
+}
+
+async function rolesDeUsuario(almacen: Almacen, usuarioId: string): Promise<Map<string, RolEvento>> {
+  const miembros = await almacen.miembrosDeUsuario(usuarioId);
+  const roles = new Map<string, RolEvento>();
+  for (const miembro of miembros) {
+    if (miembro.estado === "active") roles.set(miembro.proyectoId, miembro.rol);
+  }
+  return roles;
 }
 
 async function idsConMembresia(almacen: Almacen, usuarioId: string): Promise<Set<string>> {
-  const miembros = await almacen.miembrosDeUsuario(usuarioId);
-  return new Set(miembros.filter((miembro) => miembro.estado === "active").map((miembro) => miembro.proyectoId));
+  return new Set((await rolesDeUsuario(almacen, usuarioId)).keys());
 }
 
 export async function proyectosVisibles(almacen: Almacen, visor: Visor): Promise<Proyecto[]> {
@@ -53,12 +72,13 @@ export async function proyectosVisibles(almacen: Almacen, visor: Visor): Promise
 
 export async function puedeVerTarea(almacen: Almacen, visor: Visor, tarea: TareaFila): Promise<boolean> {
   const proyecto = await almacen.leerProyecto(tarea.proyectoId);
-  if (visor.demo) return esProyectoDemo(proyecto);
+  if (visor.demo && !visor.usuarioId) return esProyectoDemo(proyecto);
   if (!visor.usuarioId) return false;
-  if (tarea.miembroId === visor.usuarioId) return true;
-  if (!proyecto) return false;
-  const miembros = await almacen.miembrosDeUsuario(visor.usuarioId);
-  return miembros.some((miembro) => miembro.proyectoId === proyecto.id && miembro.estado === "active");
+  if (visor.demo && !esProyectoDemo(proyecto)) return false;
+  if (!proyecto) return tarea.miembroId === visor.usuarioId;
+  const rol = (await rolesDeUsuario(almacen, visor.usuarioId)).get(proyecto.id);
+  if (rol === "organizer") return true;
+  return tarea.miembroId === visor.usuarioId;
 }
 
 export async function accesoEvidencia(
@@ -75,8 +95,11 @@ export async function accesoEvidencia(
 }
 
 async function tareasDeUsuario(almacen: Almacen, usuarioId: string, todas: TareaFila[]): Promise<TareaFila[]> {
-  const membresia = await idsConMembresia(almacen, usuarioId);
-  return todas.filter((tarea) => membresia.has(tarea.proyectoId) || tarea.miembroId === usuarioId);
+  const roles = await rolesDeUsuario(almacen, usuarioId);
+  return todas.filter((tarea) => {
+    if (roles.get(tarea.proyectoId) === "organizer") return true;
+    return tarea.miembroId === usuarioId;
+  });
 }
 
 function porCreacion(a: Proyecto, b: Proyecto): number {

@@ -66,18 +66,39 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
     const pedidoId = pedido?.id?.trim() || null;
     const proyecto = pedidoId ? (proyectos.find((item) => item.id === pedidoId) ?? null) : (proyectos[0] ?? null);
     if (!proyecto) return json({ aviso: "There is no project yet." }, 404);
-    const tareas = (await tareasVisibles(almacen, visor)).filter((tarea) => tarea.proyectoId === proyecto.id);
-    const rol = visor.usuarioId
-      ? ((await almacen.listarMiembros(proyecto.id)).find((miembro) => miembro.usuarioId === visor.usuarioId && miembro.estado === "active")?.rol ?? null)
-      : null;
+    const visibles = await tareasVisibles(almacen, visor);
+    const tareas = visibles.filter((tarea) => tarea.proyectoId === proyecto.id);
+    const miembros = visor.usuarioId ? await almacen.miembrosDeUsuario(visor.usuarioId) : [];
+    const rolDe = (proyectoId: string) =>
+      miembros.find((miembro) => miembro.proyectoId === proyectoId && miembro.estado === "active")?.rol ?? null;
+    const rol = rolDe(proyecto.id);
     return json({
       proyecto: { id: proyecto.id, nombre: proyecto.nombre, rol },
-      proyectos: proyectos.map((item) => ({ id: item.id, nombre: item.nombre })),
+      proyectos: proyectos.map((item) => ({
+        id: item.id,
+        nombre: item.nombre,
+        rol: rolDe(item.id),
+        pendientes: visibles.filter((tarea) => tarea.proyectoId === item.id && tarea.estado !== "pagado").length,
+      })),
       tareas: tareas.map(tareaPublica),
+      miembros:
+        rol === "organizer"
+          ? await personasDelEvento(almacen, proyecto.id)
+          : [],
     });
   } catch {
     return baseNoLista();
   }
+}
+
+async function personasDelEvento(almacen: Almacen, proyectoId: string): Promise<{ usuarioId: string; email: string; rol: string }[]> {
+  const miembros = (await almacen.listarMiembros(proyectoId)).filter((miembro) => miembro.estado === "active");
+  const usuarios = await almacen.listarUsuarios();
+  return miembros.map((miembro) => ({
+    usuarioId: miembro.usuarioId,
+    email: usuarios.find((usuario) => usuario.id === miembro.usuarioId)?.email ?? miembro.usuarioId,
+    rol: miembro.rol,
+  }));
 }
 
 type TareaBorrador = TareaFila & { asignado: string };
