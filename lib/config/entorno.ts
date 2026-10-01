@@ -62,6 +62,12 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Clave de Trustless Work. Sin ella no hay pago: la firma responde 503 y el script del hito no corre.",
   },
   {
+    nombre: "HYTO_TOKEN_SECRET",
+    ambito: "servidor",
+    requerida: false,
+    para: "Secreto HMAC de los pagos preparados. Mínimo 32 caracteres. En production, sin él preparar y enviar responden 503.",
+  },
+  {
     nombre: "HYTO_ESCROW_PLATFORM",
     ambito: "servidor",
     requerida: false,

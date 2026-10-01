@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
-import test from "node:test";
+import { after, before, test } from "node:test";
 import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
 import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
@@ -16,6 +16,19 @@ import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp, fijarWalletHttp } from "./sesion";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
+
+const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
+let secretoPrevio: string | undefined;
+
+before(() => {
+  secretoPrevio = process.env.HYTO_TOKEN_SECRET;
+  process.env.HYTO_TOKEN_SECRET = SECRETO_TOKEN;
+});
+
+after(() => {
+  if (secretoPrevio === undefined) delete process.env.HYTO_TOKEN_SECRET;
+  else process.env.HYTO_TOKEN_SECRET = secretoPrevio;
+});
 import { listarTareasHttp } from "./tareas";
 import { asegurarSemilla } from "../db/semilla";
 import { TOPE_SESION_SEGUNDOS } from "../sesion/cookie";

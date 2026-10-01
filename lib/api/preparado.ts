@@ -14,20 +14,38 @@ export type CargaPreparado = {
 
 export type FalloPreparado = "secreto" | "invalido" | "vencido" | "sesion" | "huella";
 
-type EntornoSecreto = { TRUSTLESS_API_KEY?: string; HYTO_TEST_SESSION_KEY?: string };
+const MIN_SECRETO = 32;
+
+type EntornoSecreto = {
+  HYTO_TOKEN_SECRET?: string;
+  HYTO_TEST_SESSION_KEY?: string;
+  NODE_ENV?: string;
+  NODE_TEST_CONTEXT?: string;
+};
 
 function entornoDe(env?: EntornoSecreto): EntornoSecreto {
   if (env) return env;
   return {
-    TRUSTLESS_API_KEY: process.env.TRUSTLESS_API_KEY,
+    HYTO_TOKEN_SECRET: process.env.HYTO_TOKEN_SECRET,
     HYTO_TEST_SESSION_KEY: process.env.HYTO_TEST_SESSION_KEY,
+    NODE_ENV: process.env.NODE_ENV,
+    NODE_TEST_CONTEXT: process.env.NODE_TEST_CONTEXT,
   };
+}
+
+function permiteRespaldo(env: EntornoSecreto): boolean {
+  if (env.NODE_ENV !== "production") return true;
+  return Boolean(env.NODE_TEST_CONTEXT?.trim());
 }
 
 export function secretoPreparado(env?: EntornoSecreto): string | null {
   const fuente = entornoDe(env);
-  const clave = fuente.TRUSTLESS_API_KEY?.trim() || fuente.HYTO_TEST_SESSION_KEY?.trim() || "";
-  return clave || null;
+  const dedicado = fuente.HYTO_TOKEN_SECRET?.trim() ?? "";
+  if (dedicado.length >= MIN_SECRETO) return dedicado;
+  if (dedicado.length > 0) return null;
+  if (!permiteRespaldo(fuente)) return null;
+  const prueba = fuente.HYTO_TEST_SESSION_KEY?.trim() ?? "";
+  return prueba || null;
 }
 
 function canonico(carga: CargaPreparado): string {

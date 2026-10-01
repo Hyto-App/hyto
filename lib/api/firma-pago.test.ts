@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { after, before, test } from "node:test";
 import { Account, Address, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
 import { crearMemoria } from "../db/memoria";
@@ -9,6 +9,19 @@ import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
+
+const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
+let secretoPrevio: string | undefined;
+
+before(() => {
+  secretoPrevio = process.env.HYTO_TOKEN_SECRET;
+  process.env.HYTO_TOKEN_SECRET = SECRETO_TOKEN;
+});
+
+after(() => {
+  if (secretoPrevio === undefined) delete process.env.HYTO_TOKEN_SECRET;
+  else process.env.HYTO_TOKEN_SECRET = secretoPrevio;
+});
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -566,7 +579,7 @@ test("un XDR que el servidor no preparó no se envía", async () => {
     assert.match(((await respuesta.json()) as { aviso: string }).aviso, /not prepared/);
     assert.equal(llamadas, 0);
 
-    const clave = { TRUSTLESS_API_KEY: "clave-de-prueba" };
+    const clave = { HYTO_TOKEN_SECRET: SECRETO_TOKEN };
     const ajeno = emitirTokenPreparado(
       {
         usuarioId: "otro",
@@ -579,7 +592,6 @@ test("un XDR que el servidor no preparó no se envía", async () => {
       Date.now(),
       clave,
     );
-    process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
     const deOtro = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
@@ -610,17 +622,32 @@ test("un XDR que el servidor no preparó no se envía", async () => {
     assert.match(((await caduco.json()) as { aviso: string }).aviso, /expired/);
     assert.equal(llamadas, 0);
 
-    delete process.env.TRUSTLESS_API_KEY;
-    const sinClave = await enviarFirmaHttp(
-      sesion(FIRMANTE_XDR),
-      pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
-      almacen,
-    );
-    assert.equal(sinClave.status, 503);
-    assert.match(((await sinClave.json()) as { aviso: string }).aviso, /cannot confirm/);
+    const entorno = {
+      token: process.env.HYTO_TOKEN_SECRET,
+      prueba: process.env.HYTO_TEST_SESSION_KEY,
+      node: process.env.NODE_ENV,
+      ctx: process.env.NODE_TEST_CONTEXT,
+    };
+    delete process.env.HYTO_TOKEN_SECRET;
+    delete process.env.HYTO_TEST_SESSION_KEY;
+    (process.env as { NODE_ENV?: string }).NODE_ENV = "production";
+    delete process.env.NODE_TEST_CONTEXT;
+    try {
+      const sinClave = await enviarFirmaHttp(
+        sesion(FIRMANTE_XDR),
+        pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
+        almacen,
+      );
+      assert.equal(sinClave.status, 503);
+      assert.match(((await sinClave.json()) as { aviso: string }).aviso, /cannot confirm/);
+    } finally {
+      restaurar("HYTO_TOKEN_SECRET", entorno.token);
+      restaurar("HYTO_TEST_SESSION_KEY", entorno.prueba);
+      restaurar("NODE_ENV", entorno.node);
+      restaurar("NODE_TEST_CONTEXT", entorno.ctx);
+    }
   } finally {
     globalThis.fetch = original;
-    delete process.env.TRUSTLESS_API_KEY;
     reiniciarLimite();
   }
 });

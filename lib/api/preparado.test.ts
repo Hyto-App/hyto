@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { emitirTokenPreparado, VIGENCIA_PREPARADO_MS, verificarTokenPreparado } from "./preparado";
 
-const env = { TRUSTLESS_API_KEY: "clave-de-prueba" };
+const env = { HYTO_TOKEN_SECRET: "hyto-token-secret-for-tests-32ch" };
 const carga = {
   usuarioId: "organizador",
   sesionId: "tok",
@@ -54,4 +54,17 @@ test("sin secreto de servidor no firma ni verifica", () => {
     verificarTokenPreparado(token, { usuarioId: carga.usuarioId, sesionId: carga.sesionId, huella: carga.huella }, Date.now(), vacio),
     { ok: false, codigo: "secreto" },
   );
+});
+
+test("producción no usa la clave de pruebas y un secreto corto no firma", () => {
+  const produccion = { NODE_ENV: "production", HYTO_TEST_SESSION_KEY: "clave-de-prueba" };
+  assert.equal(emitirTokenPreparado(carga, Date.now(), produccion), null);
+  assert.equal(emitirTokenPreparado(carga, Date.now(), { HYTO_TOKEN_SECRET: "demasiado-corto", NODE_ENV: "production" }), null);
+  const enPruebas = {
+    NODE_ENV: "production",
+    NODE_TEST_CONTEXT: "child-v8",
+    HYTO_TEST_SESSION_KEY: "clave-de-prueba",
+  };
+  assert.ok(emitirTokenPreparado(carga, Date.now(), enPruebas));
+  assert.ok(emitirTokenPreparado(carga, Date.now(), { NODE_ENV: "development", HYTO_TEST_SESSION_KEY: "clave-de-prueba" }));
 });
