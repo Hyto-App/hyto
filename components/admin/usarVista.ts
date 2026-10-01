@@ -7,12 +7,23 @@ import { vistaAdmin } from "@/lib/admin/vista";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 
-export function useVistaAdmin(): VistaAdmin | null {
+export function useVistaAdmin(proyectoId?: string): VistaAdmin | null {
   const modoDemo = useModoDemo();
   const [vista, setVista] = useState<VistaAdmin | null>(null);
 
   useEffect(() => {
     let viva = true;
+    if (proyectoId) {
+      setVista(null);
+      if (modoDemo) return;
+      void cargarVistaOrganizador({ proyectoId }).then((remota) => {
+        if (!viva || !remota) return;
+        setVista(remota);
+      });
+      return () => {
+        viva = false;
+      };
+    }
     setVista(vistaAdmin(leerMemoriaAdmin()));
     if (modoDemo) return;
     void cargarVistaOrganizador().then((remota) => {
@@ -22,7 +33,7 @@ export function useVistaAdmin(): VistaAdmin | null {
     return () => {
       viva = false;
     };
-  }, [modoDemo]);
+  }, [modoDemo, proyectoId]);
 
   return vista;
 }

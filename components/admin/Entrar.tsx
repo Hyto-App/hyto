@@ -39,6 +39,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
   const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
+  const dialogoRef = useRef<HTMLDivElement>(null);
   const enCurso = useRef(false);
   const esperaRef = useRef(0);
 
@@ -60,6 +61,35 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     const id = window.setTimeout(() => setEspera((actual) => Math.max(0, actual - 1)), 1000);
     return () => window.clearTimeout(id);
   }, [espera]);
+
+  useEffect(() => {
+    if (fase === "inicio" || modoDemo) return;
+    const nodo = dialogoRef.current;
+    if (!nodo) return;
+    nodo.querySelector<HTMLElement>("input, button")?.focus();
+    function tecla(evento: KeyboardEvent) {
+      if (evento.key === "Escape") {
+        setFase("inicio");
+        return;
+      }
+      if (evento.key !== "Tab" || !nodo) return;
+      const focos = [...nodo.querySelectorAll<HTMLElement>("input, button, select, textarea, a[href]")].filter(
+        (elemento) => !elemento.hasAttribute("disabled"),
+      );
+      if (focos.length === 0) return;
+      const primero = focos[0];
+      const ultimo = focos[focos.length - 1];
+      if (evento.shiftKey && document.activeElement === primero) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primero.focus();
+      }
+    }
+    document.addEventListener("keydown", tecla);
+    return () => document.removeEventListener("keydown", tecla);
+  }, [fase, modoDemo]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -251,7 +281,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (modoDemo) {
     const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
-    const nombreRol = rolActual === "voluntario" ? "Volunteer" : "Organizer";
+    const nombreRol = rolActual === "voluntario" ? "Volunteer demo account" : "Organizer demo account";
     const nombreOtro = otro === "voluntario" ? "volunteer" : "organizer";
     return (
       <div className="flex w-full flex-col items-start gap-2">
@@ -265,7 +295,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           disabled={ocupado !== null}
           className="text-left text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {ocupado === "demo" ? "Switching…" : `Switch to ${nombreOtro}`}
+          {ocupado === "demo" ? "Switching…" : `Switch to the ${nombreOtro} demo account`}
         </button>
         <button
           type="button"
@@ -318,23 +348,20 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   }
 
   return (
-    <div className="hyto-auth" role="dialog" aria-modal="true" aria-label="Sign in">
+    <div ref={dialogoRef} className="hyto-auth" role="dialog" aria-modal="true" aria-label="Sign in">
       <div className="hyto-auth-hero">
         <p className="hyto-logo">hyto</p>
         <div>
           <div className="hyto-ring" aria-hidden="true" />
-          <h2 className="mt-8 text-4xl font-semibold tracking-tight">Prove your worth. Get paid.</h2>
-          <p className="mt-4 max-w-md text-base leading-7 text-[var(--suave)]">
-            Do tasks for real projects, send a photo, get paid in USDC. Organizers review and approve from one inbox.
-          </p>
+          <h2 className="mt-8 text-4xl font-semibold tracking-tight">Sign in</h2>
+          <p className="mt-4 max-w-md text-base leading-7 text-[var(--suave)]">Email a code, then review evidence and pay in USDC.</p>
         </div>
         <p className="text-sm text-[var(--suave)]">Volunteers · Organizers · Paid via Stellar escrow</p>
       </div>
       <div className="hyto-auth-sheet">
         <div className="mb-6 flex items-start justify-between gap-4 lg:hidden">
           <div>
-            <p className="text-3xl font-semibold tracking-tight">Prove your worth.</p>
-            <p className="text-3xl font-semibold tracking-tight text-[var(--acento-texto)]">Get paid.</p>
+            <p className="text-3xl font-semibold tracking-tight">Sign in</p>
           </div>
         </div>
         <div className="flex items-center justify-between gap-4">
@@ -402,6 +429,9 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           <button type="button" onClick={() => void confirmar()} disabled={ocupado !== null} className="hyto-btn">
             {ocupado === "codigo" ? "Signing in…" : "Confirm"}
           </button>
+          <button type="button" onClick={() => void enviarCodigo()} disabled={ocupado !== null || espera > 0} className="hyto-btn-line">
+            Resend code
+          </button>
         </>
       ) : null}
       {demoHabilitado ? (
@@ -421,8 +451,8 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="hyto-input"
           >
-            <option value="organizador">Organizer</option>
-            <option value="voluntario">Volunteer</option>
+            <option value="organizador">Organizer demo account</option>
+            <option value="voluntario">Volunteer demo account</option>
           </select>
           <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
             {ocupado === "demo" ? "Signing in…" : "Enter as demo"}

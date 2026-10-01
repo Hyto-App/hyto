@@ -126,7 +126,7 @@ function vacio(): EsquemaEsperado {
 }
 
 function aplicar(esquema: EsquemaEsperado, sentencia: string, archivo: string): void {
-  if (/^update\s+/i.test(sentencia)) return;
+  if (/^(update|insert|with)\s+/i.test(sentencia)) return;
   const crear = /^create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\1\s*\(([\s\S]*)\)\s*$/i.exec(
     sentencia,
   );

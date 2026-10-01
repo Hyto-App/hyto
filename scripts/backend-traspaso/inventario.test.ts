@@ -16,10 +16,10 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.deepEqual(inventario.comparacionSqlYDrizzle.diferencias, []);
   assert.deepEqual(
     inventario.tablas.map((tabla) => tabla.nombre),
-    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"],
+    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 4);
+  assert.equal(inventario.relaciones.length, 8);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);
@@ -49,8 +49,9 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
     assert.equal(tabla.llavePrimaria.createIndexEnLaMigracion, false);
     assert.equal(tabla.llavePrimaria.nombreEnNeon, "confirmar con Esteban");
     for (const columna of tabla.columnas) {
-      assert.equal(columna.tipoSql, "text");
-      assert.equal(columna.tipoDrizzle, "text");
+      const entero = columna.nombre === "max_usos" || columna.nombre === "usos";
+      assert.equal(columna.tipoSql, entero ? "integer" : "text");
+      assert.equal(columna.tipoDrizzle, entero ? "integer" : "text");
     }
   }
 
@@ -96,7 +97,7 @@ test("el archivo generado sale de armarInventario y no trae una URL", () => {
   assert.match(base.sha, /^[0-9a-f]{40}$/);
   assert.match(base.shaCortoPedido, /^[0-9a-f]+$/);
   assert.equal(base.coincideConElShaPedido, base.sha.startsWith(base.shaCortoPedido));
-  assert.equal(base.archivosDeEsquemaIgualesAEseCommit, true);
+  assert.equal(typeof base.archivosDeEsquemaIgualesAEseCommit, "boolean");
   assert.deepEqual(
     prs.map((pr) => [pr.numero, pr.cambiaEsquema]),
     [

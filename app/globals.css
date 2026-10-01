@@ -123,6 +123,32 @@ a {
   flex: none;
 }
 
+.hyto-mas summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.hyto-mas summary::-webkit-details-marker {
+  display: none;
+}
+
+.hyto-mas-menu {
+  display: grid;
+  gap: 4px;
+  padding: 4px 12px 8px 36px;
+}
+
+.hyto-mas-menu a {
+  font-size: 14px;
+  text-decoration: none;
+}
+
 .hyto-btn {
   display: flex;
   height: 44px;
@@ -562,7 +588,8 @@ a {
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   }
 
-  .hyto-nav a {
+  .hyto-nav a,
+  .hyto-mas summary {
     flex: 1;
     flex-direction: column;
     gap: 4px;
@@ -586,6 +613,36 @@ a {
     color: var(--tinta);
   }
 
+  .hyto-mas {
+    position: relative;
+    flex: 1;
+  }
+
+  .hyto-mas summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .hyto-mas summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .hyto-mas-menu {
+    position: absolute;
+    right: 8px;
+    bottom: calc(100% + 8px);
+    display: grid;
+    min-width: 180px;
+    gap: 4px;
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    background: var(--papel);
+    padding: 8px;
+  }
+
   .hyto-main {
     padding: 8px 20px 28px;
   }
@@ -598,7 +655,7 @@ a {
 
   .hyto-actions {
     position: sticky;
-    bottom: calc(76px + env(safe-area-inset-bottom));
+    bottom: calc(96px + env(safe-area-inset-bottom));
     z-index: 20;
     display: grid;
     gap: 8px;

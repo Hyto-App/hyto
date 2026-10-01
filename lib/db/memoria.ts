@@ -1,5 +1,15 @@
 import type { Almacen } from "./almacen";
-import type { EvidenciaFila, Proyecto, SesionFila, TareaFila, Usuario, VeredictoFila } from "./tipos";
+import type {
+  EvidenciaFila,
+  Proyecto,
+  ProyectoInvitacion,
+  ProyectoMiembro,
+  RolEvento,
+  SesionFila,
+  TareaFila,
+  Usuario,
+  VeredictoFila,
+} from "./tipos";
 
 export function crearMemoria(): Almacen {
   const usuarios = new Map<string, Usuario>();
@@ -8,6 +18,23 @@ export function crearMemoria(): Almacen {
   const evidencias = new Map<string, EvidenciaFila>();
   const veredictos = new Map<string, VeredictoFila>();
   const sesiones = new Map<string, SesionFila>();
+  const miembros = new Map<string, ProyectoMiembro>();
+  const invitaciones = new Map<string, ProyectoInvitacion>();
+
+  function claveMiembro(proyectoId: string, usuarioId: string): string {
+    return `${proyectoId}:${usuarioId}`;
+  }
+
+  function ponerMiembro(miembro: ProyectoMiembro): void {
+    const previo = miembros.get(claveMiembro(miembro.proyectoId, miembro.usuarioId));
+    const rol: RolEvento = previo?.rol === "organizer" ? "organizer" : miembro.rol;
+    miembros.set(claveMiembro(miembro.proyectoId, miembro.usuarioId), {
+      ...miembro,
+      rol,
+      estado: "active",
+      creadoEn: previo?.creadoEn ?? miembro.creadoEn,
+    });
+  }
 
   return {
     async listarUsuarios() {
@@ -42,11 +69,37 @@ export function crearMemoria(): Almacen {
     async crearProyecto(proyecto, filas) {
       proyectos.set(proyecto.id, proyecto);
       for (const tarea of filas) tareas.set(tarea.id, tarea);
+      if (proyecto.organizadorId) {
+        ponerMiembro({
+          proyectoId: proyecto.id,
+          usuarioId: proyecto.organizadorId,
+          rol: "organizer",
+          estado: "active",
+          creadoEn: proyecto.creadoEn,
+        });
+      }
+      for (const tarea of filas) {
+        if (!tarea.miembroId || tarea.miembroId === proyecto.organizadorId) continue;
+        ponerMiembro({
+          proyectoId: proyecto.id,
+          usuarioId: tarea.miembroId,
+          rol: "volunteer",
+          estado: "active",
+          creadoEn: proyecto.creadoEn,
+        });
+      }
     },
     async asignarOrganizador(proyectoId, organizadorId) {
       const actual = proyectos.get(proyectoId);
       if (!actual) return;
       proyectos.set(proyectoId, { ...actual, organizadorId });
+      ponerMiembro({
+        proyectoId,
+        usuarioId: organizadorId,
+        rol: "organizer",
+        estado: "active",
+        creadoEn: actual.creadoEn,
+      });
     },
     async listarTareas() {
       return [...tareas.values()];
@@ -95,6 +148,47 @@ export function crearMemoria(): Almacen {
       const actual = sesiones.get(token);
       if (!actual) return;
       sesiones.set(token, { ...actual, wallet });
+    },
+    async listarMiembros(proyectoId) {
+      return [...miembros.values()].filter((miembro) => miembro.proyectoId === proyectoId);
+    },
+    async miembrosDeUsuario(usuarioId) {
+      return [...miembros.values()].filter((miembro) => miembro.usuarioId === usuarioId);
+    },
+    async guardarMiembro(miembro) {
+      const previo = miembros.get(claveMiembro(miembro.proyectoId, miembro.usuarioId));
+      if (miembro.rol === "organizer" || previo?.rol !== "organizer") {
+        miembros.set(claveMiembro(miembro.proyectoId, miembro.usuarioId), miembro);
+        return;
+      }
+      miembros.set(claveMiembro(miembro.proyectoId, miembro.usuarioId), { ...miembro, rol: "organizer" });
+    },
+    async crearInvitacion(invitacion) {
+      invitaciones.set(invitacion.secretoHash, invitacion);
+    },
+    async leerInvitacionPorHash(hash) {
+      return invitaciones.get(hash) ?? null;
+    },
+    async canjearInvitacion(pedido) {
+      const invitacion = invitaciones.get(pedido.secretoHash) ?? null;
+      if (!invitacion) return { ok: false, motivo: "missing" };
+      if (invitacion.expiraEn && invitacion.expiraEn <= pedido.ahora) return { ok: false, motivo: "expired" };
+      if (invitacion.usos >= invitacion.maxUsos) return { ok: false, motivo: "used" };
+      const email = pedido.email.trim().toLowerCase();
+      if (invitacion.tipo === "direct" && (invitacion.email ?? "").toLowerCase() !== email) {
+        return { ok: false, motivo: "email" };
+      }
+      invitacion.usos += 1;
+      const previo = miembros.get(claveMiembro(invitacion.proyectoId, pedido.usuarioId));
+      const rol: RolEvento = previo?.rol === "organizer" ? "organizer" : invitacion.rol;
+      miembros.set(claveMiembro(invitacion.proyectoId, pedido.usuarioId), {
+        proyectoId: invitacion.proyectoId,
+        usuarioId: pedido.usuarioId,
+        rol,
+        estado: "active",
+        creadoEn: previo?.creadoEn ?? pedido.ahora,
+      });
+      return { ok: true, proyectoId: invitacion.proyectoId, rol };
     },
   };
 }

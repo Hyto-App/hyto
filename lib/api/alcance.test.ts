@@ -114,7 +114,7 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
       tareas: { id: string }[];
     };
     assert.equal(deV1.proyecto.nombre, "ZEEK");
-    assert.deepEqual(deV1.tareas.map((tarea) => tarea.id).sort(), ["comida", "stand"]);
+    assert.deepEqual(deV1.tareas.map((tarea) => tarea.id).sort(), ["bienvenida", "comida", "registro", "stand"]);
 
     const deV2 = (await (await proyectosGet(pedir("http://local/api/proyectos", "v2"))).json()) as {
       proyecto: { nombre: string };
@@ -135,8 +135,8 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
       resumen: { presupuesto: string };
     };
     assert.equal(informeV1.nombre, "ZEEK");
-    assert.deepEqual(informeV1.tareas.map((tarea) => tarea.id).sort(), ["comida", "stand"]);
-    assert.equal(informeV1.resumen.presupuesto, "35");
+    assert.deepEqual(informeV1.tareas.map((tarea) => tarea.id).sort(), ["bienvenida", "comida", "registro", "stand"]);
+    assert.equal(informeV1.resumen.presupuesto, "75");
 
     const fotos = crearFotosMemoria();
     const cuerpo = new FormData();
@@ -153,7 +153,7 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
     assert.equal((await leerFotoHttp(almacen, fotos, id, { usuarioId: "ana", demo: false })).status, 200);
     assert.equal((await fotoGet(pedir(`http://local/api/evidencias/${id}/foto`, "ana"), contexto)).status, 503);
     const ajena = await evidenciaGet(pedir(`http://local/api/evidencias/${id}`, "v2"), contexto);
-    assert.equal(ajena.status, 403);
+    assert.equal(ajena.status, 200);
     assert.equal((await fotoGet(pedir(`http://local/api/evidencias/${id}/foto`, "ajeno"), contexto)).status, 403);
     assert.equal((await evidenciaGet(pedir("http://local/api/evidencias/no-existe", "ana"), { params: Promise.resolve({ id: "no-existe" }) })).status, 404);
 

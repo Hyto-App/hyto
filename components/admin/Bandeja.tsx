@@ -7,7 +7,7 @@ import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { vistaAdmin } from "@/lib/admin/vista";
 import { formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
-import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { iniciales } from "@/components/ui/Marca";
 import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
@@ -16,13 +16,13 @@ type Filtro = "all" | Veredicto;
 
 const FILTROS: { id: Filtro; etiqueta: string }[] = [
   { id: "all", etiqueta: "All" },
-  { id: "cumplió", etiqueta: "Meets" },
-  { id: "parcial", etiqueta: "Partial" },
-  { id: "insuficiente", etiqueta: "Doesn't meet" },
+  { id: "cumplió", etiqueta: etiquetaVeredicto("cumplió") },
+  { id: "parcial", etiqueta: etiquetaVeredicto("parcial") },
+  { id: "insuficiente", etiqueta: etiquetaVeredicto("insuficiente") },
 ];
 
-export function Bandeja() {
-  const base = useVistaAdmin();
+export function Bandeja({ proyectoId }: { proyectoId?: string } = {}) {
+  const base = useVistaAdmin(proyectoId);
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("all");
@@ -70,7 +70,7 @@ export function Bandeja() {
           <h1 className="hyto-title mt-2">Inbox</h1>
           <p className="hyto-sub">
             {vista.bandeja.length === 0
-              ? "Open a task to see the photo, the recommendation, and the payment."
+              ? "No submissions yet."
               : `${vista.bandeja.length} submission${vista.bandeja.length === 1 ? "" : "s"} waiting for your review`}
           </p>
           {vista.propio ? (
@@ -81,8 +81,9 @@ export function Bandeja() {
         </div>
         <div className="min-w-[220px] flex-1 sm:max-w-sm">
           <div className="mb-2 flex items-center justify-between text-sm text-[var(--suave)]">
-            <span>Paid of budget</span>
-            <span className="hyto-amount text-[var(--tinta)]">{formatearMonto(vista.resumen.pendiente)} left</span>
+            <span>
+              Paid {formatearMonto(String(pagado))} of {formatearMonto(String(presupuesto))}
+            </span>
           </div>
           <div className="hyto-bar" aria-hidden="true">
             <span style={{ width: `${ancho}%` }} />
@@ -97,7 +98,7 @@ export function Bandeja() {
         <p className="mt-1 text-sm text-[var(--suave)]">Oldest first</p>
         <div className="hyto-tabs mt-4 flex" role="tablist" aria-label="Filter submissions">
           {FILTROS.map((item) => (
-            <button key={item.id} type="button" aria-pressed={filtro === item.id} onClick={() => setFiltro(item.id)}>
+            <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
               {item.etiqueta}
             </button>
           ))}
@@ -105,10 +106,10 @@ export function Bandeja() {
 
         {vista.bandeja.length === 0 ? (
           <div className="hyto-card mt-4 px-6 py-10 text-center">
-            <p className="text-lg font-semibold">All caught up</p>
-            <p className="mt-2 text-[var(--suave)]">Nothing to approve yet. When a volunteer sends a photo, it shows up here.</p>
-            <Link href="/informe" className="hyto-btn-line mx-auto mt-6 max-w-xs">
-              View report
+            <p className="text-lg font-semibold">Nothing to approve</p>
+            <p className="mt-2 text-[var(--suave)]">When someone sends a photo, it shows up here.</p>
+            <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
+              Create event
             </Link>
           </div>
         ) : (

@@ -8,14 +8,14 @@ import { Salir } from "@/components/sesion/Salir";
 import { Icono, Logo, Tema } from "@/components/ui/Marca";
 
 const ENLACES = [
-  { href: "/", etiqueta: "Inbox", icono: "inbox" },
-  { href: "/informe", etiqueta: "Report", icono: "report" },
-  { href: "/proyectos/nuevo", etiqueta: "Projects", icono: "projects" },
-  { href: "/mis-tareas", etiqueta: "My tasks", icono: "tasks" },
+  { href: "/eventos", etiqueta: "Events", icono: "projects" },
+  { href: "/mis-tareas", etiqueta: "Tasks", icono: "tasks" },
 ] as const;
 
 export function Marco({ children, demoHabilitado = false }: { children: ReactNode; demoHabilitado?: boolean }) {
   const ruta = usePathname();
+  const eventos = ruta.startsWith("/eventos") || ruta.startsWith("/revision") || ruta === "/informe" || ruta.startsWith("/proyectos");
+  const tareas = ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas");
 
   return (
     <div className="hyto-shell">
@@ -26,18 +26,25 @@ export function Marco({ children, demoHabilitado = false }: { children: ReactNod
         </div>
         <nav className="hyto-nav" aria-label="Main">
           {ENLACES.map((enlace) => {
-            const activo = enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
+            const activo = enlace.href === "/eventos" ? eventos : tareas;
             return (
-              <Link
-                key={enlace.href}
-                href={enlace.href}
-                className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}
-              >
+              <Link key={enlace.href} href={enlace.href} className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}>
                 <Icono nombre={enlace.icono} />
                 <span>{enlace.etiqueta}</span>
               </Link>
             );
           })}
+          <details className="hyto-mas">
+            <summary className="text-[var(--suave)]">
+              <Icono nombre="wallet" />
+              <span>Account</span>
+            </summary>
+            <div className="hyto-mas-menu">
+              <Link href="/eventos/nuevo">Create event</Link>
+              <Link href="/join">Join with code</Link>
+              <Link href="/cuentas">Payout account</Link>
+            </div>
+          </details>
         </nav>
         <div className="hyto-foot">
           <Entrar demoHabilitado={demoHabilitado} />

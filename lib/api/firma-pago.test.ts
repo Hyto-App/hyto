@@ -55,6 +55,14 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
   const visto: { cuerpo: Record<string, unknown> | null } = { cuerpo: null };
   globalThis.fetch = async (input, init) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       visto.cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
@@ -211,6 +219,14 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
@@ -266,6 +282,14 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
   const original = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
@@ -431,6 +455,14 @@ test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro 
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     const cuerpo = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       const hitos = cuerpo?.milestones as { amount?: number }[] | undefined;
       montos.push(hitos?.[0]?.amount ?? Number.NaN);

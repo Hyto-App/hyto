@@ -288,6 +288,10 @@ function leerTablasDrizzle(): TablaDrizzleLista {
         defaultOpaco: defecto.opaco,
       };
     });
+    const llaves = config.primaryKeys.flatMap((llave) => llave.columns.map((columna) => columna.name));
+    for (const columna of columnas) {
+      if (llaves.includes(columna.nombre)) columna.pk = true;
+    }
     const foraneas: ForaneaDrizzle[] = config.foreignKeys.map((clave) => {
       const referencia = clave.reference();
       return {

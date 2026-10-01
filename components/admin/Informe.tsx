@@ -12,8 +12,8 @@ import { TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
 
-export function Informe() {
-  const cargada = useVistaAdmin();
+export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
+  const cargada = useVistaAdmin(proyectoId);
   const [parche, setParche] = useState<VistaAdmin | null>(null);
   const [reintento, setReintento] = useState<string | null>(null);
   const [avisoId, setAvisoId] = useState<string | null>(null);
@@ -43,7 +43,17 @@ export function Informe() {
   }
 
   if (!vista) {
-    return <p className="text-[var(--suave)]">Loading…</p>;
+    return (
+      <main className="hyto-page" aria-busy="true">
+        <div className="hyto-skel">
+          <i />
+          <span>
+            <i />
+            <i />
+          </span>
+        </div>
+      </main>
+    );
   }
 
   const presupuesto = Number(vista.resumen.presupuesto) || 0;

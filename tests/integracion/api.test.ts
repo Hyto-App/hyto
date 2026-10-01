@@ -12,6 +12,7 @@ import { GET as fotoGet } from "../../app/api/evidencias/[id]/foto/route";
 import { POST as firmaPost } from "../../app/api/firma/route";
 import { POST as enviarPost } from "../../app/api/firma/enviar/route";
 import { reiniciarLimite } from "../../lib/escrow/limite";
+import { usarLectorSaldo } from "../../lib/escrow/saldo";
 import { motivoSuiteSync } from "./guardia";
 import { consulta, prepararSuite, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
 import { cookieSesionPrueba } from "./sesion-prueba";
@@ -80,6 +81,11 @@ function pedirGet(url: string, cookie?: string): Request {
 async function duenoZeek(cookie: string): Promise<void> {
   await tareasGet(pedirGet("http://local/api/tareas", cookie));
   await consulta("update proyectos set organizador_id = 'organizador' where id = 'zeek' and organizador_id is null");
+  await consulta(
+    `insert into proyecto_miembros (proyecto_id, usuario_id, rol, estado, creado_en)
+     values ('zeek', 'organizador', 'organizer', 'active', '2026-01-01T00:00:00.000Z')
+     on conflict (proyecto_id, usuario_id) do update set rol = 'organizer', estado = 'active'`,
+  );
 }
 
 function proyectoNuevo() {
@@ -242,7 +248,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   });
 
   test("POST /api/proyectos crea el proyecto con la sesión del organizador y GET devuelve el último", async () => {
-    const sesion = await cookieSesionPrueba();
+    const sesion = await cookieSesionPrueba("organizador", CUENTA);
+    usarLectorSaldo(async () => ({ saldo: "1000" }));
     const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo(), sesion));
     assert.equal(creado.status, 201);
     const json = (await leer(creado)) as {
@@ -271,6 +278,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const tareas = (await leer(await tareasGet(pedirGet("http://local/api/tareas", sesion)))) as { tareas?: { titulo: string }[] };
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Cajas"), true);
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Set up the booth"), true);
+    usarLectorSaldo(null);
   });
 
   test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {

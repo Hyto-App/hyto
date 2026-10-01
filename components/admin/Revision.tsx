@@ -106,6 +106,21 @@ export function Revision({
     setBorrador(tarea.montoConfirmado ?? tarea.montoRevisado ?? "");
   }, [claveMonto, tarea]);
 
+  async function pedirOtra() {
+    if (!real) {
+      decidir("pendiente");
+      return;
+    }
+    setAviso(null);
+    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, { method: "POST" });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+    if (!respuesta.ok) {
+      setAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
+      return;
+    }
+    setTarea((actual) => (actual ? { ...actual, estado: "pendiente" } : actual));
+  }
+
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
     if (guardado.aviso) {
@@ -293,13 +308,13 @@ export function Revision({
         </div>
         <div className="text-right">
           <p className="hyto-amount text-2xl">{montoDeTarea(tarea)}</p>
-          <p className="text-sm text-[var(--suave)]">Reward</p>
+          <p className="text-sm text-[var(--suave)]">Amount</p>
         </div>
       </header>
       <div className="hyto-review">
         <figure className="hyto-photo">
           {foto ? (
-            <img src={foto} alt="" />
+            <img src={foto} alt={textoVisible(tarea.titulo)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
@@ -431,7 +446,7 @@ export function Revision({
             ) : null}
 
             {botones.pedirOtra ? (
-              <button type="button" onClick={() => decidir("pendiente")} className="hyto-btn-line">
+              <button type="button" onClick={() => void pedirOtra()} className="hyto-btn-line">
                 Ask for another photo
               </button>
             ) : null}
@@ -471,7 +486,6 @@ export function Revision({
             ) : null}
           </div>
 
-          <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Laya only suggests. The payment of {montoDeTarea(tarea)} comes from escrow.</p>
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">

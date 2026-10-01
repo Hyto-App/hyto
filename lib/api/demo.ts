@@ -26,7 +26,7 @@ export async function crearDemoHttp(
     return json({ aviso: "The body is not JSON." }, 400);
   }
   const rol = rolPedido(body);
-  if (!rol) return json({ aviso: "That role is not allowed." }, 400);
+  if (!rol) return json({ aviso: "That demo account is not allowed." }, 400);
 
   try {
     await asegurarSemilla(almacen);

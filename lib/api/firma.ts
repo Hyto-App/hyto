@@ -2,6 +2,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
+import { rechazoSiFondos } from "@/lib/escrow/saldo";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
@@ -51,6 +52,10 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
       const ajustada = await montoFondeoDeReembolso(base, entrada, idTarea(body));
       if (ajustada instanceof Response) return ajustada;
       preparada = ajustada;
+      if (ajustada.accion === "fondear") {
+        const fondos = await rechazoSiFondos(sesion.wallet, String(ajustada.monto));
+        if (fondos) return fondos;
+      }
     }
   }
   const limitado = respuestaSiExcedido(request);
@@ -221,6 +226,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     roles,
   });
   if ("aviso" in cuentas) return Response.json({ aviso: cuentas.aviso }, { status: 400 });
+  const fondos = await rechazoSiFondos(wallet, String(monto));
+  if (fondos) return fondos;
   try {
     const listo = await prepararDespliegue(cuentas);
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
