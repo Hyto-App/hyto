@@ -9,11 +9,11 @@ const FILAS = [
 
 export function Numeros({ resumen }: { resumen: Resumen }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="hyto-kpis">
       {FILAS.map((fila) => (
-        <article key={fila.clave} className="rounded-3xl bg-[var(--papel)] p-6">
+        <article key={fila.clave}>
           <p className="text-sm text-[var(--suave)]">{fila.etiqueta}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight">{formatearMonto(resumen[fila.clave])}</p>
+          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(resumen[fila.clave])}</p>
         </article>
       ))}
     </div>

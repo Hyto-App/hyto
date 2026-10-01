@@ -254,16 +254,16 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     const nombreRol = rolActual === "voluntario" ? "Volunteer" : "Organizer";
     const nombreOtro = otro === "voluntario" ? "volunteer" : "organizer";
     return (
-      <div className="flex w-full max-w-xs flex-col items-end gap-2">
+      <div className="flex w-full flex-col items-start gap-2">
         <p className="text-sm text-[var(--suave)]">
           <InsigniaDemo />
-          <span className="ml-2 align-middle">{nombreRol}</span>
+          <span className="ml-2 align-middle">{nombreRol} · Cavos</span>
         </p>
         <button
           type="button"
           onClick={() => void entrarDemo(otro)}
           disabled={ocupado !== null}
-          className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
+          className="text-left text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {ocupado === "demo" ? "Switching…" : `Switch to ${nombreOtro}`}
         </button>
@@ -271,12 +271,12 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           type="button"
           onClick={() => void salirDemo()}
           disabled={ocupado !== null}
-          className="text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-70"
+          className="text-left text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-70"
         >
           {ocupado === "salida" ? "Leaving…" : "Leave demo"}
         </button>
         {aviso ? (
-          <p role="status" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+          <p role="status" className="text-sm leading-6 text-[var(--suave)]">
             {aviso}
           </p>
         ) : null}
@@ -289,35 +289,69 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (direccion && !pedirIngreso) {
     return (
-      <div className="flex flex-col items-end gap-2">
-        <p className="text-sm text-[var(--suave)]">Signed in</p>
-        <details className="text-right text-sm text-[var(--suave)]">
-          <summary className="cursor-pointer">Account details</summary>
-          <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
-        </details>
+      <div className="flex items-center gap-3">
+        <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
+        <div>
+          <p className="text-sm font-medium">Signed in</p>
+          <details className="text-sm text-[var(--suave)]">
+            <summary className="cursor-pointer">Account details</summary>
+            <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+          </details>
+        </div>
       </div>
     );
   }
 
+  if (fase === "inicio") {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setAviso(null);
+          setFase("correo");
+        }}
+        className="hyto-btn"
+      >
+        Sign in
+      </button>
+    );
+  }
+
   return (
-    <div className="flex w-full max-w-xs flex-col items-end gap-2">
-      {fase === "inicio" ? (
-        <button
-          type="button"
-          onClick={() => {
-            setAviso(null);
-            setFase("correo");
-          }}
-          className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)]"
-        >
-          Sign in
-        </button>
-      ) : null}
+    <div className="hyto-auth" role="dialog" aria-modal="true" aria-label="Sign in">
+      <div className="hyto-auth-hero">
+        <p className="hyto-logo">hyto</p>
+        <div>
+          <div className="hyto-ring" aria-hidden="true" />
+          <h2 className="mt-8 text-4xl font-semibold tracking-tight">Prove your worth. Get paid.</h2>
+          <p className="mt-4 max-w-md text-base leading-7 text-[var(--suave)]">
+            Do tasks for real projects, send a photo, get paid in USDC. Organizers review and approve from one inbox.
+          </p>
+        </div>
+        <p className="text-sm text-[var(--suave)]">Volunteers · Organizers · Paid via Stellar escrow</p>
+      </div>
+      <div className="hyto-auth-sheet">
+        <div className="mb-6 flex items-start justify-between gap-4 lg:hidden">
+          <div>
+            <p className="text-3xl font-semibold tracking-tight">Prove your worth.</p>
+            <p className="text-3xl font-semibold tracking-tight text-[var(--acento-texto)]">Get paid.</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-2xl font-semibold tracking-tight">Sign in to Hyto</h2>
+          <button type="button" className="text-sm text-[var(--suave)]" onClick={() => setFase("inicio")}>
+            Close
+          </button>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-[var(--suave)]">For organizers and volunteers. We'll email you a 6-digit code.</p>
+        <div className="hyto-steps mt-4" aria-hidden="true">
+          <i className="is-on" />
+          <i className={fase === "codigo" ? "is-on" : ""} />
+        </div>
+        <div className="mt-6 grid gap-3">
       {fase === "correo" ? (
         <>
-          <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
-            We'll email you a code. You don't need a separate app.
-          </p>
+          <p className="text-sm leading-6 text-[var(--suave)]">We'll email you a code. You don't need a separate app.</p>
           <label className="sr-only" htmlFor="correo-entrar">
             Email
           </label>
@@ -332,34 +366,26 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             }}
             placeholder="Email"
             disabled={ocupado !== null}
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
+            className="hyto-input"
           />
-          {demo ? (
-            <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_DEMO}</p>
-          ) : (
-            <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
-          )}
+          {demo ? <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_DEMO}</p> : <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>}
           <button
             type="button"
             onClick={() => void enviarCodigo()}
             disabled={ocupado !== null || espera > 0 || demo}
-            className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
+            className="hyto-btn"
           >
             {ocupado === "envio" ? "Sending…" : "Send code"}
           </button>
-          <button
-            type="button"
-            onClick={() => void google()}
-            disabled={ocupado !== null}
-            className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
+          <p className="text-center text-xs uppercase tracking-wide text-[var(--suave)]">or</p>
+          <button type="button" onClick={() => void google()} disabled={ocupado !== null} className="hyto-btn-line">
             {ocupado === "google" ? "Opening Google…" : "Sign in with Google"}
           </button>
         </>
       ) : null}
       {fase === "codigo" ? (
         <>
-          <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
+          <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
           <label className="sr-only" htmlFor="codigo-entrar">
             Code
           </label>
@@ -371,20 +397,17 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             onChange={(evento) => setCodigo(evento.target.value)}
             placeholder="Code"
             disabled={ocupado !== null}
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
+            className="hyto-input"
           />
-          <button
-            type="button"
-            onClick={() => void confirmar()}
-            disabled={ocupado !== null}
-            className="flex h-11 items-center justify-center rounded-full bg-[var(--acento)] px-5 text-sm font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
-          >
+          <button type="button" onClick={() => void confirmar()} disabled={ocupado !== null} className="hyto-btn">
             {ocupado === "codigo" ? "Signing in…" : "Confirm"}
           </button>
         </>
       ) : null}
       {demoHabilitado ? (
-        <>
+        <div className="hyto-card mt-2 grid gap-3 p-4">
+          <p className="text-sm font-medium">Try demo mode</p>
+          <p className="text-sm text-[var(--suave)]">No account needed</p>
           <label className="sr-only" htmlFor="rol-demo">
             Demo session role
           </label>
@@ -396,26 +419,24 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
               if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
             }}
             disabled={ocupado !== null}
-            className="h-11 w-full rounded-2xl bg-[var(--papel)] px-4 text-sm outline-none disabled:opacity-70"
+            className="hyto-input"
           >
             <option value="organizador">Organizer</option>
             <option value="voluntario">Volunteer</option>
           </select>
-          <button
-            type="button"
-            onClick={() => void entrarDemo()}
-            disabled={ocupado !== null}
-            className="text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
+          <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
             {ocupado === "demo" ? "Signing in…" : "Enter as demo"}
           </button>
-        </>
+        </div>
       ) : null}
       {mensaje ? (
-        <p role="status" className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+        <p role="status" className="text-sm leading-6 text-[var(--suave)]">
           {mensaje}
         </p>
       ) : null}
+          <p className="text-xs leading-5 text-[var(--suave)]">Sign-in by Cavos. Your Stellar wallet is created for you.</p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { Salir } from "@/components/sesion/Salir";
 import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
-import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
+import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
@@ -192,7 +192,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   if (fase === "cargando") {
     return (
-      <main>
+      <main className="hyto-page">
         <p className="text-[var(--suave)]">Loading…</p>
       </main>
     );
@@ -200,7 +200,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   if (fase === "faltante" || !tarea) {
     return (
-      <main>
+      <main className="hyto-page">
         <p className="text-lg">We couldn't find that task.</p>
         <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
           Back to My tasks
@@ -221,23 +221,28 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             ? "Choose photo"
             : "Open camera";
 
+  const enviada = fase === "lista";
+  const montoVisible = montoDeTarea(tarea);
+
   return (
-    <main>
-      <header className="mb-8">
-        <p className="text-sm text-[var(--suave)]">
+    <main className={`hyto-page ${enviada ? "mx-auto max-w-lg" : ""}`}>
+      <header className="mb-6">
+        <p className="hyto-crumb">
           <Link href="/mis-tareas">My tasks</Link>
           <InsigniaDemo />
           <SalirDemo />
           <Salir className="ml-3 align-middle" />
         </p>
         <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+          <h1 className="hyto-title">{enviada ? "Evidence sent" : fase === "foto" || fase === "enviando" ? "Upload evidence" : textoVisible(tarea.titulo)}</h1>
+          <p className="hyto-amount text-2xl">{montoVisible}</p>
+        </div>
+        <p className="hyto-sub">
           {tarea.tipo === "reembolso"
             ? "Photograph the receipt so the amount and date are readable. The organizer checks it and sends the payment."
             : "Photograph the finished work. The organizer checks it and sends the payment."}
         </p>
-        {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
       </header>
 
       {ejemplo ? null : (
@@ -246,69 +251,108 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </div>
       )}
 
-      {fase === "lista" && !fotoUrl ? null : (
-        <div className="overflow-hidden rounded-3xl bg-[var(--papel)]">
-          {fotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={fotoUrl} alt="Evidence" className="aspect-[3/4] w-full object-cover" />
-          ) : fase === "camara" ? (
-            <video ref={videoRef} playsInline muted aria-label="Camera preview" className="aspect-[3/4] w-full object-cover" />
-          ) : (
-            <div className="flex aspect-[3/4] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-              {tarea.tipo === "reembolso" ? "Photo of the receipt" : "Photo of the work"}
-            </div>
-          )}
-        </div>
-      )}
-
-      {mostrarRevision ? (
-        <dl className="mt-6 grid grid-cols-2 gap-4 rounded-3xl bg-[var(--papel)] p-6">
-          <div>
-            <dt className="text-sm text-[var(--suave)]">Amount</dt>
-            <dd className="mt-1 text-2xl font-semibold tracking-tight">{formatearMonto(evidencia.monto!)}</dd>
+      {enviada ? (
+        <div className="text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--acento)] text-2xl text-[var(--sobre-acento)]" aria-hidden="true">
+            ✓
           </div>
-          <div>
-            <dt className="text-sm text-[var(--suave)]">Date</dt>
-            <dd className="mt-1 text-2xl font-semibold tracking-tight">{formatearFecha(evidencia.fecha!)}</dd>
-          </div>
-        </dl>
-      ) : null}
-
-      {fase === "lista" ? (
-        <div className="mt-6">
-          <p className="text-lg font-medium">Photo sent</p>
+          <p className="mt-4 text-lg font-medium">Photo sent</p>
           <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
+          <article className="hyto-card mt-6 p-4 text-left">
+            <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
+            <p className="mt-1 text-sm text-[var(--suave)]">Submitted</p>
+            <p className="hyto-amount mt-3">{montoVisible}</p>
+          </article>
+          <ol className="mt-6 space-y-3 text-left text-sm">
+            <li>Laya is reviewing your photo.</li>
+            <li className="text-[var(--suave)]">The organizer approves.</li>
+            <li className="text-[var(--suave)]">You get paid from the Stellar escrow to your Cavos wallet.</li>
+          </ol>
+          <Link href="/mis-tareas" className="hyto-btn mt-6">
+            Back to My tasks
+          </Link>
+          <p className="mt-4 text-sm text-[var(--suave)]">If the photo isn't clear, the organizer may ask for another one.</p>
         </div>
       ) : (
-        <div className="mt-6">
-          <BotonPrincipal
-            type="button"
-            disabled={fase === "enviando"}
-            aria-busy={fase === "enviando"}
-            onClick={() => {
-              if (fase === "camara") tomarFoto();
-              else if (fase === "foto") void enviar();
-              else if (sinCamara || !navigator.mediaDevices?.getUserMedia) archivoRef.current?.click();
-              else void abrirCamara();
-            }}
-          >
-            {accion}
-          </BotonPrincipal>
-          {fase === "enviando" ? (
-            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              Sending the photo. The recommendation can take a few seconds.
-            </p>
-          ) : null}
+        <div className="hyto-split">
+          <div>
+            <div className="hyto-photo">
+                {fotoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={fotoUrl} alt="Evidence" />
+                ) : fase === "camara" ? (
+                  <video ref={videoRef} playsInline muted aria-label="Camera preview" />
+                ) : (
+                  <div className="flex aspect-[4/5] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
+                    {tarea.tipo === "reembolso" ? "Photo of the receipt" : "Photo of the work"}
+                  </div>
+                )}
+              </div>
+            {fase === "inicio" || fase === "camara" ? (
+              <button
+                type="button"
+                onClick={() => archivoRef.current?.click()}
+                className="mt-3 w-full rounded-2xl border border-dashed border-[var(--borde)] px-4 py-4 text-sm text-[var(--suave)]"
+              >
+                Drop a photo here or browse
+              </button>
+            ) : null}
+          </div>
+          <div>
+            {tarea.condicion ? (
+              <div className="hyto-card p-5">
+                <p className="text-sm font-medium">Your photo must show</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p>
+              </div>
+            ) : null}
+            {mostrarRevision ? (
+              <dl className="hyto-card mt-4 grid grid-cols-2 gap-4 p-5">
+                <div>
+                  <dt className="text-sm text-[var(--suave)]">Amount</dt>
+                  <dd className="hyto-amount mt-1 text-2xl">{formatearMonto(evidencia.monto!)}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-[var(--suave)]">Date</dt>
+                  <dd className="hyto-amount mt-1 text-2xl">{formatearFecha(evidencia.fecha!)}</dd>
+                </div>
+              </dl>
+            ) : null}
+            <div className="hyto-actions">
+              <BotonPrincipal
+                type="button"
+                disabled={fase === "enviando"}
+                aria-busy={fase === "enviando"}
+                onClick={() => {
+                  if (fase === "camara") tomarFoto();
+                  else if (fase === "foto") void enviar();
+                  else if (sinCamara || !navigator.mediaDevices?.getUserMedia) archivoRef.current?.click();
+                  else void abrirCamara();
+                }}
+              >
+                {accion}
+              </BotonPrincipal>
+              {fase === "enviando" ? (
+                <p className="text-sm leading-6 text-[var(--suave)]" aria-live="polite">
+                  Sending the photo. The recommendation can take a few seconds.
+                </p>
+              ) : null}
+              {fase === "foto" ? (
+                <button type="button" onClick={tomarOtra} className="hyto-btn-line">
+                  Take another
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       )}
 
       {error ? (
-        <p role="alert" className="mt-4 text-sm text-[var(--pendiente-tinta)]">
+        <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
           {error}
         </p>
       ) : null}
 
-      {fase === "foto" || fase === "lista" ? (
+      {enviada ? (
         <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
           Take another
         </button>

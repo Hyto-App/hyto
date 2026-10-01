@@ -11,6 +11,7 @@ import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { textoVisible } from "@/lib/ui/etiquetas";
+import { iniciales } from "@/components/ui/Marca";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
 import { prepararIdentidad, type CuentaPreparada } from "@/lib/integrante/preparar";
 import type { IdentidadDemo } from "@/lib/integrante/tipos";
@@ -120,37 +121,45 @@ export function CuentasDemo() {
   const etiqueta = pendiente ? "Confirm" : preparando ? "Preparing…" : falta ? "Prepare accounts" : "Accounts ready";
 
   return (
-    <main>
-      <header className="mb-8">
-        <p className="text-sm text-[var(--suave)]">
-          <Link href="/mis-tareas">My tasks</Link>
-          <InsigniaDemo />
-          <SalirDemo />
-          <Salir className="ml-3 align-middle" />
-        </p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">Payout accounts</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
-          One organizer and three volunteers. Each person confirms the code we email them. Then their account can receive the event payment.
-        </p>
+    <main className="hyto-page">
+      <header className="hyto-page-head">
+        <div>
+          <p className="hyto-crumb">
+            <Link href="/mis-tareas">My tasks</Link>
+            <InsigniaDemo />
+            <SalirDemo />
+            <Salir className="ml-3 align-middle" />
+          </p>
+          <h1 className="hyto-title mt-3">Accounts & wallet</h1>
+          <p className="hyto-sub">
+            One organizer and three volunteers. Each person confirms the code we email them. Then their account can receive the event payment.
+          </p>
+        </div>
       </header>
 
-      <div className="space-y-3">
+      <div className="grid gap-3">
         {cuentas.map((cuenta) => {
           const identidad = IDENTIDADES.find((item) => item.id === cuenta.id);
           return (
-            <article key={cuenta.id} className="rounded-3xl bg-[var(--papel)] p-6">
-              <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre)}</h2>
-              <p className="mt-1 text-sm text-[var(--suave)]">{identidad?.email}</p>
-              {cuenta.direccion ? (
-                <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer text-[var(--suave)]">Account details</summary>
-                  <p className="mt-1 font-mono">{acortarDireccion(cuenta.direccion)}</p>
-                </details>
-              ) : (
-                <p className="mt-3 text-sm text-[var(--suave)]">Not set up yet</p>
-              )}
-              <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.usdcListo ? "Ready to receive payment" : "Not ready to receive payment"}</p>
-              {cuenta.detalle ? <p className="mt-2 text-sm text-[var(--suave)]">{mensajeClaro(cuenta.detalle)}</p> : null}
+            <article key={cuenta.id} className="hyto-card flex flex-wrap items-center gap-4 p-5">
+              <span className="hyto-avatar">{iniciales(textoVisible(cuenta.nombre))}</span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre)}</h2>
+                <p className="mt-1 text-sm text-[var(--suave)]">{identidad?.email}</p>
+                {cuenta.direccion ? (
+                  <details className="mt-2 text-sm">
+                    <summary className="cursor-pointer text-[var(--suave)]">Account details</summary>
+                    <p className="mt-1 font-mono">{acortarDireccion(cuenta.direccion)}</p>
+                  </details>
+                ) : (
+                  <p className="mt-2 text-sm text-[var(--suave)]">Not set up yet</p>
+                )}
+              </div>
+              <p className={`hyto-pill ${cuenta.usdcListo ? "hyto-pill-ok" : "hyto-pill-muted"}`}>
+                <i className="hyto-dot" aria-hidden="true" />
+                {cuenta.usdcListo ? "Ready to receive payment" : "Not ready to receive payment"}
+              </p>
+              {cuenta.detalle ? <p className="w-full text-sm text-[var(--suave)]">{mensajeClaro(cuenta.detalle)}</p> : null}
             </article>
           );
         })}
@@ -165,7 +174,7 @@ export function CuentasDemo() {
             autoComplete="one-time-code"
             value={codigo}
             onChange={(evento) => setCodigo(evento.target.value)}
-            className="mt-2 h-14 w-full rounded-2xl bg-[var(--papel)] px-4 text-base text-[var(--tinta)] outline-none"
+            className="hyto-input mt-2"
           />
         </label>
       ) : null}
