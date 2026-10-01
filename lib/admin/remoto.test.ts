@@ -49,7 +49,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.deepEqual(botonesRevision(enRevision, true), {
     desplegar: true,
     fondear: false,
-    pagar: true,
+    pagar: false,
     aprobarLocal: false,
     pedirOtra: false,
   });
@@ -59,12 +59,14 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.deepEqual(botonesRevision(enRevision, true, conContrato), {
     desplegar: false,
     fondear: true,
-    pagar: true,
+    pagar: false,
     aprobarLocal: false,
     pedirOtra: false,
   });
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).fondear, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).pagar, true);
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null }).fondear, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null }).pagar, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).desplegar, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).fondear, false);
   const error = botonesRevision(tarea({ origen: "error", veredicto: null }), true, conContrato);
@@ -81,7 +83,15 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     conContrato,
   );
   assert.equal(conMonto.fondear, true);
-  assert.equal(conMonto.pagar, true);
+  assert.equal(conMonto.pagar, false);
+  assert.equal(
+    botonesRevision(
+      tarea({ tipo: "reembolso", montoRevisado: "12.40", origen: "scout", estado: "en revisión" }),
+      true,
+      { contrato: "CSTAND", fondeado: true },
+    ).pagar,
+    true,
+  );
 });
 
 test("la revisión real usa la tarea del organizador y también pide /api/tareas", async () => {

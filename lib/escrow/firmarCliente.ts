@@ -5,6 +5,7 @@ export const AVISO_DEMO_FIRMA = "Demo mode: signatures are off";
 export const AVISO_XLM = "Not enough XLM for the fee.";
 export const AVISO_RECHAZO = "You rejected the signature.";
 export const AVISO_FIRMA = "Could not sign the payment.";
+export const AVISO_DISPOSITIVO = "Approve this device before signing.";
 export const AVISO_SIN_CONTRATO = "The submit succeeded and Trustless did not return the contract.";
 export const AVISO_SESION_CAVOS = "Your Cavos session closed. Sign in again to sign.";
 export const AVISO_REINGRESO = "Your Cavos session expired.";
@@ -160,6 +161,7 @@ async function firmarConCavos(unsignedXdr: string): Promise<string> {
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar") throw new ErrorFirmaCliente(AVISO_FIRMA);
+  if (billetera.status === "needs-device-approval") throw new ErrorFirmaCliente(AVISO_DISPOSITIVO);
   return billetera.signXdr(unsignedXdr);
 }
 

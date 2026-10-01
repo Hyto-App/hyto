@@ -62,19 +62,21 @@ export function MisTareas() {
           <Salir className="ml-3 align-middle" />
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">My tasks</h1>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Member">
-          {MIEMBROS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={item.id === miembroId}
-              onClick={() => elegir(item.id)}
-              className={item.id === miembroId ? "font-semibold" : "text-[var(--suave)]"}
-            >
-              {textoVisible(item.nombre)}
-            </button>
-          ))}
-        </div>
+        {ejemplo ? (
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Member">
+            {MIEMBROS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={item.id === miembroId}
+                onClick={() => elegir(item.id)}
+                className={item.id === miembroId ? "font-semibold" : "text-[var(--suave)]"}
+              >
+                {textoVisible(item.nombre)}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {direccion ? <p className="mt-3 font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p> : null}
       </header>
 

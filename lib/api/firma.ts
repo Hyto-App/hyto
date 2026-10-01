@@ -6,7 +6,7 @@ import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/despl
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
-import type { PagoEnviado } from "@/lib/escrow/tipos";
+import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
@@ -38,18 +38,20 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     if (rechazo) return rechazo;
     return prepararDespliegueHttp(sesion, entrada.tareaId, base);
   }
+  const base = almacen === undefined ? await almacenNeon() : almacen;
   if (entrada.accion === "resolver") {
     const aviso = avisoSesionResolutor(sesion, entrada.firmante);
     if (aviso) return Response.json({ aviso }, { status: 400 });
   } else {
-    const base = almacen === undefined ? await almacenNeon() : almacen;
     const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato });
     if (rechazo) return rechazo;
   }
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
+  const pedido = entrada.accion === "fondear" ? await conMontoDeTarea(base, entrada) : entrada;
+  if ("aviso" in pedido) return Response.json({ aviso: pedido.aviso }, { status: pedido.estado });
   try {
-    const listo = await preparar(entrada);
+    const listo = await preparar(pedido);
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
@@ -139,6 +141,23 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     },
     { status: guardado.estadoHttp },
   );
+}
+
+async function conMontoDeTarea(
+  almacen: Almacen | null,
+  entrada: Extract<AccionFirma, { accion: "fondear" }>,
+): Promise<AccionFirma | { aviso: string; estado: number }> {
+  if (!almacen) return { aviso: "The database is not configured.", estado: 503 };
+  try {
+    const tarea = (await almacen.listarTareas()).find((item) => item.contratoEscrow === entrada.contrato) ?? null;
+    if (!tarea) return { aviso: "We couldn't find that task.", estado: 404 };
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    const monto = montoDeTarea(tarea, evidencia);
+    if (monto === null) return { aviso: "The funding amount has to be greater than zero.", estado: 400 };
+    return { ...entrada, monto };
+  } catch {
+    return { aviso: "The database is not ready.", estado: 503 };
+  }
 }
 
 async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almacen: Almacen): Promise<Response> {

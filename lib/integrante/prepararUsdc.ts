@@ -1,5 +1,6 @@
 import {
   AVISO_DEMO_FIRMA,
+  AVISO_DISPOSITIVO,
   AVISO_RECHAZO,
   AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
@@ -76,6 +77,7 @@ function traducir(error: unknown): string {
     if (error.message === AVISO_XLM) return "Not enough XLM for the fee.";
     if (error.message === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
     if (error.message === AVISO_DEMO_FIRMA) return "Demo mode cannot prepare USDC.";
+    if (error.message === AVISO_DISPOSITIVO) return AVISO_DISPOSITIVO;
     if (error.message === "Cavos is not configured for sign-in.") return "Cavos is not configured.";
     return "Could not sign the USDC trustline.";
   }

@@ -100,6 +100,10 @@ function normalizarEvidencia(valor: unknown, tareaId: string): Evidencia | null 
   };
 }
 
+function esErrorDeEnvio(status: number): boolean {
+  return status === 400 || status === 409 || status === 413 || status === 422 || status === 502;
+}
+
 function listaDesdeJson(json: unknown): Tarea[] | null {
   const crudo = Array.isArray(json)
     ? json
@@ -120,8 +124,8 @@ async function avisoDeAuth(respuesta: Response): Promise<string> {
   return "Sign in to continue.";
 }
 
-async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {
-  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(4000) });
+async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch, ms = 4000): Promise<Response> {
+  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(ms) });
 }
 
 async function leerJson(respuesta: Response): Promise<unknown> {
@@ -143,7 +147,7 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const tareas = listaDesdeJson(await leerJson(respuesta));
     if (!tareas) throw new Error("forma");
-    return { tareas: filtrarTareas(tareas, filtro), ejemplo: false };
+    return { tareas, ejemplo: false };
   } catch {
     const tareas = filtrarTareas(tareasEjemplo(), filtro);
     return { tareas: conEstados(tareas, opciones.estados), ejemplo: true };
@@ -166,8 +170,10 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
   if (tarea.walletCobro) cuerpo.set("wallet", tarea.walletCobro);
 
   try {
-    const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
-    if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
+    const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl, 20_000);
+    if (respuesta.status === 401 || respuesta.status === 403 || esErrorDeEnvio(respuesta.status)) {
+      throw new ErrorDeSesion(await avisoDeAuth(respuesta));
+    }
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
     if (!creada) throw new Error("forma");
