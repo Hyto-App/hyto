@@ -2,12 +2,14 @@ import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import { esContrato } from "@/lib/escrow/cuerpos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
-const MAX_BYTES = 8_000_000;
+const MAX_BYTES = 4_000_000;
+const TIPOS_FOTO = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]);
 const PLAZO_MS = 2800;
 
 export type ActorEvidencia = {
@@ -60,15 +62,18 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
       return new Response(MARCADOR_EJEMPLO, {
-        headers: { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" },
+        headers: {
+          "content-type": "image/svg+xml",
+          "cache-control": "private, max-age=3600",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "default-src 'none'",
+        },
       });
     }
     if (!fotos) return sinFotos();
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
-    return new Response(Buffer.from(foto.bytes), {
-      headers: { "content-type": foto.tipo || "application/octet-stream", "cache-control": "private, max-age=3600" },
-    });
+    return new Response(Buffer.from(foto.bytes), { headers: encabezadosFoto(foto.tipo, foto.bytes) });
   } catch {
     return baseNoLista();
   }
@@ -86,7 +91,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   const foto = form.get("foto");
   if (!tareaId || !(foto instanceof Blob)) return json({ aviso: "The task and the photo are missing." }, 400);
   if (foto.size > MAX_BYTES) return json({ aviso: "The photo is too large." }, 413);
-  if (!esImagen(foto)) return json({ aviso: "Choose a photo." }, 400);
+  if (!(await esImagen(foto))) return json({ aviso: "Choose a photo." }, 400);
 
   try {
     await asegurarSemilla(deps.almacen);
@@ -105,6 +110,9 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     }
     if (wallet && wallet !== tarea.walletCobro && !asignado) {
       return json({ aviso: "Only the person assigned to the task can set the payout account." }, 403);
+    }
+    if (wallet && wallet !== tarea.walletCobro && tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
+      return json({ aviso: "The payout account is locked because the escrow is already deployed." }, 409);
     }
 
     let blobId: string;
@@ -192,9 +200,43 @@ function texto(valor: FormDataEntryValue | null): string {
   return typeof valor === "string" ? valor.trim() : "";
 }
 
-function esImagen(foto: Blob): boolean {
-  if (foto.type.startsWith("image/")) return true;
-  return foto.type === "" && foto.size > 0;
+async function esImagen(foto: Blob): Promise<boolean> {
+  const tipo = tipoNormalizado(foto.type);
+  const cabeza = new Uint8Array(await foto.slice(0, 256).arrayBuffer());
+  if (pareceSvg(cabeza)) return false;
+  if (TIPOS_FOTO.has(tipo)) return true;
+  return tipo === "" && magiaDeFoto(cabeza);
+}
+
+function tipoNormalizado(tipo: string): string {
+  const limpio = tipo.toLowerCase().split(";")[0].trim();
+  if (limpio === "image/jpg" || limpio === "image/pjpeg") return "image/jpeg";
+  return limpio;
+}
+
+function pareceSvg(bytes: Uint8Array): boolean {
+  const texto = new TextDecoder("utf-8", { fatal: false }).decode(bytes).trimStart().toLowerCase();
+  return texto.startsWith("<svg") || texto.startsWith("<?xml") || texto.startsWith("<!doctype");
+}
+
+function magiaDeFoto(bytes: Uint8Array): boolean {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
+  const texto = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  if (texto.startsWith("GIF87a") || texto.startsWith("GIF89a")) return true;
+  if (texto.startsWith("RIFF") && texto.slice(8, 12) === "WEBP") return true;
+  return texto.slice(4, 8) === "ftyp" && /heic|heif|mif1|msf1/.test(texto.slice(8, 16).toLowerCase());
+}
+
+function encabezadosFoto(tipo: string, bytes: Uint8Array): HeadersInit {
+  const declarado = tipoNormalizado(tipo);
+  const seguro = !pareceSvg(bytes) && TIPOS_FOTO.has(declarado);
+  return {
+    "content-type": seguro ? declarado : "application/octet-stream",
+    "x-content-type-options": "nosniff",
+    "cache-control": "private, max-age=3600",
+    "content-disposition": seguro ? "inline" : "attachment",
+  };
 }
 
 function direccion(valor: string): string | null {

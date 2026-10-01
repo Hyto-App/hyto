@@ -409,6 +409,39 @@ test("un reembolso sin monto o con la revisión fallida no se despliega", async 
   }
 });
 
+test("fondear usa el monto de la tarea y no el que manda el cliente", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("stand", { contratoEscrow: CONTRATO, walletCobro: RECEPTOR });
+  const anterior = process.env.TRUSTLESS_API_KEY;
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  let amount: unknown = null;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.endsWith("/escrow/multi-release/v2/fund")) {
+      amount = (JSON.parse(String(init?.body)) as { amount?: unknown }).amount;
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc" }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    const respuesta = await prepararFirmaHttp(
+      sesion(ORGANIZADOR),
+      pedido({ accion: "fondear", contrato: CONTRATO, firmante: ORGANIZADOR, monto: 1 }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 200);
+    assert.equal(amount, 20);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior);
+    reiniciarLimite();
+  }
+});
+
 function restaurar(nombre: string, valor: string | undefined): void {
   if (valor === undefined) delete process.env[nombre];
   else process.env[nombre] = valor;

@@ -15,6 +15,13 @@ import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
 type Fase = "cargando" | "inicio" | "camara" | "foto" | "enviando" | "lista" | "faltante";
 
+const MAX_FOTO = 4_000_000;
+const TIPOS_FOTO = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"]);
+
+function blobDeLienzo(lienzo: HTMLCanvasElement, calidad: number): Promise<Blob | null> {
+  return new Promise((resolve) => lienzo.toBlob((blob) => resolve(blob), "image/jpeg", calidad));
+}
+
 export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -119,7 +126,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     }
   }
 
-  function tomarFoto() {
+  async function tomarFoto() {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
       setError("The camera is not ready yet.");
@@ -134,24 +141,33 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       return;
     }
     contexto.drawImage(video, 0, 0);
-    lienzo.toBlob(
-      (blob) => {
-        if (!blob) {
-          setError("Could not take the photo.");
-          return;
-        }
-        usarFoto(blob);
-      },
-      "image/jpeg",
-      0.9,
-    );
+    let calidad = 0.9;
+    let blob = await blobDeLienzo(lienzo, calidad);
+    while (blob && blob.size > MAX_FOTO && calidad > 0.45) {
+      calidad -= 0.15;
+      blob = await blobDeLienzo(lienzo, calidad);
+    }
+    if (!blob) {
+      setError("Could not take the photo.");
+      return;
+    }
+    if (blob.size > MAX_FOTO) {
+      setError("The photo is too large.");
+      return;
+    }
+    usarFoto(blob);
   }
 
   function elegirArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo) return;
-    if (archivo.type && !archivo.type.startsWith("image/")) {
+    if (archivo.size > MAX_FOTO) {
+      setError("The photo is too large.");
+      return;
+    }
+    const tipo = archivo.type.toLowerCase().split(";")[0].trim();
+    if (tipo === "image/svg+xml" || (tipo && !TIPOS_FOTO.has(tipo))) {
       setError("Choose a photo.");
       return;
     }
@@ -165,6 +181,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     setError(null);
     try {
       const resultado = await subirEvidencia(tarea, foto);
+      if (resultado.ejemplo && !ejemplo) {
+        setError("Could not send. Try again.");
+        setFase("foto");
+        return;
+      }
       setEvidencia(resultado.evidencia);
       setEjemplo(resultado.ejemplo);
       if (resultado.ejemplo) {
@@ -277,7 +298,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             type="button"
             disabled={fase === "enviando"}
             onClick={() => {
-              if (fase === "camara") tomarFoto();
+              if (fase === "camara") void tomarFoto();
               else if (fase === "foto") void enviar();
               else if (sinCamara || !navigator.mediaDevices?.getUserMedia) archivoRef.current?.click();
               else void abrirCamara();
@@ -307,7 +328,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       <input
         ref={archivoRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
         capture="environment"
         tabIndex={-1}
         aria-hidden="true"

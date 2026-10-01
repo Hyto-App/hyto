@@ -100,6 +100,7 @@ test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha"
 
   const foto = await leerFotoHttp(almacen, fotos, json.evidencia.id, VOLUNTARIO);
   assert.equal(foto.headers.get("content-type"), "image/jpeg");
+  assert.equal(foto.headers.get("x-content-type-options"), "nosniff");
   assert.equal((await foto.arrayBuffer()).byteLength, 3);
 
   const tarea = await almacen.leerTarea("comida");
@@ -155,6 +156,79 @@ test("solo el voluntario asignado fija la cuenta de cobro", async () => {
     actor: { usuarioId: "voluntario-1", rol: "voluntario" },
   });
   assert.equal(asignado.status, 201);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+});
+
+test("un svg no se acepta, ni disfrazado de jpeg", async () => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`;
+  const pedir = (tipo: string) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([svg], { type: tipo }), "evidencia.jpg");
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+  const directo = await publicarEvidenciaHttp(pedir("image/svg+xml"), {
+    almacen: crearMemoria(),
+    fotos: crearFotosMemoria(),
+  });
+  assert.equal(directo.status, 400);
+  const disfraz = await publicarEvidenciaHttp(pedir("image/jpeg"), {
+    almacen: crearMemoria(),
+    fotos: crearFotosMemoria(),
+  });
+  assert.equal(disfraz.status, 400);
+});
+
+test("una foto svg ya guardada no se sirve como imagen de la app", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`;
+  const blobId = await fotos.guardar("x.svg", new Blob([svg], { type: "image/svg+xml" }));
+  await almacen.crearEvidencia({
+    id: "ev-svg",
+    tareaId: "stand",
+    blobId,
+    monto: null,
+    fecha: null,
+    creadaEn: "2026-10-01T00:00:00.000Z",
+  });
+  const foto = await leerFotoHttp(almacen, fotos, "ev-svg", { usuarioId: "voluntario-1", demo: false });
+  assert.equal(foto.status, 200);
+  assert.equal(foto.headers.get("content-type"), "application/octet-stream");
+  assert.equal(foto.headers.get("x-content-type-options"), "nosniff");
+  assert.match(foto.headers.get("content-disposition") ?? "", /attachment/);
+});
+
+test("la cuenta de cobro queda fija cuando el escrow ya existe", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const propia = "G" + "A".repeat(55);
+  const otra = "G" + "C".repeat(55);
+  const contrato = "C" + "A".repeat(55);
+  await almacen.actualizarTarea("stand", { walletCobro: propia, contratoEscrow: contrato });
+  const pedir = (wallet: string) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("wallet", wallet);
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+  const cambio = await publicarEvidenciaHttp(pedir(otra), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-1", rol: "voluntario" },
+  });
+  assert.equal(cambio.status, 409);
+  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+  assert.equal((await almacen.ultimaEvidencia("stand"))?.id, "ejemplo-stand");
+  const misma = await publicarEvidenciaHttp(pedir(propia), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-1", rol: "voluntario" },
+  });
+  assert.equal(misma.status, 201);
   assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
 });
 

@@ -60,7 +60,7 @@ test("si la ruta responde, no se rellenan los ejemplos", async () => {
   assert.equal(lista.ejemplo, false);
   assert.deepEqual(
     lista.tareas.map((tarea) => tarea.id),
-    ["real"],
+    ["real", "otra"],
   );
   assert.equal(lista.tareas[0]?.estado, "pagado");
 });
@@ -80,6 +80,33 @@ test("un reembolso de ejemplo trae monto y fecha; un trabajo no", async () => {
   assert.equal(trabajo.evidencia.monto, null);
   assert.equal(trabajo.evidencia.fecha, null);
   assert.deepEqual(trabajo.evidencia, evidenciaEjemplo(stand));
+});
+
+test("la lista real no se vacía si el miembro local no coincide", async () => {
+  const fetchImpl: typeof fetch = async () =>
+    json({
+      tareas: [{ id: "real", titulo: "Tarea real", tipo: "trabajo", monto: "8", miembroId: "u-real", estado: "pendiente" }],
+    });
+  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl });
+  assert.equal(lista.ejemplo, false);
+  assert.equal(lista.tareas[0]?.id, "real");
+  const propia = await leerTarea("real", { miembroId: "voluntario-1" }, { fetch: fetchImpl });
+  assert.equal(propia.ejemplo, false);
+  assert.equal(propia.tarea?.id, "real");
+});
+
+test("un 413 muestra el aviso y no guarda un ejemplo", async () => {
+  const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const fetchImpl: typeof fetch = async () => json({ aviso: "The photo is too large." }, 413);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorDeSesion);
+      assert.equal(error.aviso, "The photo is too large.");
+      return true;
+    },
+  );
 });
 
 test("un 401 no se guarda como evidencia de ejemplo", async () => {

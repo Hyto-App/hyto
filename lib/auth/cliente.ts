@@ -7,7 +7,7 @@ export async function crearAuth() {
   const appId = appIdPublico();
   if (!appId) return null;
   const { CavosAuth } = await import("@cavos/kit");
-  // The Hyto cookie lasts 14 days and is shared across tabs. The public Cavos
+  // The Hyto cookie lasts at most 24 hours and is shared across tabs. The public Cavos
   // identity has to live in localStorage or a new tab cannot sign. The access
   // token still dies with the tab; recordarTokenCavos keeps a non-expired copy.
   return new CavosAuth({ appId, persistSession: true });

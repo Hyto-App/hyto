@@ -220,7 +220,7 @@ export function Revision({
       <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <figure className="overflow-hidden rounded-3xl bg-[var(--papel)]">
           {foto ? (
-            <img src={foto} alt="" className="aspect-[4/3] w-full object-cover" />
+            <img src={foto} alt={`Evidence for ${textoVisible(tarea.titulo)}`} className="aspect-[4/3] w-full object-cover" />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/3] flex-col justify-end bg-[var(--fondo)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
