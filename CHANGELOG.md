@@ -2,6 +2,30 @@
 
 Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
 
+## 2026-10-01
+
+### Nuevo
+
+- Quedó un informe de cómo está la aplicación: qué ya cuida los pagos y qué hay que arreglar antes de mover dinero de verdad. Josué Valles, PR #64.
+- Quedaron instrucciones, una por persona, para trabajar con la herramienta lo que encontró ese informe. Josué Valles, PR #65.
+
+### Arreglado
+
+- Si crear el depósito sale bien y cargar el dinero falla, la revisión ya no propone crear otro. Muestra el botón para cargar el dinero en el que ya existe. Raúl (Milasur), PR #67.
+
+### Cambiado
+
+- Los avisos del servidor, sobre el pago, las cuentas del depósito y los comandos de la base, quedaron en inglés. Si vuelve a colarse un aviso en español, las pruebas lo marcan. Raúl (Milasur), PR #68.
+- Antes de empezar un trabajo, el equipo y las herramientas tienen que consultar la documentación oficial de Stellar (Stellar Raven). Josué Valles, PR #62.
+- Se anotaron ideas del 30 de septiembre para mirar más adelante, sin comprometerse a hacerlas. El proyecto sigue solo con los pagos por depósito hasta que lo actual funcione. Después quedan el tema oscuro, las insignias y un tablero. También quedaron preguntas abiertas: la revisión con inteligencia, la foto solo con la cámara y un recorrido más simple para quien no usa cripto. Josué Valles, PR #63.
+- El nombre que figura en una tarea es una sugerencia, no un dueño exclusivo. Cualquiera puede ayudar. Si alguien toma la tarea de otra persona, lo deja escrito en el buzón. Josué Valles, PR #66.
+
+### Pendiente para el equipo
+
+- Aprobar y pagar sigue visible aunque el depósito todavía no tenga el dinero. Raúl (Milasur), PR #67.
+- Si al abrir la revisión no se puede leer el saldo, no aparece el botón para solo cargar el dinero. Raúl (Milasur), PR #67.
+- El informe deja abierto, entre lo más urgente: que quien cobra pueda recibir USDC de prueba antes de crear el depósito, guardar el contrato en la base al prepararlo, comprobar que la persona controla su cuenta, rechazar fotos que no sean una imagen común, exigir en el sitio los datos del ingreso, y sumar pruebas automáticas. Josué Valles, PR #64. El reparto sugerido está en el PR #65.
+
 ## 2026-09-29
 
 ### Nuevo
