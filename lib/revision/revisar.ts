@@ -23,7 +23,14 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "stub" }));
       return cerrado;
     }
-    const senales = await preguntarLaya(contexto.layaUrl, descripcion.texto, tarea.condicion, fetchImpl, AbortSignal.timeout(8000));
+    const senales = await preguntarLaya(
+      contexto.layaUrl,
+      descripcion.texto,
+      tarea.condicion,
+      tarea.tipo,
+      fetchImpl,
+      AbortSignal.timeout(8000),
+    );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;

@@ -152,12 +152,56 @@ async function conLog<T>(trabajo: () => Promise<T>): Promise<T> {
   }
 }
 
+test("la revisión manda a Laya el tipo y la condición de la tarea", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  assert.equal(tarea.tipo, "reembolso");
+  let cuerpo: { model?: string; state?: string; questions?: { noul?: { instructions?: string }; score?: { criteria?: unknown } } } | null =
+    null;
+  let paso = 0;
+  const resultado = await revisar(tarea, FOTO, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    fetchImpl: async (input, init) => {
+      paso += 1;
+      if (paso === 1) {
+        assert.match(String(input), /api\.groq\.com/);
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  texto: "Team meal receipt, 12.40 USD, dated 2026-09-27.",
+                  monto: "12.40",
+                  fecha: "2026-09-27",
+                }),
+              },
+            },
+          ],
+        });
+      }
+      assert.match(String(input), /\/v1\/systemone$/);
+      cuerpo = JSON.parse(String(init?.body)) as typeof cuerpo;
+      return Response.json({ choice: "factura", noul: true, score: "cumplió" });
+    },
+  });
+  assert.equal(resultado.origen, "scout");
+  assert.equal(resultado.veredicto, "cumplió");
+  assert.ok(cuerpo);
+  assert.equal(cuerpo.model, "multilingual");
+  assert.match(cuerpo.state ?? "", /Condition: Photo of the meal receipt/);
+  assert.match(cuerpo.questions?.noul?.instructions ?? "", /receipt or an invoice/);
+  assert.match(cuerpo.questions?.noul?.instructions ?? "", /Photo of the meal receipt/);
+  assert.equal(Array.isArray(cuerpo.questions?.score?.criteria), true);
+  assert.equal((cuerpo.questions?.score?.criteria as unknown[]).length, 3);
+});
+
 test("la clave de Laya viaja solo si está configurada", async () => {
   const previa = process.env.LAYA_API_KEY;
   process.env.LAYA_API_KEY = "clave-compartida";
   try {
     let autorizacion = "";
-    await preguntarLaya("https://laya.example", "texto", "condición", async (_input, init) => {
+    await preguntarLaya("https://laya.example", "texto", "condición", "trabajo", async (_input, init) => {
       autorizacion = new Headers(init?.headers).get("authorization") ?? "";
       return Response.json({ choice: "stand", noul: true, score: "parcial" });
     });

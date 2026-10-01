@@ -1,4 +1,5 @@
 import { claveDeLaya } from "@/lib/config/entorno";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Senales } from "./armar";
 import { nivelScore } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
@@ -9,34 +10,112 @@ export function urlLaya(base: string): string {
   return `${limpia}/v1/systemone`;
 }
 
-export function cuerpoLaya(texto: string, condicion: string): unknown {
+export function cuerpoLaya(texto: string, condicion: string, tipo: TipoTarea): unknown {
+  const pedido = condicion.trim();
   return {
     model: "multilingual",
-    state: `${texto}\nCondition: ${condicion}`,
+    state: `${texto}\nCondition: ${pedido}`,
     questions: {
-      choice: {
-        type: "choice",
-        instructions: "What does the photo show?",
-        criteria: {
-          trabajo: "The finished work is visible",
-          factura: "An invoice or a receipt is visible",
-          otra: "It is not clear",
-        },
-      },
-      noul: {
-        type: "noul",
-        instructions: condicion ? `The photo meets this condition: ${condicion}` : "The photo shows what was requested",
-      },
-      score: {
-        type: "score",
-        instructions: "How complete is the evidence?",
-        criteria: [
-          "The requested item is barely visible",
-          "Part of it is visible, something is missing",
-          "The requested item is clearly visible",
-        ],
-      },
+      choice: choiceDe(tipo, pedido),
+      noul: noulDe(tipo, pedido),
+      score: scoreDe(tipo, pedido),
     },
+  };
+}
+
+// Laya never sees the photo. Each question is a check against the written description.
+function choiceDe(tipo: TipoTarea, condicion: string) {
+  if (tipo === "reembolso") {
+    return {
+      type: "choice" as const,
+      instructions: condicion
+        ? `Which label matches the written description? This reimbursement asks for: "${condicion}". Count only evidence the description names, not words copied from the condition.`
+        : "Which label matches the written description of this reimbursement? Count only evidence the description names.",
+      criteria: {
+        trabajo: "The description names finished work and does not name a receipt or an invoice.",
+        factura: condicion
+          ? `The description names a receipt or an invoice for this request: "${condicion}".`
+          : "The description names a receipt or an invoice.",
+        otra: "The description does not name a receipt or an invoice. Use this for a meal with no document, a blank wall, or a vague scene.",
+      },
+    };
+  }
+  return {
+    type: "choice" as const,
+    instructions: condicion
+      ? `Which label matches the written description? This work asks for: "${condicion}". Count only evidence the description names, not words copied from the condition.`
+      : "Which label matches the written description of this work? Count only evidence the description names.",
+    criteria: {
+      trabajo: condicion
+        ? `The description names the finished work this request asks for: "${condicion}".`
+        : "The description names a finished piece of work.",
+      factura: "The description names an invoice or a receipt, not the finished work.",
+      otra: "The description does not name the finished work. Use this for a blank wall, an unrelated scene, or a vague scene.",
+    },
+  };
+}
+
+function noulDe(tipo: TipoTarea, condicion: string) {
+  if (condicion) {
+    const evidencia =
+      tipo === "reembolso"
+        ? `a receipt or an invoice for the evidence this condition requests: "${condicion}"`
+        : `the evidence this condition requests: "${condicion}"`;
+    return {
+      type: "noul" as const,
+      instructions: `The written description explicitly names ${evidencia}. A blank wall, an empty room, or a description that never names that evidence makes this statement false.`,
+    };
+  }
+  if (tipo === "reembolso") {
+    return {
+      type: "noul" as const,
+      instructions:
+        "The written description explicitly names a receipt or an invoice. A meal, a blank wall, or a description that names no receipt and no invoice makes this statement false.",
+    };
+  }
+  return {
+    type: "noul" as const,
+    instructions:
+      "The written description explicitly names a finished piece of work and what was done. A blank wall, an empty room, or a description that names no finished work makes this statement false.",
+  };
+}
+
+function scoreDe(tipo: TipoTarea, condicion: string) {
+  if (tipo === "reembolso") {
+    return {
+      type: "score" as const,
+      instructions: condicion
+        ? `How much of the reimbursement evidence does the written description name? Required evidence: "${condicion}". Count a detail only when the description states it. Do not treat the condition text itself as something the description said.`
+        : "How much of a reimbursement receipt does the written description name? Count a detail only when the description states it.",
+      criteria: condicion
+        ? [
+            "The description does not name a receipt and does not name an invoice.",
+            "The description names a receipt or an invoice, and it leaves out part of the required evidence.",
+            "The description names a receipt or an invoice and names every part of the required evidence.",
+          ]
+        : [
+            "The description does not name a receipt and does not name an invoice.",
+            "The description names a receipt or an invoice, and it does not state both an amount and a date.",
+            "The description names a receipt or an invoice, and it states both an amount and a date.",
+          ],
+    };
+  }
+  return {
+    type: "score" as const,
+    instructions: condicion
+      ? `How much of the required work evidence does the written description name? Required evidence: "${condicion}". Count a detail only when the description states it. Do not treat the condition text itself as something the description said.`
+      : "How much finished work does the written description name? Count a detail only when the description states it.",
+    criteria: condicion
+      ? [
+          "The description does not name the required evidence. A blank wall, an empty room, or an unrelated scene is this level.",
+          "The description names some of the required evidence and leaves out at least one part the condition asks for.",
+          "The description names every part the condition asks for.",
+        ]
+      : [
+          "The description does not name any finished work. A blank wall, an empty room, or an unrelated scene is this level.",
+          "The description names some finished work and also says that part of it is missing or not shown.",
+          "The description names the finished work and does not say that any part of it is missing or not shown.",
+        ],
   };
 }
 
@@ -147,6 +226,7 @@ export async function preguntarLaya(
   base: string,
   texto: string,
   condicion: string,
+  tipo: TipoTarea,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
 ): Promise<Senales> {
@@ -160,7 +240,7 @@ export async function preguntarLaya(
         "content-type": "application/json",
         ...(clave ? { authorization: `Bearer ${clave}` } : {}),
       },
-      body: JSON.stringify(cuerpoLaya(texto, condicion)),
+      body: JSON.stringify(cuerpoLaya(texto, condicion, tipo)),
       signal,
     });
   } catch (error) {
