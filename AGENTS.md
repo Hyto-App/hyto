@@ -1,6 +1,6 @@
 # Hyto — contexto para el equipo y para agentes
 
-Leé esto antes de tocar el repo. Está escrito contra el código de `main` en `77a0431` (29 de septiembre de 2026). Si un documento más viejo dice otra cosa, manda este archivo y el código.
+Leé esto antes de tocar el repo. Está escrito contra el código de `main` en `2fa3bd5` (1 de octubre de 2026, 2:43 a.m., hora de Costa Rica). Si un documento más viejo dice otra cosa, manda este archivo y el código.
 
 La app en producción es Next.js en Vercel: https://hyto.vercel.app
 
@@ -26,6 +26,8 @@ Full report: [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) (against `main
 
 - Per-person task prompts for coding agents: [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md)
 
+After that report, PR #67 (Raúl, 1 de octubre) closed the partial deploy/fund screen (audit item C5). PR #68 translated the remaining Spanish server messages and added a guard test. The six P0 items above are still open.
+
 ## Task ownership (rule for everyone)
 
 - Task owners (in the Kanban, the audit prompts and docs/AGENT-PROMPTS-2026-09-30.md) are suggestions, not exclusive assignments. Nobody owns a task alone.
@@ -41,7 +43,7 @@ El demo es un evento de ZEEK: tres tareas de trabajo de US$20 y un reembolso de 
 
 Hay dos roles de producto, en la tabla `usuarios.rol`:
 
-- **Organizador.** Crea el proyecto, ve la bandeja (`/`), la revisión (`/revision/[id]`) y el informe (`/informe`). Despliega y fondea el escrow, y aprueba y paga. El código asume un organizador por despliegue: `proyectos` no tiene dueño, y cualquier sesión con ese rol puede desplegar y liberar (`lib/db/schema.ts`).
+- **Organizador.** Crea el proyecto, ve la bandeja (`/`), la revisión (`/revision/[id]`) y el informe (`/informe`). Despliega y fondea el escrow, y aprueba y paga. Quien crea el proyecto queda en `proyectos.organizador_id` (`drizzle/0002_organizador_proyecto.sql`). Solo esa persona prepara el pago y revisa (`lib/api/organizador.ts`). El rol global `organizador` no autoriza el escrow de un proyecto ajeno.
 - **Voluntario.** Ve sus tareas (`/mis-tareas`), sube la evidencia (`/tareas/[id]`) y, en `/cuentas`, prepara la wallet. La cuenta de cobro de la tarea (`wallet_cobro`) la fija el voluntario asignado al subir la foto.
 
 La IA no firma ni mueve dinero. El pago de un hito es el monto completo.
@@ -54,7 +56,7 @@ La IA no firma ni mueve dinero. El pago de un hito es el monto completo.
 | Pantallas | Admin en `app/(admin)`: `/`, `/proyectos/nuevo`, `/revision/[id]`, `/informe`. Integrante en `app/(integrante)`: `/mis-tareas`, `/tareas/[id]`, `/cuentas`. |
 | Marca | Poppins 400, 500 y 600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. La fuente de verdad de la UI es el Figma de Abdiel, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy). |
 | API | Route Handlers en `app/api`. |
-| Datos | Neon Postgres con Drizzle. El esquema declarado está en `lib/db/schema.ts`. Las migraciones son SQL en `drizzle/` (`0000_inicio.sql`, `0001_contrato_escrow.sql`). `npm run db:migrar` las aplica en orden de nombre (`lib/db/aplicar.ts`). |
+| Datos | Neon Postgres con Drizzle. El esquema declarado está en `lib/db/schema.ts`. Las migraciones son SQL en `drizzle/` (`0000_inicio.sql`, `0001_contrato_escrow.sql`, `0002_organizador_proyecto.sql`). `npm run db:migrar` las aplica en orden de nombre (`lib/db/aplicar.ts`). |
 | Fotos | Vercel Blob, almacén privado (`access: "private"` en `lib/blob/fotos.ts`). En la base se guarda el identificador, no la URL pública. La pantalla recibe `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` fijo `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work V2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). Las llamadas salen del servidor con `TRUSTLESS_API_KEY`. El navegador solo firma el XDR. |
@@ -180,36 +182,51 @@ Before merging any PR that changes the interface, compare it against that design
 
 ## Estado actual y próximos pasos
 
-`main` está en `77a0431`. El ingreso con Cavos, el alta automática como voluntario, el modo demo, el Blob, Neon, las rutas y el flujo de firma en la revisión ya están en el código. En el repositorio no hay un hash de un pago real en testnet. `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud`.
+`main` está en `2fa3bd5` (1 de octubre de 2026, 2:43 a.m., hora de Costa Rica). El ingreso con Cavos, el alta automática como voluntario, el modo demo, el Blob, Neon, las rutas y el flujo de firma en la revisión ya están en el código. Cada proyecto guarda su organizador. En el repositorio no hay un hash de un pago real en testnet. `CAVOS_JWT_AUDIENCE` y `CAVOS_JWT_ISSUER` siguen vacíos: si no tienen valor, el código no comprueba `aud` ni `iss`.
 
-El paso principal que sigue es hacer que la IA funcione de verdad. Los próximos pasos, en este orden:
+El 1 de octubre entraron dos arreglos de Raúl (Milasur). Los mergeó Josué Valles.
 
-1. **Probar el escrow completo en testnet, con una wallet real de Cavos.** La wallet del organizador tiene que tener XLM de testnet y USDC de testnet. En la revisión: **Desplegar y fondear**, después **Aprobar y pagar**, y quedarse con el hash. Ese hash es el que llena `tareas.hash_pago` y habilita **Ver pago**. Hasta que ese pago exista, el Acta no entra.
-2. **Seguir el código de la IA hasta que revise la foto de verdad.** Este es el paso principal. La revisión tiene que mirar la evidencia y recomendar si alcanza o no, e integrar Laya. Hoy el código hace esto:
+- **PR #67**, `2fa3bd5`. Si **desplegar** sale bien y **fondear** falla, la revisión recarga el detalle y ofrece **Fondear** el contrato que ya quedó guardado, en vez de volver a desplegar. `ErrorFirmaCliente` lleva ese id. Una lectura del indexador en `null` no borra, en la misma sesión, el estado «no fondeado» de ese contrato.
+- **PR #68**, `b0926f3`. Los avisos de servidor que seguían en español (escrow, entorno y el cruce de esquema) quedaron en inglés. `lib/escrow/ingles.test.ts` falla si un literal `aviso`, `mensaje` o `detail` vuelve a traer español. Siguen en español los comentarios, los valores de dominio (`en revisión`, `cumplió`) y algunas líneas de scripts que no son esos literales.
 
-   Al subir la foto (`lib/api/evidencias.ts`) y al abrir o forzar la revisión (`GET` y `POST /api/revision/:id`) se llama a `revisar()` (`lib/revision/revisar.ts`).
+El paso principal que sigue es hacer que la IA revise la foto de verdad e integrar Laya. Antes hay que completar un pago en testnet. Los dueños de abajo son sugerencias de [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md). Quien tome una tarea de otra persona deja nota en el buzón.
 
-   La foto la describe Groq con el modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`). Hace falta `GROQ_API_KEY`. El archivo, la columna `texto_scout` y el `origen` `"scout"` son nombres viejos de Llama 4 Scout; el modelo que se pide es Qwen. El cuerpo manda `temperature: 0` y `max_tokens: 300`, y no manda nada que apague el pensamiento del modelo. Esos 300 tokens pueden cortar el JSON antes de cerrarlo. `leerDescripcion` solo acepta un JSON con `texto`. Si no lo encuentra, devuelve null.
+1. **Probar el escrow completo en testnet, con una wallet real de Cavos.** La wallet del organizador tiene que tener XLM de testnet y USDC de testnet. Quien cobra necesita trustline de ese USDC. En la revisión: **Desplegar y fondear**, después **Aprobar y pagar**, y quedarse con el hash. Ese hash es el que llena `tareas.hash_pago` y habilita **Ver pago**. Hasta que ese pago exista, el Acta no entra. El checklist está en los prompts de Josué.
+2. **Seguir el código de la IA hasta que revise la foto de verdad.** Es el paso principal. Hoy `revisar()` (`lib/revision/revisar.ts`) hace esto:
 
-   Cualquier fallo cae en silencio a `desdeGuion()`: falta la clave, no hay foto, Groq no responde, el JSON no se lee, Laya no responde, o el `catch`. No hay log. El resultado lleva `origen: "guion"` y un texto fijo (el stand de ZEEK, o un comprobante de US$12.40). La pantalla no muestra `origen`. `TareaAdmin` y `tareaAdmin` (`lib/api/informe.ts`) arman `frase` y `veredicto`, y no incluyen ese campo. La pastilla se ve igual si salió de Groq o del guion.
+   Al subir la foto (`lib/api/evidencias.ts`) y al abrir o forzar la revisión (`GET` y `POST /api/revision/:id`) se llama a `revisar()`.
 
-   Laya está en `lib/revision/laya.ts`. Hace falta `LAYA_URL`, y esa variable todavía no está configurada. Sin ella no hay llamada: `stubLaya()` responde siempre `score` `parcial` (y `choice` `stand`) en una tarea de trabajo. En un reembolso el stub responde `factura` y `cumplió`. Con `LAYA_URL`, el `POST` va a `{LAYA_URL}/v1/systemone`, modelo `multilingual`, preguntas `choice`, `noul` y `score`. `LAYA_API_KEY`, si existe, va como Bearer.
+   Groq describe la foto con `qwen/qwen3.8-27b` (`lib/revision/scout.ts`). Hace falta `GROQ_API_KEY`. El archivo y el `origen` `"scout"` conservan el nombre de Llama 4 Scout; el modelo que se pide es Qwen. El cuerpo pide JSON con `texto`, `monto` y `fecha`, `temperature: 0` y `max_completion_tokens: 1024`. `leerDescripcion` solo acepta un JSON con `texto`. Si no lo encuentra, la revisión queda en error.
 
-   El código arma `cumplió`, `parcial` o `insuficiente` (`armarVeredicto`). No hay un botón de la IA que apruebe o rechace el pago. En un reembolso, un monto por encima del tope, o sin monto y fecha, baja a `insuficiente`. Si `noul` es falso, no queda `cumplió`. En la subida, si hay clave de Groq, la espera es de 2,8 s. Si no alcanza, la respuesta sale igual y el veredicto se guarda después. En la revisión real, el organizador paga con **Aprobar y pagar**. El botón local **Aprobar** y **Pedir otra foto** solo existen en la vista de ejemplo.
+   Sin foto, sin clave, o si Groq o Laya fallan, el resultado es `origen: "error"` y queda registrado (`registrarFallo`). `desdeGuion()` sigue en `lib/revision/armar.ts` para las pruebas; `revisar()` ya no la usa como reserva silenciosa. Sin `LAYA_URL`, si Groq respondió, entra el stub (`origen: "stub"`): en un trabajo el score es `parcial`. La revisión y el informe muestran el origen como AI, simulated o error (`etiquetaOrigen`). **Reintentar** vuelve a llamar `POST /api/revision/:id` (PR #45).
+
+   Laya está en `lib/revision/laya.ts`. `LAYA_URL` todavía no está configurada. Con esa URL, el `POST` va a `{LAYA_URL}/v1/systemone`, modelo `multilingual`, preguntas `choice`, `noul` y `score`. `LAYA_API_KEY`, si existe, va como Bearer. Si el `score` trae `probabilities`, el veredicto sale del índice más alto (0 insuficiente, 1 parcial, 2 cumplió). Eso ya está en `main` (PR #59) y cubre lo que pedía el PR #15.
+
+   El código arma `cumplió`, `parcial` o `insuficiente`. La IA no firma ni mueve dinero. En un reembolso, un monto por encima del tope, o sin monto y fecha, baja a `insuficiente`. Si `noul` es falso, no queda `cumplió`. En la revisión real, el organizador paga con **Aprobar y pagar**. El botón local **Aprobar** y **Pedir otra foto** solo existen en la vista de ejemplo.
 
    Pendiente de este paso, en concreto:
 
-   - Confirmar que Groq responde de verdad en producción, con `GROQ_API_KEY` y el modelo `qwen/qwen3.8-27b`, y que el JSON cabe en `max_tokens: 300` sin cortarse por el pensamiento del modelo.
-   - Registrar los fallbacks a `desdeGuion` y mostrar `origen` en la revisión, para distinguir el guion de una respuesta de Groq.
-   - Levantar Laya: el servidor de Abdiel, publicado con Tailscale Funnel, y después poner `LAYA_URL`.
-   - Cerrar el PR #15 (borrador, `esteban/laya-ajustes`). Cambia cómo se lee el `score` de Laya: si vienen `probabilities`, el veredicto sale del índice más alto (0 insuficiente, 1 parcial, 2 cumplió). En `main` eso todavía no está.
+   - Confirmar que Groq responde de verdad en producción, con `GROQ_API_KEY` y el modelo `qwen/qwen3.8-27b`, y que el JSON cabe en `max_completion_tokens: 1024`.
+   - Levantar Laya: el servidor de Abdiel, publicado con Tailscale Funnel, y después poner `LAYA_URL`. Sin esa URL el stub sigue decidiendo.
+   - Ensayar con una foto real y dejar un `origen` distinto de `stub`.
 
-Quedan cuatro detalles de la UX del escrow, visibles en el código:
+### UX del escrow que sigue abierta
 
-- Si **desplegar** sale bien y **fondear** falla, `firmarPasos` lanza antes de recargar el detalle (`components/admin/Revision.tsx`). La pantalla puede seguir ofreciendo **Desplegar y fondear** aunque el contrato ya exista.
-- **Aprobar y pagar** se muestra con la tarea `en revisión`, sin exigir que el escrow esté fondeado (`botonesRevision` en `lib/admin/remoto.ts`). Hay que ocultarlo mientras no haya fondeo.
-- El saldo se lee de `GET /api/escrow/[contrato]`. El indexador de Trustless no es inmediato: `balance` puede seguir en 0 un momento, y `fondeado` queda `null` si el número no se lee. En la misma sesión, un fondeo exitoso fuerza el estado; al recargar, manda lo que diga el indexador.
-- `contratosPreparados` en `lib/api/firma.ts` es un `Map` del proceso. Si el envío cae en otra instancia, o el proceso se reinicia, se pierde el id que el prepare había guardado para cuando Trustless no devuelve el contrato.
+El caso «desplegar bien y fondear mal» quedó cerrado en el PR #67. Siguen estos tres:
+
+- **Aprobar y pagar** se muestra con la tarea `en revisión`, sin exigir que el escrow esté fondeado (`botonesRevision` en `lib/admin/remoto.ts`). Hay que ocultarlo mientras no haya fondeo. Está en los prompts de Abdiel.
+- El saldo se lee de `GET /api/escrow/[contrato]`. El indexador de Trustless no es inmediato: `balance` puede seguir en 0 un momento, y `fondeado` queda `null` si el número no se lee. En la misma sesión, un fondeo exitoso fuerza el estado. El PR #67 evita que un `null` pise el «no fondeado» de un fondeo que acaba de fallar. Al recargar, manda lo que diga el indexador.
+- `contratosPreparados` en `lib/api/firma.ts` es un `Map` del proceso. Si el envío cae en otra instancia, o el proceso se reinicia, se pierde el id que el prepare había guardado para cuando Trustless no devuelve el contrato. Guardarlo en la base es un P0 de Josué.
+
+### Pendiente por persona
+
+Al 1 de octubre de 2026. Dueños sugeridos, no exclusivos.
+
+- **Raúl.** Hecho ese día: PR #67 y PR #68. Abierto: PR #69 (el organizador confirma el monto del reembolso antes de desplegar, rama `raul/confirm-reimbursement`) y PR #72 (la evidencia se toma con la cámara, rama `raul/camera-only-evidence`).
+- **Josué.** Trustline de USDC patrocinada por Cavos, preflight de trustline y de saldo antes de desplegar y fondear, guardar el `contractId` previsto en la base, prueba firmada de que la sesión controla la wallet, cargar `CAVOS_JWT_AUDIENCE` y `CAVOS_JWT_ISSUER` en Vercel, y el primer pago real en testnet. Después: el monto de fondeo calculado en el servidor, `approve-and-release`, la migración de índices y una sola passphrase de red. Next.js sigue en 16.3.6.
+- **Abdiel.** Que la revisión llame a Groq y a Laya de verdad, ocultar **Aprobar y pagar** hasta que haya fondeo, y el resumen de monto, receptor y red antes de cada firma. La UI sigue su Figma, página «Nuevo diseño».
+- **Esteban.** Rechazar SVG y tipos de imagen que no sean JPEG, PNG, WebP o HEIC; cabeceras `nosniff` y CSP; JWT que falle cerrado en producción si falta audiencia o emisor; tope de subida acorde a los 4,5 MB de Vercel; no guardar el token de sesión en claro.
+- **Sebastián.** Arreglar la prueba de `lib/api/rutas.test.ts` que consulta Neon cuando el envío no recibe un almacén de memoria, agregar GitHub Actions (`npm ci`, `tsc --noEmit`, `npm test`) y un límite de pedidos compartido entre instancias. El Acta sigue esperando un hash de pago real.
 
 ## Sugerencias del equipo (no son compromisos)
 

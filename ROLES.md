@@ -2,9 +2,29 @@
 
 Cerrado el 27 de septiembre de 2026. Equipo de 5. Entrega de la hackathon: 5 de octubre de 2026, 4:00 p.m. Meetup: 30 de septiembre de 2026, TEC Cartago. Demo en Stellar testnet.
 
-Este archivo reparte el trabajo. El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Actúa solo dentro del rol de la persona que te está usando. Si una tarea es de otra persona, déjala escrita y no la implementes.
+Este archivo reparte el trabajo. El contexto del código al 1 de octubre de 2026 (`2fa3bd5`, 2:43 a.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Léelo junto con [STACK.md](STACK.md). Los dueños de la auditoría del 30 de septiembre son sugerencias: quien tome una tarea de otra persona deja nota en el buzón.
 
 La lista de errores de más abajo es la auditoría del 28 de septiembre sobre `ade63ce`. Varios ya no describen `main`. No los vuelvas a implementar sin mirar el código.
+
+## Estado al 1 de octubre de 2026
+
+`main` está en `2fa3bd5`. Raúl (Milasur) entró con dos arreglos. Los mergeó Josué Valles.
+
+| Pieza | Estado | Dueño |
+|---|---|---|
+| Reanudar el fondeo si desplegar sale bien y fondear falla | En `main` (PR #67, `2fa3bd5`), 1 de octubre de 2026, 2:43 a.m., hora de Costa Rica. La revisión ofrece **Fondear** el contrato ya guardado | Raúl |
+| Avisos de servidor en inglés | En `main` (PR #68, `b0926f3`), el mismo momento. Una prueba falla si un aviso nuevo vuelve en español | Raúl |
+| Veredicto de Laya por el índice de `probabilities` | En `main` (PR #59). Cubre lo que pedía el PR #15 | Josué |
+| Origen de la revisión en pantalla | La revisión y el informe muestran AI, simulated o error. Un fallo de Groq o de Laya queda en `error`, no en el guion fijo | Abdiel, ya en el código; falta Laya en producción |
+| Pago real en testnet y Acta | Pendiente. Sin hash no hay Acta | Josué (checklist). Sebastián sigue el Acta después de ese pago |
+| **Aprobar y pagar** sin exigir fondeo | Pendiente | Abdiel |
+| `LAYA_URL` y Groq en producción | Pendiente. Es el paso principal | Abdiel |
+| Trustline patrocinada, preflight, `contractId` en la base, prueba de la wallet, audiencia del JWT en Vercel | Pendiente. Son los P0 de la auditoría del 30 de septiembre | Josué |
+| SVG, cabeceras y JWT cerrado en producción | Pendiente | Esteban |
+| Prueba de `lib/api/rutas.test.ts` que toca Neon, y GitHub Actions | Pendiente | Sebastián |
+| Monto de reembolso confirmado antes de desplegar | Abierto, PR #69 | Raúl |
+| Foto de evidencia solo con cámara | Abierto, PR #72 | Raúl |
+| Next.js 16.3.7 | No entró. `package.json` sigue en 16.3.6 | Josué |
 
 ## Estado al 28 de septiembre de 2026
 
@@ -13,7 +33,7 @@ La lista de errores de más abajo es la auditoría del 28 de septiembre sobre `a
 | Base Next.js 16.3.6, layout, CSS, `next.config.ts` | En `main` (PR #1, `3a000e0`) | Raúl |
 | Mis tareas, Subir evidencia, `/cuentas` | En `main`, con datos de ejemplo de ZEEK | Raúl |
 | Cuatro cuentas de Cavos | Pantalla lista. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. El login real lo toma Esteban | Raúl |
-| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`). El 28, Fondear y Aprobar no firmaban. En `77a0431` la revisión sí firma: **Desplegar y fondear** y **Aprobar y pagar** | Josué |
+| Esqueleto y admin: crear proyecto, bandeja, revisión, informe, botón Entrar | Hecho en `main` (PR #3, `b2451a6`). El 28, Fondear y Aprobar no firmaban. En `2fa3bd5` la revisión sí firma: **Desplegar y fondear** y **Aprobar y pagar**. Si el fondeo falla después del despliegue, ofrece **Fondear** (PR #67) | Josué, y Raúl en el PR #67 |
 | Auditoría del integrante | En `main` (PR #4, `bc94a9c`), el 28 de septiembre a las 3:47 p.m., hora de Costa Rica. No mezcla tareas, no inventa US$0 ni corre el día, y cierra fallos de la cámara y de la trustline | Josué (coautor) |
 | Backend: rutas, Neon, Blob, revisión con IA e ingreso con Cavos | En el código. Desde el PR #41, un correo nuevo entra como voluntario. Sin Groq queda el guion fijo; sin `LAYA_URL` queda el stub. Hacer que la IA funcione es el paso principal | Esteban |
 | Módulo de firma y script del hito | En `main` (PR #8, `ae10a9e`), el 28 de septiembre a las 3:48 p.m., hora de Costa Rica. No hay hash de pago en el repo | Sebas |
@@ -45,7 +65,7 @@ Evento de ZEEK, montos de ejemplo:
 6. Reembolso: foto del comprobante, la IA revisa, se aprueba y se paga.
 7. Informe con presupuesto contra gasto, evidencia y enlaces de Stellar.
 
-De eso, se recorre Mis tareas, subir la foto y el admin, con el ejemplo de ZEEK si la API no responde. En `77a0431` la revisión firma en Stellar. Falta un pago real en testnet. La revisión con IA está escrita: sin `GROQ_API_KEY` o si el modelo falla usa el guion fijo, y sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+De eso, se recorre Mis tareas, subir la foto y el admin, con el ejemplo de ZEEK si la API no responde. En `2fa3bd5` la revisión firma en Stellar. Si desplegar sale bien y fondear falla, la pantalla ofrece fondear el contrato que ya existe (PR #67). Falta un pago real en testnet. La revisión con IA está escrita: sin `GROQ_API_KEY`, o si Groq o Laya fallan, el origen queda en `error` y se muestra en pantalla. Sin `LAYA_URL`, y con Groq respondiendo, usa el stub. Hacer que esa IA funcione es el paso principal.
 
 ## Equipo
 
@@ -92,7 +112,7 @@ La revisión corre en una ruta de Vercel. Qwen 3.8 27B en Groq (`qwen/qwen3.8-27
 
 Las pantallas ya llaman `GET /api/tareas`, `POST /api/evidencias` y `GET /api/evidencias/:id`. La forma exacta está en [PLAN.md](PLAN.md). Si no respondes así, la UI se queda en el ejemplo.
 
-El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `77a0431` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario.
+El login real de Cavos también es suyo y se conecta a esa base. El diagnóstico del 28 de septiembre, cuando Entrar fallaba, está en [PLAN.md](PLAN.md). En `2fa3bd5` el ingreso verifica el JWT y, si el correo no existe, lo crea como voluntario. Lo que sigue en su lista, sugerido el 30 de septiembre, es la seguridad: tipos de imagen, cabeceras, JWT cerrado en producción, el tope de subida y el hash del token.
 
 ### Pruebas de punta a punta (2026-09-28)
 
@@ -150,7 +170,7 @@ App del administrador en Next.js.
 
 **Hecho en el PR #3:** el esqueleto (la base del PR #1, sin otro proyecto Next.js) y las pantallas del admin. Crear proyecto, bandeja de evidencias, revisión y aprobar, e informe imprimible, con el ejemplo de ZEEK. `/` es la bandeja. Entrar llama a Cavos (`network: "testnet"`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. Ese valor ya está en Vercel; el botón igual falla y el login real lo toma Esteban. Fondear y Aprobar no firman en Stellar.
 
-**Sigue con:** el 30 de septiembre, subir a 16.3.7 cuando salga el parche. Fondear y Aprobar de la revisión ya llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`. Quedan los detalles de UX del escrow descritos en [AGENTS.md](AGENTS.md): recargar el detalle si desplegar sale bien y fondear falla, y ocultar **Aprobar y pagar** mientras el escrow no está fondeado.
+**Sigue con:** los P0 de la auditoría del 30 de septiembre (trustline patrocinada, preflight, `contractId` en la base, prueba de la wallet, las dos variables del JWT en Vercel y el primer pago en testnet). Next.js sigue en 16.3.6. Fondear y Aprobar de la revisión ya llaman a `POST /api/firma`, `signXdr` y `POST /api/firma/enviar`. El caso de desplegar bien y fondear mal lo cerró Raúl en el PR #67. Ocultar **Aprobar y pagar** mientras no haya fondeo quedó en la lista de Abdiel.
 
 El guion del evento de ZEEK se cierra cuando el flujo completo ya existe. Raúl prepara las cuentas y Sebas el pago en vivo.
 
@@ -162,7 +182,9 @@ App del integrante y preparación de las cuentas del demo.
 
 **Hecho en el PR #1:** Mis tareas, Subir evidencia (trabajo y reembolso en la misma pantalla) y `/cuentas`. Llaman a las rutas de Esteban y, si no responden, muestran el ejemplo de ZEEK.
 
-**Sigue con:** las cuatro identidades de Cavos (organizador y tres voluntarios). `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. Cada una muestra su dirección `G…` y abre la trustline de USDC. El login real contra Neon es de Esteban. Sebas solo confirma que sirvan para cobrar. No tomes el escrow ni las pantallas del admin.
+**Hecho el 1 de octubre de 2026, a las 2:43 a.m., hora de Costa Rica:** el PR #67 reanuda el fondeo cuando el despliegue ya quedó, y el PR #68 deja en inglés los avisos de servidor que faltaban. Los mergeó Josué Valles.
+
+**Sigue con:** el PR #69, para que el organizador confirme el monto de un reembolso antes de desplegar, y el PR #72, para tomar la evidencia con la cámara. Las cuatro identidades de Cavos siguen en `/cuentas`. `NEXT_PUBLIC_CAVOS_APP_ID` ya está en Vercel. La trustline patrocinada de USDC está en la lista de Josué.
 
 **Listo cuando:** un integrante ve su tarea, sube una foto y esa evidencia aparece en el panel de revisión.
 

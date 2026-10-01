@@ -2,6 +2,16 @@
 
 One ready-to-paste prompt per person. Each prompt is self-contained: copy everything inside the fenced block into your coding agent (Cursor or similar).
 
+Status on 1 October 2026, 2:43 a.m. Costa Rica time (`main` at `2fa3bd5`). Owners below are suggestions. Whoever takes someone else's task leaves a note in the mailbox.
+
+| Person | Landed since these prompts | Still open |
+|---|---|---|
+| Raúl | P1-1 English server messages (PR #68) and P1-2 resume after a partial deploy/fund (PR #67). Josué Valles merged both | P1-3 confirm the reimbursement amount (open PR #69). Camera-only evidence is open PR #72 and was not one of these prompts |
+| Josué | Nothing from the P0 list | Sponsored trustline, preflight, persist `contractId`, wallet proof, JWT vars in Vercel, first testnet payment, then the P1s. Next.js is still 16.3.6 |
+| Abdiel | The review already shows origen (AI / simulated / error) and a Groq or Laya failure is `origen: "error"`, not the fixed script. Laya's score index landed earlier (PR #59) | Model check in production, `LAYA_URL`, hide Approve and pay until funded, pre-sign summary |
+| Esteban | Nothing from this list | Image allow-list, security headers, strict JWT, upload limit, session hash |
+| Sebastián | Nothing from this list | The env-dependent test in `lib/api/rutas.test.ts`, GitHub Actions, shared rate limit. Acta still waits on a real payment hash |
+
 Kanban: https://app.notion.com/p/2d5d21fae61440d7861d5ce924a6f29c
 
 ---
@@ -232,6 +242,8 @@ When done, reply with: for each task, the PR link, branch, files changed, a link
 ---
 
 ## Raúl
+
+P1-1 and P1-2 below already landed on 1 October 2026 (PR #68 and PR #67). Start at P1-3. Do not reopen the English-message guard or the partial-deploy reload.
 
 ```text
 You are working on the repo Hyto-App/hyto (https://github.com/Hyto-App/hyto). I am Raúl, working on English-only strings and P1 UX/frontend items.

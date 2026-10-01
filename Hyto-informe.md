@@ -2,7 +2,7 @@
 
 Informe del proyecto · 27 de septiembre de 2026
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
+El estado del código al 1 de octubre de 2026 (`2fa3bd5`, 2:43 a.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. Si desplegar sale bien y fondear falla, ofrece fondear el contrato guardado (PR #67, Raúl, merge de Josué Valles). Los avisos de servidor que faltaban quedaron en inglés (PR #68, el mismo momento). El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya). Lo pendiente por persona está en [AGENTS.md](AGENTS.md).
 
 Pagos por hitos: el dinero queda comprometido antes del trabajo, cada tarea o gasto se respalda con evidencia y el informe está listo al cerrar el proyecto.
 
@@ -78,14 +78,14 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 
 | Capa | Decisión |
 |---|---|
-| App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
+| App | Next.js 16.3.6, App Router, TypeScript, Tailwind. Al 1 de octubre de 2026 el parche 16.3.7 no entró. |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `77a0431`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Falta un pago real en testnet. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `2fa3bd5`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Si el fondeo falla después del despliegue, la pantalla ofrece **Fondear** (PR #67). Falta un pago real en testnet. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
-| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falla, `desdeGuion` entra en silencio y la pantalla no muestra `origen`. Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y el stub deja el trabajo en `parcial`. El detalle está en [AGENTS.md](AGENTS.md). |
+| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`, `max_completion_tokens: 1024`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falta la clave o un modelo falla, el origen queda en `error` y la pantalla lo muestra. Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y el stub deja el trabajo en `parcial`. El índice de `probabilities` ya está (PR #59). El detalle está en [AGENTS.md](AGENTS.md). |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 
@@ -107,13 +107,13 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 
 | Persona | Rol | Empieza por | Listo cuando |
 |---|---|---|---|
-| Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
-| Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
-| Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Abdiel Cole | UX, marca y la IA de la evidencia | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC y ocultar **Aprobar y pagar** hasta el fondeo | El demo llama a `LAYA_URL` y Groq responde con una foto real |
+| Esteban | Seguridad del backend | Neon, Blob, rutas y el ingreso ya están. Sigue el allow-list de imágenes, las cabeceras y el JWT cerrado en producción | Esos tres controles están en `main` y las pruebas cubren el rechazo |
+| Sebastián | CI y el Acta | El módulo y el script ya están (PR #8). El `appId` de Cavos ya está en Vercel. Siguen la prueba que toca Neon, GitHub Actions y, después de un pago, el Acta | `npm test` pasa en limpio y hay un workflow verde. El Acta espera el hash |
+| Josué | Escrow, trustline y el primer pago | Las pantallas del admin ya firman. Siguen la trustline patrocinada, el preflight, el `contractId` en la base y un pago real en testnet | `tareas.hash_pago` tiene un hash de testnet y **Ver pago** lo abre |
+| Raúl | Integrante y los avisos | Mis tareas y `/cuentas` ya están (PR #1). El 1 de octubre entraron el PR #67 y el PR #68. Abiertos: PR #69 y PR #72 | El reembolso no se despliega sin un monto confirmado |
 
-Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
+Abdiel no bloquea el código: el resto avanza con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. El 1 de octubre también cerró el fondeo a medias (PR #67) y los avisos de servidor en inglés (PR #68). Josué lleva el escrow que falta para el primer pago. Sebastián lleva la CI. El Acta sigue después de ese pago.
 
 Pantallas: inicio del admin (presupuesto, pagado, pendiente), crear proyecto, mis tareas, subir evidencia, panel de revisión e informe. Josué ya dejó las del admin en `main` (PR #3). Raúl ya dejó mis tareas, subir evidencia y `/cuentas` (PR #1, 28 de septiembre de 2026). La auditoría de esas pantallas entró en el PR #4, a las 3:47 p.m., hora de Costa Rica, con Josué Valles como coautor. Abdiel dejó Poppins y el lima `#B7EE34` (PR #7, a las 2:58 p.m.). La base de Next.js salió en el PR #1; Josué no la vuelve a crear. `LAYA_URL` todavía no está. Sebas dejó el módulo de firma y el script del hito en `main` (PR #8, squash `ae10a9e`, a las 3:48 p.m.). Lo empujó Josué Valles. No hay hash de un pago real en el repositorio.
 

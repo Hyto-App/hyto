@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+El estado del código al 1 de octubre de 2026 (`2fa3bd5`, 2:43 a.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo; cada proyecto tiene `organizador_id` (PR #44). El 1 de octubre, Raúl (Milasur) cerró el caso en que desplegar sale bien y fondear falla (PR #67) y pasó al inglés los avisos de servidor que faltaban (PR #68). Los mergeó Josué Valles. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, el origen queda en `error` y la pantalla lo muestra. Sin `LAYA_URL`, si Groq respondió, usa el stub. Hacer que esa IA funcione es el paso principal.
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
@@ -21,14 +21,14 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Capa | Decisión |
 |---|---|
 | App | Next.js 16 (App Router), TypeScript, Tailwind |
-| Versión | **16.3.6**, la que está en `package.json`. El 30 de septiembre, subir a **16.3.7** cuando salga el parche de seguridad |
+| Versión | **16.3.6**, la que está en `package.json` al 1 de octubre de 2026. El parche 16.3.7 no entró |
 | Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). Lo definió Abdiel en el PR #7 |
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
+| IA | Qwen 3.8 27B (Groq, `max_completion_tokens: 1024`) describe la foto. Laya, si hay `LAYA_URL`, responde `choice`, `noul` y `score`. El código arma el veredicto. Si falta la clave o un modelo falla, el origen queda en `error`. Sin `LAYA_URL` entra el stub |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
@@ -61,7 +61,7 @@ La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/
 2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
 3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de la foto más esas tres respuestas.
 
-Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
+Sin `GROQ_API_KEY`, o si Groq o Laya fallan, `revisar()` devuelve `origen: "error"` y lo registra. `desdeGuion()` queda para las pruebas. Sin `LAYA_URL`, si Groq respondió, el stub marca el trabajo como parcial. La pantalla muestra AI, simulated o error.
 
 Hay dos tipos de hito y los dos entran por la misma cámara. El de trabajo pide una foto de lo hecho. El de reembolso pide una foto de la factura o del comprobante. Qwen las describe a las dos. En la factura también extrae monto y fecha, y el código compara ese monto con el tope. Laya clasifica las dos. No hay un lector de PDF ni un flujo distinto. Subir evidencia ya es esa única pantalla; monto y fecha del reembolso solo aparecen si la API los devuelve.
 
@@ -103,5 +103,5 @@ El script ya está en el repositorio (PR #8, a las 3:48 p.m., hora de Costa Rica
 
 ## Fuentes
 
-- Next.js 16.3.6, publicado el 22 de septiembre de 2026. Parche 16.3.7 anunciado para el 30 de septiembre de 2026.
+- Next.js 16.3.6, publicado el 22 de septiembre de 2026. El 1 de octubre de 2026 `package.json` sigue en 16.3.6.
 - Trustless Work v2, testnet, en `beta.api.trustlesswork.com`. Sigue en beta y sin auditoría externa. v1 sigue siendo la infraestructura de mainnet.

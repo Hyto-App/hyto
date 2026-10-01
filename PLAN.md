@@ -1,6 +1,6 @@
 # Plan para empezar a codear Hyto
 
-El contexto del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Lo que sigue es el plan del 27 y 28 de septiembre. Donde diga que Fondear y Aprobar no firman, o que el backend no está en el repo, ya no describe `main`: la revisión firma, y un correo nuevo con Cavos entra como voluntario. El paso principal que sigue es la IA (Groq `qwen/qwen3.8-27b`, fallback silencioso a `desdeGuion`, Laya sin `LAYA_URL`, PR #15). El orden está en [AGENTS.md](AGENTS.md).
+El contexto del código al 1 de octubre de 2026 (`2fa3bd5`, 2:43 a.m., hora de Costa Rica) está en [AGENTS.md](AGENTS.md). Lo que sigue es el plan del 27 y 28 de septiembre. Donde diga que Fondear y Aprobar no firman, o que el backend no está en el repo, ya no describe `main`: la revisión firma, un correo nuevo con Cavos entra como voluntario, y el organizador es de cada proyecto. El 1 de octubre, Raúl (Milasur) cerró el fondeo a medias (PR #67) y tradujo los avisos de servidor que faltaban (PR #68). Los mergeó Josué Valles. El paso principal que sigue es la IA: Groq `qwen/qwen3.8-27b` con `max_completion_tokens: 1024`; un fallo queda en `origen: "error"` y se muestra; sin `LAYA_URL` entra el stub. El índice de `probabilities` ya está (PR #59). El orden y lo pendiente por persona están en [AGENTS.md](AGENTS.md).
 
 El contrato está en [STACK.md](STACK.md) y [ROLES.md](ROLES.md). Cada quien avanza su lista en orden. No espera a otra persona salvo el único dato marcado como encuentro.
 
@@ -165,9 +165,25 @@ El esqueleto y el admin ya están en `main`. Lo que sigue espera las rutas de Es
 
 ## Bitácora
 
+### 2026-10-01
+
+A las 2:43 a.m., hora de Costa Rica, Josué Valles mergeó en `main` dos pull requests de Raúl (Milasur). El cursor del repo queda en `2fa3bd5`.
+
+PR #68 (`b0926f3`), un segundo antes: los avisos que el servidor todavía mostraba en español pasaron al inglés. Cubre el escrow (clave de Trustless Work, cuentas del contrato, hitos en disputa), el entorno de la base y el cruce del esquema. `lib/escrow/ingles.test.ts` recorre los literales `aviso`, `mensaje` y `detail` de `lib/` y falla si vuelve a entrar español. Los comentarios, los valores `en revisión` y `cumplió`, y algunas líneas de scripts que no son esos literales pueden seguir en español.
+
+PR #67 (`2fa3bd5`): si **desplegar** sale bien y **fondear** falla, `firmarPasos` ya no deja la pantalla ofreciendo otro despliegue. El error de firma trae el id del contrato, la revisión recarga el detalle y ofrece **Fondear** ese contrato. Una lectura del indexador en `null` no borra, en la misma sesión, ese «no fondeado». Pruebas en `lib/admin/pantalla-revision.test.ts` y `lib/escrow/firmarCliente.test.ts`.
+
+Sigue pendiente, con el dueño sugerido el 30 de septiembre: Josué (trustline patrocinada, preflight, `contractId` en la base, prueba de la wallet, las variables del JWT en Vercel y el primer pago en testnet; Next.js sigue en 16.3.6), Abdiel (Groq y Laya de verdad, ocultar **Aprobar y pagar** hasta el fondeo, resumen antes de firmar), Esteban (imágenes, cabeceras, JWT cerrado, tope de subida, token hasheado), Sebastián (la prueba de `lib/api/rutas.test.ts` que toca Neon, GitHub Actions y el límite compartido) y Raúl (PR #69 abierto, confirmar el monto del reembolso; PR #72 abierto, foto solo con cámara). No hay hash de un pago real. El Acta no entra. El changelog de ese hueco, desde el PR #19, quedó en [CHANGELOG.md](CHANGELOG.md).
+
+### 2026-09-30
+
+Entre las 10:00 a.m. y las 11:37 a.m., hora de Costa Rica, Josué Valles mergeó cinco documentos. PR #62: Stellar Raven queda obligatorio para el equipo y para los agentes. PR #63: las sugerencias del meetup no son compromisos. PR #64: auditoría del código contra `db82b93`, con los P0 de trustline, `contractId`, prueba de wallet, XSS, JWT y CI. PR #65: un prompt de agente por persona. PR #66: los dueños del tablero son sugerencias; quien tome una tarea de otra persona escribe en el buzón. No cambió el comportamiento de la app.
+
 ### 2026-09-29
 
 El backend de Esteban quedó en la rama `esteban/backend`. Neon con Drizzle (usuarios con correo y rol, proyecto, tarea, evidencia, veredicto y hash de pago vacío), migración en `drizzle/0000_inicio.sql` y semilla de ZEEK. Blob privado. Rutas `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`, `POST /api/proyectos`, `GET /api/informe` y `GET /api/revision/:id`. La revisión llama a `qwen/qwen3.8-27b`; sin `LAYA_URL` usa el stub; sin `GROQ_API_KEY` o si un modelo falla, el guion fijo. El informe abre sin hash. Entrar y Preparar cuentas pasan `auth` de CavosAuth. `POST /api/firma` y `POST /api/firma/enviar` exigen la sesión del organizador. Falta cargar las variables en Vercel y correr la migración. Josué sigue conectando las pantallas. No hay Acta.
+
+Ese mismo día, después del changelog del PR #19 (9:22 a.m., hora de Costa Rica), Josué Valles mergeó el resto del recorrido que hoy está en `main`. En orden de entrada: Postgres local, migración y semilla (PR #21), configuración de entorno (PR #22), inventario y cruce del esquema (PR #24 y PR #25), pruebas de integración (PR #27), avisos de ingreso (PR #28), verificación del JWT (PR #23), acciones v2 del escrow (PR #26), ingreso demo (PR #30), salir del demo (PR #36), backend para desplegar y pagar (PR #38), firma en el navegador (PR #39), alta de cualquier correo como voluntario (PR #41), contexto del repo (PR #43), organizador por proyecto (PR #44), el demo no crea proyectos (PR #47), evidencia en el demo y trustline de USDC (PR #50), sesión de firma y salir (PR #52), la sesión sigue el vencimiento del JWT (PR #54), el error real de la revisión (PR #45), la interfaz en inglés (PR #56), el Figma de Abdiel como fuente de la UI (PR #58) y el veredicto de Laya por el índice de `probabilities` (PR #59, 7:46 p.m.). El detalle está en [CHANGELOG.md](CHANGELOG.md). El párrafo de arriba describe la mañana: al cierre del día la revisión ya firma, el fallo de la IA no cae en el guion fijo y el índice de Laya ya está en `main`.
 
 ### 2026-09-28
 
