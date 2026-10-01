@@ -4,7 +4,7 @@ Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de 
 
 Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+El estado del código al 1 de octubre de 2026 (`67522f9`) está en [AGENTS.md](AGENTS.md). La sección «Qué hay en el repo al 28 de septiembre» es de ese día. Lo que cambió después: la revisión firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; cada proyecto tiene `organizador_id` (`drizzle/0002_organizador_proyecto.sql`); `HYTO_DEMO_LOGIN=1` enciende el demo. El 1 de octubre, a las 4:01 p.m. hora de Costa Rica, Josué Valles mergeó el shell v2 del Figma (PR #82): tema claro y oscuro, barra lateral y pestañas móviles. El mismo día Raúl (Milasur) mergeó el reintento de fondeo (PR #67), el inglés restante del servidor (PR #68) y el monto confirmado del reembolso (PR #69, `drizzle/0003_monto_confirmado.sql`). Josué ocultó **Aprobar y pagar** hasta que hay fondeo y pasó el flujo a lenguaje llano (PR #77, 11:25 a.m.). Sigue sin un pago real en el repositorio. Si falta `GROQ_API_KEY` o el modelo falla, el origen es `error` (PR #45), no el guion fijo. Sin `LAYA_URL` la descripción de Groq se cierra con el stub. Publicar Laya sigue pendiente.
 
 ## Qué hay en el repo al 28 de septiembre de 2026
 
@@ -21,14 +21,14 @@ El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
 | Capa | Decisión |
 |---|---|
 | App | Next.js 16 (App Router), TypeScript, Tailwind |
-| Versión | **16.3.6**, la que está en `package.json`. El 30 de septiembre, subir a **16.3.7** cuando salga el parche de seguridad |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). Lo definió Abdiel en el PR #7 |
+| Versión | **16.3.6**, la que está en `package.json`. El salto a 16.3.7 previsto para el 30 de septiembre no entró |
+| Pantallas | Móvil para el integrante (pestañas abajo), escritorio con barra lateral. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). El lima lo definió Abdiel en el PR #7. El shell claro/oscuro es el PR #82 de Josué |
 | Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
 | Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
 | Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
 | Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
+| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, el origen es `error` (PR #45). Sin `LAYA_URL`, el stub cierra el veredicto |
 | Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
 
@@ -41,7 +41,7 @@ Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`. La 
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
 | `DATABASE_URL` | Neon. La leen las rutas |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
-| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión usa el guion fijo |
+| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión queda en origen `error` |
 | `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
 | `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
 
@@ -61,7 +61,7 @@ La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/
 2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
 3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de la foto más esas tres respuestas.
 
-Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
+Sin `GROQ_API_KEY`, o si Groq o Laya fallan, `revisar()` registra el fallo y devuelve origen `error` (PR #45). `desdeGuion()` sigue en el código y ya no es el camino de esa función. Sin `LAYA_URL`, Groq describe la foto y el stub cierra el veredicto con origen `stub`. El pedido a Groq usa `max_completion_tokens` 1024, `reasoning_effort` `none` y `reasoning_format` `hidden`. El modelo sigue fijo: `qwen/qwen3.8-27b`.
 
 Hay dos tipos de hito y los dos entran por la misma cámara. El de trabajo pide una foto de lo hecho. El de reembolso pide una foto de la factura o del comprobante. Qwen las describe a las dos. En la factura también extrae monto y fecha, y el código compara ese monto con el tope. Laya clasifica las dos. No hay un lector de PDF ni un flujo distinto. Subir evidencia ya es esa única pantalla; monto y fecha del reembolso solo aparecen si la API los devuelve.
 
@@ -95,7 +95,7 @@ La referencia es Ramp: el integrante resuelve su parte en el teléfono en segund
 - **Revisión.** La foto a la izquierda. A la derecha, una tarjeta corta: cumplió, parcial o insuficiente, y la frase de la evidencia. Un botón: Aprobar. Si hace falta otra foto, un enlace secundario, no un segundo botón del mismo peso.
 - **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
 
-Una pantalla, una acción principal. Fondo claro, Poppins, mucho espacio, un solo color de acento (`#B7EE34`). Estados con color: pendiente, en revisión, pagado.
+Una pantalla, una acción principal. Poppins, mucho espacio, un solo color de acento (`#B7EE34`). El tema claro es el de defecto y hay tema oscuro (`data-theme="dark"`). Estados con color: pendiente, en revisión, pagado. En el escritorio la navegación es una barra lateral; en el móvil, pestañas fijas abajo (PR #82, 1 de octubre de 2026, 4:01 p.m. hora de Costa Rica).
 
 ## Salida del lunes 28
 

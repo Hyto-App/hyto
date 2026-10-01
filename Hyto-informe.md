@@ -2,7 +2,7 @@
 
 Informe del proyecto · 27 de septiembre de 2026
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma. El paso principal que sigue es hacer funcionar la revisión de la foto (Groq `qwen/qwen3.8-27b` y Laya).
+El estado del código al 1 de octubre de 2026 (`67522f9`) está en [AGENTS.md](AGENTS.md). Este informe describe la premisa. Donde diga que Fondear y Aprobar no llaman al módulo, o que `NEXT_PUBLIC_CAVOS_APP_ID` no está, eso era el 28 de septiembre. En `main` la revisión ya firma y la interfaz es el shell v2 del Figma (PR #82, Josué Valles, 1 de octubre, 4:01 p.m. hora de Costa Rica). El paso principal que sigue es un pago real en testnet y publicar Laya.
 
 Pagos por hitos: el dinero queda comprometido antes del trabajo, cada tarea o gasto se respalda con evidencia y el informe está listo al cerrar el proyecto.
 
@@ -62,7 +62,7 @@ Modelo técnico: un escrow multi-release por proyecto. Cada hito tiene su monto 
 
 Para el demo, el stack cuesta $0. Trustless Work en testnet es gratis: API, API key y escrows de prueba, sin mensualidad. El 0,3 % se cobra solo en mainnet, cuando un hito se libera con dinero real. La comisión de plataforma de Hyto va en 0. En testnet, el XLM de las comisiones de red lo da Friendbot.
 
-La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Qwen 3.8 27B en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde o esa PC está apagada, el veredicto sale de un guion fijo y el resto de la web sigue. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
+La app corre en Vercel. Neon (Postgres) y Vercel Blob están en el plan gratis del demo. También son gratis Trustless Work en testnet, Qwen 3.8 27B en Groq y Laya en la PC Windows de Abdiel. Si Groq no responde, el origen es `error` y se puede reintentar (PR #45). Si la PC de Abdiel está apagada y no hay `LAYA_URL`, el stub cierra el veredicto. El resto de la web sigue. Cavos patrocina el XLM con el saldo de gas de la app en su dashboard; ese saldo hay que revisarlo antes del demo.
 
 ## 5. Referencias
 
@@ -78,14 +78,14 @@ Cerrado el 27 de septiembre de 2026. Una sola app. El detalle operativo está en
 
 | Capa | Decisión |
 |---|---|
-| App | Next.js 16.3.6 o superior, App Router, TypeScript, Tailwind. El 30 de septiembre, subir a 16.3.7 cuando salga el parche de seguridad. |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. Lo definió Abdiel en el PR #7. |
+| App | Next.js 16.3.6, App Router, TypeScript, Tailwind. El salto a 16.3.7 previsto para el 30 de septiembre no entró. |
+| Pantallas | Móvil con pestañas, escritorio con barra lateral. Poppins. Acento lima `#B7EE34`, texto del botón `#08090C`. El lima lo definió Abdiel en el PR #7. El shell claro/oscuro es el PR #82 de Josué (1 de octubre de 2026). |
 | Wallet | Cavos (`@cavos/kit`) en Stellar testnet. Cuenta `G…`. Firma el XDR de Trustless Work con `signXdr`. https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). En `77a0431`, **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. Falta un pago real en testnet. |
+| Escrow | Trustless Work v2 multi-release, en beta.api.trustlesswork.com, solo desde el servidor. La clave `TRUSTLESS_API_KEY` no va al navegador. El módulo y `npm run hito` ya están (PR #8). **Desplegar y fondear** y **Aprobar y pagar** salen de la revisión. **Aprobar y pagar** espera el fondeo (PR #77). Un reembolso espera monto confirmado (PR #69). Falta un pago real en testnet. |
 | Dónde corre | Vercel. La única computadora encendida es la de Abdiel, para Laya. |
 | Datos | Neon Postgres con Drizzle. `DATABASE_URL`. |
 | Archivos | Vercel Blob, almacén privado. La foto no va al disco de la app ni a la blockchain. |
-| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falla, `desdeGuion` entra en silencio y la pantalla no muestra `origen`. Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y el stub deja el trabajo en `parcial`. El detalle está en [AGENTS.md](AGENTS.md). |
+| IA | Groq, modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`), con `GROQ_API_KEY`. Los nombres `scout` son restos de Llama 4 Scout. Si falla, el origen es `error` y se puede reintentar (PR #45). Laya (`lib/revision/laya.ts`) necesita `LAYA_URL`; todavía no está, y sin ella el stub cierra el veredicto. El `score` se lee por probabilidad (PR #59). El detalle está en [AGENTS.md](AGENTS.md). |
 | Informe | Página imprimible y enlace a stellar.expert en testnet. |
 | USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
 
@@ -110,8 +110,8 @@ El detalle para la IA de cada integrante está en [ROLES.md](ROLES.md). El orden
 | Abdiel Cole | UX, marca y Laya | Poppins y lima `#B7EE34` ya están (PR #7). Sigue Laya en su PC Windows | El demo puede llamar a `LAYA_URL` |
 | Esteban | Backend | Neon, Blob, rutas y revisión con stub de Laya | La app en Vercel guarda un proyecto, una foto y un veredicto |
 | Sebas | Escrow y wallet | El módulo y el script ya están (PR #8). Siguen el `appId` de Cavos y un pago en USDC | Hay un pago de prueba en testnet y el `appId` publicado. El Acta va después de ese pago |
-| Josué | App del admin | Pantallas del admin ya están. Sigue conectar Fondear y Aprobar al módulo de firma | El admin crea, revisa, aprueba en Stellar y abre el informe |
-| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1), con la auditoría del PR #4. Las cuatro cuentas esperan el `appId` | El integrante ve su tarea, sube una foto y aparece en revisión |
+| Josué | App del admin | Pantallas del admin y el shell v2 ya están (PR #82). Fondear y Aprobar ya firman. Siguen el primer pago en testnet y los P0 de escrow de la auditoría | El admin crea, revisa, aprueba en Stellar y abre el informe |
+| Raúl | App del integrante | Mis tareas, subir evidencia y `/cuentas` ya están (PR #1). El 1 de octubre entraron el reintento de fondeo, el inglés del servidor y el monto confirmado (PR #67, #68 y #69). Las cuatro cuentas del ensayo siguen pendientes | El integrante ve su tarea, sube una foto y aparece en revisión |
 
 Abdiel no bloquea el código: Esteban y Sebas avanzan con el stack. Raúl es nuevo en hackatones. Su parte se ve en el demo. Josué revisa su app y Sebas revisa las wallets. Raúl no toma el escrow ni la arquitectura.
 
@@ -155,7 +155,7 @@ El orden para construir está en [PLAN.md](PLAN.md). Esta tabla solo marca lo qu
 | Fecha | Qué pasa |
 |---|---|
 | Dom 27 sep | Repositorio, stack, roles y plan compartidos. |
-| Mié 30 sep | Meetup en TEC Cartago, llegar a las 17:00. Confirmar la hora de cierre. Subir Next.js a 16.3.7. |
+| Mié 30 sep | Meetup en TEC Cartago, llegar a las 17:00. Confirmar la hora de cierre. El salto de Next.js a 16.3.7 no entró: al 1 de octubre sigue en 16.3.6. |
 | Sáb 3 oct | Ensayo del guion de ZEEK. La PC de Abdiel queda encendida. |
 | Dom 4 oct | Grabar la demo, pulir el pitch y enviar. |
 | Lun 5 oct | Colchón. Cierre 4:00 p.m., posiblemente 1:00 p.m. hora de Costa Rica. |

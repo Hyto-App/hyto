@@ -6,9 +6,9 @@ El demo es un evento de ZEEK. La app corre en https://hyto.vercel.app. Organizac
 
 El contexto para trabajar, incluido el de los agentes, está en [AGENTS.md](AGENTS.md). Este archivo no lo repite.
 
-## Estado al 29 de septiembre de 2026
+## Estado al 1 de octubre de 2026
 
-`main` está en `77a0431`. Entran el esqueleto (PR #1), el admin (PR #3), la marca (PR #7), la auditoría del integrante (PR #4), el módulo de firma (PR #8), el backend de Neon, Blob y Cavos, el modo demo, el escrow V2 en la revisión (desplegar, fondear, aprobar y liberar) y el alta automática: desde el PR #41, un correo con login de Cavos válido que no existe se registra como voluntario. El rol organizador solo queda si ya está escrito en la base.
+`main` está en `67522f9`. Entran el esqueleto (PR #1), el admin (PR #3), la marca (PR #7), la auditoría del integrante (PR #4), el módulo de firma (PR #8), el backend de Neon, Blob y Cavos, el modo demo, el escrow V2 en la revisión (desplegar, fondear, aprobar y liberar) y el alta automática: desde el PR #41, un correo con login de Cavos válido que no existe se registra como voluntario. Desde el PR #44 el organizador es de cada proyecto. El 1 de octubre Josué Valles dejó el shell de los mockups v2 (PR #82, 4:01 p.m. hora de Costa Rica): tema claro y oscuro, barra lateral y pestañas móviles. Raúl (Milasur) dejó el reintento de fondeo (PR #67), el inglés que faltaba en el servidor (PR #68) y el monto confirmado del reembolso (PR #69). Josué también dejó el lenguaje llano del pago (PR #77).
 
 La bandeja, la revisión y el informe leen la API cuando hay sesión y no es demo. Si la API no responde, siguen el ejemplo de ZEEK (tres trabajos de US$20 y un reembolso de hasta US$15). **Desplegar y fondear** y **Aprobar y pagar** están en la revisión y firman con Cavos. El botón Fondear de crear proyecto sigue guardando el borrador en el navegador.
 
@@ -20,20 +20,22 @@ El paso principal que sigue es hacer que la IA revise la foto de verdad e integr
 | Mis tareas, Subir evidencia (trabajo y reembolso) y `/cuentas` | Raúl |
 | Esqueleto y admin: bandeja en `/`, crear proyecto, revisión, informe imprimible. El pago en Stellar se firma desde la revisión | Josué |
 | Botón Entrar. Cavos (`testnet`, `appSalt` `hyto`) solo si hay `NEXT_PUBLIC_CAVOS_APP_ID`. El ingreso pide el código al correo, o Google, y guarda la dirección solo si no hay aviso | Josué, ingreso de Esteban |
-| Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C` | Abdiel |
-| Módulo de firma (`lib/escrow`), `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]` y `npm run hito`. El hash de un pago real no está en el repositorio | Sebas |
-| Neon con Drizzle, Blob privado, rutas de tareas, evidencias, informe, proyectos y revisión. Semilla de ZEEK. La revisión llama a Qwen y, sin `LAYA_URL`, al stub. Sin Groq, usa el guion fijo. Desde el PR #41, un correo nuevo entra como voluntario | Esteban |
+| Marca: Poppins 400, 500 y 600, acento lima `#B7EE34` y texto del botón `#08090C`. El shell v2 (claro y oscuro, barra lateral, pestañas) entró en el PR #82 | Abdiel (marca), Josué (PR #82) |
+| Módulo de firma (`lib/escrow`), `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]` y `npm run hito`. El hash de un pago real no está en el repositorio. **Aprobar y pagar** espera contrato fondeado (PR #77). Un reembolso espera monto confirmado (PR #69) | Sebas, con UX de Josué y Raúl |
+| Neon con Drizzle, Blob privado, rutas de tareas, evidencias, informe, proyectos y revisión. Semilla de ZEEK. Migraciones `0000` a `0003` (contrato, organizador del proyecto, monto confirmado). La revisión llama a Qwen (`max_completion_tokens` 1024). Sin `LAYA_URL` usa el stub y `origen` `stub`. Si Groq o Laya fallan, el origen es `error`, queda registrado y la pantalla ofrece reintentar (PR #45). El `score` de Laya sale de la probabilidad más alta (PR #59). Desde el PR #41, un correo nuevo entra como voluntario | Esteban, con el arreglo de la revisión de Josué |
 | Auditoría del integrante: no mezcla tareas, no inventa US$0 ni corre el día de una fecha, abre USDC si la cuenta ya existe, y cierra fallos de la cámara | Josué (coautor), PR #4 |
 | `npm ci`, `npm test` y `npm run build` pasan. No hay ESLint ni script `lint` | Raúl |
 
 | Pendiente | Dueño |
 |---|---|
-| Probar en testnet, con wallet real de Cavos, **Desplegar y fondear** y **Aprobar y pagar**, y guardar el hash. La wallet del organizador necesita XLM y USDC de testnet. El Acta solo después de ese pago | Sebas |
-| Hacer que la IA funcione. Es el paso principal. Groq (`qwen/qwen3.8-27b`) pide `GROQ_API_KEY`; si falla, `desdeGuion` entra en silencio y la UI no muestra `origen`. `LAYA_URL` no está: el stub deja las tareas de trabajo en `parcial`. Falta confirmar Groq en producción, mostrar `origen`, publicar Laya (Tailscale Funnel) y cerrar el PR #15 | Esteban, Abdiel |
-| `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud` | Esteban |
-| El 30 de septiembre, subir Next.js a 16.3.7 cuando salga el parche | Josué |
+| Probar en testnet, con wallet real de Cavos, **Desplegar y fondear** y **Aprobar y pagar**, y guardar el hash. La wallet del organizador necesita XLM y USDC de testnet. Quien cobra necesita trustline. El Acta solo después de ese pago. Siguen el preflight, guardar el id de contrato en la base y la prueba de que la wallet es de quien entra | Josué (sugerido en la auditoría), Sebas en el pago |
+| Publicar Laya (`LAYA_URL`) y hacer que la revisión muestre `origen`. El modelo sigue fijo en `qwen/qwen3.8-27b`. El error y el reintento ya están (PR #45). El PR #15 quedó cubierto por el PR #59 | Abdiel |
+| Rechazar SVG, encabezados `nosniff` y CSP, y fallar en producción si `CAVOS_JWT_AUDIENCE` o `CAVOS_JWT_ISSUER` están vacíos. Hoy, vacío: no se comprueba el `aud` | Esteban |
+| Arreglar la prueba de `lib/api/rutas.test.ts` que habla con Neon si no hay `DATABASE_URL`, y agregar GitHub Actions | Sebastián |
+| Dejar listas las cuatro cuentas del demo para el ensayo. El código de sus tareas de auditoría ya está (PR #67, #68 y #69) | Raúl |
+| Next.js sigue en 16.3.6. El salto a 16.3.7 previsto para el 30 de septiembre no entró | Josué |
 
-`--acento` es `#B7EE34` y `--sobre-acento` es `#08090C`, en `app/globals.css`. La tipografía es Poppins.
+`--acento` es `#B7EE34` y `--sobre-acento` es `#08090C`, en `app/globals.css`. El tema claro es el de defecto; el oscuro se activa con `data-theme="dark"` en `<html>` y el botón de `components/ui/Marca.tsx`. La tipografía es Poppins. En el escritorio la navegación es una barra lateral; en el móvil, pestañas abajo (PR #82).
 
 ## Cómo correrlo
 
@@ -63,7 +65,7 @@ Solo nombres. Los valores van en Vercel o en `.env` local, nunca en el repo. La 
 | `HYTO_ESCROW_RESOLVER` | Cuenta que resuelve disputas. |
 | `DATABASE_URL` | Neon o Postgres local. La leen las rutas y la migración. |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob, almacén privado. |
-| `GROQ_API_KEY` | Qwen 3.8 27B (`qwen/qwen3.8-27b`). Sin ella, la revisión usa el guion fijo. |
+| `GROQ_API_KEY` | Qwen 3.8 27B (`qwen/qwen3.8-27b`). Sin ella, la revisión queda en origen `error` y se puede reintentar. |
 | `LAYA_URL` | Laya. Sin ella, la revisión usa el stub. |
 | `CAVOS_JWKS_URL` | JWKS para verificar el JWT de Cavos. |
 | `CAVOS_JWT_ISSUER` | Emisores permitidos, separados por coma. |
@@ -75,7 +77,7 @@ Solo nombres. Los valores van en Vercel o en `.env` local, nunca en el repo. La 
 ## Fechas
 
 - Meetup: miércoles 30 de septiembre de 2026, TEC Cartago.
-- Ese día, subir Next.js a 16.3.7 cuando salga el parche.
+- Ese día estaba previsto subir Next.js a 16.3.7. Al 1 de octubre la app sigue en 16.3.6.
 - Cierre de entregas: lunes 5 de octubre de 2026, 4:00 p.m.
 - El demo a mostrar sigue siendo el de ZEEK.
 

@@ -1,8 +1,83 @@
 # Changelog
 
-Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
+Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número. Las horas son de Costa Rica.
+
+## 2026-10-01
+
+`main` queda en `67522f9`.
+
+### Nuevo
+
+- La interfaz sigue los mockups v2 del Figma (página «Nuevo diseño»): tema claro y oscuro, barra lateral en el escritorio y pestañas abajo en el móvil, sobre las pantallas que ya existían. Los manejadores, las llamadas a datos y el texto que afirman las pruebas no cambian. Josué Valles, PR #82, 4:01 p.m.
+
+### Arreglado
+
+- Si desplegar el escrow sale bien y fondear falla, la revisión recarga el detalle y sigue desde el fondeo del contrato que ya existe. Raúl (Milasur), PR #67, 2:43 a.m.
+- Los mensajes de servidor que seguían en español quedaron en inglés. Raúl (Milasur), PR #68, 2:43 a.m.
+
+### Cambiado
+
+- El flujo de pago usa lenguaje llano y un error técnico se convierte en el siguiente paso. **Aprobar y pagar** solo se muestra si ya hay contrato y el escrow está fondeado. Josué Valles, PR #77, 11:25 a.m. (sugerencia #007).
+- Un reembolso no se despliega hasta que el organizador confirma un monto, como máximo el tope. Ese monto queda en la base (`drizzle/0003_monto_confirmado.sql`). Raúl (Milasur), PR #69, 3:33 p.m.
+
+### Pendiente al cierre del día
+
+Los dueños de abajo son sugerencias de la auditoría del 30 de septiembre. Quien tome la tarea de otra persona deja nota en el buzón.
+
+- Josué: trustline patrocinada de USDC y comprobar que la wallet esté lista antes de firmar; preflight de trustline de quien cobra y de saldo del organizador; guardar el id de contrato previsto en la base (hoy sigue en el `Map` del proceso); probar la wallet con un nonce firmado y bloquear `wallet_cobro` al desplegar; poner `CAVOS_JWT_AUDIENCE` y `CAVOS_JWT_ISSUER` en Vercel; el primer pago real en testnet. Siguen también el monto de fondeo calculado en el servidor, `approve-and-release`, los índices del esquema y fijar la red. Next.js sigue en 16.3.6.
+- Abdiel: publicar Laya y dejar `LAYA_URL`; el modelo de la foto sigue fijo en `qwen/qwen3.8-27b`; mostrar `origen` en la revisión; el resumen antes de cada firma. El shell v2 ya está en `main` (PR #82, Josué).
+- Esteban: rechazar SVG y tipos de imagen desconocidos; encabezados `nosniff` y CSP; en producción, fallar si faltan audiencia o emisor del JWT; tope de subida de 4,5 MB; guardar el hash de la sesión, no el token en claro.
+- Sebastián: arreglar la prueba que depende del entorno en `lib/api/rutas.test.ts`, GitHub Actions (`npm ci`, `tsc --noEmit`, `npm test`) y un límite de pedidos compartido entre instancias. El Acta solo después de un pago real. En el repo no hay hash.
+- Raúl: las tres tareas de la auditoría ya entraron (PR #68, #67 y #69). Sigue preparar las cuatro cuentas del demo para el ensayo, fuera del código.
+
+## 2026-09-30
+
+### Cambiado
+
+- Stellar Raven queda obligatorio para el equipo y para los agentes. Josué Valles, PR #62, 10:00 a.m.
+- Quedaron escritas las sugerencias del equipo de ese día. No son compromisos. Josué Valles, PR #63, 10:28 a.m.
+- Entró la auditoría de código contra `main` en `db82b93`. Josué Valles, PR #64, 11:17 a.m.
+- Entraron los prompts por persona para las tareas de esa auditoría. Josué Valles, PR #65, 11:26 a.m.
+- Los dueños del tablero son sugerencias. Quien haga la tarea de otro deja el contexto en el buzón. Josué Valles, PR #66, 11:37 a.m.
 
 ## 2026-09-29
+
+### Entró el mismo día, después del PR #19
+
+#### Nuevo
+
+- Pruebas de integración contra Postgres local. Josué Valles, PR #27, 9:44 a.m.
+- Configuración central del entorno y una salvaguarda antes de migrar o sembrar la base de producción. Josué Valles, PR #22, 9:50 a.m.
+- Acciones v2 para aprobar, liberar, disputar y leer el escrow. Josué Valles, PR #26, 11:28 a.m.
+- Ingreso demo sin Cavos para el pitch. Josué Valles, PR #30, 11:30 a.m.
+- Backend de escrow v2 para desplegar y pagar. Josué Valles, PR #38, 12:38 p.m.
+- La revisión firma el pago en el navegador. Josué Valles, PR #39, 12:42 p.m.
+- Un correo con login de Cavos que no está en la base entra como voluntario. Josué Valles, PR #41, 12:51 p.m.
+- Cada proyecto guarda a su organizador (`drizzle/0002_organizador_proyecto.sql`). Josué Valles, PR #44, 1:38 p.m.
+- La interfaz y los mensajes de la API que ve la persona pasan a inglés. Josué Valles, PR #56, 4:37 p.m.
+
+#### Arreglado
+
+- Postgres local, la migración y la semilla de ejemplo ya corren. Josué Valles, PR #21, 10:03 a.m.
+- El JWT de Cavos se verifica y hace falta sesión para escribir. Josué Valles, PR #23, 10:45 a.m.
+- Si el ingreso falla, el aviso dice qué pasó. Josué Valles, PR #28, 10:14 a.m.
+- Se puede salir del demo y cambiar de rol. Josué Valles, PR #36, 11:48 a.m.
+- El modo demo no crea proyectos. Josué Valles, PR #47, 2:10 p.m.
+- En el demo se puede subir la evidencia, y la trustline de USDC de testnet queda cubierta. Josué Valles, PR #50, 3:02 p.m.
+- La sesión de firma de Cavos se recupera y hay cierre de sesión. Josué Valles, PR #52, 4:10 p.m.
+- La sesión de Hyto sigue el vencimiento del JWT de Cavos, con un máximo de 24 horas. Josué Valles, PR #54, 4:18 p.m.
+- Si la revisión de la foto falla, se muestra el error y se puede reintentar. Ya no cae en silencio al guion fijo. Josué Valles, PR #45, 4:22 p.m.
+- El veredicto de Laya sale del índice de probabilidad más alto del `score`. Josué Valles, PR #59, 7:46 p.m. Con eso queda cubierto lo que pedía el borrador del PR #15.
+
+#### Cambiado
+
+- `.env.example` precisa el alcance de cada variable, sin valores. Josué Valles, PR #20, 9:16 a.m. Entró unos minutos antes del changelog de la mañana y esa entrada no lo nombra.
+- Inventario del esquema de Postgres. Josué Valles, PR #24, 10:10 a.m.
+- Cruce del esquema declarado contra las consultas, sin escribir en la base. Josué Valles, PR #25, 10:13 a.m.
+- Contexto del repo para el equipo y los agentes (`AGENTS.md`). Josué Valles, PR #43, 12:59 p.m.
+- El Figma de Abdiel queda como fuente de verdad de la interfaz. Josué Valles, PR #58, 4:53 p.m.
+
+Lo que sigue es el cierre de la mañana, hasta el PR #19.
 
 ### Nuevo
 
@@ -22,7 +97,7 @@ Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull re
 - Quedó escrito que Esteban se encarga de la base, de las rutas y del ingreso. Josué Valles, PR #12.
 - Josué anotó el recorrido del 28 de septiembre, en la computadora y en el sitio: las pantallas seguían con el ejemplo de ZEEK, el ingreso fallaba y Fondear y Aprobar no firmaban un pago. Josué Valles, PR #13.
 
-### Pendiente para el equipo
+### Pendiente esa mañana
 
 - Esteban: cargar en el sitio la dirección de la base, la clave del almacén de fotos y la clave de la revisión de fotos, y crear el almacén privado. Las tablas y la carga de ZEEK ya se corrieron en la base. Sin eso, el sitio sigue mostrando el ejemplo.
 - Josué: conectar la bandeja, la revisión y el informe a las rutas nuevas, y Fondear y Aprobar al módulo de firma.
