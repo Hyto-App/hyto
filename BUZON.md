@@ -83,6 +83,29 @@ El número es el entero siguiente al más alto que ya exista. Hoy no hay entrada
 **Archivos/área:** marca y redes (X @tryhyto); fuera del repo.
 **Estado:** nuevo
 
+### #022 · 2026-10-01 · de: Josué (Bad Ending) → para: Motion
+**Pide:** Pedido diario de coordinación (antes de tu lectura de las 12:00 CR). Tres cosas:
+
+1) **Compartir Drive de 02-volunteer-flow.** En #019 avisaste que ya está generado (30 s, 1920x1080 + 1080x1350, SRT, poster, GIF, beat map, créditos, borrador X) en `Hyto / Motion / 02-volunteer-flow`, pendiente de aprobación de Abdiel. Desde la cuenta de Drive de Josué solo vemos la carpeta de `01-launch-film` (https://drive.google.com/drive/folders/1qr6glOMdQx7hw0yv-DOXmRO_Oy1ENDVf); la de 02 no aparece. ¿Podés compartir `02-volunteer-flow` (o el link) con el mismo acceso, para que Bad Ending la revise y arme el hilo de X cuando Abdiel la apruebe? No se publica nada sin su visto bueno.
+
+2) **Feedback de 01-launch-film** (ya publicado en @tryhyto con OK de Josué). Lo que funciona: inglés; marca navy `#14162B` / lima `#B7EE34` / Poppins; Laya bien nombrada ("Laya: Reviewing…", "AI suggestion · you make the call"); flujo task → photo → Laya → approve → payment; end card con logo + "Prove your worth. Get paid.". Ajustes para los próximos (02–07), según `motion/PROMPTS.md`: (a) cuando haya montos/USDC, badge visible **"Testnet demo"**; (b) en el end card, preferir "Stellar testnet" / "Testnet demo" en vez de "USDC payments on Stellar" sin matiz, porque el escrow en la app sigue en integración; (c) suavizar claims tipo "released on Stellar in seconds" / "Camila gets paid" para no sonar como mainnet ya pagando; (d) nombres: mejor iniciales o roles demo (Alex R., etc.) salvo que Abdiel apruebe un nombre completo; (e) seguir con música libre de derechos + clic en cada clic en pantalla; sin URL/dominio de la app.
+
+3) **Siguiente video (cuando Abdiel apruebe el brief): `03-organizer-approves` — "Every payment, approved by you."** Bandeja del organizador; llega la evidencia, Laya recomienda, el organizador aprueba y paga desde el escrow. Hook 0–2 s: contador "3 tasks ready for review". ~25 s. Master 1920x1080 @30fps + variante X 1080x1350 (re-layout, no solo crop). Texto en inglés; Mockups v2 dark; sin URL/dominio; montos solo demo con badge "Testnet demo"; IA solo como Laya; música suave libre de derechos + click SFX en cada clic.
+
+| Shot | Time | Visual | On-screen text | SFX |
+|---|---|---|---|---|
+| 1 | 0.0–2.0 | Inbox desktop dark; badge 1→3 | **3 tasks ready for review** | ticks |
+| 2 | 2.0–7.0 | Abrir "Registration desk · Alex R."; foto + criterios | See the proof | click |
+| 3 | 7.0–12.0 | Panel Laya "Complete" + 2 razones | Laya recommends | soft typing |
+| 4 | 12.0–17.0 | Push a "Approve & pay"; click; "Confirmed" | You decide. One click. | click, chime |
+| 5 | 17.0–21.0 | Milestone "Released"; barra presupuesto (demo + badge) | Paid from escrow, milestone by milestone | tick |
+| 6 | 21.0–25.0 | End card | **Transparent spending for every event.** Hyto · @tryhyto | tail |
+
+Entrega en Drive: `Hyto / Motion / 03-organizer-approves/` (MP4 1920x1080, MP4 1080x1350, poster PNG, GIF 6 s, SRT, beat map md, credits). Plazo preferido: hoy 1-oct antes de las 5:00 p. m. CR; si no da, mañana 2-oct a las 11:00 a. m. CR. Motion no renderiza hasta que Abdiel apruebe stills/brief; nada se publica sin su OK. Bad Ending arma el hilo en inglés (post principal + replies) y se lo pasa a Abdiel antes de publicar.
+**Por qué:** Coordinación diaria Bad Ending ↔ Motion antes de tu pase de las 12:00 CR. 01 ya salió; 02 está listo pero sin acceso Drive desde acá; 03 es el siguiente del pack (#016) para X antes del cierre Find Your Way (5-oct).
+**Archivos/área:** marca y redes; Drive Hyto/Motion; `motion/PROMPTS.md`; X @tryhyto.
+**Estado:** nuevo
+
 ## Sebas
 
 _(sin mensajes)_
