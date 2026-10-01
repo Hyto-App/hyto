@@ -105,9 +105,25 @@ Josué: ya podés usarlos de referencia para la app admin.
 Bad Ending: podés arrancar borradores de posts para X con estos mockups. Todo post pasa por Abdiel antes de publicarse. No uses URLs de la app ni del dominio sin su visto bueno.
 **Estado:** nuevo
 
+### #020 · 2026-10-01 · de: Abdiel (ARGOS) → para: Josué (Jayden)
+**Pide:** Subí a Figma los mockups v2 con logo real, usando tu conexión de Figma (tu cuenta tiene su propia cuota). Fuente: Drive, carpeta "Mockups v2 (logo) 2026-09-30" → https://drive.google.com/drive/folders/1EALvwq126BePBnXaDOCGBdfHu47WlJ2c (subcarpetas Desktop dark 12, Desktop light 12, Mobile light 16, Mobile dark 16, más 4 contact sheets). Destino: archivo "Hyto – App", página "Nuevo diseño", en una sección nueva "Mockups v2 (ARGOS) 2026-09-30" a la derecha de lo que ya hay. Orden: cuatro filas (Desktop dark, Desktop light, Mobile dark, Mobile light), pantallas 01→12 de izquierda a derecha, estados 12a/12b/12d/12e al final de su fila; un frame por imagen, nombre = nombre del archivo sin extensión, tamaño nativo. Las v1 que ya están (02, 03, 04, 06, 07) no se borran. **No toqués la página "Actual (referencia)" ni frames ajenos.** Cuando termines, cambiá el estado de esta entrada a "hecho" con el link al nodo de la sección.
+**Por qué:** El equipo ya aprobó el tema oscuro (#011) y los mockups v2 están completos; nuestra cuota de Figma está bloqueada, la tuya no. Así queda todo en Figma antes del ensayo del 3-oct.
+**Archivos/área:** Figma "Hyto – App" → página "Nuevo diseño" (solo sección nueva); Drive Hyto/Mockups v2.
+**Estado:** nuevo
+
+### #021 · 2026-10-01 · de: Abdiel (ARGOS) → para: Josué (Jayden)
+**Pide:** Revisá y, si te parece, aprobá el setup para Jayden que está en `docs/prompts/josue-jayden-vault-graphify.md` de esta misma rama `buzon`. Arma: (a) un vault de Obsidian personal solo tuyo, local y fuera del repo; (b) Graphify (paquete `graphifyy`) sobre tu clon, con `graphify-out/` en `.git/info/exclude`, sin tocar `.gitignore` ni `AGENTS.md`; (c) lectura del vault compartido `docs/vault/`; (d) un clon del repo privado nuevo `Hyto-App/hyto-private`, al lado de `hyto`. Para (d) primero tenés que aceptar la invitación de GitHub al repo. Jayden: no instales, no clones y no corras nada hasta que Josué lo apruebe en su chat. Primero mostrale el plan (sección 9 del documento).
+**Por qué:** Para que Jayden tenga la misma memoria de trabajo, el mismo mapa del código y el mismo contexto que las otras IAs antes del ensayo del 3-oct. Reparto: `docs/vault/` (público) solo contexto no sensible; `hyto-private` para decisiones internas, acuerdos, pendientes y URLs internas. En ninguno van claves, tokens, `.env` ni semillas. Las IAs solo leen `hyto-private`, salvo que su humano diga otra cosa. `docs/vault/` llega en un PR en borrador aparte.
+**Archivos/área:** `docs/prompts/josue-jayden-vault-graphify.md` (rama `buzon`); compu de Josué (vault fuera del repo, `.git/info/exclude`, clon de `hyto-private`); `docs/vault/` (PR aparte); acceso a `Hyto-App/hyto-private`.
+**Estado:** nuevo
+
 ## Raúl
 
-_(sin mensajes)_
+### #017 · 2026-10-01 · de: Abdiel (ARGOS) → para: Raúl (Martín)
+**Pide:** Revisá y, si te parece, aprobá el anexo para Martín en `docs/prompts/raul-martin-hyto-private.md` de esta misma rama `buzon`. Complementa tu guía de vault y Graphify: (a) aceptá la invitación de GitHub al repo privado nuevo `Hyto-App/hyto-private` y clonalo al lado de `hyto`, no dentro; (b) Martín lo lee como contexto y no escribe ahí salvo que vos se lo pidas; (c) si lo indexás con Graphify, primero `graphify-out/` en `.git/info/exclude`, y nunca se sube; (d) `docs/vault/` en el repo público es contexto compartido de solo lectura. Martín: no clones ni corras nada hasta que Raúl lo apruebe en su chat.
+**Por qué:** Lo interno del equipo (decisiones, acuerdos, pendientes, URLs internas) ya no va en el repo público: va en `hyto-private`. `docs/vault/` queda solo para contexto no sensible. En ninguno de los dos van claves, tokens, `.env` ni semillas. Así todas las IAs trabajan con el mismo contexto antes del ensayo del 3-oct.
+**Archivos/área:** `docs/prompts/raul-martin-hyto-private.md` (rama `buzon`); compu de Raúl (clon de `hyto-private`, `.git/info/exclude`); `docs/vault/` (PR aparte); acceso a `Hyto-App/hyto-private`.
+**Estado:** nuevo
 
 ## Todos
 
