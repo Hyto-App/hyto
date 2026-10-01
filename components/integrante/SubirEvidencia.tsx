@@ -6,6 +6,7 @@ import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
+import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
@@ -17,6 +18,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
+  const capturaRef = useRef<HTMLInputElement>(null);
   const fotoUrlRef = useRef<string | null>(null);
   const montadoRef = useRef(true);
   const enviandoRef = useRef(false);
@@ -27,7 +29,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [evidencia, setEvidencia] = useState<Evidencia | null>(null);
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sinCamara, setSinCamara] = useState(false);
+  const [conCaptura, setConCaptura] = useState(false);
   const [capturadaEn, setCapturadaEn] = useState<string | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const [cargaError, setCargaError] = useState<string | null>(null);
@@ -87,6 +89,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   useEffect(() => {
     montadoRef.current = true;
+    if (!navigator.mediaDevices?.getUserMedia) setConCaptura(true);
     return () => {
       montadoRef.current = false;
       streamRef.current?.getTracks().forEach((pista) => pista.stop());
@@ -125,8 +128,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   async function abrirCamara() {
     setError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
-      setSinCamara(true);
-      setError("A camera is needed to photograph the finished work.");
+      capturaRef.current?.click();
       return;
     }
     try {
@@ -139,11 +141,9 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         return;
       }
       streamRef.current = stream;
-      setSinCamara(false);
       setFase("camara");
     } catch {
-      setSinCamara(true);
-      setError("A camera is needed to photograph the finished work.");
+      setError("Could not open the camera. Allow the camera and try again.");
     }
   }
 
@@ -192,6 +192,21 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       return;
     }
     usarFoto(archivo, archivo.name, null);
+  }
+
+  function elegirCaptura(evento: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = "";
+    if (!archivo || tarea?.tipo !== "trabajo") return;
+    if (!esFotoDeCamara(archivo)) {
+      setError("Take the photo with the camera.");
+      return;
+    }
+    if (!archivoDeCamaraReciente(archivo)) {
+      setError("Take the photo now. Photos from the gallery are not accepted.");
+      return;
+    }
+    usarFoto(archivo, null, new Date(archivo.lastModified).toISOString());
   }
 
   function soltarArchivo(evento: React.DragEvent<HTMLButtonElement>) {
@@ -364,8 +379,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
                 Choose a PDF or image
               </button>
             ) : null}
-            {!reembolso && sinCamara ? (
-              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">A camera is needed to photograph the finished work.</p>
+            {!reembolso && fase === "inicio" ? (
+              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Take the photo now. Photos from the gallery are not accepted.</p>
             ) : null}
           </div>
           <div>
@@ -390,7 +405,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             <div className="hyto-actions">
               <BotonPrincipal
                 type="button"
-                disabled={fase === "enviando" || (!reembolso && sinCamara && fase === "inicio")}
+                disabled={fase === "enviando"}
                 aria-busy={fase === "enviando"}
                 onClick={() => {
                   if (fase === "camara") tomarFoto();
@@ -441,6 +456,17 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           aria-hidden="true"
           className="sr-only"
           onChange={elegirArchivo}
+        />
+      ) : conCaptura ? (
+        <input
+          ref={capturaRef}
+          type="file"
+          accept="image/jpeg"
+          capture="environment"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={elegirCaptura}
         />
       ) : null}
     </main>
