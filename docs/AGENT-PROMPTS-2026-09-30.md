@@ -2,6 +2,16 @@
 
 One ready-to-paste prompt per person. Each prompt is self-contained: copy everything inside the fenced block into your coding agent (Cursor or similar).
 
+Status on 1 October 2026, 3:33 p.m. Costa Rica time (`main` at `0d2c402`). Owners below are suggestions. Whoever takes someone else's task leaves a note in the mailbox.
+
+| Person | Landed since these prompts | Still open |
+|---|---|---|
+| Raúl | P1-1 English server messages (PR #68), P1-2 resume after a partial deploy/fund (PR #67), and P1-3 confirmed reimbursement amount (PR #69, 3:33 p.m., Josué Valles co-author). The resume button reads **Finish locking** (PR #77) | Nothing from this list. Camera-only evidence is open PR #72, and Laya questions about the written description are open PR #80. Neither was one of these prompts |
+| Josué | Plain-language payment steps and **Approve and pay** only when the budget is locked (PR #77, 11:25 a.m.). Not from the P0 list. Reimbursement fund amount is now the stored confirmation (Raúl's PR #69) | Sponsored trustline, preflight, persist `contractId`, wallet proof, JWT vars in Vercel, first testnet payment, then the remaining P1s. A work-task fund can still use the client amount. Next.js is still 16.3.6. Open PR #18 (Google return) |
+| Abdiel | The review shows **AI recommendation**, **Sample recommendation**, or **Review failed**. A Groq or Laya failure is `origen: "error"`, not the fixed script. Laya's score index landed earlier (PR #59). Hiding **Approve and pay** until funded landed in Josué's PR #77 | Model check in production, `LAYA_URL`, pre-sign summary |
+| Esteban | Nothing from this list | Image allow-list, security headers, strict JWT, upload limit, session hash |
+| Sebastián | Nothing from this list | The env-dependent test in `lib/api/rutas.test.ts`, GitHub Actions, shared rate limit. Acta still waits on a real payment hash |
+
 Kanban: https://app.notion.com/p/2d5d21fae61440d7861d5ce924a6f29c
 
 ---
@@ -85,6 +95,8 @@ When done, reply with: for each task, the PR link, branch, what changed (files),
 ---
 
 ## Abdiel
+
+P1-1 below (hide **Approve and pay** until funded) landed on 1 October 2026 at 11:25 a.m. Costa Rica time in Josué Valles's PR #77. `botonesRevision` already requires `conContrato && fondeado === true`. Do not reopen it. Start at the AI tasks and at P1-2.
 
 ```text
 You are working on the repo Hyto-App/hyto (https://github.com/Hyto-App/hyto). I am Abdiel (GitHub abdxcole). I am the single owner of the WHOLE AI evidence flow plus Laya, end to end, and the UX/Figma owner.
@@ -232,6 +244,8 @@ When done, reply with: for each task, the PR link, branch, files changed, a link
 ---
 
 ## Raúl
+
+P1-1, P1-2, and P1-3 below already landed on 1 October 2026 (PR #68, PR #67, and PR #69 at 3:33 p.m. Costa Rica time). The resume button reads **Finish locking** (PR #77). Do not reopen the English-message guard, the partial-deploy reload, or the reimbursement confirmation. The receipt reading stays in `evidencias.monto`. Deploy and fund use `evidencias.monto_confirmado`.
 
 ```text
 You are working on the repo Hyto-App/hyto (https://github.com/Hyto-App/hyto). I am Raúl, working on English-only strings and P1 UX/frontend items.
