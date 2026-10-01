@@ -32,7 +32,8 @@ export function tareasSemilla(): TareaFila[] {
 }
 
 export function tareasDemo(): TareaFila[] {
-  return filasTareas(ID_PROYECTO_DEMO, idTareaDemo);
+  const voluntarioId = usuarioDemo("voluntario").id;
+  return filasTareas(ID_PROYECTO_DEMO, idTareaDemo).map((tarea) => ({ ...tarea, miembroId: voluntarioId }));
 }
 
 function filasTareas(proyectoId: string, idDe: (id: string) => string): TareaFila[] {
@@ -181,6 +182,23 @@ async function asegurarProyectoDemo(almacen: Almacen): Promise<void> {
     if (await almacen.veredictoDe(veredicto.evidenciaId)) continue;
     await almacen.guardarVeredicto(veredicto);
   }
+  await asegurarVoluntarioDemo(almacen);
+}
+
+export async function asegurarVoluntarioDemo(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
+  const voluntarioId = usuarioDemo("voluntario").id;
+  for (const tarea of await almacen.listarTareas()) {
+    if (tarea.proyectoId !== ID_PROYECTO_DEMO || tarea.miembroId === voluntarioId) continue;
+    await almacen.actualizarTarea(tarea.id, { miembroId: voluntarioId });
+  }
+  await almacen.guardarMiembro({
+    proyectoId: ID_PROYECTO_DEMO,
+    usuarioId: voluntarioId,
+    rol: "volunteer",
+    estado: "active",
+    creadoEn: CREADO_DEMO,
+  });
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {

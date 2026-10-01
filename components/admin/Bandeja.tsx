@@ -100,8 +100,6 @@ export function Bandeja({
       <Numeros resumen={vista.resumen} />
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold tracking-tight">To approve</h2>
-        <p className="mt-1 text-sm text-[var(--suave)]">Oldest first</p>
         <div className="hyto-tabs mt-4 flex" role="tablist" aria-label="Filter submissions">
           {FILTROS.map((item) => (
             <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
@@ -158,9 +156,6 @@ export function Bandeja({
 
             {seleccion ? (
               <article className="hyto-card overflow-hidden">
-                <div className="flex h-48 items-end bg-[var(--superficie-2)] p-6">
-                  <p className="text-sm text-[var(--suave)]">No photo in the list. Open the review to see it.</p>
-                </div>
                 <div className="p-5">
                   <p className="text-sm text-[var(--suave)]">{etiquetaTipo(seleccion.tipo)} · {textoVisible(seleccion.miembro)}</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo)}</h3>
@@ -182,6 +177,7 @@ export function Bandeja({
                           }).then(() => estado.reintentar());
                         }}
                       >
+                        <option value="">Unassigned</option>
                         {miembros.map((persona) => (
                           <option key={persona.usuarioId} value={persona.usuarioId}>
                             {persona.email}

@@ -123,7 +123,7 @@ export function CuentasDemo() {
       <header className="hyto-page-head">
         <div>
           <p className="hyto-crumb">
-            <Link href="/mis-tareas">My tasks</Link>
+            <Link href="/cuentas">Account</Link>
             <InsigniaDemo />
           </p>
           <h1 className="hyto-title mt-3">Accounts & wallet</h1>

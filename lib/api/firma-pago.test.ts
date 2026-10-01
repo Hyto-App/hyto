@@ -7,7 +7,8 @@ import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
-import { enviarFirmaHttp, prepararFirmaHttp, registrarPreparado } from "./firma";
+import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
+import { emitirTokenPreparado } from "./preparado";
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -25,6 +26,19 @@ function sesion(wallet: string): SesionFila {
     expiraEn: new Date(Date.now() + 60_000).toISOString(),
     wallet,
   };
+}
+
+function tokenDe(xdr: string, meta: { accion: string; tareaId: string | null; monto: string | null }): string {
+  const token = emitirTokenPreparado({
+    usuarioId: "organizador",
+    sesionId: "tok",
+    huella: huellaDeXdr(xdr),
+    accion: meta.accion,
+    tareaId: meta.tareaId ?? "",
+    monto: meta.monto ?? "",
+  });
+  if (!token) throw new Error("missing payment secret");
+  return token;
 }
 
 function pedido(cuerpo: unknown): Request {
@@ -126,10 +140,9 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, null);
 
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
-    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "stand", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "stand", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -153,10 +166,9 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.notEqual((await almacen.leerTarea("stand"))?.estado, "pagado");
 
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
-    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "stand", monto: null });
     const pagado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "stand" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "stand", token: tokenDe(pago, { accion: "liberar", tareaId: "stand", monto: null }) }),
       almacen,
     );
     assert.equal(pagado.status, 200);
@@ -249,10 +261,9 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
     const preparado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
     assert.equal(preparado.status, 200);
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
-    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "registro", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "registro", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -309,10 +320,9 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
       200,
     );
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
-    registrarPreparado(alta, { usuarioId: "organizador", accion: "desplegar", tareaId: "bienvenida", monto: "20" });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida" }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida", token: tokenDe(alta, { accion: "desplegar", tareaId: "bienvenida", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -348,10 +358,9 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
   };
   try {
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
-    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "comida", monto: null });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "comida" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "comida", token: tokenDe(pago, { accion: "liberar", tareaId: "comida", monto: null }) }),
       almacen,
     );
     assert.equal(respuesta.status, 200);
@@ -382,10 +391,9 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
   };
   try {
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
-    registrarPreparado(pago, { usuarioId: "organizador", accion: "liberar", tareaId: "bienvenida", monto: null });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida", token: tokenDe(pago, { accion: "liberar", tareaId: "bienvenida", monto: null }) }),
       almacen,
     );
     assert.equal(respuesta.status, 200);
@@ -557,8 +565,62 @@ test("un XDR que el servidor no preparó no se envía", async () => {
     assert.equal(respuesta.status, 409);
     assert.match(((await respuesta.json()) as { aviso: string }).aviso, /not prepared/);
     assert.equal(llamadas, 0);
+
+    const clave = { TRUSTLESS_API_KEY: "clave-de-prueba" };
+    const ajeno = emitirTokenPreparado(
+      {
+        usuarioId: "otro",
+        sesionId: "tok",
+        huella: huellaDeXdr(xdr),
+        accion: "liberar",
+        tareaId: "stand",
+        monto: "",
+      },
+      Date.now(),
+      clave,
+    );
+    process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+    const deOtro = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
+      almacen,
+    );
+    assert.equal(deOtro.status, 409);
+    assert.match(((await deOtro.json()) as { aviso: string }).aviso, /not prepared/);
+
+    const vencido = emitirTokenPreparado(
+      {
+        usuarioId: "organizador",
+        sesionId: "tok",
+        huella: huellaDeXdr(xdr),
+        accion: "liberar",
+        tareaId: "stand",
+        monto: "",
+        exp: Date.now() - 1000,
+      },
+      Date.now(),
+      clave,
+    );
+    const caduco = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand", token: vencido }),
+      almacen,
+    );
+    assert.equal(caduco.status, 409);
+    assert.match(((await caduco.json()) as { aviso: string }).aviso, /expired/);
+    assert.equal(llamadas, 0);
+
+    delete process.env.TRUSTLESS_API_KEY;
+    const sinClave = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
+      almacen,
+    );
+    assert.equal(sinClave.status, 503);
+    assert.match(((await sinClave.json()) as { aviso: string }).aviso, /cannot confirm/);
   } finally {
     globalThis.fetch = original;
+    delete process.env.TRUSTLESS_API_KEY;
     reiniciarLimite();
   }
 });

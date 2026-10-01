@@ -1,4 +1,3 @@
-import { CuentasDemo } from "@/components/integrante/CuentasDemo";
 import { Entrar } from "@/components/admin/Entrar";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { Salir } from "@/components/sesion/Salir";
@@ -18,11 +17,7 @@ export default async function PaginaCuentas() {
           <div className="mt-4 max-w-sm">
             <Entrar demoHabilitado={demoHabilitado()} />
           </div>
-          <div className="mt-3">
-            <Salir />
-          </div>
         </div>
-        <CuentasDemo />
       </>
     );
   }

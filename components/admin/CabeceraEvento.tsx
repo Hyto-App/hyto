@@ -12,7 +12,7 @@ export function CabeceraEvento({
   id: string;
   nombre: string;
   rol: "organizer" | "team" | "volunteer";
-  pestana: "inbox" | "report";
+  pestana: "inbox" | "tasks" | "report";
 }) {
   const [abierto, setAbierto] = useState(false);
   const [secreto, setSecreto] = useState<string | null>(null);
@@ -92,9 +92,17 @@ export function CabeceraEvento({
         </div>
       ) : null}
       {organiza ? (
-        <div className="hyto-tabs mt-6" role="tablist" aria-label="Event">
+        <div className="hyto-tabs mt-6 flex" role="tablist" aria-label="Event">
           <Link href={`/eventos/${id}`} role="tab" aria-selected={pestana === "inbox"} aria-current={pestana === "inbox" ? "page" : undefined}>
             Inbox
+          </Link>
+          <Link
+            href={`/eventos/${id}/tareas`}
+            role="tab"
+            aria-selected={pestana === "tasks"}
+            aria-current={pestana === "tasks" ? "page" : undefined}
+          >
+            Tasks
           </Link>
           <Link
             href={`/eventos/${id}/informe`}

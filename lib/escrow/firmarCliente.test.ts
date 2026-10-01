@@ -45,7 +45,7 @@ function fetchDe(pasos: { status?: number; body: unknown }[]): {
 
 test("prepara, firma el XDR con Cavos y reenvía el contrato al enviar", async () => {
   const red = fetchDe([
-    { body: { xdr: XDR, hashPreparado: "prep", contrato: "C1" } },
+    { body: { xdr: XDR, hashPreparado: "prep", contrato: "C1", token: "tok" } },
     { body: { hash: "a".repeat(64), ledger: 9, codigo: null, contrato: "C1", estado: "SUCCESS" } },
   ]);
   const firmados: string[] = [];
@@ -73,13 +73,13 @@ test("prepara, firma el XDR con Cavos y reenvía el contrato al enviar", async (
   });
   assert.deepEqual(red.llamadas[1], {
     url: "/api/firma/enviar",
-    body: { xdr: FIRMADO, accion: "fondear", tareaId: "stand", contrato: "C1" },
+    body: { xdr: FIRMADO, accion: "fondear", tareaId: "stand", contrato: "C1", token: "tok" },
   });
 });
 
 test("desplegar solo manda la tarea y usa el contrato conocido si la respuesta no trae uno", async () => {
   const red = fetchDe([
-    { body: { xdr: XDR, hashPreparado: "prep", contrato: null, monto: 20 } },
+    { body: { xdr: XDR, hashPreparado: "prep", contrato: null, monto: 20, token: "tok" } },
     { body: { hash: null, ledger: null, codigo: null, contrato: null, estado: "SUCCESS", aviso: "guardado" } },
   ]);
   const pago = await firmarYEnviar(
@@ -93,7 +93,7 @@ test("desplegar solo manda la tarea y usa el contrato conocido si la respuesta n
   assert.equal(pago.monto, 20);
   assert.equal(pago.contrato, "C2");
   assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "stand" });
-  assert.deepEqual(red.llamadas[1]?.body, { xdr: FIRMADO, accion: "desplegar", tareaId: "stand", contrato: "C2" });
+  assert.deepEqual(red.llamadas[1]?.body, { xdr: FIRMADO, accion: "desplegar", tareaId: "stand", contrato: "C2", token: "tok" });
 });
 
 test("el 403 de demo, el XLM insuficiente y el rechazo usan avisos en español", async () => {
@@ -104,7 +104,7 @@ test("el 403 de demo, el XLM insuficiente y el rechazo usan avisos en español",
   );
 
   const xlm = fetchDe([
-    { body: { xdr: XDR } },
+    { body: { xdr: XDR, token: "tok" } },
     { status: 400, body: { aviso: "fee", codigo: "STELLAR_TX_INSUFFICIENT_BALANCE" } },
   ]);
   await assert.rejects(
@@ -112,7 +112,7 @@ test("el 403 de demo, el XLM insuficiente y el rechazo usan avisos en español",
     (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_XLM,
   );
 
-  const rechazo = fetchDe([{ body: { xdr: XDR } }]);
+  const rechazo = fetchDe([{ body: { xdr: XDR, token: "tok" } }]);
   await assert.rejects(
     () =>
       firmarYEnviar("aprobar", "stand", {}, {
@@ -143,9 +143,9 @@ test("un fallo de red o un XDR vacío no muestran el error crudo", async () => {
 
 test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear falla", async () => {
   const red = fetchDe([
-    { body: { xdr: "uno", hashPreparado: "p1", contrato: "C9", monto: 20 } },
+    { body: { xdr: "uno", hashPreparado: "p1", contrato: "C9", monto: 20, token: "tok-1" } },
     { body: { hash: "h1", ledger: 1, codigo: null, contrato: "C9", estado: "SUCCESS" } },
-    { body: { xdr: "dos", hashPreparado: "p2", contrato: "C9" } },
+    { body: { xdr: "dos", hashPreparado: "p2", contrato: "C9", token: "tok-2" } },
     { status: 502, body: { aviso: "Could not submit the payment." } },
   ]);
   const vistos: string[] = [];
@@ -164,7 +164,7 @@ test("desplegar y fondear pasan el contrato y el monto, y se detienen si fondear
   );
   assert.deepEqual(vistos, ["desplegar", "fondear"]);
   assert.deepEqual(red.llamadas[0]?.body, { accion: "desplegar", tareaId: "tarea-1" });
-  assert.deepEqual(red.llamadas[1]?.body, { xdr: "uno", accion: "desplegar", tareaId: "tarea-1", contrato: "C9" });
+  assert.deepEqual(red.llamadas[1]?.body, { xdr: "uno", accion: "desplegar", tareaId: "tarea-1", contrato: "C9", token: "tok-1" });
   assert.deepEqual(red.llamadas[2]?.body, {
     accion: "fondear",
     tareaId: "tarea-1",
@@ -184,7 +184,7 @@ test("aprobar y pagar retoma desde el paso que falló", () => {
 test("sin identidad de Cavos restaurada no autentica ni envía", async () => {
   const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
   process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-test";
-  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1", token: "tok" } }]);
   try {
     await assert.rejects(
       () => firmarYEnviar("fondear", "stand", { contrato: "C1", firmante: "G1" }, { fetch: red.fetch }),
@@ -199,7 +199,7 @@ test("sin identidad de Cavos restaurada no autentica ni envía", async () => {
 });
 
 test("un token vencido de la bóveda se muestra como sesión de Cavos cerrada", async () => {
-  const red = fetchDe([{ body: { xdr: XDR } }]);
+  const red = fetchDe([{ body: { xdr: XDR, token: "tok" } }]);
   await assert.rejects(
     () =>
       firmarYEnviar("fondear", "stand", {}, {
@@ -233,7 +233,7 @@ test("con identidad en sessionStorage pasa restoreIdentity y no dice que la sesi
   global.fetch = async () => {
     throw new Error("red cortada");
   };
-  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1", token: "tok" } }]);
   try {
     await assert.rejects(
       () => firmarYEnviar("fondear", "stand", { contrato: "C1", firmante: "G1" }, { fetch: red.fetch }),
@@ -273,7 +273,7 @@ test("un token vigente en otra pestaña reconstruye la identidad antes de firmar
   global.fetch = async () => {
     throw new Error("red cortada");
   };
-  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1", token: "tok" } }]);
   try {
     await assert.rejects(
       () => firmarYEnviar("fondear", "stand", { contrato: "C1", firmante: "G1" }, { fetch: red.fetch }),
@@ -307,7 +307,7 @@ test("un token vencido y sin identidad no se puede refrescar", async () => {
   });
   const global = globalThis as { window?: unknown };
   global.window = { sessionStorage: almacenamiento(sesion), localStorage: almacenamiento(local) };
-  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1" } }]);
+  const red = fetchDe([{ body: { xdr: XDR, hashPreparado: "p", contrato: "C1", token: "tok" } }]);
   try {
     await assert.rejects(
       () => firmarYEnviar("fondear", "stand", { contrato: "C1" }, { fetch: red.fetch }),

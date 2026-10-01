@@ -15,7 +15,11 @@ export async function asignarTareaHttp(request: Request, almacen: Almacen, tarea
     return json({ aviso: "The body is not JSON." }, 400);
   }
   const destino = miembroDe(body);
-  if (!destino) return json({ aviso: "Choose a person in this event." }, 400);
+  if (destino === null) return json({ aviso: "Choose a person in this event." }, 400);
+  if (destino === "") {
+    await almacen.actualizarTarea(tarea.id, { miembroId: "" });
+    return json({ tareaId: tarea.id, miembroId: "" });
+  }
   const miembros = await almacen.listarMiembros(tarea.proyectoId);
   const miembro = miembros.find((item) => item.usuarioId === destino && item.estado === "active");
   if (!miembro) return json({ aviso: "That person is not in this event." }, 400);
@@ -23,8 +27,9 @@ export async function asignarTareaHttp(request: Request, almacen: Almacen, tarea
   return json({ tareaId: tarea.id, miembroId: destino });
 }
 
-function miembroDe(body: unknown): string {
-  if (!body || typeof body !== "object") return "";
+function miembroDe(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
   const id = (body as { usuarioId?: unknown }).usuarioId;
-  return typeof id === "string" ? id.trim() : "";
+  if (typeof id !== "string") return null;
+  return id.trim();
 }

@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado } from "@/lib/ui/etiquetas";
-import type { EstadoTarea } from "@/lib/integrante/tipos";
+import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export function TareasMiembro({
   tareas,
 }: {
-  tareas: { id: string; titulo: string; estado: string; monto: string }[];
+  tareas: { id: string; titulo: string; estado: string; tipo: TipoTarea; monto: string; tope: string | null }[];
 }) {
   if (tareas.length === 0) {
     return (
@@ -25,7 +26,7 @@ export function TareasMiembro({
             <Link href={`/tareas/${tarea.id}`} className="hyto-card block p-5">
               <p className="text-lg font-semibold">{tarea.titulo}</p>
               <p className="mt-1 text-sm text-[var(--suave)]">
-                {etiquetaEstado(tarea.estado as EstadoTarea)} · {tarea.monto} USDC
+                {etiquetaEstado(tarea.estado as EstadoTarea)} · {montoDeTarea(tarea)}
               </p>
             </Link>
           </li>

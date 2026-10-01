@@ -35,7 +35,16 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
   return (
     <>
       <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol={rol} pestana="inbox" />
-      <TareasMiembro tareas={tareas.map((tarea) => ({ id: tarea.id, titulo: tarea.titulo, estado: tarea.estado, monto: tarea.monto }))} />
+      <TareasMiembro
+        tareas={tareas.map((tarea) => ({
+          id: tarea.id,
+          titulo: tarea.titulo,
+          estado: tarea.estado,
+          tipo: tarea.tipo,
+          monto: tarea.monto,
+          tope: tarea.tope,
+        }))}
+      />
     </>
   );
 }

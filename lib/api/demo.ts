@@ -1,5 +1,5 @@
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
+import { asegurarSemilla, asegurarVoluntarioDemo } from "@/lib/db/semilla";
 import { clienteDe, excedido } from "@/lib/escrow/limite";
 import { COOKIE_SESION, SESION_SIN_EXP_SEGUNDOS, encabezadoCookie, expiracion, leerCookie, tokenSesion } from "@/lib/sesion/cookie";
 import { demoHabilitado, rolDemoDe, sesionEsDemo, usuarioDemo } from "@/lib/sesion/demo";
@@ -30,6 +30,7 @@ export async function crearDemoHttp(
 
   try {
     await asegurarSemilla(almacen);
+    await asegurarVoluntarioDemo(almacen);
     const fijo = usuarioDemo(rol);
     await almacen.guardarUsuario(fijo);
     const usuario = await almacen.usuarioPorEmail(fijo.email);

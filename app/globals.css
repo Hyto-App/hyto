@@ -391,7 +391,6 @@ a {
 }
 
 .hyto-tabs {
-  display: flex;
   gap: 18px;
   border-bottom: 1px solid var(--linea);
   margin-bottom: 16px;
@@ -416,7 +415,6 @@ a {
 }
 
 .hyto-chips {
-  display: flex;
   gap: 8px;
   overflow-x: auto;
   margin-bottom: 16px;
@@ -533,6 +531,10 @@ a {
 .hyto-steps {
   display: flex;
   gap: 8px;
+}
+
+.hyto-atras {
+  display: none;
 }
 
 .hyto-steps i {
@@ -683,6 +685,20 @@ a {
 
   .hyto-shell-foco .hyto-main {
     padding-bottom: 140px;
+  }
+
+  .hyto-shell-foco .hyto-atras {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0 0;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--tinta);
   }
 
   .hyto-kpis {

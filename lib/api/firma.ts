@@ -12,6 +12,7 @@ import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
+import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
@@ -20,15 +21,6 @@ const FUNCION_LIBERACION = "release_funds";
 
 // contractId que devolvió el prepare de esta tarea. No viene del cliente.
 const contratosPreparados = new Map<string, string>();
-
-type MetaPreparado = {
-  usuarioId: string;
-  accion: string | null;
-  tareaId: string | null;
-  monto: string | null;
-};
-
-const xdrPreparados = new Map<string, MetaPreparado>();
 
 export function huellaDeXdr(xdr: string): string {
   for (const red of [Networks.TESTNET, Networks.PUBLIC]) {
@@ -43,18 +35,30 @@ export function huellaDeXdr(xdr: string): string {
   return createHash("sha256").update(xdr).digest("hex");
 }
 
-export function registrarPreparado(xdr: string, meta: MetaPreparado): void {
-  xdrPreparados.set(huellaDeXdr(xdr), meta);
-}
+const AVISO_SIN_SECRETO = "The server cannot sign this payment.";
+const AVISO_SIN_PREPARAR = "This signature was not prepared by the server.";
+const AVISO_VENCIDO = "This payment request has expired. Prepare it again.";
+const AVISO_NO_COINCIDE = "This signature does not match the prepared payment.";
 
-function anotarPreparado(
+function tokenDePreparado(
   xdr: string,
   sesion: SesionFila,
   accion: string,
   tareaId: string | null,
   monto: string | null,
-): void {
-  registrarPreparado(xdr, { usuarioId: sesion.usuarioId, accion, tareaId, monto });
+): string | null {
+  return emitirTokenPreparado({
+    usuarioId: sesion.usuarioId,
+    sesionId: sesion.token,
+    huella: huellaDeXdr(xdr),
+    accion,
+    tareaId: tareaId ?? "",
+    monto: monto ?? "",
+  });
+}
+
+function sinSecreto(): Response {
+  return Response.json({ aviso: AVISO_SIN_SECRETO }, { status: 503 });
 }
 
 export async function prepararFirmaHttp(sesion: SesionFila, request: Request, almacen?: Almacen | null): Promise<Response> {
@@ -97,11 +101,13 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   }
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
+  if (!secretoPreparado()) return sinSecreto();
   try {
     const listo = await preparar(preparada);
     const monto = preparada.accion === "fondear" ? String(preparada.monto) : null;
-    anotarPreparado(listo.xdr, sesion, preparada.accion, idTarea(body), monto);
-    return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato });
+    const token = tokenDePreparado(listo.xdr, sesion, preparada.accion, idTarea(body), monto);
+    if (!token) return sinSecreto();
+    return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, token });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
   }
@@ -166,18 +172,26 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
     if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
   }
-  const preparado = xdrPreparados.get(huellaDeXdr(envio.xdr));
-  if (!preparado || preparado.usuarioId !== sesion.usuarioId) {
-    return Response.json({ aviso: "This signature was not prepared by the server." }, { status: 409 });
+  if (!envio.token) return Response.json({ aviso: AVISO_SIN_PREPARAR }, { status: 409 });
+  const preparado = verificarTokenPreparado(envio.token, {
+    usuarioId: sesion.usuarioId,
+    sesionId: sesion.token,
+    huella: huellaDeXdr(envio.xdr),
+  });
+  if (!preparado.ok) {
+    if (preparado.codigo === "secreto") return Response.json({ aviso: "The server cannot confirm this payment." }, { status: 503 });
+    if (preparado.codigo === "vencido") return Response.json({ aviso: AVISO_VENCIDO }, { status: 409 });
+    if (preparado.codigo === "huella") return Response.json({ aviso: AVISO_NO_COINCIDE }, { status: 409 });
+    return Response.json({ aviso: AVISO_SIN_PREPARAR }, { status: 409 });
   }
-  if (preparado.accion && envio.accion && preparado.accion !== envio.accion) {
-    return Response.json({ aviso: "This signature does not match the prepared payment." }, { status: 409 });
+  if (preparado.carga.accion && envio.accion && preparado.carga.accion !== envio.accion) {
+    return Response.json({ aviso: AVISO_NO_COINCIDE }, { status: 409 });
   }
-  if (preparado.tareaId && envio.tareaId && preparado.tareaId !== envio.tareaId) {
+  if (preparado.carga.tareaId && envio.tareaId && preparado.carga.tareaId !== envio.tareaId) {
     return Response.json({ aviso: "This signature does not match the prepared task." }, { status: 409 });
   }
-  if (preparado.monto !== null) {
-    const fondos = await rechazoSiFondos(wallet, preparado.monto);
+  if (preparado.carga.monto) {
+    const fondos = await rechazoSiFondos(wallet, preparado.carga.monto);
     if (fondos) return fondos;
   }
   let pago: PagoEnviado;
@@ -281,11 +295,13 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   if ("aviso" in cuentas) return Response.json({ aviso: cuentas.aviso }, { status: 400 });
   const fondos = await rechazoSiFondos(wallet, String(monto));
   if (fondos) return fondos;
+  if (!secretoPreparado()) return sinSecreto();
   try {
     const listo = await prepararDespliegue(cuentas);
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
-    anotarPreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto));
-    return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto });
+    const token = tokenDePreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto));
+    if (!token) return sinSecreto();
+    return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto, token });
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
   }
@@ -380,18 +396,20 @@ function hitoLiberado(escrow: Record<string, unknown>): boolean {
   return flags?.released === true;
 }
 
-type MetaEnvio = { xdr: string | null; accion: string | null; tareaId: string | null };
+type MetaEnvio = { xdr: string | null; accion: string | null; tareaId: string | null; token: string | null };
 
 function datosEnvio(body: unknown): MetaEnvio {
-  if (!body || typeof body !== "object") return { xdr: null, accion: null, tareaId: null };
-  const datos = body as { xdr?: unknown; accion?: unknown; tareaId?: unknown };
+  if (!body || typeof body !== "object") return { xdr: null, accion: null, tareaId: null, token: null };
+  const datos = body as { xdr?: unknown; accion?: unknown; tareaId?: unknown; token?: unknown };
   const xdr = typeof datos.xdr === "string" ? datos.xdr.trim() : "";
   const accion = typeof datos.accion === "string" ? datos.accion.trim() : "";
   const tareaId = typeof datos.tareaId === "string" ? datos.tareaId.trim() : "";
+  const token = typeof datos.token === "string" ? datos.token.trim() : "";
   return {
     xdr: xdr || null,
     accion: accion || null,
     tareaId: tareaId && /^[A-Za-z0-9_-]{1,80}$/.test(tareaId) ? tareaId : null,
+    token: token || null,
   };
 }
 

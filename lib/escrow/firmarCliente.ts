@@ -85,7 +85,7 @@ export async function firmarYEnviar(
   if (!firmado) throw new ErrorFirmaCliente(AVISO_FIRMA);
 
   const contrato = listo.contrato ?? texto(extra.contrato);
-  const enviado = await postJson(fetchImpl, "/api/firma/enviar", cuerpoEnvio(firmado, accion, id, contrato));
+  const enviado = await postJson(fetchImpl, "/api/firma/enviar", cuerpoEnvio(firmado, accion, id, contrato, listo.token));
   const pago = leerPago(enviado.cuerpo, contrato);
   return { ...pago, monto: listo.monto };
 }
@@ -147,8 +147,14 @@ function cuerpoFirma(accion: AccionCliente, tareaId: string, extra: ExtraFirma):
   return cuerpo;
 }
 
-function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contrato: string | null): Record<string, unknown> {
-  const cuerpo: Record<string, unknown> = { xdr, accion, tareaId };
+function cuerpoEnvio(
+  xdr: string,
+  accion: AccionCliente,
+  tareaId: string,
+  contrato: string | null,
+  token: string,
+): Record<string, unknown> {
+  const cuerpo: Record<string, unknown> = { xdr, accion, tareaId, token };
   if (contrato) cuerpo.contrato = contrato;
   return cuerpo;
 }
@@ -187,12 +193,13 @@ async function postJson(
   return { cuerpo: json };
 }
 
-function leerPreparado(json: unknown): { xdr: string; contrato: string | null; monto: number | null } {
+function leerPreparado(json: unknown): { xdr: string; contrato: string | null; monto: number | null; token: string } {
   const datos = registro(json);
   const xdr = texto(datos.xdr);
-  if (!xdr) throw new ErrorFirmaCliente("We couldn't prepare that step. Try again.");
+  const token = texto(datos.token);
+  if (!xdr || !token) throw new ErrorFirmaCliente("We couldn't prepare that step. Try again.");
   const monto = typeof datos.monto === "number" && Number.isFinite(datos.monto) ? datos.monto : null;
-  return { xdr, contrato: texto(datos.contrato), monto };
+  return { xdr, contrato: texto(datos.contrato), monto, token };
 }
 
 function leerPago(json: unknown, contratoPreparado: string | null): PagoFirmado {

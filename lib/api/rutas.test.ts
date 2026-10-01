@@ -14,7 +14,8 @@ import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
 import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp, fijarWalletHttp } from "./sesion";
-import { enviarFirmaHttp, prepararFirmaHttp, registrarPreparado } from "./firma";
+import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
+import { emitirTokenPreparado } from "./preparado";
 import { listarTareasHttp } from "./tareas";
 import { asegurarSemilla } from "../db/semilla";
 import { TOPE_SESION_SEGUNDOS } from "../sesion/cookie";
@@ -541,13 +542,20 @@ test("el envío de resolve_dispute usa el firmante del XDR y el disputeResolver 
     assert.equal(otroRol.status, 403);
     assert.deepEqual(llamadas, []);
 
-    registrarPreparado(xdr, { usuarioId: "voluntario", accion: "liberar", tareaId: null, monto: null });
+    const tokenPago = emitirTokenPreparado({
+      usuarioId: "voluntario",
+      sesionId: "tok",
+      huella: huellaDeXdr(xdr),
+      accion: "liberar",
+      tareaId: "",
+      monto: "",
+    });
     const listo = await enviarFirmaHttp(
       sesion("voluntario", FIRMANTE_XDR),
       new Request("http://local/api/firma/enviar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ xdr, accion: "liberar", firmante: ORGANIZADOR }),
+        body: JSON.stringify({ xdr, accion: "liberar", firmante: ORGANIZADOR, token: tokenPago }),
       }),
     );
     assert.equal(listo.status, 200);

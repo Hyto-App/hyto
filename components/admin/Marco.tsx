@@ -37,7 +37,14 @@ export function Marco({ children }: { children: ReactNode; demoHabilitado?: bool
           })}
         </nav>
       </aside>
-      <div className="hyto-main">{children}</div>
+      <div className="hyto-main">
+        {foco ? (
+          <button type="button" className="hyto-atras" aria-label="Back" onClick={() => window.history.back()}>
+            ←
+          </button>
+        ) : null}
+        {children}
+      </div>
     </div>
   );
 }

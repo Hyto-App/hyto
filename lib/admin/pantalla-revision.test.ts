@@ -174,8 +174,8 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     if (url === "/api/usdc") return json({ listo: true });
     if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: fondos > 1 ? 20 : 0 } });
     if (method === "POST" && url === "/api/firma") {
-      if (body?.accion === "desplegar") return json({ xdr: "DEPLOY", contrato, monto: 20 });
-      if (body?.accion === "fondear") return json({ xdr: "FUND", contrato });
+      if (body?.accion === "desplegar") return json({ xdr: "DEPLOY", contrato, monto: 20, token: "tok" });
+      if (body?.accion === "fondear") return json({ xdr: "FUND", contrato, token: "tok" });
       return json({ aviso: "unexpected" }, 400);
     }
     if (method === "POST" && url === "/api/firma/enviar") {

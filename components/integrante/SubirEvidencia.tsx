@@ -30,6 +30,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [sinCamara, setSinCamara] = useState(false);
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [evento, setEvento] = useState<string | null>(null);
   const demo = useModoDemo();
 
   useEffect(() => {
@@ -64,6 +65,23 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       activo = false;
     };
   }, [tareaId, demo, intento]);
+
+  useEffect(() => {
+    const proyectoId = tarea?.proyectoId;
+    if (!proyectoId) return;
+    let activo = true;
+    fetch("/api/proyectos")
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
+      .then((cuerpo: { proyectos?: { id: string; nombre: string }[]; proyecto?: { id: string; nombre: string } } | null) => {
+        if (!activo || !cuerpo) return;
+        const lista = cuerpo.proyectos ?? (cuerpo.proyecto ? [cuerpo.proyecto] : []);
+        setEvento(lista.find((item) => item.id === proyectoId)?.nombre ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      activo = false;
+    };
+  }, [tarea?.proyectoId]);
 
   useEffect(() => {
     montadoRef.current = true;
@@ -243,6 +261,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       <header className="mb-6">
         <p className="hyto-crumb">
           <Link href="/mis-tareas">My tasks</Link>
+          {tarea.proyectoId ? (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link href={`/eventos/${tarea.proyectoId}`}>{textoVisible(evento ?? "Event")}</Link>
+            </>
+          ) : null}
         </p>
         <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">

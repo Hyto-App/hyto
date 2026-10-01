@@ -305,7 +305,7 @@ test("la sesión demo sube evidencia a una tarea demo, sin fijar cobro, y no a Z
         cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
         return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
       })(),
-      { almacen, fotos, actor: { ...actor, demo: false } },
+      { almacen, fotos, actor: { usuarioId: "voluntario-1", rol: "voluntario", demo: false } },
     );
     assert.equal(ajeno.status, 403);
   } finally {

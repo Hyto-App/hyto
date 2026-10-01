@@ -94,7 +94,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     const asignado = puedeFijarWallet(tarea, deps.actor);
     // La sesión demo sube evidencia a las tareas del proyecto demo, sin fijar cuenta de cobro.
-    const demo = !asignado && deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
+    const demo = deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
     const wallet = demo ? null : direccion(texto(form.get("wallet")));
     if (deps.actor && !asignado && !demo) {
       const aviso =
