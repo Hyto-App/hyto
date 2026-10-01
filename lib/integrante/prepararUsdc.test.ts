@@ -54,7 +54,7 @@ test("si la trustline ya existe no se pide firma", async () => {
 
 test("sin función de firma usa la misma ruta de Cavos que el escrow", async () => {
   const fetchImpl: typeof fetch = async () => json({ xdr: "UNSIGNED" });
-  await assert.rejects(() => prepararUsdcDeSesion({ fetch: fetchImpl }), /Cavos is not configured/);
+  await assert.rejects(() => prepararUsdcDeSesion({ fetch: fetchImpl }), /isn't set up yet/);
 });
 
 test("un rechazo de firma queda en inglés", async () => {
@@ -67,7 +67,7 @@ test("un rechazo de firma queda en inglés", async () => {
           throw new ErrorFirmaCliente(AVISO_RECHAZO);
         },
       }),
-    /You rejected the signature/,
+    /cancelled the confirmation/,
   );
 });
 
@@ -75,7 +75,7 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
   limpiarPantalla();
   try {
     await montar(createElement(PrepararUsdc, { consultar: async () => true, preparar: async () => ({ hash: null }) }));
-    assert.match(texto(), /USDC ready/);
+    assert.match(texto(), /Ready to be paid/);
     assert.equal(document.querySelector("button"), null);
 
     let resolver: (valor: { hash: string | null }) => void = () => undefined;
@@ -91,14 +91,14 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /Prepare USDC/);
-    await pulsar("Prepare USDC");
-    assert.match(texto(), /Preparing…/);
+    assert.match(texto(), /Get ready to be paid/);
+    await pulsar("Get ready to be paid");
+    assert.match(texto(), /Getting ready…/);
     await act(async () => {
       resolver({ hash: "abc" });
     });
-    assert.match(texto(), /USDC trustline added/);
-    assert.match(texto(), /View transaction/);
+    assert.match(texto(), /Payout account ready/);
+    assert.match(texto(), /View on blockchain/);
 
     await montar(
       createElement(PrepararUsdc, {
@@ -111,9 +111,9 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    await pulsar("Prepare USDC");
-    assert.match(texto(), /Could not submit the USDC trustline/);
-    assert.match(texto(), /Prepare USDC/);
+    await pulsar("Get ready to be paid");
+    assert.match(texto(), /couldn't finish setting up payouts/);
+    assert.match(texto(), /Get ready to be paid/);
     assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
 
     await montar(
@@ -127,8 +127,8 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    await pulsar("Prepare USDC");
-    assert.match(texto(), /Your Cavos session expired/);
+    await pulsar("Get ready to be paid");
+    assert.match(texto(), /sign-in expired/);
     assert.equal(document.querySelector('a[href="/?signin=1"]')?.textContent, "Sign in again");
   } finally {
     await desmontar();
@@ -185,13 +185,13 @@ test("en demo no aparece y en la revisión real sí", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.doesNotMatch(texto(), /Prepare USDC/);
+    assert.doesNotMatch(texto(), /Get ready to be paid/);
 
     await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(Revision, { tareaId: "stand" }) }));
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Prepare USDC/);
+    assert.match(texto(), /Get ready to be paid/);
 
     await montar(
       createElement(ProveedorModoDemo, {
@@ -203,13 +203,13 @@ test("en demo no aparece y en la revisión real sí", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.doesNotMatch(texto(), /Prepare USDC/);
+    assert.doesNotMatch(texto(), /Get ready to be paid/);
 
     await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "stand" }) }));
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Prepare USDC/);
+    assert.match(texto(), /Get ready to be paid/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

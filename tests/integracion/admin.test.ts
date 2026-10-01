@@ -41,20 +41,20 @@ describe("pantallas de admin", { concurrency: false }, () => {
     assert.match(plano, /Team meal/);
     assert.equal(plano.includes("Welcome table"), false);
     assert.equal(plano.includes("Back to the ZEEK example"), false);
-    assert.match(plano, /Example view, until the routes respond/);
+    assert.match(plano, /Sample event, until live tasks load/);
   });
 
   test("crear proyecto avisa si faltan el nombre o el monto y no navega", async () => {
     const idas: string[] = [];
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await pulsar("Fund");
+    await pulsar("Save project");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.deepEqual(idas, []);
 
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "0");
-    await pulsar("Fund");
+    await pulsar("Save project");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
@@ -67,12 +67,12 @@ describe("pantallas de admin", { concurrency: false }, () => {
       { push: (href) => idas.push(href) },
     );
     assert.match(texto(), /Demo mode cannot create projects/);
-    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Fund"));
+    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Save project"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Fund");
+    await pulsar("Save project");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -83,7 +83,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Fund");
+    await pulsar("Save project");
     assert.deepEqual(idas, ["/"]);
     const proyecto = leerMemoriaAdmin().proyecto;
     assert.equal(proyecto?.nombre, "Feria");
@@ -120,7 +120,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await pulsar("Approve");
     const plano = texto();
     assert.match(plano, /Paid/);
-    assert.match(plano, /Example view, until the payment is connected/);
+    assert.match(plano, /This is a sample. A live payment adds a link to the blockchain/);
     assert.equal(leerMemoriaAdmin().decisiones.stand, "pagado");
   });
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
+import { mensajeClaro, TEXTO } from "@/lib/ui/claro";
 
 type Estado = "comprobando" | "listo" | "pendiente" | "preparando" | "hecho" | "error";
 
@@ -33,7 +34,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       .catch((error: unknown) => {
         if (!viva) return;
         setEstado("error");
-        setAviso(error instanceof Error && error.message ? error.message : "Could not read the USDC trustline.");
+        setAviso(mensajeClaro(error instanceof Error && error.message ? error.message : "We couldn't check whether this account can receive payment. Try again."));
       });
     return () => {
       viva = false;
@@ -50,7 +51,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       setEstado("hecho");
     } catch (error) {
       setEstado("error");
-      setAviso(error instanceof Error && error.message ? error.message : "Could not prepare the USDC trustline.");
+      setAviso(mensajeClaro(error instanceof Error && error.message ? error.message : "We couldn't get this account ready to receive payment. Try again."));
     }
   }
 
@@ -58,14 +59,16 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
 
   const mensaje =
     estado === "comprobando"
-      ? "Checking USDC…"
+      ? TEXTO.checkingPayout
       : estado === "listo"
-        ? "USDC ready"
+        ? TEXTO.payoutReady
         : estado === "hecho"
-          ? "USDC trustline added"
-          : estado === "error"
-            ? aviso
-            : null;
+          ? TEXTO.payoutDone
+          : estado === "preparando"
+            ? "Confirm in the window if it asks. This can take a minute."
+            : estado === "error"
+              ? aviso
+              : "This lets the account receive the event payment. You'll confirm once.";
   const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
 
   return (
@@ -73,13 +76,13 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       {estado === "error" && aviso ? (
         <AvisoFirma mensaje={aviso} className="text-sm text-[var(--suave)]" />
       ) : mensaje ? (
-        <p className="text-sm text-[var(--suave)]" role="status">
+        <p className="text-sm leading-6 text-[var(--suave)]" role="status" aria-live="polite">
           {mensaje}
         </p>
       ) : null}
       {mostrarBoton ? (
-        <button type="button" className={`${CLASE} mt-3`} disabled={estado === "preparando"} onClick={() => void correr()}>
-          {estado === "preparando" ? "Preparing…" : "Prepare USDC"}
+        <button type="button" className={`${CLASE} mt-3`} disabled={estado === "preparando"} aria-busy={estado === "preparando"} onClick={() => void correr()}>
+          {estado === "preparando" ? TEXTO.preparingPayout : TEXTO.preparePayout}
         </button>
       ) : null}
       {estado === "hecho" && hash ? (
@@ -87,7 +90,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
           href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
           className="mt-2 inline-block text-sm font-semibold underline-offset-4 hover:underline"
         >
-          View transaction
+          {TEXTO.viewChain}
         </a>
       ) : null}
     </div>

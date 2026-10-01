@@ -99,10 +99,10 @@ export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
   return orden.map((clave) => grupos.get(clave)!);
 }
 
-export function etiquetaOrigen(origen: TareaAdmin["origen"]): "AI" | "simulated" | "error" | null {
-  if (origen === "scout") return "AI";
-  if (origen === "guion" || origen === "stub") return "simulated";
-  if (origen === "error") return "error";
+export function etiquetaOrigen(origen: TareaAdmin["origen"]): "AI recommendation" | "Sample recommendation" | "Review failed" | null {
+  if (origen === "scout") return "AI recommendation";
+  if (origen === "guion" || origen === "stub") return "Sample recommendation";
+  if (origen === "error") return "Review failed";
   return null;
 }
 

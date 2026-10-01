@@ -32,6 +32,9 @@ export function Bandeja() {
     <main>
       <header className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">{vista.nombre}</h1>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--suave)]">
+          Open a task to see the photo, the recommendation, and the payment.
+        </p>
         {vista.propio ? (
           <button type="button" onClick={usarEjemplo} className="mt-3 text-sm text-[var(--suave)]">
             Back to the ZEEK example
@@ -43,7 +46,9 @@ export function Bandeja() {
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold tracking-tight">To approve</h2>
-        {vista.bandeja.length === 0 ? <p className="mt-4 text-[var(--suave)]">Nothing to approve.</p> : null}
+        {vista.bandeja.length === 0 ? (
+          <p className="mt-4 text-[var(--suave)]">Nothing to approve yet. When a volunteer sends a photo, it shows up here.</p>
+        ) : null}
         <div className="mt-4 space-y-4">
           {vista.bandeja.map((tarea) => (
             <article key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
@@ -74,7 +79,7 @@ export function Bandeja() {
       {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{aviso}</p> : null}
 
       {vista.ejemplo ? (
-        <p className="mt-8 text-sm leading-6 text-[var(--suave)]">Example view, until the routes respond.</p>
+        <p className="mt-8 text-sm leading-6 text-[var(--suave)]">Sample event, until live tasks load.</p>
       ) : null}
     </main>
   );

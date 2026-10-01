@@ -137,7 +137,7 @@ test("un fallo de red o un XDR vacío no muestran el error crudo", async () => {
   const vacio = fetchDe([{ body: { hashPreparado: "x" } }]);
   await assert.rejects(
     () => firmarYEnviar("marcar", "stand", {}, { fetch: vacio.fetch, firmar: async () => FIRMADO }),
-    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "Preparation did not return the XDR.",
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === "We couldn't prepare that step. Try again.",
   );
 });
 

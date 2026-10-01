@@ -89,7 +89,7 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
   const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
   const crudo = datos.wallet;
   if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
-    return json({ aviso: "The wallet is not a Stellar account." }, 400);
+    return json({ aviso: "That doesn't look like a payout account. Sign in again." }, 400);
   }
   try {
     const sesion = await almacen.leerSesion(token);
@@ -103,11 +103,11 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
     const tokenIngreso = typeof datos.token === "string" ? datos.token.trim() : "";
     const delIngreso = tokenIngreso ? walletDelToken(tokenIngreso) : null;
     if (delIngreso && delIngreso !== wallet) {
-      return json({ aviso: "The wallet does not match this sign-in." }, 400);
+      return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     const guardada = (sesion.wallet ?? "").trim();
     if (guardada && esCuenta(guardada) && guardada !== wallet) {
-      return json({ aviso: "The wallet does not match this sign-in." }, 400);
+      return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
     return json({ wallet }, 200);

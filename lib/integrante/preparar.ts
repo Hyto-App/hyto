@@ -21,14 +21,14 @@ export async function prepararIdentidad(identidad: IdentidadDemo, auth: AuthProv
       nombre: identidad.nombre,
       direccion: null,
       usdcListo: false,
-      detalle: "Accounts are waiting for the Cavos app id.",
+      detalle: "Account setup isn't available yet.",
     };
   }
 
   const sesion = await conectarStellar(auth);
   const billetera = sesion.wallet("stellar");
   if (billetera.chain !== "stellar") {
-    throw new Error("The account did not land on Stellar.");
+    throw new Error("The payout account didn't open. Try again.");
   }
 
   const lista = await asegurarCobroUsdc(billetera);

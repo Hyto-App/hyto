@@ -232,6 +232,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </p>
         <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+          {tarea.tipo === "reembolso"
+            ? "Photograph the receipt so the amount and date are readable. The organizer checks it and sends the payment."
+            : "Photograph the finished work. The organizer checks it and sends the payment."}
+        </p>
         {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
       </header>
 
@@ -270,12 +275,16 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       ) : null}
 
       {fase === "lista" ? (
-        <p className="mt-6 text-lg font-medium">Evidence sent</p>
+        <div className="mt-6">
+          <p className="text-lg font-medium">Photo sent</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
+        </div>
       ) : (
         <div className="mt-6">
           <BotonPrincipal
             type="button"
             disabled={fase === "enviando"}
+            aria-busy={fase === "enviando"}
             onClick={() => {
               if (fase === "camara") tomarFoto();
               else if (fase === "foto") void enviar();
@@ -285,6 +294,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           >
             {accion}
           </BotonPrincipal>
+          {fase === "enviando" ? (
+            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
+              Sending the photo. The recommendation can take a few seconds.
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -301,7 +315,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       ) : null}
 
       {ejemplo ? (
-        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Example view, until the routes respond.</p>
+        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Sample task, until your own tasks load.</p>
       ) : null}
 
       <input
