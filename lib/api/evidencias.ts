@@ -4,6 +4,7 @@ import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
+import { fotoAceptada } from "@/lib/integrante/fotoEnVivo";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -193,8 +194,7 @@ function texto(valor: FormDataEntryValue | null): string {
 }
 
 function esImagen(foto: Blob): boolean {
-  if (foto.type.startsWith("image/")) return true;
-  return foto.type === "" && foto.size > 0;
+  return fotoAceptada(foto.type, foto.size);
 }
 
 function direccion(valor: string): string | null {

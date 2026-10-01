@@ -8,6 +8,7 @@ import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { Salir } from "@/components/sesion/Salir";
 import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
+import { archivoDeCamaraReciente } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto } from "@/lib/integrante/formato";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
@@ -29,7 +30,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [evidencia, setEvidencia] = useState<Evidencia | null>(null);
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sinCamara, setSinCamara] = useState(false);
+  const [archivoActivo, setArchivoActivo] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -62,6 +63,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   useEffect(() => {
     montadoRef.current = true;
+    if (!navigator.mediaDevices?.getUserMedia) setArchivoActivo(true);
     return () => {
       montadoRef.current = false;
       streamRef.current?.getTracks().forEach((pista) => pista.stop());
@@ -95,13 +97,15 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     setFase("foto");
   }
 
+  function abrirArchivo() {
+    const input = archivoRef.current;
+    if (!input) return;
+    input.disabled = false;
+    input.click();
+  }
+
   async function abrirCamara() {
     setError(null);
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setSinCamara(true);
-      archivoRef.current?.click();
-      return;
-    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -114,8 +118,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       streamRef.current = stream;
       setFase("camara");
     } catch {
-      setSinCamara(true);
-      setError("Could not open the camera.");
+      setError("Could not open the camera. Allow the camera and try again.");
     }
   }
 
@@ -151,8 +154,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo) return;
-    if (archivo.type && !archivo.type.startsWith("image/")) {
-      setError("Choose a photo.");
+    if (!archivoDeCamaraReciente(archivo)) {
+      setError("Take the photo now. Photos from the gallery are not accepted.");
       return;
     }
     usarFoto(archivo);
@@ -217,9 +220,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         ? "Send"
         : fase === "enviando"
           ? "Sending…"
-          : sinCamara
-            ? "Choose photo"
-            : "Open camera";
+          : "Open camera";
 
   return (
     <main>
@@ -269,6 +270,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </dl>
       ) : null}
 
+      {fase === "inicio" ? (
+        <p className="mt-4 text-sm leading-6 text-[var(--suave)]">
+          Take the photo now. Photos from the gallery are not accepted.
+        </p>
+      ) : null}
+
       {fase === "lista" ? (
         <p className="mt-6 text-lg font-medium">Evidence sent</p>
       ) : (
@@ -279,7 +286,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             onClick={() => {
               if (fase === "camara") tomarFoto();
               else if (fase === "foto") void enviar();
-              else if (sinCamara || !navigator.mediaDevices?.getUserMedia) archivoRef.current?.click();
+              else if (!navigator.mediaDevices?.getUserMedia) abrirArchivo();
               else void abrirCamara();
             }}
           >
@@ -309,6 +316,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         type="file"
         accept="image/*"
         capture="environment"
+        disabled={!archivoActivo}
         tabIndex={-1}
         aria-hidden="true"
         className="sr-only"
