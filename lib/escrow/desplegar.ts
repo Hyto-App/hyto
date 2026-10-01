@@ -14,15 +14,15 @@ export type RolesServidor = {
 };
 
 export function rolesDeEntorno(env: Record<string, string | undefined> = process.env): RolesServidor | { aviso: string } {
-  const plataforma = leerCuenta(env.HYTO_ESCROW_PLATFORM, "HYTO_ESCROW_PLATFORM", "la plataforma del escrow");
+  const plataforma = leerCuenta(env.HYTO_ESCROW_PLATFORM, "HYTO_ESCROW_PLATFORM", "the platform account");
   if (typeof plataforma !== "string") return plataforma;
-  const resolutor = leerCuenta(env.HYTO_ESCROW_RESOLVER, "HYTO_ESCROW_RESOLVER", "quien resuelve disputas");
+  const resolutor = leerCuenta(env.HYTO_ESCROW_RESOLVER, "HYTO_ESCROW_RESOLVER", "the dispute resolver");
   if (typeof resolutor !== "string") return resolutor;
-  const admin = leerCuenta(env.HYTO_ESCROW_ADMIN, "HYTO_ESCROW_ADMIN", "la cuenta admin del escrow");
+  const admin = leerCuenta(env.HYTO_ESCROW_ADMIN, "HYTO_ESCROW_ADMIN", "the admin account");
   if (typeof admin !== "string") return admin;
   if (new Set([plataforma, resolutor, admin]).size !== 3) {
     return {
-      aviso: "HYTO_ESCROW_PLATFORM, HYTO_ESCROW_RESOLVER y HYTO_ESCROW_ADMIN tienen que ser tres cuentas distintas.",
+      aviso: "HYTO_ESCROW_PLATFORM, HYTO_ESCROW_RESOLVER, and HYTO_ESCROW_ADMIN have to be three different accounts.",
     };
   }
   return { plataforma, resolutor, admin };
@@ -71,7 +71,7 @@ export function cuentasDeTarea(opciones: {
   ) {
     return { aviso: "The admin account cannot repeat another role." };
   }
-  const titulo = opciones.titulo.trim().slice(0, 120) || "Tarea";
+  const titulo = opciones.titulo.trim().slice(0, 120) || "Task";
   return {
     red: "v2",
     firmante: opciones.firmante,
@@ -93,7 +93,7 @@ export function cuentasDeTarea(opciones: {
 
 function leerCuenta(valor: string | undefined, nombre: string, rol: string): string | { aviso: string } {
   const limpio = valor?.trim() ?? "";
-  if (!limpio) return { aviso: `Falta ${nombre} en el servidor. Es ${rol} y no puede repetir otro rol.` };
-  if (!esCuenta(limpio)) return { aviso: `${nombre} no es una cuenta de Stellar.` };
+  if (!limpio) return { aviso: `Missing ${nombre} on the server. It is ${rol} and cannot repeat another role.` };
+  if (!esCuenta(limpio)) return { aviso: `${nombre} is not a Stellar account.` };
   return limpio;
 }

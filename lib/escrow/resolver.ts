@@ -22,14 +22,14 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
   const hito = hitoDe(fuentes, accion.indice);
   if (!hito) {
     return {
-      mensaje: "El escrow no trae el hito en disputa.",
+      mensaje: "The payment contract does not include the disputed milestone.",
       estado: 422,
       codigo: "ESCROW_MILESTONE_NOT_FOUND",
     };
   }
   if (!enDisputa(hito)) {
     return {
-      mensaje: "Ese hito no está en disputa.",
+      mensaje: "That milestone is not in dispute.",
       estado: 422,
       codigo: "ESCROW_MILESTONE_NOT_IN_DISPUTE",
     };
@@ -37,7 +37,7 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
   const esperado = unidadesDe(hito.amount ?? hito.monto);
   if (esperado === null || esperado <= 0n) {
     return {
-      mensaje: "El escrow no trae el monto del hito en disputa.",
+      mensaje: "The disputed milestone has no amount.",
       estado: 422,
       codigo: "ESCROW_MILESTONE_AMOUNT",
     };
@@ -47,7 +47,7 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
     const parte = unidadesDe(item.monto);
     if (parte === null) {
       return {
-        mensaje: "Hay un monto del reparto que no se puede sumar.",
+        mensaje: "One split amount cannot be added up.",
         estado: 400,
         codigo: "AMOUNT_PRECISION_UNSUPPORTED",
       };
@@ -57,7 +57,7 @@ export function revisarResolucion(accion: Resolucion, fuentes: unknown[]): Fallo
   // La comisión de protocolo la descuenta el contrato. El reparto suma el monto bruto.
   if (suma !== esperado) {
     return {
-      mensaje: "El reparto tiene que sumar el monto del hito en disputa.",
+      mensaje: "The split has to add up to the disputed milestone amount.",
       estado: 422,
       codigo: "ESCROW_DISTRIBUTIONS_MUST_EQUAL_BALANCE",
     };

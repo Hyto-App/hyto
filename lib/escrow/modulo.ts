@@ -59,7 +59,7 @@ export function respuestaDeErrorFirma(error: unknown, avisoPorDefecto: string): 
       const detalle = error.codigo ? ` (${error.codigo})` : "";
       return Response.json(
         {
-          aviso: `Trustless Work no autorizó la clave del servidor${detalle}.`,
+          aviso: `Trustless Work did not authorize the server key${detalle}.`,
           codigo: "TRUSTLESS_AUTH",
         },
         { status: 502 },
@@ -140,7 +140,7 @@ async function leerJson(respuesta: Response): Promise<unknown> {
 
 function problemaDe(json: unknown): { detail: string; codigo: string | null } {
   if (!json || typeof json !== "object") {
-    return { detail: "Trustless Work rechazó la solicitud.", codigo: null };
+    return { detail: "Trustless Work rejected the request.", codigo: null };
   }
   const datos = json as Record<string, unknown>;
   const codigo = typeof datos.code === "string" ? datos.code : null;
@@ -157,7 +157,7 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
       codigo,
     };
   }
-  return { detail: detail ?? "Trustless Work rechazó la solicitud.", codigo };
+  return { detail: detail ?? "Trustless Work rejected the request.", codigo };
 }
 
 function leerXdr(json: unknown): XdrListo {

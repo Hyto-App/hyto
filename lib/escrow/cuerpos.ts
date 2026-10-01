@@ -24,11 +24,11 @@ export function claveDeV1(entorno?: {
   const propia = fuente.TRUSTLESS_API_KEY_V1?.trim() ?? "";
   if (!propia) {
     return {
-      aviso: "Para repetir el hito en v1 hace falta TRUSTLESS_API_KEY_V1. Esa clave es distinta de TRUSTLESS_API_KEY.",
+      aviso: "Repeating the v1 milestone needs TRUSTLESS_API_KEY_V1. That key is different from TRUSTLESS_API_KEY.",
     };
   }
   if (propia === (fuente.TRUSTLESS_API_KEY?.trim() ?? "")) {
-    return { aviso: "TRUSTLESS_API_KEY_V1 repite TRUSTLESS_API_KEY. V1 y v2 piden claves distintas." };
+    return { aviso: "TRUSTLESS_API_KEY_V1 is the same as TRUSTLESS_API_KEY. V1 and v2 need different keys." };
   }
   return { clave: propia };
 }
@@ -325,7 +325,7 @@ export function leerEntrada(body: unknown): EntradaLeida {
   ) {
     return { aviso: "That action does not prepare a payment." };
   }
-  if (!contrato || !firmante) return { aviso: "Faltan el contrato y la cuenta que firma." };
+  if (!contrato || !firmante) return { aviso: "The contract and the signing account are missing." };
   if (accion === "fondear") {
     const monto = typeof datos.monto === "number" ? datos.monto : Number(datos.monto);
     return { accion, contrato, firmante, monto };
