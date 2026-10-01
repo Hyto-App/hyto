@@ -189,7 +189,7 @@ export async function asegurarVoluntarioDemo(almacen: Almacen): Promise<void> {
   if (!demoHabilitado()) return;
   const voluntarioId = usuarioDemo("voluntario").id;
   for (const tarea of await almacen.listarTareas()) {
-    if (tarea.proyectoId !== ID_PROYECTO_DEMO || tarea.miembroId === voluntarioId) continue;
+    if (tarea.proyectoId !== ID_PROYECTO_DEMO || tarea.miembroId.trim()) continue;
     await almacen.actualizarTarea(tarea.id, { miembroId: voluntarioId });
   }
   await almacen.guardarMiembro({

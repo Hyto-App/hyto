@@ -322,7 +322,6 @@ export function Revision({
         </div>
         <div className="text-right">
           <p className="hyto-amount text-2xl">{montoDeTarea(tarea)}</p>
-          <p className="text-sm text-[var(--suave)]">Amount</p>
         </div>
       </header>
       <div className="hyto-review">
