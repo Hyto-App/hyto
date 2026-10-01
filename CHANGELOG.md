@@ -2,7 +2,77 @@
 
 Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
 
-## 2026-09-29
+## 2026-10-01
+
+A las 11:25 a.m., hora de Costa Rica. Josué Valles.
+
+### Cambiado
+
+- El pago se explica en pasos, sin jerga de billetera. En la revisión el orden visible es revisar la foto, **Lock budget** y **Approve and pay**. **Lock budget** sigue corriendo desplegar y fondear juntos. Si el despliegue ya quedó y el bloqueo falla, el botón pasa a **Finish locking**. **Approve and pay** solo aparece cuando el presupuesto ya está bloqueado (`fondeado === true` en `botonesRevision`) y dice el monto. Un pago con hash se abre con **View on blockchain**. Preparar el cobro pasó a **Get ready to be paid** y las cuentas de demo a **Payout accounts**. Crear proyecto dice **Save project** y aclara que guardar no mueve dinero. Los errores técnicos se traducen en `lib/ui/claro.ts` a la siguiente acción. El servidor sigue devolviendo las respuestas de Trustless Work; la pantalla las traduce. No cambió cómo se preparan ni se envían desplegar, fondear, marcar, aprobar ni liberar. Josué Valles, PR #77.
+
+A las 2:43 a.m., hora de Costa Rica, del mismo día. Los escribió Raúl (Milasur) y los mergeó Josué Valles.
+
+### Arreglado
+
+- Si el despliegue del escrow sale bien y el fondeo falla, la revisión recarga el detalle y ofrece fondear el contrato que ya quedó guardado, en vez de desplegar otro. El error de firma trae ese id. Una lectura vacía del indexador no borra, en la misma sesión, el estado de «todavía no fondeado». Raúl (Milasur), PR #67.
+- Los avisos del servidor que seguían en español (el escrow, el entorno de la base y el cruce del esquema) quedaron en inglés. Una prueba falla si un aviso nuevo, de los que ve quien usa la app, vuelve en español. Los comentarios y los nombres de estado (`en revisión`, `cumplió`) pueden seguir en español. Raúl (Milasur), PR #68.
+
+## 2026-09-30
+
+Josué Valles. Entre las 10:00 a.m. y las 11:37 a.m., hora de Costa Rica. Solo documentación.
+
+### Cambiado
+
+- Quedó escrito que, antes de trabajar, el equipo y los agentes consultan Stellar Raven. Josué Valles, PR #62.
+- Quedaron anotadas las sugerencias del 30 de septiembre. No son trabajo comprometido. Josué Valles, PR #63.
+- Quedó la auditoría del código contra `db82b93`: trustline de USDC, guardar el id del contrato, probar la wallet, rechazar SVG, JWT cerrado en producción y CI. Josué Valles, PR #64.
+- Quedó un prompt listo para el agente de cada persona, con esas tareas. Josué Valles, PR #65.
+- Quedó la regla de que el dueño sugerido no es exclusivo: quien tome una tarea de otra persona deja nota en el buzón. Josué Valles, PR #66.
+
+## 2026-09-29, después del PR #19
+
+Esto entró después del changelog del PR #19 (9:22 a.m., hora de Costa Rica). El bloque de más abajo cubre los PR #11 a #14 de esa mañana. No se repite.
+
+### Nuevo
+
+- La app ya prepara, en la API v2, aprobar, liberar, disputar, resolver y leer el saldo del escrow. Josué Valles, PR #26.
+- Hay un ingreso de demostración, sin Cavos, para el pitch. Con el interruptor apagado esa ruta no existe. Josué Valles, PR #30.
+- El servidor arma el despliegue y el fondeo del escrow v2 por tarea. Josué Valles, PR #38.
+- Desde la revisión, el navegador firma el pago con Cavos y el servidor lo envía. Josué Valles, PR #39.
+- Un correo con login de Cavos que no está en la base entra solo, como voluntario. Josué Valles, PR #41.
+- Cada proyecto guarda quién lo organiza. Solo esa persona despliega y revisa. Josué Valles, PR #44.
+- Quedó escrito el contexto del repositorio para el equipo y para los agentes. Josué Valles, PR #43.
+- La interfaz y los mensajes de la API que ve quien usa la app pasaron al inglés. Josué Valles, PR #56.
+- El Figma de Abdiel quedó como la fuente de la interfaz. Josué Valles, PR #58.
+
+### Arreglado
+
+- Postgres se puede levantar en local, y la migración y la semilla de ejemplo corren con una salvaguarda si la base es de producción. Josué Valles, PR #21 y PR #22.
+- El inventario del esquema y el cruce contra las consultas no escriben en la base. Josué Valles, PR #24 y PR #25.
+- Hay pruebas de integración contra Postgres local. Josué Valles, PR #27.
+- Si el ingreso falla, la pantalla dice qué pasó. Josué Valles, PR #28.
+- El JWT de Cavos se verifica, y escribir en la API exige sesión. Josué Valles, PR #23.
+- Se puede salir del demo y cambiar de rol sin quedar atrapado. Josué Valles, PR #36.
+- El modo demo no crea proyectos. Josué Valles, PR #47.
+- En el demo se puede subir la evidencia, y la trustline de USDC de testnet queda preparada. Josué Valles, PR #50.
+- Preparar USDC y salir ya no dejan la sesión de Cavos vencida. Josué Valles, PR #52.
+- La sesión de Hyto sigue el vencimiento del JWT de Cavos, con un máximo de 24 horas. Josué Valles, PR #54.
+- Si la revisión de la foto falla, se ve el error real y se puede reintentar. Josué Valles, PR #45.
+- Si Laya manda probabilidades, el veredicto sale del índice más alto: 0 insuficiente, 1 parcial, 2 cumplió. Josué Valles, PR #59.
+
+### Cambiado
+
+- `.env.example` lista los nombres que el código lee, sin valores. Josué Valles, PR #20. Entró unos minutos antes del changelog del PR #19 y no estaba en ese registro.
+
+### Pendiente al cierre de ese día
+
+- No hay un hash de pago real en el repositorio. El Acta no entra.
+- `LAYA_URL` no está. Sin ella, la revisión usa el reemplazo.
+- `CAVOS_JWT_AUDIENCE` sigue vacío.
+
+## 2026-09-29, mañana (PR #11 a #14)
+
+Este bloque es el que ya estaba en el PR #19. No se vuelve a escribir arriba.
 
 ### Nuevo
 
