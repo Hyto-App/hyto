@@ -11,7 +11,15 @@ import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin } from "@/lib/admin/vista";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
-import { AVISO_FIRMA, ErrorFirmaCliente, firmarPasos, mensajeFirmaVisible, pasosDesde, type AccionCliente } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_FIRMA,
+  ErrorFirmaCliente,
+  firmarPasos,
+  mensajeFirmaVisible,
+  pasosDesde,
+  type AccionCliente,
+  type PagoFirmado,
+} from "@/lib/escrow/firmarCliente";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -24,7 +32,13 @@ const PASO: Record<AccionCliente, string> = {
   liberar: "Releasing…",
 };
 
-export function Revision({ tareaId }: { tareaId: string }) {
+export function Revision({
+  tareaId,
+  firmar,
+}: {
+  tareaId: string;
+  firmar?: (unsignedXdr: string) => Promise<string>;
+}) {
   const modoDemo = useModoDemo();
   const [tarea, setTarea] = useState<TareaAdmin | null | undefined>(undefined);
   const [foto, setFoto] = useState<string | null>(null);
@@ -73,7 +87,8 @@ export function Revision({ tareaId }: { tareaId: string }) {
     }
     let viva = true;
     void leerFondeo(contrato).then((valor) => {
-      if (viva) setFondeado(valor);
+      if (!viva || fondeoForzado.current === contrato || valor === null) return;
+      setFondeado(valor);
     });
     return () => {
       viva = false;
@@ -123,8 +138,11 @@ export function Revision({ tareaId }: { tareaId: string }) {
     }
     setAviso(null);
     let actual: AccionCliente | null = null;
+    let pago: PagoFirmado | null = null;
+    let contratoParcial: string | null = null;
     try {
-      const pago = await firmarPasos(acciones, tareaId, {
+      pago = await firmarPasos(acciones, tareaId, {
+        ...(firmar ? { firmar } : {}),
         extra: {
           firmante: wallet,
           ...(contrato ? { contrato } : {}),
@@ -145,27 +163,30 @@ export function Revision({ tareaId }: { tareaId: string }) {
       setReanudar(null);
       setHashPaso(pago.hash);
       if (pago.aviso) setAviso(pago.aviso);
-      const fresco = await cargarDetalleOrganizador(tareaId);
-      if (fresco) {
-        setTarea(fresco.tarea);
-        setFoto(fresco.foto);
-        setContrato(fresco.contratoEscrow ?? pago.contrato);
-        setWallet(fresco.wallet ?? wallet);
-        setReal(true);
-        return;
-      }
-      if (acciones.includes("liberar") && pago.hash) {
-        setTarea((actualTarea) => {
-          if (!actualTarea) return actualTarea;
-          const hashPago = pago.hash ?? actualTarea.hashPago;
-          return { ...actualTarea, estado: "pagado", hashPago };
-        });
-      }
     } catch (error) {
       if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
+      if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
       setAviso(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA));
     } finally {
       setPaso(null);
+      if (!pago && contratoParcial) setContrato(contratoParcial);
+      if (!pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
+      const fresco = await cargarDetalleOrganizador(tareaId);
+      const contratoConocido = fresco?.contratoEscrow ?? pago?.contrato ?? contratoParcial;
+      if (contratoConocido) setContrato(contratoConocido);
+      if (!pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
+      if (fresco) {
+        setTarea(fresco.tarea);
+        setFoto(fresco.foto);
+        setWallet(fresco.wallet ?? wallet);
+        setReal(true);
+      } else if (pago?.hash && acciones.includes("liberar")) {
+        const hashPago = pago.hash;
+        setTarea((actualTarea) => {
+          if (!actualTarea) return actualTarea;
+          return { ...actualTarea, estado: "pagado", hashPago };
+        });
+      }
     }
   }
 
