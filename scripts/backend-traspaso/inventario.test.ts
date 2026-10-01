@@ -6,7 +6,7 @@ import { parsearSql } from "./leer-sql";
 
 const RAIZ = process.cwd();
 
-test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () => {
+test("el SQL real declara ocho tablas y el inventario coincide con Drizzle", () => {
   const sql = readFileSync("drizzle/0000_inicio.sql", "utf8");
   const sentencias = parsearSql(sql);
   assert.equal(sentencias.every((sentencia) => sentencia.parseada), true);
@@ -16,10 +16,10 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.deepEqual(inventario.comparacionSqlYDrizzle.diferencias, []);
   assert.deepEqual(
     inventario.tablas.map((tabla) => tabla.nombre),
-    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"],
+    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 4);
+  assert.equal(inventario.relaciones.length, 8);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);
@@ -49,8 +49,9 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
     assert.equal(tabla.llavePrimaria.createIndexEnLaMigracion, false);
     assert.equal(tabla.llavePrimaria.nombreEnNeon, "confirmar con Esteban");
     for (const columna of tabla.columnas) {
-      assert.equal(columna.tipoSql, "text");
-      assert.equal(columna.tipoDrizzle, "text");
+      const tipo = columna.nombre === "max_usos" || columna.nombre === "usos" ? "integer" : "text";
+      assert.equal(columna.tipoSql, tipo);
+      assert.equal(columna.tipoDrizzle, tipo);
     }
   }
 

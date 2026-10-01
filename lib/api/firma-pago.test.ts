@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after, before } from "node:test";
+import { fijarLectorSaldo } from "../escrow/saldo";
+
+before(() => {
+  fijarLectorSaldo(async () => "1000000");
+});
+
+after(() => {
+  fijarLectorSaldo(null);
+});
 import { Account, Address, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
 import { crearMemoria } from "../db/memoria";

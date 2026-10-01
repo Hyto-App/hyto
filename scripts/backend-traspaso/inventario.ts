@@ -605,7 +605,9 @@ function comparar(
     if (columna.aceptaNull !== !par.notNull) {
       diferencias.push(`${tablaSql.nombre}.${columna.nombre}: nulidad SQL aceptaNull=${columna.aceptaNull} y Drizzle notNull=${par.notNull}`);
     }
-    if (columna.esLlavePrimaria !== par.pk) {
+    const pkEnDrizzle =
+      par.pk || tablaDrizzle.llavesPrimariasDeTabla.some((llave) => llave.includes(columna.nombre));
+    if (columna.esLlavePrimaria !== pkEnDrizzle) {
       diferencias.push(`${tablaSql.nombre}.${columna.nombre}: llave primaria distinta`);
     }
     if (columna.esUnico !== par.unico) {

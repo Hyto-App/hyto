@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Invitar } from "@/components/eventos/Invitar";
 import { useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
@@ -67,12 +68,32 @@ export function Bandeja() {
       <header className="hyto-page-head">
         <div>
           <p className="text-sm font-semibold">{vista.nombre}</p>
-          <h1 className="hyto-title mt-2">Inbox</h1>
+          <h1 className="hyto-title mt-2">My events</h1>
           <p className="hyto-sub">
-            {vista.bandeja.length === 0
-              ? "Open a task to see the photo, the recommendation, and the payment."
-              : `${vista.bandeja.length} submission${vista.bandeja.length === 1 ? "" : "s"} waiting for your review`}
+            {vista.tareas.length === 0
+              ? "No events yet. Create one or join with a code."
+              : vista.bandeja.length === 0
+                ? "Nothing to approve yet."
+                : `${vista.bandeja.length} submission${vista.bandeja.length === 1 ? "" : "s"} waiting for your review`}
           </p>
+          {vista.tareas.length > 0 ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Invitar />
+              <Link href="/informe" className="text-sm font-medium">
+                Report
+              </Link>
+            </div>
+          ) : null}
+          {vista.tareas.length === 0 ? (
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="/proyectos/nuevo" className="hyto-btn">
+                Create event
+              </Link>
+              <Link href="/unirse" className="hyto-btn-line">
+                Join with code
+              </Link>
+            </div>
+          ) : null}
           {vista.propio ? (
             <button type="button" onClick={usarEjemplo} className="mt-3 text-sm text-[var(--suave)]">
               Back to the ZEEK example
@@ -103,7 +124,7 @@ export function Bandeja() {
           ))}
         </div>
 
-        {vista.bandeja.length === 0 ? (
+        {vista.tareas.length === 0 ? null : vista.bandeja.length === 0 ? (
           <div className="hyto-card mt-4 px-6 py-10 text-center">
             <p className="text-lg font-semibold">All caught up</p>
             <p className="mt-2 text-[var(--suave)]">Nothing to approve yet. When a volunteer sends a photo, it shows up here.</p>

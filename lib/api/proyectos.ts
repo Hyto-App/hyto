@@ -2,18 +2,38 @@ import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
+import {
+  AVISO_SALDO_EVENTO,
+  AVISO_WALLET_FONDOS,
+  alcanza,
+  lectorSaldoActual,
+  RESERVA_USDC,
+  sumarMontos,
+  type LectorSaldoUsdc,
+} from "@/lib/escrow/saldo";
+import { esCuenta } from "@/lib/escrow/cuerpos";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
 
+export type OpcionesCrearProyecto = {
+  wallet?: string;
+  leerSaldo?: LectorSaldoUsdc;
+};
+
 export function rechazoProyectoDemo(sesion: Pick<SesionFila, "email" | "usuarioId">): Response | null {
   if (!sesionEsDemo(sesion)) return null;
   return json({ aviso: AVISO_PROYECTO_DEMO }, 403);
 }
 
-export async function crearProyectoHttp(request: Request, almacen: Almacen, organizadorId: string): Promise<Response> {
+export async function crearProyectoHttp(
+  request: Request,
+  almacen: Almacen,
+  organizadorId: string,
+  opciones: OpcionesCrearProyecto = {},
+): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -22,6 +42,18 @@ export async function crearProyectoHttp(request: Request, almacen: Almacen, orga
   }
   const proyecto = leerProyecto(body);
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
+  const wallet = (opciones.wallet ?? "").trim();
+  if (!esCuenta(wallet)) return json({ aviso: AVISO_WALLET_FONDOS }, 400);
+  const presupuesto = sumarMontos([...proyecto.tareas.map((tarea) => tarea.monto), RESERVA_USDC]);
+  if (!presupuesto) return json({ aviso: "Enter a name and at least one task with an amount." }, 400);
+  const leerSaldo = opciones.leerSaldo ?? lectorSaldoActual();
+  let saldo: string;
+  try {
+    saldo = await leerSaldo(wallet);
+  } catch {
+    return json({ aviso: "Could not read the USDC balance." }, 503);
+  }
+  if (!alcanza(saldo, presupuesto)) return json({ aviso: AVISO_SALDO_EVENTO }, 402);
   try {
     await asegurarSemilla(almacen);
     const fila = { ...proyecto.proyecto, organizadorId };

@@ -59,6 +59,7 @@ const TRAZOS: Record<string, string> = {
   projects: "M4 5h12v12H4zM4 8h12",
   tasks: "M5 6h10M5 10h10M5 14h6",
   wallet: "M3 7h14v10H3zM3 10h14M13 13h2",
+  join: "M10 4v8M6 8h8M4 16h12",
 };
 
 export function Icono({ nombre }: { nombre: keyof typeof TRAZOS }) {

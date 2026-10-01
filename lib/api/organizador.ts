@@ -5,8 +5,8 @@ export const AVISO_ORGANIZADOR = "Only the organizer can lock the budget and pay
 export const AVISO_REVISION = "Only the organizer reviews.";
 
 export async function organizaAlguno(almacen: Almacen, usuarioId: string): Promise<boolean> {
-  const proyectos = await almacen.listarProyectos();
-  return proyectos.some((proyecto) => proyecto.organizadorId === usuarioId);
+  const miembros = await almacen.listarMiembrosDe(usuarioId);
+  return miembros.some((miembro) => miembro.rol === "organizer" && miembro.estado === "active");
 }
 
 export async function estadoOrganizadorTarea(
@@ -41,6 +41,8 @@ export async function respuestaSiNoOrganiza(
 }
 
 async function esDe(almacen: Almacen, usuarioId: string, tarea: TareaFila): Promise<boolean> {
-  const proyecto = await almacen.leerProyecto(tarea.proyectoId);
-  return Boolean(proyecto?.organizadorId && proyecto.organizadorId === usuarioId);
+  const miembros = await almacen.listarMiembrosDe(usuarioId);
+  return miembros.some(
+    (miembro) => miembro.proyectoId === tarea.proyectoId && miembro.rol === "organizer" && miembro.estado === "active",
+  );
 }

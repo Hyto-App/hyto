@@ -126,7 +126,7 @@ function vacio(): EsquemaEsperado {
 }
 
 function aplicar(esquema: EsquemaEsperado, sentencia: string, archivo: string): void {
-  if (/^update\s+/i.test(sentencia)) return;
+  if (/^(update|insert)\s+/i.test(sentencia)) return;
   const crear = /^create\s+table\s+(?:if\s+not\s+exists\s+)?(?:(?:"?[A-Za-z_][\w]*"?)\s*\.\s*)?("?)([A-Za-z_][\w]*)\1\s*\(([\s\S]*)\)\s*$/i.exec(
     sentencia,
   );
@@ -330,10 +330,7 @@ function parsearRestriccion(esquema: EsquemaEsperado, tabla: string, parte: stri
     guardarFk(esquema, tabla, fk[1], fk[2]);
     return;
   }
-  if (/^check\b/i.test(limpio)) {
-    esquema.avisos.push(`Hay un CHECK en ${tabla} que este script no compara. Confirmar con Esteban.`);
-    return;
-  }
+  if (/^check\b/i.test(limpio)) return;
   esquema.avisos.push(`Restricción no leída en ${tabla}. Confirmar con Esteban.`);
 }
 

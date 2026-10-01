@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { guardarProyecto } from "@/lib/admin/memoria";
 import { normalizarMonto } from "@/lib/admin/vista";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { TipoTarea } from "@/lib/integrante/tipos";
@@ -29,12 +28,13 @@ export function CrearProyecto() {
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
     setFilas((actuales) => actuales.map((fila) => (fila.clave === clave ? { ...fila, ...cambio } : fila)));
   }
 
-  function fondear() {
+  async function fondear() {
     if (modoDemo) {
       setAviso(AVISO_PROYECTO_DEMO);
       return;
@@ -54,20 +54,32 @@ export function CrearProyecto() {
       return;
     }
 
-    const guardado = guardarProyecto({
-      nombre: nombreLimpio,
-      tareas: tareas.map((fila, indice) => ({
-        id: `nueva-${indice + 1}`,
-        titulo: fila.titulo,
-        tipo: fila.tipo,
-        monto: fila.monto!,
-      })),
-    });
-    if (guardado.aviso) {
-      setAviso(guardado.aviso);
-      return;
+    setGuardando(true);
+    setAviso(null);
+    try {
+      const respuesta = await fetch("/api/proyectos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombreLimpio,
+          tareas: tareas.map((fila) => ({
+            titulo: fila.titulo,
+            tipo: fila.tipo,
+            monto: fila.monto,
+          })),
+        }),
+      });
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
+      if (!respuesta.ok) {
+        setAviso(typeof cuerpo?.aviso === "string" ? cuerpo.aviso : "Could not create the event.");
+        return;
+      }
+      router.push("/");
+    } catch {
+      setAviso("Could not create the event.");
+    } finally {
+      setGuardando(false);
     }
-    router.push("/");
   }
 
   let trabajo = 0;
@@ -84,15 +96,15 @@ export function CrearProyecto() {
   return (
     <main className="hyto-page">
       <p className="hyto-crumb">
-        <span>Projects</span>
+        <a href="/">My events</a>
         <span aria-hidden="true">/</span>
-        <span>New project</span>
+        <span>New event</span>
       </p>
       <header className="hyto-page-head">
         <div>
-          <h1 className="hyto-title">Create project</h1>
+          <h1 className="hyto-title">Create event</h1>
           <p className="hyto-sub">
-            Name each task and its amount in US dollars. Work is a fixed amount. A reimbursement is a cap. Saving does not move money. You lock each budget from the task review.
+            Name each task and its amount in US dollars. Work is a fixed amount. A reimbursement is a cap. Your USDC balance must cover the total plus a small reserve. Saving does not move money.
           </p>
         </div>
       </header>
@@ -205,8 +217,8 @@ export function CrearProyecto() {
           </dl>
           <p className="mt-4 text-sm leading-6 text-[var(--suave)]">Nothing is paid when you save. You approve every payment from the review.</p>
           <div className="mt-5">
-            <BotonPrincipal type="button" onClick={fondear} disabled={modoDemo}>
-              Save project
+            <BotonPrincipal type="button" onClick={() => void fondear()} disabled={modoDemo || guardando}>
+              {guardando ? "Creating…" : "Create event"}
             </BotonPrincipal>
           </div>
         </aside>
@@ -215,7 +227,6 @@ export function CrearProyecto() {
       {modoDemo || aviso ? (
         <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{modoDemo ? AVISO_PROYECTO_DEMO : aviso}</p>
       ) : null}
-      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">This draft stays on this device until the project is connected.</p>
     </main>
   );
 }

@@ -8,10 +8,10 @@ import { Salir } from "@/components/sesion/Salir";
 import { Icono, Logo, Tema } from "@/components/ui/Marca";
 
 const ENLACES = [
-  { href: "/", etiqueta: "Inbox", icono: "inbox" },
-  { href: "/informe", etiqueta: "Report", icono: "report" },
-  { href: "/proyectos/nuevo", etiqueta: "Projects", icono: "projects" },
+  { href: "/", etiqueta: "My events", icono: "inbox" },
   { href: "/mis-tareas", etiqueta: "My tasks", icono: "tasks" },
+  { href: "/proyectos/nuevo", etiqueta: "Create event", icono: "projects" },
+  { href: "/unirse", etiqueta: "Join with code", icono: "join" },
 ] as const;
 
 export function Marco({ children, demoHabilitado = false }: { children: ReactNode; demoHabilitado?: boolean }) {

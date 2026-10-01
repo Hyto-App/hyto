@@ -63,3 +63,36 @@ export type SesionFila = {
   expiraEn: string;
   wallet: string;
 };
+
+export type RolMiembro = "organizer" | "team" | "volunteer";
+export type EstadoMiembro = "active" | "removed";
+export type TipoInvitacion = "direct" | "code";
+export type RolInvitacion = "team" | "volunteer";
+
+export type MiembroProyecto = {
+  proyectoId: string;
+  usuarioId: string;
+  rol: RolMiembro;
+  estado: EstadoMiembro;
+  creadoEn: string;
+};
+
+export type InvitacionFila = {
+  id: string;
+  proyectoId: string;
+  tipo: TipoInvitacion;
+  email: string | null;
+  secretoHash: string;
+  rol: RolInvitacion;
+  maxUsos: number;
+  usos: number;
+  expiraEn: string | null;
+  creadoPor: string;
+  creadoEn: string;
+};
+
+export type MotivoInvitacion = "missing" | "expired" | "used" | "email";
+
+export type ResultadoInvitacion =
+  | { ok: true; proyectoId: string; rol: RolInvitacion }
+  | { ok: false; motivo: MotivoInvitacion };

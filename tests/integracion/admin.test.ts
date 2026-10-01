@@ -47,14 +47,14 @@ describe("pantallas de admin", { concurrency: false }, () => {
   test("crear proyecto avisa si faltan el nombre o el monto y no navega", async () => {
     const idas: string[] = [];
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.deepEqual(idas, []);
 
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "0");
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
@@ -67,29 +67,40 @@ describe("pantallas de admin", { concurrency: false }, () => {
       { push: (href) => idas.push(href) },
     );
     assert.match(texto(), /Demo mode cannot create projects/);
-    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Save project"));
+    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create event"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
 
   test("crear proyecto guarda el nombre y la tarea y vuelve a la bandeja", async () => {
     const idas: string[] = [];
-    await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await escribir("#nombre-proyecto", "Feria");
-    await escribir("#titulo-1", "Cajas");
-    await escribir("#monto-1", "8");
-    await pulsar("Save project");
-    assert.deepEqual(idas, ["/"]);
-    const proyecto = leerMemoriaAdmin().proyecto;
-    assert.equal(proyecto?.nombre, "Feria");
-    assert.equal(proyecto?.tareas[0]?.titulo, "Cajas");
-    assert.equal(proyecto?.tareas[0]?.tipo, "trabajo");
-    assert.equal(proyecto?.tareas[0]?.monto, "8");
+    const original = globalThis.fetch;
+    let cuerpo = "";
+    globalThis.fetch = async (_input, init) => {
+      cuerpo = String(init?.body ?? "");
+      return new Response(JSON.stringify({ proyecto: { id: "p1", nombre: "Feria" } }), { status: 201 });
+    };
+    try {
+      await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
+      await escribir("#nombre-proyecto", "Feria");
+      await escribir("#titulo-1", "Cajas");
+      await escribir("#monto-1", "8");
+      await pulsar("Create event");
+      assert.deepEqual(idas, ["/"]);
+      assert.equal(leerMemoriaAdmin().proyecto, null);
+      const enviado = JSON.parse(cuerpo) as { nombre: string; tareas: { titulo: string; tipo: string; monto: string }[] };
+      assert.equal(enviado.nombre, "Feria");
+      assert.equal(enviado.tareas[0]?.titulo, "Cajas");
+      assert.equal(enviado.tareas[0]?.tipo, "trabajo");
+      assert.equal(enviado.tareas[0]?.monto, "8");
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 
   test("un proyecto propio sale de la bandeja al volver al ejemplo", async () => {

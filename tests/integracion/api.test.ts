@@ -80,6 +80,11 @@ function pedirGet(url: string, cookie?: string): Request {
 async function duenoZeek(cookie: string): Promise<void> {
   await tareasGet(pedirGet("http://local/api/tareas", cookie));
   await consulta("update proyectos set organizador_id = 'organizador' where id = 'zeek' and organizador_id is null");
+  await consulta(
+    `insert into proyecto_miembros (proyecto_id, usuario_id, rol, estado, creado_en)
+     select id, 'organizador', 'organizer', 'active', creado_en from proyectos where id = 'zeek'
+     on conflict (proyecto_id, usuario_id) do update set rol = 'organizer', estado = 'active'`,
+  );
 }
 
 function proyectoNuevo() {
@@ -242,7 +247,9 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
   });
 
   test("POST /api/proyectos crea el proyecto con la sesión del organizador y GET devuelve el último", async () => {
-    const sesion = await cookieSesionPrueba();
+    const { fijarLectorSaldo } = await import("../../lib/escrow/saldo");
+    fijarLectorSaldo(async () => "1000000");
+    const sesion = await cookieSesionPrueba("organizador", "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     const creado = await proyectosPost(pedido("http://local/api/proyectos", proyectoNuevo(), sesion));
     assert.equal(creado.status, 201);
     const json = (await leer(creado)) as {
@@ -271,6 +278,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const tareas = (await leer(await tareasGet(pedirGet("http://local/api/tareas", sesion)))) as { tareas?: { titulo: string }[] };
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Cajas"), true);
     assert.equal(tareas.tareas?.some((tarea) => tarea.titulo === "Set up the booth"), true);
+    fijarLectorSaldo(null);
   });
 
   test("POST /api/proyectos rechaza cuerpo inválido y tarea sin monto", async () => {

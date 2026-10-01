@@ -282,7 +282,7 @@ export function pendientesConEsteban(esperado: EsquemaEsperado, cruce: CruceCodi
 }
 
 export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[]; avisos: string[] } {
-  const bloques = [...fuente.matchAll(/export const (\w+) = pgTable\("(\w+)", \{([\s\S]*?)\n\}\);/g)];
+  const bloques = [...fuente.matchAll(/export const (\w+) = pgTable\(\s*"(\w+)",\s*\{([\s\S]*?)\n\s*\}([\s\S]*?)\);/g)];
   const columnas: ColumnaDrizzle[] = [];
   const avisos: string[] = [];
   for (const bloque of bloques) {
@@ -292,7 +292,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
     let actual: string[] | null = null;
     const campos: string[] = [];
     for (const linea of cuerpo.split("\n")) {
-      if (/^\s{2}\w+:/.test(linea)) {
+      if (/^\s+\w+:/.test(linea)) {
         if (actual) campos.push(actual.join("\n"));
         actual = [linea];
       } else if (actual) {
@@ -316,7 +316,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         avisos.push(`No se reconoció el builder ${match[2]}() de ${tabla}.${match[3]} en schema.ts. Confirmar con Esteban.`);
       }
       const referenciaCruda = /\.references\(\s*\(\s*\)\s*=>\s*(\w+)\.(\w+)\s*(?:,\s*\{[\s\S]*?\}\s*)?\)/.exec(resto);
-      columnas.push({
+      const fila = {
         exportName,
         tabla,
         campo: match[1],
@@ -327,7 +327,19 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         primaryKey: /\.primaryKey\(\)/.test(resto),
         unique: /\.unique\(\)/.test(resto),
         referencia: referenciaCruda ? { tabla: referenciaCruda[1], columna: referenciaCruda[2] } : null,
-      });
+      };
+      columnas.push(fila);
+    }
+    const extra = bloque[4] ?? "";
+    const pkCompuesta = /primaryKey\(\{\s*columns:\s*\[([^\]]+)\]/.exec(extra);
+    if (pkCompuesta) {
+      const camposPk = [...pkCompuesta[1].matchAll(/\.(\w+)/g)].map((item) => item[1]);
+      for (const columna of columnas) {
+        if (columna.exportName === exportName && camposPk.includes(columna.campo)) {
+          columna.primaryKey = true;
+          columna.nullable = false;
+        }
+      }
     }
   }
   const porExport = new Map<string, Map<string, string>>();

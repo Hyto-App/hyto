@@ -1,16 +1,17 @@
 import { neon } from "@neondatabase/serverless";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
-import { evidencias, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { motivoInvitacion } from "@/lib/invitaciones/secreto";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
-import type { Rol, TareaFila, VeredictoFila } from "./tipos";
+import type { InvitacionFila, MiembroProyecto, Rol, RolInvitacion, RolMiembro, TareaFila, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
-const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones };
+const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
 
@@ -108,11 +109,38 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async crearProyecto(proyecto, filas) {
       await db.insert(proyectos).values(proyecto).onConflictDoNothing();
-      if (filas.length === 0) return;
-      await db.insert(tareas).values(filas).onConflictDoNothing();
+      if (filas.length > 0) await db.insert(tareas).values(filas).onConflictDoNothing();
+      if (proyecto.organizadorId) {
+        await db
+          .insert(proyectoMiembros)
+          .values({
+            proyectoId: proyecto.id,
+            usuarioId: proyecto.organizadorId,
+            rol: "organizer",
+            estado: "active",
+            creadoEn: proyecto.creadoEn,
+          })
+          .onConflictDoUpdate({
+            target: [proyectoMiembros.proyectoId, proyectoMiembros.usuarioId],
+            set: { rol: "organizer", estado: "active" },
+          });
+      }
     },
     async asignarOrganizador(proyectoId, organizadorId) {
       await db.update(proyectos).set({ organizadorId }).where(eq(proyectos.id, proyectoId));
+      await db
+        .insert(proyectoMiembros)
+        .values({
+          proyectoId,
+          usuarioId: organizadorId,
+          rol: "organizer",
+          estado: "active",
+          creadoEn: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+          target: [proyectoMiembros.proyectoId, proyectoMiembros.usuarioId],
+          set: { rol: "organizer", estado: "active" },
+        });
     },
     async listarTareas() {
       const filas = await db.select().from(tareas);
@@ -188,6 +216,104 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     async guardarWallet(token, wallet) {
       await db.update(sesiones).set({ wallet }).where(eq(sesiones.token, token));
     },
+    async listarMiembrosDe(usuarioId) {
+      const filas = await db.select().from(proyectoMiembros).where(eq(proyectoMiembros.usuarioId, usuarioId));
+      return filas.map(miembroDesde);
+    },
+    async listarMiembros(proyectoId) {
+      const filas = await db.select().from(proyectoMiembros).where(eq(proyectoMiembros.proyectoId, proyectoId));
+      return filas.map(miembroDesde);
+    },
+    async guardarMiembro(miembro) {
+      await db
+        .insert(proyectoMiembros)
+        .values(miembro)
+        .onConflictDoUpdate({
+          target: [proyectoMiembros.proyectoId, proyectoMiembros.usuarioId],
+          set: {
+            estado: "active",
+            rol: sql`CASE WHEN ${proyectoMiembros.rol} = 'organizer' THEN ${proyectoMiembros.rol} ELSE ${miembro.rol} END`,
+          },
+        });
+    },
+    async crearInvitacion(invitacion) {
+      await db.insert(proyectoInvitaciones).values(invitacion);
+    },
+    async invitacionPorHash(hash) {
+      const filas = await db.select().from(proyectoInvitaciones).where(eq(proyectoInvitaciones.secretoHash, hash)).limit(1);
+      return filas[0] ? invitacionDesde(filas[0]) : null;
+    },
+    async aceptarInvitacion({ hash, usuarioId, email, ahora }) {
+      const resultado = await db.execute(sql`
+        WITH tomada AS (
+          UPDATE proyecto_invitaciones
+          SET usos = usos + 1
+          WHERE secreto_hash = ${hash}
+            AND usos < max_usos
+            AND (expira_en IS NULL OR expira_en > ${ahora})
+            AND (tipo <> 'direct' OR lower(coalesce(email, '')) = lower(${email}))
+          RETURNING proyecto_id, rol
+        )
+        INSERT INTO proyecto_miembros (proyecto_id, usuario_id, rol, estado, creado_en)
+        SELECT proyecto_id, ${usuarioId}, rol, 'active', ${ahora} FROM tomada
+        ON CONFLICT (proyecto_id, usuario_id)
+        DO UPDATE SET
+          estado = 'active',
+          rol = CASE WHEN proyecto_miembros.rol = 'organizer' THEN proyecto_miembros.rol ELSE EXCLUDED.rol END
+        RETURNING proyecto_id, rol
+      `);
+      const filas = filasDe(resultado);
+      const fila = filas[0];
+      if (fila) {
+        return { ok: true as const, proyectoId: String(fila.proyecto_id), rol: rolInvitacionDe(String(fila.rol)) };
+      }
+      const actual = await db.select().from(proyectoInvitaciones).where(eq(proyectoInvitaciones.secretoHash, hash)).limit(1);
+      const motivo = motivoInvitacion(actual[0] ? invitacionDesde(actual[0]) : null, email, ahora);
+      return { ok: false as const, motivo: motivo ?? "missing" };
+    },
+  };
+}
+
+function filasDe(resultado: unknown): Record<string, unknown>[] {
+  if (Array.isArray(resultado)) return resultado as Record<string, unknown>[];
+  if (resultado && typeof resultado === "object" && "rows" in resultado && Array.isArray((resultado as { rows: unknown }).rows)) {
+    return (resultado as { rows: Record<string, unknown>[] }).rows;
+  }
+  return [];
+}
+
+function rolMiembroDe(valor: string): RolMiembro {
+  if (valor === "organizer" || valor === "team" || valor === "volunteer") return valor;
+  return "volunteer";
+}
+
+function rolInvitacionDe(valor: string): RolInvitacion {
+  return valor === "team" ? "team" : "volunteer";
+}
+
+function miembroDesde(fila: typeof proyectoMiembros.$inferSelect): MiembroProyecto {
+  return {
+    proyectoId: fila.proyectoId,
+    usuarioId: fila.usuarioId,
+    rol: rolMiembroDe(fila.rol),
+    estado: fila.estado === "removed" ? "removed" : "active",
+    creadoEn: fila.creadoEn,
+  };
+}
+
+function invitacionDesde(fila: typeof proyectoInvitaciones.$inferSelect): InvitacionFila {
+  return {
+    id: fila.id,
+    proyectoId: fila.proyectoId,
+    tipo: fila.tipo === "direct" ? "direct" : "code",
+    email: fila.email,
+    secretoHash: fila.secretoHash,
+    rol: rolInvitacionDe(fila.rol),
+    maxUsos: fila.maxUsos,
+    usos: fila.usos,
+    expiraEn: fila.expiraEn,
+    creadoPor: fila.creadoPor,
+    creadoEn: fila.creadoEn,
   };
 }
 

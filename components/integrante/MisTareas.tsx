@@ -3,12 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { claseBoton } from "@/components/integrante/BotonPrincipal";
-import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
-import { Salir } from "@/components/sesion/Salir";
-import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { leerMemoria, guardarMiembro } from "@/lib/integrante/almacen";
-import { Entrar } from "@/components/admin/Entrar";
 import { acortarDireccion, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { MIEMBROS } from "@/lib/integrante/identidades";
@@ -76,17 +72,8 @@ export function MisTareas() {
     <main className="hyto-page">
       <header className="hyto-page-head">
         <div>
-          <p className="text-sm text-[var(--suave)]">
-            Hyto
-            <InsigniaDemo />
-            <SalirDemo />
-            <Salir className="ml-3 align-middle" />
-          </p>
-          <h1 className="hyto-title mt-2">My tasks</h1>
+          <h1 className="hyto-title">My tasks</h1>
           <p className="hyto-sub">Photograph the finished work. The organizer reviews it and sends the payment.</p>
-          <div className="mt-4 max-w-xs">
-            <Entrar />
-          </div>
           {ejemplo ? (
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Sample people">
               {MIEMBROS.map((item) => (
@@ -108,7 +95,9 @@ export function MisTareas() {
               <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
             </details>
           ) : lista && !ejemplo ? (
-            <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Sign in above so we know where to send your payment.</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+              <Link href="/cuentas">Open your wallet</Link> so we know where to send your payment.
+            </p>
           ) : null}
         </div>
         {lista && tareas.length > 0 ? (
@@ -137,8 +126,11 @@ export function MisTareas() {
 
       {lista && tareas.length === 0 ? (
         <div className="hyto-card px-6 py-10">
-          <p className="text-lg text-[var(--suave)]">You have no tasks yet.</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--suave)]">When the organizer assigns you one, it shows up here.</p>
+          <p className="text-lg">No tasks yet.</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--suave)]">Join an event with a code, or wait until one is assigned to you.</p>
+          <Link href="/unirse" className="hyto-btn mt-4 inline-flex">
+            Join with code
+          </Link>
         </div>
       ) : null}
 

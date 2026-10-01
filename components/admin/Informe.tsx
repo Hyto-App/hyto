@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { useVistaAdmin } from "@/components/admin/usarVista";
@@ -54,7 +55,9 @@ export function Informe() {
     <main className="hyto-page">
       <header className="hyto-page-head">
         <div>
-          <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
+          <Link href="/" className="text-sm text-[var(--suave)] print:text-black">
+            My events
+          </Link>
           <h1 className="hyto-title mt-2">Report</h1>
           <p className="mt-2 text-lg">{vista.nombre}</p>
           <p className="hyto-sub">Budget compared with what has been paid. Each task is one payment.</p>

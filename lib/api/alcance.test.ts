@@ -10,6 +10,9 @@ import type { Almacen } from "../db/almacen";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { crearProyectoHttp } from "./proyectos";
+
+const WALLET = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const FONDOS = { wallet: WALLET, leerSaldo: async () => "1000000" };
 import { leerFotoHttp, publicarEvidenciaHttp } from "./evidencias";
 import { crearFotosMemoria } from "../blob/fotos";
 
@@ -57,6 +60,7 @@ test("sin sesión los listados privados responden 401 y no eligen el proyecto m�
     }),
     almacen,
     "voluntario-2",
+    FONDOS,
   );
   const anterior = usar(almacen);
   const demo = process.env.HYTO_DEMO_LOGIN;
@@ -90,6 +94,7 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
     }),
     almacen,
     "voluntario-9",
+    FONDOS,
   );
   await sesion(almacen, "ana", "ana", "organizador");
   await sesion(almacen, "v1", "voluntario-1");

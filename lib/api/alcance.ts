@@ -40,8 +40,8 @@ export async function proyectosVisibles(almacen: Almacen, visor: Visor): Promise
   const tareas = await tareasVisibles(almacen, visor);
   const ids = new Set(tareas.map((tarea) => tarea.proyectoId));
   if (visor.usuarioId) {
-    for (const proyecto of await almacen.listarProyectos()) {
-      if (proyecto.organizadorId === visor.usuarioId) ids.add(proyecto.id);
+    for (const miembro of await almacen.listarMiembrosDe(visor.usuarioId)) {
+      if (miembro.estado === "active") ids.add(miembro.proyectoId);
     }
   }
   const proyectos = await almacen.listarProyectos();
@@ -53,7 +53,13 @@ export async function puedeVerTarea(almacen: Almacen, visor: Visor, tarea: Tarea
   if (visor.demo) return esProyectoDemo(proyecto);
   if (!visor.usuarioId) return false;
   if (tarea.miembroId === visor.usuarioId) return true;
-  return Boolean(proyecto?.organizadorId && proyecto.organizadorId === visor.usuarioId);
+  const miembros = await almacen.listarMiembrosDe(visor.usuarioId);
+  return miembros.some(
+    (miembro) =>
+      miembro.proyectoId === tarea.proyectoId &&
+      miembro.estado === "active" &&
+      (miembro.rol === "organizer" || miembro.rol === "team"),
+  );
 }
 
 export async function accesoEvidencia(
@@ -70,10 +76,12 @@ export async function accesoEvidencia(
 }
 
 async function tareasDeUsuario(almacen: Almacen, usuarioId: string, todas: TareaFila[]): Promise<TareaFila[]> {
-  const organiza = new Set(
-    (await almacen.listarProyectos()).filter((proyecto) => proyecto.organizadorId === usuarioId).map((proyecto) => proyecto.id),
+  const amplias = new Set(
+    (await almacen.listarMiembrosDe(usuarioId))
+      .filter((miembro) => miembro.estado === "active" && (miembro.rol === "organizer" || miembro.rol === "team"))
+      .map((miembro) => miembro.proyectoId),
   );
-  return todas.filter((tarea) => organiza.has(tarea.proyectoId) || tarea.miembroId === usuarioId);
+  return todas.filter((tarea) => amplias.has(tarea.proyectoId) || tarea.miembroId === usuarioId);
 }
 
 function porCreacion(a: Proyecto, b: Proyecto): number {

@@ -12,6 +12,11 @@ import { crearMemoria } from "../db/memoria";
 import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
 import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
+
+const FONDOS_PRUEBA = {
+  wallet: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  leerSaldo: async () => "1000000",
+};
 import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp, fijarWalletHttp } from "./sesion";
 import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
@@ -233,6 +238,7 @@ test("un proyecto nuevo entra por la ruta", async () => {
     }),
     almacen,
     "voluntario-2",
+    FONDOS_PRUEBA,
   );
   assert.equal(respuesta.status, 201);
   assert.equal((await almacen.ultimoProyecto())?.organizadorId, "voluntario-2");

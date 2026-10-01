@@ -14,5 +14,5 @@ export async function POST(request: Request): Promise<Response> {
   if (sesion instanceof Response) return sesion;
   const demo = rechazoProyectoDemo(sesion);
   if (demo) return demo;
-  return conAlmacen((almacen) => crearProyectoHttp(request, almacen, sesion.usuarioId));
+  return conAlmacen((almacen) => crearProyectoHttp(request, almacen, sesion.usuarioId, { wallet: sesion.wallet }));
 }

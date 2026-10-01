@@ -10,6 +10,7 @@ import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
+import { AVISO_SALDO_TAREA, respuestaSiFondosInsuficientes } from "@/lib/escrow/saldo";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
@@ -51,6 +52,10 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
       const ajustada = await montoFondeoDeReembolso(base, entrada, idTarea(body));
       if (ajustada instanceof Response) return ajustada;
       preparada = ajustada;
+      if (ajustada.accion === "fondear") {
+        const fondos = await respuestaSiFondosInsuficientes(sesion.wallet.trim(), String(ajustada.monto), AVISO_SALDO_TAREA);
+        if (fondos) return fondos;
+      }
     }
   }
   const limitado = respuestaSiExcedido(request);
@@ -211,6 +216,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   }
   const monto = montoDeTarea(tarea, evidencia);
   if (monto === null) return Response.json({ aviso: "The milestone amount has to be greater than zero." }, { status: 400 });
+  const fondos = await respuestaSiFondosInsuficientes(wallet, String(monto), AVISO_SALDO_TAREA);
+  if (fondos) return fondos;
   const cuentas = cuentasDeTarea({
     firmante: wallet,
     receptor: tarea.walletCobro,

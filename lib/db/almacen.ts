@@ -1,4 +1,14 @@
-import type { EvidenciaFila, Proyecto, SesionFila, TareaFila, Usuario, VeredictoFila } from "./tipos";
+import type {
+  EvidenciaFila,
+  InvitacionFila,
+  MiembroProyecto,
+  Proyecto,
+  ResultadoInvitacion,
+  SesionFila,
+  TareaFila,
+  Usuario,
+  VeredictoFila,
+} from "./tipos";
 
 export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
@@ -29,4 +39,10 @@ export type Almacen = {
   leerSesion(token: string): Promise<SesionFila | null>;
   borrarSesion(token: string): Promise<void>;
   guardarWallet(token: string, wallet: string): Promise<void>;
+  listarMiembrosDe(usuarioId: string): Promise<MiembroProyecto[]>;
+  listarMiembros(proyectoId: string): Promise<MiembroProyecto[]>;
+  guardarMiembro(miembro: MiembroProyecto): Promise<void>;
+  crearInvitacion(invitacion: InvitacionFila): Promise<void>;
+  invitacionPorHash(hash: string): Promise<InvitacionFila | null>;
+  aceptarInvitacion(entrada: { hash: string; usuarioId: string; email: string; ahora: string }): Promise<ResultadoInvitacion>;
 };

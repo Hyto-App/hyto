@@ -662,7 +662,7 @@ export function parsearSentencia(sql: string): SentenciaSql {
   try {
     const cursor = new Cursor(tokenizar(sql));
     if (cursor.fin()) throw new Error("sentencia vacía");
-    if (cursor.verId("update")) return { tipo: "datos", parseada: true, sql: sql.trim() };
+    if (cursor.verId("update") || cursor.verId("insert")) return { tipo: "datos", parseada: true, sql: sql.trim() };
     if (cursor.verId("alter")) {
       cursor.tomar();
       cursor.esperarId("table");

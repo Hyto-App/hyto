@@ -1,4 +1,4 @@
-import { pgTable, text } from "drizzle-orm/pg-core";
+import { integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 
 export const usuarios = pgTable("usuarios", {
   id: text("id").primaryKey(),
@@ -68,4 +68,38 @@ export const sesiones = pgTable("sesiones", {
   rol: text("rol").notNull(),
   expiraEn: text("expira_en").notNull(),
   wallet: text("wallet").notNull().default(""),
+});
+
+export const proyectoMiembros = pgTable(
+  "proyecto_miembros",
+  {
+    proyectoId: text("proyecto_id")
+      .notNull()
+      .references(() => proyectos.id, { onDelete: "cascade" }),
+    usuarioId: text("usuario_id")
+      .notNull()
+      .references(() => usuarios.id, { onDelete: "cascade" }),
+    rol: text("rol").notNull(),
+    estado: text("estado").notNull().default("active"),
+    creadoEn: text("creado_en").notNull(),
+  },
+  (tabla) => [primaryKey({ columns: [tabla.proyectoId, tabla.usuarioId] })],
+);
+
+export const proyectoInvitaciones = pgTable("proyecto_invitaciones", {
+  id: text("id").primaryKey(),
+  proyectoId: text("proyecto_id")
+    .notNull()
+    .references(() => proyectos.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(),
+  email: text("email"),
+  secretoHash: text("secreto_hash").notNull().unique(),
+  rol: text("rol").notNull(),
+  maxUsos: integer("max_usos").notNull().default(1),
+  usos: integer("usos").notNull().default(0),
+  expiraEn: text("expira_en"),
+  creadoPor: text("creado_por")
+    .notNull()
+    .references(() => usuarios.id),
+  creadoEn: text("creado_en").notNull(),
 });
