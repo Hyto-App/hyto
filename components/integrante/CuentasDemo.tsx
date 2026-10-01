@@ -9,6 +9,7 @@ import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
+import { mensajeClaro } from "@/lib/ui/claro";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
 import { prepararIdentidad, type CuentaPreparada } from "@/lib/integrante/preparar";
@@ -52,7 +53,7 @@ export function CuentasDemo() {
   async function preparar() {
     if (preparandoRef.current) return;
     if (!hayApp) {
-      setAviso("Accounts are waiting for the Cavos app id.");
+      setAviso("Account setup isn't available yet.");
       return;
     }
     if (pendiente) {
@@ -67,7 +68,7 @@ export function CuentasDemo() {
     try {
       const auth = await crearAuth();
       if (!auth) {
-        setAviso("Accounts are waiting for the Cavos app id.");
+        setAviso("Account setup isn't available yet.");
         return;
       }
       await auth.sendOtp(identidad.email);
@@ -75,7 +76,7 @@ export function CuentasDemo() {
       setPendiente(identidad);
       setCodigo("");
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
+      setAviso(mensajeClaro(error instanceof Error ? error.message : "Could not prepare the account."));
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -93,7 +94,7 @@ export function CuentasDemo() {
       const identity = await auth.verifyOtp(identidad.email, codigo.trim());
       const sesion = await publicarSesion(identity.email ?? identidad.email, auth.getAuthToken?.() ?? null);
       if (!sesion.ok) {
-        setAviso(sesion.aviso);
+        setAviso(mensajeClaro(sesion.aviso));
         return;
       }
       const cuenta = await prepararIdentidad(identidad, auth);
@@ -105,10 +106,10 @@ export function CuentasDemo() {
       setCuentas((actuales) => actuales.map((item) => (item.id === cuenta.id ? cuenta : item)));
       setPendiente(null);
       setCodigo("");
-      if (avisoWallet) setAviso(avisoWallet);
-      else if (cuenta.detalle) setAviso(cuenta.detalle);
+      if (avisoWallet) setAviso(mensajeClaro(avisoWallet));
+      else if (cuenta.detalle) setAviso(mensajeClaro(cuenta.detalle));
     } catch (error) {
-      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
+      setAviso(mensajeClaro(error instanceof Error ? error.message : "Could not prepare the account."));
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -127,8 +128,10 @@ export function CuentasDemo() {
           <SalirDemo />
           <Salir className="ml-3 align-middle" />
         </p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight">Demo accounts</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Organizer and three volunteers.</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight">Payout accounts</h1>
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+          One organizer and three volunteers. Each person confirms the code we email them. Then their account can receive the event payment.
+        </p>
       </header>
 
       <div className="space-y-3">
@@ -138,9 +141,16 @@ export function CuentasDemo() {
             <article key={cuenta.id} className="rounded-3xl bg-[var(--papel)] p-6">
               <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre)}</h2>
               <p className="mt-1 text-sm text-[var(--suave)]">{identidad?.email}</p>
-              <p className="mt-3 font-mono text-sm">{cuenta.direccion ? acortarDireccion(cuenta.direccion) : "No address"}</p>
-              <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.usdcListo ? "USDC ready to receive" : "USDC pending"}</p>
-              {cuenta.detalle ? <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.detalle}</p> : null}
+              {cuenta.direccion ? (
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-[var(--suave)]">Account details</summary>
+                  <p className="mt-1 font-mono">{acortarDireccion(cuenta.direccion)}</p>
+                </details>
+              ) : (
+                <p className="mt-3 text-sm text-[var(--suave)]">Not set up yet</p>
+              )}
+              <p className="mt-2 text-sm text-[var(--suave)]">{cuenta.usdcListo ? "Ready to receive payment" : "Not ready to receive payment"}</p>
+              {cuenta.detalle ? <p className="mt-2 text-sm text-[var(--suave)]">{mensajeClaro(cuenta.detalle)}</p> : null}
             </article>
           );
         })}

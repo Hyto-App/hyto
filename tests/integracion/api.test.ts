@@ -529,7 +529,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const voluntario = cookieDe(await entrar("voluntario1@demo.hyto"));
     const prohibida = await firmaPost(pedido("http://local/api/firma", {}, voluntario));
     assert.equal(prohibida.status, 403);
-    assert.equal(avisoDe(await leer(prohibida)), "Only the organizer prepares the payment.");
+    assert.equal(avisoDe(await leer(prohibida)), "Only the organizer can lock the budget and pay.");
     const envioProhibido = await enviarPost(pedido("http://local/api/firma/enviar", { xdr: "AAAA" }, voluntario));
     assert.equal(envioProhibido.status, 403);
 

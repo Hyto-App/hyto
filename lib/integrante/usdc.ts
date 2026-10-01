@@ -35,7 +35,7 @@ export async function asegurarCobroUsdc(
     return {
       direccion: billetera.address,
       usdcListo: false,
-      detalle: "This session cannot sign for this account.",
+      detalle: "This sign-in can't confirm for this account. Sign in again.",
     };
   }
 

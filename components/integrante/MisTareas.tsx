@@ -8,6 +8,7 @@ import { Salir } from "@/components/sesion/Salir";
 import { SalirDemo } from "@/components/sesion/SalirDemo";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { leerMemoria, guardarMiembro } from "@/lib/integrante/almacen";
+import { Entrar } from "@/components/admin/Entrar";
 import { acortarDireccion, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { MIEMBROS } from "@/lib/integrante/identidades";
@@ -62,7 +63,14 @@ export function MisTareas() {
           <Salir className="ml-3 align-middle" />
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">My tasks</h1>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Member">
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+          Photograph the finished work. The organizer reviews it and sends the payment.
+        </p>
+        <div className="mt-4">
+          <Entrar />
+        </div>
+        {ejemplo ? (
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm" role="group" aria-label="Sample people">
           {MIEMBROS.map((item) => (
             <button
               key={item.id}
@@ -75,7 +83,15 @@ export function MisTareas() {
             </button>
           ))}
         </div>
-        {direccion ? <p className="mt-3 font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p> : null}
+        ) : null}
+        {direccion ? (
+          <details className="mt-3 text-sm text-[var(--suave)]">
+            <summary className="cursor-pointer">Payout account</summary>
+            <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+          </details>
+        ) : lista && !ejemplo ? (
+          <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Sign in above so we know where to send your payment.</p>
+        ) : null}
       </header>
 
       {!lista ? (
@@ -84,7 +100,12 @@ export function MisTareas() {
         </p>
       ) : null}
 
-      {lista && tareas.length === 0 ? <p className="text-lg text-[var(--suave)]">You have no tasks.</p> : null}
+      {lista && tareas.length === 0 ? (
+        <div>
+          <p className="text-lg text-[var(--suave)]">You have no tasks yet.</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--suave)]">When the organizer assigns you one, it shows up here.</p>
+        </div>
+      ) : null}
 
       {lista && tareas.length > 0 ? (
         <div className="space-y-4">
@@ -125,12 +146,12 @@ export function MisTareas() {
       ) : null}
 
       {ejemplo && lista ? (
-        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Example view, until the routes respond.</p>
+        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Sample tasks, until your own tasks load. The names above are sample people.</p>
       ) : null}
 
       <p className="mt-10">
         <Link href="/cuentas" className="text-sm text-[var(--suave)]">
-          Demo accounts
+          Payout accounts
         </Link>
       </p>
     </main>

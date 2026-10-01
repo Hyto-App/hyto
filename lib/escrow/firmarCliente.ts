@@ -1,13 +1,13 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 
-export const AVISO_DEMO_FIRMA = "Demo mode: signatures are off";
-export const AVISO_XLM = "Not enough XLM for the fee.";
-export const AVISO_RECHAZO = "You rejected the signature.";
-export const AVISO_FIRMA = "Could not sign the payment.";
-export const AVISO_SIN_CONTRATO = "The submit succeeded and Trustless did not return the contract.";
-export const AVISO_SESION_CAVOS = "Your Cavos session closed. Sign in again to sign.";
-export const AVISO_REINGRESO = "Your Cavos session expired.";
+export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
+export const AVISO_XLM = "This account needs a little test balance for the network fee. Add some and try again.";
+export const AVISO_RECHAZO = "You cancelled the confirmation. Nothing was sent.";
+export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
+export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
+export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
+export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
 
 export function mensajeFirmaVisible(mensaje: string): string {
   if (mensaje === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
@@ -155,7 +155,7 @@ function cuerpoEnvio(xdr: string, accion: AccionCliente, tareaId: string, contra
 
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
   const auth = await crearAuth();
-  if (!auth) throw new ErrorFirmaCliente("Cavos is not configured for sign-in.");
+  if (!auth) throw new ErrorFirmaCliente("Sign-in isn't set up yet.");
   if (!asegurarIdentidadCavos(auth)) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
@@ -190,7 +190,7 @@ async function postJson(
 function leerPreparado(json: unknown): { xdr: string; contrato: string | null; monto: number | null } {
   const datos = registro(json);
   const xdr = texto(datos.xdr);
-  if (!xdr) throw new ErrorFirmaCliente("Preparation did not return the XDR.");
+  if (!xdr) throw new ErrorFirmaCliente("We couldn't prepare that step. Try again.");
   const monto = typeof datos.monto === "number" && Number.isFinite(datos.monto) ? datos.monto : null;
   return { xdr, contrato: texto(datos.contrato), monto };
 }
@@ -217,7 +217,7 @@ function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
   if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
   if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado);
   if (aviso) return new ErrorFirmaCliente(aviso, estado);
-  if (estado === 403) return new ErrorFirmaCliente("Only the organizer prepares the payment.", 403);
+  if (estado === 403) return new ErrorFirmaCliente("Only the organizer can lock the budget and pay.", 403);
   return new ErrorFirmaCliente(AVISO_FIRMA, estado);
 }
 

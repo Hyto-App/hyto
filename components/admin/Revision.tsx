@@ -13,6 +13,7 @@ import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, vistaAdmin 
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import {
   AVISO_FIRMA,
+  AVISO_REINGRESO,
   ErrorFirmaCliente,
   firmarPasos,
   mensajeFirmaVisible,
@@ -20,16 +21,17 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { frasePaso, mensajeClaro, pasosDePago, TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
 const PASO: Record<AccionCliente, string> = {
-  desplegar: "Deploying…",
-  fondear: "Funding…",
-  marcar: "Marking…",
-  aprobar: "Approving…",
-  liberar: "Releasing…",
+  desplegar: TEXTO.settingUp,
+  fondear: TEXTO.locking,
+  marcar: TEXTO.checking,
+  aprobar: TEXTO.approving,
+  liberar: TEXTO.paying,
 };
 
 export function Revision({
@@ -129,11 +131,11 @@ export function Revision({
   async function correr(acciones: readonly AccionCliente[]) {
     if (paso || !tarea) return;
     if (!wallet) {
-      setAviso("This session has no Stellar wallet. Sign in again to sign.");
+      setAviso(AVISO_REINGRESO);
       return;
     }
     if (acciones[0] !== "desplegar" && !contrato) {
-      setAviso("This task has no escrow yet. Deploy and fund it first.");
+      setAviso("Lock the budget before you pay.");
       return;
     }
     setAviso(null);
@@ -162,11 +164,11 @@ export function Revision({
       }
       setReanudar(null);
       setHashPaso(pago.hash);
-      if (pago.aviso) setAviso(pago.aviso);
+      if (pago.aviso) setAviso(mensajeClaro(pago.aviso));
     } catch (error) {
       if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
       if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
-      setAviso(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA));
+      setAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)));
     } finally {
       setPaso(null);
       if (!pago && contratoParcial) setContrato(contratoParcial);
@@ -227,8 +229,9 @@ export function Revision({
               <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo)}</p>
             </div>
           ) : (
-            <div className="flex aspect-[4/3] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-              No evidence
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-8 text-center text-sm text-[var(--suave)]">
+              <p>No photo yet</p>
+              <p>Waiting for the volunteer to send one.</p>
             </div>
           )}
         </figure>
@@ -240,6 +243,24 @@ export function Revision({
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
           {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
           <p className="mt-6 text-2xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
+          {real ? (
+            <ol className="mt-6 space-y-2 text-sm" aria-label="Payment steps">
+              {pasosDePago({
+                tieneVeredicto: Boolean(tarea.veredicto),
+                revisionFallida: tarea.origen === "error",
+                presupuestoListo: Boolean(contrato) && fondeado === true,
+                pagado: tarea.estado === "pagado",
+              }).map((item, indice) => (
+                <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
+                  {item.estado === "done" ? "Done" : item.estado === "now" ? "Now" : "Later"} · {indice + 1}. {item.nombre}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-6 text-sm leading-6 text-[var(--suave)]">
+              Sample review. The paid mark here stays on this device.
+            </p>
+          )}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} /> : <PastillaEstado estado={tarea.estado} />}
@@ -294,26 +315,41 @@ export function Revision({
           {botones.desplegar || botones.fondear || botones.pagar ? (
             <div className="mt-8 space-y-3">
               {botones.desplegar ? (
-                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
-                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : "Deploy and fund"}
-                </BotonPrincipal>
+                <>
+                  <p className="text-sm leading-6 text-[var(--suave)]">
+                    This sets aside {montoDeTarea(tarea)} for this task. You'll confirm it once.
+                  </p>
+                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["desplegar", "fondear"])}>
+                    {paso === "desplegar" || paso === "fondear" ? PASO[paso] : TEXTO.lockBudget}
+                  </BotonPrincipal>
+                </>
               ) : null}
               {botones.fondear ? (
-                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(["fondear"])}>
-                  {paso === "fondear" ? PASO.fondear : "Fund"}
-                </BotonPrincipal>
+                <>
+                  <p className="text-sm leading-6 text-[var(--suave)]">
+                    The budget is set up. One more confirmation locks the money.
+                  </p>
+                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["fondear"])}>
+                    {paso === "fondear" ? PASO.fondear : TEXTO.finishLocking}
+                  </BotonPrincipal>
+                </>
               ) : null}
               {botones.pagar ? (
-                <BotonPrincipal type="button" disabled={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
-                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : "Approve and pay"}
-                </BotonPrincipal>
+                <>
+                  {fondeado === true ? (
+                    <p className="text-sm leading-6 text-[var(--suave)]">Budget secured. Approving sends {montoDeTarea(tarea)}.</p>
+                  ) : null}
+                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
+                    {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : TEXTO.approvePay}
+                  </BotonPrincipal>
+                </>
               ) : null}
             </div>
           ) : null}
 
           {paso ? (
-            <p className="mt-4 text-sm text-[var(--suave)]" aria-live="polite">
-              {PASO[paso]}
+            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
+              {frasePaso(paso)}
             </p>
           ) : null}
 
@@ -321,8 +357,16 @@ export function Revision({
 
           {transaccion ? (
             <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">
-              View transaction
+              {TEXTO.viewChain}
             </a>
+          ) : null}
+
+          {real && (wallet || contrato) ? (
+            <details className="mt-6 text-sm text-[var(--suave)]">
+              <summary className="cursor-pointer">Technical details</summary>
+              {wallet ? <p className="mt-2 font-mono">Your account {acortarDireccion(wallet)}</p> : null}
+              {contrato ? <p className="mt-2 font-mono">Budget reference {acortarDireccion(contrato)}</p> : null}
+            </details>
           ) : null}
 
           {tarea.estado === "pagado" ? (
@@ -330,11 +374,13 @@ export function Revision({
               <p className="text-lg font-medium">Paid {formatearMonto(detalleMonto(tarea).cifra)}</p>
               {pago ? (
                 <a href={pago} className="inline-block text-sm font-semibold underline-offset-4 hover:underline">
-                  View payment
+                  {TEXTO.viewChain}
                 </a>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {real ? "The payment is recorded. The link appears when there is a hash." : "Example view, until the payment is connected."}
+                  {real
+                    ? "Paid. The blockchain link shows up once the network confirms it."
+                    : "This is a sample. A live payment adds a link to the blockchain."}
                 </p>
               )}
               {credencial ? (

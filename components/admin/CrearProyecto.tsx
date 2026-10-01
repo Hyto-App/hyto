@@ -73,7 +73,9 @@ export function CrearProyecto() {
     <main className="max-w-xl">
       <header className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Create project</h1>
-        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Name, tasks, and the amount for each one.</p>
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+          Name each task and its amount in US dollars. Work is a fixed amount. A reimbursement is a cap. Saving does not move money. You lock each budget from the task review.
+        </p>
       </header>
 
       <label className="block text-sm text-[var(--suave)]" htmlFor="nombre-proyecto">
@@ -146,13 +148,13 @@ export function CrearProyecto() {
 
       <div className="mt-8">
         <BotonPrincipal type="button" onClick={fondear} disabled={modoDemo}>
-          Fund
+          Save project
         </BotonPrincipal>
       </div>
       {modoDemo || aviso ? (
         <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{modoDemo ? AVISO_PROYECTO_DEMO : aviso}</p>
       ) : null}
-      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Example view, until the payment is connected.</p>
+      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">This draft stays on this device until the project is connected.</p>
     </main>
   );
 }

@@ -16,6 +16,7 @@ import {
   textoEspera,
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
+import { mensajeClaro } from "@/lib/ui/claro";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 
@@ -210,7 +211,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       });
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
       if (!respuesta.ok) {
-        setAviso(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in.");
+        setAviso(mensajeClaro(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in."));
         return;
       }
       const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
@@ -289,7 +290,11 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   if (direccion && !pedirIngreso) {
     return (
       <div className="flex flex-col items-end gap-2">
-        <p className="font-mono text-sm text-[var(--suave)]">{acortarDireccion(direccion)}</p>
+        <p className="text-sm text-[var(--suave)]">Signed in</p>
+        <details className="text-right text-sm text-[var(--suave)]">
+          <summary className="cursor-pointer">Account details</summary>
+          <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+        </details>
       </div>
     );
   }
@@ -310,6 +315,9 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       ) : null}
       {fase === "correo" ? (
         <>
+          <p className="max-w-xs text-right text-sm leading-6 text-[var(--suave)]">
+            We'll email you a code. You don't need a separate app.
+          </p>
           <label className="sr-only" htmlFor="correo-entrar">
             Email
           </label>

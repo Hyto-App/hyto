@@ -41,7 +41,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     });
     const alerta = document.querySelector("[role=alert]");
     assert.equal(alerta?.textContent, MENSAJE);
-    assert.match(texto(), /error/);
+    assert.match(texto(), /Review failed/);
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
     await pulsar("Retry review");
     await act(async () => {
@@ -51,7 +51,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
       llamadas.some((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/stand"),
       true,
     );
-    assert.match(texto(), /AI/);
+    assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
   } finally {
@@ -65,7 +65,7 @@ test("el demo muestra el guion como simulado y no ofrece reintentar", async () =
   await act(async () => {
     await new Promise((resolver) => setTimeout(resolver, 20));
   });
-  assert.match(texto(), /simulated/);
+  assert.match(texto(), /Sample recommendation/);
   assert.match(texto(), /Table set up, ZEEK banner facing forward, and the room is visible/);
   assert.equal(texto().includes("Retry review"), false);
   assert.equal(document.querySelector("[role=alert]"), null);
@@ -99,12 +99,12 @@ test("el informe muestra el origen y el error", async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
     assert.equal(document.querySelector("[role=alert]")?.textContent, "The AI did not respond in time");
-    assert.match(texto(), /error/);
+    assert.match(texto(), /Review failed/);
     await pulsar("Retry review");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /AI/);
+    assert.match(texto(), /AI recommendation/);
     assert.match(texto(), /Listo de verdad/);
     assert.equal(document.querySelector("[role=alert]"), null);
   } finally {
@@ -191,14 +191,14 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
 
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Deploy and fund"));
+    await esperar(() => rotulo("Lock budget"));
     const lecturasAntes = lecturas;
-    await pulsar("Deploy and fund");
-    await esperar(() => rotulo("Fund") && !rotulo("Deploy and fund") && texto().includes("Could not submit the payment."));
+    await pulsar("Lock budget");
+    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
-    await pulsar("Fund");
+    await pulsar("Finish locking");
     await esperar(() => firmas.filter((item) => item.url === "/api/firma/enviar" && item.body.accion === "fondear").length === 2);
     const reintento = firmas.filter((item) => item.url === "/api/firma" && item.body.accion === "fondear").at(-1);
     assert.equal(reintento?.body.contrato, contrato);

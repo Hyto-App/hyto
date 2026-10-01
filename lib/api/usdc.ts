@@ -6,12 +6,12 @@ import { cuentaTieneUsdc } from "@/lib/integrante/usdc";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { json } from "./json";
 
-export const AVISO_USDC_DEMO = "Demo mode cannot prepare USDC.";
-export const AVISO_USDC_SIN_WALLET = "This session has no Stellar wallet.";
-export const AVISO_USDC_SIN_CUENTA = "This wallet is not on Stellar testnet yet.";
-export const AVISO_USDC_XDR = "The transaction is not a testnet USDC trustline for this wallet.";
-export const AVISO_USDC_ENVIO = "Could not submit the USDC trustline.";
-export const AVISO_USDC_LECTURA = "Could not read the Stellar account.";
+export const AVISO_USDC_DEMO = "Demo mode can't set up payouts. Sign in with your email to continue.";
+export const AVISO_USDC_SIN_WALLET = "Sign in again before setting up payouts.";
+export const AVISO_USDC_SIN_CUENTA = "This account isn't on the test network yet. Sign in again and retry.";
+export const AVISO_USDC_XDR = "That confirmation doesn't match this account. Try again.";
+export const AVISO_USDC_ENVIO = "We couldn't finish setting up payouts. Try again.";
+export const AVISO_USDC_LECTURA = "We couldn't check the payout account. Try again.";
 
 type CuentaHorizon = {
   sequence?: unknown;

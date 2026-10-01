@@ -74,7 +74,7 @@ export function botonesRevision(
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
-    pagar: !bloqueado && tarea.estado === "en revisión",
+    pagar: !bloqueado && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
     aprobarLocal: false,
     pedirOtra: false,
   };

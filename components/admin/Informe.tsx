@@ -8,6 +8,7 @@ import { reintentarRevision } from "@/lib/admin/remoto";
 import { bandejaDe, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, porPersona, resumir } from "@/lib/admin/vista";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
+import { TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 
 export function Informe() {
@@ -51,6 +52,9 @@ export function Informe() {
           <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Report</h1>
           <p className="mt-2 text-lg">{vista.nombre}</p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--suave)]">
+            Budget compared with what has been paid. Each task is one payment.
+          </p>
         </div>
         <button
           type="button"
@@ -70,6 +74,7 @@ export function Informe() {
 
       <section className="mt-10 space-y-8">
         <h2 className="text-lg font-semibold tracking-tight">Detail</h2>
+        {vista.personas.length === 0 ? <p className="text-[var(--suave)]">No tasks yet.</p> : null}
         {vista.personas.map((persona) => (
           <article key={persona.miembroId || persona.miembro}>
             <h3 className="text-base font-semibold">{textoVisible(persona.miembro)}</h3>
@@ -120,7 +125,7 @@ export function Informe() {
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">
                         {pago ? (
                           <a href={pago} className="font-semibold underline-offset-4 hover:underline">
-                            View payment
+                            {TEXTO.viewChain}
                           </a>
                         ) : null}
                         {credencial ? (
@@ -140,7 +145,7 @@ export function Informe() {
 
       {vista.ejemplo ? (
         <p className="mt-8 text-sm leading-6 text-[var(--suave)] print:hidden">
-          Example view, until the routes respond. View payment appears when the payment already has a link.
+          Sample report, until live tasks load. A paid task can include a blockchain link.
         </p>
       ) : null}
     </main>
