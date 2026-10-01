@@ -4,46 +4,47 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Entrar } from "@/components/admin/Entrar";
-import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { Salir } from "@/components/sesion/Salir";
+import { Icono, Logo, Tema } from "@/components/ui/Marca";
 
 const ENLACES = [
-  { href: "/", etiqueta: "Inbox" },
-  { href: "/informe", etiqueta: "Report" },
-  { href: "/proyectos/nuevo", etiqueta: "Create project" },
-];
+  { href: "/", etiqueta: "Inbox", icono: "inbox" },
+  { href: "/informe", etiqueta: "Report", icono: "report" },
+  { href: "/proyectos/nuevo", etiqueta: "Projects", icono: "projects" },
+  { href: "/mis-tareas", etiqueta: "My tasks", icono: "tasks" },
+] as const;
 
 export function Marco({ children, demoHabilitado = false }: { children: ReactNode; demoHabilitado?: boolean }) {
   const ruta = usePathname();
 
   return (
-    <>
-      <header className="mb-10 flex flex-wrap items-start justify-between gap-6 print:hidden">
-        <div>
-          <p className="text-sm text-[var(--suave)]">
-            Hyto
-            <InsigniaDemo />
-          </p>
-          <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            {ENLACES.map((enlace) => {
-              const activo = enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
-              return (
-                <Link key={enlace.href} href={enlace.href} className={activo ? "font-semibold" : "text-[var(--suave)]"}>
-                  {enlace.etiqueta}
-                </Link>
-              );
-            })}
-            <Link href="/mis-tareas" className="text-[var(--suave)]">
-              My tasks
-            </Link>
-          </nav>
+    <div className="hyto-shell">
+      <aside className="hyto-side print:hidden">
+        <div className="hyto-brand">
+          <Logo />
+          <Tema />
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <nav className="hyto-nav" aria-label="Main">
+          {ENLACES.map((enlace) => {
+            const activo = enlace.href === "/" ? ruta === "/" : ruta.startsWith(enlace.href);
+            return (
+              <Link
+                key={enlace.href}
+                href={enlace.href}
+                className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}
+              >
+                <Icono nombre={enlace.icono} />
+                <span>{enlace.etiqueta}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="hyto-foot">
           <Entrar demoHabilitado={demoHabilitado} />
           <Salir />
         </div>
-      </header>
-      {children}
-    </>
+      </aside>
+      <div className="hyto-main">{children}</div>
+    </div>
   );
 }

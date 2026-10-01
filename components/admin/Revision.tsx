@@ -229,12 +229,27 @@ export function Revision({
   }
 
   if (tarea === undefined) {
-    return <p className="text-[var(--suave)]">Loading…</p>;
+    return (
+      <main className="hyto-page" aria-busy="true">
+        <p className="text-[var(--suave)]">Loading…</p>
+        <div className="mt-4 grid gap-3">
+          {[0, 1].map((item) => (
+            <div key={item} className="hyto-skel">
+              <i />
+              <span>
+                <i />
+                <i />
+              </span>
+            </div>
+          ))}
+        </div>
+      </main>
+    );
   }
 
   if (!tarea) {
     return (
-      <main>
+      <main className="hyto-page">
         <p className="text-lg">We couldn't find that task.</p>
         <Link href="/" className="mt-6 inline-block text-sm font-medium">
           Back to the inbox
@@ -260,37 +275,53 @@ export function Revision({
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
 
+  const falloPago = Boolean(aviso) && /try again|didn't go through|cancelled|couldn't|isn't|not ready|sign in again/i.test(aviso ?? "");
+
   return (
-    <main>
-      <Link href="/" className="text-sm text-[var(--suave)] print:hidden">
-        Inbox
-      </Link>
-      <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-        <figure className="overflow-hidden rounded-3xl bg-[var(--papel)]">
+    <main className="hyto-page">
+      <p className="hyto-crumb print:hidden">
+        <Link href="/">Inbox</Link>
+        <span aria-hidden="true">/</span>
+        <span>Evidence review</span>
+      </p>
+      <header className="hyto-page-head">
+        <div>
+          <h1 className="hyto-title">{textoVisible(tarea.titulo)}</h1>
+          <p className="hyto-sub">
+            {etiquetaTipo(tarea.tipo)} · {textoVisible(tarea.miembro)}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="hyto-amount text-2xl">{montoDeTarea(tarea)}</p>
+          <p className="text-sm text-[var(--suave)]">Reward</p>
+        </div>
+      </header>
+      <div className="hyto-review">
+        <figure className="hyto-photo">
           {foto ? (
-            <img src={foto} alt="" className="aspect-[4/3] w-full object-cover" />
+            <img src={foto} alt="" />
           ) : tarea.frase ? (
-            <div className="flex aspect-[4/3] flex-col justify-end bg-[var(--fondo)] p-8">
+            <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
               <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo)}</p>
             </div>
           ) : (
-            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-8 text-center text-sm text-[var(--suave)]">
+            <div className="flex aspect-[4/5] flex-col items-center justify-center gap-2 px-8 text-center text-sm text-[var(--suave)]">
               <p>No photo yet</p>
               <p>Waiting for the volunteer to send one.</p>
             </div>
           )}
         </figure>
 
-        <section className="rounded-3xl bg-[var(--papel)] p-6 sm:p-8">
-          <p className="text-sm text-[var(--suave)]">
-            {etiquetaTipo(tarea.tipo)} · {textoVisible(tarea.miembro)}
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h1>
-          {tarea.condicion ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
-          <p className="mt-6 text-2xl font-semibold tracking-tight">{montoDeTarea(tarea)}</p>
+        <section className="hyto-panel">
+          {tarea.condicion ? (
+            <>
+              <p className="text-sm font-medium">Photo must show</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p>
+            </>
+          ) : null}
           {real ? (
-            <ol className="mt-6 space-y-2 text-sm" aria-label="Payment steps">
+            <ol className="mt-5 space-y-2 text-sm" aria-label="Payment steps">
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
@@ -303,17 +334,18 @@ export function Revision({
               ))}
             </ol>
           ) : (
-            <p className="mt-6 text-sm leading-6 text-[var(--suave)]">
-              Sample review. The paid mark here stays on this device.
-            </p>
+            <p className="mt-5 text-sm leading-6 text-[var(--suave)]">Sample review. The paid mark here stays on this device.</p>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} /> : <PastillaEstado estado={tarea.estado} />}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
+          {tarea.origen === "error" ? (
+            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Laya is unavailable. No AI score for this photo.</p>
+          ) : null}
           {tarea.origen === "error" && tarea.frase ? (
-            <p role="alert" className="mt-4 text-base leading-7">
+            <p role="alert" className="mt-2 text-base leading-7">
               {textoVisible(tarea.frase)}
             </p>
           ) : tarea.frase ? (
@@ -329,11 +361,11 @@ export function Revision({
             <dl className="mt-6 grid grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm text-[var(--suave)]">Amount on the receipt</dt>
-                <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearMonto(tarea.montoRevisado)}</dd>
+                <dd className="hyto-amount mt-1 text-xl">{formatearMonto(tarea.montoRevisado)}</dd>
               </div>
               <div>
                 <dt className="text-sm text-[var(--suave)]">Date</dt>
-                <dd className="mt-1 text-xl font-semibold tracking-tight">{formatearFecha(tarea.fecha)}</dd>
+                <dd className="hyto-amount mt-1 text-xl">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
           ) : null}
@@ -357,7 +389,7 @@ export function Revision({
                 aria-describedby="monto-confirmado-ayuda"
                 value={borrador}
                 onChange={(evento) => setBorrador(evento.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl bg-[var(--fondo)] px-4 text-base outline-none"
+                className="hyto-input mt-2"
               />
               <p id="monto-confirmado-ayuda" className="mt-2 text-sm leading-6 text-[var(--suave)]">
                 Up to {formatearMonto(tarea.tope ?? tarea.monto)}. Confirm this amount before deploying.
@@ -366,7 +398,7 @@ export function Revision({
                 type="button"
                 disabled={confirmando || coincide}
                 onClick={() => void confirmar()}
-                className="mt-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+                className="hyto-btn-line mt-4 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {coincide ? "Amount confirmed" : confirmando ? "Confirming…" : "Confirm amount"}
               </button>
@@ -379,64 +411,67 @@ export function Revision({
           ) : null}
 
           {real ? (
-            <div className="mt-8">
+            <div className="mt-6">
               <PrepararUsdc />
             </div>
           ) : null}
 
-          {botones.aprobarLocal ? (
-            <div className="mt-8">
+          {falloPago && aviso ? (
+            <div className="hyto-callout mt-5">
+              <p className="font-semibold">Payment failed</p>
+              <p className="mt-1 text-sm">No USDC left the escrow.</p>
+            </div>
+          ) : null}
+
+          <div className="hyto-actions">
+            {botones.aprobarLocal ? (
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
                 Approve
               </BotonPrincipal>
-            </div>
-          ) : null}
+            ) : null}
 
-          {botones.pedirOtra ? (
-            <button type="button" onClick={() => decidir("pendiente")} className="mt-4 text-sm text-[var(--suave)]">
-              Ask for another photo
-            </button>
-          ) : null}
+            {botones.pedirOtra ? (
+              <button type="button" onClick={() => decidir("pendiente")} className="hyto-btn-line">
+                Ask for another photo
+              </button>
+            ) : null}
 
-          {puedeDesplegar || esperaConfirmacion || botones.fondear || botones.pagar ? (
-            <div className="mt-8 space-y-3">
-              {puedeDesplegar || esperaConfirmacion ? (
-                <>
-                  <p className="text-sm leading-6 text-[var(--suave)]">
-                    This sets aside {montoDeTarea(tarea)} for this task. You'll confirm it once.
-                  </p>
-                  <BotonPrincipal
-                    type="button"
-                    disabled={ocupado || !puedeDesplegar}
-                    aria-busy={ocupado}
-                    onClick={() => void correr(["desplegar", "fondear"])}
-                  >
-                    {paso === "desplegar" || paso === "fondear" ? PASO[paso] : TEXTO.lockBudget}
-                  </BotonPrincipal>
-                </>
-              ) : null}
-              {botones.fondear ? (
-                <>
-                  <p className="text-sm leading-6 text-[var(--suave)]">
-                    The budget is set up. One more confirmation locks the money.
-                  </p>
-                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["fondear"])}>
-                    {paso === "fondear" ? PASO.fondear : TEXTO.finishLocking}
-                  </BotonPrincipal>
-                </>
-              ) : null}
-              {botones.pagar ? (
-                <>
-                  {fondeado === true ? (
-                    <p className="text-sm leading-6 text-[var(--suave)]">Budget secured. Approving sends {montoDeTarea(tarea)}.</p>
-                  ) : null}
-                  <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
-                    {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : TEXTO.approvePay}
-                  </BotonPrincipal>
-                </>
-              ) : null}
-            </div>
-          ) : null}
+            {puedeDesplegar || esperaConfirmacion ? (
+              <>
+                <p className="text-sm leading-6 text-[var(--suave)]">
+                  This sets aside {montoDeTarea(tarea)} for this task. You'll confirm it once.
+                </p>
+                <BotonPrincipal
+                  type="button"
+                  disabled={ocupado || !puedeDesplegar}
+                  aria-busy={ocupado}
+                  onClick={() => void correr(["desplegar", "fondear"])}
+                >
+                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : TEXTO.lockBudget}
+                </BotonPrincipal>
+              </>
+            ) : null}
+            {botones.fondear ? (
+              <>
+                <p className="text-sm leading-6 text-[var(--suave)]">The budget is set up. One more confirmation locks the money.</p>
+                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["fondear"])}>
+                  {paso === "fondear" ? PASO.fondear : TEXTO.finishLocking}
+                </BotonPrincipal>
+              </>
+            ) : null}
+            {botones.pagar ? (
+              <>
+                {fondeado === true ? (
+                  <p className="text-sm leading-6 text-[var(--suave)]">Budget secured. The payment sends {montoDeTarea(tarea)}.</p>
+                ) : null}
+                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
+                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : TEXTO.approvePay}
+                </BotonPrincipal>
+              </>
+            ) : null}
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Laya only suggests. The payment of {montoDeTarea(tarea)} comes from escrow.</p>
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">

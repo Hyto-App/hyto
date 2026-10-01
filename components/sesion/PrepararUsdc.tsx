@@ -8,8 +8,7 @@ import { mensajeClaro, TEXTO } from "@/lib/ui/claro";
 
 type Estado = "comprobando" | "listo" | "pendiente" | "preparando" | "hecho" | "error";
 
-const CLASE =
-  "inline-flex h-10 items-center justify-center rounded-full bg-[var(--acento)] px-4 text-sm font-semibold text-[var(--sobre-acento)] disabled:cursor-not-allowed disabled:opacity-70";
+const CLASE = "hyto-btn mt-3 w-auto px-5";
 
 type Props = {
   consultar?: () => Promise<boolean>;

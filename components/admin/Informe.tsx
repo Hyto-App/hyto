@@ -10,6 +10,7 @@ import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
 import { TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { iniciales } from "@/components/ui/Marca";
 
 export function Informe() {
   const cargada = useVistaAdmin();
@@ -45,21 +46,23 @@ export function Informe() {
     return <p className="text-[var(--suave)]">Loading…</p>;
   }
 
+  const presupuesto = Number(vista.resumen.presupuesto) || 0;
+  const pagado = Number(vista.resumen.pagado) || 0;
+  const ancho = presupuesto > 0 ? Math.min(100, (pagado / presupuesto) * 100) : 0;
+
   return (
-    <main>
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <main className="hyto-page">
+      <header className="hyto-page-head">
         <div>
           <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Report</h1>
+          <h1 className="hyto-title mt-2">Report</h1>
           <p className="mt-2 text-lg">{vista.nombre}</p>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--suave)]">
-            Budget compared with what has been paid. Each task is one payment.
-          </p>
+          <p className="hyto-sub">Budget compared with what has been paid. Each task is one payment.</p>
         </div>
         <button
           type="button"
           onClick={() => window.print()}
-          className="flex h-14 items-center justify-center rounded-full bg-[var(--acento)] px-6 text-base font-semibold text-[var(--sobre-acento)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tinta)] print:hidden"
+          className="hyto-btn is-inline px-6 print:hidden"
         >
           Print
         </button>
@@ -70,6 +73,14 @@ export function Informe() {
         <div className="mt-4">
           <Numeros resumen={vista.resumen} />
         </div>
+        <div className="mt-4">
+          <div className="hyto-bar" aria-hidden="true">
+            <span style={{ width: `${ancho}%` }} />
+          </div>
+          <p className="mt-2 text-sm text-[var(--suave)]">
+            Paid {formatearMonto(vista.resumen.pagado)} · Pending {formatearMonto(vista.resumen.pendiente)} · {vista.personas.length} volunteer{vista.personas.length === 1 ? "" : "s"}
+          </p>
+        </div>
       </section>
 
       <section className="mt-10 space-y-8">
@@ -77,7 +88,10 @@ export function Informe() {
         {vista.personas.length === 0 ? <p className="text-[var(--suave)]">No tasks yet.</p> : null}
         {vista.personas.map((persona) => (
           <article key={persona.miembroId || persona.miembro}>
-            <h3 className="text-base font-semibold">{textoVisible(persona.miembro)}</h3>
+            <div className="flex items-center gap-3">
+              <span className="hyto-avatar">{iniciales(textoVisible(persona.miembro))}</span>
+              <h3 className="text-base font-semibold">{textoVisible(persona.miembro)}</h3>
+            </div>
             <div className="mt-3 space-y-3">
               {persona.tareas.map((tarea) => {
                 const pago = enlacePago(tarea.hashPago);
@@ -85,8 +99,9 @@ export function Informe() {
                 const detalle = detalleMonto(tarea);
                 const cifra = detalle.hasta ? `Up to ${formatearMonto(detalle.cifra)}` : formatearMonto(detalle.cifra);
                 const origen = etiquetaOrigen(tarea.origen);
+                const lleno = tarea.estado === "pagado" ? 100 : 0;
                 return (
-                  <div key={tarea.id} className="rounded-3xl bg-[var(--papel)] p-6">
+                  <div key={tarea.id} className="hyto-card p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
@@ -94,7 +109,10 @@ export function Informe() {
                       </div>
                       <PastillaEstado estado={tarea.estado} />
                     </div>
-                    <p className="mt-4 text-xl font-semibold tracking-tight">{cifra}</p>
+                    <p className="hyto-amount mt-4 text-xl">{cifra}</p>
+                    <div className="hyto-bar mt-3" aria-hidden="true">
+                      <span style={{ width: `${lleno}%` }} />
+                    </div>
                     {detalle.tope && detalle.tope !== detalle.cifra ? (
                       <p className="mt-1 text-sm text-[var(--suave)]">Limit {formatearMonto(detalle.tope)}</p>
                     ) : null}
