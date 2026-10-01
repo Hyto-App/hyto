@@ -156,8 +156,9 @@ test("la revisión manda a Laya el tipo y la condición de la tarea", async () =
   const tarea = tareasSemilla().find((item) => item.id === "comida");
   assert.ok(tarea);
   assert.equal(tarea.tipo, "reembolso");
-  let cuerpo: { model?: string; state?: string; questions?: { noul?: { instructions?: string }; score?: { criteria?: unknown } } } | null =
-    null;
+  const capturado: {
+    cuerpo: { model?: string; state?: string; questions?: { noul?: { instructions?: string }; score?: { criteria?: unknown } } } | null;
+  } = { cuerpo: null };
   let paso = 0;
   const resultado = await revisar(tarea, FOTO, {
     claveGroq: "clave",
@@ -181,13 +182,14 @@ test("la revisión manda a Laya el tipo y la condición de la tarea", async () =
         });
       }
       assert.match(String(input), /\/v1\/systemone$/);
-      cuerpo = JSON.parse(String(init?.body)) as typeof cuerpo;
+      capturado.cuerpo = JSON.parse(String(init?.body)) as NonNullable<typeof capturado.cuerpo>;
       return Response.json({ choice: "factura", noul: true, score: "cumplió" });
     },
   });
   assert.equal(resultado.origen, "scout");
   assert.equal(resultado.veredicto, "cumplió");
-  assert.ok(cuerpo);
+  const cuerpo = capturado.cuerpo;
+  if (!cuerpo) assert.fail("Laya did not receive a body");
   assert.equal(cuerpo.model, "multilingual");
   assert.match(cuerpo.state ?? "", /Condition: Photo of the meal receipt/);
   assert.match(cuerpo.questions?.noul?.instructions ?? "", /receipt or an invoice/);
