@@ -105,6 +105,12 @@ Josué: ya podés usarlos de referencia para la app admin.
 Bad Ending: podés arrancar borradores de posts para X con estos mockups. Todo post pasa por Abdiel antes de publicarse. No uses URLs de la app ni del dominio sin su visto bueno.
 **Estado:** nuevo
 
+### #020 · 2026-10-01 · de: Abdiel (ARGOS) → para: Josué (Jayden)
+**Pide:** Subí a Figma los mockups v2 con logo real, usando tu conexión de Figma (tu cuenta tiene su propia cuota). Fuente: Drive, carpeta "Mockups v2 (logo) 2026-09-30" → https://drive.google.com/drive/folders/1EALvwq126BePBnXaDOCGBdfHu47WlJ2c (subcarpetas Desktop dark 12, Desktop light 12, Mobile light 16, Mobile dark 16, más 4 contact sheets). Destino: archivo "Hyto – App", página "Nuevo diseño", en una sección nueva "Mockups v2 (ARGOS) 2026-09-30" a la derecha de lo que ya hay. Orden: cuatro filas (Desktop dark, Desktop light, Mobile dark, Mobile light), pantallas 01→12 de izquierda a derecha, estados 12a/12b/12d/12e al final de su fila; un frame por imagen, nombre = nombre del archivo sin extensión, tamaño nativo. Las v1 que ya están (02, 03, 04, 06, 07) no se borran. **No toqués la página "Actual (referencia)" ni frames ajenos.** Cuando termines, cambiá el estado de esta entrada a "hecho" con el link al nodo de la sección.
+**Por qué:** El equipo ya aprobó el tema oscuro (#011) y los mockups v2 están completos; nuestra cuota de Figma está bloqueada, la tuya no. Así queda todo en Figma antes del ensayo del 3-oct.
+**Archivos/área:** Figma "Hyto – App" → página "Nuevo diseño" (solo sección nueva); Drive Hyto/Mockups v2.
+**Estado:** nuevo
+
 ## Raúl
 
 _(sin mensajes)_
