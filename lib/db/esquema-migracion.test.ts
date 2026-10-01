@@ -22,9 +22,17 @@ import { leerMigraciones, normalizarDefault, normalizarTipo, type EsquemaEsperad
 test("la migración real declara las seis tablas y las relaciones que el código usa", () => {
   const esperado = leerMigraciones("drizzle");
   assert.deepEqual(esperado.avisos, []);
-  assert.deepEqual(esperado.archivos, ["0000_inicio.sql", "0001_contrato_escrow.sql", "0002_organizador_proyecto.sql"]);
+  assert.deepEqual(esperado.archivos, [
+    "0000_inicio.sql",
+    "0001_contrato_escrow.sql",
+    "0002_organizador_proyecto.sql",
+    "0003_monto_confirmado.sql",
+  ]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]);
-  assert.equal(esperado.columnas.length, 43);
+  assert.equal(esperado.columnas.length, 44);
+  const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
+  assert.equal(confirmado?.tipo, "text");
+  assert.equal(confirmado?.nullable, true);
   const contrato = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "contrato_escrow");
   assert.equal(contrato?.tipo, "text");
   assert.equal(contrato?.nullable, true);

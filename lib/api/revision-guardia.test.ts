@@ -15,6 +15,7 @@ test("un fallo no borra el monto y la fecha ya guardados", async () => {
     tareaId: "comida",
     blobId: "memoria/comida",
     monto: null,
+    montoConfirmado: null,
     fecha: null,
     creadaEn: "2026-09-28T00:00:00.000Z",
   });
@@ -22,10 +23,20 @@ test("un fallo no borra el monto y la fecha ya guardados", async () => {
   assert.equal((await almacen.leerEvidencia("ev"))?.monto, "12.40");
   assert.equal((await almacen.leerEvidencia("ev"))?.fecha, "2026-09-27");
 
+  await almacen.actualizarEvidencia("ev", { montoConfirmado: "12.40" });
+  await guardarRevision(almacen, "ev", "comida", desdeGuion("reembolso", "15"));
+  assert.equal((await almacen.leerEvidencia("ev"))?.montoConfirmado, "12.40");
+
+  await guardarRevision(almacen, "ev", "comida", { ...desdeGuion("reembolso", "15"), monto: "9.50" });
+  assert.equal((await almacen.leerEvidencia("ev"))?.monto, "9.50");
+  assert.equal((await almacen.leerEvidencia("ev"))?.montoConfirmado, null);
+  await almacen.actualizarEvidencia("ev", { montoConfirmado: "9.50" });
+
   await guardarRevision(almacen, "ev", "comida", desdeFallo({ code: "tiempo", mensaje: "La IA no respondió a tiempo" }));
   const evidencia = await almacen.leerEvidencia("ev");
-  assert.equal(evidencia?.monto, "12.40");
+  assert.equal(evidencia?.monto, "9.50");
   assert.equal(evidencia?.fecha, "2026-09-27");
+  assert.equal(evidencia?.montoConfirmado, "9.50");
   assert.equal((await almacen.veredictoDe("ev"))?.origen, "error");
   assert.equal((await almacen.veredictoDe("ev"))?.choice, "tiempo");
 });
@@ -166,6 +177,7 @@ async function evidenciaReal(
     tareaId,
     blobId,
     monto: "12.40",
+    montoConfirmado: null,
     fecha: "2026-09-27",
     creadaEn: "2026-09-29T00:00:00.000Z",
   });

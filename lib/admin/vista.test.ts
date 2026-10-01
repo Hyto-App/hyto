@@ -68,6 +68,16 @@ test("el reembolso del informe usa el monto revisado y cuadra con lo pagado", ()
   assert.equal(textoMonto(suma), vista.resumen.pagado);
 });
 
+test("un reembolso pagado usa el monto confirmado y deja la lectura del recibo", () => {
+  const comida = vistaAdmin(VACIA).tareas.find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const pagada = { ...comida, estado: "pagado" as const, montoConfirmado: "10", montoRevisado: "12.40" };
+  assert.equal(centavosGasto(pagada), 1000);
+  assert.equal(detalleMonto(pagada).cifra, "10");
+  assert.equal(comida.montoRevisado, "12.40");
+  assert.equal(comida.montoConfirmado, null);
+});
+
 test("los centavos salen del texto y aceptan una coma decimal", () => {
   assert.equal(centavos("19.99"), 1999);
   assert.equal(centavos("12,40"), 1240);

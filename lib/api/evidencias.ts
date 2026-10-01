@@ -118,6 +118,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       tareaId,
       blobId,
       monto: null,
+      montoConfirmado: null,
       fecha: null,
       creadaEn: new Date().toISOString(),
     };
@@ -169,7 +170,13 @@ export async function guardarRevision(
   };
   await almacen.guardarVeredicto(veredicto);
   if (resultado.origen === "error") return;
-  await almacen.actualizarEvidencia(evidenciaId, { monto: resultado.monto, fecha: resultado.fecha });
+  const previa = await almacen.leerEvidencia(evidenciaId);
+  const cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado">> = {
+    monto: resultado.monto,
+    fecha: resultado.fecha,
+  };
+  if (previa?.montoConfirmado && previa.monto !== resultado.monto) cambio.montoConfirmado = null;
+  await almacen.actualizarEvidencia(evidenciaId, cambio);
 }
 
 function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {

@@ -43,6 +43,7 @@ export const evidencias = pgTable("evidencias", {
   monto: text("monto"),
   fecha: text("fecha"),
   creadaEn: text("creada_en").notNull(),
+  montoConfirmado: text("monto_confirmado"),
 });
 
 export const veredictos = pgTable("veredictos", {

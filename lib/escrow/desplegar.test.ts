@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { pedidoDespliegue } from "./cuerpos";
-import type { TareaFila } from "../db/tipos";
+import type { EvidenciaFila, TareaFila } from "../db/tipos";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno, USDC_SAC_TESTNET } from "./desplegar";
 
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -95,6 +95,39 @@ test("el monto del escrow no pasa el tope de la tarea", () => {
   assert.equal(montoDeTarea(tarea, null), 15);
   assert.equal(montoDeTarea({ ...tarea, tope: null }, null), 20);
   assert.equal(montoDeTarea({ ...tarea, monto: "10" }, null), 10);
+});
+
+test("un reembolso usa el monto confirmado y no la lectura del recibo", () => {
+  const tarea = {
+    id: "comida",
+    proyectoId: "zeek",
+    titulo: "Meal",
+    tipo: "reembolso",
+    monto: "15",
+    tope: "15",
+    condicion: "",
+    miembroId: "",
+    walletCobro: "",
+    estado: "en revisión",
+    hashPago: null,
+    credencialUrl: null,
+    contratoEscrow: null,
+  } satisfies TareaFila;
+  const evidencia = {
+    id: "ev",
+    tareaId: "comida",
+    blobId: "blob",
+    monto: "20",
+    montoConfirmado: null,
+    fecha: "2026-09-27",
+    creadaEn: "2026-09-27T00:00:00.000Z",
+  } satisfies EvidenciaFila;
+  assert.equal(montoDeTarea(tarea, evidencia), null);
+  assert.equal(montoDeTarea(tarea, { ...evidencia, montoConfirmado: "12.40" }), 12.4);
+  assert.equal(montoDeTarea(tarea, { ...evidencia, monto: "8", montoConfirmado: "12.40" }), 12.4);
+  assert.equal(montoDeTarea(tarea, { ...evidencia, montoConfirmado: "15" }), 15);
+  assert.equal(montoDeTarea(tarea, { ...evidencia, montoConfirmado: "15.01" }), null);
+  assert.equal(montoDeTarea(tarea, null), null);
 });
 
 test("la plataforma no puede ser quien cobra", () => {

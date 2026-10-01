@@ -18,7 +18,10 @@ export type Almacen = {
   ): Promise<void>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
-  actualizarEvidencia(id: string, cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha">>): Promise<void>;
+  actualizarEvidencia(
+    id: string,
+    cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado">>,
+  ): Promise<void>;
   ultimaEvidencia(tareaId: string): Promise<EvidenciaFila | null>;
   guardarVeredicto(veredicto: VeredictoFila): Promise<void>;
   veredictoDe(evidenciaId: string): Promise<VeredictoFila | null>;

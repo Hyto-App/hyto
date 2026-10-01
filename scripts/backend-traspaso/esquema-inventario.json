@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "de0ebc9c6e854591cf9ab65f00fa336e7759b78a571e22edd576615b05a03ff3",
+      "sha256": "895a0eeb359b2ce16bf96848099716053067e48ea660483b8a1412ba203e2a4b",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -71,7 +71,8 @@
         "archivosQueLee": [
           "drizzle/0000_inicio.sql",
           "drizzle/0001_contrato_escrow.sql",
-          "drizzle/0002_organizador_proyecto.sql"
+          "drizzle/0002_organizador_proyecto.sql",
+          "drizzle/0003_monto_confirmado.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -118,6 +119,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "4e0609d33c83b95ac92e382a36961183ba8fab9974538a758a47a0ffc183bd62",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0003_monto_confirmado.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "b33d9037d17dc4cc530e8226c44990dfdf692641d430ea349886cc2c81f37f77",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -1208,6 +1221,39 @@
             "tipoTs": "string",
             "literales": null,
             "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "monto_confirmado",
+          "nombreEnDrizzle": "montoConfirmado",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "montoConfirmado",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }

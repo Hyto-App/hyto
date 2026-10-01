@@ -34,6 +34,7 @@ export function centavosPresupuesto(tarea: TareaAdmin): number {
 
 export function centavosGasto(tarea: TareaAdmin): number {
   if (tarea.estado !== "pagado") return 0;
+  if (tarea.tipo === "reembolso" && centavos(tarea.montoConfirmado) > 0) return centavos(tarea.montoConfirmado);
   if (tarea.tipo === "reembolso" && tarea.montoRevisado) return centavos(tarea.montoRevisado);
   return centavos(tarea.monto);
 }
@@ -45,9 +46,12 @@ export type DetalleMonto = {
 };
 
 export function detalleMonto(tarea: TareaAdmin): DetalleMonto {
-  if (tarea.tipo === "reembolso" && centavos(tarea.montoRevisado) > 0) {
+  const confirmado = tarea.tipo === "reembolso" && centavos(tarea.montoConfirmado) > 0 ? tarea.montoConfirmado : null;
+  const leido = tarea.tipo === "reembolso" && centavos(tarea.montoRevisado) > 0 ? tarea.montoRevisado : null;
+  const cifra = confirmado ?? leido;
+  if (cifra) {
     return {
-      cifra: textoMonto(centavos(tarea.montoRevisado)),
+      cifra: textoMonto(centavos(cifra)),
       hasta: false,
       tope: textoMonto(centavosPresupuesto(tarea)),
     };
@@ -141,6 +145,7 @@ function desdeCreada(tarea: TareaCreada, decision: "pagado" | "pendiente" | unde
       origen: null,
       codigo: null,
       montoRevisado: null,
+      montoConfirmado: null,
       fecha: null,
       hashPago: null,
       credencialUrl: null,

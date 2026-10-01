@@ -1,4 +1,5 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
+import { cifraConfirmada } from "@/lib/escrow/monto";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
@@ -11,16 +12,11 @@ export type DetalleRevision = {
 };
 
 export function montoDeVista(tarea: TareaAdmin): number | null {
-  const crudo = tarea.tipo === "reembolso" ? tarea.montoRevisado || tarea.tope || tarea.monto : tarea.monto;
-  const normal = normalizarMonto(crudo ?? "");
+  if (tarea.tipo === "reembolso") return cifraConfirmada(tarea.montoConfirmado, tarea.tope, tarea.monto);
+  const normal = normalizarMonto(tarea.monto);
   if (!normal) return null;
-  let monto = Number(normal);
+  const monto = Number(normal);
   if (!(monto > 0) || !Number.isFinite(monto)) return null;
-  if (tarea.tipo === "reembolso" && tarea.tope) {
-    const tope = normalizarMonto(tarea.tope);
-    const limite = tope ? Number(tope) : Number.NaN;
-    if (limite > 0 && monto > limite) monto = limite;
-  }
   return monto;
 }
 
@@ -70,7 +66,9 @@ export function botonesRevision(
   }
   const abierto = tarea.estado !== "pagado";
   const conContrato = Boolean(escrow.contrato);
-  const bloqueado = tarea.origen === "error" || (tarea.tipo === "reembolso" && !tarea.montoRevisado);
+  const bloqueado =
+    tarea.origen === "error" ||
+    (tarea.tipo === "reembolso" && (!tarea.montoRevisado || montoDeVista(tarea) === null));
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
@@ -249,6 +247,7 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     origen: origenDe(datos.origen),
     codigo: texto(datos.codigo),
     montoRevisado: texto(datos.montoRevisado),
+    montoConfirmado: texto(datos.montoConfirmado),
     fecha: texto(datos.fecha),
     hashPago: pago.hashPago,
     credencialUrl: pago.credencialUrl,
@@ -308,6 +307,31 @@ function texto(valor: unknown): string | null {
   if (typeof valor !== "string") return null;
   const limpio = valor.trim();
   return limpio ? limpio : null;
+}
+
+export async function confirmarMonto(
+  tareaId: string,
+  monto: string,
+  opciones: OpcionesRemoto = {},
+): Promise<{ montoConfirmado: string } | { aviso: string }> {
+  const id = tareaId.trim();
+  if (!id) return { aviso: "The task is missing." };
+  try {
+    const respuesta = await (opciones.fetch ?? fetch)(`/api/revision/${encodeURIComponent(id)}/monto`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ monto }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; montoConfirmado?: unknown } | null;
+    const aviso = typeof cuerpo?.aviso === "string" ? cuerpo.aviso : null;
+    const guardado = typeof cuerpo?.montoConfirmado === "string" ? cuerpo.montoConfirmado : null;
+    if (!respuesta.ok || !guardado) return { aviso: aviso ?? "The amount could not be confirmed." };
+    return { montoConfirmado: guardado };
+  } catch {
+    return { aviso: "The amount could not be confirmed." };
+  }
 }
 
 function pedir(fetchImpl: typeof fetch, url: string): Promise<Response> {

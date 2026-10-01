@@ -1,6 +1,7 @@
 import { Asset, Networks } from "@stellar/stellar-sdk";
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { EvidenciaFila, TareaFila } from "@/lib/db/tipos";
+import { cifraConfirmada } from "./monto";
 import { USDC } from "@/lib/integrante/identidades";
 import { esCuenta } from "./cuerpos";
 import type { CuentasDespliegue } from "./tipos";
@@ -29,8 +30,8 @@ export function rolesDeEntorno(env: Record<string, string | undefined> = process
 }
 
 export function montoDeTarea(tarea: TareaFila, evidencia: EvidenciaFila | null): number | null {
-  const crudo = tarea.tipo === "reembolso" ? evidencia?.monto || tarea.tope || tarea.monto : tarea.monto;
-  const normal = normalizarMonto(crudo ?? "");
+  if (tarea.tipo === "reembolso") return cifraConfirmada(evidencia?.montoConfirmado, tarea.tope, tarea.monto);
+  const normal = normalizarMonto(tarea.monto);
   if (!normal) return null;
   let monto = Number(normal);
   if (!(monto > 0) || !Number.isFinite(monto)) return null;

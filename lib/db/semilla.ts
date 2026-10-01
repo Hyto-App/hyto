@@ -83,6 +83,7 @@ function filasEvidencias(
         tareaId,
         blobId: `${MARCA_EJEMPLO}/${tareaId}`,
         monto: tarea.montoRevisado,
+        montoConfirmado: null,
         fecha: tarea.fecha,
         creadaEn: creadoEn,
       },
