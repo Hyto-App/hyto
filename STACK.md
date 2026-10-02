@@ -1,107 +1,67 @@
-# Stack de Hyto
+# Stack
 
-Cerrado el 27 de septiembre de 2026 para el demo de Stellar testnet. Entrega de la hackathon: 5 de octubre de 2026, 4:00 p.m. Meetup: 30 de septiembre de 2026, TEC Cartago.
+Current as of `main` at `2b9fad4` (2 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
-Una sola app. El dinero vive en un escrow multi-release de Trustless Work. La evidencia, la revisión con IA y el informe viven fuera de la cadena.
+One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Evidence, the AI review, and the report stay off-chain.
 
-El estado del código al 29 de septiembre de 2026 (`77a0431`) está en [AGENTS.md](AGENTS.md). La sección de abajo describe el repo al 28 de septiembre. Lo que cambió después: la revisión del organizador firma **Desplegar y fondear** y **Aprobar y pagar**; `tareas.contrato_escrow` guarda el contrato; `tareas.hash_pago` guarda el hash; un correo nuevo con Cavos entra como voluntario; `HYTO_DEMO_LOGIN=1` enciende el demo. Sigue sin un pago real en el repositorio. Sin `GROQ_API_KEY` la revisión usa el guion fijo. Sin `LAYA_URL` usa el stub. Hacer que esa IA funcione es el paso principal.
+## Layers
 
-## Qué hay en el repo al 28 de septiembre de 2026
-
-Instalado y en uso: Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4, `@cavos/kit` 0.2.5. Tipografía Poppins (400, 500 y 600). `--acento` es `#B7EE34` y `--sobre-acento` es `#08090C` (PR #7 de Abdiel Cole, squash `cff4512`). Las pantallas del integrante están en `app/mis-tareas`, `app/tareas/[id]` y `app/cuentas`. El admin está en `/` (bandeja), `/proyectos/nuevo`, `/revision/[id]` e `/informe`, con datos fijos de ZEEK.
-
-El módulo de firma está en `lib/escrow` (PR #8 de Sebastián Ceciliano Piedra, squash `ae10a9e`, el 28 de septiembre a las 3:48 p.m., hora de Costa Rica). `POST /api/firma` prepara el XDR y `POST /api/firma/enviar` lo manda a Stellar. `npm run hito` corre `scripts/hito-prueba.ts`. `@stellar/stellar-sdk` está en devDependencies para ese script; la app no lo usa en el navegador. La auditoría del integrante entró en el PR #4 (squash `bc94a9c`, a las 3:47 p.m.).
-
-En el código, de Esteban: Drizzle sobre Neon, Vercel Blob privado, `GET /api/tareas`, `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/informe`, `POST /api/proyectos`, `GET /api/revision/:id` y el ingreso con CavosAuth. La revisión llama a Qwen 3.8 27B en Groq y, si no hay `LAYA_URL`, usa un stub. Sin `GROQ_API_KEY`, o si Groq o Laya fallan, responde el guion fijo. El hash de pago es un campo vacío. No hay Acta. No hay ESLint. Las variables de Neon, Blob y Groq todavía hay que ponerlas en Vercel.
-
-El contrato que esas pantallas ya esperan está en [PLAN.md](PLAN.md).
-
-## Capas
-
-| Capa | Decisión |
+| Layer | Choice |
 |---|---|
-| App | Next.js 16 (App Router), TypeScript, Tailwind |
-| Versión | **16.3.6**, la que está en `package.json`. El 30 de septiembre, subir a **16.3.7** cuando salga el parche de seguridad |
-| Pantallas | Móvil para el integrante, dashboard para el admin. Tipografía Poppins. `--acento` es `#B7EE34` y el texto del botón primario es `#08090C` (`--sobre-acento`). Lo definió Abdiel en el PR #7 |
-| Wallet | Cavos, paquete `@cavos/kit`. Stellar testnet. Cuenta clásica `G…`, sin extensión ni frase semilla. Docs: https://docs.cavos.xyz/docs/stellar |
-| Escrow | Trustless Work **v2 multi-release**. Base: `https://beta.api.trustlesswork.com`. Las llamadas salen solo de Route Handlers |
-| Dónde corre | Vercel. La única computadora que tiene que estar encendida es el servidor de Abdiel, y solo para Laya |
-| Datos | Neon Postgres con Drizzle. `DATABASE_URL` en Vercel. Plan gratis. El esquema, la migración y la semilla de ZEEK ya están |
-| Archivos | Vercel Blob, almacén privado. `BLOB_READ_WRITE_TOKEN` en Vercel. La foto no se escribe en la blockchain ni en el disco de la app |
-| IA | Qwen 3.8 27B (Groq) describe la foto. Laya corre en el servidor de Abdiel y responde `choice`, `noul` y `score`. El código arma el veredicto. Si falla alguno, un guion fijo |
-| Informe | Página imprimible en `/informe`, con enlace a [stellar.expert](https://stellar.expert/explorer/testnet) cuando el pago ya tiene hash. Hoy el ejemplo no trae hash |
-| USDC | Testnet. Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
+| App | Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4. App Router. |
+| UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
+| Shell | Events, Tasks, Account. Same chrome for organizers and members. |
+| Host | Vercel. Push to `main` deploys https://hyto.vercel.app. Each PR gets a preview. |
+| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0004_miembros_invitaciones.sql`. `0004` was applied on 2026-10-01. |
+| Files | Private Vercel Blob. The photo is not written on-chain. |
+| Wallet | `@cavos/kit` 0.2.5. `chains: ["stellar"]`, `network: "testnet"`, `appSalt` `hyto`. Changing the salt later creates a different wallet. |
+| Escrow | `https://beta.api.trustlesswork.com`. Unsigned XDR from the server, `wallet.signXdr` in the browser, `POST /stellar/send-transaction`. Not the Cavos `TrustlessWorkEscrow` wrapper. |
+| USDC | Testnet issuer `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. SAC id derived for testnet in `lib/escrow/desplegar.ts`. |
+| AI | Groq vision, then Laya on the description. Neither signs. |
+| Report | `/eventos/[id]/informe`. "View payment" links to stellar.expert testnet when `hash_pago` exists. |
 
-## Variables
+`@stellar/stellar-sdk` is a dependency. The browser payment path uses Cavos, not the SDK, to sign.
 
-Nombres nada más. Ninguna va al navegador salvo `NEXT_PUBLIC_CAVOS_APP_ID`. La lista al día, con `HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`, `CAVOS_JWKS_URL`, `CAVOS_JWT_ISSUER`, `CAVOS_JWT_AUDIENCE` y `HYTO_DEMO_LOGIN`, está en [AGENTS.md](AGENTS.md). `CAVOS_JWT_AUDIENCE` está vacío.
+## Payment path
 
-| Nombre | Uso |
+1. Create an event. The server checks Horizon: session wallet USDC must cover the task total plus 1 USDC (`lib/escrow/saldo.ts`). Default Horizon is testnet. `HYTO_STELLAR_NETWORK=public` (or `mainnet`) switches that read only.
+2. A member uploads a photo. The assigned member can set `wallet_cobro`. That field is not locked when a contract already exists.
+3. Groq describes the image (`max_completion_tokens` 1024, reasoning off). Laya, if `LAYA_URL` is set, returns `choice`, `noul`, and `score`. The code maps that to `cumplió`, `parcial`, or `insuficiente`.
+4. For a reimbursement, the organizer confirms `monto_confirmado` before deploy. The amount cannot exceed the cap.
+5. **Lock budget**: deploy, then fund. Platform fee is 0. Roles: organizer is approver, service provider, and release signer; platform, resolver, and admin come from env and must be distinct.
+6. **Pay**: mark, approve, release milestone index 0, only after the indexed balance is positive. The HMAC token from prepare must match the signed XDR.
+7. A confirmed release with a 64-hex hash sets `hash_pago` and `pagado`.
+
+`npm run hito` (`scripts/hito-prueba.ts`) can repeat a 1 USDC milestone on v2 and, with `TRUSTLESS_API_KEY_V1`, on v1 (`https://dev.api.trustlesswork.com`). It is not the in-app flow. No payment hash from that script is stored in the repo.
+
+A classic USDC balance requires a trustline. Trustless Work rejects deploy when the receiver lacks one (`ESCROW_RECEIVER_TRUSTLINE_MISSING`). Hyto does not check the receiver trustline before deploy. The Account screen still builds a self-paid `changeTrust` (`/api/usdc`). The signer pays the fee in XLM; fee-bumps are rejected. Testnet XLM comes from Friendbot.
+
+## AI
+
+| Step | Detail |
 |---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` | Dashboard de Cavos. La lee `lib/integrante/identidades.ts`. Ya está en Vercel |
-| `DATABASE_URL` | Neon. La leen las rutas |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob privado. La lee la subida de la foto |
-| `GROQ_API_KEY` | Qwen 3.8 27B. Sin ella, la revisión usa el guion fijo |
-| `TRUSTLESS_API_KEY` | Trustless Work. La leen `lib/escrow` y `npm run hito`. Solo en el servidor. La pone Sebas |
-| `LAYA_URL` | URL pública de Laya, por Tailscale Funnel. La publica Abdiel |
+| Describe | Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`. JSON keys `texto`, `monto`, `fecha`. |
+| Judge | `POST {LAYA_URL}/v1/systemone`, model `multilingual`. Optional `LAYA_API_KEY` as Bearer. |
+| Verdict | Code in `lib/revision/armar.ts`. Score probabilities: index 0 insuficiente, 1 parcial, 2 cumplió. |
 
-La clave `TRUSTLESS_API_KEY` y la clave `cav_…` de Cavos se quedan en el servidor. `cav_…` todavía no tiene nombre en el repo. La clave de Acta, igual, y solo después de un pago en USDC.
+No Groq key, or a failed call, stores `origen: "error"`. No `LAYA_URL` uses the stub (`origen: "stub"`). `desdeGuion()` remains in the tree for tests; the live review does not call it.
 
-La clave de API de Trustless Work no va al navegador. La API arma un XDR sin firmar, Cavos lo firma con `wallet.signXdr` y el servidor lo envía a Stellar. Ese ciclo es el mismo para fondear, marcar el hito, aprobar y liberar.
+## Data
 
-Cavos se conecta con `chains: ["stellar"]`, `network: "testnet"` y un `appId` del dashboard (`NEXT_PUBLIC_CAVOS_APP_ID`). El `appSalt` queda fijo en código (`hyto`): cambiarlo después crea otra wallet. La clave `cav_…` del dashboard es de servidor y no va al navegador. `/cuentas` ya usa ese `appSalt`, `testnet` y las identidades organizador y tres voluntarios; sin `appId` no llama a Cavos.
+Tables: `usuarios`, `proyectos`, `tareas`, `evidencias`, `veredictos`, `sesiones`, `proyecto_miembros`, `proyecto_invitaciones`.
 
-La dirección es una cuenta Stellar normal, así que puede ser rol de Trustless Work. Para cobrar USDC hace falta trustline. El relayer de Cavos, si hay `appId`, patrocina la reserva de XLM al crear la cuenta. El envío a Trustless Work es `POST /stellar/send-transaction` y rechaza fee-bumps: la cuenta que firma tiene que existir y poder pagar la comisión en XLM. Hay que comprobarlo; si el relayer no cubre ese envío, la cuenta se fondea con Friendbot.
+`usuarios.rol` is leftover from the global-role model. New signups are stored as `voluntario`. Access control uses `proyecto_miembros.rol` (`organizer`, `team`, `volunteer`).
 
-El escrow sigue siendo la API v2 (`https://beta.api.trustlesswork.com`) más `signXdr`. No usamos el wrapper `TrustlessWorkEscrow` del kit de Cavos: ese camino no es el multi-release v2. La evidencia on-chain es un texto corto (referencia, hasta 500 caracteres). La foto se sube a Vercel Blob y en Neon se guarda su identificador. El script del hito ya está (`npm run hito`, PR #8). Si hay pago, el hash se escribiría en `lib/escrow/pago-prueba.json`; ese archivo no está en el repositorio.
+## What this stack does not do
 
-La revisión son dos modelos. Ninguno firma ni mueve fondos. `GET /api/revision/:id` lee la foto desde Blob y no publica esa URL. La pantalla recibe `/api/evidencias/:id/foto`.
+- Mainnet payments. The Trustless base in code is the testnet beta API.
+- Partial milestone payouts, except through dispute resolution, which is stricter than the protocol in places (see the audit).
+- An AI button that releases funds.
+- Acta credentials. That waits on a real USDC payment. None is recorded yet.
 
-1. **Qwen 3.8 27B** describe la imagen. Groq, modelo `qwen/qwen3.8-27b`, base `https://api.groq.com/openai/v1`, clave `GROQ_API_KEY` en Vercel. Es el único modelo de esta clave que acepta foto. Una imagen, leída desde Blob. Devuelve un texto corto y, si es una factura, el monto y la fecha. El plan gratis cubre el demo.
-2. **Laya** decide sobre ese texto. Corre en el servidor de Abdiel, en un entorno de Python aparte (`pip install "laya[serve]"`, checkpoint `laya-multilingual`), y se publica con Tailscale Funnel. La ruta de la app la llama con `LAYA_URL`. Esa máquina tiene que estar encendida durante el demo y ser alcanzable desde internet. Recibe el texto de la foto más la condición de la tarea y responde `choice`, `noul` y `score`. No redacta un párrafo.
-3. **El código** compara montos y fechas (un tope de US$15 no lo decide Laya) y arma el veredicto: `cumplió`, `parcial` o `insuficiente`. La justificación en pantalla es el texto de la foto más esas tres respuestas.
+## Rules that are in the code
 
-Sin `GROQ_API_KEY`, o si Groq o Laya fallan, la misma función devuelve el guion fijo.
-
-Hay dos tipos de hito y los dos entran por la misma cámara. El de trabajo pide una foto de lo hecho. El de reembolso pide una foto de la factura o del comprobante. Qwen las describe a las dos. En la factura también extrae monto y fecha, y el código compara ese monto con el tope. Laya clasifica las dos. No hay un lector de PDF ni un flujo distinto. Subir evidencia ya es esa única pantalla; monto y fecha del reembolso solo aparecen si la API los devuelve.
-
-Ejemplo, stand de ZEEK. La tarea pide banner visible y mesa armada. Qwen dice: "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón." Laya responde categoría stand, condición cumplida y evidencia parcial. El código marca **parcial**. El administrador ve la foto, el texto y esa recomendación, y pide otra foto o aprueba el monto completo.
-
-## Reglas que este stack cierra
-
-- **Un escrow multi-release por proyecto, un hito por tarea.** Cada hito tiene monto y receptor propios. Hasta 5 direcciones por rol y 50 hitos. El demo cabe: 3 voluntarios y 1 reembolso.
-- **Pago todo o nada.** Liberar un hito paga su monto completo, menos comisiones. Un parcial pide más evidencia o aprueba el monto entero. Partir el monto solo existe en una disputa, y eso queda fuera del MVP.
-- **El admin de Hyto puede contradecir a la IA.** La IA no tiene rol en el contrato y no firma.
-- **Quien aprueba y quien libera es el organizador**, en las dos listas. v2 permite `approve-and-release`: una sola firma hace las dos cosas. El estado del hito lo marca el proveedor, no el organizador.
-- **La cuenta Admin del contrato es otra dirección.** No puede ser aprobador, proveedor, firmante de liberación ni resolutor de disputas. El resolutor tampoco puede coincidir con esos roles, con Platform ni con el receptor. Los hitos no se editan después de fondear.
-
-## Acta, en el demo
-
-Acta es viable en el demo como una sola credencial, no como el sistema de pago. Entra al final: un hito ya pagado, Cavos firma la emisión, y el informe abre la credencial de "esta persona cumplió esta tarea".
-
-En testnet la emisión cuesta 5 XLM, que da Friendbot. Leer la credencial después no vuelve a cobrar. En mainnet sería 1 USDC por credencial; el demo no llega a mainnet. La clave se crea en https://dapp.acta.build y se queda en el servidor.
-
-Si todavía no hay un pago en USDC, Acta no se integra y el informe se queda con el hash de Stellar. El informe imprimible ya está en el repo (PR #3) y el ejemplo no trae hash. El módulo de firma ya está (PR #8) y no dejó un pago en USDC.
-
-## UX
-
-Hyto se ve como una app web normal. El dinero está en Stellar, pero la pantalla no lo explica. No hay extensión, frase semilla, lista de wallets ni palabras como escrow, XDR, trustline o Soroban. Se dice pago, tarea, evidencia y aprobar.
-
-La referencia es Ramp: el integrante resuelve su parte en el teléfono en segundos, y el administrador trabaja en una bandeja.
-
-- **Entrada.** Un botón, con Cavos. La cuenta de Stellar se crea en el primer pago o en la primera evidencia, no en un asistente de configuración. El botón Entrar está en el admin. Sin `appId` no llama a Cavos y avisa que espera el identificador.
-- **Integrante, móvil.** Ve su tarea, el monto y un estado. Un botón abre la cámara. Enviar. Si es un reembolso, la app rellena monto y fecha. No hay un formulario largo. Mis tareas y Subir evidencia ya están, con datos de ejemplo.
-- **Admin, escritorio.** Tres números: presupuesto, pagado, pendiente. Debajo, una bandeja de lo que falta aprobar. El resto no compite con esa lista. Está en `/`, con el ejemplo de ZEEK.
-- **Revisión.** La foto a la izquierda. A la derecha, una tarjeta corta: cumplió, parcial o insuficiente, y la frase de la evidencia. Un botón: Aprobar. Si hace falta otra foto, un enlace secundario, no un segundo botón del mismo peso.
-- **Después del pago.** Monto en USDC y un enlace "Ver pago". La credencial de Acta, si existe, es otro enlace en el informe. No es un paso para cobrar.
-
-Una pantalla, una acción principal. Fondo claro, Poppins, mucho espacio, un solo color de acento (`#B7EE34`). Estados con color: pendiente, en revisión, pagado.
-
-## Salida del lunes 28
-
-El script ya está en el repositorio (PR #8, a las 3:48 p.m., hora de Costa Rica). Si el beta no logra desplegar, fondear y liberar un hito, el mismo script pasa la base a `https://dev.api.trustlesswork.com` (v1). La app no se reescribe. En v1 hay un solo proveedor: el operador marca el estado y los voluntarios quedan solo como receptores de cada hito. Al cierre de esta entrada no hay un pago en USDC guardado: sin `TRUSTLESS_API_KEY`, o si el grifo de Circle no entrega el activo, el script se detiene y el Acta no entra.
-
-## Fuentes
-
-- Next.js 16.3.6, publicado el 22 de septiembre de 2026. Parche 16.3.7 anunciado para el 30 de septiembre de 2026.
-- Trustless Work v2, testnet, en `beta.api.trustlesswork.com`. Sigue en beta y sin auditoría externa. v1 sigue siendo la infraestructura de mainnet.
+- One escrow per task, one milestone (index 0), full amount.
+- The organizer can pay against the AI recommendation. The AI has no contract role.
+- Admin, platform, and resolver accounts must not collide with the organizer or the receiver.
+- Demo sessions cannot create events or submit signatures.

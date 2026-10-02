@@ -1,4 +1,5 @@
--- Per-event membership and invites. Not applied to Neon in this change.
+-- Per-event membership and invites. Applied to Neon on 2026-10-01.
+-- Backup branch: pre-0004-backup.
 CREATE TABLE IF NOT EXISTS proyecto_miembros (
   proyecto_id text NOT NULL REFERENCES proyectos (id) ON DELETE CASCADE,
   usuario_id text NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,

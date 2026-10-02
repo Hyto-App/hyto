@@ -1,151 +1,160 @@
-# Hyto — contexto para el equipo y para agentes
+# Hyto — context for the team and for agents
 
-Leé esto antes de tocar el repo. Está escrito contra el código de `main` en `77a0431` (29 de septiembre de 2026). Si un documento más viejo dice otra cosa, manda este archivo y el código.
+Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
 
-La app en producción es Next.js en Vercel: https://hyto.vercel.app
+Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
 ## Stellar Raven (mandatory)
 
-[Stellar Raven](https://raven.stellar.org) is Stellar's official MCP server: docs, live ecosystem data and playbooks. Sign-in is OAuth in the browser; no API keys.
+[Stellar Raven](https://raven.stellar.org) is Stellar's official MCP server. Sign-in is OAuth in the browser. No API keys.
 
 - MCP endpoint: `https://raven.stellar.org/mcp`
 - Cursor `mcp.json`: `{"mcpServers":{"stellar-raven":{"url":"https://raven.stellar.org/mcp"}}}`
 
-**MANDATORY, not optional:** every new prompt or task by any teammate (Sebastián, Esteban, Abdiel, Raúl, Josué) or any AI agent must first consult Stellar Raven's documentation and use the Stellar MCP tools (Raven, plus Trustless Work where relevant) before starting any work.
+Every new task must consult Stellar Raven (and Trustless Work docs where the escrow is involved) before the work starts.
 
-## Code audit (2026-09-30)
+Facts that bound this app, checked on 2026-10-02:
 
-Full report: [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) (against `main` at `db82b93`). Top P0 items:
+- A classic Stellar asset such as USDC needs a trustline before an account can hold it ([Stellar docs, anatomy of an asset](https://developers.stellar.org/docs/tokens/anatomy-of-an-asset)). Friendbot funds testnet XLM ([networks](https://developers.stellar.org/docs/networks#friendbot)).
+- Trustless Work v2 multi-release deploys at `https://beta.api.trustlesswork.com`. Deploy is rejected with `ESCROW_RECEIVER_TRUSTLINE_MISSING` when a milestone receiver cannot hold the escrow token. Hyto does not run that preflight yet.
+- Testnet USDC issuer in code: `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. The SAC id is derived in `lib/escrow/desplegar.ts` (`USDC_SAC_TESTNET`).
 
-1. **USDC trustline:** use Cavos's sponsored `wallet.addTrustline()` for the volunteer and check `wallet.status === "ready"` before `signXdr`; add a receiver-trustline and organizer-balance preflight before deploy/fund (Trustless Work v2 rejects deploy with `ESCROW_RECEIVER_TRUSTLINE_MISSING`).
-2. **Contract id persistence:** save the predicted `contractId` and prepared hash in the DB at prepare time (not in the in-process `contratosPreparados` map) and confirm `INDEXER_LAGGING` submits via RPC.
-3. **Wallet proof:** verify wallet ownership with a signed nonce; take `wallet_cobro` from the verified session wallet and lock it once the escrow is deployed.
-4. **XSS:** reject SVG/unknown image types on evidence upload and add `nosniff`/CSP headers.
-5. **JWT:** fail closed in production when `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` is empty, and set both in Vercel.
-6. **CI:** add GitHub Actions (`npm ci`, `tsc --noEmit`, `npm test`) and fix the env-dependent test in `lib/api/rutas.test.ts:495`.
+## What Hyto is
 
-- Per-person task prompts for coding agents: [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md)
+Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
 
-## Task ownership (rule for everyone)
+The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 
-- Task owners (in the Kanban, the audit prompts and docs/AGENT-PROMPTS-2026-09-30.md) are suggestions, not exclusive assignments. Nobody owns a task alone.
-- Anyone who can take or help with a task may work on it.
-- Whoever works on a task that was suggested for someone else must leave an entry in the mailbox (BUZON.md on the `buzon` branch) saying what they did, the PR/branch, and what's left, so the other person has the context.
-- All coordination about tasks goes through the mailbox.
+### Membership (per event, not a login role)
 
-## Qué es Hyto
+Login does not ask for a role. Creating an event requires a session wallet whose USDC balance covers the sum of the task amounts plus a 1 USDC reserve (`lib/escrow/saldo.ts`, `RESERVA_USDC`). The creator is stored as `organizer` on `proyecto_miembros` and on `proyectos.organizador_id`.
 
-Hyto es control de gastos y pagos por hitos sobre Stellar. El organizador deja el presupuesto en un escrow multi-release de Trustless Work (V2, testnet). Cada tarea es un hito. El voluntario sube una foto. Una IA recomienda si la evidencia alcanzó. El organizador aprueba y el pago sale en USDC de testnet. Al cerrar, el informe compara presupuesto contra gasto y, si ya hay hash, enlaza el pago en Stellar.
+People join by direct invite (email-bound, one use) or a code `HYTO-` plus 12 characters from a no-lookalike alphabet (`lib/api/invitaciones.ts`). Both expire in 7 days. After five failed attempts in 15 minutes, the next try returns 429. That counter is an in-memory map, so it does not hold across Vercel instances. Invite roles are `team` or `volunteer`.
 
-El demo es un evento de ZEEK: tres tareas de trabajo de US$20 y un reembolso de comida de hasta US$15. Esos montos viven en la semilla y en el ejemplo local. Organización: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+Who can see what (`lib/api/alcance.ts`):
 
-Hay dos roles de producto, en la tabla `usuarios.rol`:
+- **Organizer** of that event sees every task, invites people, assigns tasks at `/eventos/[id]/tareas`, locks the budget, and pays.
+- **Team and volunteer** see only tasks assigned to them (`tareas.miembro_id`). The `team` value is stored; it does not grant a wider view.
 
-- **Organizador.** Crea el proyecto, ve la bandeja (`/`), la revisión (`/revision/[id]`) y el informe (`/informe`). Despliega y fondea el escrow, y aprueba y paga. El código asume un organizador por despliegue: `proyectos` no tiene dueño, y cualquier sesión con ese rol puede desplegar y liberar (`lib/db/schema.ts`).
-- **Voluntario.** Ve sus tareas (`/mis-tareas`), sube la evidencia (`/tareas/[id]`) y, en `/cuentas`, prepara la wallet. La cuenta de cobro de la tarea (`wallet_cobro`) la fija el voluntario asignado al subir la foto.
+`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign.
 
-La IA no firma ni mueve dinero. El pago de un hito es el monto completo.
+## App shell
 
-## Stack y arquitectura
+One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/mis-tareas`), **Account** (`/cuentas`). Light and dark tokens are in `app/globals.css`. Accent `#B7EE34`, button text `#08090C`. Poppins 400, 500, 600. UI source of truth is Abdiel's Figma, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". Flag conflicts with that file instead of overwriting it.
 
-| Capa | Dónde está |
+| Route | What it is |
 |---|---|
-| App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. Corre en Vercel. |
-| Pantallas | Admin en `app/(admin)`: `/`, `/proyectos/nuevo`, `/revision/[id]`, `/informe`. Integrante en `app/(integrante)`: `/mis-tareas`, `/tareas/[id]`, `/cuentas`. |
-| Marca | Poppins 400, 500 y 600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. La fuente de verdad de la UI es el Figma de Abdiel, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy). |
-| API | Route Handlers en `app/api`. |
-| Datos | Neon Postgres con Drizzle. El esquema declarado está en `lib/db/schema.ts`. Las migraciones son SQL en `drizzle/` (`0000_inicio.sql`, `0001_contrato_escrow.sql`). `npm run db:migrar` las aplica en orden de nombre (`lib/db/aplicar.ts`). |
-| Fotos | Vercel Blob, almacén privado (`access: "private"` en `lib/blob/fotos.ts`). En la base se guarda el identificador, no la URL pública. La pantalla recibe `GET /api/evidencias/:id/foto`. |
-| Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` fijo `hyto` (`lib/integrante/identidades.ts`). |
-| Escrow | Trustless Work V2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). Las llamadas salen del servidor con `TRUSTLESS_API_KEY`. El navegador solo firma el XDR. |
-| USDC testnet | Emisor `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
-| IA | Groq, modelo `qwen/qwen3.8-27b`, y Laya si hay `LAYA_URL`. El veredicto lo arma el código. |
+| `/` | Landing. Signed-in users go to `/eventos`. |
+| `/eventos`, `/eventos/nuevo`, `/eventos/[id]` | List, create, event home. |
+| `/eventos/[id]/tareas` | Organizer assigns tasks. |
+| `/eventos/[id]/informe` | Printable report. `/informe` redirects to the first event. |
+| `/revision/[id]` | Photo review and payment. |
+| `/join`, `/join/[secreto]` | Redeem an invite. |
+| `/mis-tareas`, `/tareas/[id]` | Assigned tasks and evidence upload. |
+| `/cuentas`, `/cuentas/preparar` | Wallet and USDC setup. |
+| `/proyectos/nuevo` | Redirects to `/eventos/nuevo`. |
 
-Rutas:
+User-facing copy is English.
 
-- `POST /api/sesion` y `DELETE /api/sesion` — abrir y cerrar sesión.
-- `POST /api/sesion/wallet` — guardar la `G…` de la sesión.
-- `GET` y `POST /api/sesion/demo` — modo demo.
-- `GET` y `POST /api/tareas`, `POST /api/proyectos`, `GET /api/proyectos`, `GET /api/informe`.
+## Stack
+
+| Layer | Where |
+|---|---|
+| App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
+| API | Route handlers in `app/api`. |
+| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
+| Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
+| Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
+| Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
+| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). |
+
+`Almacen` (`lib/db/almacen.ts`) is the data interface. Production uses `almacenNeon()` (`lib/db/neon.ts`): Neon HTTP when the host is Neon, `pg` otherwise. Routes enter through `conAlmacen` (`lib/api/base.ts`). Without `DATABASE_URL` they say the database is not configured. Tests use `crearMemoria()`. Browser `localStorage` helpers still exist for the sample view.
+
+## API
+
+- `GET`, `POST`, `DELETE /api/sesion` — read, open, and close a session. `POST /api/sesion/wallet` stores a `G…`.
+- `GET`, `POST /api/sesion/demo` — demo mode. Anything other than `HYTO_DEMO_LOGIN=1` makes `POST` return 404.
+- `GET`, `POST /api/proyectos` — list visible events; create one (demo sessions get 403).
+- `GET`, `POST /api/tareas`. `POST /api/tareas/[id]/asignar` — organizer assigns a member.
+- `POST /api/eventos/[id]/invitaciones` — organizer creates an invite. `POST /api/join` redeems one.
 - `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
-- `GET` y `POST /api/revision/:id` — el POST vuelve a revisar.
+- `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
+- `GET /api/informe`.
 - `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]`.
+- `GET`, `POST /api/usdc` — read or prepare a classic `changeTrust` for the session wallet.
 
-## Almacén: Neon y memoria
+## Sign-in
 
-`Almacen` (`lib/db/almacen.ts`) es la interfaz de usuarios, proyectos, tareas, evidencias, veredictos y sesiones.
+Cavos (email code or Google) in `components/admin/Entrar.tsx`. The browser sends the email and the JWT to `POST /api/sesion`. The server checks RS256 and expiry (`lib/sesion/jwt.ts`) and sets the `hyto_sesion` cookie (HttpOnly, SameSite=Lax, Secure in production, capped at 24 hours).
 
-- **Neon.** `almacenNeon()` y `crearAlmacenNeon()` en `lib/db/neon.ts`. Si el host es Neon, usa el cliente HTTP. Si no, usa `pg` (Postgres local). Las rutas de producción entran por `conAlmacen` (`lib/api/base.ts`). Sin `DATABASE_URL` responden que la base no está configurada.
-- **Memoria de servidor.** `crearMemoria()` en `lib/db/memoria.ts` guarda todo en `Map`. La usan las pruebas. No es el almacén de producción.
-- **Memoria del navegador.** `lib/admin/memoria.ts` y `lib/integrante/almacen.ts` escriben en `localStorage`. La bandeja y Mis tareas arrancan con el ejemplo de ZEEK y, si la API responde y no es modo demo, lo reemplazan (`components/admin/usarVista.ts`). Crear proyecto (`components/admin/CrearProyecto.tsx`) todavía guarda el borrador en ese `localStorage`. El despliegue real del escrow no sale de ese botón: sale de la revisión.
+`CAVOS_JWT_JWK` wins over `CAVOS_JWKS_URL`. `HYTO_PERMITIR_JWT_SIN_FIRMA=1` skips the signature only outside production. `CAVOS_JWT_ISSUER` is a comma-separated issuer list. `CAVOS_JWT_AUDIENCE`, when set, must match `aud`. **When either is empty, that check is skipped.** That is still open. See the audit note below.
 
-Las fotos de prueba usan `crearFotosMemoria()`. En el servidor, `fotosBlob()` exige `BLOB_READ_WRITE_TOKEN`.
+If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wallet` accepts the address the client sends. The code says that does not prove the client holds the key. On submit, the signer is read from the XDR and must match `sesiones.wallet`.
 
-## Ingreso
+## Evidence and AI
 
-El ingreso es Cavos (código al correo o Google) en `components/admin/Entrar.tsx`. El navegador manda el correo y el JWT a `POST /api/sesion`. El servidor verifica el JWT en `lib/sesion` (`lib/sesion/jwt.ts`, `lib/sesion/correo.ts`) y deja la cookie `hyto_sesion`.
+Upload and review call `revisar()` (`lib/revision/revisar.ts`).
 
-La firma RS256 y el vencimiento salen de `CAVOS_JWT_JWK` o de `CAVOS_JWKS_URL`. Sin las dos no hay sesión, salvo `HYTO_PERMITIR_JWT_SIN_FIRMA=1`, y ese atajo no corre si `NODE_ENV` o `VERCEL_ENV` es `production`. `CAVOS_JWT_ISSUER` es una lista de `iss` separada por coma. Si `CAVOS_JWT_AUDIENCE` tiene valor, el `aud` tiene que coincidir. Vacío: no se comprueba la audiencia.
+1. Groq (`qwen/qwen3.8-27b`) returns JSON with `texto`, `monto`, and `fecha`. The request uses `max_completion_tokens: 1024`, `reasoning_effort: "none"`, and `reasoning_format: "hidden"`. The file name `scout.ts` and the column `texto_scout` are old names.
+2. If `LAYA_URL` is set, `POST {LAYA_URL}/v1/systemone` (model `multilingual`) asks `choice`, `noul`, and `score`. When `probabilities` are present, the score is the highest index: 0 insuficiente, 1 parcial, 2 cumplió (`lib/revision/laya.ts`). `LAYA_API_KEY` is sent as Bearer when set.
+3. The code returns `cumplió`, `parcial`, or `insuficiente`. A reimbursement over the cap, or without amount and date, becomes `insuficiente`. `noul` false cannot be `cumplió`.
 
-Desde el PR #41, un correo con login de Cavos válido que no está en `usuarios` se inserta solo, con rol `voluntario` (`lib/api/sesion.ts`). El rol `organizador` no se asigna en ese alta: queda solo si la fila ya existe con ese rol (la semilla trae `organizador@demo.hyto`) o si alguien lo escribe en la base.
+Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
 
-La wallet del JWT, si viene, se guarda en la sesión. Si el JWT no trae la `G…`, `POST /api/sesion/wallet` acepta la dirección que manda el cliente. Eso no prueba que controle la clave. Al enviar un pago, la cuenta que firma tiene que ser la del XDR y la de `sesiones.wallet`.
+For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POST /api/revision/:id/monto`). The receipt reading stays in `monto`.
 
-## Modo demo
+## Escrow
 
-`HYTO_DEMO_LOGIN=1` enciende el demo (`lib/sesion/demo.ts`). Cualquier otro valor lo apaga y `POST /api/sesion/demo` responde 404.
+Actions on `POST /api/firma`: `desplegar`, `fondear`, `marcar`, `aprobar`, `liberar`, `disputar`, `resolver`. The server returns an unsigned XDR plus an HMAC token (`lib/api/preparado.ts`, `HYTO_TOKEN_SECRET`, 10 minutes). The client signs with `wallet.signXdr` and posts to `POST /api/firma/enviar`. Submit is `POST /stellar/send-transaction`. Fee-bumps are rejected. The token binds the XDR fingerprint, action, task, and amount.
 
-Con el interruptor en 1, el ingreso muestra **Entrar como demo** y un selector de organizador o voluntario. La sesión usa `demo-organizador@hyto.demo` o `demo-voluntario@hyto.demo`, sin billetera. Dentro del demo, los botones son **Cambiar a organizador** o **Cambiar a voluntario**, y **Salir del demo** (`components/admin/Entrar.tsx`, `components/sesion/SalirDemo.tsx`). Esa sesión no firma: `/api/firma` y `/api/firma/enviar` responden 403, «Modo demo: las firmas están desactivadas».
+Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0.
 
-## Escrow en Stellar testnet
+On the review screen (`lib/admin/remoto.ts`):
 
-Trustless Work V2, multi-release. Un contrato por tarea. El id queda en `tareas.contrato_escrow` (`drizzle/0001_contrato_escrow.sql`). El hash del pago queda en `tareas.hash_pago`. «Ver pago» arma `https://stellar.expert/explorer/testnet/tx/<hash>`.
+1. **Lock budget** deploys, then funds. If deploy succeeds and fund fails, the button resumes at fund (`fondear` when a contract exists and the indexed balance is still zero).
+2. **Pay** runs mark, approve, and release (index 0). It is shown only when the task is in review, a contract exists, and the indexed balance is positive.
+3. **View payment** when the task is `pagado` and `hash_pago` is set (`https://stellar.expert/explorer/testnet/tx/<hash>`).
 
-Acciones que acepta `POST /api/firma` (`lib/escrow/cuerpos.ts`, `lib/api/firma.ts`): `desplegar`, `fondear`, `marcar`, `aprobar`, `liberar`, `disputar`, `resolver`. La prepara el servidor y devuelve un XDR sin firmar. El cliente lo firma con `wallet.signXdr` de Cavos (`lib/escrow/firmarCliente.ts`) y lo manda a `POST /api/firma/enviar`. El envío a Trustless es `POST /stellar/send-transaction`. Un fee-bump se rechaza: la cuenta que firma paga la comisión en XLM.
+The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id is still kept in the process-local map `contratosPreparados` (`lib/api/firma.ts`). A different instance can lose it.
 
-`GET /api/escrow/[contrato]` lee el escrow en Trustless. Solo el organizador. El saldo se mira en `balance`.
+`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. `asegurarCobroUsdc` can call Cavos `addTrustline`, and that is not the path `PrepararUsdc` uses. There is no receiver-trustline check before deploy.
 
-En la revisión, el organizador ve este orden (`components/admin/Revision.tsx`):
+## Environment
 
-1. **Desplegar y fondear.** `firmarPasos` corre `desplegar` y después `fondear`. Desplegar arma el contrato con la wallet del organizador, la `wallet_cobro` del voluntario, el monto de la tarea y tres cuentas del servidor (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Esas tres tienen que ser distintas entre sí y distintas del organizador y de quien cobra. La comisión de plataforma va en 0.
-2. **Aprobar y pagar.** Corre `marcar`, `aprobar` y `liberar` (índice 0). Si un paso de esos falla, el botón reanuda desde ese paso.
-3. **Ver pago.** Aparece cuando la tarea queda `pagado` y hay `hash_pago`.
+Names only. No values in the repo. `.env.example` lists the same reads.
 
-`npm run hito` (`scripts/hito-prueba.ts`) es un script aparte. No sustituye este flujo en el navegador.
-
-Para probar el flujo a mano en testnet, la wallet del organizador necesita XLM de testnet (la comisión) y USDC de testnet (el fondeo). Quien cobra necesita trustline de ese USDC.
-
-## Variables de entorno
-
-Solo nombres. Los valores no van al repo ni a estos documentos. `.env.example` lista las mismas lecturas, sin valores. La única que el código manda al navegador es `NEXT_PUBLIC_CAVOS_APP_ID`. No agregues otra `NEXT_PUBLIC_` sin avisar: queda en el bundle.
-
-| Nombre | Para qué |
+| Name | Use |
 |---|---|
-| `NEXT_PUBLIC_CAVOS_APP_ID` | Id de la app de Cavos en el cliente. Sin él no se llama a Cavos. |
-| `TRUSTLESS_API_KEY` | Clave de Trustless Work, solo servidor. Sin ella la firma responde 503. |
-| `TRUSTLESS_API_KEY_V1` | Clave distinta, solo para repetir el hito de prueba en v1. |
-| `HYTO_ESCROW_ADMIN` | Cuenta `G…` admin del contrato. No puede repetir otro rol. |
-| `HYTO_ESCROW_PLATFORM` | Cuenta `G…` de la plataforma. La comisión en Hyto es 0. |
-| `HYTO_ESCROW_RESOLVER` | Cuenta `G…` que resuelve disputas. |
-| `DATABASE_URL` | Postgres (Neon o local). Sin ella no hay almacén ni migración. |
-| `HYTO_HOST_BASE_PRODUCCION` | Hosts de producción. `db:migrar` y `db:semilla` los comparan con `DATABASE_URL`. |
-| `HYTO_CONFIRMAR_BASE_PRODUCCION` | El único valor que habilita migrar o sembrar esa base es `si`. |
-| `BLOB_READ_WRITE_TOKEN` | Token del Blob privado. Sin él no se guardan ni se leen fotos. |
-| `GROQ_API_KEY` | Groq, para describir la foto. Sin ella, la revisión usa el guion fijo. |
-| `LAYA_URL` | URL de Laya. Sin ella, después de Groq se usa el stub. |
-| `LAYA_API_KEY` | Opcional. Si está, la revisión la manda a Laya como Bearer. |
-| `CAVOS_JWKS_URL` | JWKS para verificar el JWT. |
-| `CAVOS_JWT_ISSUER` | `iss` permitidos, separados por coma. Vacío: no se comprueba el emisor. |
-| `CAVOS_JWT_AUDIENCE` | Si está, el `aud` tiene que coincidir. Vacío: no se comprueba. |
-| `CAVOS_JWT_JWK` | JWK público. Tiene prioridad sobre `CAVOS_JWKS_URL`. |
-| `HYTO_PERMITIR_JWT_SIN_FIRMA` | Solo fuera de producción, valor exacto `1`. Lee el JWT sin comprobar la firma. |
-| `HYTO_DEMO_LOGIN` | Valor exacto `1` para el modo demo. |
-| `NODE_ENV` | La pone Next.js. En `production` la cookie lleva `Secure`. |
-| `VERCEL_ENV` | Si es `production`, también bloquea el JWT sin firma. |
+| `NEXT_PUBLIC_CAVOS_APP_ID` | Cavos app id in the browser. The only public variable. |
+| `TRUSTLESS_API_KEY` | Trustless Work, server only. Without it, signing returns 503. |
+| `TRUSTLESS_API_KEY_V1` | Separate key for the v1 retry in `npm run hito`. |
+| `HYTO_TOKEN_SECRET` | HMAC secret for prepare/submit. At least 32 characters. In production, prepare and submit return 503 without it. |
+| `HYTO_TEST_SESSION_KEY` | Outside production, used as the HMAC secret when `HYTO_TOKEN_SECRET` is unset. Not for production. |
+| `HYTO_ESCROW_ADMIN` | Contract admin `G…`. Must not repeat another role. |
+| `HYTO_ESCROW_PLATFORM` | Platform `G…`. Fee in Hyto is 0. |
+| `HYTO_ESCROW_RESOLVER` | Dispute resolver `G…`. |
+| `DATABASE_URL` | Neon or local Postgres. |
+| `HYTO_HOST_BASE_PRODUCCION` | Production DB hosts. `db:migrar` and `db:semilla` compare them to `DATABASE_URL`. |
+| `HYTO_CONFIRMAR_BASE_PRODUCCION` | Only `si` allows migrate or seed against those hosts. |
+| `BLOB_READ_WRITE_TOKEN` | Private Blob token. |
+| `GROQ_API_KEY` | Groq. Without it, review is stored as an error. |
+| `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
+| `LAYA_API_KEY` | Optional Bearer token for Laya. |
+| `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
+| `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
+| `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |
+| `CAVOS_JWT_JWK` | Public JWK. Wins over `CAVOS_JWKS_URL`. |
+| `HYTO_PERMITIR_JWT_SIN_FIRMA` | Exact `1`, and never in production. |
+| `HYTO_DEMO_LOGIN` | Exact `1` turns demo login on. |
+| `HYTO_STELLAR_NETWORK` | `public` or `mainnet` points the USDC balance read at public Horizon. Anything else, including unset, is testnet. The escrow API stays on the Trustless testnet base. |
+| `HYTO_PROBE_URL` | Integration tests only. |
+| `NODE_ENV` | Set by Next.js. `production` marks the cookie Secure. |
+| `VERCEL_ENV` | `production` also blocks the unsigned-JWT shortcut. |
+| `NODE_TEST_CONTEXT` | Set by the test runner. Allows the HMAC test fallback when `NODE_ENV` is `production`. |
 
-`HYTO_PROBE_URL` la usan pruebas de integración, no la app.
+`npm run verificar:entorno` prints which of the names in `lib/config/entorno.ts` are missing. It does not print values, and it does not list every name in the table above.
 
-## Cómo correrlo
+## How to run
 
 ```bash
 npm ci
@@ -155,66 +164,33 @@ npx tsc --noEmit
 npm run build
 ```
 
-`npm test` corre los `*.test.ts` de `lib/`, `scripts/backend-traspaso` y dos pruebas de `tests/integracion`, con `tsx`. No hay ESLint ni `npm run lint`. `npm run test:integracion` es aparte y habla con Postgres.
+Do not run migrations against production on your own.
 
-Migraciones y semilla, solo con el visto bueno de quien es dueño de la base. No las corras contra producción por tu cuenta.
+## How the team works
 
-```bash
-npm run db:migrar
-npm run db:semilla
-```
+One cloud agent per task, one pull request per agent. Branch from updated `main`. Nobody pushes to `main`. Squash-merge after a human reads the diff and the tests pass. No secrets. No new `NEXT_PUBLIC_` variable without saying so. UI follows Abdiel's Figma.
 
-`db:migrar` aplica `drizzle/*.sql` en orden. `db:semilla` carga el proyecto ZEEK, los usuarios de demo y los veredictos de ejemplo. `npm run db:local` levanta Postgres en `127.0.0.1` si no hay `DATABASE_URL`. `npm run verificar:entorno` lista qué nombres faltan, sin imprimir valores. `npm run hito` es el script de escrow; sin `TRUSTLESS_API_KEY` no paga.
+Task owners in old prompts are suggestions. Anyone may take a task. If you do work that was suggested for someone else, leave a note so they have the branch, the PR, and what is left.
 
-## Cómo trabaja el equipo
+Team communication, including that note, lives in the private repo [Hyto-App/hyto-private](https://github.com/Hyto-App/hyto-private). Do not copy its contents into this repo or into chat logs that get committed.
 
-Un agente en la nube por tarea, y un pull request por agente. La rama sale de `main` actualizado. Nadie empuja a `main`.
+## Status
 
-Antes de mergear, se lee el diff a mano y se corren las pruebas. El merge es squash. No se suben secretos. No se agrega una variable `NEXT_PUBLIC_` nueva sin avisar. La UI sigue el Figma de Abdiel (Design (Figma)). No se corren migraciones de la base sin el visto bueno de quien es dueño.
+`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
 
-## Design (Figma)
+There is still no real testnet USDC payment hash in the repo.
 
-Abdiel owns UX/UI. The source of truth is the Figma file [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy). The current redesign lives on the page "Nuevo diseño".
+Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
 
-Before merging any PR that changes the interface, compare it against that design and flag conflicts instead of overwriting his work.
+1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
+2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
+3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
+4. **No CI.** There is no `.github/` workflow.
 
-## Estado actual y próximos pasos
+Also still open: receiver-trustline preflight before deploy, persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
 
-`main` está en `77a0431`. El ingreso con Cavos, el alta automática como voluntario, el modo demo, el Blob, Neon, las rutas y el flujo de firma en la revisión ya están en el código. En el repositorio no hay un hash de un pago real en testnet. `CAVOS_JWT_AUDIENCE` sigue vacío: el código no comprueba el `aud`.
+Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
 
-El paso principal que sigue es hacer que la IA funcione de verdad. Los próximos pasos, en este orden:
+## Design
 
-1. **Probar el escrow completo en testnet, con una wallet real de Cavos.** La wallet del organizador tiene que tener XLM de testnet y USDC de testnet. En la revisión: **Desplegar y fondear**, después **Aprobar y pagar**, y quedarse con el hash. Ese hash es el que llena `tareas.hash_pago` y habilita **Ver pago**. Hasta que ese pago exista, el Acta no entra.
-2. **Seguir el código de la IA hasta que revise la foto de verdad.** Este es el paso principal. La revisión tiene que mirar la evidencia y recomendar si alcanza o no, e integrar Laya. Hoy el código hace esto:
-
-   Al subir la foto (`lib/api/evidencias.ts`) y al abrir o forzar la revisión (`GET` y `POST /api/revision/:id`) se llama a `revisar()` (`lib/revision/revisar.ts`).
-
-   La foto la describe Groq con el modelo `qwen/qwen3.8-27b` (`lib/revision/scout.ts`). Hace falta `GROQ_API_KEY`. El archivo, la columna `texto_scout` y el `origen` `"scout"` son nombres viejos de Llama 4 Scout; el modelo que se pide es Qwen. El cuerpo manda `temperature: 0` y `max_tokens: 300`, y no manda nada que apague el pensamiento del modelo. Esos 300 tokens pueden cortar el JSON antes de cerrarlo. `leerDescripcion` solo acepta un JSON con `texto`. Si no lo encuentra, devuelve null.
-
-   Cualquier fallo cae en silencio a `desdeGuion()`: falta la clave, no hay foto, Groq no responde, el JSON no se lee, Laya no responde, o el `catch`. No hay log. El resultado lleva `origen: "guion"` y un texto fijo (el stand de ZEEK, o un comprobante de US$12.40). La pantalla no muestra `origen`. `TareaAdmin` y `tareaAdmin` (`lib/api/informe.ts`) arman `frase` y `veredicto`, y no incluyen ese campo. La pastilla se ve igual si salió de Groq o del guion.
-
-   Laya está en `lib/revision/laya.ts`. Hace falta `LAYA_URL`, y esa variable todavía no está configurada. Sin ella no hay llamada: `stubLaya()` responde siempre `score` `parcial` (y `choice` `stand`) en una tarea de trabajo. En un reembolso el stub responde `factura` y `cumplió`. Con `LAYA_URL`, el `POST` va a `{LAYA_URL}/v1/systemone`, modelo `multilingual`, preguntas `choice`, `noul` y `score`. `LAYA_API_KEY`, si existe, va como Bearer.
-
-   El código arma `cumplió`, `parcial` o `insuficiente` (`armarVeredicto`). No hay un botón de la IA que apruebe o rechace el pago. En un reembolso, un monto por encima del tope, o sin monto y fecha, baja a `insuficiente`. Si `noul` es falso, no queda `cumplió`. En la subida, si hay clave de Groq, la espera es de 2,8 s. Si no alcanza, la respuesta sale igual y el veredicto se guarda después. En la revisión real, el organizador paga con **Aprobar y pagar**. El botón local **Aprobar** y **Pedir otra foto** solo existen en la vista de ejemplo.
-
-   Pendiente de este paso, en concreto:
-
-   - Confirmar que Groq responde de verdad en producción, con `GROQ_API_KEY` y el modelo `qwen/qwen3.8-27b`, y que el JSON cabe en `max_tokens: 300` sin cortarse por el pensamiento del modelo.
-   - Registrar los fallbacks a `desdeGuion` y mostrar `origen` en la revisión, para distinguir el guion de una respuesta de Groq.
-   - Levantar Laya: el servidor de Abdiel, publicado con Tailscale Funnel, y después poner `LAYA_URL`.
-   - Cerrar el PR #15 (borrador, `esteban/laya-ajustes`). Cambia cómo se lee el `score` de Laya: si vienen `probabilities`, el veredicto sale del índice más alto (0 insuficiente, 1 parcial, 2 cumplió). En `main` eso todavía no está.
-
-Quedan cuatro detalles de la UX del escrow, visibles en el código:
-
-- Si **desplegar** sale bien y **fondear** falla, `firmarPasos` lanza antes de recargar el detalle (`components/admin/Revision.tsx`). La pantalla puede seguir ofreciendo **Desplegar y fondear** aunque el contrato ya exista.
-- **Aprobar y pagar** se muestra con la tarea `en revisión`, sin exigir que el escrow esté fondeado (`botonesRevision` en `lib/admin/remoto.ts`). Hay que ocultarlo mientras no haya fondeo.
-- El saldo se lee de `GET /api/escrow/[contrato]`. El indexador de Trustless no es inmediato: `balance` puede seguir en 0 un momento, y `fondeado` queda `null` si el número no se lee. En la misma sesión, un fondeo exitoso fuerza el estado; al recargar, manda lo que diga el indexador.
-- `contratosPreparados` en `lib/api/firma.ts` es un `Map` del proceso. Si el envío cae en otra instancia, o el proceso se reinicia, se pierde el id que el prepare había guardado para cuando Trustless no devuelve el contrato.
-
-## Sugerencias del equipo (no son compromisos)
-
-Ideas para considerar más adelante; no son trabajo planificado. Las decisiones y los pendientes viven en `BUZON.md` de la rama `buzon` (#005–#014).
-
-- **Decisión (#005):** el MVP se queda en pagos con escrow; no se agregan features nuevas hasta que lo existente funcione.
-- **Sugerencias:** auditar el código con IA y armar un plan de trabajo (#010); tema oscuro y animaciones con las plantillas de Abdiel (#011); después del MVP, integrar Luma, insignias y Stellar Passport (#013); Kanban en Notion (#014).
-- **Preguntas abiertas a evaluar:** lógica de validación con IA (Grok describe, Laya decide; puntaje del organizador) (#006); foto de evidencia solo con cámara y riesgo de fraude (#012); simplificar el flujo para gente sin experiencia en crypto (#007).
+Abdiel owns UX. Before merging a UI change, compare it with the Figma page "Nuevo diseño" and flag conflicts.
