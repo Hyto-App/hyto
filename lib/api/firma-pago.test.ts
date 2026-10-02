@@ -666,6 +666,197 @@ test("un XDR que el servidor no preparó no se envía", async () => {
   }
 });
 
+test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.crearEvidencia({
+    id: "ev-stand",
+    tareaId: "stand",
+    blobId: "blob-stand",
+    monto: null,
+    montoConfirmado: null,
+    fecha: null,
+    creadaEn: "2026-10-02T12:00:00.000Z",
+  });
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const visto: { receptor: string | null } = { receptor: null };
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      const cuerpo = JSON.parse(String(init?.body)) as { milestones?: { receiver?: string }[] };
+      visto.receptor = cuerpo.milestones?.[0]?.receiver ?? null;
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    const sinCuenta = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
+    assert.equal(sinCuenta.status, 400);
+    assert.equal(
+      ((await sinCuenta.json()) as { aviso: string }).aviso,
+      "The task has no payout wallet. Ask the volunteer to sign in and open the task.",
+    );
+    assert.equal((await almacen.leerTarea("registro"))?.walletCobro, "");
+
+    await almacen.crearSesion({
+      token: "ajena",
+      email: "voluntario2@demo.hyto",
+      usuarioId: "voluntario-2",
+      rol: "voluntario",
+      expiraEn: "2026-10-03T00:00:00.000Z",
+      wallet: "G" + "C".repeat(55),
+    });
+    await almacen.crearSesion({
+      token: "demo",
+      email: "demo-voluntario@hyto.demo",
+      usuarioId: "voluntario-1",
+      rol: "voluntario",
+      expiraEn: "2026-10-04T00:00:00.000Z",
+      wallet: "G" + "D".repeat(55),
+    });
+    const aunNo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(aunNo.status, 400);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+
+    await almacen.crearSesion({
+      token: "sin-foto",
+      email: "voluntario3@demo.hyto",
+      usuarioId: "voluntario-3",
+      rol: "voluntario",
+      expiraEn: "2026-10-03T00:00:00.000Z",
+      wallet: "G" + "F".repeat(55),
+    });
+    const sinEvidencia = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(sinEvidencia.status, 400);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, "");
+
+    await almacen.crearSesion({
+      token: "vieja",
+      email: "voluntario1@demo.hyto",
+      usuarioId: "voluntario-1",
+      rol: "voluntario",
+      expiraEn: "2026-10-01T00:00:00.000Z",
+      wallet: "G" + "E".repeat(55),
+    });
+    await almacen.crearSesion({
+      token: "nueva",
+      email: "voluntario1@demo.hyto",
+      usuarioId: "voluntario-1",
+      rol: "voluntario",
+      expiraEn: "2026-10-02T00:00:00.000Z",
+      wallet: RECEPTOR,
+    });
+    const listo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(listo.status, 200);
+    assert.equal(visto.receptor, RECEPTOR);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, RECEPTOR);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
+test("desplegar no llama a Trustless si el receptor no está en testnet o Horizon no responde", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("stand", { walletCobro: RECEPTOR });
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const despliegues: string[] = [];
+  const receptores: string[] = [];
+  function horizon(receptor: "ausente" | "sin-linea" | "caido"): typeof fetch {
+    return async (input) => {
+      const url = String(input);
+      if (url.includes("/escrow/")) {
+        despliegues.push(url);
+        return new Response("no", { status: 500 });
+      }
+      if (url.includes(`/accounts/${ORGANIZADOR}`)) {
+        return new Response(
+          JSON.stringify({
+            balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.includes(`/accounts/${RECEPTOR}`)) {
+        receptores.push(url);
+        if (receptor === "ausente") return new Response("missing", { status: 404 });
+        if (receptor === "sin-linea") {
+          return new Response(JSON.stringify({ balances: [{ balance: "2", asset_type: "native" }] }), { status: 200 });
+        }
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      }
+      throw new Error(`fetch inesperado: ${url}`);
+    };
+  }
+  try {
+    globalThis.fetch = horizon("ausente");
+    const ausente = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(ausente.status, 409);
+    const cuerpoAusente = (await ausente.json()) as { aviso: string; codigo: string };
+    assert.equal(cuerpoAusente.codigo, "receptor_no_listo");
+    assert.match(cuerpoAusente.aviso, /Get ready to be paid/);
+
+    globalThis.fetch = horizon("sin-linea");
+    const sinLinea = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(sinLinea.status, 409);
+    assert.equal(((await sinLinea.json()) as { codigo: string }).codigo, "receptor_no_listo");
+
+    globalThis.fetch = horizon("caido");
+    const caido = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(caido.status, 503);
+    const cuerpoCaido = (await caido.json()) as { aviso: string; codigo: string };
+    assert.equal(cuerpoCaido.codigo, "horizon_no_disponible");
+    assert.equal(cuerpoCaido.aviso.includes("Get ready to be paid"), false);
+    assert.equal(despliegues.length, 0);
+    assert.ok(receptores.every((url) => url.startsWith("https://horizon-testnet.stellar.org/accounts/")));
+    assert.equal(receptores.length, 3);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
 function restaurar(nombre: string, valor: string | undefined): void {
   if (valor === undefined) delete process.env[nombre];
   else process.env[nombre] = valor;

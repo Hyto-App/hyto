@@ -16,7 +16,7 @@ export type FalloPreparado = "secreto" | "invalido" | "vencido" | "sesion" | "hu
 
 const MIN_SECRETO = 32;
 
-type EntornoSecreto = {
+export type EntornoSecreto = {
   HYTO_TOKEN_SECRET?: string;
   HYTO_TEST_SESSION_KEY?: string;
   NODE_ENV?: string;

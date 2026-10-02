@@ -1,12 +1,17 @@
 import { centavos } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
-import { etiquetaChoice, etiquetaVeredicto } from "@/lib/ui/etiquetas";
+import { etiquetaChoice } from "@/lib/ui/etiquetas";
+import { calificar, notaDeTexto, type MotivoTope } from "./pesos";
 
 export type Senales = {
   choice: string;
   noul: boolean;
   score: string;
+  /** Caps already named by the answers. Empty when none apply. */
+  motivos?: MotivoTope[];
+  /** Answer snapshot. Stored beside the description. Never shown as the phrase. */
+  detalle?: string | null;
 };
 
 export type Descripcion = {
@@ -20,10 +25,14 @@ export type OrigenRevision = "scout" | "guion" | "stub" | "error";
 export type ResultadoRevision = Descripcion &
   Senales & {
     veredicto: Veredicto;
+    nota: number | null;
     frase: string;
     origen: OrigenRevision;
     codigo: string | null;
   };
+
+const NOTA_STUB_TRABAJO = 65;
+const NOTA_STUB_REEMBOLSO = 90;
 
 const TEXTO_TRABAJO = "Table set up, ZEEK banner facing forward, three open boxes. The back of the room is not visible.";
 const TEXTO_REEMBOLSO = "Team meal receipt, with the amount and date visible.";
@@ -35,8 +44,8 @@ export function guionFijo(tipo: TipoTarea): Descripcion & Senales {
       monto: "12.40",
       fecha: "2026-09-27",
       choice: "factura",
-      noul: true,
-      score: "cumplió",
+      noul: false,
+      score: String(NOTA_STUB_REEMBOLSO),
     };
   }
   return {
@@ -44,47 +53,58 @@ export function guionFijo(tipo: TipoTarea): Descripcion & Senales {
     monto: null,
     fecha: null,
     choice: "stand",
-    noul: true,
-    score: "parcial",
+    noul: false,
+    score: String(NOTA_STUB_TRABAJO),
   };
 }
 
 export function stubLaya(tipo: TipoTarea): Senales {
-  if (tipo === "reembolso") return { choice: "factura", noul: true, score: "cumplió" };
-  return { choice: "stand", noul: true, score: "parcial" };
+  if (tipo === "reembolso") return { choice: "factura", noul: false, score: String(NOTA_STUB_REEMBOLSO) };
+  return { choice: "stand", noul: false, score: String(NOTA_STUB_TRABAJO) };
 }
 
-export function nivelScore(score: string): Veredicto | null {
-  const limpio = score.trim().toLowerCase();
-  if (limpio === "cumplió" || limpio === "cumplio" || limpio === "completa" || limpio === "completo") return "cumplió";
-  if (limpio === "parcial" || limpio === "partial") return "parcial";
-  if (limpio === "insuficiente" || limpio === "insufficient") return "insuficiente";
-  return null;
-}
-
+// The percentage is the result. It never approves a payment.
 export function armarVeredicto(entrada: {
   tipo: TipoTarea;
   tope: string | null;
   monto: string | null;
   fecha: string | null;
-  noul: boolean;
   score: string;
-}): Veredicto | null {
-  const nivel = nivelScore(entrada.score);
-  if (!nivel) return null;
-  if (entrada.tipo === "reembolso") {
-    const monto = centavos(entrada.monto);
-    const tope = centavos(entrada.tope);
-    if (!entrada.monto || !entrada.fecha || monto <= 0) return "insuficiente";
-    if (tope > 0 && monto > tope) return "insuficiente";
-  }
-  // Laya's yes/no is only copied into the phrase. It does not set the verdict.
-  return nivel;
+  motivos?: readonly MotivoTope[];
+}): { nota: number; veredicto: Veredicto } | null {
+  const nota = notaDeTexto(entrada.score);
+  if (nota === null) return null;
+  const motivos = [...(entrada.motivos ?? [])];
+  if (reembolsoMalo(entrada)) motivos.push("reembolso");
+  const calificado = calificar(nota, motivos);
+  return { nota: calificado.nota, veredicto: calificado.veredicto };
+}
+
+export function limitarNotaReembolso(
+  nota: number,
+  entrada: { tipo: TipoTarea; tope: string | null; monto: string | null; fecha: string | null },
+): number {
+  return calificar(nota, reembolsoMalo(entrada) ? ["reembolso"] : []).nota;
+}
+
+function reembolsoMalo(entrada: {
+  tipo: TipoTarea;
+  tope: string | null;
+  monto: string | null;
+  fecha: string | null;
+}): boolean {
+  if (entrada.tipo !== "reembolso") return false;
+  const monto = centavos(entrada.monto);
+  const tope = centavos(entrada.tope);
+  const incompleto = !entrada.monto || !entrada.fecha || monto <= 0;
+  const pasaTope = tope > 0 && monto > tope;
+  return incompleto || pasaTope;
 }
 
 export function fraseDe(texto: string, senales: Senales): string {
-  const condicion = senales.noul ? "met" : "not met";
-  return `${texto.trim()} Category ${etiquetaChoice(senales.choice)}, condition ${condicion}, evidence ${etiquetaVeredicto(senales.score)}.`;
+  const nota = notaDeTexto(senales.score);
+  const grado = nota === null ? senales.score : `${nota}%`;
+  return `${texto.trim()} Category ${etiquetaChoice(senales.choice)}, grade ${grado}.`;
 }
 
 export function cerrar(
@@ -96,15 +116,22 @@ export function cerrar(
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
-  const veredicto = armarVeredicto({ tipo, tope, monto, fecha, noul: senales.noul, score: senales.score });
-  if (!veredicto) return null;
+  const armado = armarVeredicto({ tipo, tope, monto, fecha, score: senales.score, motivos: senales.motivos });
+  if (!armado) return null;
+  const senalesFinales: Senales = {
+    ...senales,
+    score: String(armado.nota),
+    // noul stays true only when every question earned its full weight.
+    noul: armado.nota === 100 ? senales.noul : false,
+  };
   return {
     texto: descripcion.texto.trim(),
     monto,
     fecha,
-    ...senales,
-    veredicto,
-    frase: fraseDe(descripcion.texto, senales),
+    ...senalesFinales,
+    veredicto: armado.veredicto,
+    nota: armado.nota,
+    frase: fraseDe(descripcion.texto, senalesFinales),
     origen,
     codigo: null,
   };
@@ -119,6 +146,7 @@ export function desdeFallo(fallo: { code: string; mensaje: string }): ResultadoR
     noul: false,
     score: "error",
     veredicto: "insuficiente",
+    nota: null,
     frase: fallo.mensaje,
     origen: "error",
     codigo: fallo.code,
@@ -128,14 +156,6 @@ export function desdeFallo(fallo: { code: string; mensaje: string }): ResultadoR
 export function desdeGuion(tipo: TipoTarea, tope: string | null): ResultadoRevision {
   const guion = guionFijo(tipo);
   const cerrado = cerrar(tipo, tope, guion, guion, "guion");
-  if (!cerrado) {
-    return {
-      ...guion,
-      veredicto: "parcial",
-      frase: fraseDe(guion.texto, guion),
-      origen: "guion",
-      codigo: null,
-    };
-  }
+  if (!cerrado) throw new Error("The sample script did not produce a grade.");
   return cerrado;
 }

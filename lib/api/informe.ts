@@ -1,8 +1,10 @@
 import { bandejaDe, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
-import type { TareaAdmin } from "@/lib/admin/tipos";
+import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import type { TareaFila } from "@/lib/db/tipos";
+import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
+import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 
@@ -48,18 +50,41 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     miembroId: tarea.miembroId,
     miembro: mapa.get(tarea.miembroId) || (tarea.miembroId ? tarea.miembroId : "Unassigned"),
     estado: tarea.estado,
-    veredicto: veredicto?.origen === "error" ? null : (veredicto?.veredicto ?? null),
+    veredicto: bandaDe(veredicto),
+    nota: notaDe(veredicto),
     frase: veredicto?.frase ?? null,
     origen: veredicto?.origen ?? null,
     codigo: veredicto?.origen === "error" ? veredicto.choice : null,
     montoRevisado: evidencia?.monto ?? null,
     montoConfirmado: evidencia?.montoConfirmado ?? null,
     fecha: evidencia?.fecha ?? null,
+    tipoArchivo: evidencia?.tipoArchivo ?? null,
+    motivoCopia: evidencia?.motivoCopia ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
+    etiquetas: etiquetasDesdeVeredicto({
+      textoScout: veredicto?.textoScout ?? null,
+      origen: veredicto?.origen ?? null,
+      monto: evidencia?.monto ?? null,
+      fecha: evidencia?.fecha ?? null,
+      tope: tarea.tope,
+      tipo: tarea.tipo,
+    }),
   };
 }
 
 export function pagoDe(hash: string | null): string | null {
   return enlacePago(hash);
+}
+
+function notaDe(veredicto: VeredictoFila | null): number | null {
+  if (!veredicto || veredicto.origen === "error") return null;
+  return notaDeTexto(veredicto?.score);
+}
+
+function bandaDe(veredicto: VeredictoFila | null): Veredicto | null {
+  if (!veredicto || veredicto.origen === "error") return null;
+  const nota = notaDeTexto(veredicto?.score);
+  if (nota !== null) return etiquetaDesdeNota(nota);
+  return veredicto.veredicto;
 }

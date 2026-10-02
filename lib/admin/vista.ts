@@ -1,4 +1,5 @@
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
+export { notaCopia, notaManual } from "@/lib/evidencia/copia";
 import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
 
 const MONTO = /^\d+([.,]\d{1,2})?$/;
@@ -78,7 +79,7 @@ export function resumir(tareas: TareaAdmin[]): Resumen {
 export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendiente" | undefined): TareaAdmin {
   if (!decision) return tarea;
   if (decision === "pagado") return { ...tarea, estado: "pagado" };
-  return { ...tarea, estado: "pendiente", veredicto: null };
+  return { ...tarea, estado: "pendiente", veredicto: null, nota: null };
 }
 
 export function enBandeja(tarea: { estado: string; veredicto: string | null }): boolean {
@@ -143,6 +144,7 @@ function desdeCreada(tarea: TareaCreada, decision: "pagado" | "pendiente" | unde
       miembro: "Unassigned",
       estado: "pendiente",
       veredicto: null,
+      nota: null,
       frase: null,
       origen: null,
       codigo: null,

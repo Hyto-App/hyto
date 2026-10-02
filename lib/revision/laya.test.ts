@@ -123,64 +123,69 @@ test("una factura manda las nueve preguntas y no inventa un pedido distinto", ()
   assert.equal("t10" in preguntas, false);
 });
 
-test("el score final de un trabajo cumplido no sube por un sí suelto", () => {
-  const cumplido = senalesDeTrabajo(trabajoBase());
-  assert.deepEqual(cumplido, { choice: "trabajo", noul: true, score: "cumplió" });
-  const sinPrueba = senalesDeTrabajo({ ...trabajoBase(), t10: 0, v3: true, t7: true });
-  assert.equal(sinPrueba.score, "insuficiente");
-  assert.equal(sinPrueba.noul, true);
+test("un trabajo con todas las respuestas a favor queda en 100", () => {
+  const cumplido = senalesDeTrabajo({ ...trabajoBase(), t7: true });
+  assert.deepEqual(cumplido, { choice: "trabajo", noul: true, score: "100" });
 });
 
-test("si V4 o T9 dicen que falta algo, un trabajo no queda en cumplió", () => {
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v4: true }).score, "parcial");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t9: true }).score, "parcial");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v3: false }).score, "parcial");
+test("una respuesta floja resta solo su peso y no borra el resto", () => {
+  assert.equal(senalesDeTrabajo(trabajoBase()).score, "99");
+  assert.equal(senalesDeTrabajo(trabajoBase()).noul, false);
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t10: 0 }).score, "92");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v4: true }).score, "89");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t9: true }).score, "89");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v3: false }).score, "95");
   assert.equal(senalesDeTrabajo({ ...trabajoBase(), v4: true, t9: true }).noul, false);
 });
 
-test("un trabajo que es otra cosa, que no empezó o que no nombra partes queda insuficiente", () => {
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v1: "es_otra_cosa" }).score, "insuficiente");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "sin_empezar" }).score, "insuficiente");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 0 }).score, "insuficiente");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 1 }).score, "parcial");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "a_medias" }).score, "parcial");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }).score, "parcial");
+test("el crédito parcial de un trabajo es la mitad del peso", () => {
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v1: "es_otra_cosa" }).score, "79");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v1: "no_se_puede_saber" }).score, "89");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "sin_empezar" }).score, "83");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "a_medias" }).score, "91");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 0 }).score, "83");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 1 }).score, "91");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }).score, "87");
 });
 
-test("nombrar herramientas no cambia el veredicto del trabajo", () => {
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: false }).score, "cumplió");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t10: 1 }).score, "parcial");
+test("nombrar herramientas suma un punto", () => {
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: false }).score, "99");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t10: 1 }).score, "96");
 });
 
-test("el score final de una factura no sube porque el gasto parezca razonable", () => {
+test("una factura con todas las respuestas a favor queda en 100", () => {
   const cumplida = senalesDeFactura(facturaBase());
-  assert.deepEqual(cumplida, { choice: "factura", noul: true, score: "cumplió" });
-  const razonablePeroVacia = senalesDeFactura({ ...facturaBase(), g5: 0, g2: true });
-  assert.equal(razonablePeroVacia.score, "insuficiente");
-  assert.equal(razonablePeroVacia.noul, true);
+  assert.deepEqual(cumplida, { choice: "factura", noul: true, score: "100" });
+  const sinCierre = senalesDeFactura({ ...facturaBase(), g5: 0, g2: true });
+  assert.equal(sinCierre.score, "90");
+  assert.equal(sinCierre.noul, false);
 });
 
-test("si el gasto no es razonable, la factura no queda en cumplió", () => {
+test("un gasto que no es razonable resta sus 20 puntos", () => {
   const senales = senalesDeFactura({ ...facturaBase(), g2: false });
-  assert.equal(senales.score, "parcial");
+  assert.equal(senales.score, "80");
   assert.equal(senales.noul, false);
 });
 
-test("un gasto distinto o sin detalle deja la factura en insuficiente", () => {
-  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "otro_gasto" }).score, "insuficiente");
-  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "no_se_ve" }).score, "insuficiente");
-  assert.equal(senalesDeFactura({ ...facturaBase(), f4: 0 }).score, "insuficiente");
-  assert.equal(senalesDeFactura({ ...facturaBase(), f2: false }).score, "parcial");
-  assert.equal(senalesDeFactura({ ...facturaBase(), f3: false }).score, "parcial");
-  assert.equal(senalesDeFactura({ ...facturaBase(), g3: false }).score, "parcial");
-  assert.equal(senalesDeFactura({ ...facturaBase(), g4: false }).score, "cumplió");
+test("cada pregunta de la factura resta solo su peso", () => {
+  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "otro_gasto" }).score, "82");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "no_se_ve" }).score, "91");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f4: 0 }).score, "86");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f4: 1 }).score, "93");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f2: false }).score, "90");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f3: false }).score, "90");
+  assert.equal(senalesDeFactura({ ...facturaBase(), g3: false }).score, "90");
+  assert.equal(senalesDeFactura({ ...facturaBase(), g4: false }).score, "98");
 });
 
-test("el tope del reembolso sigue ganando aunque Laya diga que cumplió", () => {
+test("el tope del reembolso deja la nota en 40 aunque el cuestionario sume 100", () => {
   const senales = senalesDeFactura(facturaBase());
   const cerrado = cerrar("reembolso", "10", { texto: "Receipt for 20 dollars.", monto: "20.00", fecha: "2026-09-27" }, senales, "scout");
-  assert.equal(senales.score, "cumplió");
+  assert.equal(senales.score, "100");
+  assert.equal(cerrado?.nota, 40);
+  assert.equal(cerrado?.score, "40");
   assert.equal(cerrado?.veredicto, "insuficiente");
+  assert.equal(cerrado?.noul, false);
 });
 
 test("lee la clase y el camino desde answers, no desde la primera pregunta que encuentre", () => {
@@ -202,7 +207,7 @@ test("un empate de score se queda en el nivel más bajo", () => {
     answers: { ...respuestasTrabajo(), t10: { probabilities: [0.4, 0.2, 0.4] } },
   });
   assert.equal(trabajo?.t10, 0);
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t10: 0 }).score, "insuficiente");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t10: 0 }).score, "91");
 });
 
 test("un empate de etiquetas no elige camino", () => {
@@ -210,11 +215,18 @@ test("un empate de etiquetas no elige camino", () => {
   assert.equal(leerFactura({ answers: { f1: { probabilities: { otro_gasto: 0.4, no_se_ve: 0.4 } } } }), null);
 });
 
+test("un noul de exactamente 0,5 cuenta como sí", () => {
+  const enElCorte = leerTrabajo({ answers: { ...respuestasTrabajo(), v3: { noul: 0.5 } } });
+  assert.equal(enElCorte?.v3, true);
+  const debajo = leerTrabajo({ answers: { ...respuestasTrabajo(), v3: { noul: 0.499 } } });
+  assert.equal(debajo?.v3, false);
+});
+
 test("un noul de 0,99 en V4 es sí y baja el veredicto", () => {
   const trabajo = leerTrabajo({ answers: { ...respuestasTrabajo(), v4: { noul: 0.99 } } });
   assert.equal(trabajo?.v4, true);
   assert.ok(trabajo);
-  assert.equal(senalesDeTrabajo(trabajo).score, "parcial");
+  assert.equal(senalesDeTrabajo(trabajo).score, "89");
 });
 
 test("sin URL Laya no está configurada", async () => {
@@ -256,7 +268,9 @@ test("primero clasifica y después pregunta solo el camino de trabajo", async ()
   assert.equal((cuerpos[1].questions.t10?.criteria as unknown[]).length, 3);
   assert.equal("f1" in cuerpos[1].questions, false);
   assert.equal("g5" in cuerpos[1].questions, false);
-  assert.deepEqual(senales, { choice: "trabajo", noul: true, score: "cumplió" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=trabajo"), true);
+  assert.deepEqual(resto, { choice: "trabajo", noul: false, score: "99" });
 });
 
 test("una factura no dispara las preguntas de trabajo", async () => {
@@ -269,7 +283,9 @@ test("una factura no dispara las preguntas de trabajo", async () => {
   });
   assert.deepEqual(ids[1], ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
   assert.equal(ids[1].includes("t10"), false);
-  assert.deepEqual(senales, { choice: "factura", noul: true, score: "cumplió" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=factura"), true);
+  assert.deepEqual(resto, { choice: "factura", noul: true, score: "100" });
 });
 
 test("si la descripción no es trabajo ni factura, no hay segunda llamada", async () => {
@@ -279,7 +295,31 @@ test("si la descripción no es trabajo ni factura, no hay segunda llamada", asyn
     return Response.json({ answers: { c1: { choice: "otra" } } });
   });
   assert.equal(llamadas, 1);
-  assert.deepEqual(senales, { choice: "otra", noul: false, score: "insuficiente" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle, "c=otra");
+  assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
+});
+
+test("un reembolso clasificado como otra se queda en 0", async () => {
+  let llamadas = 0;
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Photo of the meal receipt", async () => {
+    llamadas += 1;
+    return Response.json({ answers: { c1: { choice: "otra" } } });
+  });
+  assert.equal(llamadas, 1);
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle, "c=otra");
+  assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
+  const cerrado = cerrar(
+    "reembolso",
+    "15",
+    { texto: "Meal receipt for something else.", monto: "12.40", fecha: "2026-09-27" },
+    senales,
+    "scout",
+  );
+  assert.equal(cerrado?.nota, 0);
+  assert.equal(cerrado?.veredicto, "insuficiente");
+  assert.equal(cerrado?.score, "0");
 });
 
 test("si el segundo llamado falla, la revisión falla", async () => {

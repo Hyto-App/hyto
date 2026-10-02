@@ -1,3 +1,4 @@
+import { etiquetasEjemplo } from "@/lib/revision/razones-ejemplo";
 import type { TareaAdmin } from "./tipos";
 
 export const PROYECTO_EJEMPLO = "ZEEK";
@@ -15,6 +16,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       miembro: "Volunteer 1",
       estado: "en revisión",
       veredicto: "cumplió",
+      nota: 100,
       frase: "Table set up, ZEEK banner facing forward, and the room is visible.",
       origen: "guion",
       codigo: null,
@@ -23,6 +25,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: null,
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("stand"),
     },
     {
       id: "registro",
@@ -35,6 +38,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       miembro: "Volunteer 2",
       estado: "en revisión",
       veredicto: "parcial",
+      nota: 65,
       frase: "The list is incomplete: a few signatures show, and the back of the room is out of frame.",
       origen: "guion",
       codigo: null,
@@ -43,6 +47,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: null,
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("registro"),
     },
     {
       id: "bienvenida",
@@ -55,6 +60,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       miembro: "Volunteer 3",
       estado: "pendiente",
       veredicto: null,
+      nota: null,
       frase: null,
       origen: null,
       codigo: null,
@@ -75,6 +81,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       miembro: "Volunteer 1",
       estado: "en revisión",
       veredicto: "cumplió",
+      nota: 90,
       frase: "Team meal receipt, with the amount and date visible.",
       origen: "guion",
       codigo: null,
@@ -83,6 +90,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: "2026-09-27",
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("comida"),
     },
   ];
 }

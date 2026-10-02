@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -11,6 +11,10 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(etiquetaOrigen("guion"), "Sample recommendation");
   assert.equal(etiquetaOrigen("error"), "Review failed");
   assert.equal(etiquetaOrigen(null), null);
+  assert.equal(notaManual("pdf"), "Needs a manual review");
+  assert.equal(notaManual("sin_clave"), null);
+  assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
+  assert.equal(notaCopia("   "), null);
 });
 
 test("la bandeja y el contador usan la misma regla", () => {
