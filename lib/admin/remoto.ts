@@ -2,6 +2,7 @@ import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vis
 import { cifraConfirmada } from "@/lib/escrow/monto";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 
 export type DetalleRevision = {
   tarea: TareaAdmin;
@@ -62,6 +63,7 @@ export function botonesRevision(
       fondear: false,
       pagar: false,
       aprobarLocal: puede,
+      // The sample hides another-photo only in the fulfilled band. The grade never pays.
       pedirOtra: puede && tarea.veredicto !== "cumplió",
     };
   }
@@ -73,6 +75,7 @@ export function botonesRevision(
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
+    // A percentage never approves the payment. Pay follows the escrow balance.
     pagar: !bloqueado && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
     aprobarLocal: false,
     pedirOtra: tarea.estado === "en revisión",
@@ -228,6 +231,8 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
   const tipo = tipoDe(datos.tipo);
   if (!id || !titulo || !tipo) return null;
   const pago = camposPago(datos);
+  const nota = notaDeTexto(datos.nota);
+  const etiqueta = veredictoDe(datos.veredicto);
   return {
     id,
     titulo,
@@ -238,7 +243,8 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     miembroId: texto(datos.miembroId) ?? "",
     miembro: texto(datos.miembro) ?? "Unassigned",
     estado: estadoDe(datos.estado),
-    veredicto: veredictoDe(datos.veredicto),
+    veredicto: nota !== null ? etiquetaDesdeNota(nota) : etiqueta,
+    nota,
     frase: texto(datos.frase),
     origen: origenDe(datos.origen),
     codigo: texto(datos.codigo),

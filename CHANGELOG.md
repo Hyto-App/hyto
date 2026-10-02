@@ -31,6 +31,7 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 ### Cambiado
 
 - Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
+- La nota final es un porcentaje de 0 a 100. Es la suma de los pesos de las preguntas contestadas a favor. Los pesos están en `PESOS_PREGUNTAS`. Una banda (insuficiente, parcial, cumplió) solo sirve para el color. El porcentaje no aprueba el pago. Un reembolso sin monto, sin fecha o sobre el tope queda en 40 como máximo.
 
 ## 2026-09-29
 

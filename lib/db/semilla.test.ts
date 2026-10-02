@@ -37,6 +37,9 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
   assert.equal(evidencias.find((evidencia) => evidencia.tareaId === "comida")?.fecha, "2026-09-27");
 
   const veredictos = veredictosSemilla();
+  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "stand")?.score, "100");
+  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.score, "64");
+  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.score, "92");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "stand")?.veredicto, "cumplió");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.veredicto, "parcial");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.veredicto, "cumplió");
@@ -59,7 +62,9 @@ test("el informe de ejemplo arma la bandeja de admin", async () => {
     informe.bandeja.map((tarea) => tarea.id),
     ["stand", "registro", "comida"],
   );
+  assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.nota, 64);
   assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.veredicto, "parcial");
+  assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.nota, 100);
   assert.equal(informe.tareas.find((tarea) => tarea.id === "comida")?.montoRevisado, "12.40");
   assert.equal(informe.tareas.find((tarea) => tarea.id === "comida")?.fecha, "2026-09-27");
   assert.equal(informe.tareas.find((tarea) => tarea.id === "bienvenida")?.veredicto, null);
@@ -75,10 +80,11 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   const respuesta = await leerRevisionHttp(almacen, null, "stand");
   assert.equal(respuesta.status, 200);
   const json = (await respuesta.json()) as {
-    tarea: { veredicto: string; frase: string; estado: string };
+    tarea: { veredicto: string; nota: number | null; frase: string; estado: string };
     foto: string | null;
   };
   assert.equal(json.tarea.estado, "pendiente");
+  assert.equal(json.tarea.nota, 100);
   assert.equal(json.tarea.veredicto, "cumplió");
   assert.match(json.tarea.frase, /^Example\./);
   assert.equal(json.foto, null);
@@ -94,8 +100,9 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   assert.equal(vacia.foto, null);
 
   const reembolso = (await (await leerRevisionHttp(almacen, null, "comida")).json()) as {
-    tarea: { veredicto: string; montoRevisado: string | null; fecha: string | null };
+    tarea: { veredicto: string; nota: number | null; montoRevisado: string | null; fecha: string | null };
   };
+  assert.equal(reembolso.tarea.nota, 92);
   assert.equal(reembolso.tarea.veredicto, "cumplió");
   assert.equal(reembolso.tarea.montoRevisado, "12.40");
   assert.equal(reembolso.tarea.fecha, "2026-09-27");
@@ -217,5 +224,6 @@ test("un insert simultáneo de la evidencia de ejemplo no corta la semilla", asy
   await asegurarSemilla(almacen);
   assert.equal(intentos, 3);
   assert.equal((await base.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await base.veredictoDe("ejemplo-stand"))?.score, "100");
   assert.equal((await base.veredictoDe("ejemplo-stand"))?.veredicto, "cumplió");
 });

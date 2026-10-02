@@ -26,7 +26,7 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 
 1. Create an event. The server checks Horizon: session wallet USDC must cover the task total plus 1 USDC (`lib/escrow/saldo.ts`). Default Horizon is testnet. `HYTO_STELLAR_NETWORK=public` (or `mainnet`) switches that read only.
 2. A member uploads a photo. The assigned member can set `wallet_cobro`. That field is not locked when a contract already exists.
-3. Groq describes the image (`max_completion_tokens` 1024, reasoning off). Laya, if `LAYA_URL` is set, returns `choice`, `noul`, and `score`. The code maps that to `cumplió`, `parcial`, or `insuficiente`.
+3. Groq describes the image (`max_completion_tokens` 1024, reasoning off). Laya, if `LAYA_URL` is set, answers the questionnaire. The code turns those answers into a grade from 0 to 100. The organizer still approves the payment.
 4. For a reimbursement, the organizer confirms `monto_confirmado` before deploy. The amount cannot exceed the cap.
 5. **Lock budget**: deploy, then fund. Platform fee is 0. Roles: organizer is approver, service provider, and release signer; platform, resolver, and admin come from env and must be distinct.
 6. **Pay**: mark, approve, release milestone index 0, only after the indexed balance is positive. The HMAC token from prepare must match the signed XDR.
@@ -42,7 +42,7 @@ A classic USDC balance requires a trustline. Trustless Work rejects deploy when 
 |---|---|
 | Describe | Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`. JSON keys `texto`, `monto`, `fecha`. |
 | Judge | `POST {LAYA_URL}/v1/systemone`, model `multilingual`. Optional `LAYA_API_KEY` as Bearer. |
-| Verdict | Code in `lib/revision/armar.ts`. Score probabilities: index 0 insuficiente, 1 parcial, 2 cumplió. |
+| Verdict | Grade 0–100 in `lib/revision/pesos.ts`, stored in `veredictos.score`. Bands for display: under 50 insufficient, 50–79 partial, 80+ fulfilled. A bad reimbursement is capped at 40. |
 
 No Groq key, or a failed call, stores `origen: "error"`. No `LAYA_URL` uses the stub (`origen: "stub"`). `desdeGuion()` remains in the tree for tests; the live review does not call it.
 

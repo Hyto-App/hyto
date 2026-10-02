@@ -18,6 +18,7 @@ function tarea(parcial: Partial<TareaAdmin> = {}): TareaAdmin {
     miembro: "Volunteer 1",
     estado: "en revisión",
     veredicto: "cumplió",
+    nota: 100,
     frase: "Listo",
     origen: null,
     codigo: null,

@@ -24,9 +24,12 @@ test("si Scout responde y no hay Laya, el stub arma el veredicto", async () => {
   });
   assert.equal(resultado.origen, "stub");
   assert.equal(resultado.codigo, null);
+  assert.equal(resultado.nota, 65);
+  assert.equal(resultado.score, "65");
   assert.equal(resultado.veredicto, "parcial");
   assert.match(resultado.frase, /Banner de ZEEK de frente/);
   assert.match(resultado.frase, /Category booth/);
+  assert.match(resultado.frase, /grade 65%/);
 });
 
 test("si Scout falla, no entra el guion fijo", async () => {
@@ -60,6 +63,7 @@ test("si Laya falla, no entra el guion fijo", async () => {
   });
   assert.equal(resultado.origen, "error");
   assert.equal(resultado.codigo, "proveedor");
+  assert.equal(resultado.nota, null);
   assert.equal(resultado.veredicto, "insuficiente");
   assert.equal(resultado.monto, null);
   assert.notEqual(resultado.texto, guionFijo("reembolso").texto);
@@ -82,6 +86,7 @@ test("si Laya no responde a tiempo, queda el error y no un pago", async () => {
   );
   assert.equal(resultado.origen, "error");
   assert.equal(resultado.codigo, "tiempo");
+  assert.equal(resultado.nota, null);
   assert.equal(resultado.veredicto, "insuficiente");
   assert.match(resultado.frase, /did not respond in time/);
 });
@@ -200,6 +205,8 @@ test("la revisión clasifica y después manda solo las preguntas de la factura",
     },
   });
   assert.equal(resultado.origen, "scout");
+  assert.equal(resultado.nota, 100);
+  assert.equal(resultado.score, "100");
   assert.equal(resultado.veredicto, "cumplió");
   assert.equal(cuerpos.length, 2);
   assert.equal(cuerpos[0].model, "multilingual");
@@ -209,6 +216,64 @@ test("la revisión clasifica y después manda solo las preguntas de la factura",
   assert.equal(Array.isArray(cuerpos[1].questions?.g5?.criteria), true);
   assert.equal((cuerpos[1].questions?.g5?.criteria as unknown[]).length, 3);
   assert.equal(cuerpos[1].questions?.t10, undefined);
+});
+
+test("si la descripción es otra cosa, la nota es 0 y no hay segunda llamada", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let llamadasLaya = 0;
+  const resultado = await revisar(tarea, FOTO, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    fetchImpl: async (input) => {
+      if (String(input).includes("groq")) return groq("A blurry selfie.");
+      llamadasLaya += 1;
+      return Response.json({ answers: { c1: { choice: "otra" } } });
+    },
+  });
+  assert.equal(llamadasLaya, 1);
+  assert.equal(resultado.nota, 0);
+  assert.equal(resultado.score, "0");
+  assert.equal(resultado.choice, "otra");
+  assert.equal(resultado.veredicto, "insuficiente");
+});
+
+test("un reembolso sobre el tope queda en 40 aunque la factura sume 100", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  assert.equal(tarea.tope, "15");
+  const resultado = await revisar(tarea, FOTO, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    fetchImpl: async (input, init) => {
+      if (String(input).includes("groq")) {
+        return Response.json({
+          choices: [{ message: { content: JSON.stringify({ texto: "Receipt for 20.", monto: "20.00", fecha: "2026-09-27" }) } }],
+        });
+      }
+      const cuerpo = JSON.parse(String(init?.body)) as {
+        questions?: Record<string, unknown>;
+      };
+      if (cuerpo.questions && "c1" in cuerpo.questions && !("f1" in cuerpo.questions)) {
+        return Response.json({ answers: { c1: { choice: "factura" } } });
+      }
+      return Response.json({
+        answers: {
+          f1: { choice: "coincide_con_lo_pedido" },
+          f2: { noul: true },
+          f3: { noul: true },
+          f4: { score: 2 },
+          g1: { choice: "comida_o_bebida" },
+          g2: { noul: true },
+          g3: { noul: true },
+          g4: { noul: true },
+          g5: { score: 2 },
+        },
+      });
+    },
+  });
+  assert.equal(resultado.nota, 40);
+  assert.equal(resultado.veredicto, "insuficiente");
 });
 
 test("la clave de Laya viaja solo si está configurada", async () => {

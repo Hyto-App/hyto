@@ -366,7 +366,7 @@ export function Revision({
           )}
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} /> : <PastillaEstado estado={tarea.estado} />}
+            {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
           {tarea.origen === "error" ? (

@@ -19,7 +19,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     llamadas.push({ url, method });
     if (method === "POST") {
       return json({
-        tarea: tarea({ origen: "scout", codigo: null, veredicto: "parcial", frase: "Banner de ZEEK de frente." }),
+        tarea: tarea({ origen: "scout", codigo: null, veredicto: "parcial", nota: 64, frase: "Banner de ZEEK de frente." }),
         foto: "/api/evidencias/1/foto",
         contratoEscrow: null,
         wallet: "GORGANIZADOR",
@@ -54,6 +54,8 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
+    assert.match(texto(), /64%/);
+    assert.match(texto(), /Partial/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -66,7 +68,7 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
     const url = String(input);
     if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
     return json({
-      tarea: tarea({ origen: "guion", codigo: null, veredicto: "cumplió", frase: "Table set up, ZEEK banner facing forward." }),
+      tarea: tarea({ origen: "guion", codigo: null, veredicto: "cumplió", nota: 100, frase: "Table set up, ZEEK banner facing forward." }),
       foto: null,
       contratoEscrow: null,
       wallet: "GORGANIZADOR",
@@ -78,6 +80,8 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Sample recommendation/);
+    assert.match(texto(), /100%/);
+    assert.match(texto(), /Met/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
   } finally {
@@ -92,7 +96,7 @@ test("el informe muestra el origen y el error", async () => {
     const url = String(input);
     if (init?.method === "POST") {
       return json({
-        tarea: tarea({ origen: "scout", codigo: null, veredicto: "parcial", frase: "Listo de verdad." }),
+        tarea: tarea({ origen: "scout", codigo: null, veredicto: "parcial", nota: 64, frase: "Listo de verdad." }),
         foto: null,
       });
     }
@@ -120,6 +124,7 @@ test("el informe muestra el origen y el error", async () => {
     });
     assert.match(texto(), /AI recommendation/);
     assert.match(texto(), /Listo de verdad/);
+    assert.match(texto(), /64%/);
     assert.equal(document.querySelector("[role=alert]"), null);
   } finally {
     globalThis.fetch = anterior;
@@ -310,6 +315,7 @@ function tarea(parcial: Record<string, unknown>) {
     miembro: "Volunteer 1",
     estado: "en revisión",
     veredicto: "cumplió",
+    nota: null,
     frase: "Listo",
     origen: "guion",
     codigo: null,
