@@ -207,6 +207,10 @@ a {
   background: color-mix(in srgb, var(--tinta) 6%, transparent);
 }
 
+.hyto-btn-line.is-inline {
+  width: auto;
+}
+
 .hyto-btn-line:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -831,6 +835,143 @@ a {
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(240px, 320px);
     gap: 20px;
     align-items: start;
+  }
+}
+
+.hyto-note {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--acento) 22%, var(--papel));
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hyto-meses {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  min-height: 168px;
+}
+
+.hyto-mes {
+  display: flex;
+  min-width: 0;
+  height: 168px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.hyto-mes-valor {
+  width: 100%;
+  min-height: 1.2em;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--suave);
+}
+
+.hyto-mes-pista {
+  display: flex;
+  width: 100%;
+  max-width: 36px;
+  flex: 1;
+  align-items: flex-end;
+}
+
+.hyto-mes-col {
+  width: 100%;
+  border-radius: 8px 8px 3px 3px;
+  background: var(--acento);
+}
+
+.hyto-mes-col.is-zero {
+  height: 4px;
+  background: var(--linea);
+}
+
+.hyto-mes-nombre {
+  font-size: 12px;
+  color: var(--suave);
+}
+
+.hyto-vacio {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--superficie-2) 55%, var(--papel));
+  padding: 16px;
+}
+
+.hyto-vacio-barras {
+  display: flex;
+  height: 36px;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.hyto-vacio-barras i {
+  display: block;
+  width: 10px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--linea);
+}
+
+.hyto-vacio-barras i:nth-child(1) {
+  height: 14px;
+}
+
+.hyto-vacio-barras i:nth-child(2) {
+  height: 28px;
+}
+
+.hyto-vacio-barras i:nth-child(3) {
+  height: 18px;
+}
+
+.hyto-vacio-barras i:nth-child(4) {
+  height: 34px;
+}
+
+.hyto-badge {
+  border-radius: 14px;
+  border: 1px solid var(--linea);
+  padding: 14px;
+}
+
+.hyto-badge.is-on {
+  border-color: color-mix(in srgb, var(--acento) 75%, var(--borde));
+  background: var(--pagado-fondo);
+}
+
+.hyto-skeleton {
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--superficie-2),
+    color-mix(in srgb, var(--papel) 72%, var(--superficie-2)),
+    var(--superficie-2)
+  );
+  background-size: 200% 100%;
+  animation: hyto-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes hyto-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-skeleton {
+    animation: none;
   }
 }
 
