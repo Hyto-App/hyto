@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -11,6 +11,15 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(etiquetaOrigen("guion"), "Sample recommendation");
   assert.equal(etiquetaOrigen("error"), "Review failed");
   assert.equal(etiquetaOrigen(null), null);
+});
+
+test("la bandeja y el contador usan la misma regla", () => {
+  const vista = vistaAdmin(VACIA);
+  assert.equal(vista.bandeja.length, vista.tareas.filter((tarea) => enBandeja(tarea)).length);
+  assert.equal(enBandeja({ estado: "pendiente", veredicto: null }), false);
+  assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), true);
+  assert.equal(enBandeja({ estado: "en revisión", veredicto: null }), true);
+  assert.equal(enBandeja({ estado: "pagado", veredicto: "cumplió" }), false);
 });
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {

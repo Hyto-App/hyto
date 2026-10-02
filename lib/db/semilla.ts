@@ -154,6 +154,7 @@ export async function asegurarSemilla(almacen: Almacen): Promise<void> {
     await almacen.guardarVeredicto(veredicto);
   }
   await reponerPendientes(almacen);
+  await asegurarCaminoDemo(almacen);
 }
 
 async function asegurarProyectoDemo(almacen: Almacen): Promise<void> {
@@ -199,6 +200,60 @@ export async function asegurarVoluntarioDemo(almacen: Almacen): Promise<void> {
     estado: "active",
     creadoEn: CREADO_DEMO,
   });
+}
+
+const MIEMBROS_MUESTRA = new Set(["voluntario-1", "voluntario-2", "voluntario-3"]);
+const TAREA_DEMO_SUBIR = "demo-bienvenida";
+const TAREA_DEMO_MET = "demo-stand";
+
+export async function asegurarCaminoDemo(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
+  const voluntarioId = usuarioDemo("voluntario").id;
+  const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === ID_PROYECTO_DEMO);
+  for (const tarea of tareas) {
+    if (tarea.miembroId.trim() && !MIEMBROS_MUESTRA.has(tarea.miembroId)) continue;
+    if (tarea.miembroId === voluntarioId) continue;
+    await almacen.actualizarTarea(tarea.id, { miembroId: voluntarioId });
+  }
+  const subir = await almacen.leerTarea(TAREA_DEMO_SUBIR);
+  if (subir && subir.proyectoId === ID_PROYECTO_DEMO && subir.estado !== "pagado" && !subir.hashPago) {
+    const evidencia = await almacen.ultimaEvidencia(subir.id);
+    if (!evidencia && subir.estado !== "pendiente") {
+      await almacen.actualizarTarea(subir.id, { estado: "pendiente" });
+    }
+  }
+  await asegurarRevisionMet(almacen, voluntarioId);
+}
+
+async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Promise<void> {
+  const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === ID_PROYECTO_DEMO);
+  for (const tarea of tareas) {
+    if (tarea.estado === "pagado" || tarea.hashPago) continue;
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+    if (!veredicto || veredicto.origen === "error" || veredicto.veredicto !== "cumplió") continue;
+    if (tarea.estado !== "en revisión") await almacen.actualizarTarea(tarea.id, { estado: "en revisión" });
+    return;
+  }
+  const stand = await almacen.leerTarea(TAREA_DEMO_MET);
+  if (!stand || stand.proyectoId !== ID_PROYECTO_DEMO || stand.estado === "pagado" || stand.hashPago) return;
+  const evidencia = await almacen.ultimaEvidencia(stand.id);
+  if (evidencia && !esBlobEjemplo(evidencia.blobId)) return;
+  const plantillaEvidencia = evidenciasDemo().find((fila) => fila.tareaId === TAREA_DEMO_MET);
+  const plantillaVeredicto = veredictosDemo().find((fila) => fila.tareaId === TAREA_DEMO_MET);
+  if (!plantillaEvidencia || !plantillaVeredicto) return;
+  if (!evidencia) {
+    try {
+      await almacen.crearEvidencia(plantillaEvidencia);
+    } catch (error) {
+      if (!esClaveDuplicada(error)) throw error;
+    }
+  }
+  const guardado = await almacen.veredictoDe(plantillaVeredicto.evidenciaId);
+  if (!guardado || guardado.origen === "error" || guardado.veredicto !== "cumplió") {
+    await almacen.guardarVeredicto(plantillaVeredicto);
+  }
+  await almacen.actualizarTarea(stand.id, { estado: "en revisión", miembroId: stand.miembroId.trim() || voluntarioId });
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {
