@@ -4,6 +4,7 @@ import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
+import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -172,7 +173,7 @@ export async function guardarRevision(
     tareaId,
     veredicto: resultado.veredicto,
     frase: resultado.frase,
-    textoScout: resultado.texto,
+    textoScout: unirDescripcion(resultado.texto, resultado.detalle),
     choice: resultado.choice,
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,

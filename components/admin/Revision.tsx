@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
@@ -364,6 +365,7 @@ export function Revision({
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
+          <EtiquetasNota etiquetas={tarea.etiquetas} />
           {tarea.origen === "error" ? (
             <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Mile is unavailable. No AI score for this photo.</p>
           ) : null}

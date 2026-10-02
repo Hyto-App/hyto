@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { armarVeredicto, desdeGuion, fraseDe, guionFijo, limitarNotaReembolso } from "./armar";
+import { armarVeredicto, cerrar, desdeGuion, fraseDe, guionFijo, limitarNotaReembolso } from "./armar";
 import { TOPE_NOTA_REEMBOLSO } from "./pesos";
 
 test("el guion de un trabajo queda en 65 por ciento", () => {
@@ -59,6 +59,50 @@ test("el porcentaje sale solo del score", () => {
   assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "40" })?.nota, 40);
   assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "80" })?.nota, 80);
   assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "80" })?.veredicto, "cumplió");
+});
+
+test("una falta grave deja la nota en 49 aunque el peso crudo siga en cumplió", () => {
+  const cerrado = cerrar(
+    "trabajo",
+    null,
+    { texto: "A different scene.", monto: null, fecha: null },
+    { choice: "trabajo", noul: false, score: "80", motivos: ["no_coincide"] },
+    "scout",
+  );
+  assert.equal(cerrado?.nota, 49);
+  assert.equal(cerrado?.veredicto, "insuficiente");
+  assert.equal(cerrado?.score, "49");
+  assert.equal(cerrado?.frase.includes("@@"), false);
+  assert.match(cerrado?.frase ?? "", /grade 49%/);
+});
+
+test("g2 falso no pasa de 79 y el reembolso sin fecha baja al tope menor", () => {
+  assert.deepEqual(
+    armarVeredicto({
+      tipo: "reembolso",
+      tope: "15",
+      monto: "12.40",
+      fecha: "2026-09-27",
+      score: "80",
+      motivos: ["gasto_no_razonable"],
+    }),
+    { nota: 79, veredicto: "parcial" },
+  );
+  assert.equal(
+    armarVeredicto({
+      tipo: "reembolso",
+      tope: "15",
+      monto: "12.40",
+      fecha: null,
+      score: "80",
+      motivos: ["gasto_no_razonable"],
+    })?.nota,
+    40,
+  );
+  assert.equal(
+    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "90", motivos: ["otra"] })?.nota,
+    49,
+  );
 });
 
 test("la frase muestra el porcentaje", () => {

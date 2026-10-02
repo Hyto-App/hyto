@@ -8,9 +8,9 @@ const ESTADOS: Record<EstadoTarea, string> = {
 };
 
 const VEREDICTOS: Record<Veredicto, string> = {
-  cumplió: "Met",
-  parcial: "Partial",
-  insuficiente: "Insufficient",
+  cumplió: "Completado",
+  parcial: "Parcialmente completado",
+  insuficiente: "Insuficiente",
 };
 
 const TIPOS: Record<string, string> = {
@@ -59,10 +59,13 @@ export function etiquetaEstado(estado: string): string {
 export function etiquetaVeredicto(veredicto: string): string {
   const limpio = veredicto.trim();
   if (limpio in VEREDICTOS) return VEREDICTOS[limpio as Veredicto];
-  if (limpio === "cumplio" || limpio === "completa" || limpio === "completo") return "Met";
-  if (limpio === "partial") return "Partial";
-  if (limpio === "insufficient") return "Insufficient";
   return limpio;
+}
+
+/** One string for the pill: "64% · Parcialmente completado", or the label alone when there is no percentage. */
+export function textoNota(etiqueta: string, nota: number | null | undefined): string {
+  if (typeof nota !== "number") return etiqueta;
+  return `${nota}% · ${etiqueta}`;
 }
 
 export function etiquetaTipo(tipo: string): string {

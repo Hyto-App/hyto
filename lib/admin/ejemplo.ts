@@ -1,3 +1,4 @@
+import { etiquetasEjemplo } from "@/lib/revision/razones-ejemplo";
 import type { TareaAdmin } from "./tipos";
 
 export const PROYECTO_EJEMPLO = "ZEEK";
@@ -24,6 +25,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: null,
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("stand"),
     },
     {
       id: "registro",
@@ -45,6 +47,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: null,
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("registro"),
     },
     {
       id: "bienvenida",
@@ -87,6 +90,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       fecha: "2026-09-27",
       hashPago: null,
       credencialUrl: null,
+      etiquetas: etiquetasEjemplo("comida"),
     },
   ];
 }

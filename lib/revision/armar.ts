@@ -2,12 +2,16 @@ import { centavos } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
-import { TOPE_NOTA_REEMBOLSO, etiquetaDesdeNota, notaDeTexto } from "./pesos";
+import { calificar, notaDeTexto, type MotivoTope } from "./pesos";
 
 export type Senales = {
   choice: string;
   noul: boolean;
   score: string;
+  /** Caps already named by the answers. Empty when none apply. */
+  motivos?: MotivoTope[];
+  /** Answer snapshot. Stored beside the description. Never shown as the phrase. */
+  detalle?: string | null;
 };
 
 export type Descripcion = {
@@ -66,24 +70,35 @@ export function armarVeredicto(entrada: {
   monto: string | null;
   fecha: string | null;
   score: string;
+  motivos?: readonly MotivoTope[];
 }): { nota: number; veredicto: Veredicto } | null {
   const nota = notaDeTexto(entrada.score);
   if (nota === null) return null;
-  const limitada = limitarNotaReembolso(nota, entrada);
-  return { nota: limitada, veredicto: etiquetaDesdeNota(limitada) };
+  const motivos = [...(entrada.motivos ?? [])];
+  if (reembolsoMalo(entrada)) motivos.push("reembolso");
+  const calificado = calificar(nota, motivos);
+  return { nota: calificado.nota, veredicto: calificado.veredicto };
 }
 
 export function limitarNotaReembolso(
   nota: number,
   entrada: { tipo: TipoTarea; tope: string | null; monto: string | null; fecha: string | null },
 ): number {
-  if (entrada.tipo !== "reembolso") return nota;
+  return calificar(nota, reembolsoMalo(entrada) ? ["reembolso"] : []).nota;
+}
+
+function reembolsoMalo(entrada: {
+  tipo: TipoTarea;
+  tope: string | null;
+  monto: string | null;
+  fecha: string | null;
+}): boolean {
+  if (entrada.tipo !== "reembolso") return false;
   const monto = centavos(entrada.monto);
   const tope = centavos(entrada.tope);
   const incompleto = !entrada.monto || !entrada.fecha || monto <= 0;
   const pasaTope = tope > 0 && monto > tope;
-  if (incompleto || pasaTope) return Math.min(nota, TOPE_NOTA_REEMBOLSO);
-  return nota;
+  return incompleto || pasaTope;
 }
 
 export function fraseDe(texto: string, senales: Senales): string {
@@ -101,7 +116,7 @@ export function cerrar(
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
-  const armado = armarVeredicto({ tipo, tope, monto, fecha, score: senales.score });
+  const armado = armarVeredicto({ tipo, tope, monto, fecha, score: senales.score, motivos: senales.motivos });
   if (!armado) return null;
   const senalesFinales: Senales = {
     ...senales,

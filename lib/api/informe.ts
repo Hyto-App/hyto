@@ -3,6 +3,7 @@ import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
@@ -59,6 +60,14 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     fecha: evidencia?.fecha ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
+    etiquetas: etiquetasDesdeVeredicto({
+      textoScout: veredicto?.textoScout ?? null,
+      origen: veredicto?.origen ?? null,
+      monto: evidencia?.monto ?? null,
+      fecha: evidencia?.fecha ?? null,
+      tope: tarea.tope,
+      tipo: tarea.tipo,
+    }),
   };
 }
 

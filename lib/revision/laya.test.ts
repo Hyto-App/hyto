@@ -268,7 +268,9 @@ test("primero clasifica y después pregunta solo el camino de trabajo", async ()
   assert.equal((cuerpos[1].questions.t10?.criteria as unknown[]).length, 3);
   assert.equal("f1" in cuerpos[1].questions, false);
   assert.equal("g5" in cuerpos[1].questions, false);
-  assert.deepEqual(senales, { choice: "trabajo", noul: false, score: "99" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=trabajo"), true);
+  assert.deepEqual(resto, { choice: "trabajo", noul: false, score: "99" });
 });
 
 test("una factura no dispara las preguntas de trabajo", async () => {
@@ -281,7 +283,9 @@ test("una factura no dispara las preguntas de trabajo", async () => {
   });
   assert.deepEqual(ids[1], ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
   assert.equal(ids[1].includes("t10"), false);
-  assert.deepEqual(senales, { choice: "factura", noul: true, score: "100" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=factura"), true);
+  assert.deepEqual(resto, { choice: "factura", noul: true, score: "100" });
 });
 
 test("si la descripción no es trabajo ni factura, no hay segunda llamada", async () => {
@@ -291,7 +295,9 @@ test("si la descripción no es trabajo ni factura, no hay segunda llamada", asyn
     return Response.json({ answers: { c1: { choice: "otra" } } });
   });
   assert.equal(llamadas, 1);
-  assert.deepEqual(senales, { choice: "otra", noul: false, score: "0" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle, "c=otra");
+  assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
 });
 
 test("un reembolso clasificado como otra se queda en 0", async () => {
@@ -301,7 +307,9 @@ test("un reembolso clasificado como otra se queda en 0", async () => {
     return Response.json({ answers: { c1: { choice: "otra" } } });
   });
   assert.equal(llamadas, 1);
-  assert.deepEqual(senales, { choice: "otra", noul: false, score: "0" });
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle, "c=otra");
+  assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
   const cerrado = cerrar(
     "reembolso",
     "15",
