@@ -115,7 +115,7 @@ function filasVeredictos(idTarea: (id: string) => string, idEvidencia: (id: stri
         textoScout: texto,
         choice: choiceDe(tarea),
         noul: "si",
-        score: tarea.veredicto,
+        score: tarea.nota === null ? tarea.veredicto : String(tarea.nota),
         origen: "guion",
       },
     ];

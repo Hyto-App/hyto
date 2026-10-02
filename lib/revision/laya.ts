@@ -8,6 +8,7 @@ import {
   preguntasTrabajo,
   type Pregunta,
 } from "./laya-preguntas";
+import { notaDeFactura, notaDeTrabajo } from "./pesos";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -17,7 +18,6 @@ export function urlLaya(base: string): string {
   return `${limpia}/v1/systemone`;
 }
 
-const NIVELES = ["insuficiente", "parcial", "cumplió"] as const;
 const CLASE = ["trabajo", "factura", "otra"] as const;
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
 const V1 = ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"] as const;
@@ -92,49 +92,15 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
   return { f1, f2, f3, f4, g1, g2, g3, g4, g5 };
 }
 
-// The final score is T10 or G5. Other signals can only lower it. A yes never raises it.
+// The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
 export function senalesDeTrabajo(respuestas: RespuestasTrabajo): Senales {
-  let indice: 0 | 1 | 2 = respuestas.t10;
-  if (respuestas.v1 === "es_otra_cosa" || respuestas.t6 === "sin_empezar" || respuestas.v2 === 0) indice = 0;
-  else if (
-    respuestas.v4 ||
-    respuestas.t9 ||
-    respuestas.v1 === "no_se_puede_saber" ||
-    respuestas.v2 === 1 ||
-    respuestas.t6 === "a_medias" ||
-    respuestas.t6 === "no_claro" ||
-    !respuestas.v3 ||
-    !respuestas.t8
-  ) {
-    indice = limitar(indice, 1);
-  }
-  const noul =
-    respuestas.v1 === "es_lo_pedido" &&
-    respuestas.v2 === 2 &&
-    !respuestas.v4 &&
-    respuestas.t6 === "terminado" &&
-    !respuestas.t9 &&
-    respuestas.v3 &&
-    respuestas.t8;
-  return { choice: "trabajo", noul, score: NIVELES[indice] };
+  const nota = notaDeTrabajo(respuestas);
+  return { choice: "trabajo", noul: nota === 100, score: String(nota) };
 }
 
 export function senalesDeFactura(respuestas: RespuestasFactura): Senales {
-  let indice: 0 | 1 | 2 = respuestas.g5;
-  if (respuestas.f1 === "otro_gasto" || respuestas.f1 === "no_se_ve" || respuestas.f4 === 0) indice = 0;
-  else if (!respuestas.g2 || !respuestas.f2 || !respuestas.f3 || !respuestas.g3 || respuestas.f4 === 1) indice = limitar(indice, 1);
-  const noul =
-    respuestas.f1 === "coincide_con_lo_pedido" &&
-    respuestas.f2 &&
-    respuestas.f3 &&
-    respuestas.f4 === 2 &&
-    respuestas.g2 &&
-    respuestas.g3;
-  return { choice: "factura", noul, score: NIVELES[indice] };
-}
-
-function limitar(indice: 0 | 1 | 2, tope: 0 | 1 | 2): 0 | 1 | 2 {
-  return indice > tope ? tope : indice;
+  const nota = notaDeFactura(respuestas);
+  return { choice: "factura", noul: nota === 100, score: String(nota) };
 }
 
 export async function preguntarLaya(
@@ -150,7 +116,7 @@ export async function preguntarLaya(
   const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(), fetchImpl, signal, clave);
   const clase = leerClase(claseJson);
   if (!clase) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  if (clase === "otra") return { choice: "otra", noul: false, score: "insuficiente" };
+  if (clase === "otra") return { choice: "otra", noul: false, score: "0" };
   if (clase === "trabajo") {
     const json = await enviar(base, texto, pedido, preguntasTrabajo(pedido), fetchImpl, signal, clave);
     const respuestas = leerTrabajo(json);

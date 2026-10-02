@@ -47,8 +47,8 @@ const EXACTO: Record<string, string> = {
   "This task already has an escrow.": "This task already has its budget locked.",
   "The submit succeeded and Trustless did not return the contract.":
     "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.",
-  "The task has no payout wallet. The volunteer has to submit evidence with their account.":
-    "The volunteer needs to send their photo first, so we know where to pay.",
+  "The task has no payout wallet. Ask the volunteer to sign in and open the task.":
+    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
   "Review pending": "Wait until the photo review finishes before locking the budget.",
   "The milestone amount has to be greater than zero.": "The amount has to be greater than zero.",
   "Only the organizer prepares the payment.": "Only the organizer can lock the budget and pay.",

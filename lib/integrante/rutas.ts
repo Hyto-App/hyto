@@ -175,7 +175,6 @@ export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: Opcione
   cuerpo.set("tareaId", tarea.id);
   cuerpo.set("foto", foto, "evidencia.jpg");
   if (tarea.miembroId) cuerpo.set("miembroId", tarea.miembroId);
-  if (tarea.walletCobro) cuerpo.set("wallet", tarea.walletCobro);
 
   try {
     const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);

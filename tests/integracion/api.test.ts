@@ -102,7 +102,6 @@ function fotoDe(tareaId: string, tipo = "image/jpeg", bytes = Uint8Array.from([1
   const datos = new FormData();
   datos.set("tareaId", tareaId);
   datos.set("foto", new Blob([bytes], { type: tipo }), "evidencia.jpg");
-  datos.set("wallet", CUENTA);
   return datos;
 }
 
@@ -370,8 +369,9 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
   test("POST /api/evidencias guarda la foto, deja el error de la IA y GET la lee", async () => {
     const sesion = await cookieSesionPrueba();
+    const voluntario = await cookieSesionPrueba("voluntario", CUENTA);
     await duenoZeek(sesion);
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), sesion));
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), voluntario));
     assert.equal(creada.status, 201);
     const json = (await leer(creada)) as { evidencia?: { id: string; monto: string | null; fecha: string | null; tareaId: string } };
     const id = json.evidencia?.id ?? "";
