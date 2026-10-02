@@ -76,6 +76,7 @@ async function marcaDe(almacen: Almacen, tarea: TareaFila): Promise<Marca> {
         visible ?? "",
         origen ?? "",
         veredicto?.frase ?? "",
+        veredicto?.score ?? "",
       ].join(SEPARADOR),
     )
     .digest("hex")

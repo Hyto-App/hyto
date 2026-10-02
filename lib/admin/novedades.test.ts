@@ -123,6 +123,7 @@ function tarea(parcial: Partial<TareaAdmin> & { id: string }): TareaAdmin {
     miembro: "Volunteer 1",
     estado: parcial.estado ?? "en revisión",
     veredicto: parcial.veredicto === undefined ? "cumplió" : parcial.veredicto,
+    nota: parcial.nota === undefined ? null : parcial.nota,
     frase: parcial.frase === undefined ? "Ready" : parcial.frase,
     origen: parcial.origen === undefined ? "guion" : parcial.origen,
     codigo: null,
