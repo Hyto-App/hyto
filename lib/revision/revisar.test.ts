@@ -152,13 +152,12 @@ async function conLog<T>(trabajo: () => Promise<T>): Promise<T> {
   }
 }
 
-test("la revisión manda a Laya el tipo y la condición de la tarea", async () => {
+test("la revisión clasifica y después manda solo las preguntas de la factura", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "comida");
   assert.ok(tarea);
   assert.equal(tarea.tipo, "reembolso");
-  const capturado: {
-    cuerpo: { model?: string; state?: string; questions?: { noul?: { instructions?: string }; score?: { criteria?: unknown } } } | null;
-  } = { cuerpo: null };
+  const cuerpos: Array<{ model?: string; state?: string; questions?: Record<string, { type?: string; criteria?: unknown; instructions?: string }> }> =
+    [];
   let paso = 0;
   const resultado = await revisar(tarea, FOTO, {
     claveGroq: "clave",
@@ -182,20 +181,34 @@ test("la revisión manda a Laya el tipo y la condición de la tarea", async () =
         });
       }
       assert.match(String(input), /\/v1\/systemone$/);
-      capturado.cuerpo = JSON.parse(String(init?.body)) as NonNullable<typeof capturado.cuerpo>;
-      return Response.json({ choice: "factura", noul: true, score: "cumplió" });
+      const cuerpo = JSON.parse(String(init?.body)) as (typeof cuerpos)[number];
+      cuerpos.push(cuerpo);
+      if (paso === 2) return Response.json({ answers: { c1: { choice: "factura" } } });
+      return Response.json({
+        answers: {
+          f1: { choice: "coincide_con_lo_pedido" },
+          f2: { noul: true },
+          f3: { noul: true },
+          f4: { score: 2 },
+          g1: { choice: "comida_o_bebida" },
+          g2: { noul: true },
+          g3: { noul: true },
+          g4: { noul: true },
+          g5: { score: 2 },
+        },
+      });
     },
   });
   assert.equal(resultado.origen, "scout");
   assert.equal(resultado.veredicto, "cumplió");
-  const cuerpo = capturado.cuerpo;
-  if (!cuerpo) assert.fail("Laya did not receive a body");
-  assert.equal(cuerpo.model, "multilingual");
-  assert.match(cuerpo.state ?? "", /Condition: Photo of the meal receipt/);
-  assert.match(cuerpo.questions?.noul?.instructions ?? "", /receipt or an invoice/);
-  assert.match(cuerpo.questions?.noul?.instructions ?? "", /Photo of the meal receipt/);
-  assert.equal(Array.isArray(cuerpo.questions?.score?.criteria), true);
-  assert.equal((cuerpo.questions?.score?.criteria as unknown[]).length, 3);
+  assert.equal(cuerpos.length, 2);
+  assert.equal(cuerpos[0].model, "multilingual");
+  assert.match(cuerpos[0].state ?? "", /Condition: Photo of the meal receipt/);
+  assert.deepEqual(Object.keys(cuerpos[0].questions ?? {}), ["c1"]);
+  assert.equal(cuerpos[1].questions?.g2?.instructions?.includes("Photo of the meal receipt"), true);
+  assert.equal(Array.isArray(cuerpos[1].questions?.g5?.criteria), true);
+  assert.equal((cuerpos[1].questions?.g5?.criteria as unknown[]).length, 3);
+  assert.equal(cuerpos[1].questions?.t10, undefined);
 });
 
 test("la clave de Laya viaja solo si está configurada", async () => {
@@ -203,10 +216,14 @@ test("la clave de Laya viaja solo si está configurada", async () => {
   process.env.LAYA_API_KEY = "clave-compartida";
   try {
     let autorizacion = "";
-    await preguntarLaya("https://laya.example", "texto", "condición", "trabajo", async (_input, init) => {
+    let llamadas = 0;
+    await preguntarLaya("https://laya.example", "texto", "condición", async (_input, init) => {
+      llamadas += 1;
       autorizacion = new Headers(init?.headers).get("authorization") ?? "";
-      return Response.json({ choice: "stand", noul: true, score: "parcial" });
+      if (llamadas === 1) return Response.json({ answers: { c1: { choice: "otra" } } });
+      return Response.json({});
     });
+    assert.equal(llamadas, 1);
     assert.equal(autorizacion, "Bearer clave-compartida");
   } finally {
     if (previa === undefined) delete process.env.LAYA_API_KEY;

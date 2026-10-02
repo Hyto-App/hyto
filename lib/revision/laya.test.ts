@@ -1,36 +1,220 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { cerrar } from "./armar";
 import { FalloRevision } from "./fallo";
-import { cuerpoLaya, leerLaya, preguntarLaya, urlLaya } from "./laya";
+import {
+  cuerpoLaya,
+  leerClase,
+  leerFactura,
+  leerTrabajo,
+  preguntarLaya,
+  preguntasClasificacion,
+  preguntasFactura,
+  preguntasTrabajo,
+  senalesDeFactura,
+  senalesDeTrabajo,
+  urlLaya,
+  type RespuestasFactura,
+  type RespuestasTrabajo,
+} from "./laya";
+
+const PEDIDO = "Banner visible and the table set up";
 
 test("la URL de Laya apunta a systemone", () => {
   assert.equal(urlLaya("https://ejemplo.ts.net"), "https://ejemplo.ts.net/v1/systemone");
   assert.equal(urlLaya("https://ejemplo.ts.net/v1/systemone/"), "https://ejemplo.ts.net/v1/systemone");
 });
 
-test("lee choice, noul y score de la respuesta", () => {
-  const senales = leerLaya({
+test("C1 clasifica la descripción con las tres etiquetas", () => {
+  const cuerpo = leerCuerpo(cuerpoLaya("A blank wall.", PEDIDO, preguntasClasificacion()));
+  assert.equal(cuerpo.model, "multilingual");
+  assert.equal(cuerpo.state, `A blank wall.\nCondition: ${PEDIDO}`);
+  assert.deepEqual(Object.keys(cuerpo.questions), ["c1"]);
+  const c1 = cuerpo.questions.c1;
+  assert.equal(c1.type, "choice");
+  assert.equal(c1.instructions, "What kind of evidence does the written description give? Pick one label. Use only what the description states.");
+  assert.deepEqual(c1.criteria, {
+    trabajo: "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, or people working.",
+    factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
+    otra: "The description shows neither. For example, a selfie, a blurry image, or a scene with no work and no document.",
+  });
+});
+
+test("un trabajo manda las once preguntas y los niveles de score en orden", () => {
+  const preguntas = preguntasTrabajo(`  ${PEDIDO}  `);
+  assert.deepEqual(Object.keys(preguntas), ["lugar", "v1", "v2", "v3", "v4", "t5", "t6", "t7", "t8", "t9", "t10"]);
+  assert.equal(preguntas.lugar.instructions, "Which place does the written description show? Pick one label. Use only what the description states.");
+  assert.equal(preguntas.lugar.criteria.pared_o_superficie, "A wall, floor, fence, or other surface that was painted, cleaned, or fixed.");
+  assert.equal(preguntas.lugar.criteria.stand_o_mesa, "A stand, table, or booth set up with items.");
+  assert.equal(preguntas.lugar.criteria.espacio_abierto, "An outdoor area, street, park, or yard.");
+  assert.equal(preguntas.lugar.criteria.no_claro, "The place is not stated or is too vague.");
+  assert.equal(preguntas.v1.instructions, `The organizer asked for: ${PEDIDO}. Does the written description match this request?`);
+  assert.deepEqual(Object.keys(preguntas.v1.criteria), ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"]);
+  assert.equal(preguntas.v2.instructions, `The organizer asked for: ${PEDIDO}. How many parts of this request does the written description clearly state?`);
+  assert.equal(preguntas.v3.instructions, `The organizer asked for: ${PEDIDO}. Does the written description name a place, an object, or an action that proves it?`);
+  assert.equal(
+    preguntas.v4.instructions,
+    `The organizer asked for: ${PEDIDO}. Does the written description say that something the organizer asked for is missing or not shown?`,
+  );
+  assert.equal(preguntas.t5.instructions, "What was done, according to the written description? Pick one label. Use only what the description states.");
+  assert.equal(preguntas.t5.criteria.pintar, "Something was painted or drawn.");
+  assert.equal(preguntas.t5.criteria.limpiar, "An area was cleaned or cleared of trash.");
+  assert.equal(preguntas.t5.criteria.armar_o_montar, "Something was built, set up, or assembled, such as a stand or a booth.");
+  assert.equal(preguntas.t5.criteria.vender_o_atender, "People were selling, serving, or attending visitors.");
+  assert.equal(preguntas.t5.criteria.transportar, "Items or people were moved from one place to another.");
+  assert.equal(preguntas.t5.criteria.otra_o_no_claro, "Something else, or the description does not say.");
+  assert.equal(
+    preguntas.t6.instructions,
+    "In what condition is the finished work, according to the written description? Pick one label. Use only what the description states.",
+  );
+  assert.equal(preguntas.t6.criteria.terminado, "The description says the work is finished or complete.");
+  assert.equal(preguntas.t6.criteria.a_medias, "The description says part of the work is done and part is missing or still in progress.");
+  assert.equal(preguntas.t6.criteria.sin_empezar, "The description shows no work done, such as an empty wall or an empty room.");
+  assert.equal(preguntas.t6.criteria.no_claro, "The description does not say.");
+  assert.equal(preguntas.t7.instructions, "Does the written description name the tools or materials used, such as brushes, paint, trash bags, tables, or a vehicle?");
+  assert.equal(preguntas.t8.instructions, "Does the written description say that the work was done in the place the organizer asked for?");
+  assert.equal(preguntas.t9.instructions, "Does the written description say that any part of the work is unfinished, damaged, or not visible?");
+  assert.equal(preguntas.t10.instructions, "Overall, how well does the written description show that the organizer's request was done?");
+  assertListaDeTres(preguntas.v2.criteria, [
+    "None. The description clearly states no part of the request.",
+    "Some. The description clearly states only some parts of the request.",
+    "All. The description clearly states every part of the request.",
+  ]);
+  assertListaDeTres(preguntas.t10.criteria, [
+    "The description does not show the request was done.",
+    "The description shows part of the request, and something is missing.",
+    "The description shows the whole request was done.",
+  ]);
+  assert.equal(preguntas.v1.criteria.es_lo_pedido.includes(PEDIDO), false);
+});
+
+test("una factura manda las nueve preguntas y no inventa un pedido distinto", () => {
+  const pedido = "Photo of the meal receipt";
+  const preguntas = preguntasFactura(pedido);
+  assert.deepEqual(Object.keys(preguntas), ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
+  assert.equal(preguntas.f1.instructions, `The organizer asked for a receipt for: ${pedido}. What was the money spent on, according to the written description?`);
+  assert.deepEqual(Object.keys(preguntas.f1.criteria), ["coincide_con_lo_pedido", "otro_gasto", "no_se_ve"]);
+  assert.equal(preguntas.f2.instructions, "Does the written description state the total amount paid, as a number?");
+  assert.equal(preguntas.f3.instructions, "Does the written description state the date of the purchase?");
+  assert.equal(preguntas.f4.instructions, `The organizer asked for a receipt that shows: ${pedido}. How many of the required details does the written description state?`);
+  assert.equal(preguntas.g1.instructions, `The organizer asked for: ${pedido}. According to the written description, what category is the expense?`);
+  assert.equal(preguntas.g1.criteria.transporte, "Fuel, bus fare, taxi, parking, or tolls.");
+  assert.equal(preguntas.g1.criteria.comida_o_bebida, "Food, drinks, or snacks.");
+  assert.equal(preguntas.g1.criteria.materiales, "Paint, tools, supplies, or building materials.");
+  assert.equal(preguntas.g1.criteria.impresion_o_papeleria, "Printing, paper, posters, or stationery.");
+  assert.equal(preguntas.g1.criteria.otro_o_no_claro, "Anything else, or the description does not say.");
+  assert.equal(
+    preguntas.g2.instructions,
+    `The organizer asked for: ${pedido}. Is the expense category a reasonable cost for this task? For example, fuel for a transport task, or paint for a painting task.`,
+  );
+  assert.equal(preguntas.g3.instructions, "Does the written description name at least one item that was bought, such as fuel, paint, or food?");
+  assert.equal(preguntas.g4.instructions, "Does the written description name the store or business where the purchase was made?");
+  assert.equal(preguntas.g5.instructions, `Overall, how well does the written description show that this expense fits the organizer's request: ${pedido}?`);
+  assertListaDeTres(preguntas.f4.criteria, [
+    "None. The description states none of the required details.",
+    "Some. The description states only some of the required details.",
+    "All. The description states every required detail.",
+  ]);
+  assertListaDeTres(preguntas.g5.criteria, [
+    "The expense does not fit the request, or the description does not say what was bought.",
+    "The expense could fit the request, but an item, an amount, or a date is missing.",
+    "The expense clearly fits the request, and it states the item, the amount, and the date.",
+  ]);
+  assert.equal("t10" in preguntas, false);
+});
+
+test("el score final de un trabajo cumplido no sube por un sí suelto", () => {
+  const cumplido = senalesDeTrabajo(trabajoBase());
+  assert.deepEqual(cumplido, { choice: "trabajo", noul: true, score: "cumplió" });
+  const sinPrueba = senalesDeTrabajo({ ...trabajoBase(), t10: 0, v3: true, t7: true });
+  assert.equal(sinPrueba.score, "insuficiente");
+  assert.equal(sinPrueba.noul, true);
+});
+
+test("si V4 o T9 dicen que falta algo, un trabajo no queda en cumplió", () => {
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v4: true }).score, "parcial");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t9: true }).score, "parcial");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v3: false }).score, "parcial");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v4: true, t9: true }).noul, false);
+});
+
+test("un trabajo que es otra cosa, que no empezó o que no nombra partes queda insuficiente", () => {
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v1: "es_otra_cosa" }).score, "insuficiente");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "sin_empezar" }).score, "insuficiente");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 0 }).score, "insuficiente");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 1 }).score, "parcial");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "a_medias" }).score, "parcial");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }).score, "parcial");
+});
+
+test("nombrar herramientas no cambia el veredicto del trabajo", () => {
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: false }).score, "cumplió");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t10: 1 }).score, "parcial");
+});
+
+test("el score final de una factura no sube porque el gasto parezca razonable", () => {
+  const cumplida = senalesDeFactura(facturaBase());
+  assert.deepEqual(cumplida, { choice: "factura", noul: true, score: "cumplió" });
+  const razonablePeroVacia = senalesDeFactura({ ...facturaBase(), g5: 0, g2: true });
+  assert.equal(razonablePeroVacia.score, "insuficiente");
+  assert.equal(razonablePeroVacia.noul, true);
+});
+
+test("si el gasto no es razonable, la factura no queda en cumplió", () => {
+  const senales = senalesDeFactura({ ...facturaBase(), g2: false });
+  assert.equal(senales.score, "parcial");
+  assert.equal(senales.noul, false);
+});
+
+test("un gasto distinto o sin detalle deja la factura en insuficiente", () => {
+  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "otro_gasto" }).score, "insuficiente");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f1: "no_se_ve" }).score, "insuficiente");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f4: 0 }).score, "insuficiente");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f2: false }).score, "parcial");
+  assert.equal(senalesDeFactura({ ...facturaBase(), f3: false }).score, "parcial");
+  assert.equal(senalesDeFactura({ ...facturaBase(), g3: false }).score, "parcial");
+  assert.equal(senalesDeFactura({ ...facturaBase(), g4: false }).score, "cumplió");
+});
+
+test("el tope del reembolso sigue ganando aunque Laya diga que cumplió", () => {
+  const senales = senalesDeFactura(facturaBase());
+  const cerrado = cerrar("reembolso", "10", { texto: "Receipt for 20 dollars.", monto: "20.00", fecha: "2026-09-27" }, senales, "scout");
+  assert.equal(senales.score, "cumplió");
+  assert.equal(cerrado?.veredicto, "insuficiente");
+});
+
+test("lee la clase y el camino desde answers, no desde la primera pregunta que encuentre", () => {
+  assert.equal(leerClase({ answers: { c1: { choice: "factura" }, lugar: { choice: "stand_o_mesa" } } }), "factura");
+  const trabajo = leerTrabajo({
     answers: {
-      choice: { choice: "factura" },
-      noul: { noul: 0.82 },
-      score: { score: "parcial" },
+      ...respuestasTrabajo(),
+      t10: { type: "score", score: 1.8, probabilities: { "0": 0.1, "1": 0.2, "2": 0.7 } },
+      v2: { type: "score", score: 0.2, probabilities: { "0": 0.8, "1": 0.1, "2": 0.1 } },
     },
   });
-  assert.deepEqual(senales, { choice: "factura", noul: true, score: "parcial" });
+  assert.equal(trabajo?.t10, 2);
+  assert.equal(trabajo?.v2, 0);
+  assert.equal(leerTrabajo({ answers: { t10: { probabilities: { "0": 0.9, "1": 0.1, "2": 0 } } } }), null);
 });
 
-test("un noul bajo es no", () => {
-  const senales = leerLaya({
-    choice: "trabajo",
-    noul: 0.2,
-    score: "insuficiente",
+test("un empate de score se queda en el nivel más bajo", () => {
+  const trabajo = leerTrabajo({
+    answers: { ...respuestasTrabajo(), t10: { probabilities: [0.4, 0.2, 0.4] } },
   });
-  assert.equal(senales?.noul, false);
-  assert.equal(senales?.score, "insuficiente");
+  assert.equal(trabajo?.t10, 0);
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t10: 0 }).score, "insuficiente");
 });
 
-test("una respuesta sin las tres señales no se usa", () => {
-  assert.equal(leerLaya({ answers: { choice: { choice: "factura" } } }), null);
+test("un empate de etiquetas no elige camino", () => {
+  assert.equal(leerClase({ answers: { c1: { probabilities: { trabajo: 0.5, factura: 0.5, otra: 0 } } } }), null);
+  assert.equal(leerFactura({ answers: { f1: { probabilities: { otro_gasto: 0.4, no_se_ve: 0.4 } } } }), null);
+});
+
+test("un noul de 0,99 en V4 es sí y baja el veredicto", () => {
+  const trabajo = leerTrabajo({ answers: { ...respuestasTrabajo(), v4: { noul: 0.99 } } });
+  assert.equal(trabajo?.v4, true);
+  assert.ok(trabajo);
+  assert.equal(senalesDeTrabajo(trabajo).score, "parcial");
 });
 
 test("sin URL Laya no está configurada", async () => {
@@ -57,171 +241,142 @@ test("una respuesta de Laya que no se lee es respuesta", async () => {
   assert.equal(error.code, "respuesta");
 });
 
+test("primero clasifica y después pregunta solo el camino de trabajo", async () => {
+  const cuerpos: Array<{ questions: Record<string, { type: string; criteria?: unknown }> }> = [];
+  const senales = await preguntarLaya("https://laya.example", "Table set up.", PEDIDO, async (_input, init) => {
+    const cuerpo = JSON.parse(String(init?.body)) as (typeof cuerpos)[number];
+    cuerpos.push(cuerpo);
+    if (cuerpos.length === 1) return Response.json({ answers: { c1: { choice: "trabajo" } } });
+    return Response.json({ answers: respuestasTrabajo() });
+  });
+  assert.equal(cuerpos.length, 2);
+  assert.deepEqual(Object.keys(cuerpos[0].questions), ["c1"]);
+  assert.equal(cuerpos[1].questions.t10?.type, "score");
+  assert.equal(Array.isArray(cuerpos[1].questions.t10?.criteria), true);
+  assert.equal((cuerpos[1].questions.t10?.criteria as unknown[]).length, 3);
+  assert.equal("f1" in cuerpos[1].questions, false);
+  assert.equal("g5" in cuerpos[1].questions, false);
+  assert.deepEqual(senales, { choice: "trabajo", noul: true, score: "cumplió" });
+});
+
+test("una factura no dispara las preguntas de trabajo", async () => {
+  const ids: string[][] = [];
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt 12.40.", "Photo of the meal receipt", async (_input, init) => {
+    const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+    ids.push(Object.keys(cuerpo.questions));
+    if (ids.length === 1) return Response.json({ answers: { c1: { choice: "factura" } } });
+    return Response.json({ answers: respuestasFactura() });
+  });
+  assert.deepEqual(ids[1], ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
+  assert.equal(ids[1].includes("t10"), false);
+  assert.deepEqual(senales, { choice: "factura", noul: true, score: "cumplió" });
+});
+
+test("si la descripción no es trabajo ni factura, no hay segunda llamada", async () => {
+  let llamadas = 0;
+  const senales = await preguntarLaya("https://laya.example", "A blank wall.", PEDIDO, async () => {
+    llamadas += 1;
+    return Response.json({ answers: { c1: { choice: "otra" } } });
+  });
+  assert.equal(llamadas, 1);
+  assert.deepEqual(senales, { choice: "otra", noul: false, score: "insuficiente" });
+});
+
+test("si el segundo llamado falla, la revisión falla", async () => {
+  let llamadas = 0;
+  const error = await falloLaya("https://laya.example", async () => {
+    llamadas += 1;
+    if (llamadas === 1) return Response.json({ answers: { c1: { choice: "trabajo" } } });
+    return new Response("no", { status: 502 });
+  });
+  assert.equal(llamadas, 2);
+  assert.equal(error.code, "proveedor");
+  assert.equal(error.status, 502);
+});
+
+function assertListaDeTres(criterios: readonly string[], esperados: [string, string, string]) {
+  assert.equal(Array.isArray(criterios), true);
+  assert.deepEqual([...criterios], esperados);
+}
+
+function trabajoBase(): RespuestasTrabajo {
+  return {
+    lugar: "stand_o_mesa",
+    v1: "es_lo_pedido",
+    v2: 2,
+    v3: true,
+    v4: false,
+    t5: "armar_o_montar",
+    t6: "terminado",
+    t7: false,
+    t8: true,
+    t9: false,
+    t10: 2,
+  };
+}
+
+function facturaBase(): RespuestasFactura {
+  return {
+    f1: "coincide_con_lo_pedido",
+    f2: true,
+    f3: true,
+    f4: 2,
+    g1: "comida_o_bebida",
+    g2: true,
+    g3: true,
+    g4: true,
+    g5: 2,
+  };
+}
+
+function respuestasTrabajo(): Record<string, unknown> {
+  return {
+    lugar: { choice: "stand_o_mesa" },
+    v1: { choice: "es_lo_pedido" },
+    v2: { probabilities: { "0": 0.05, "1": 0.1, "2": 0.85 } },
+    v3: { noul: 0.91 },
+    v4: { noul: 0.1 },
+    t5: { choice: "armar_o_montar" },
+    t6: { choice: "terminado" },
+    t7: { noul: false },
+    t8: { noul: 0.8 },
+    t9: { noul: 0.2 },
+    t10: { probabilities: ["0.05", "0.15", "0.8"] },
+  };
+}
+
+function respuestasFactura(): Record<string, unknown> {
+  return {
+    f1: { choice: "coincide_con_lo_pedido" },
+    f2: { noul: 0.95 },
+    f3: { noul: true },
+    f4: { score: 2 },
+    g1: { choice: "comida_o_bebida" },
+    g2: { noul: 0.7 },
+    g3: { noul: "yes" },
+    g4: { noul: 0.6 },
+    g5: { probabilities: { "0": 0.1, "1": 0.2, "2": 0.7 } },
+  };
+}
+
+function leerCuerpo(cuerpo: unknown): {
+  model: string;
+  state: string;
+  questions: { c1: { type: string; instructions: string; criteria: Record<string, string> } };
+} {
+  return cuerpo as {
+    model: string;
+    state: string;
+    questions: { c1: { type: string; instructions: string; criteria: Record<string, string> } };
+  };
+}
+
 async function falloLaya(base: string, fetchImpl: typeof fetch): Promise<FalloRevision> {
   try {
-    await preguntarLaya(base, "texto", "condición", "trabajo", fetchImpl);
+    await preguntarLaya(base, "texto", "condición", fetchImpl);
   } catch (error) {
     assert.ok(error instanceof FalloRevision);
     return error;
   }
   assert.fail("tenía que fallar");
 }
-
-test("el pedido de un trabajo con condición nombra la evidencia en el texto", () => {
-  const cuerpo = leerCuerpo(cuerpoLaya("Table set up with the ZEEK banner.", "Banner visible and the table set up", "trabajo"));
-  assert.equal(cuerpo.model, "multilingual");
-  assert.equal(cuerpo.state, "Table set up with the ZEEK banner.\nCondition: Banner visible and the table set up");
-  assert.equal(
-    cuerpo.questions.choice.instructions,
-    'Which label matches the written description? This work asks for: "Banner visible and the table set up". Count only evidence the description names, not words copied from the condition.',
-  );
-  assert.deepEqual(cuerpo.questions.choice.criteria, {
-    trabajo: 'The description names the finished work this request asks for: "Banner visible and the table set up".',
-    factura: "The description names an invoice or a receipt, not the finished work.",
-    otra: "The description does not name the finished work. Use this for a blank wall, an unrelated scene, or a vague scene.",
-  });
-  assert.equal(
-    cuerpo.questions.noul.instructions,
-    'The written description explicitly names the evidence this condition requests: "Banner visible and the table set up". A blank wall, an empty room, or a description that never names that evidence makes this statement false.',
-  );
-  assert.equal(
-    cuerpo.questions.score.instructions,
-    'How much of the required work evidence does the written description name? Required evidence: "Banner visible and the table set up". Count a detail only when the description states it. Do not treat the condition text itself as something the description said.',
-  );
-  assert.deepEqual(cuerpo.questions.score.criteria, [
-    "The description does not name the required evidence. A blank wall, an empty room, or an unrelated scene is this level.",
-    "The description names some of the required evidence and leaves out at least one part the condition asks for.",
-    "The description names every part the condition asks for.",
-  ]);
-  assertListaDeScore(cuerpo);
-});
-
-test("el pedido de un trabajo sin condición no inventa una condición", () => {
-  const cuerpo = leerCuerpo(cuerpoLaya("A blank wall.", "", "trabajo"));
-  assert.equal(cuerpo.state, "A blank wall.\nCondition: ");
-  assert.equal(
-    cuerpo.questions.choice.instructions,
-    "Which label matches the written description of this work? Count only evidence the description names.",
-  );
-  assert.equal(cuerpo.questions.choice.criteria.trabajo, "The description names a finished piece of work.");
-  assert.equal(
-    cuerpo.questions.noul.instructions,
-    "The written description explicitly names a finished piece of work and what was done. A blank wall, an empty room, or a description that names no finished work makes this statement false.",
-  );
-  assert.equal(cuerpo.questions.noul.instructions.includes("this condition"), false);
-  assert.deepEqual(cuerpo.questions.score.criteria, [
-    "The description does not name any finished work. A blank wall, an empty room, or an unrelated scene is this level.",
-    "The description names some finished work and also says that part of it is missing or not shown.",
-    "The description names the finished work and does not say that any part of it is missing or not shown.",
-  ]);
-  assertListaDeScore(cuerpo);
-});
-
-test("el pedido de un reembolso con condición pide el comprobante de esa condición", () => {
-  const cuerpo = leerCuerpo(cuerpoLaya("Team meal receipt for 12.40 on 2026-09-27.", "Photo of the meal receipt", "reembolso"));
-  assert.equal(cuerpo.state, "Team meal receipt for 12.40 on 2026-09-27.\nCondition: Photo of the meal receipt");
-  assert.equal(
-    cuerpo.questions.choice.instructions,
-    'Which label matches the written description? This reimbursement asks for: "Photo of the meal receipt". Count only evidence the description names, not words copied from the condition.',
-  );
-  assert.deepEqual(cuerpo.questions.choice.criteria, {
-    trabajo: "The description names finished work and does not name a receipt or an invoice.",
-    factura: 'The description names a receipt or an invoice for this request: "Photo of the meal receipt".',
-    otra: "The description does not name a receipt or an invoice. Use this for a meal with no document, a blank wall, or a vague scene.",
-  });
-  assert.equal(
-    cuerpo.questions.noul.instructions,
-    'The written description explicitly names a receipt or an invoice for the evidence this condition requests: "Photo of the meal receipt". A blank wall, an empty room, or a description that never names that evidence makes this statement false.',
-  );
-  assert.deepEqual(cuerpo.questions.score.criteria, [
-    "The description does not name a receipt and does not name an invoice.",
-    "The description names a receipt or an invoice, and it leaves out part of the required evidence.",
-    "The description names a receipt or an invoice and names every part of the required evidence.",
-  ]);
-  assertListaDeScore(cuerpo);
-});
-
-test("el pedido de un reembolso sin condición exige el comprobante en el texto", () => {
-  const cuerpo = leerCuerpo(cuerpoLaya("A plate of food.", "   ", "reembolso"));
-  assert.equal(cuerpo.state, "A plate of food.\nCondition: ");
-  assert.equal(
-    cuerpo.questions.noul.instructions,
-    "The written description explicitly names a receipt or an invoice. A meal, a blank wall, or a description that names no receipt and no invoice makes this statement false.",
-  );
-  assert.equal(cuerpo.questions.choice.criteria.factura, "The description names a receipt or an invoice.");
-  assert.equal(cuerpo.questions.noul.instructions.includes("Photo of"), false);
-  assert.deepEqual(cuerpo.questions.score.criteria, [
-    "The description does not name a receipt and does not name an invoice.",
-    "The description names a receipt or an invoice, and it does not state both an amount and a date.",
-    "The description names a receipt or an invoice, and it states both an amount and a date.",
-  ]);
-  assertListaDeScore(cuerpo);
-  const sinCondicion = leerCuerpo(cuerpoLaya("A plate of food.", "", "reembolso"));
-  assert.deepEqual(cuerpo.questions, sinCondicion.questions);
-});
-
-function leerCuerpo(cuerpo: unknown): {
-  model: string;
-  state: string;
-  questions: {
-    choice: { type: string; instructions: string; criteria: { trabajo: string; factura: string; otra: string } };
-    noul: { type: string; instructions: string };
-    score: { type: string; instructions: string; criteria: string[] };
-  };
-} {
-  return cuerpo as {
-    model: string;
-    state: string;
-    questions: {
-      choice: { type: string; instructions: string; criteria: { trabajo: string; factura: string; otra: string } };
-      noul: { type: string; instructions: string };
-      score: { type: string; instructions: string; criteria: string[] };
-    };
-  };
-}
-
-function assertListaDeScore(cuerpo: ReturnType<typeof leerCuerpo>) {
-  assert.equal(cuerpo.questions.choice.type, "choice");
-  assert.equal(cuerpo.questions.noul.type, "noul");
-  assert.equal(cuerpo.questions.score.type, "score");
-  assert.equal(Array.isArray(cuerpo.questions.score.criteria), true);
-  assert.equal(cuerpo.questions.score.criteria.length, 3);
-  assert.deepEqual(Object.keys(cuerpo.questions.choice.criteria), ["trabajo", "factura", "otra"]);
-  assert.match(cuerpo.questions.score.criteria[0], /does not name/);
-  assert.match(cuerpo.questions.score.criteria[2], /names /);
-  assert.equal(cuerpo.questions.noul.instructions.includes("The photo meets this condition"), false);
-  assert.equal(cuerpo.questions.choice.instructions.includes("What does the photo show?"), false);
-}
-
-test("el score usa el índice con mayor probabilidad", () => {
-  const senales = leerLaya({
-    answers: {
-      choice: { choice: "otra" },
-      noul: { noul: 0.91 },
-      score: { type: "score", score: 1.2, probabilities: { "0": 0.1, "1": 0.7, "2": 0.2 } },
-    },
-  });
-  assert.equal(senales?.noul, true);
-  assert.equal(senales?.score, "parcial");
-});
-
-test("el índice más alto en dos es cumplió", () => {
-  const senales = leerLaya({
-    answers: {
-      choice: { choice: "trabajo" },
-      noul: { noul: 0.1 },
-      score: { type: "score", score: 1.6, probabilities: { "0": "0.1", "1": "0.2", "2": "0.7" } },
-    },
-  });
-  assert.equal(senales?.noul, false);
-  assert.equal(senales?.score, "cumplió");
-});
-
-test("si el dos empata con el cero, queda el nivel más bajo", () => {
-  const senales = leerLaya({
-    choice: "trabajo",
-    noul: false,
-    score: { score: 1, probabilities: [0.4, 0.2, 0.4] },
-  });
-  assert.equal(senales?.score, "insuficiente");
-});

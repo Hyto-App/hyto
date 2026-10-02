@@ -2,11 +2,11 @@
 
 Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
 
-## 2026-10-01
+## 2026-10-02
 
 ### Cambiado
 
-- Las preguntas que se envían a Laya dependen del tipo de tarea (trabajo o reembolso) y de la condición. El sí o no y los tres niveles piden que la descripción escrita nombre la evidencia; una pared vacía o un texto vago ya no alcanzan para un sí. El veredicto y el pago no cambian.
+- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
 
 ## 2026-09-29
 
