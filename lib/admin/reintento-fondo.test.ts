@@ -41,14 +41,14 @@ describe("reintento en segundo plano", { concurrency: false }, () => {
   test("un clic manual no se duplica y sigue disponible después del tope automático", async () => {
     reiniciarReintentoFondo();
     let posts = 0;
-    let soltar: (() => void) | null = null;
+    const pendiente: { soltar: (() => void) | null } = { soltar: null };
     const fetchImpl: typeof fetch = async (input, init) => {
       posts += 1;
       assert.equal(String(input), "/api/revision/stand");
       assert.equal(init?.method, "POST");
-      if (!soltar) {
+      if (!pendiente.soltar) {
         return new Promise((resolve) => {
-          soltar = () => resolve(json(cuerpo("error"), 500));
+          pendiente.soltar = () => resolve(json(cuerpo("error"), 500));
         });
       }
       return json({ aviso: "no" }, 500);
@@ -59,7 +59,7 @@ describe("reintento en segundo plano", { concurrency: false }, () => {
       assert.equal(posts, 1);
       assert.equal(segundo?.ok, false);
       if (segundo && !segundo.ok) assert.match(segundo.aviso, /Wait a moment/);
-      soltar?.();
+      pendiente.soltar?.();
       assert.equal((await primero)?.ok, false);
       for (let i = 0; i < MAX_INTENTOS_FONDO + 1; i += 1) await correrReintento("stand", "fondo", fetchImpl);
       assert.equal(posts, 1 + MAX_INTENTOS_FONDO);
@@ -68,7 +68,7 @@ describe("reintento en segundo plano", { concurrency: false }, () => {
       if (manual && !manual.ok) assert.equal(manual.aviso, "The review could not be retried.");
       assert.equal(posts, 2 + MAX_INTENTOS_FONDO);
     } finally {
-      soltar?.();
+      pendiente.soltar?.();
       reiniciarReintentoFondo();
     }
   });

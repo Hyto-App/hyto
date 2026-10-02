@@ -72,7 +72,7 @@ test("la bandeja muestra un botón de reintento en cada revisión fallida", asyn
 
 test("el botón avisa si el reintento falla y muestra que está cargando", async () => {
   reiniciarReintentoFondo();
-  let soltar: ((respuesta: Response) => void) | null = null;
+  const pendiente: { soltar: ((respuesta: Response) => void) | null } = { soltar: null };
   const urls: string[] = [];
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -80,7 +80,7 @@ test("el botón avisa si el reintento falla y muestra que está cargando", async
     urls.push(`${init?.method ?? "GET"} ${url}`);
     if (init?.method === "POST") {
       return new Promise((resolve) => {
-        soltar = resolve;
+        pendiente.soltar = resolve;
       });
     }
     if (url === "/api/tareas") return json({ tareas: [{ id: "stand" }] });
@@ -104,14 +104,14 @@ test("el botón avisa si el reintento falla y muestra que está cargando", async
     assert.equal(botonReintento()?.disabled, true);
     assert.equal(urls.some((url) => url.startsWith("POST /api/firma")), false);
     await act(async () => {
-      soltar?.(json({ aviso: "Only the organizer reviews." }, 403));
+      pendiente.soltar?.(json({ aviso: "Only the organizer reviews." }, 403));
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Only the organizer reviews/);
     assert.equal(botonReintento()?.textContent, "Retry review");
     assert.equal(botonReintento()?.disabled, false);
   } finally {
-    soltar?.(json({ aviso: "no" }, 500));
+    pendiente.soltar?.(json({ aviso: "no" }, 500));
     globalThis.fetch = anterior;
     await desmontar();
     reiniciarReintentoFondo();
