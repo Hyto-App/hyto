@@ -124,7 +124,6 @@ test("schema.ts coincide con la migración y neon no nombra columnas ausentes", 
       "veredictos.tarea_id",
       "veredictos.texto_scout",
       "veredictos.noul",
-      "veredictos.score",
     ],
   );
   assert.deepEqual(cruce.hashPagoEscrituras, ["lib/api/firma.ts"]);

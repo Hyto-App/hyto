@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { useVistaAdmin } from "@/components/admin/usarVista";
+import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { reintentarRevision } from "@/lib/admin/remoto";
 import { bandejaDe, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, porPersona, resumir } from "@/lib/admin/vista";
@@ -129,7 +130,10 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                         <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
                         <p className="mt-1 text-lg font-semibold tracking-tight">{textoVisible(tarea.titulo)}</p>
                       </div>
-                      <PastillaEstado estado={tarea.estado} />
+                      <span className="flex flex-wrap items-center justify-end gap-2">
+                        {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
+                        <PastillaEstado estado={tarea.estado} />
+                      </span>
                     </div>
                     <p className="hyto-amount mt-4 text-xl">{cifra}</p>
                     <div className="hyto-bar mt-3" aria-hidden="true">
