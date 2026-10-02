@@ -9,6 +9,10 @@ test("technical payment errors tell the person what to do", () => {
   assert.match(mensajeClaro("HYTO_ESCROW_PLATFORM is missing"), /isn't complete/);
   assert.match(mensajeClaro("ESCROW_RECEIVER_TRUSTLINE_MISSING"), /Get ready to be paid/);
   assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Lock the budget before you pay.");
+  assert.equal(
+    mensajeClaro("The task has no payout wallet. Ask the volunteer to sign in and open the task."),
+    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
+  );
   assert.equal(mensajeClaro("Sign in to continue."), "Sign in to continue.");
   assert.equal(mensajeClaro("  "), "");
 });

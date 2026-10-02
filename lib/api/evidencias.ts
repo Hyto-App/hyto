@@ -14,7 +14,11 @@ export type ActorEvidencia = {
   usuarioId: string;
   rol: Rol;
   demo?: boolean;
+  wallet?: string;
 };
+
+export const AVISO_SIN_CUENTA =
+  "This sign-in has no payout account. Sign in again and open the task so we know where to pay.";
 
 export type DepsEvidencia = {
   almacen: Almacen;
@@ -99,7 +103,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const asignado = puedeFijarWallet(tarea, deps.actor);
     // La sesión demo sube evidencia a las tareas del proyecto demo, sin fijar cuenta de cobro.
     const demo = deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
-    const wallet = demo ? null : direccion(texto(form.get("wallet")));
+    const wallet = demo || !asignado ? null : direccion(deps.actor?.wallet ?? "");
     if (deps.actor && !asignado && !demo) {
       const aviso =
         wallet && wallet !== tarea.walletCobro
@@ -129,6 +133,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
     if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
+    const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
+    if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
     const leida = await deps.fotos.leer(blobId);
     const trabajo = (deps.revisarTarea ?? revisarPorDefecto)(tarea, leida);
@@ -144,7 +150,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       );
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
-    return json({ evidencia: evidenciaPublica(guardada) }, 201);
+    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
   } catch {
     return baseNoLista();
   }
@@ -238,8 +244,9 @@ function esImagen(foto: Blob): boolean {
 }
 
 function direccion(valor: string): string | null {
-  if (!/^G[A-Z2-7]{55}$/.test(valor)) return null;
-  return valor;
+  const limpio = valor.trim();
+  if (!/^G[A-Z2-7]{55}$/.test(limpio)) return null;
+  return limpio;
 }
 
 function puedeFijarWallet(tarea: TareaFila, actor: ActorEvidencia | undefined): boolean {
