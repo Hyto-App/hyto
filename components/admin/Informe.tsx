@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
+import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { reintentarRevision } from "@/lib/admin/remoto";
-import { bandejaDe, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, porPersona, resumir } from "@/lib/admin/vista";
-import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
+import { conTarea } from "@/lib/admin/parche";
+import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/lib/admin/vista";
+import type { VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
 import { TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -18,32 +19,11 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
   const estado = useVistaAdmin(proyectoId);
   const cargada = estado.vista;
   const [parche, setParche] = useState<VistaAdmin | null>(null);
-  const [reintento, setReintento] = useState<string | null>(null);
-  const [avisoId, setAvisoId] = useState<string | null>(null);
   const vista = parche ?? cargada;
 
   useEffect(() => {
     setParche(null);
   }, [cargada]);
-
-  async function reintentar(id: string) {
-    if (reintento) return;
-    setReintento(id);
-    setAvisoId(null);
-    try {
-      const detalle = await reintentarRevision(id);
-      if (!detalle) {
-        setAvisoId(id);
-        return;
-      }
-      setParche((actual) => {
-        const base = actual ?? cargada;
-        return base ? conTarea(base, detalle.tarea) : base;
-      });
-    } finally {
-      setReintento(null);
-    }
-  }
 
   if (estado.error) {
     return (
@@ -152,20 +132,16 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                     ) : tarea.frase ? (
                       <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.frase)}</p>
                     ) : null}
-                    {tarea.origen === "error" && !vista.ejemplo ? (
-                      <button
-                        type="button"
-                        onClick={() => void reintentar(tarea.id)}
-                        disabled={reintento === tarea.id}
-                        className="mt-3 text-sm font-semibold underline-offset-4 hover:underline"
-                      >
-                        Retry review
-                      </button>
-                    ) : null}
-                    {avisoId === tarea.id ? (
-                      <p role="alert" className="mt-3 text-sm leading-6">
-                        The review could not be retried.
-                      </p>
+                    {tarea.origen === "error" && tarea.estado !== "pagado" && !vista.ejemplo ? (
+                      <AccionesRevisionFallida
+                        tareaId={tarea.id}
+                        onDetalle={(detalle) => {
+                          setParche((actual) => {
+                            const base = actual ?? cargada;
+                            return base ? conTarea(base, detalle.tarea) : base;
+                          });
+                        }}
+                      />
                     ) : null}
                     {pago || credencial ? (
                       <p className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -198,13 +174,3 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
   );
 }
 
-function conTarea(vista: VistaAdmin, tarea: TareaAdmin): VistaAdmin {
-  const tareas = vista.tareas.map((item) => (item.id === tarea.id ? tarea : item));
-  return {
-    ...vista,
-    tareas,
-    bandeja: bandejaDe(tareas),
-    resumen: resumir(tareas),
-    personas: porPersona(tareas),
-  };
-}

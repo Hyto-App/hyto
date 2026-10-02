@@ -6,6 +6,7 @@ import { asegurarSemilla } from "../db/semilla";
 import type { VeredictoFila } from "../db/tipos";
 import { desdeFallo, desdeGuion } from "../revision/armar";
 import { guardarRevision } from "./evidencias";
+import { INTENTOS_REVISION } from "../revision/reintento";
 import { leerRevisionHttp, liberarRevision, reiniciarCandadosRevision, reservarRevision } from "./revision";
 
 test("un fallo no borra el monto y la fecha ya guardados", async () => {
@@ -113,7 +114,7 @@ describe("reintentar la revisión", { concurrency: false }, () => {
       const otra = (await forzada.json()) as { tarea: { origen: string; codigo: string | null } };
       assert.equal(otra.tarea.origen, "error");
       assert.equal(otra.tarea.codigo, "proveedor");
-      assert.equal(llamadas, 1);
+      assert.equal(llamadas, INTENTOS_REVISION);
       assert.equal((await almacen.leerEvidencia(id))?.monto, "12.40");
     } finally {
       console.error = previo;

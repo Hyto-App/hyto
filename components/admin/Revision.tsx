@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
@@ -11,8 +12,9 @@ import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
+import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, type DetalleRevision } from "@/lib/admin/remoto";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
+import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
@@ -69,7 +71,6 @@ export function Revision({
     setFalloPaso(fallo?.paso ?? null);
     setFalloCodigo(fallo?.codigo ?? null);
   }
-  const [reintentando, setReintentando] = useState(false);
   const [borrador, setBorrador] = useState("");
   const [confirmando, setConfirmando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
@@ -134,12 +135,11 @@ export function Revision({
   pasoRef.current = paso;
   const confirmandoRef = useRef(confirmando);
   confirmandoRef.current = confirmando;
-  const reintentandoRef = useRef(reintentando);
-  reintentandoRef.current = reintentando;
   const fotoRef = useRef(foto);
   fotoRef.current = foto;
   const tareaRef = useRef(tarea);
   tareaRef.current = tarea;
+  const localRef = useRef(0);
 
   const { reciente } = useNovedadesEvento({
     proyectoId: real && eventoId ? eventoId : undefined,
@@ -149,12 +149,19 @@ export function Revision({
     exigirFoto: true,
     fotoDe: (id) => (id === tareaId ? fotoRef.current : null),
     alCambiar: async (ids) => {
-      if (pasoRef.current || confirmandoRef.current || reintentandoRef.current) {
+      const marca = localRef.current;
+      if (pasoRef.current || confirmandoRef.current || reintentoFondoEnCurso(tareaId)) {
         return { ok: false, avisar: false };
       }
       if (!ids.includes(tareaId)) return { ok: true, avisar: false };
       const detalle = await cargarDetalleOrganizador(tareaId);
-      if (!detalle || pasoRef.current || confirmandoRef.current || reintentandoRef.current) {
+      if (
+        !detalle ||
+        localRef.current !== marca ||
+        pasoRef.current ||
+        confirmandoRef.current ||
+        reintentoFondoEnCurso(tareaId)
+      ) {
         return { ok: false, avisar: false };
       }
       const previa = tareaRef.current;
@@ -192,25 +199,14 @@ export function Revision({
     setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
   }
 
-  async function reintentar() {
-    if (reintentando || !tarea) return;
-    setReintentando(true);
-    publicarAviso(null);
-    try {
-      const detalle = await reintentarRevision(tareaId);
-      if (!detalle) {
-        publicarAviso("The review could not be retried.");
-        return;
-      }
-      setReal(true);
-      setTarea(detalle.tarea);
-      setFoto(detalle.foto);
-      setContrato(detalle.contratoEscrow);
-      setWallet(detalle.wallet);
-    } finally {
-      setReintentando(false);
-    }
-  }
+  const aplicarDetalle = useCallback((detalle: DetalleRevision) => {
+    localRef.current += 1;
+    setReal(true);
+    setTarea(detalle.tarea);
+    setFoto(detalle.foto);
+    setContrato(detalle.contratoEscrow);
+    setWallet(detalle.wallet);
+  }, []);
 
   async function confirmar() {
     if (confirmando || !tarea || tarea.tipo !== "reembolso") return;
@@ -445,10 +441,8 @@ export function Revision({
           ) : tarea.frase ? (
             <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase)}</p>
           ) : null}
-          {tarea.origen === "error" && real ? (
-            <button type="button" onClick={() => void reintentar()} disabled={reintentando} className="mt-4 text-sm text-[var(--suave)]">
-              Retry review
-            </button>
+          {tarea.origen === "error" && real && tarea.estado !== "pagado" && !contrato ? (
+            <AccionesRevisionFallida tareaId={tarea.id} onDetalle={aplicarDetalle} />
           ) : null}
 
           {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (

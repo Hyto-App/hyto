@@ -1,21 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { Numeros } from "@/components/admin/Numeros";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
-import { cargarDetalleOrganizador } from "@/lib/admin/remoto";
+import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
 import { vistaAdmin } from "@/lib/admin/vista";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { iniciales } from "@/components/ui/Marca";
 import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
+
+const PROTECCION_REINTENTO_MS = 8_000;
 
 type Filtro = "all" | Veredicto;
 
@@ -48,11 +51,22 @@ export function Bandeja({
   const vivaRef = useRef(viva);
   vivaRef.current = viva;
   const generacion = useRef(0);
+  const aplicadoEn = useRef(new Map<string, number>());
 
   useEffect(() => {
     generacion.current += 1;
     setViva((actual) => (actual === null ? actual : null));
   }, [base]);
+
+  const aplicar = useCallback((detalle: DetalleRevision) => {
+    aplicadoEn.current.set(detalle.tarea.id, Date.now());
+    const marca = generacion.current;
+    const origen = elegidaRef.current ? null : (vivaRef.current ?? vistaRef.current);
+    if (!origen || origen.ejemplo) return;
+    const fusion = fusionarVista(origen, [detalle.tarea]);
+    if (generacion.current !== marca || elegidaRef.current) return;
+    if (fusion !== origen) setViva(fusion);
+  }, []);
 
   const { reciente } = useNovedadesEvento({
     proyectoId: proyectoId && vista && !vista.ejemplo && !elegida ? proyectoId : undefined,
@@ -70,9 +84,21 @@ export function Bandeja({
       const detalles = await Promise.all(ids.map((id) => cargarDetalleOrganizador(id)));
       if (generacion.current !== marca || elegidaRef.current) return { ok: false, avisar: false };
       if (detalles.some((detalle) => !detalle)) return { ok: false, avisar: false };
-      const llegadas = detalles.flatMap((detalle) => (detalle ? [detalle.tarea] : []));
-      const fusion = fusionarVista(vivaRef.current ?? vistaRef.current ?? actual, llegadas);
-      if (fusion !== (vivaRef.current ?? vistaRef.current)) setViva(fusion);
+      const ahora = Date.now();
+      let protegida = false;
+      const llegadas = detalles.flatMap((detalle) => {
+        if (!detalle) return [];
+        const cuando = aplicadoEn.current.get(detalle.tarea.id) ?? 0;
+        if (cuando > 0 && ahora - cuando < PROTECCION_REINTENTO_MS) {
+          protegida = true;
+          return [];
+        }
+        return [detalle.tarea];
+      });
+      const baseVista = vivaRef.current ?? vistaRef.current ?? actual;
+      const fusion = fusionarVista(baseVista, llegadas);
+      if (fusion !== baseVista) setViva(fusion);
+      if (protegida) return { ok: false, avisar: false };
       return { ok: true, avisar: fusion !== actual };
     },
   });
@@ -117,8 +143,13 @@ export function Bandeja({
 
   const visibles = filtro === "all" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
+  const fallidas = vista.ejemplo ? [] : vista.bandeja.filter((item) => item.origen === "error" && item.estado !== "pagado");
+
   return (
     <main className="hyto-page">
+      {fallidas.map((item) => (
+        <ReintentoFondo key={item.id} tareaId={item.id} onDetalle={aplicar} />
+      ))}
       {proyectoId ? null : (
         <header className="hyto-page-head">
           <div>
@@ -204,6 +235,9 @@ export function Bandeja({
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo)}</h3>
                   <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion)}</p>
                   {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase)}</p> : null}
+                  {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
+                    <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />
+                  ) : null}
                   {proyectoId && miembros.length > 0 ? (
                     <label className="mt-4 block text-sm" htmlFor={`asignar-${seleccion.id}`}>
                       Assign

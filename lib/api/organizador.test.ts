@@ -11,6 +11,7 @@ import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { usarLectorSaldo } from "../escrow/saldo";
 import { AVISO_PROYECTO_DEMO } from "../sesion/demo";
+import { INTENTOS_REVISION } from "../revision/reintento";
 import { reiniciarCandadosRevision } from "./revision";
 import { crearProyectoHttp } from "./proyectos";
 
@@ -329,7 +330,7 @@ test("el reintento solo corre si quien llama organiza ese proyecto", async () =>
 
     const propio = await forzarRevision(pedir("global"), stand);
     assert.equal(propio.status, 200);
-    assert.equal(llamadas, 1);
+    assert.equal(llamadas, INTENTOS_REVISION);
     const vista = (await propio.json()) as { tarea: { origen: string; codigo: string | null } };
     assert.equal(vista.tarea.origen, "error");
     assert.equal(vista.tarea.codigo, "proveedor");
