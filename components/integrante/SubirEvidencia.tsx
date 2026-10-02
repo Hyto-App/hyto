@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
+import { leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
@@ -221,11 +221,6 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       });
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
-      if (ejemplo) {
-        guardarEvidencia(resultado.evidencia);
-        guardarEstado(tarea.id, "en revisión");
-        setTarea({ ...tarea, estado: "en revisión" });
-      }
       setFase("lista");
     } catch (err) {
       setError(err instanceof ErrorDeSesion || err instanceof ErrorDeEnvio ? err.aviso : "Could not send. Try again.");
