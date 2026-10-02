@@ -387,6 +387,9 @@ async function guardarResultado(
 
 function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | { aviso: string } | null {
   if (pago.contrato && esContrato(pago.contrato)) return pago.contrato;
+  // Submitted, not failed. The predicted contractId from prepare is not written
+  // here, and the process-local map below is skipped. A missing contrato_escrow
+  // does not mean the deploy never landed.
   if (pago.codigo === "STELLAR_TX_SUBMITTED_INDEXER_LAGGING") {
     return {
       aviso:

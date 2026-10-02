@@ -72,6 +72,8 @@ async function preparar(wallet: string, fetchImpl: typeof fetch): Promise<Respon
   } catch {
     return json({ aviso: AVISO_USDC_LECTURA }, 502);
   }
+  // Horizon 404: the account is not on testnet. This path does not call Friendbot
+  // or Cavos addTrustline, so signing in again does not create it.
   if (!cuenta) return json({ aviso: AVISO_USDC_SIN_CUENTA }, 400);
   if (cuentaTieneUsdc(cuenta)) return json({ listo: true });
   const sequence = typeof cuenta.sequence === "string" || typeof cuenta.sequence === "number" ? String(cuenta.sequence) : "";
