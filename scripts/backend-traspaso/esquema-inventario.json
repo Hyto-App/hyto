@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "c224c9391ff7ead664697f97f9e30f955be53350ac1eeb620032127beb67a163",
+      "sha256": "02dc28603fee77fc6463c8a72c672330fab7bb3b798c8925c01909aea3b5d2d1",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -75,7 +75,8 @@
           "drizzle/0001_contrato_escrow.sql",
           "drizzle/0002_organizador_proyecto.sql",
           "drizzle/0003_monto_confirmado.sql",
-          "drizzle/0004_miembros_invitaciones.sql"
+          "drizzle/0004_miembros_invitaciones.sql",
+          "drizzle/0005_evidencia_antifraude.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -146,6 +147,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "6769386aa77191918fa6d9bd33dab95c23178320a050a029a5467b95fe6f8e4e",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0005_evidencia_antifraude.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "9a7b8f4572335b21d68679c381e1398ffbf4ceff68d8f77cbc03532822afd705",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -1272,6 +1285,204 @@
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
+        },
+        {
+          "nombre": "capturada_en",
+          "nombreEnDrizzle": "capturadaEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "capturadaEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "frescura",
+          "nombreEnDrizzle": "frescura",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "frescura",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "sha256",
+          "nombreEnDrizzle": "sha256",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "sha256",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "phash",
+          "nombreEnDrizzle": "phash",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "phash",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "tipo_archivo",
+          "nombreEnDrizzle": "tipoArchivo",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "tipoArchivo",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "motivo_copia",
+          "nombreEnDrizzle": "motivoCopia",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "EvidenciaFila",
+            "campo": "motivoCopia",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
         }
       ],
       "llavePrimaria": {
@@ -1305,7 +1516,60 @@
           "nombreEnNeon": "confirmar con Esteban"
         }
       ],
-      "indices": [],
+      "indices": [
+        {
+          "nombre": "evidencias_sha256_idx",
+          "unico": false,
+          "metodo": null,
+          "columnas": [
+            {
+              "nombre": "sha256",
+              "orden": null
+            }
+          ],
+          "origen": "sql",
+          "archivo": "drizzle/0005_evidencia_antifraude.sql"
+        },
+        {
+          "nombre": "evidencias_phash_idx",
+          "unico": false,
+          "metodo": null,
+          "columnas": [
+            {
+              "nombre": "phash",
+              "orden": null
+            }
+          ],
+          "origen": "sql",
+          "archivo": "drizzle/0005_evidencia_antifraude.sql"
+        },
+        {
+          "nombre": "evidencias_sha256_idx",
+          "unico": false,
+          "metodo": "btree",
+          "columnas": [
+            {
+              "nombre": "sha256",
+              "orden": null
+            }
+          ],
+          "origen": "drizzle",
+          "archivo": "lib/db/schema.ts"
+        },
+        {
+          "nombre": "evidencias_phash_idx",
+          "unico": false,
+          "metodo": "btree",
+          "columnas": [
+            {
+              "nombre": "phash",
+              "orden": null
+            }
+          ],
+          "origen": "drizzle",
+          "archivo": "lib/db/schema.ts"
+        }
+      ],
       "checks": []
     },
     {
@@ -2932,7 +3196,6 @@
     "El SQL no califica las tablas y pgTable no recibe esquema. Si en Neon no están en public, confirmar con Esteban",
     "UNIQUE sin nombre en el SQL: usuarios(email), proyecto_invitaciones(secreto_hash). El nombre en Neon: confirmar con Esteban",
     "Las PRIMARY KEY no tienen nombre en el SQL. El nombre del índice en Neon: confirmar con Esteban",
-    "No hay CREATE INDEX ni index() de Drizzle. PostgreSQL igual crea índice para cada PRIMARY KEY y cada UNIQUE; esos nombres no están en el código. confirmar con Esteban",
     "Las REFERENCES no tienen nombre de restricción en el SQL. El nombre en Neon: confirmar con Esteban",
     "tareas.miembro_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con miembro. confirmar con Esteban",
     "evidencias.blob_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con blob. confirmar con Esteban",

@@ -44,10 +44,16 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Groq key used to describe the photo. Without it, the review reports that AI review is not configured.",
   },
   {
+    nombre: "GROQ_VISION_MODEL",
+    ambito: "servidor",
+    requerida: false,
+    para: "Modelo de visión de Groq. Si falta, se usa qwen/qwen3.8-27b.",
+  },
+  {
     nombre: "LAYA_URL",
     ambito: "servidor",
     requerida: false,
-    para: "URL pública de Laya. Sin ella, la revisión usa el stub.",
+    para: "URL pública de Laya. Sin ella, fuera de producción la revisión usa el stub. En producción la revisión queda como error y no aprueba sola.",
   },
   {
     nombre: "LAYA_API_KEY",
@@ -65,7 +71,7 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     nombre: "HYTO_TOKEN_SECRET",
     ambito: "servidor",
     requerida: false,
-    para: "Secreto HMAC de los pagos preparados. Mínimo 32 caracteres. En production, sin él preparar y enviar responden 503.",
+    para: "Secreto HMAC de los pagos preparados y de los tokens de la cámara. Mínimo 32 caracteres. En production, sin él preparar, enviar y el token de evidencia responden 503.",
   },
   {
     nombre: "HYTO_ESCROW_PLATFORM",
