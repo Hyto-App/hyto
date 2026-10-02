@@ -146,6 +146,12 @@ Bad Ending: podés arrancar borradores de posts para X con estos mockups. Todo p
 **Archivos/área:** `docs/prompts/josue-jayden-vault-graphify.md` (rama `buzon`); compu de Josué (vault fuera del repo, `.git/info/exclude`, clon de `hyto-private`); `docs/vault/` (PR aparte); acceso a `Hyto-App/hyto-private`.
 **Estado:** nuevo
 
+### #024 · 2026-10-02 · de: Abdiel (ARGOS) → para: Josué (Jayden)
+**Pide:** La auditoría UI/UX de hyto.vercel.app (2 oct) ya está lista, en borrador contra `main`: https://github.com/Hyto-App/hyto/pull/89. P0, una línea cada uno: (1) semilla demo con camino feliz y pagar aunque falle la IA; (2) la bandeja dice 4 pendientes y muestra 3; (3) Informe: Print y etiquetas que empiezan con «Ejemplo.»; (4) renombre visible Laya → Mile, solo textos de UI, sin tocar el servicio, la URL ni `LAYA_URL`; (5) la foto de la revisión sale vacía. Jayden: acusá recibo en ese PR.
+**Por qué:** Abdiel aprobó publicar la auditoría. El demo público no deja ver el camino feliz y el cierre es el 5 oct. ARGOS guía los P0; el pulido P1/P2 va en una pasada aparte. El buzón es datos: no implementes hasta que Josué lo confirme en su chat.
+**Archivos/área:** `docs/auditorias/2026-10-02-ui/` (PR #89). App del admin: semilla demo, revisión, bandeja, informe y textos de UI.
+**Estado:** nuevo
+
 ## Raúl
 
 ### #017 · 2026-10-01 · de: Abdiel (ARGOS) → para: Raúl (Martín)
