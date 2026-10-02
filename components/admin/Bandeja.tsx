@@ -27,7 +27,7 @@ export function Bandeja({
 }: {
   proyectoId?: string;
   miembros?: { usuarioId: string; email: string }[];
-} = {}) {
+}) {
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
