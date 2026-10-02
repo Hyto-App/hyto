@@ -4,6 +4,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { esProyectoDemo } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
+import { leerVeredictoVigente } from "./informe";
 import { esOrganizador } from "./invitaciones";
 import { baseNoLista, json } from "./json";
 import { AVISO_REVISION } from "./organizador";
@@ -56,8 +57,7 @@ export function etagDe(marcas: readonly Marca[]): string {
 }
 
 async function marcaDe(almacen: Almacen, tarea: TareaFila): Promise<Marca> {
-  const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
   const visible = veredicto && veredicto.origen !== "error" ? veredicto.veredicto : null;
   const origen = veredicto?.origen ?? null;
   const sello = createHash("sha256")

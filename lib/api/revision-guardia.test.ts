@@ -209,6 +209,7 @@ async function evidenciaReal(
     fecha: "2026-09-27",
     creadaEn: "2026-09-29T00:00:00.000Z",
   });
+  await almacen.actualizarTarea(tareaId, { estado: "en revisión" });
   return id;
 }
 
