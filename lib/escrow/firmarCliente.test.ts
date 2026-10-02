@@ -323,6 +323,23 @@ test("un token vencido y sin identidad no se puede refrescar", async () => {
   }
 });
 
+test("un rechazo de despliegue conserva el código del receptor", async () => {
+  const red = fetchDe([
+    {
+      status: 409,
+      body: {
+        aviso: "The volunteer's payout account isn't ready yet. Ask them to open the task in Hyto and tap Get ready to be paid.",
+        codigo: "receptor_no_listo",
+      },
+    },
+  ]);
+  await assert.rejects(
+    () => firmarYEnviar("desplegar", "stand", {}, { fetch: red.fetch, firmar: async () => FIRMADO }),
+    (error: unknown) =>
+      error instanceof ErrorFirmaCliente && error.codigo === "receptor_no_listo" && error.estado === 409,
+  );
+});
+
 function jwt(payload: Record<string, unknown>): string {
   const parte = (valor: Record<string, unknown>) => Buffer.from(JSON.stringify(valor)).toString("base64url");
   return `${parte({ alg: "none" })}.${parte(payload)}.x`;

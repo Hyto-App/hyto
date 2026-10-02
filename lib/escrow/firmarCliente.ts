@@ -54,12 +54,19 @@ const ACCIONES = new Set<AccionCliente>(["desplegar", "fondear", "marcar", "apro
 export class ErrorFirmaCliente extends Error {
   estado: number | null;
   contrato: string | null;
+  codigo: string | null;
 
-  constructor(mensaje: string, estado: number | null = null, contrato: string | null = null) {
+  constructor(
+    mensaje: string,
+    estado: number | null = null,
+    contrato: string | null = null,
+    codigo: string | null = null,
+  ) {
     super(mensaje);
     this.name = "ErrorFirmaCliente";
     this.estado = estado;
     this.contrato = contrato;
+    this.codigo = codigo;
   }
 }
 
@@ -219,13 +226,13 @@ function leerPago(json: unknown, contratoPreparado: string | null): PagoFirmado 
 function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
   const datos = registro(json);
   const aviso = texto(datos.aviso) ?? "";
-  const codigo = texto(datos.codigo) ?? "";
-  const junto = `${aviso} ${codigo}`;
-  if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
-  if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado);
-  if (aviso) return new ErrorFirmaCliente(aviso, estado);
-  if (estado === 403) return new ErrorFirmaCliente("Only the organizer can lock the budget and pay.", 403);
-  return new ErrorFirmaCliente(AVISO_FIRMA, estado);
+  const codigo = texto(datos.codigo);
+  const junto = `${aviso} ${codigo ?? ""}`;
+  if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403, null, codigo);
+  if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado, null, codigo);
+  if (aviso) return new ErrorFirmaCliente(aviso, estado, null, codigo);
+  if (estado === 403) return new ErrorFirmaCliente("Only the organizer can lock the budget and pay.", 403, null, codigo);
+  return new ErrorFirmaCliente(AVISO_FIRMA, estado, null, codigo);
 }
 
 export function traducirFirma(error: unknown): ErrorFirmaCliente {
