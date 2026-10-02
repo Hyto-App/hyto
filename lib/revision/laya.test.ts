@@ -215,6 +215,13 @@ test("un empate de etiquetas no elige camino", () => {
   assert.equal(leerFactura({ answers: { f1: { probabilities: { otro_gasto: 0.4, no_se_ve: 0.4 } } } }), null);
 });
 
+test("un noul de exactamente 0,5 cuenta como sí", () => {
+  const enElCorte = leerTrabajo({ answers: { ...respuestasTrabajo(), v3: { noul: 0.5 } } });
+  assert.equal(enElCorte?.v3, true);
+  const debajo = leerTrabajo({ answers: { ...respuestasTrabajo(), v3: { noul: 0.499 } } });
+  assert.equal(debajo?.v3, false);
+});
+
 test("un noul de 0,99 en V4 es sí y baja el veredicto", () => {
   const trabajo = leerTrabajo({ answers: { ...respuestasTrabajo(), v4: { noul: 0.99 } } });
   assert.equal(trabajo?.v4, true);
@@ -285,6 +292,26 @@ test("si la descripción no es trabajo ni factura, no hay segunda llamada", asyn
   });
   assert.equal(llamadas, 1);
   assert.deepEqual(senales, { choice: "otra", noul: false, score: "0" });
+});
+
+test("un reembolso clasificado como otra se queda en 0", async () => {
+  let llamadas = 0;
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Photo of the meal receipt", async () => {
+    llamadas += 1;
+    return Response.json({ answers: { c1: { choice: "otra" } } });
+  });
+  assert.equal(llamadas, 1);
+  assert.deepEqual(senales, { choice: "otra", noul: false, score: "0" });
+  const cerrado = cerrar(
+    "reembolso",
+    "15",
+    { texto: "Meal receipt for something else.", monto: "12.40", fecha: "2026-09-27" },
+    senales,
+    "scout",
+  );
+  assert.equal(cerrado?.nota, 0);
+  assert.equal(cerrado?.veredicto, "insuficiente");
+  assert.equal(cerrado?.score, "0");
 });
 
 test("si el segundo llamado falla, la revisión falla", async () => {

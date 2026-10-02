@@ -16,7 +16,7 @@ export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Vered
         <i className="hyto-dot" aria-hidden="true" />
         {porcentaje ?? banda}
       </span>
-      {porcentaje ? <span className="text-sm text-[var(--suave)]">{banda}</span> : null}
+      {porcentaje ? <span className={`text-sm ${CLASE[veredicto]}`}>{banda}</span> : null}
     </span>
   );
 }

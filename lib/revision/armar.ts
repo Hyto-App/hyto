@@ -59,13 +59,12 @@ export function stubLaya(tipo: TipoTarea): Senales {
   return { choice: "stand", noul: false, score: String(NOTA_STUB_TRABAJO) };
 }
 
-// The percentage is the result. noul does not change it, and it never approves a payment.
+// The percentage is the result. It never approves a payment.
 export function armarVeredicto(entrada: {
   tipo: TipoTarea;
   tope: string | null;
   monto: string | null;
   fecha: string | null;
-  noul: boolean;
   score: string;
 }): { nota: number; veredicto: Veredicto } | null {
   const nota = notaDeTexto(entrada.score);
@@ -102,7 +101,7 @@ export function cerrar(
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
-  const armado = armarVeredicto({ tipo, tope, monto, fecha, noul: senales.noul, score: senales.score });
+  const armado = armarVeredicto({ tipo, tope, monto, fecha, score: senales.score });
   if (!armado) return null;
   const senalesFinales: Senales = {
     ...senales,
@@ -142,15 +141,6 @@ export function desdeFallo(fallo: { code: string; mensaje: string }): ResultadoR
 export function desdeGuion(tipo: TipoTarea, tope: string | null): ResultadoRevision {
   const guion = guionFijo(tipo);
   const cerrado = cerrar(tipo, tope, guion, guion, "guion");
-  if (!cerrado) {
-    return {
-      ...guion,
-      veredicto: "parcial",
-      nota: NOTA_STUB_TRABAJO,
-      frase: fraseDe(guion.texto, guion),
-      origen: "guion",
-      codigo: null,
-    };
-  }
+  if (!cerrado) throw new Error("The sample script did not produce a grade.");
   return cerrado;
 }

@@ -28,22 +28,22 @@ test("el guion de un reembolso dentro del tope queda en 90 por ciento", () => {
 
 test("un monto por encima del tope no pasa de 40 por ciento", () => {
   assert.deepEqual(
-    armarVeredicto({ tipo: "reembolso", tope: "10", monto: "12.40", fecha: "2026-09-27", noul: true, score: "100" }),
+    armarVeredicto({ tipo: "reembolso", tope: "10", monto: "12.40", fecha: "2026-09-27", score: "100" }),
     { nota: TOPE_NOTA_REEMBOLSO, veredicto: "insuficiente" },
   );
 });
 
 test("sin monto o sin fecha el reembolso no pasa de 40 por ciento", () => {
   assert.equal(
-    armarVeredicto({ tipo: "reembolso", tope: "15", monto: null, fecha: "2026-09-27", noul: true, score: "90" })?.nota,
+    armarVeredicto({ tipo: "reembolso", tope: "15", monto: null, fecha: "2026-09-27", score: "90" })?.nota,
     TOPE_NOTA_REEMBOLSO,
   );
   assert.equal(
-    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "12.40", fecha: null, noul: true, score: "90" })?.nota,
+    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "12.40", fecha: null, score: "90" })?.nota,
     TOPE_NOTA_REEMBOLSO,
   );
   assert.equal(
-    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "0", fecha: "2026-09-27", noul: true, score: "90" })?.nota,
+    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "0", fecha: "2026-09-27", score: "90" })?.nota,
     TOPE_NOTA_REEMBOLSO,
   );
 });
@@ -55,19 +55,10 @@ test("un reembolso ya bajo no sube al tope de seguridad", () => {
   );
 });
 
-test("el sí o no de Laya no cambia el porcentaje", () => {
-  assert.equal(
-    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: true, score: "40" })?.nota,
-    40,
-  );
-  assert.equal(
-    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: false, score: "80" })?.nota,
-    80,
-  );
-  assert.equal(
-    armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, noul: false, score: "80" })?.veredicto,
-    "cumplió",
-  );
+test("el porcentaje sale solo del score", () => {
+  assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "40" })?.nota, 40);
+  assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "80" })?.nota, 80);
+  assert.equal(armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "80" })?.veredicto, "cumplió");
 });
 
 test("la frase muestra el porcentaje", () => {

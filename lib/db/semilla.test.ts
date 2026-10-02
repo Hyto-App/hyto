@@ -46,8 +46,8 @@ test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
 
   const veredictos = veredictosSemilla();
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "stand")?.score, "100");
-  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.score, "64");
-  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.score, "92");
+  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.score, "65");
+  assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.score, "90");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "stand")?.veredicto, "cumplió");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "registro")?.veredicto, "parcial");
   assert.equal(veredictos.find((veredicto) => veredicto.tareaId === "comida")?.veredicto, "cumplió");
@@ -70,7 +70,7 @@ test("el informe de ejemplo arma la bandeja de admin", async () => {
     informe.bandeja.map((tarea) => tarea.id),
     ["stand", "registro", "comida"],
   );
-  assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.nota, 64);
+  assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.nota, 65);
   assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.veredicto, "parcial");
   assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.nota, 100);
   assert.equal(informe.tareas.find((tarea) => tarea.id === "comida")?.montoRevisado, "12.40");
@@ -110,7 +110,7 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   const reembolso = (await (await leerRevisionHttp(almacen, null, "comida")).json()) as {
     tarea: { veredicto: string; nota: number | null; montoRevisado: string | null; fecha: string | null };
   };
-  assert.equal(reembolso.tarea.nota, 92);
+  assert.equal(reembolso.tarea.nota, 90);
   assert.equal(reembolso.tarea.veredicto, "cumplió");
   assert.equal(reembolso.tarea.montoRevisado, "12.40");
   assert.equal(reembolso.tarea.fecha, "2026-09-27");

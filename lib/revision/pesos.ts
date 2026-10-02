@@ -1,4 +1,5 @@
 import type { Veredicto } from "@/lib/admin/tipos";
+import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 
 /**
  * Weights for Laya's second call. Tune these numbers. Each path sums to 100.
@@ -77,33 +78,7 @@ export const TOPE_NOTA_REEMBOLSO = 40;
 export const UMBRAL_PARCIAL = 50;
 export const UMBRAL_CUMPLIO = 80;
 
-export type RespuestasNotaTrabajo = {
-  lugar: "pared_o_superficie" | "stand_o_mesa" | "espacio_abierto" | "no_claro";
-  v1: "es_lo_pedido" | "es_otra_cosa" | "no_se_puede_saber";
-  v2: 0 | 1 | 2;
-  v3: boolean;
-  v4: boolean;
-  t5: "pintar" | "limpiar" | "armar_o_montar" | "vender_o_atender" | "transportar" | "otra_o_no_claro";
-  t6: "terminado" | "a_medias" | "sin_empezar" | "no_claro";
-  t7: boolean;
-  t8: boolean;
-  t9: boolean;
-  t10: 0 | 1 | 2;
-};
-
-export type RespuestasNotaFactura = {
-  f1: "coincide_con_lo_pedido" | "otro_gasto" | "no_se_ve";
-  f2: boolean;
-  f3: boolean;
-  f4: 0 | 1 | 2;
-  g1: "transporte" | "comida_o_bebida" | "materiales" | "impresion_o_papeleria" | "otro_o_no_claro";
-  g2: boolean;
-  g3: boolean;
-  g4: boolean;
-  g5: 0 | 1 | 2;
-};
-
-export function notaDeTrabajo(respuestas: RespuestasNotaTrabajo): number {
+export function notaDeTrabajo(respuestas: RespuestasTrabajo): number {
   const peso = PESOS_PREGUNTAS.trabajo;
   return notaEntera(
     peso.lugar * creditoLugar(respuestas.lugar) +
@@ -120,7 +95,7 @@ export function notaDeTrabajo(respuestas: RespuestasNotaTrabajo): number {
   );
 }
 
-export function notaDeFactura(respuestas: RespuestasNotaFactura): number {
+export function notaDeFactura(respuestas: RespuestasFactura): number {
   const peso = PESOS_PREGUNTAS.factura;
   return notaEntera(
     peso.f1 * creditoF1(respuestas.f1) +
@@ -150,6 +125,7 @@ export function notaDeTexto(valor: unknown): number | null {
 }
 
 export function notaEntera(suma: number): number {
+  if (!Number.isFinite(suma)) return 0;
   const redonda = Math.round(suma);
   if (redonda < 0) return 0;
   if (redonda > 100) return 100;
@@ -170,32 +146,32 @@ function creditoNo(valor: boolean): number {
   return valor ? 0 : 1;
 }
 
-function creditoV1(valor: RespuestasNotaTrabajo["v1"]): number {
+function creditoV1(valor: RespuestasTrabajo["v1"]): number {
   if (valor === "es_lo_pedido") return 1;
   if (valor === "no_se_puede_saber") return 0.5;
   return 0;
 }
 
-function creditoF1(valor: RespuestasNotaFactura["f1"]): number {
+function creditoF1(valor: RespuestasFactura["f1"]): number {
   if (valor === "coincide_con_lo_pedido") return 1;
   if (valor === "no_se_ve") return 0.5;
   return 0;
 }
 
-function creditoEstado(valor: RespuestasNotaTrabajo["t6"]): number {
+function creditoEstado(valor: RespuestasTrabajo["t6"]): number {
   if (valor === "terminado") return 1;
   if (valor === "a_medias") return 0.5;
   return 0;
 }
 
-function creditoLugar(valor: RespuestasNotaTrabajo["lugar"]): number {
+function creditoLugar(valor: RespuestasTrabajo["lugar"]): number {
   return valor === "no_claro" ? 0 : 1;
 }
 
-function creditoAccion(valor: RespuestasNotaTrabajo["t5"]): number {
+function creditoAccion(valor: RespuestasTrabajo["t5"]): number {
   return valor === "otra_o_no_claro" ? 0 : 1;
 }
 
-function creditoGasto(valor: RespuestasNotaFactura["g1"]): number {
+function creditoGasto(valor: RespuestasFactura["g1"]): number {
   return valor === "otro_o_no_claro" ? 0 : 1;
 }

@@ -20,6 +20,7 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 - Prepare and submit use an HMAC token (`HYTO_TOKEN_SECRET`).
 - Task owners are suggestions. Team coordination moves to the private repo Hyto-App/hyto-private. #66.
 - Stellar Raven is mandatory for agents. A code audit was recorded for 30 September. #62, #64, #65.
+- The review grade is a percentage from 0 to 100. It is the weighted sum of the answered questions (`PESOS_PREGUNTAS`). A band (Insufficient, Partial, Met) is only a color. The percentage does not approve a payment. A reimbursement with no amount, no date, or over the cap stays at 40 or below.
 
 ### Not in the repo yet
 
