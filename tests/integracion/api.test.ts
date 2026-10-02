@@ -15,6 +15,7 @@ import { reiniciarLimite } from "../../lib/escrow/limite";
 import { usarLectorSaldo } from "../../lib/escrow/saldo";
 import { motivoSuiteSync } from "./guardia";
 import { consulta, prepararSuite, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
+import { jpegDePrueba, tokenDePrueba } from "../../lib/evidencia/muestras";
 import { cookieSesionPrueba } from "./sesion-prueba";
 
 const CUENTA = `G${"A".repeat(55)}`;
@@ -102,6 +103,24 @@ function fotoDe(tareaId: string, tipo = "image/jpeg", bytes = Uint8Array.from([1
   const datos = new FormData();
   datos.set("tareaId", tareaId);
   datos.set("foto", new Blob([bytes], { type: tipo }), "evidencia.jpg");
+  return datos;
+}
+
+async function fotoRecibo(tareaId: string): Promise<{ datos: FormData; bytes: number }> {
+  const jpeg = await jpegDePrueba();
+  const datos = new FormData();
+  datos.set("tareaId", tareaId);
+  datos.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+  return { datos, bytes: jpeg.byteLength };
+}
+
+async function fotoCamara(tareaId: string, usuarioId = "voluntario-1"): Promise<FormData> {
+  const jpeg = await jpegDePrueba();
+  const datos = new FormData();
+  datos.set("tareaId", tareaId);
+  datos.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+  datos.set("token", tokenDePrueba(usuarioId, tareaId));
+  datos.set("capturadaEn", new Date().toISOString());
   return datos;
 }
 
@@ -371,7 +390,8 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const sesion = await cookieSesionPrueba();
     const voluntario = await cookieSesionPrueba("voluntario", CUENTA);
     await duenoZeek(sesion);
-    const creada = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("comida"), voluntario));
+    const recibo = await fotoRecibo("comida");
+    const creada = await evidenciasPost(pedido("http://local/api/evidencias", recibo.datos, voluntario));
     assert.equal(creada.status, 201);
     const json = (await leer(creada)) as { evidencia?: { id: string; monto: string | null; fecha: string | null; tareaId: string } };
     const id = json.evidencia?.id ?? "";
@@ -394,7 +414,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const foto = await fotoGet(pedirGet(`http://local/api/evidencias/${id}/foto`, sesion), contexto(id));
     assert.equal(foto.status, 200);
     assert.equal(foto.headers.get("content-type"), "image/jpeg");
-    assert.equal((await foto.arrayBuffer()).byteLength, 4);
+    assert.equal((await foto.arrayBuffer()).byteLength, recibo.bytes);
 
     const revision = await revisionGet(pedidoRevision("comida", sesion), contexto("comida"));
     const vista = (await leer(revision)) as {
@@ -419,7 +439,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const voluntario = await cookieSesionPrueba("voluntario");
     await duenoZeek(sesion);
     const creada = await evidenciasPost(
-      pedido("http://local/api/evidencias", fotoDe("stand", "image/png", Uint8Array.from([9])), voluntario),
+      pedido("http://local/api/evidencias", await fotoCamara("stand"), voluntario),
     );
     const id = ((await leer(creada)) as { evidencia?: { id: string } }).evidencia?.id ?? "";
     await consulta(
@@ -480,9 +500,10 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     const texto = new FormData();
     texto.set("tareaId", "stand");
     texto.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
-    const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto, sesion));
+    const asignado = await cookieSesionPrueba("voluntario");
+    const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto, asignado));
     assert.equal(noImagen.status, 400);
-    assert.equal(avisoDe(await leer(noImagen)), "Choose a photo.");
+    assert.equal(avisoDe(await leer(noImagen)), "Take the photo with the camera.");
 
     const ajena = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("no-existe"), sesion));
     assert.equal(ajena.status, 404);
@@ -493,7 +514,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     grande.set("foto", new Blob([new Uint8Array(8_000_001)], { type: "image/jpeg" }), "grande.jpg");
     const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande, sesion));
     assert.equal(pesada.status, 413);
-    assert.equal(avisoDe(await leer(pesada)), "The photo is too large.");
+    assert.equal(avisoDe(await leer(pesada)), "The file is too large.");
   });
 
   test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {

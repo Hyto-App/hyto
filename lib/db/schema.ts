@@ -1,4 +1,4 @@
-import { integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 
 export const usuarios = pgTable("usuarios", {
   id: text("id").primaryKey(),
@@ -44,7 +44,13 @@ export const evidencias = pgTable("evidencias", {
   fecha: text("fecha"),
   creadaEn: text("creada_en").notNull(),
   montoConfirmado: text("monto_confirmado"),
-});
+  capturadaEn: text("capturada_en"),
+  frescura: text("frescura"),
+  sha256: text("sha256"),
+  phash: text("phash"),
+  tipoArchivo: text("tipo_archivo"),
+  motivoCopia: text("motivo_copia"),
+}, (tabla) => [index("evidencias_sha256_idx").on(tabla.sha256), index("evidencias_phash_idx").on(tabla.phash)]);
 
 export const veredictos = pgTable("veredictos", {
   id: text("id").primaryKey(),

@@ -3,6 +3,8 @@ import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
 import { after, before, test } from "node:test";
 import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
 import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
+import { jpegDePrueba, jpegDistinto, tokenDePrueba } from "../evidencia/muestras";
+import { reiniciarTokensEvidencia } from "../evidencia/token";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
 import { POST as crearProyecto } from "../../app/api/proyectos/route";
@@ -89,9 +91,10 @@ test("las tareas de ZEEK salen de la base", async () => {
 test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha", async () => {
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();
+  const jpeg = await jpegDePrueba();
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "comida");
-  cuerpo.set("foto", new Blob([Uint8Array.from([1, 2, 3])], { type: "image/jpeg" }), "evidencia.jpg");
+  cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
   const previo = console.error;
   console.error = () => undefined;
   let creada: Response;
@@ -114,7 +117,7 @@ test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha"
 
   const foto = await leerFotoHttp(almacen, fotos, json.evidencia.id, VOLUNTARIO);
   assert.equal(foto.headers.get("content-type"), "image/jpeg");
-  assert.equal((await foto.arrayBuffer()).byteLength, 3);
+  assert.equal((await foto.arrayBuffer()).byteLength, jpeg.byteLength);
 
   const tarea = await almacen.leerTarea("comida");
   assert.equal(tarea?.estado, "en revisión");
@@ -163,7 +166,18 @@ test("la subida guarda la cuenta de la sesión del asignado, no la del formulari
     assert.equal(organizador.status, 403);
     assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
 
-    const sinCuenta = await publicarEvidenciaHttp(pedir(ajena), {
+    reiniciarTokensEvidencia();
+    const subir = (jpeg: Uint8Array<ArrayBuffer>) => {
+      const cuerpo = new FormData();
+      cuerpo.set("tareaId", "stand");
+      cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+      cuerpo.set("wallet", ajena);
+      cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+      cuerpo.set("capturadaEn", new Date().toISOString());
+      return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+    };
+
+    const sinCuenta = await publicarEvidenciaHttp(subir(await jpegDePrueba()), {
       almacen,
       fotos,
       actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: "no-es-cuenta" },
@@ -172,7 +186,7 @@ test("la subida guarda la cuenta de la sesión del asignado, no la del formulari
     assert.equal(((await sinCuenta.json()) as { aviso?: string }).aviso, AVISO_SIN_CUENTA);
     assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
 
-    const asignado = await publicarEvidenciaHttp(pedir(ajena), {
+    const asignado = await publicarEvidenciaHttp(subir(await jpegDistinto()), {
       almacen,
       fotos,
       actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: ` ${propia} ` },
@@ -196,7 +210,7 @@ test("la sesión demo no fija la cuenta de cobro", async () => {
     const cuerpo = new FormData();
     cuerpo.set("tareaId", "demo-comida");
     cuerpo.set("wallet", "G" + "B".repeat(55));
-    cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("foto", new Blob([await jpegDePrueba()], { type: "image/jpeg" }), "evidencia.jpg");
     const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
       almacen,
       fotos,
@@ -245,11 +259,14 @@ test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () =
 });
 
 test("la revisión de un trabajo sin clave guarda el error y no el guion", async () => {
+  reiniciarTokensEvidencia();
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
-  cuerpo.set("foto", new Blob([Uint8Array.from([9])], { type: "image/png" }), "evidencia.jpg");
+  cuerpo.set("foto", new Blob([await jpegDePrueba()], { type: "image/jpeg" }), "evidencia.jpg");
+  cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+  cuerpo.set("capturadaEn", new Date().toISOString());
   const previo = console.error;
   console.error = () => undefined;
   try {

@@ -1,8 +1,14 @@
 import { normalizarMonto } from "@/lib/admin/vista";
+import { ajustarParaVision } from "@/lib/evidencia/vision";
 import type { Descripcion } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 
-const MODELO = "qwen/qwen3.8-27b";
+export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
+
+export function modeloVision(env: NodeJS.ProcessEnv = process.env): string {
+  const pedido = env.GROQ_VISION_MODEL?.trim();
+  return pedido || MODELO_VISION_DEFECTO;
+}
 const BASE = "https://api.groq.com/openai/v1";
 const MAX_TOKENS = 1024;
 
@@ -57,6 +63,7 @@ export async function describirFoto(
   signal?: AbortSignal,
 ): Promise<Descripcion> {
   if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
+  const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${BASE}/chat/completions`, {
@@ -66,17 +73,18 @@ export async function describirFoto(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: MODELO,
+        model: modeloVision(),
         temperature: 0,
         max_completion_tokens: MAX_TOKENS,
         reasoning_effort: "none",
         reasoning_format: "hidden",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "user",
             content: [
               { type: "text", text: PEDIDO },
-              { type: "image_url", image_url: { url: `data:${tipo || "image/jpeg"};base64,${Buffer.from(bytes).toString("base64")}` } },
+              { type: "image_url", image_url: { url: `data:${imagen.tipo};base64,${Buffer.from(imagen.bytes).toString("base64")}` } },
             ],
           },
         ],

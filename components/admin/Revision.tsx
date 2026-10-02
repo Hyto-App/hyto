@@ -10,7 +10,7 @@ import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
-import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
+import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
@@ -322,7 +322,14 @@ export function Revision({
       </header>
       <div className="hyto-review">
         <figure className="hyto-photo">
-          {foto ? (
+          {foto && tarea.tipoArchivo === "application/pdf" ? (
+            <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
+              <p className="text-sm text-[var(--suave)]">Invoice PDF</p>
+              <a href={foto} className="text-sm font-medium underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+                Open the invoice
+              </a>
+            </div>
+          ) : foto ? (
             <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
@@ -366,8 +373,13 @@ export function Revision({
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
           <EtiquetasNota etiquetas={tarea.etiquetas} />
-          {tarea.origen === "error" ? (
+          {notaManual(tarea.codigo) ? (
+            <p className="mt-4 text-sm font-medium">{notaManual(tarea.codigo)}</p>
+          ) : tarea.origen === "error" ? (
             <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Mile is unavailable. No AI score for this photo.</p>
+          ) : null}
+          {notaCopia(tarea.motivoCopia) ? (
+            <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "")}</p>
           ) : null}
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-2 text-base leading-7">

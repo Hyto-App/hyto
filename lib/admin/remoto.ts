@@ -252,6 +252,8 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     fecha: texto(datos.fecha),
     hashPago: pago.hashPago,
     credencialUrl: pago.credencialUrl,
+    tipoArchivo: texto(datos.tipoArchivo),
+    motivoCopia: texto(datos.motivoCopia),
     etiquetas: leerEtiquetas(datos.etiquetas),
   };
 }
