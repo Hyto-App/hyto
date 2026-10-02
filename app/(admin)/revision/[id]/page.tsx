@@ -1,6 +1,8 @@
 import { Revision } from "@/components/admin/Revision";
+import { exigirOrganizadorDeTarea } from "@/lib/sesion/puerta";
 
 export default async function PaginaRevision({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <Revision tareaId={id} />;
+  const tarea = await exigirOrganizadorDeTarea(id);
+  return <Revision tareaId={id} eventoId={tarea.proyectoId} />;
 }

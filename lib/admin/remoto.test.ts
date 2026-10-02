@@ -52,7 +52,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     fondear: false,
     pagar: false,
     aprobarLocal: false,
-    pedirOtra: false,
+    pedirOtra: true,
   });
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true).desplegar, false);
   assert.equal(botonesRevision(tarea({ estado: "pendiente", veredicto: null }), true).pagar, false);
@@ -62,7 +62,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     fondear: true,
     pagar: false,
     aprobarLocal: false,
-    pedirOtra: false,
+    pedirOtra: true,
   });
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).fondear, false);
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).pagar, true);
@@ -226,7 +226,8 @@ test("la bandeja muestra los proyectos que organiza y omite el resto", async () 
     if (url === "/api/tareas") return json({ tareas: [{ id: "ajena" }] });
     return json({ aviso: "Only the organizer reviews." }, 403);
   };
-  assert.equal(await cargarVistaOrganizador({ fetch: soloAjena }), null);
+  const vacia = await cargarVistaOrganizador({ fetch: soloAjena });
+  assert.deepEqual(vacia?.tareas, []);
 });
 
 test("la vista real arma Ver pago con el hash de cada revisión", async () => {

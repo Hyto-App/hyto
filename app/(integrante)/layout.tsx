@@ -1,6 +1,7 @@
-import { MarcoVoluntario } from "@/components/integrante/MarcoVoluntario";
+import { Marco } from "@/components/admin/Marco";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
 import { VigilarSesion } from "@/components/sesion/VigilarSesion";
+import { demoHabilitado } from "@/lib/sesion/demo";
 import { leerRolDemo } from "@/lib/sesion/vista";
 
 export default async function LayoutIntegrante({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -8,7 +9,7 @@ export default async function LayoutIntegrante({ children }: Readonly<{ children
   return (
     <ProveedorModoDemo activo={rolDemo !== null} rol={rolDemo}>
       <VigilarSesion />
-      <MarcoVoluntario>{children}</MarcoVoluntario>
+      <Marco demoHabilitado={demoHabilitado()}>{children}</Marco>
     </ProveedorModoDemo>
   );
 }

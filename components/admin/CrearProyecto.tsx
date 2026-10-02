@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { guardarProyecto } from "@/lib/admin/memoria";
 import { normalizarMonto } from "@/lib/admin/vista";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { TipoTarea } from "@/lib/integrante/tipos";
@@ -15,12 +15,14 @@ type Fila = {
   titulo: string;
   tipo: TipoTarea;
   monto: string;
+  condicion: string;
+  asignado: string;
 };
 
-const FILA_INICIAL: Fila = { clave: "1", titulo: "", tipo: "trabajo", monto: "" };
+const FILA_INICIAL: Fila = { clave: "1", titulo: "", tipo: "trabajo", monto: "", condicion: "", asignado: "" };
 
 function filaNueva(): Fila {
-  return { clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`, titulo: "", tipo: "trabajo", monto: "" };
+  return { clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`, titulo: "", tipo: "trabajo", monto: "", condicion: "", asignado: "" };
 }
 
 export function CrearProyecto() {
@@ -34,7 +36,7 @@ export function CrearProyecto() {
     setFilas((actuales) => actuales.map((fila) => (fila.clave === clave ? { ...fila, ...cambio } : fila)));
   }
 
-  function fondear() {
+  async function fondear() {
     if (modoDemo) {
       setAviso(AVISO_PROYECTO_DEMO);
       return;
@@ -44,6 +46,8 @@ export function CrearProyecto() {
         titulo: fila.titulo.trim(),
         tipo: fila.tipo,
         monto: normalizarMonto(fila.monto),
+        condicion: fila.condicion.trim(),
+        asignado: fila.asignado.trim(),
       }))
       .filter((fila) => fila.titulo || fila.monto);
 
@@ -54,20 +58,17 @@ export function CrearProyecto() {
       return;
     }
 
-    const guardado = guardarProyecto({
-      nombre: nombreLimpio,
-      tareas: tareas.map((fila, indice) => ({
-        id: `nueva-${indice + 1}`,
-        titulo: fila.titulo,
-        tipo: fila.tipo,
-        monto: fila.monto!,
-      })),
+    const respuesta = await fetch("/api/proyectos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nombre: nombreLimpio, tareas }),
     });
-    if (guardado.aviso) {
-      setAviso(guardado.aviso);
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string; proyecto?: { id?: string } } | null;
+    if (!respuesta.ok || !cuerpo?.proyecto?.id) {
+      setAviso(cuerpo?.aviso ?? "Could not create the event.");
       return;
     }
-    router.push("/");
+    router.push(`/eventos/${cuerpo.proyecto.id}`);
   }
 
   let trabajo = 0;
@@ -84,16 +85,13 @@ export function CrearProyecto() {
   return (
     <main className="hyto-page">
       <p className="hyto-crumb">
-        <span>Projects</span>
+        <Link href="/eventos">Events</Link>
         <span aria-hidden="true">/</span>
-        <span>New project</span>
+        <span>New event</span>
       </p>
       <header className="hyto-page-head">
         <div>
-          <h1 className="hyto-title">Create project</h1>
-          <p className="hyto-sub">
-            Name each task and its amount in US dollars. Work is a fixed amount. A reimbursement is a cap. Saving does not move money. You lock each budget from the task review.
-          </p>
+          <h1 className="hyto-title">Create event</h1>
         </div>
       </header>
 
@@ -140,7 +138,7 @@ export function CrearProyecto() {
                         onClick={() => cambiar(fila.clave, { tipo: "reembolso" })}
                         className={`h-12 rounded-xl text-sm font-medium ${fila.tipo === "reembolso" ? "bg-[var(--tinta)] text-[var(--fondo)]" : "border border-[var(--borde)] text-[var(--suave)]"}`}
                       >
-                        Reimb.
+                        Reimbursement
                       </button>
                     </div>
                     <label className="sr-only" htmlFor={`tipo-${fila.clave}`}>
@@ -158,7 +156,7 @@ export function CrearProyecto() {
                   </div>
                   <div>
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${fila.clave}`}>
-                      Amount
+                      Amount (USDC)
                     </label>
                     <input
                       id={`monto-${fila.clave}`}
@@ -169,13 +167,32 @@ export function CrearProyecto() {
                     />
                   </div>
                 </div>
+                <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`condicion-${fila.clave}`}>
+                  Photo must show
+                </label>
+                <input
+                  id={`condicion-${fila.clave}`}
+                  value={fila.condicion}
+                  onChange={(evento) => cambiar(fila.clave, { condicion: evento.target.value })}
+                  className="hyto-input mt-2"
+                />
+                <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`asignado-${fila.clave}`}>
+                  Assign to
+                </label>
+                <input
+                  id={`asignado-${fila.clave}`}
+                  type="email"
+                  value={fila.asignado}
+                  onChange={(evento) => cambiar(fila.clave, { asignado: evento.target.value })}
+                  className="hyto-input mt-2"
+                />
                 {filas.length > 1 ? (
                   <button
                     type="button"
                     onClick={() => setFilas((actuales) => actuales.filter((item) => item.clave !== fila.clave))}
                     className="mt-4 text-sm text-[var(--suave)]"
                   >
-                    Remove
+                    Remove {fila.titulo.trim() || "task"}
                   </button>
                 ) : null}
               </fieldset>
@@ -203,19 +220,18 @@ export function CrearProyecto() {
               <dd className="hyto-amount">{formatearMonto(total)}</dd>
             </div>
           </dl>
-          <p className="mt-4 text-sm leading-6 text-[var(--suave)]">Nothing is paid when you save. You approve every payment from the review.</p>
-          <div className="mt-5">
-            <BotonPrincipal type="button" onClick={fondear} disabled={modoDemo}>
-              Save project
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <BotonPrincipal type="button" onClick={() => void fondear()} disabled={modoDemo}>
+              Create event
             </BotonPrincipal>
+            {modoDemo || aviso ? (
+              <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                {modoDemo ? AVISO_PROYECTO_DEMO : aviso}
+              </p>
+            ) : null}
           </div>
         </aside>
       </div>
-
-      {modoDemo || aviso ? (
-        <p className="mt-4 text-sm leading-6 text-[var(--suave)]">{modoDemo ? AVISO_PROYECTO_DEMO : aviso}</p>
-      ) : null}
-      <p className="mt-6 text-sm leading-6 text-[var(--suave)]">This draft stays on this device until the project is connected.</p>
     </main>
   );
 }

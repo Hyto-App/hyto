@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { after, before, test } from "node:test";
 import { Account, Address, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
 import { crearMemoria } from "../db/memoria";
@@ -7,7 +7,21 @@ import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
-import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
+import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
+import { emitirTokenPreparado } from "./preparado";
+
+const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
+let secretoPrevio: string | undefined;
+
+before(() => {
+  secretoPrevio = process.env.HYTO_TOKEN_SECRET;
+  process.env.HYTO_TOKEN_SECRET = SECRETO_TOKEN;
+});
+
+after(() => {
+  if (secretoPrevio === undefined) delete process.env.HYTO_TOKEN_SECRET;
+  else process.env.HYTO_TOKEN_SECRET = secretoPrevio;
+});
 
 const CONTRATO = "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const ORGANIZADOR = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -25,6 +39,19 @@ function sesion(wallet: string): SesionFila {
     expiraEn: new Date(Date.now() + 60_000).toISOString(),
     wallet,
   };
+}
+
+function tokenDe(xdr: string, meta: { accion: string; tareaId: string | null; monto: string | null }): string {
+  const token = emitirTokenPreparado({
+    usuarioId: "organizador",
+    sesionId: "tok",
+    huella: huellaDeXdr(xdr),
+    accion: meta.accion,
+    tareaId: meta.tareaId ?? "",
+    monto: meta.monto ?? "",
+  });
+  if (!token) throw new Error("missing payment secret");
+  return token;
 }
 
 function pedido(cuerpo: unknown): Request {
@@ -55,6 +82,14 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
   const visto: { cuerpo: Record<string, unknown> | null } = { cuerpo: null };
   globalThis.fetch = async (input, init) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       visto.cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
@@ -120,7 +155,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "stand", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -146,7 +181,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
     const pagado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "stand" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "stand", token: tokenDe(pago, { accion: "liberar", tareaId: "stand", monto: null }) }),
       almacen,
     );
     assert.equal(pagado.status, 200);
@@ -211,6 +246,14 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
@@ -233,7 +276,7 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "registro", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -266,6 +309,14 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
   const original = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       return new Response(JSON.stringify({ unsignedXdr: "AAAA", contractId: CONTRATO_XDR }), { status: 200 });
     }
@@ -284,7 +335,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida" }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida", token: tokenDe(alta, { accion: "desplegar", tareaId: "bienvenida", monto: "20" }) }),
       almacen,
     );
     assert.equal(enviado.status, 200);
@@ -322,7 +373,7 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "comida" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "comida", token: tokenDe(pago, { accion: "liberar", tareaId: "comida", monto: null }) }),
       almacen,
     );
     assert.equal(respuesta.status, 200);
@@ -355,7 +406,7 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
     const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
     const respuesta = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida" }),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "bienvenida", token: tokenDe(pago, { accion: "liberar", tareaId: "bienvenida", monto: null }) }),
       almacen,
     );
     assert.equal(respuesta.status, 200);
@@ -431,6 +482,14 @@ test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro 
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     const cuerpo = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
     if (url.endsWith("/escrow/multi-release/v2/deploy")) {
       const hitos = cuerpo?.milestones as { amount?: number }[] | undefined;
       montos.push(hitos?.[0]?.amount ?? Number.NaN);
@@ -492,6 +551,103 @@ test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro 
     restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
     restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
     restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
+test("un XDR que el servidor no preparó no se envía", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const contrato = Address.contract(new Uint8Array(32).fill(9)).toString();
+  await almacen.actualizarTarea("stand", { contratoEscrow: contrato, walletCobro: RECEPTOR });
+  const xdr = xdrDeInvocacion({ contrato, funcion: "release_funds", firmante: FIRMANTE_XDR });
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    throw new Error("no hay que enviar");
+  };
+  try {
+    const respuesta = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand" }),
+      almacen,
+    );
+    assert.equal(respuesta.status, 409);
+    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /not prepared/);
+    assert.equal(llamadas, 0);
+
+    const clave = { HYTO_TOKEN_SECRET: SECRETO_TOKEN };
+    const ajeno = emitirTokenPreparado(
+      {
+        usuarioId: "otro",
+        sesionId: "tok",
+        huella: huellaDeXdr(xdr),
+        accion: "liberar",
+        tareaId: "stand",
+        monto: "",
+      },
+      Date.now(),
+      clave,
+    );
+    const deOtro = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
+      almacen,
+    );
+    assert.equal(deOtro.status, 409);
+    assert.match(((await deOtro.json()) as { aviso: string }).aviso, /not prepared/);
+
+    const vencido = emitirTokenPreparado(
+      {
+        usuarioId: "organizador",
+        sesionId: "tok",
+        huella: huellaDeXdr(xdr),
+        accion: "liberar",
+        tareaId: "stand",
+        monto: "",
+        exp: Date.now() - 1000,
+      },
+      Date.now(),
+      clave,
+    );
+    const caduco = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr, accion: "liberar", tareaId: "stand", token: vencido }),
+      almacen,
+    );
+    assert.equal(caduco.status, 409);
+    assert.match(((await caduco.json()) as { aviso: string }).aviso, /expired/);
+    assert.equal(llamadas, 0);
+
+    const entorno = {
+      token: process.env.HYTO_TOKEN_SECRET,
+      prueba: process.env.HYTO_TEST_SESSION_KEY,
+      node: process.env.NODE_ENV,
+      ctx: process.env.NODE_TEST_CONTEXT,
+    };
+    delete process.env.HYTO_TOKEN_SECRET;
+    delete process.env.HYTO_TEST_SESSION_KEY;
+    (process.env as { NODE_ENV?: string }).NODE_ENV = "production";
+    delete process.env.NODE_TEST_CONTEXT;
+    try {
+      const sinClave = await enviarFirmaHttp(
+        sesion(FIRMANTE_XDR),
+        pedido({ xdr, accion: "liberar", tareaId: "stand", token: ajeno }),
+        almacen,
+      );
+      assert.equal(sinClave.status, 503);
+      assert.match(((await sinClave.json()) as { aviso: string }).aviso, /cannot confirm/);
+    } finally {
+      restaurar("HYTO_TOKEN_SECRET", entorno.token);
+      restaurar("HYTO_TEST_SESSION_KEY", entorno.prueba);
+      restaurar("NODE_ENV", entorno.node);
+      restaurar("NODE_TEST_CONTEXT", entorno.ctx);
+    }
+  } finally {
+    globalThis.fetch = original;
     reiniciarLimite();
   }
 });

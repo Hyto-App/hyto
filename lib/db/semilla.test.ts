@@ -114,19 +114,28 @@ test("la semilla no toca organizador_id de zeek y el demo es otro proyecto", asy
     await asegurarSemilla(vacio);
     assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, null);
     assert.equal((await vacio.leerProyecto("demo"))?.organizadorId, "demo-organizador");
+    const demoTareas = (await vacio.listarTareas()).filter((tarea) => tarea.proyectoId === "demo");
     assert.deepEqual(
-      (await vacio.listarTareas())
-        .filter((tarea) => tarea.proyectoId === "demo")
-        .map((tarea) => tarea.id)
-        .sort(),
+      demoTareas.map((tarea) => tarea.id).sort(),
       ["demo-bienvenida", "demo-comida", "demo-registro", "demo-stand"],
+    );
+    assert.equal(demoTareas.every((tarea) => tarea.miembroId === "demo-voluntario"), true);
+    assert.equal(
+      (await vacio.listarMiembros("demo")).some(
+        (miembro) => miembro.usuarioId === "demo-voluntario" && miembro.rol === "volunteer" && miembro.estado === "active",
+      ),
+      true,
     );
 
     await vacio.asignarOrganizador("zeek", "ana");
     await vacio.asignarOrganizador("demo", "ana");
+    await vacio.actualizarTarea("demo-stand", { miembroId: "voluntario-2" });
+    await vacio.actualizarTarea("demo-registro", { miembroId: "" });
     await asegurarSemilla(vacio);
     assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, "ana");
     assert.equal((await vacio.leerProyecto("demo"))?.organizadorId, "ana");
+    assert.equal((await vacio.leerTarea("demo-stand"))?.miembroId, "voluntario-2");
+    assert.equal((await vacio.leerTarea("demo-registro"))?.miembroId, "demo-voluntario");
   } finally {
     if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
     else process.env.HYTO_DEMO_LOGIN = anterior;

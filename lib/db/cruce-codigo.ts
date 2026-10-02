@@ -282,7 +282,7 @@ export function pendientesConEsteban(esperado: EsquemaEsperado, cruce: CruceCodi
 }
 
 export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[]; avisos: string[] } {
-  const bloques = [...fuente.matchAll(/export const (\w+) = pgTable\("(\w+)", \{([\s\S]*?)\n\}\);/g)];
+  const bloques = [...fuente.matchAll(/export const (\w+) = pgTable\("(\w+)", \{([\s\S]*?)\n\}(?:,[\s\S]*?)?\);/g)];
   const columnas: ColumnaDrizzle[] = [];
   const avisos: string[] = [];
   for (const bloque of bloques) {
@@ -328,6 +328,15 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         unique: /\.unique\(\)/.test(resto),
         referencia: referenciaCruda ? { tabla: referenciaCruda[1], columna: referenciaCruda[2] } : null,
       });
+    }
+    const pk = /primaryKey\(\s*\{\s*columns:\s*\[([^\]]+)\]/.exec(bloque[0]);
+    if (pk) {
+      const campos = [...pk[1].matchAll(/\.(\w+)/g)].map((item) => item[1]);
+      for (const columna of columnas) {
+        if (columna.exportName !== exportName || !campos.includes(columna.campo)) continue;
+        columna.primaryKey = true;
+        columna.nullable = false;
+      }
     }
   }
   const porExport = new Map<string, Map<string, string>>();
@@ -435,7 +444,7 @@ function diferenciasSchema(schema: ColumnaDrizzle[], esperado: EsquemaEsperado):
 function columnasNombradas(neonFuente: string, schema: ColumnaDrizzle[]): { tabla: string; columna: string }[] {
   const porClave = new Map(schema.map((columna) => [`${columna.exportName}.${columna.campo}`, columna]));
   const vistos = new Map<string, { tabla: string; columna: string }>();
-  for (const match of neonFuente.matchAll(/\b(usuarios|proyectos|tareas|evidencias|veredictos|sesiones)\.(\w+)/g)) {
+  for (const match of neonFuente.matchAll(/\b(usuarios|proyectos|tareas|evidencias|veredictos|sesiones|proyectoMiembros|proyectoInvitaciones)\.(\w+)/g)) {
     const columna = porClave.get(`${match[1]}.${match[2]}`);
     if (!columna) {
       vistos.set(`${match[1]}.${match[2]}`, { tabla: match[1], columna: `(campo ${match[2]} sin columna en schema.ts)` });

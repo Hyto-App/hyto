@@ -1,5 +1,5 @@
-import { CrearProyecto } from "@/components/admin/CrearProyecto";
+import { redirect } from "next/navigation";
 
-export default function PaginaCrearProyecto() {
-  return <CrearProyecto />;
+export default function PaginaProyectoNuevo() {
+  redirect("/eventos/nuevo");
 }

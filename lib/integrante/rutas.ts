@@ -13,11 +13,13 @@ export type OpcionesRuta = {
   fetch?: typeof fetch;
   estados?: Record<string, EstadoTarea>;
   baseUrl?: string;
+  muestra?: boolean;
 };
 
 export type ListaTareas = {
   tareas: Tarea[];
   ejemplo: boolean;
+  error: string | null;
 };
 
 export type FotoEnviada = {
@@ -41,6 +43,7 @@ function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | unde
 }
 
 function filtrarTareas(tareas: Tarea[], filtro: FiltroTareas): Tarea[] {
+  if (!filtro.miembroId && !filtro.wallet) return tareas;
   if (filtro.wallet) {
     const porWallet = tareas.filter((tarea) => tarea.walletCobro && tarea.walletCobro === filtro.wallet);
     if (porWallet.length > 0) return porWallet;
@@ -135,7 +138,8 @@ async function leerJson(respuesta: Response): Promise<unknown> {
 export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta = {}): Promise<ListaTareas> {
   const fetchImpl = opciones.fetch ?? fetch;
   const base = opciones.baseUrl ?? "";
-  const params = new URLSearchParams({ miembro: filtro.miembroId });
+  const params = new URLSearchParams({ alcance: "mias" });
+  if (filtro.miembroId) params.set("miembro", filtro.miembroId);
   if (filtro.wallet) params.set("wallet", filtro.wallet);
 
   try {
@@ -143,17 +147,25 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
     if (!respuesta.ok) throw new Error(String(respuesta.status));
     const tareas = listaDesdeJson(await leerJson(respuesta));
     if (!tareas) throw new Error("forma");
-    return { tareas: filtrarTareas(tareas, filtro), ejemplo: false };
+    return { tareas: filtrarTareas(tareas, filtro), ejemplo: false, error: null };
   } catch {
-    const tareas = filtrarTareas(tareasEjemplo(), filtro);
-    return { tareas: conEstados(tareas, opciones.estados), ejemplo: true };
+    if (opciones.muestra) {
+      const tareas = filtrarTareas(tareasEjemplo(), filtro);
+      return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+    }
+    return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
   }
 }
 
-export async function leerTarea(id: string, filtro: FiltroTareas, opciones: OpcionesRuta = {}): Promise<{ tarea: Tarea | null; ejemplo: boolean }> {
+export async function leerTarea(
+  id: string,
+  filtro: FiltroTareas,
+  opciones: OpcionesRuta = {},
+): Promise<{ tarea: Tarea | null; ejemplo: boolean; error: string | null }> {
   const lista = await listarTareas(filtro, opciones);
+  if (lista.error) return { tarea: null, ejemplo: false, error: lista.error };
   const propia = lista.tareas.find((tarea) => tarea.id === id) ?? null;
-  return { tarea: propia, ejemplo: lista.ejemplo };
+  return { tarea: propia, ejemplo: lista.ejemplo, error: null };
 }
 
 export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: OpcionesRuta = {}): Promise<FotoEnviada> {

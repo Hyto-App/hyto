@@ -123,6 +123,32 @@ a {
   flex: none;
 }
 
+.hyto-mas summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.hyto-mas summary::-webkit-details-marker {
+  display: none;
+}
+
+.hyto-mas-menu {
+  display: grid;
+  gap: 4px;
+  padding: 4px 12px 8px 36px;
+}
+
+.hyto-mas-menu a {
+  font-size: 14px;
+  text-decoration: none;
+}
+
 .hyto-btn {
   display: flex;
   height: 44px;
@@ -370,7 +396,8 @@ a {
   margin-bottom: 16px;
 }
 
-.hyto-tabs button {
+.hyto-tabs button,
+.hyto-tabs a {
   margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   padding: 8px 0;
@@ -378,7 +405,10 @@ a {
   color: var(--suave);
 }
 
-.hyto-tabs button[aria-pressed="true"] {
+.hyto-tabs button[aria-pressed="true"],
+.hyto-tabs button[aria-selected="true"],
+.hyto-tabs a[aria-selected="true"],
+.hyto-tabs a[aria-current="page"] {
   border-bottom-color: var(--tinta);
   font-weight: 600;
   color: var(--tinta);
@@ -400,7 +430,8 @@ a {
   color: var(--suave);
 }
 
-.hyto-chips button[aria-pressed="true"] {
+.hyto-chips button[aria-pressed="true"],
+.hyto-chips button[aria-selected="true"] {
   border-color: transparent;
   background: var(--tinta);
   font-weight: 600;
@@ -502,6 +533,10 @@ a {
   gap: 8px;
 }
 
+.hyto-atras {
+  display: none;
+}
+
 .hyto-steps i {
   height: 4px;
   flex: 1;
@@ -562,7 +597,8 @@ a {
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   }
 
-  .hyto-nav a {
+  .hyto-nav a,
+  .hyto-mas summary {
     flex: 1;
     flex-direction: column;
     gap: 4px;
@@ -586,6 +622,36 @@ a {
     color: var(--tinta);
   }
 
+  .hyto-mas {
+    position: relative;
+    flex: 1;
+  }
+
+  .hyto-mas summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .hyto-mas summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .hyto-mas-menu {
+    position: absolute;
+    right: 8px;
+    bottom: calc(100% + 8px);
+    display: grid;
+    min-width: 180px;
+    gap: 4px;
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    background: var(--papel);
+    padding: 8px;
+  }
+
   .hyto-main {
     padding: 8px 20px 28px;
   }
@@ -598,14 +664,41 @@ a {
 
   .hyto-actions {
     position: sticky;
-    bottom: calc(76px + env(safe-area-inset-bottom));
+    bottom: calc(96px + env(safe-area-inset-bottom));
     z-index: 20;
     display: grid;
     gap: 8px;
     margin-top: 20px;
+    border: 1px solid var(--linea);
     border-radius: 20px;
-    background: color-mix(in srgb, var(--fondo) 92%, transparent);
-    padding-top: 8px;
+    background: var(--papel);
+    padding: 12px;
+  }
+
+  .hyto-shell-foco .hyto-side {
+    display: none;
+  }
+
+  .hyto-shell-foco .hyto-actions {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .hyto-shell-foco .hyto-main {
+    padding-bottom: 140px;
+  }
+
+  .hyto-shell-foco .hyto-atras {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0 0;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--tinta);
   }
 
   .hyto-kpis {

@@ -21,15 +21,24 @@ import { leerMigraciones, normalizarDefault, normalizarTipo, type EsquemaEsperad
 
 test("la migración real declara las seis tablas y las relaciones que el código usa", () => {
   const esperado = leerMigraciones("drizzle");
-  assert.deepEqual(esperado.avisos, []);
+  assert.deepEqual(esperado.avisos, [
+    "Hay un CHECK en proyecto_miembros que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+  ]);
   assert.deepEqual(esperado.archivos, [
     "0000_inicio.sql",
     "0001_contrato_escrow.sql",
     "0002_organizador_proyecto.sql",
     "0003_monto_confirmado.sql",
+    "0004_miembros_invitaciones.sql",
   ]);
-  assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones"]);
-  assert.equal(esperado.columnas.length, 44);
+  assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"]);
+  assert.equal(esperado.columnas.length, 60);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -48,13 +57,32 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "evidencias.tarea_id→tareas.id",
       "veredictos.evidencia_id→evidencias.id",
       "proyectos.organizador_id→usuarios.id",
+      "proyecto_miembros.proyecto_id→proyectos.id",
+      "proyecto_miembros.usuario_id→usuarios.id",
+      "proyecto_invitaciones.proyecto_id→proyectos.id",
+      "proyecto_invitaciones.creado_por→usuarios.id",
     ],
   );
-  assert.equal(esperado.fks.every((fk) => fk.alBorrar === "a" && !fk.alBorrarExplicito), true);
-  assert.deepEqual(esperado.uniques, [{ tabla: "usuarios", columnas: ["email"] }]);
+  assert.equal(
+    esperado.fks.every((fk) => (fk.alBorrar === "c" && fk.alBorrarExplicito) || (fk.alBorrar === "a" && !fk.alBorrarExplicito)),
+    true,
+  );
+  assert.deepEqual(esperado.uniques, [
+    { tabla: "usuarios", columnas: ["email"] },
+    { tabla: "proyecto_invitaciones", columnas: ["secreto_hash"] },
+  ]);
   assert.deepEqual(
     esperado.primaryKeys.map((grupo) => `${grupo.tabla}:${grupo.columnas.join(",")}`),
-    ["usuarios:id", "proyectos:id", "tareas:id", "evidencias:id", "veredictos:id", "sesiones:token"],
+    [
+      "proyecto_miembros:proyecto_id,usuario_id",
+      "usuarios:id",
+      "proyectos:id",
+      "tareas:id",
+      "evidencias:id",
+      "veredictos:id",
+      "sesiones:token",
+      "proyecto_invitaciones:id",
+    ],
   );
   assert.deepEqual(esperado.indices, []);
   const estado = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "estado");
@@ -119,10 +147,7 @@ test("los pendientes salen de hechos del repo y solo nombran columnas reales", (
     "veredicto-id-compartido",
     "veredictos-sin-lector",
     "credencial-url-sin-escritura",
-    "tipos-text",
-    "on-delete",
     "sin-indices",
-    "sin-check",
     "email-case",
     "fuente-sql",
   ]);
@@ -207,7 +232,7 @@ test("una copia idéntica a las migraciones no tiene diferencias y no imprime la
     },
     salida: { log: (linea) => log.push(linea), error: () => undefined },
   });
-  assert.equal(codigo, 0);
+  assert.equal(codigo, 2);
   assert.match(log.join("\n"), /Sin diferencias/);
   assert.equal(log.some((linea) => linea.includes("secreto")), false);
 });

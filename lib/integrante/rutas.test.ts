@@ -16,7 +16,7 @@ test("sin rutas, Mis tareas usa el ejemplo de ZEEK del miembro", async () => {
     throw new Error("red");
   };
 
-  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl });
+  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl, muestra: true });
   assert.equal(lista.ejemplo, true);
   assert.deepEqual(
     lista.tareas.map((tarea) => tarea.id),
@@ -30,13 +30,13 @@ test("sin rutas, Mis tareas usa el ejemplo de ZEEK del miembro", async () => {
 
 test("el voluntario 3 solo ve su tarea y el organizador no tiene tareas de ejemplo", async () => {
   const fetchImpl: typeof fetch = async () => json({ tareas: [] }, 404);
-  const tres = await listarTareas({ miembroId: "voluntario-3" }, { fetch: fetchImpl });
+  const tres = await listarTareas({ miembroId: "voluntario-3" }, { fetch: fetchImpl, muestra: true });
   assert.deepEqual(tareasEjemplo().filter((t) => t.miembroId === "voluntario-3").map((t) => t.titulo), [
     "Welcome table",
   ]);
   assert.equal(tres.tareas[0]?.titulo, "Welcome table");
 
-  const organizador = await listarTareas({ miembroId: "organizador" }, { fetch: fetchImpl });
+  const organizador = await listarTareas({ miembroId: "organizador" }, { fetch: fetchImpl, muestra: true });
   assert.deepEqual(organizador.tareas, []);
 });
 
@@ -163,13 +163,13 @@ test("la evidencia de ejemplo no abre la tarea de otro integrante", async () => 
   const fetchImpl: typeof fetch = async () => {
     throw new Error("red");
   };
-  const ajena = await leerTarea("stand", { miembroId: "voluntario-2" }, { fetch: fetchImpl });
+  const ajena = await leerTarea("stand", { miembroId: "voluntario-2" }, { fetch: fetchImpl, muestra: true });
   assert.equal(ajena.tarea, null);
 
   const propia = await leerTarea(
     "stand",
     { miembroId: "voluntario-1" },
-    { fetch: fetchImpl, estados: { stand: "en revisión" } },
+    { fetch: fetchImpl, estados: { stand: "en revisión" }, muestra: true },
   );
   assert.equal(propia.ejemplo, true);
   assert.equal(propia.tarea?.id, "stand");
@@ -181,7 +181,7 @@ test("un monto que no viene no se inventa como cero", async () => {
     json({
       tareas: [{ id: "sin-monto", titulo: "Sin monto", tipo: "trabajo", miembroId: "voluntario-1" }],
     });
-  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl });
+  const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl, muestra: true });
   assert.equal(lista.ejemplo, false);
   assert.equal(lista.tareas[0]?.monto, "");
 });
@@ -192,7 +192,7 @@ test("el estado local de ejemplo pisa el pendiente", async () => {
   };
   const lista = await listarTareas(
     { miembroId: "voluntario-1" },
-    { fetch: fetchImpl, estados: { stand: "en revisión" } },
+    { fetch: fetchImpl, estados: { stand: "en revisión" }, muestra: true },
   );
   assert.equal(lista.tareas.find((tarea) => tarea.id === "stand")?.estado, "en revisión");
   assert.equal(lista.tareas.find((tarea) => tarea.id === "comida")?.estado, "pendiente");

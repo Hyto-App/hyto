@@ -16,6 +16,7 @@ import { GET as proyectosGet, POST as proyectosPost } from "../../app/api/proyec
 import { GET as revisionGet } from "../../app/api/revision/[id]/route";
 import { motivoSuiteSync } from "./guardia";
 import { prepararSuite, soltar, tomar } from "./postgres";
+import { usarLectorSaldo } from "../../lib/escrow/saldo";
 import { cookieSesionPrueba } from "./sesion-prueba";
 
 const motivo = motivoSuiteSync();
@@ -47,14 +48,14 @@ describe("pantallas de admin", { concurrency: false }, () => {
   test("crear proyecto avisa si faltan el nombre o el monto y no navega", async () => {
     const idas: string[] = [];
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.deepEqual(idas, []);
 
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "0");
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.match(texto(), /Enter a name and at least one task with an amount/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
@@ -66,30 +67,36 @@ describe("pantallas de admin", { concurrency: false }, () => {
       createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
       { push: (href) => idas.push(href) },
     );
-    assert.match(texto(), /Demo mode cannot create projects/);
-    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Save project"));
+    assert.match(texto(), /Demo mode cannot create events/);
+    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create event"));
     assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Save project");
+    await pulsar("Create event");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
 
   test("crear proyecto guarda el nombre y la tarea y vuelve a la bandeja", async () => {
     const idas: string[] = [];
-    await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await escribir("#nombre-proyecto", "Feria");
-    await escribir("#titulo-1", "Cajas");
-    await escribir("#monto-1", "8");
-    await pulsar("Save project");
-    assert.deepEqual(idas, ["/"]);
-    const proyecto = leerMemoriaAdmin().proyecto;
-    assert.equal(proyecto?.nombre, "Feria");
-    assert.equal(proyecto?.tareas[0]?.titulo, "Cajas");
-    assert.equal(proyecto?.tareas[0]?.tipo, "trabajo");
-    assert.equal(proyecto?.tareas[0]?.monto, "8");
+    const original = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ proyecto: { id: "evt-1", nombre: "Feria" } }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      });
+    try {
+      await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
+      await escribir("#nombre-proyecto", "Feria");
+      await escribir("#titulo-1", "Cajas");
+      await escribir("#monto-1", "8");
+      await pulsar("Create event");
+      assert.deepEqual(idas, ["/eventos/evt-1"]);
+      assert.equal(leerMemoriaAdmin().proyecto, null);
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 
   test("un proyecto propio sale de la bandeja al volver al ejemplo", async () => {
@@ -161,14 +168,13 @@ describe("pantallas de admin", { concurrency: false }, () => {
   });
 
   test("el marco enlaza la bandeja, el informe, crear proyecto y mis tareas", async () => {
-    await montar(createElement(Marco, null, createElement("p", null, "contenido")), { ruta: "/informe" });
+    await montar(createElement(Marco, null, createElement("p", null, "contenido")), { ruta: "/eventos" });
     const plano = texto();
     assert.match(plano, /contenido/);
-    assert.match(plano, /Sign in/);
     const hrefs = [...document.querySelectorAll("a")].map((enlace) => enlace.getAttribute("href"));
-    assert.deepEqual(hrefs, ["/", "/informe", "/proyectos/nuevo", "/mis-tareas"]);
-    assert.match(document.querySelector('a[href="/informe"]')?.className ?? "", /font-semibold/);
-    assert.match(document.querySelector('a[href="/"]')?.className ?? "", /suave/);
+    assert.deepEqual(hrefs, ["/eventos", "/mis-tareas", "/cuentas"]);
+    assert.match(document.querySelector('a[href="/eventos"]')?.className ?? "", /font-semibold/);
+    assert.match(document.querySelector('a[href="/mis-tareas"]')?.className ?? "", /suave/);
   });
 });
 
@@ -186,7 +192,8 @@ describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () =
   });
 
   test("crear un proyecto, subir evidencia y verla en la revisión y el informe", async () => {
-    const sesion = await cookieSesionPrueba();
+    const sesion = await cookieSesionPrueba("organizador", "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    usarLectorSaldo(async () => ({ saldo: "1000" }));
     const creado = await proyectosPost(
       new Request("http://local/api/proyectos", {
         method: "POST",
@@ -247,6 +254,7 @@ describe("flujo de admin en la base", { concurrency: false, skip: motivo }, () =
     assert.equal(informe.bandeja[0]?.id, tareaId);
     assert.equal(informe.bandeja[0]?.veredicto, null);
     assert.equal(informe.bandeja[0]?.origen, "error");
+    usarLectorSaldo(null);
   });
 });
 });

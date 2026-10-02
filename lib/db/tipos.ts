@@ -55,6 +55,42 @@ export type VeredictoFila = {
   origen: "scout" | "guion" | "stub" | "error";
 };
 
+export type RolEvento = "organizer" | "team" | "volunteer";
+export type RolInvitacion = "team" | "volunteer";
+export type TipoInvitacion = "direct" | "code";
+export type MotivoCanje = "missing" | "expired" | "used" | "email";
+
+export type ProyectoMiembro = {
+  proyectoId: string;
+  usuarioId: string;
+  rol: RolEvento;
+  estado: "active" | "inactive";
+  creadoEn: string;
+};
+
+export type ProyectoInvitacion = {
+  id: string;
+  proyectoId: string;
+  tipo: TipoInvitacion;
+  email: string | null;
+  secretoHash: string;
+  rol: RolInvitacion;
+  maxUsos: number;
+  usos: number;
+  expiraEn: string;
+  creadoPor: string;
+  creadoEn: string;
+};
+
+export type PedidoCanje = {
+  secretoHash: string;
+  usuarioId: string;
+  email: string;
+  ahora: string;
+};
+
+export type ResultadoCanje = { ok: true; proyectoId: string; rol: RolEvento } | { ok: false; motivo: MotivoCanje };
+
 export type SesionFila = {
   token: string;
   email: string;

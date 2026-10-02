@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
-import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
-import { Salir } from "@/components/sesion/Salir";
-import { SalirDemo } from "@/components/sesion/SalirDemo";
+import { PastillaEstado } from "@/components/integrante/EstadoTarea";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
-import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
@@ -30,14 +28,22 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sinCamara, setSinCamara] = useState(false);
+  const [cargaError, setCargaError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
+  const [evento, setEvento] = useState<string | null>(null);
+  const demo = useModoDemo();
 
   useEffect(() => {
     let activo = true;
     const memoria = leerMemoria();
-    leerTarea(tareaId, { miembroId: memoria.miembroId, wallet: memoria.cuentas[memoria.miembroId]?.direccion }, {
-      estados: memoria.estados,
-    }).then((resultado) => {
+    setCargaError(null);
+    leerTarea(tareaId, { miembroId: "" }, { estados: demo ? memoria.estados : undefined, muestra: demo }).then((resultado) => {
       if (!activo) return;
+      if (resultado.error) {
+        setCargaError(resultado.error);
+        setFase("faltante");
+        return;
+      }
       if (!resultado.tarea) {
         setFase("faltante");
         return;
@@ -45,8 +51,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       setTarea(resultado.tarea);
       setEjemplo(resultado.ejemplo);
       const guardada = memoria.evidencias[resultado.tarea.id];
-      if (guardada) {
-        setEvidencia(guardada);
+      if (resultado.tarea.estado !== "pendiente") {
+        if (guardada) setEvidencia(guardada);
         setFase("lista");
         return;
       }
@@ -58,7 +64,24 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     return () => {
       activo = false;
     };
-  }, [tareaId]);
+  }, [tareaId, demo, intento]);
+
+  useEffect(() => {
+    const proyectoId = tarea?.proyectoId;
+    if (!proyectoId) return;
+    let activo = true;
+    fetch("/api/proyectos")
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
+      .then((cuerpo: { proyectos?: { id: string; nombre: string }[]; proyecto?: { id: string; nombre: string } } | null) => {
+        if (!activo || !cuerpo) return;
+        const lista = cuerpo.proyectos ?? (cuerpo.proyecto ? [cuerpo.proyecto] : []);
+        setEvento(lista.find((item) => item.id === proyectoId)?.nombre ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      activo = false;
+    };
+  }, [tarea?.proyectoId]);
 
   useEffect(() => {
     montadoRef.current = true;
@@ -201,10 +224,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   if (fase === "faltante" || !tarea) {
     return (
       <main className="hyto-page">
-        <p className="text-lg">We couldn't find that task.</p>
-        <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
-          Back to My tasks
-        </Link>
+        <p className="text-lg" role="alert">
+          {cargaError ?? "We couldn't find that task."}
+        </p>
+        {cargaError ? (
+          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
+            Try again
+          </button>
+        ) : (
+          <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
+            Back to My tasks
+          </Link>
+        )}
       </main>
     );
   }
@@ -221,7 +252,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             ? "Choose photo"
             : "Open camera";
 
-  const enviada = fase === "lista";
+  const cerrada = tarea.estado !== "pendiente";
+  const enviada = fase === "lista" || cerrada;
   const montoVisible = montoDeTarea(tarea);
 
   return (
@@ -229,9 +261,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       <header className="mb-6">
         <p className="hyto-crumb">
           <Link href="/mis-tareas">My tasks</Link>
-          <InsigniaDemo />
-          <SalirDemo />
-          <Salir className="ml-3 align-middle" />
+          {tarea.proyectoId ? (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link href={`/eventos/${tarea.proyectoId}`}>{textoVisible(evento ?? "Event")}</Link>
+            </>
+          ) : null}
         </p>
         <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
@@ -245,12 +280,6 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </p>
       </header>
 
-      {ejemplo ? null : (
-        <div className="mb-6">
-          <PrepararUsdc />
-        </div>
-      )}
-
       {enviada ? (
         <div className="text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--acento)] text-2xl text-[var(--sobre-acento)]" aria-hidden="true">
@@ -260,14 +289,13 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
           <article className="hyto-card mt-6 p-4 text-left">
             <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
-            <p className="mt-1 text-sm text-[var(--suave)]">Submitted</p>
+            <p className="mt-1 text-sm text-[var(--suave)]">{etiquetaEstado(tarea.estado)}</p>
+            <div className="mt-3">
+              <PastillaEstado estado={tarea.estado} />
+            </div>
             <p className="hyto-amount mt-3">{montoVisible}</p>
           </article>
-          <ol className="mt-6 space-y-3 text-left text-sm">
-            <li>Laya is reviewing your photo.</li>
-            <li className="text-[var(--suave)]">The organizer approves.</li>
-            <li className="text-[var(--suave)]">You get paid from the Stellar escrow to your Cavos wallet.</li>
-          </ol>
+          <p className="mt-6 text-left text-sm text-[var(--suave)]">The organizer approves, then the payment leaves the escrow.</p>
           <Link href="/mis-tareas" className="hyto-btn mt-6">
             Back to My tasks
           </Link>
@@ -292,9 +320,20 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
               <button
                 type="button"
                 onClick={() => archivoRef.current?.click()}
+                onDragOver={(evento) => evento.preventDefault()}
+                onDrop={(evento) => {
+                  evento.preventDefault();
+                  const archivo = evento.dataTransfer.files?.[0];
+                  if (!archivo) return;
+                  if (archivo.type && !archivo.type.startsWith("image/")) {
+                    setError("Choose a photo.");
+                    return;
+                  }
+                  usarFoto(archivo);
+                }}
                 className="mt-3 w-full rounded-2xl border border-dashed border-[var(--borde)] px-4 py-4 text-sm text-[var(--suave)]"
               >
-                Drop a photo here or browse
+                Choose a photo
               </button>
             ) : null}
           </div>
@@ -352,7 +391,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </p>
       ) : null}
 
-      {enviada ? (
+      {enviada && !cerrada ? (
         <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
           Take another
         </button>

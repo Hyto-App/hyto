@@ -41,6 +41,7 @@ export async function leerFondeo(contrato: string, opciones: OpcionesRemoto = {}
 
 export type OpcionesRemoto = {
   fetch?: typeof fetch;
+  proyectoId?: string;
 };
 
 export function botonesRevision(
@@ -74,7 +75,7 @@ export function botonesRevision(
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
     pagar: !bloqueado && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
     aprobarLocal: false,
-    pedirOtra: false,
+    pedirOtra: tarea.estado === "en revisión",
   };
 }
 
@@ -109,25 +110,27 @@ export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Pro
     if (!lista.ok) return null;
     const leidas = filasDe(await lista.json());
     if (!leidas) return null;
-    filas = leidas;
+    filas = opciones.proyectoId ? leidas.filter((fila) => fila.proyectoId === opciones.proyectoId) : leidas;
   } catch {
     return null;
   }
 
   if (filas.length === 0) {
-    if (!(await esOrganizador(fetchImpl))) return null;
-    return armarVista([], await nombreProyecto(fetchImpl));
+    return armarVista([], await nombreProyecto(fetchImpl, opciones.proyectoId));
   }
 
   const detalles = await Promise.all(filas.map((fila) => leerUna(fetchImpl, fila.id)));
-  if (detalles.some((item) => item === "ajeno")) return null;
+  if (detalles.some((item) => item === "ajeno" || item === "fallo")) return null;
   const porId = new Map(filas.map((fila) => [fila.id, fila]));
   const tareas = detalles.flatMap((item) => {
     if (!item || item === "ajeno" || item === "omitida" || item === "fallo") return [];
     return [cruzarLista(item, porId.get(item.tarea.id) ?? null).tarea];
   });
+  if (tareas.length === 0 && detalles.some((item) => item === "omitida")) {
+    return armarVista([], await nombreProyecto(fetchImpl, opciones.proyectoId));
+  }
   if (tareas.length === 0) return null;
-  return armarVista(tareas, await nombreProyecto(fetchImpl));
+  return armarVista(tareas, await nombreProyecto(fetchImpl, opciones.proyectoId));
 }
 
 function cruzarLista(detalle: DetalleRevision, fila: FilaTarea | null): DetalleRevision {
@@ -150,18 +153,10 @@ async function leerUna(fetchImpl: typeof fetch, id: string): Promise<DetalleRevi
   }
 }
 
-async function esOrganizador(fetchImpl: typeof fetch): Promise<boolean> {
+async function nombreProyecto(fetchImpl: typeof fetch, proyectoId?: string): Promise<string> {
   try {
-    const revision = await pedir(fetchImpl, "/api/revision/hyto-sin-tarea");
-    return revision.status === 404;
-  } catch {
-    return false;
-  }
-}
-
-async function nombreProyecto(fetchImpl: typeof fetch): Promise<string> {
-  try {
-    const respuesta = await pedir(fetchImpl, "/api/proyectos");
+    const consulta = proyectoId ? `/api/proyectos?id=${encodeURIComponent(proyectoId)}` : "/api/proyectos";
+    const respuesta = await pedir(fetchImpl, consulta);
     if (!respuesta.ok) return "";
     const json = (await respuesta.json()) as { proyecto?: { nombre?: unknown } };
     return typeof json.proyecto?.nombre === "string" ? json.proyecto.nombre : "";
@@ -199,6 +194,7 @@ function detalleDe(json: unknown): DetalleRevision | null {
 
 type FilaTarea = {
   id: string;
+  proyectoId: string | null;
   hashPago: string | null;
   contratoEscrow: string | null;
 };
@@ -215,7 +211,7 @@ function filasDe(json: unknown): FilaTarea[] | null {
     if (!id) continue;
     const hashPago = texto(datos.hashPago);
     const contratoEscrow = texto(datos.contratoEscrow);
-    filas.push({ id, hashPago, contratoEscrow });
+    filas.push({ id, proyectoId: texto(datos.proyectoId), hashPago, contratoEscrow });
   }
   return filas;
 }

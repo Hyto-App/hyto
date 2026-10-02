@@ -7,11 +7,10 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { guardarDecision, leerMemoriaAdmin } from "@/lib/admin/memoria";
+import { guardarDecision } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
-import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import {
   AVISO_FIRMA,
   AVISO_REINGRESO,
@@ -37,9 +36,11 @@ const PASO: Record<AccionCliente, string> = {
 
 export function Revision({
   tareaId,
+  eventoId,
   firmar,
 }: {
   tareaId: string;
+  eventoId?: string;
   firmar?: (unsignedXdr: string) => Promise<string>;
 }) {
   const modoDemo = useModoDemo();
@@ -57,11 +58,11 @@ export function Revision({
   const [borrador, setBorrador] = useState("");
   const [confirmando, setConfirmando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     let viva = true;
-    const local = vistaAdmin(leerMemoriaAdmin()).tareas.find((item) => item.id === tareaId) ?? null;
-    setTarea(local);
+    setTarea(undefined);
     setFoto(null);
     setReal(false);
     setHashPaso(null);
@@ -70,9 +71,14 @@ export function Revision({
     setReanudar(null);
     fondeoForzado.current = null;
     setWallet(null);
-    if (modoDemo) return;
+    setAviso(null);
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
-      if (!viva || !detalle) return;
+      if (!viva) return;
+      if (!detalle) {
+        setTarea(null);
+        setAviso("Could not load this review.");
+        return;
+      }
       setReal(true);
       setTarea(detalle.tarea);
       setFoto(detalle.foto);
@@ -82,10 +88,10 @@ export function Revision({
     return () => {
       viva = false;
     };
-  }, [tareaId, modoDemo]);
+  }, [tareaId, modoDemo, intento]);
 
   useEffect(() => {
-    if (modoDemo || !real || !contrato) return;
+    if (!real || !contrato) return;
     if (fondeoForzado.current === contrato) {
       setFondeado(true);
       return;
@@ -98,13 +104,28 @@ export function Revision({
     return () => {
       viva = false;
     };
-  }, [modoDemo, real, contrato]);
+  }, [real, contrato]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
   useEffect(() => {
     if (!tarea || tarea.tipo !== "reembolso") return;
     setBorrador(tarea.montoConfirmado ?? tarea.montoRevisado ?? "");
   }, [claveMonto, tarea]);
+
+  async function pedirOtra() {
+    if (!real) {
+      decidir("pendiente");
+      return;
+    }
+    setAviso(null);
+    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, { method: "POST" });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+    if (!respuesta.ok) {
+      setAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
+      return;
+    }
+    setTarea((actual) => (actual ? { ...actual, estado: "pendiente" } : actual));
+  }
 
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
@@ -250,10 +271,18 @@ export function Revision({
   if (!tarea) {
     return (
       <main className="hyto-page">
-        <p className="text-lg">We couldn't find that task.</p>
-        <Link href="/" className="mt-6 inline-block text-sm font-medium">
-          Back to the inbox
-        </Link>
+        <p className="text-lg" role="alert">
+          {aviso ?? "We couldn't find that task."}
+        </p>
+        {aviso ? (
+          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
+            Try again
+          </button>
+        ) : (
+          <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="mt-6 inline-block text-sm font-medium">
+            Back to the event
+          </Link>
+        )}
       </main>
     );
   }
@@ -280,7 +309,7 @@ export function Revision({
   return (
     <main className="hyto-page">
       <p className="hyto-crumb print:hidden">
-        <Link href="/">Inbox</Link>
+        <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"}>Events</Link>
         <span aria-hidden="true">/</span>
         <span>Evidence review</span>
       </p>
@@ -293,13 +322,12 @@ export function Revision({
         </div>
         <div className="text-right">
           <p className="hyto-amount text-2xl">{montoDeTarea(tarea)}</p>
-          <p className="text-sm text-[var(--suave)]">Reward</p>
         </div>
       </header>
       <div className="hyto-review">
         <figure className="hyto-photo">
           {foto ? (
-            <img src={foto} alt="" />
+            <img src={foto} alt={textoVisible(tarea.titulo)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
@@ -410,12 +438,6 @@ export function Revision({
             </p>
           ) : null}
 
-          {real ? (
-            <div className="mt-6">
-              <PrepararUsdc />
-            </div>
-          ) : null}
-
           {falloPago && aviso ? (
             <div className="hyto-callout mt-5">
               <p className="font-semibold">Payment failed</p>
@@ -431,7 +453,7 @@ export function Revision({
             ) : null}
 
             {botones.pedirOtra ? (
-              <button type="button" onClick={() => decidir("pendiente")} className="hyto-btn-line">
+              <button type="button" onClick={() => void pedirOtra()} className="hyto-btn-line">
                 Ask for another photo
               </button>
             ) : null}
@@ -471,7 +493,6 @@ export function Revision({
             ) : null}
           </div>
 
-          <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Laya only suggests. The payment of {montoDeTarea(tarea)} comes from escrow.</p>
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">

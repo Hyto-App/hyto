@@ -5,5 +5,6 @@ import { listarTareasHttp } from "@/lib/api/tareas";
 export async function GET(request: Request): Promise<Response> {
   const visor = await visorDe(request);
   if (visor instanceof Response) return visor;
-  return conAlmacen((almacen) => listarTareasHttp(almacen, visor));
+  const alcance = new URL(request.url).searchParams.get("alcance") === "mias" ? "mias" : "evento";
+  return conAlmacen((almacen) => listarTareasHttp(almacen, visor, alcance));
 }

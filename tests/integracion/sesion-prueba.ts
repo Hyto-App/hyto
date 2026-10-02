@@ -41,7 +41,7 @@ export function cookieDesdeToken(tokenFirmado: string): string {
   return par;
 }
 
-export async function cookieSesionPrueba(rol: Rol = "organizador"): Promise<string> {
+export async function cookieSesionPrueba(rol: Rol = "organizador", wallet = ""): Promise<string> {
   const identidad = IDENTIDADES.find((item) => item.id === (rol === "organizador" ? "organizador" : "voluntario-1"));
   if (!identidad) throw new Error("No hay identidad de prueba.");
   const token = firmarTokenPrueba(tokenSesion());
@@ -51,7 +51,7 @@ export async function cookieSesionPrueba(rol: Rol = "organizador"): Promise<stri
     usuarioId: identidad.id,
     rol,
     expiraEn: expiracion(),
-    wallet: "",
+    wallet,
   });
   return cookieDesdeToken(token);
 }

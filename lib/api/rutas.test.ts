@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
-import test from "node:test";
+import { after, before, test } from "node:test";
 import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
 import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
@@ -14,7 +14,21 @@ import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
 import { leerRevisionHttp } from "./revision";
 import { crearSesionHttp, fijarWalletHttp } from "./sesion";
-import { enviarFirmaHttp, prepararFirmaHttp } from "./firma";
+import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
+import { emitirTokenPreparado } from "./preparado";
+
+const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
+let secretoPrevio: string | undefined;
+
+before(() => {
+  secretoPrevio = process.env.HYTO_TOKEN_SECRET;
+  process.env.HYTO_TOKEN_SECRET = SECRETO_TOKEN;
+});
+
+after(() => {
+  if (secretoPrevio === undefined) delete process.env.HYTO_TOKEN_SECRET;
+  else process.env.HYTO_TOKEN_SECRET = secretoPrevio;
+});
 import { listarTareasHttp } from "./tareas";
 import { asegurarSemilla } from "../db/semilla";
 import { TOPE_SESION_SEGUNDOS } from "../sesion/cookie";
@@ -541,12 +555,20 @@ test("el envío de resolve_dispute usa el firmante del XDR y el disputeResolver 
     assert.equal(otroRol.status, 403);
     assert.deepEqual(llamadas, []);
 
+    const tokenPago = emitirTokenPreparado({
+      usuarioId: "voluntario",
+      sesionId: "tok",
+      huella: huellaDeXdr(xdr),
+      accion: "liberar",
+      tareaId: "",
+      monto: "",
+    });
     const listo = await enviarFirmaHttp(
       sesion("voluntario", FIRMANTE_XDR),
       new Request("http://local/api/firma/enviar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ xdr, accion: "liberar", firmante: ORGANIZADOR }),
+        body: JSON.stringify({ xdr, accion: "liberar", firmante: ORGANIZADOR, token: tokenPago }),
       }),
     );
     assert.equal(listo.status, 200);

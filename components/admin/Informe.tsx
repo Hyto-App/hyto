@@ -12,8 +12,9 @@ import { TEXTO } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
 
-export function Informe() {
-  const cargada = useVistaAdmin();
+export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
+  const estado = useVistaAdmin(proyectoId);
+  const cargada = estado.vista;
   const [parche, setParche] = useState<VistaAdmin | null>(null);
   const [reintento, setReintento] = useState<string | null>(null);
   const [avisoId, setAvisoId] = useState<string | null>(null);
@@ -42,8 +43,29 @@ export function Informe() {
     }
   }
 
+  if (estado.error) {
+    return (
+      <main className="hyto-page">
+        <p role="alert">{estado.error}</p>
+        <button type="button" className="hyto-btn mt-4 max-w-xs" onClick={estado.reintentar}>
+          Try again
+        </button>
+      </main>
+    );
+  }
+
   if (!vista) {
-    return <p className="text-[var(--suave)]">Loading…</p>;
+    return (
+      <main className="hyto-page" aria-busy="true">
+        <div className="hyto-skel">
+          <i />
+          <span>
+            <i />
+            <i />
+          </span>
+        </div>
+      </main>
+    );
   }
 
   const presupuesto = Number(vista.resumen.presupuesto) || 0;
@@ -52,6 +74,7 @@ export function Informe() {
 
   return (
     <main className="hyto-page">
+      {proyectoId ? null : (
       <header className="hyto-page-head">
         <div>
           <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
@@ -67,12 +90,14 @@ export function Informe() {
           Print
         </button>
       </header>
+      )}
 
       <section>
         <h2 className="text-lg font-semibold tracking-tight">Budget against spend</h2>
         <div className="mt-4">
           <Numeros resumen={vista.resumen} />
         </div>
+        {proyectoId ? null : (
         <div className="mt-4">
           <div className="hyto-bar" aria-hidden="true">
             <span style={{ width: `${ancho}%` }} />
@@ -81,6 +106,7 @@ export function Informe() {
             Paid {formatearMonto(vista.resumen.pagado)} · Pending {formatearMonto(vista.resumen.pendiente)} · {vista.personas.length} volunteer{vista.personas.length === 1 ? "" : "s"}
           </p>
         </div>
+        )}
       </section>
 
       <section className="mt-10 space-y-8">

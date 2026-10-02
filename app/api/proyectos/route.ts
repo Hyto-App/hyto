@@ -6,7 +6,8 @@ import { exigirSesion } from "@/lib/sesion/exigir";
 export async function GET(request: Request): Promise<Response> {
   const visor = await visorDe(request);
   if (visor instanceof Response) return visor;
-  return conAlmacen((almacen) => leerProyectoHttp(almacen, visor));
+  const id = new URL(request.url).searchParams.get("id");
+  return conAlmacen((almacen) => leerProyectoHttp(almacen, visor, { id }));
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -14,5 +15,5 @@ export async function POST(request: Request): Promise<Response> {
   if (sesion instanceof Response) return sesion;
   const demo = rechazoProyectoDemo(sesion);
   if (demo) return demo;
-  return conAlmacen((almacen) => crearProyectoHttp(request, almacen, sesion.usuarioId));
+  return conAlmacen((almacen) => crearProyectoHttp(request, almacen, sesion.usuarioId, { wallet: sesion.wallet }));
 }

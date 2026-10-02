@@ -9,6 +9,7 @@ import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
+import { usarLectorSaldo } from "../escrow/saldo";
 import { AVISO_PROYECTO_DEMO } from "../sesion/demo";
 import { reiniciarCandadosRevision } from "./revision";
 import { crearProyectoHttp } from "./proyectos";
@@ -62,9 +63,10 @@ test("POST /api/proyectos rechaza el demo y la petición sin sesión", async () 
     usuarioId: "ana",
     rol: "voluntario",
     expiraEn,
-    wallet: "",
+    wallet: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
   });
   const anterior = gancho();
+  usarLectorSaldo(async () => ({ saldo: "1000" }));
   usar(almacen);
   const cuerpo = JSON.stringify({ nombre: "Basura", tareas: [{ titulo: "Nada", tipo: "trabajo", monto: "1" }] });
   function pedido(token?: string): Request {
@@ -93,6 +95,7 @@ test("POST /api/proyectos rechaza el demo y la petición sin sesión", async () 
     assert.equal(real.status, 201);
     assert.equal((await almacen.listarProyectos()).find((proyecto) => proyecto.nombre === "Basura")?.organizadorId, "ana");
   } finally {
+    usarLectorSaldo(null);
     (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = anterior;
   }
 });
@@ -141,7 +144,7 @@ test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", as
     usuarioId: "voluntario-2",
     rol: "voluntario",
     expiraEn,
-    wallet: "",
+    wallet: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
   });
   await almacen.crearSesion({
     token: "global",
@@ -165,6 +168,7 @@ test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", as
   const clave = process.env.TRUSTLESS_API_KEY;
   process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
   usar(almacen);
+  usarLectorSaldo(async () => ({ saldo: "1000" }));
   let llamadas = 0;
   const original = globalThis.fetch;
   globalThis.fetch = async () => {
@@ -241,6 +245,7 @@ test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", as
     assert.equal(alta.status, 201);
     assert.equal((await almacen.listarProyectos()).find((proyecto) => proyecto.nombre === "Otra")?.organizadorId, "voluntario-2");
   } finally {
+    usarLectorSaldo(null);
     globalThis.fetch = original;
     (globalThis as typeof globalThis & { __HYTO_ALMACEN_PRUEBA?: Gancho }).__HYTO_ALMACEN_PRUEBA = anterior;
     if (clave === undefined) delete process.env.TRUSTLESS_API_KEY;
@@ -285,7 +290,7 @@ test("el reintento solo corre si quien llama organiza ese proyecto", async () =>
     usuarioId: "voluntario-2",
     rol: "voluntario",
     expiraEn,
-    wallet: "",
+    wallet: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
   });
   await almacen.crearSesion({
     token: "global",
