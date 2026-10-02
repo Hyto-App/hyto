@@ -1,10 +1,10 @@
 # Hyto — project brief
 
-Product behavior as of `main` at `2b9fad4` is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
+Product behavior as of `main` at `d755229` is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
 
 ## Pitch
 
-Hyto is expense control and milestone payments for a team, on Stellar and Trustless Work. The person who creates the event locks the budget. Each task is a photo. An AI recommends whether the evidence is enough. The organizer pays the full amount in testnet USDC. The report compares budget with spend and, once a hash exists, links the payment on Stellar.
+Hyto is expense control and milestone payments for a team, on Stellar and Trustless Work. The person who creates the event locks the budget. A work task is a live camera photo. A reimbursement is a receipt file. An AI recommends whether the evidence is enough. The organizer pays the full amount in testnet USDC. The report compares budget with spend and, once a hash exists, links the payment on Stellar.
 
 Positioning is teams and companies first. Volunteer events such as ZEEK are the demo the team knows.
 
@@ -25,8 +25,8 @@ Positioning is teams and companies first. Volunteer events such as ZEEK are the 
 
 1. **Budget.** A signed-in user with enough USDC creates an event. Each task is its own escrow. The balance check is the task total plus 1 USDC.
 2. **People.** Organizer invites teammates with a direct link or an `HYTO-` code. Members see their tasks. The organizer assigns work.
-3. **Evidence.** Work or reimbursement, same camera: a photo of the work, or a photo of the receipt.
-4. **Review.** Groq describes the photo. Laya answers a questionnaire when `LAYA_URL` is set. The code turns those answers into a grade from 0 to 100. Neither model moves money.
+3. **Evidence.** A work task is a live camera JPEG. A reimbursement is a PDF, JPEG, PNG, or WebP file. The payout account is the assigned member's session.
+4. **Review.** Groq describes an image. Mile answers a questionnaire when `LAYA_URL` is set. The code turns those answers into a grade from 0 to 100. A PDF is left for a person. Neither model moves money.
 5. **Pay.** The organizer confirms a reimbursement amount, locks the budget, then pays. The link appears after a real transaction hash. That hash is not in the repo yet.
 
 ## Problem

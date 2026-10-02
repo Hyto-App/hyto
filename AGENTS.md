@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `d755229` (2 October 2026, 03:01 Costa Rica): camera checks for work proof, file checks for receipts, and a review grade from 0 to 100. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -21,7 +21,7 @@ Facts that bound this app, checked on 2026-10-02:
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
+Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC. A work task takes a live camera JPEG. A reimbursement takes a PDF, JPEG, PNG, or WebP file. Groq describes an image. Mile scores that text when `LAYA_URL` is set. The organizer pays the full milestone. The AI does not sign or move money. The screen says Mile. The service and the env vars stay `LAYA_*`.
 
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 
@@ -62,8 +62,8 @@ User-facing copy is English.
 |---|---|
 | App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
 | API | Route handlers in `app/api`. |
-| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
-| Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
+| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0005`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). `0005_evidencia_antifraude.sql` is in the repo. The file says not to apply it to production without approval. New uploads return 503 until those columns exist. This file does not record `0005` as applied. |
+| Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. Work proof is a camera JPEG. A receipt may be a PDF. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
 | AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). |
@@ -77,8 +77,8 @@ User-facing copy is English.
 - `GET`, `POST /api/proyectos` — list visible events; create one (demo sessions get 403).
 - `GET`, `POST /api/tareas`. `POST /api/tareas/[id]/asignar` — organizer assigns a member.
 - `POST /api/eventos/[id]/invitaciones` — organizer creates an invite. `POST /api/join` redeems one.
-- `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
-- `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
+- `POST /api/evidencias`, `POST /api/evidencias/token` (camera token for a work task), `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
+- `GET /api/revision/:id` reads the stored review and does not run one. `POST /api/revision/:id` can run one. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
 - `GET /api/informe`.
 - `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]`.
 - `GET`, `POST /api/usdc` — read or prepare a classic `changeTrust` for the session wallet.
@@ -93,13 +93,19 @@ If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wal
 
 ## Evidence and AI
 
+A work task (`trabajo`) accepts only a live camera JPEG. There is no gallery picker. `POST /api/evidencias/token` issues an HMAC token of about 2 minutes, bound to the task and the signed-in user, using `HYTO_TOKEN_SECRET` (outside production, the `HYTO_TEST_SESSION_KEY` fallback still applies). The upload rejects a missing, expired, or reused token. Used ids stay in process memory, so another instance can still accept the same token once. The file must be JPEG by magic bytes. The capture time must fall within 3 minutes of the token and of the server clock. If the JPEG has EXIF `DateTimeOriginal`, that time must fall in the same window.
+
+A reimbursement (`reembolso`) accepts a PDF, JPEG, PNG, or WebP, sniffed from the bytes, up to 8 MB. There is no camera token and no freshness check. SVG and GIF are rejected. The same SHA-256 cannot be stored twice (409). A near-duplicate image (64-bit dHash, Hamming distance 8) is stored, and the recommendation is forced to insufficient. The organizer sees that reason. A PDF is not sent to Groq. The review is stored as an error that needs a person, and the screen links "Open the invoice". The organizer can still confirm the amount and pay.
+
+`drizzle/0005_evidencia_antifraude.sql` adds `capturada_en`, `frescura`, `sha256`, `phash`, `tipo_archivo`, and `motivo_copia`. Until those columns exist, a new upload returns 503.
+
 Upload and review call `revisar()` (`lib/revision/revisar.ts`).
 
-1. Groq (`qwen/qwen3.8-27b`) returns JSON with `texto`, `monto`, and `fecha`. The request uses `max_completion_tokens: 1024`, `reasoning_effort: "none"`, and `reasoning_format: "hidden"`. The file name `scout.ts` and the column `texto_scout` are old names.
+1. Groq returns JSON with `texto`, `monto`, and `fecha`. The model is `GROQ_VISION_MODEL`, or `qwen/qwen3.8-27b` when that is unset. The request uses `max_completion_tokens: 1024`, `reasoning_effort: "none"`, and `reasoning_format: "hidden"`. Large images are downscaled first. The file name `scout.ts` and the column `texto_scout` are old names. A PDF skips this step.
 2. If `LAYA_URL` is set, `POST {LAYA_URL}/v1/systemone` (model `multilingual`) asks one classification question, then the work questions or the invoice questions (`lib/revision/laya-preguntas.ts`). `LAYA_API_KEY` is sent as Bearer when set. Classification `otra` scores 0 and does not ask the second set.
-3. The result is an integer grade from 0 to 100 (`lib/revision/pesos.ts`). It is the sum of each question's weight times its credit. Weights are `PESOS_PREGUNTAS` and each path sums to 100. Ordered answers get half credit on the middle step. A yes/no question scores its weight only when the answer supports a valid task; for "is something missing", that answer is no. The grade is stored in `veredictos.score`. A display band is derived from it: under 50 `insuficiente`, 50–79 `parcial`, 80–100 `cumplió`. A reimbursement with no positive amount, no date, or an amount over the cap is capped at 40. The percentage does not approve or sign a payment.
+3. The result is an integer grade from 0 to 100 (`lib/revision/pesos.ts`). It is the sum of each question's weight times its credit. Weights are `PESOS_PREGUNTAS` and each path sums to 100. Ordered answers get half credit on the middle step. A yes/no question scores its weight only when the answer supports a valid task; for "is something missing", that answer is no. The grade is stored in `veredictos.score`. A display band is derived from it: under 50 `insuficiente`, 50–79 `parcial`, 80–100 `cumplió`. A reimbursement with no positive amount, no date, or an amount over the cap is capped at 40. A single grave answer can still leave the grade in the Met band. The percentage does not approve or sign a payment.
 
-Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
+Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. In production, a missing `LAYA_URL` is that error. Outside production the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured and the file is not a PDF, the handler waits 2.8 seconds and saves the verdict later if that is not enough. The payout account saved with the upload is the assigned member's session address, not a field from the form.
 
 For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POST /api/revision/:id/monto`). The receipt reading stays in `monto`.
 
@@ -107,7 +113,7 @@ For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POS
 
 Actions on `POST /api/firma`: `desplegar`, `fondear`, `marcar`, `aprobar`, `liberar`, `disputar`, `resolver`. The server returns an unsigned XDR plus an HMAC token (`lib/api/preparado.ts`, `HYTO_TOKEN_SECRET`, 10 minutes). The client signs with `wallet.signXdr` and posts to `POST /api/firma/enviar`. Submit is `POST /stellar/send-transaction`. Fee-bumps are rejected. The token binds the XDR fingerprint, action, task, and amount.
 
-Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0.
+Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0. `wallet_cobro` comes from the assigned member's session (#94). A demo session does not set it. If a photo exists and the address is still empty, lock budget stores that member's newest non-demo session account before the XDR. A later upload by the assigned member can still replace the address after a contract exists.
 
 On the review screen (`lib/admin/remoto.ts`):
 
@@ -128,7 +134,7 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Cavos app id in the browser. The only public variable. |
 | `TRUSTLESS_API_KEY` | Trustless Work, server only. Without it, signing returns 503. |
 | `TRUSTLESS_API_KEY_V1` | Separate key for the v1 retry in `npm run hito`. |
-| `HYTO_TOKEN_SECRET` | HMAC secret for prepare/submit. At least 32 characters. In production, prepare and submit return 503 without it. |
+| `HYTO_TOKEN_SECRET` | HMAC secret for prepare/submit and for the camera token. At least 32 characters. In production, prepare, submit, and a work-task upload return 503 without it. |
 | `HYTO_TEST_SESSION_KEY` | Outside production, used as the HMAC secret when `HYTO_TOKEN_SECRET` is unset. Not for production. |
 | `HYTO_ESCROW_ADMIN` | Contract admin `G…`. Must not repeat another role. |
 | `HYTO_ESCROW_PLATFORM` | Platform `G…`. Fee in Hyto is 0. |
@@ -138,7 +144,8 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `HYTO_CONFIRMAR_BASE_PRODUCCION` | Only `si` allows migrate or seed against those hosts. |
 | `BLOB_READ_WRITE_TOKEN` | Private Blob token. |
 | `GROQ_API_KEY` | Groq. Without it, review is stored as an error. |
-| `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
+| `GROQ_VISION_MODEL` | Optional vision model. Unset means `qwen/qwen3.8-27b`. |
+| `LAYA_URL` | Laya base URL. In production, a missing URL is a review error. Outside production, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
 | `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
@@ -176,20 +183,20 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `d755229`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, fund retry, the Mile questionnaire (#80), the 0–100 grade (#91), the demo review path (#90), the session payout account (#94), and camera checks for work proof (#93) are in the code.
 
 There is still no real testnet USDC payment hash in the repo.
 
 Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
 
 1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
-2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
-3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
+2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` now comes from the assigned member's session (#94). A later upload can still replace it after deploy.
+3. **SVG serving.** New uploads reject SVG and GIF (#93). The photo route can still serve a stored `image/*`, and the demo seed marker is an SVG on purpose. `next.config.ts` sets no `nosniff` or CSP headers.
 4. **No CI.** There is no `.github/` workflow.
 
-Also still open: receiver-trustline preflight before deploy, persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
+Also still open: receiver-trustline preflight before deploy (open PR #100 is not on `main`), persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`. `drizzle/0005_evidencia_antifraude.sql` is not recorded as applied. Who still has which piece is in [ROLES.md](ROLES.md).
 
-Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
+Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), the grade is 0–100 (#91; the older probability index was #59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), review failures are stored instead of the silent script, a failed score does not hide Lock budget or Pay (#90), and new evidence is checked for camera freshness or file type (#93).
 
 ## Design
 
