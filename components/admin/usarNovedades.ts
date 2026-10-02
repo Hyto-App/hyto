@@ -34,11 +34,12 @@ export function useNovedadesEvento(opciones: {
   const [reciente, setReciente] = useState(false);
 
   useEffect(() => {
-    const proyectoId = opciones.proyectoId;
-    if (!proyectoId || typeof document === "undefined") return;
+    const pedido = opciones.proyectoId;
+    if (!pedido || typeof document === "undefined") return;
+    const proyectoId: string = pedido;
     let viva = true;
-    let timer = 0;
-    let avisoTimer = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let avisoTimer: ReturnType<typeof setTimeout> | undefined;
     let avisoId = 0;
     let fallos = 0;
     let ocupado = false;

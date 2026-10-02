@@ -19,7 +19,7 @@ describe("pantalla en vivo", { concurrency: false }, () => {
 
   test("la bandeja actualiza el veredicto sin soltar la fila abierta ni el scroll", async () => {
     let sondeos = 0;
-    let soltar: ((respuesta: Response) => void) | null = null;
+    const espera: { soltar: ((respuesta: Response | PromiseLike<Response>) => void) | null } = { soltar: null };
     let fase: "inicial" | "nueva" = "inicial";
     const anterior = globalThis.fetch;
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -28,8 +28,8 @@ describe("pantalla en vivo", { concurrency: false }, () => {
         sondeos += 1;
         if (sondeos === 1) return json(fotoDe("a", "cumplió", "guion"));
         assert.equal(new Headers(init?.headers).get("if-none-match"), `"${sello("c")}"`);
-        return new Promise((resolver) => {
-          soltar = resolver;
+        return new Promise<Response>((resolver) => {
+          espera.soltar = resolver;
         });
       }
       if (url.startsWith("/api/tareas")) return json({ tareas: filas });
@@ -39,14 +39,14 @@ describe("pantalla en vivo", { concurrency: false }, () => {
       return new Response("no", { status: 404 });
     }) as typeof fetch;
     try {
-      await montar(createElement(Bandeja, { proyectoId: "evt" }));
+      await montar(createElement(Bandeja as (props: { proyectoId?: string }) => ReturnType<typeof Bandeja>, { proyectoId: "evt" }));
       await esperar(() => texto().includes("Set up the booth") && sondeos >= 2);
       await pulsar("Check-in list");
       const main = document.querySelector("main");
       assert.ok(main);
       main.scrollTop = 80;
       fase = "nueva";
-      soltar?.(json(fotoDe("b", "insuficiente", "scout")));
+      espera.soltar?.(json(fotoDe("b", "insuficiente", "scout")));
       await esperar(() => texto().includes("Updated just now") && texto().includes("Insufficient"));
       assert.equal(document.querySelector("h3")?.textContent, "Check-in list");
       const fila = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Check-in list"));
@@ -61,7 +61,7 @@ describe("pantalla en vivo", { concurrency: false }, () => {
 
   test("la revisión muestra la nota nueva y no borra el monto que se está escribiendo", async () => {
     let sondeos = 0;
-    let soltar: ((respuesta: Response) => void) | null = null;
+    const espera: { soltar: ((respuesta: Response | PromiseLike<Response>) => void) | null } = { soltar: null };
     let fase: "inicial" | "nueva" = "inicial";
     const anterior = globalThis.fetch;
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -70,8 +70,8 @@ describe("pantalla en vivo", { concurrency: false }, () => {
         sondeos += 1;
         if (sondeos === 1) return json(marcaComida("a", "Receipt is blurry."));
         assert.match(String(init && "headers" in init ? new Headers(init.headers).get("if-none-match") : ""), /"[a-f0-9]{32}"/);
-        return new Promise((resolver) => {
-          soltar = resolver;
+        return new Promise<Response>((resolver) => {
+          espera.soltar = resolver;
         });
       }
       if (url.startsWith("/api/tareas")) return json({ tareas: [{ id: "comida", proyectoId: "evt", hashPago: null, contratoEscrow: null }] });
@@ -86,7 +86,7 @@ describe("pantalla en vivo", { concurrency: false }, () => {
       detalles.open = true;
       await esperar(() => sondeos >= 2);
       fase = "nueva";
-      soltar?.(json(marcaComida("b", "Amount and date are visible.")));
+      espera.soltar?.(json(marcaComida("b", "Amount and date are visible.")));
       await esperar(() => texto().includes("Amount and date are visible.") && texto().includes("Updated just now"));
       assert.equal((document.querySelector("#monto-confirmado") as HTMLInputElement).value, "12");
       assert.equal(document.querySelector("details")?.open, true);
