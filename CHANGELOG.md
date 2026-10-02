@@ -26,6 +26,12 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 - A successful real testnet USDC payment (`hash_pago`).
 - Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
 
+## 2026-10-02
+
+### Cambiado
+
+- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
+
 ## 2026-09-29
 
 ### Nuevo
