@@ -11,6 +11,8 @@ import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { crearProyectoHttp } from "./proyectos";
 import { leerFotoHttp, publicarEvidenciaHttp } from "./evidencias";
+import { jpegDePrueba, PDF_MINIMO, tokenDePrueba } from "../evidencia/muestras";
+import { reiniciarTokensEvidencia } from "../evidencia/token";
 import { crearFotosMemoria } from "../blob/fotos";
 
 type Gancho = () => Promise<Almacen | null>;
@@ -139,9 +141,12 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
     assert.equal(informeV1.resumen.presupuesto, "35");
 
     const fotos = crearFotosMemoria();
+    reiniciarTokensEvidencia();
     const cuerpo = new FormData();
     cuerpo.set("tareaId", "stand");
-    cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("foto", new Blob([await jpegDePrueba()], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("token", tokenDePrueba("ana", "stand"));
+    cuerpo.set("capturadaEn", new Date().toISOString());
     const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
       almacen,
       fotos,
@@ -282,11 +287,19 @@ test("la sesión demo sube evidencia a una tarea demo, sin fijar cobro, y no a Z
   try {
     await asegurarSemilla(almacen);
     const actor = { usuarioId: "demo-voluntario", rol: "voluntario" as const, demo: true };
+    reiniciarTokensEvidencia();
+    const jpeg = await jpegDePrueba();
     const subir = (tareaId: string) => {
       const cuerpo = new FormData();
       cuerpo.set("tareaId", tareaId);
       cuerpo.set("wallet", "G" + "A".repeat(55));
-      cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+      if (tareaId.includes("stand") || tareaId === "demo-registro") {
+        cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+        cuerpo.set("token", tokenDePrueba(actor.usuarioId, tareaId));
+        cuerpo.set("capturadaEn", new Date().toISOString());
+      } else {
+        cuerpo.set("foto", new Blob([PDF_MINIMO], { type: "application/pdf" }), "factura.pdf");
+      }
       return publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
         almacen,
         fotos,
@@ -303,7 +316,9 @@ test("la sesión demo sube evidencia a una tarea demo, sin fijar cobro, y no a Z
       (() => {
         const cuerpo = new FormData();
         cuerpo.set("tareaId", "demo-registro");
-        cuerpo.set("foto", new Blob([Uint8Array.from([7])], { type: "image/jpeg" }), "evidencia.jpg");
+        cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+        cuerpo.set("token", tokenDePrueba("voluntario-1", "demo-registro"));
+        cuerpo.set("capturadaEn", new Date().toISOString());
         return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
       })(),
       { almacen, fotos, actor: { usuarioId: "voluntario-1", rol: "voluntario", demo: false } },

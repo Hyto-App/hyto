@@ -46,7 +46,7 @@ export async function leerRevisionHttp(
     const blobReal = evidencia !== null && !esBlobEjemplo(evidencia.blobId);
     const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
     const puedeForzar = !veredicto || veredicto.origen === "error";
-    if (evidencia && blobReal && fotos && (forzar ? puedeForzar : !veredicto)) {
+    if (forzar && evidencia && blobReal && fotos && puedeForzar) {
       let reservado = false;
       if (forzar) {
         if (!reservarRevision(tareaId)) return json({ aviso: "Wait a moment before reviewing again." }, 429);

@@ -36,9 +36,10 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0002_organizador_proyecto.sql",
     "0003_monto_confirmado.sql",
     "0004_miembros_invitaciones.sql",
+    "0005_evidencia_antifraude.sql",
   ]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"]);
-  assert.equal(esperado.columnas.length, 60);
+  assert.equal(esperado.columnas.length, 66);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -84,7 +85,10 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "proyecto_invitaciones:id",
     ],
   );
-  assert.deepEqual(esperado.indices, []);
+  assert.deepEqual(esperado.indices, [
+    { nombre: "evidencias_sha256_idx", tabla: "evidencias" },
+    { nombre: "evidencias_phash_idx", tabla: "evidencias" },
+  ]);
   const estado = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "estado");
   const condicion = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "condicion");
   const tope = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "tope");
@@ -146,7 +150,6 @@ test("los pendientes salen de hechos del repo y solo nombran columnas reales", (
     "veredicto-id-compartido",
     "veredictos-sin-lector",
     "credencial-url-sin-escritura",
-    "sin-indices",
     "email-case",
     "fuente-sql",
   ]);
