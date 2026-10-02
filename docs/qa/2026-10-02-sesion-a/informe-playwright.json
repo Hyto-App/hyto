@@ -1,0 +1,922 @@
+[
+  {
+    "nombre": "desktop-dark-anon-landing",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-dark-anon-signin",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-dark-anon-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-dark-anon-404",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": null,
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto"
+  },
+  {
+    "nombre": "desktop-light-anon-landing",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-light-anon-signin",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-light-anon-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "desktop-light-anon-404",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": null,
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto"
+  },
+  {
+    "nombre": "mobile-dark-anon-landing",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-dark-anon-signin",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-dark-anon-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-dark-anon-404",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": null,
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto"
+  },
+  {
+    "nombre": "mobile-light-anon-landing",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-light-anon-signin",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-light-anon-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto · Prove your worth. Get paid."
+  },
+  {
+    "nombre": "mobile-light-anon-404",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": null,
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-evento-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Assign tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-organizador-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-evento-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Assign tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "desktop-light-organizador-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-evento-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Assign tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-organizador-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-evento-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Assign tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "mobile-light-organizador-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "desktop-dark-voluntario-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "desktop-light-voluntario-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "mobile-dark-voluntario-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-eventos",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Events · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-eventos-nuevo",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "New event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-evento",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-informe",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Report · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-join",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Join an event · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-mis-tareas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Tasks · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-tarea",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Task · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-cuentas",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Account · Hyto"
+  },
+  {
+    "nombre": "mobile-light-voluntario-cuentas-preparar",
+    "desborde": 0,
+    "fuente": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteBoton": "Poppins, \"Poppins Fallback\", Poppins, ui-sans-serif, system-ui, sans-serif",
+    "fuenteInput": null,
+    "cortados": [],
+    "espanol": null,
+    "titulo": "Set up USDC · Hyto"
+  }
+]
