@@ -289,12 +289,7 @@ export function Revision({
 
   const botones = botonesRevision(tarea, real, { contrato, fondeado });
   const esperaConfirmacion =
-    real &&
-    tarea.tipo === "reembolso" &&
-    !contrato &&
-    tarea.estado !== "pagado" &&
-    tarea.origen !== "error" &&
-    Boolean(tarea.montoRevisado);
+    real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
@@ -327,7 +322,7 @@ export function Revision({
       <div className="hyto-review">
         <figure className="hyto-photo">
           {foto ? (
-            <img src={foto} alt={textoVisible(tarea.titulo)} />
+            <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
@@ -370,7 +365,7 @@ export function Revision({
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
           {tarea.origen === "error" ? (
-            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Laya is unavailable. No AI score for this photo.</p>
+            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Mile is unavailable. No AI score for this photo.</p>
           ) : null}
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-2 text-base leading-7">
@@ -540,5 +535,41 @@ export function Revision({
         </section>
       </div>
     </main>
+  );
+}
+
+function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
+  const [lista, setLista] = useState(false);
+  const [rota, setRota] = useState(false);
+
+  useEffect(() => {
+    setLista(false);
+    setRota(false);
+  }, [src]);
+
+  if (rota) {
+    return (
+      <div className="hyto-photo-nota">
+        <p>This photo could not be shown.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {lista ? null : (
+        <div className="hyto-photo-nota" role="status">
+          <span className="hyto-spinner" aria-hidden="true" />
+          <span className="sr-only">Loading photo</span>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLista(true)}
+        onError={() => setRota(true)}
+        style={lista ? undefined : { opacity: 0 }}
+      />
+    </>
   );
 }

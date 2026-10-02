@@ -181,10 +181,11 @@ test("en demo, sin sesión solo se ve el proyecto demo y no ZEEK", async () => {
 
     const proyectos = (await (await proyectosGet(pedir("http://local/api/proyectos"))).json()) as {
       proyecto: { id: string; nombre: string };
-      proyectos: { id: string }[];
+      proyectos: { id: string; pendientes?: number }[];
     };
     assert.equal(proyectos.proyecto.id, "demo");
     assert.deepEqual(proyectos.proyectos.map((proyecto) => proyecto.id), ["demo"]);
+    assert.equal(proyectos.proyectos[0]?.pendientes, 3);
 
     const tareas = (await (await tareasGet(pedir("http://local/api/tareas"))).json()) as {
       tareas: { id: string; walletCobro: string; contratoEscrow: string | null }[];

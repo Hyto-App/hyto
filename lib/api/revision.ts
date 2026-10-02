@@ -64,7 +64,7 @@ export async function leerRevisionHttp(
     const vista = await tareaAdmin(almacen, actual);
     return json({
       tarea: vista,
-      foto: evidencia && blobReal ? `/api/evidencias/${evidencia.id}/foto` : null,
+      foto: evidencia ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
       contratoEscrow: actual.contratoEscrow,
       walletCobro: actual.walletCobro,

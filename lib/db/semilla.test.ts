@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { armarInforme } from "../api/informe";
-import { leerFotoHttp } from "../api/evidencias";
+import { leerFotoHttp, tipoDeFoto } from "../api/evidencias";
 import { leerRevisionHttp } from "../api/revision";
 import type { Almacen } from "./almacen";
 import { crearMemoria } from "./memoria";
 import { asegurarSemilla, evidenciasSemilla, MARCA_EJEMPLO, tareasSemilla, veredictosSemilla } from "./semilla";
+
+test("el tipo de la foto sigue los bytes cuando el almacén no dice image", () => {
+  const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0x00]);
+  assert.equal(tipoDeFoto("application/octet-stream", jpeg), "image/jpeg");
+  assert.equal(tipoDeFoto("image/png", jpeg), "image/jpeg");
+  assert.equal(tipoDeFoto("image/jpg", jpeg), "image/jpeg");
+  assert.equal(tipoDeFoto("", Uint8Array.from([1, 2, 3])), "application/octet-stream");
+});
 
 test("la semilla marca la evidencia de ZEEK como ejemplo", () => {
   const tareas = tareasSemilla();
@@ -87,7 +95,7 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   assert.equal(json.tarea.nota, 100);
   assert.equal(json.tarea.veredicto, "cumplió");
   assert.match(json.tarea.frase, /^Example\./);
-  assert.equal(json.foto, null);
+  assert.equal(json.foto, "/api/evidencias/ejemplo-stand/foto");
 
   const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand", { usuarioId: "voluntario-1", demo: false });
   assert.equal(marcador.status, 200);
@@ -136,13 +144,18 @@ test("la semilla no toca organizador_id de zeek y el demo es otro proyecto", asy
 
     await vacio.asignarOrganizador("zeek", "ana");
     await vacio.asignarOrganizador("demo", "ana");
-    await vacio.actualizarTarea("demo-stand", { miembroId: "voluntario-2" });
-    await vacio.actualizarTarea("demo-registro", { miembroId: "" });
+    await vacio.actualizarTarea("demo-stand", { miembroId: "persona-real" });
+    await vacio.actualizarTarea("demo-registro", { miembroId: "voluntario-2" });
+    await vacio.actualizarTarea("demo-bienvenida", { miembroId: "" });
     await asegurarSemilla(vacio);
     assert.equal((await vacio.leerProyecto("zeek"))?.organizadorId, "ana");
     assert.equal((await vacio.leerProyecto("demo"))?.organizadorId, "ana");
-    assert.equal((await vacio.leerTarea("demo-stand"))?.miembroId, "voluntario-2");
+    assert.equal((await vacio.leerTarea("demo-stand"))?.miembroId, "persona-real");
     assert.equal((await vacio.leerTarea("demo-registro"))?.miembroId, "demo-voluntario");
+    assert.equal((await vacio.leerTarea("demo-bienvenida"))?.miembroId, "demo-voluntario");
+    assert.equal((await vacio.leerTarea("demo-bienvenida"))?.estado, "pendiente");
+    assert.equal((await vacio.leerTarea("demo-stand"))?.estado, "en revisión");
+    assert.equal((await vacio.veredictoDe("ejemplo-demo-stand"))?.veredicto, "cumplió");
   } finally {
     if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
     else process.env.HYTO_DEMO_LOGIN = anterior;

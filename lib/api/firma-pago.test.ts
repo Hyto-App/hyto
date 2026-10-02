@@ -417,7 +417,7 @@ test("un hito v1 con flags.released también se marca pagado", async () => {
   }
 });
 
-test("un reembolso sin monto o con la revisión fallida no se despliega", async () => {
+test("un reembolso sin monto no se despliega, y un fallo de la IA no bloquea el fondeo", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -443,13 +443,27 @@ test("un reembolso sin monto o con la revisión fallida no se despliega", async 
     assert.equal(sinMonto.status, 409);
     assert.equal(((await sinMonto.json()) as { aviso: string }).aviso, "Review pending");
 
-    await almacen.actualizarEvidencia("ejemplo-comida", { monto: "12.40", fecha: "2026-09-27" });
+    await almacen.actualizarEvidencia("ejemplo-comida", { monto: "12.40", fecha: "2026-09-27", montoConfirmado: "12.40" });
     const guardado = await almacen.veredictoDe("ejemplo-comida");
     assert.ok(guardado);
-    await almacen.guardarVeredicto({ ...guardado, origen: "error", choice: "sin_clave", frase: "La IA no está configurada" });
+    await almacen.guardarVeredicto({ ...guardado, origen: "error", choice: "sin_clave", frase: "The AI could not finish the review" });
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      if (url.includes("horizon")) {
+        return new Response(
+          JSON.stringify({
+            balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+        return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
+      }
+      return new Response("no", { status: 404 });
+    };
     const fallida = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
-    assert.equal(fallida.status, 409);
-    assert.equal(((await fallida.json()) as { aviso: string }).aviso, "Review pending");
+    assert.equal(fallida.status, 200);
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior.clave);

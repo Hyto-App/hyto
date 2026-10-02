@@ -109,7 +109,7 @@ export function pasosDePago(entrada: {
       { nombre: "Pay", estado: "done" },
     ];
   }
-  const revisionLista = entrada.tieneVeredicto && !entrada.revisionFallida;
+  const revisionLista = entrada.tieneVeredicto || entrada.revisionFallida;
   const revision: PasoFlujo["estado"] = revisionLista ? "done" : "now";
   const bloqueo: PasoFlujo["estado"] = !revisionLista ? "later" : entrada.presupuestoListo ? "done" : "now";
   const pago: PasoFlujo["estado"] = revisionLista && entrada.presupuestoListo ? "now" : "later";
