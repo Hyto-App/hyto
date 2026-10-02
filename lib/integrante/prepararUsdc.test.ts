@@ -92,6 +92,7 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
       await Promise.resolve();
     });
     assert.match(texto(), /Get ready to be paid/);
+    assert.match(texto(), /open it on the test network first/);
     await pulsar("Get ready to be paid");
     assert.match(texto(), /Getting ready…/);
     await act(async () => {
