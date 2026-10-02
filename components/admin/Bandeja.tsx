@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
+import { conTarea } from "@/lib/admin/parche";
+import type { DetalleRevision } from "@/lib/admin/remoto";
 import { vistaAdmin } from "@/lib/admin/vista";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
@@ -31,10 +34,23 @@ export function Bandeja({
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
+  const [frescas, setFrescas] = useState<VistaAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("all");
   const [selId, setSelId] = useState<string | null>(null);
-  const vista = elegida ?? base;
+  const vista = frescas ?? elegida ?? base;
+  const vistaRef = useRef<VistaAdmin | null>(vista);
+  vistaRef.current = vista;
+
+  useEffect(() => {
+    setFrescas(null);
+  }, [base, elegida]);
+
+  const aplicar = useCallback((detalle: DetalleRevision) => {
+    const origen = vistaRef.current;
+    if (!origen) return;
+    setFrescas(conTarea(origen, detalle.tarea));
+  }, []);
 
   function usarEjemplo() {
     const guardado = volverAlEjemplo();
@@ -76,8 +92,13 @@ export function Bandeja({
 
   const visibles = filtro === "all" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
+  const fallidas = vista.ejemplo ? [] : vista.bandeja.filter((item) => item.origen === "error" && item.estado !== "pagado");
+
   return (
     <main className="hyto-page">
+      {fallidas.map((item) => (
+        <ReintentoFondo key={item.id} tareaId={item.id} onDetalle={aplicar} />
+      ))}
       {proyectoId ? null : (
         <header className="hyto-page-head">
           <div>
@@ -161,6 +182,9 @@ export function Bandeja({
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo)}</h3>
                   <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion)}</p>
                   {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase)}</p> : null}
+                  {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
+                    <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />
+                  ) : null}
                   {proyectoId && miembros.length > 0 ? (
                     <label className="mt-4 block text-sm" htmlFor={`asignar-${seleccion.id}`}>
                       Assign

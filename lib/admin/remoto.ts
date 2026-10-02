@@ -274,21 +274,43 @@ function origenDe(valor: unknown): TareaAdmin["origen"] {
   return null;
 }
 
-export async function reintentarRevision(tareaId: string, opciones: OpcionesRemoto = {}): Promise<DetalleRevision | null> {
+const AVISO_REINTENTO = "The review could not be retried.";
+
+export function avisoDeReintento(cuerpo: unknown): string {
+  if (!cuerpo || typeof cuerpo !== "object") return AVISO_REINTENTO;
+  const aviso = (cuerpo as { aviso?: unknown }).aviso;
+  if (typeof aviso !== "string") return AVISO_REINTENTO;
+  const limpio = aviso.trim();
+  if (limpio.length < 12) return AVISO_REINTENTO;
+  return limpio.slice(0, 240);
+}
+
+export async function pedirReintentoRevision(
+  tareaId: string,
+  opciones: OpcionesRemoto = {},
+): Promise<{ ok: true; detalle: DetalleRevision } | { ok: false; aviso: string }> {
   const fetchImpl = opciones.fetch ?? fetch;
   const id = tareaId.trim();
-  if (!id) return null;
+  if (!id) return { ok: false, aviso: AVISO_REINTENTO };
   try {
     const revision = await fetchImpl(`/api/revision/${encodeURIComponent(id)}`, {
       method: "POST",
       cache: "no-store",
       signal: AbortSignal.timeout(25000),
     });
-    if (!revision.ok) return null;
-    return detalleDe(await revision.json());
+    const cuerpo = await revision.json().catch(() => null);
+    if (!revision.ok) return { ok: false, aviso: avisoDeReintento(cuerpo) };
+    const detalle = detalleDe(cuerpo);
+    if (!detalle) return { ok: false, aviso: AVISO_REINTENTO };
+    return { ok: true, detalle };
   } catch {
-    return null;
+    return { ok: false, aviso: AVISO_REINTENTO };
   }
+}
+
+export async function reintentarRevision(tareaId: string, opciones: OpcionesRemoto = {}): Promise<DetalleRevision | null> {
+  const resultado = await pedirReintentoRevision(tareaId, opciones);
+  return resultado.ok ? resultado.detalle : null;
 }
 
 function saldoPositivo(valor: unknown): boolean | null {
