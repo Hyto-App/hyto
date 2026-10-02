@@ -23,8 +23,12 @@ test("the payment steps move from the photo to the locked budget to paid", () =>
     ["done", "now", "later"],
   );
   assert.deepEqual(
+    pasosDePago({ tieneVeredicto: false, revisionFallida: true, presupuestoListo: false, pagado: false }).map((paso) => paso.estado),
+    ["done", "now", "later"],
+  );
+  assert.deepEqual(
     pasosDePago({ tieneVeredicto: true, revisionFallida: true, presupuestoListo: false, pagado: false }).map((paso) => paso.estado),
-    ["now", "later", "later"],
+    ["done", "now", "later"],
   );
   assert.deepEqual(
     pasosDePago({ tieneVeredicto: true, revisionFallida: false, presupuestoListo: true, pagado: false }).map((paso) => paso.estado),

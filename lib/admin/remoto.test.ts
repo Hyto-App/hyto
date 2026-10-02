@@ -71,8 +71,13 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).fondear, false);
   const error = botonesRevision(tarea({ origen: "error", veredicto: null }), true, conContrato);
   assert.equal(error.desplegar, false);
-  assert.equal(error.fondear, false);
+  assert.equal(error.fondear, true);
   assert.equal(error.pagar, false);
+  assert.equal(botonesRevision(tarea({ origen: "error", veredicto: null }), true).desplegar, true);
+  assert.equal(
+    botonesRevision(tarea({ origen: "error", veredicto: null }), true, { contrato: "CSTAND", fondeado: true }).pagar,
+    true,
+  );
   const sinMonto = botonesRevision(tarea({ tipo: "reembolso", montoRevisado: null, origen: "scout" }), true, conContrato);
   assert.equal(sinMonto.desplegar, false);
   assert.equal(sinMonto.fondear, false);

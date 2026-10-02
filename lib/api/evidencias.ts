@@ -67,7 +67,11 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
     return new Response(Buffer.from(foto.bytes), {
-      headers: { "content-type": foto.tipo || "application/octet-stream", "cache-control": "private, max-age=3600" },
+      headers: {
+        "content-type": tipoDeFoto(foto.tipo, foto.bytes),
+        "cache-control": "private, max-age=3600",
+        "content-disposition": "inline",
+      },
     });
   } catch {
     return baseNoLista();
@@ -197,6 +201,35 @@ function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {
 
 function texto(valor: FormDataEntryValue | null): string {
   return typeof valor === "string" ? valor.trim() : "";
+}
+
+export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
+  const olido = olerImagen(bytes);
+  if (olido) return olido;
+  const limpio = declarado.trim().toLowerCase();
+  if (limpio === "image/jpg" || limpio === "image/pjpeg") return "image/jpeg";
+  if (limpio.startsWith("image/")) return limpio;
+  return "application/octet-stream";
+}
+
+function olerImagen(bytes: Uint8Array): string | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+  if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return "image/gif";
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return null;
 }
 
 function esImagen(foto: Blob): boolean {

@@ -1,4 +1,4 @@
-import { normalizarMonto } from "@/lib/admin/vista";
+import { enBandeja, normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
@@ -74,12 +74,17 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
     const rol = rolDe(proyecto.id);
     return json({
       proyecto: { id: proyecto.id, nombre: proyecto.nombre, rol },
-      proyectos: proyectos.map((item) => ({
-        id: item.id,
-        nombre: item.nombre,
-        rol: rolDe(item.id),
-        pendientes: visibles.filter((tarea) => tarea.proyectoId === item.id && tarea.estado !== "pagado").length,
-      })),
+      proyectos: await Promise.all(
+        proyectos.map(async (item) => ({
+          id: item.id,
+          nombre: item.nombre,
+          rol: rolDe(item.id),
+          pendientes: await contarBandeja(
+            almacen,
+            visibles.filter((tarea) => tarea.proyectoId === item.id),
+          ),
+        })),
+      ),
       tareas: tareas.map(tareaPublica),
       miembros:
         rol === "organizer"
@@ -89,6 +94,17 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
   } catch {
     return baseNoLista();
   }
+}
+
+async function contarBandeja(almacen: Almacen, tareas: TareaFila[]): Promise<number> {
+  let total = 0;
+  for (const tarea of tareas) {
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+    const veredicto = fila && fila.origen !== "error" ? fila.veredicto : null;
+    if (enBandeja({ estado: tarea.estado, veredicto })) total += 1;
+  }
+  return total;
 }
 
 async function personasDelEvento(almacen: Almacen, proyectoId: string): Promise<{ usuarioId: string; email: string; rol: string }[]> {
