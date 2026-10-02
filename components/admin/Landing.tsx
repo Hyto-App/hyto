@@ -7,7 +7,7 @@ export function Landing({ demoHabilitado = false }: { demoHabilitado?: boolean }
     <main className="hyto-page mx-auto max-w-lg">
       <h1 className="hyto-title">Hyto</h1>
       <p className="hyto-sub">Events, evidence, and USDC payments on Stellar.</p>
-      <div className="mt-8 max-w-xs">
+      <div className="mt-8 max-w-md">
         <Entrar demoHabilitado={demoHabilitado} />
       </div>
     </main>
