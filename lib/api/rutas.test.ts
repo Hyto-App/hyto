@@ -167,7 +167,7 @@ test("la subida guarda la cuenta de la sesión del asignado, no la del formulari
     assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
 
     reiniciarTokensEvidencia();
-    const subir = (jpeg: Uint8Array) => {
+    const subir = (jpeg: Uint8Array<ArrayBuffer>) => {
       const cuerpo = new FormData();
       cuerpo.set("tareaId", "stand");
       cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
