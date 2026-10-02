@@ -4,7 +4,23 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
-Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+`main` is `b3affce` (02:46, Costa Rica). This section is what landed after the docs refresh at `2b9fad4`.
+
+### Changed
+
+- The payout account is the assigned member's session address. The upload form no longer sends a wallet. A demo session does not set one. If the sign-in has no `G…` address, the photo is kept and the response says to sign in again. If the organizer locks the budget, a photo is already there, and the address is still empty, the server stores the member's newest non-demo session account before deploy. When that account is still missing, the screen says: "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task." Josué Valles, PR #94.
+- Lock budget and Pay stay available when the AI score fails. A reimbursement still needs a confirmed amount. The event pending count uses the same rule as the inbox. The report shows its title, Print, and the budget bar. The screen says Mile. The photo response sniffs JPEG, PNG, GIF, and WebP. With demo login, the seed keeps Welcome table pending for upload and a Met booth task in review. Demo sessions still cannot sign. Josué Valles, PR #90.
+- Mile is asked a questionnaire about Groq's written description. It classifies the text as work, a receipt, or something else, then asks only that path. Something else is insufficient. The last score is the ceiling. Other answers can only lower it. A yes does not raise the score and does not approve payment. Reimbursement amount, date, and cap rules are unchanged. The service and the env vars stay `LAYA_*`. This note replaces the Spanish paragraph that landed with the same pull request. Raúl (Milasur), PR #80.
+
+### Not in the repo yet
+
+- A successful real testnet USDC payment (`hash_pago`).
+- Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md). A later upload can still replace `wallet_cobro` after a contract exists.
+- Camera checks for work proof and file checks for receipts (PR #93, including `drizzle/0005_evidencia_antifraude.sql`). That pull request is open. It is not how upload works on `main`.
+
+## 2026-10-02
+
+Docs matched `main` at `2b9fad4` (#87). Summary of what had landed after the 29 September changelog:
 
 ### Changed
 
@@ -25,12 +41,6 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 
 - A successful real testnet USDC payment (`hash_pago`).
 - Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
-
-## 2026-10-02
-
-### Cambiado
-
-- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
 
 ## 2026-09-29
 

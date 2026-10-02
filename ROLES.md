@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `b3affce` (2 October 2026, 02:46 Costa Rica). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 
@@ -8,7 +8,7 @@ Nobody picks "organizer" or "volunteer" at login. Membership is per event, in `p
 
 | Membership | How you get it | What you can do |
 |---|---|---|
-| Organizer | Create an event. The wallet must cover the budget plus 1 USDC. | See every task, invite people, assign tasks at `/eventos/[id]/tareas`, lock the budget, confirm a reimbursement, pay. |
+| Organizer | Create an event. The wallet must cover the budget plus 1 USDC. | See every task, invite people, assign tasks at `/eventos/[id]/tareas`, lock the budget, confirm a reimbursement, pay. A failed AI review does not remove lock or pay. |
 | Team | Invite (`rol: "team"`), direct or code. | See and submit evidence only on tasks assigned to you. |
 | Volunteer | Invite (`rol: "volunteer"`), or the default when the invite omits `team`. | Same visibility as team: assigned tasks only. |
 
@@ -35,3 +35,15 @@ That note, and the rest of the coordination between people and agents, goes in t
 Work lands as a pull request from an updated `main`. Nobody pushes to `main`.
 
 The per-person prompts in [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md) described the 30 September audit against an older commit. Do not paste them into an agent as current instructions.
+
+## What each person still has
+
+Suggestions, not assignments. A draft or an open pull request is not on `main`.
+
+| Person | On `main` as of 2 Oct 2026, 02:46 | Still open |
+|---|---|---|
+| Abdiel Cole | The five P0 items from the 2 Oct UI audit shipped in #90 (Josué): demo path, inbox count, report, Mile label, photo. | P1/P2 from that audit were left for a later pass. Compare the Mile label with the Figma page "Nuevo diseño". Whether `LAYA_URL` is set in Vercel is not in the repo. Draft #89 is the audit write-up; it is not merged. |
+| Esteban | Review pipeline and data layer from earlier PRs. | JWT `aud` and `iss` fail closed in production, prove wallet ownership, stop SVG evidence (JPEG/PNG/GIF/WebP are sniffed; other `image/*` still pass), add CI, and refuse a new `wallet_cobro` once a contract exists. |
+| Sebas | Escrow module and `npm run hito` from earlier PRs. No payment hash in the repo. | A real testnet USDC `hash_pago`. Receiver trustline check before deploy. Save the predicted contract id. Sponsored trustline on Account. Check `wallet.status === "ready"` before `signXdr`. |
+| Josué | #94 stores the payout account from the volunteer's session. #90 keeps lock and pay available when Mile fails, and repairs the pending count, the report, the Mile label, and the evidence photo. | Draft #18 (keep the session when returning from Google) is not merged. PR #93 (camera checks and receipt file checks, migration `0005`) is open and not current behaviour. |
+| Raúl | #80. Laya asks the approved questionnaire on the written description. The UI name is Mile; the service is still Laya. | Draft #72 (camera only, no gallery), draft #91 (a 0–100 review score), and draft #96 (retry the review when Groq or Laya fail) are not merged. |

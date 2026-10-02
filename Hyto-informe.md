@@ -1,6 +1,6 @@
 # Hyto — project brief
 
-Product behavior as of `main` at `2b9fad4` is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
+Product behavior as of `main` at `b3affce` (2 October 2026, 02:46 Costa Rica) is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
 
 ## Pitch
 
@@ -25,9 +25,9 @@ Positioning is teams and companies first. Volunteer events such as ZEEK are the 
 
 1. **Budget.** A signed-in user with enough USDC creates an event. Each task is its own escrow. The balance check is the task total plus 1 USDC.
 2. **People.** Organizer invites teammates with a direct link or an `HYTO-` code. Members see their tasks. The organizer assigns work.
-3. **Evidence.** Work or reimbursement, same camera: a photo of the work, or a photo of the receipt.
-4. **Review.** Groq describes the photo. Laya scores that description when `LAYA_URL` is set. The code says cumplió, parcial, or insuficiente. Neither model moves money.
-5. **Pay.** The organizer confirms a reimbursement amount, locks the budget, then pays. The link appears after a real transaction hash. That hash is not in the repo yet.
+3. **Evidence.** Work or reimbursement, same camera: a photo of the work, or a photo of the receipt. The payout account is the assigned member's session address.
+4. **Review.** Groq describes the photo. Mile (Laya) scores that description when `LAYA_URL` is set. The code says cumplió, parcial, or insuficiente. A failed score does not hide Lock budget or Pay. Neither model moves money.
+5. **Pay.** The organizer confirms a reimbursement amount, locks the budget, then pays. If the payout account is still empty and a photo exists, lock budget reads the member's session. The link appears after a real transaction hash. That hash is not in the repo yet.
 
 ## Problem
 

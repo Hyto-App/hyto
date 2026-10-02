@@ -8,7 +8,7 @@ This file is the short map. Agents and contributors should read [AGENTS.md](AGEN
 
 Login does not pick a global role. A signed-in user who can cover the budget plus a 1 USDC reserve creates an event and becomes that event's organizer. Other people join with a direct invite or a code `HYTO-` plus 12 characters. Invites expire in 7 days. Members see the tasks assigned to them. The organizer sees every task and assigns them at `/eventos/[id]/tareas`.
 
-The shell is Events, Tasks, and Account (light and dark). Evidence is a photo. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
+The shell is Events, Tasks, and Account (light and dark). Evidence is a photo. Groq describes it. Mile (Laya) scores that description when `LAYA_URL` is set, using the questionnaire from #80. A failed score does not hide Lock budget or Pay (#90). The payout account is the assigned member's session address (#94). The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
 
 There is no successful real USDC payment on testnet in this repo yet (`tareas.hash_pago` is empty).
 
@@ -51,4 +51,4 @@ Names only. The full list, taken from `process.env` reads in the app, is in [AGE
 | [ROLES.md](ROLES.md) | Event membership and how the team splits work. |
 | [PLAN.md](PLAN.md) | What is left. The September kickoff plan is retired. |
 | [CHANGELOG.md](CHANGELOG.md) | What landed. |
-| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note for `2b9fad4`. |
+| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note for `b3affce`. |

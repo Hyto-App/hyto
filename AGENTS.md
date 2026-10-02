@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `b3affce` (2 October 2026, 02:46 Costa Rica): the payout account comes from the assigned member's session, Mile asks Raúl's questionnaire, and a failed score does not hide lock or pay. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -21,7 +21,7 @@ Facts that bound this app, checked on 2026-10-02:
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
+Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Mile (Laya) scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money. The payout address is the assigned member's session account.
 
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 
@@ -66,7 +66,7 @@ User-facing copy is English.
 | Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
-| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). |
+| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Mile (Laya) scores the description with a questionnaire (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). The screen says Mile. |
 
 `Almacen` (`lib/db/almacen.ts`) is the data interface. Production uses `almacenNeon()` (`lib/db/neon.ts`): Neon HTTP when the host is Neon, `pg` otherwise. Routes enter through `conAlmacen` (`lib/api/base.ts`). Without `DATABASE_URL` they say the database is not configured. Tests use `crearMemoria()`. Browser `localStorage` helpers still exist for the sample view.
 
@@ -96,10 +96,14 @@ If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wal
 Upload and review call `revisar()` (`lib/revision/revisar.ts`).
 
 1. Groq (`qwen/qwen3.8-27b`) returns JSON with `texto`, `monto`, and `fecha`. The request uses `max_completion_tokens: 1024`, `reasoning_effort: "none"`, and `reasoning_format: "hidden"`. The file name `scout.ts` and the column `texto_scout` are old names.
-2. If `LAYA_URL` is set, `POST {LAYA_URL}/v1/systemone` (model `multilingual`) asks `choice`, `noul`, and `score`. When `probabilities` are present, the score is the highest index: 0 insuficiente, 1 parcial, 2 cumplió (`lib/revision/laya.ts`). `LAYA_API_KEY` is sent as Bearer when set.
-3. The code returns `cumplió`, `parcial`, or `insuficiente`. A reimbursement over the cap, or without amount and date, becomes `insuficiente`. `noul` false cannot be `cumplió`.
+2. If `LAYA_URL` is set, Mile classifies that text as work, a receipt, or something else (`lib/revision/laya.ts`, #80). Something else is `insuficiente` and stops. Work and receipt each get a second `POST {LAYA_URL}/v1/systemone` (model `multilingual`) with only that path. The final score question is the ceiling (0 insuficiente, 1 parcial, 2 cumplió). Other answers can only lower it. A yes does not raise it. `LAYA_API_KEY` is sent as Bearer when set. The screen says Mile. The env vars stay `LAYA_*`.
+3. The code returns `cumplió`, `parcial`, or `insuficiente`. A reimbursement over the cap, or without amount and date, becomes `insuficiente`. `noul` is copied into the phrase. It does not set the verdict by itself; the questionnaire already folded those signals into the score.
 
-Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
+Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed) and says "Mile is unavailable" when the score fails. That failure does not hide Lock budget or Pay (#90). A reimbursement still needs `monto_confirmado`. On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
+
+The photo route sniffs JPEG, PNG, GIF, and WebP when the stored type is missing, `application/octet-stream`, or wrong (#90). `esImagen` still accepts any `image/*`, including SVG.
+
+The assigned member's upload stores `sesiones.wallet` as `wallet_cobro` (#94). The form field is ignored. A demo session does not set a payout account. If that sign-in has no `G…` address, the photo is kept and the response includes "This sign-in has no payout account. Sign in again and open the task so we know where to pay." A later upload by the same member can still replace the address, including after a contract exists.
 
 For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POST /api/revision/:id/monto`). The receipt reading stays in `monto`.
 
@@ -107,7 +111,7 @@ For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POS
 
 Actions on `POST /api/firma`: `desplegar`, `fondear`, `marcar`, `aprobar`, `liberar`, `disputar`, `resolver`. The server returns an unsigned XDR plus an HMAC token (`lib/api/preparado.ts`, `HYTO_TOKEN_SECRET`, 10 minutes). The client signs with `wallet.signXdr` and posts to `POST /api/firma/enviar`. Submit is `POST /stellar/send-transaction`. Fee-bumps are rejected. The token binds the XDR fingerprint, action, task, and amount.
 
-Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0.
+Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0. If a photo exists and `wallet_cobro` is not a `G…` address, deploy stores the assigned member's newest non-demo session account first (`walletDeUsuario` in `lib/sesion/cobro.ts`). When that account is still missing, the server returns "The task has no payout wallet. Ask the volunteer to sign in and open the task." The screen shows "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task."
 
 On the review screen (`lib/admin/remoto.ts`):
 
@@ -176,20 +180,20 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `b3affce`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, fund retry, the Mile questionnaire (#80), the demo review path (#90), and the session payout account (#94) are in the code.
 
 There is still no real testnet USDC payment hash in the repo.
 
 Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
 
 1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
-2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
-3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
+2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. #94 copies that session address onto `wallet_cobro`. A later upload can still replace it after deploy.
+3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG. #90 sniffs JPEG, PNG, GIF, and WebP, and a recognized file is served as that type. Anything else, including SVG, is still served as declared. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
 4. **No CI.** There is no `.github/` workflow.
 
 Also still open: receiver-trustline preflight before deploy, persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
 
-Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
+Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59) and Raúl's questionnaire (#80), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), review failures are stored instead of the silent script, a failed score does not hide lock or pay (#90), and the payout account comes from the assigned member's session (#94). Who still has which item: [ROLES.md](ROLES.md).
 
 ## Design
 
