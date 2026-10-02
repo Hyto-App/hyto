@@ -15,7 +15,7 @@ import { guardarDecision } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, type DetalleRevision } from "@/lib/admin/remoto";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
-import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
+import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
@@ -185,7 +185,7 @@ export function Revision({
       publicarAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
       return;
     }
-    setTarea((actual) => (actual ? { ...actual, estado: "pendiente" } : actual));
+    setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
   }
 
   function decidir(decision: "pagado" | "pendiente") {
@@ -384,7 +384,7 @@ export function Revision({
             </div>
           ) : foto ? (
             <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo)} />
-          ) : tarea.frase ? (
+          ) : !real && tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
               <p className="text-sm text-[var(--suave)]">Sample evidence</p>
               <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo)}</p>

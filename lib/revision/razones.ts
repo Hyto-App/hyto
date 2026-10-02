@@ -64,7 +64,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_otra",
       "Falta grave: no muestra trabajo ni comprobante",
-      "The photo is not the requested work and not a receipt, so the grade stays Insuficiente.",
+      "The photo is not the requested work and not a receipt, so the grade stays Insufficient.",
       "problem",
       ["c1"],
     ));
@@ -73,7 +73,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_no_coincide",
       "Falta grave: no coincide con lo pedido",
-      "The photo does not match what was requested, so the grade stays Insuficiente.",
+      "The photo does not match what was requested, so the grade stays Insufficient.",
       "problem",
       ["v1"],
     ));
@@ -82,7 +82,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_sin_empezar",
       "Falta grave: el trabajo no empezó",
-      "The work has not started, so the grade stays Insuficiente.",
+      "The work has not started, so the grade stays Insufficient.",
       "problem",
       ["t6"],
     ));
@@ -91,7 +91,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_otro_gasto",
       "Falta grave: es otro gasto",
-      "The expense is a different kind from the one requested, so the grade stays Insuficiente.",
+      "The expense is a different kind from the one requested, so the grade stays Insufficient.",
       "problem",
       ["f1"],
     ));
@@ -100,7 +100,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_no_razonable",
       "No puede ser Completado: el gasto no es razonable",
-      "The expense is not reasonable for the task, so the grade cannot reach Completado.",
+      "The expense is not reasonable for the task, so the grade cannot reach Completed.",
       "warning",
       ["g2"],
     ));

@@ -99,7 +99,13 @@ test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
 
   const marcador = await leerFotoHttp(almacen, null, "ejemplo-stand", { usuarioId: "voluntario-1", demo: false });
   assert.equal(marcador.status, 200);
-  assert.match(marcador.headers.get("content-type") ?? "", /image\/svg\+xml/);
+  assert.equal(marcador.headers.get("content-type"), "image/png");
+  assert.equal(marcador.headers.get("x-content-type-options"), "nosniff");
+  const bytes = new Uint8Array(await marcador.arrayBuffer());
+  assert.deepEqual([...bytes.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const vista = new DataView(bytes.buffer, bytes.byteOffset);
+  assert.equal(vista.getUint32(16), 480);
+  assert.equal(vista.getUint32(20), 360);
 
   const sinEvidencia = await leerRevisionHttp(almacen, null, "bienvenida");
   const vacia = (await sinEvidencia.json()) as { tarea: { veredicto: string | null; estado: string }; foto: string | null };

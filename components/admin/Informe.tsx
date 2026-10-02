@@ -82,7 +82,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
             <span style={{ width: `${ancho}%` }} />
           </div>
           <p className="mt-2 text-sm text-[var(--suave)]">
-            Paid {formatearMonto(vista.resumen.pagado)} · Pending {formatearMonto(vista.resumen.pendiente)} · {vista.personas.length} volunteer{vista.personas.length === 1 ? "" : "s"}
+            Paid {formatearMonto(vista.resumen.pagado)} · Remaining {formatearMonto(vista.resumen.pendiente)} · {vista.personas.length} volunteer{vista.personas.length === 1 ? "" : "s"}
           </p>
         </div>
       </section>

@@ -96,7 +96,7 @@ export function ListaEventos() {
                 <p className="mt-1 text-sm text-[var(--suave)]">
                   {evento.rol ? ROL[evento.rol] : "Member"}
                   {" · "}
-                  {evento.pendientes ?? 0} pending
+                  {evento.pendientes ?? 0} {evento.rol === "organizer" ? "to review" : "in review"}
                 </p>
               </Link>
             </li>

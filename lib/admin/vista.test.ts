@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, resumir, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -24,6 +24,34 @@ test("la bandeja y el contador usan la misma regla", () => {
   assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), true);
   assert.equal(enBandeja({ estado: "en revisión", veredicto: null }), true);
   assert.equal(enBandeja({ estado: "pagado", veredicto: "cumplió" }), false);
+  assert.equal(enBandeja({ estado: "pagado", veredicto: null }), false);
+});
+
+test("the ZEEK example: subtitle, list, and event count all say three", () => {
+  const vista = vistaAdmin(VACIA);
+  assert.equal(vista.tareas.length, 4);
+  assert.equal(vista.bandeja.length, 3);
+  assert.equal(vista.tareas.filter((tarea) => enBandeja(tarea)).length, vista.bandeja.length);
+  assert.equal(vista.bandeja.some((tarea) => tarea.id === "bienvenida"), false);
+});
+
+test("asking for another photo drops the old AI result and leaves the inbox", () => {
+  const vista = vistaAdmin({ ...VACIA, decisiones: { registro: "pendiente" } });
+  const registro = vista.tareas.find((tarea) => tarea.id === "registro");
+  assert.ok(registro);
+  assert.equal(registro.estado, "pendiente");
+  assert.equal(registro.veredicto, null);
+  assert.equal(registro.nota, null);
+  assert.equal(registro.frase, null);
+  assert.equal(registro.origen, null);
+  assert.deepEqual(registro.etiquetas, []);
+  assert.equal(vista.bandeja.some((tarea) => tarea.id === "registro"), false);
+
+  const base = vistaAdmin(VACIA).tareas.find((tarea) => tarea.id === "stand");
+  assert.ok(base);
+  const devuelta = sinVeredicto({ ...base, estado: "pendiente" });
+  assert.equal(devuelta.veredicto, null);
+  assert.equal(enBandeja(devuelta), false);
 });
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {

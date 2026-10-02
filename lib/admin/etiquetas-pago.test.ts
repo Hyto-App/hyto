@@ -12,7 +12,7 @@ import { desmontar, montar, texto } from "../../tests/integracion/montar";
 const GRAVE: EtiquetaNota = {
   id: "cap_no_coincide",
   texto: "Falta grave: no coincide con lo pedido",
-  explicacion: "The photo does not match what was requested, so the grade stays Insuficiente.",
+  explicacion: "The photo does not match what was requested, so the grade stays Insufficient.",
   severidad: "problem",
   preguntas: ["v1"],
 };
@@ -43,7 +43,7 @@ test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async ()
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /49% · Insuficiente/);
+    assert.match(texto(), /49% · Insufficient/);
     assert.match(texto(), /Falta grave: no coincide con lo pedido/);
     assert.match(texto(), /The photo does not match what was requested/);
     assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"), true);

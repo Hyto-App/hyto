@@ -272,6 +272,7 @@ test("el reintento solo corre si quien llama organiza ese proyecto", async () =>
     fecha: null,
     creadaEn: "2099-01-01T00:00:00.000Z",
   });
+  await almacen.actualizarTarea("stand", { estado: "en revisión" });
   await almacen.guardarVeredicto({
     id: evidenciaId,
     evidenciaId,

@@ -8,9 +8,9 @@ const ESTADOS: Record<EstadoTarea, string> = {
 };
 
 const VEREDICTOS: Record<Veredicto, string> = {
-  cumplió: "Completado",
-  parcial: "Parcialmente completado",
-  insuficiente: "Insuficiente",
+  cumplió: "Completed",
+  parcial: "Partially completed",
+  insuficiente: "Insufficient",
 };
 
 const TIPOS: Record<string, string> = {
@@ -62,7 +62,7 @@ export function etiquetaVeredicto(veredicto: string): string {
   return limpio;
 }
 
-/** One string for the pill: "64% · Parcialmente completado", or the label alone when there is no percentage. */
+/** One string for the pill: "64% · Partially completed", or the label alone when there is no percentage. */
 export function textoNota(etiqueta: string, nota: number | null | undefined): string {
   if (typeof nota !== "number") return etiqueta;
   return `${nota}% · ${etiqueta}`;
