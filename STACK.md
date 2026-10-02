@@ -42,7 +42,7 @@ A classic USDC balance requires a trustline. Trustless Work rejects deploy when 
 |---|---|
 | Describe | Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`. JSON keys `texto`, `monto`, `fecha`. |
 | Judge | `POST {LAYA_URL}/v1/systemone`, model `multilingual`. Optional `LAYA_API_KEY` as Bearer. |
-| Verdict | Grade 0–100 in `lib/revision/pesos.ts`, stored in `veredictos.score`. Bands for display: under 50 insufficient, 50–79 partial, 80+ fulfilled. A bad reimbursement is capped at 40. |
+| Verdict | Grade 0–100 in `lib/revision/pesos.ts`, stored in `veredictos.score`. Bands for display: under 50 Insufficient, 50–79 Partial, 80+ Met. A bad reimbursement is capped at 40. |
 
 No Groq key, or a failed call, stores `origen: "error"`. No `LAYA_URL` uses the stub (`origen: "stub"`). `desdeGuion()` remains in the tree for tests; the live review does not call it.
 
