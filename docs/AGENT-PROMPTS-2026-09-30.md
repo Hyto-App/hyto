@@ -1,5 +1,16 @@
 # Coding-agent prompts — Hyto audit tasks (2026-09-30)
 
+Status on 1 October 2026, 6:22 p.m. Costa Rica time. `main` is `2b9fad4`. The prompts below are unchanged paste targets. Do not redo a task that already landed:
+
+- Raúl P1-1 English server messages: PR #68 (Milasur, 2:43 a.m.).
+- Raúl P1-2 resume fund after a partial deploy: PR #67 (Milasur, 2:43 a.m.).
+- Raúl P1-3 confirmed reimbursement amount: PR #69 (Milasur, 3:33 p.m.).
+- Abdiel P1-1 hide Approve and pay until funded: landed inside Josué's PR #77 (11:25 a.m.), together with the plain-language payment flow (#007).
+- Presentation shell from the Figma v2 mockups (dark and light, desktop sidebar, mobile tabs): PR #82 (Josué Valles, 4:01 p.m.). Handlers and data calls stayed the same. Abdiel still owns the Figma.
+- Per-event membership, invites, and one shell: PR #85 (Josué Valles, 6:22 p.m.). Organizer USDC balance is checked on Horizon. Prepared payments use an HMAC token (`HYTO_TOKEN_SECRET`). `drizzle/0004_miembros_invitaciones.sql` was not applied to Neon. PR #84 is still open and repeats this work.
+
+Still open, suggested owner in parentheses: sponsored USDC trustline, receiver-trustline preflight (the organizer balance check landed in #85), persist the predicted contract id (the XDR map was replaced; the contract-id map was not), wallet proof, `HYTO_TOKEN_SECRET` plus JWT audience and issuer on Vercel, apply `0004` with the database owner's approval, and the first testnet payment (Josué); Laya URL, model env var, show `origen`, pre-sign summary (Abdiel); image allow-list, security headers, strict JWT, upload limit, session hash (Esteban); the env-dependent test, GitHub Actions, shared rate limit (Sebastián). Raúl's remaining piece is preparing the four demo accounts for the rehearsal. PR #72 and PR #80 are still open. Owners are suggestions.
+
 One ready-to-paste prompt per person. Each prompt is self-contained: copy everything inside the fenced block into your coding agent (Cursor or similar).
 
 Kanban: https://app.notion.com/p/2d5d21fae61440d7861d5ce924a6f29c
