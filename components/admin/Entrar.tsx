@@ -19,6 +19,7 @@ import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { AnilloHitos, Eslogan, Logo } from "@/components/ui/Marca";
 
 type Fase = "inicio" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
@@ -350,23 +351,22 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   return (
     <div ref={dialogoRef} className="hyto-auth" role="dialog" aria-modal="true" aria-label="Sign in">
       <div className="hyto-auth-hero">
-        <p className="hyto-logo">hyto</p>
-        <div>
-          <div className="hyto-ring" aria-hidden="true" />
-          <h2 className="mt-8 text-4xl font-semibold tracking-tight">Sign in</h2>
-          <p className="mt-4 max-w-md text-base leading-7 text-[var(--suave)]">Email a code, then review evidence and pay in USDC.</p>
+        <Logo className="hyto-auth-logo" />
+        <AnilloHitos />
+        <div className="hyto-auth-claim">
+          <Eslogan />
+          <p className="hyto-auth-claim-sub">Do tasks for real projects, send a photo, get paid in USDC.</p>
         </div>
-        <p className="text-sm text-[var(--suave)]">Volunteers · Organizers · Paid via Stellar escrow</p>
+        <ul className="hyto-roles">
+          <li>Volunteers</li>
+          <li>Organizers</li>
+          <li>Paid via Stellar escrow</li>
+        </ul>
       </div>
       <div className="hyto-auth-sheet">
-        <div className="mb-6 flex items-start justify-between gap-4 lg:hidden">
-          <div>
-            <p className="text-3xl font-semibold tracking-tight">Sign in</p>
-          </div>
-        </div>
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-semibold tracking-tight">Sign in to Hyto</h2>
-          <button type="button" className="text-sm text-[var(--suave)]" onClick={() => setFase("inicio")}>
+          <h2 className="text-[20px] font-medium tracking-[-0.4px]">Sign in to Hyto</h2>
+          <button type="button" className="hyto-cerrar" onClick={() => setFase("inicio")}>
             Close
           </button>
         </div>
