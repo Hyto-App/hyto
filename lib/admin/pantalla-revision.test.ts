@@ -42,6 +42,11 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     const alerta = document.querySelector("[role=alert]");
     assert.equal(alerta?.textContent, MENSAJE);
     assert.match(texto(), /Review failed/);
+    assert.match(texto(), /Mile is unavailable/);
+    assert.equal(
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"),
+      true,
+    );
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
     await pulsar("Retry review");
     await act(async () => {
@@ -277,7 +282,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
-    assert.match(texto(), /Amount confirmed/);
+    assert.equal(document.querySelector("#monto-confirmado"), null);
+    assert.match(texto(), /Amount to pay/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

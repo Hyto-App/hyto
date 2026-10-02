@@ -81,10 +81,12 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
   return { ...tarea, estado: "pendiente", veredicto: null };
 }
 
+export function enBandeja(tarea: { estado: string; veredicto: string | null }): boolean {
+  return tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado");
+}
+
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
-  return tareas.filter(
-    (tarea) => tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado"),
-  );
+  return tareas.filter((tarea) => enBandeja(tarea));
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {

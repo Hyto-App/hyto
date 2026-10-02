@@ -67,9 +67,7 @@ export function botonesRevision(
   }
   const abierto = tarea.estado !== "pagado";
   const conContrato = Boolean(escrow.contrato);
-  const bloqueado =
-    tarea.origen === "error" ||
-    (tarea.tipo === "reembolso" && (!tarea.montoRevisado || montoDeVista(tarea) === null));
+  const bloqueado = tarea.tipo === "reembolso" && montoDeVista(tarea) === null;
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,

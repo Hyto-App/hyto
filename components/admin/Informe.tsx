@@ -74,7 +74,6 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
 
   return (
     <main className="hyto-page">
-      {proyectoId ? null : (
       <header className="hyto-page-head">
         <div>
           <p className="text-sm text-[var(--suave)] print:text-black">Hyto</p>
@@ -90,14 +89,12 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
           Print
         </button>
       </header>
-      )}
 
       <section>
         <h2 className="text-lg font-semibold tracking-tight">Budget against spend</h2>
         <div className="mt-4">
           <Numeros resumen={vista.resumen} />
         </div>
-        {proyectoId ? null : (
         <div className="mt-4">
           <div className="hyto-bar" aria-hidden="true">
             <span style={{ width: `${ancho}%` }} />
@@ -106,7 +103,6 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
             Paid {formatearMonto(vista.resumen.pagado)} · Pending {formatearMonto(vista.resumen.pendiente)} · {vista.personas.length} volunteer{vista.personas.length === 1 ? "" : "s"}
           </p>
         </div>
-        )}
       </section>
 
       <section className="mt-10 space-y-8">

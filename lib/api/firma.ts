@@ -272,9 +272,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   }
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
   if (tarea.tipo === "reembolso") {
-    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
-    const sinMonto = !evidencia?.monto?.trim();
-    if (veredicto?.origen === "error" || sinMonto) {
+    if (!evidencia?.monto?.trim() && !evidencia?.montoConfirmado?.trim()) {
       return Response.json({ aviso: "Review pending" }, { status: 409 });
     }
     if (montoDeTarea(tarea, evidencia) === null) {
