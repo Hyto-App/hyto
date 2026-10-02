@@ -45,7 +45,7 @@ export function Salir({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => void salir()}
       disabled={saliendo}
-      className={`text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:opacity-70 ${className}`.trim()}
+      className={`hyto-btn-danger ${className}`.trim()}
     >
       {saliendo ? "Signing out…" : "Sign out"}
     </button>

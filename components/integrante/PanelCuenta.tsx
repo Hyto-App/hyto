@@ -139,11 +139,11 @@ function Direccion({ direccion }: { direccion: string }) {
         <span className="sr-only">{direccion}</span>
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="hyto-btn-line is-inline h-10 px-4 text-sm" aria-live="polite" onClick={() => void copiar()}>
+        <button type="button" className="hyto-btn-line is-inline px-5" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? "Copied" : "Copy address"}
         </button>
         <a
-          className="hyto-btn-line is-inline h-10 px-4 text-sm"
+          className="hyto-btn-line is-inline px-5"
           href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}
           target="_blank"
           rel="noreferrer"

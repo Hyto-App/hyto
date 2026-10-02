@@ -207,13 +207,59 @@ a {
   background: color-mix(in srgb, var(--tinta) 6%, transparent);
 }
 
+.hyto-btn-line:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 2px;
+}
+
 .hyto-btn-line.is-inline {
   width: auto;
+}
+
+.hyto-btn-line.is-dashed {
+  border-style: dashed;
 }
 
 .hyto-btn-line:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.hyto-btn-danger {
+  display: flex;
+  min-height: 44px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--peligro) 70%, var(--borde));
+  background: color-mix(in srgb, var(--peligro) 12%, var(--papel));
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--peligro);
+  text-align: center;
+  text-decoration: none;
+}
+
+.hyto-btn-danger:hover {
+  background: color-mix(in srgb, var(--peligro) 20%, var(--papel));
+}
+
+.hyto-btn-danger:focus-visible {
+  outline: 2px solid var(--peligro);
+  outline-offset: 2px;
+}
+
+.hyto-btn-danger.is-inline {
+  width: auto;
+}
+
+.hyto-btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .hyto-page {
@@ -402,10 +448,14 @@ a {
 
 .hyto-tabs button,
 .hyto-tabs a {
+  display: inline-flex;
+  min-height: 44px;
   margin-bottom: -1px;
+  align-items: center;
   border-bottom: 2px solid transparent;
-  padding: 8px 0;
-  font-size: 14px;
+  padding: 8px 2px;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--suave);
 }
 
@@ -427,10 +477,12 @@ a {
 
 .hyto-chips button {
   flex: none;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--borde);
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--suave);
 }
 
@@ -595,7 +647,7 @@ a {
   .hyto-shell {
     display: flex;
     flex-direction: column;
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   .hyto-side {
@@ -638,8 +690,10 @@ a {
     flex: 1;
     flex-direction: column;
     gap: 4px;
-    padding: 6px 4px;
-    font-size: 11px;
+    min-height: 48px;
+    padding: 8px 4px;
+    font-size: 13px;
+    font-weight: 600;
     text-align: center;
   }
 
@@ -693,9 +747,15 @@ a {
   }
 
   .hyto-btn,
+  .hyto-btn-line,
+  .hyto-btn-danger {
+    min-height: 52px;
+    border-radius: 14px;
+  }
+
+  .hyto-btn,
   .hyto-btn-line {
     height: 52px;
-    border-radius: 14px;
   }
 
   .hyto-actions {

@@ -20,8 +20,10 @@ export default async function PaginaCuentas() {
           </div>
           <p className="hyto-sub">{sesion.email}</p>
         </div>
-        <Salir />
       </header>
+      <div className="mb-6 max-w-sm">
+        <Salir />
+      </div>
       <PanelCuenta />
       {demo ? null : (
         <div className="mt-8">

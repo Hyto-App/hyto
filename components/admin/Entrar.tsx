@@ -284,7 +284,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     const nombreRol = rolActual === "voluntario" ? "Volunteer demo account" : "Organizer demo account";
     const nombreOtro = otro === "voluntario" ? "volunteer" : "organizer";
     return (
-      <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex w-full flex-col items-stretch gap-3">
         <p className="text-sm text-[var(--suave)]">
           <InsigniaDemo />
           <span className="ml-2 align-middle">{nombreRol} · Cavos</span>
@@ -293,7 +293,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           type="button"
           onClick={() => void entrarDemo(otro)}
           disabled={ocupado !== null}
-          className="text-left text-sm text-[var(--suave)] disabled:cursor-not-allowed disabled:opacity-70"
+          className="hyto-btn-line"
         >
           {ocupado === "demo" ? "Switching…" : `Switch to the ${nombreOtro} demo account`}
         </button>
@@ -301,7 +301,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           type="button"
           onClick={() => void salirDemo()}
           disabled={ocupado !== null}
-          className="text-left text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-70"
+          className="hyto-btn-danger"
         >
           {ocupado === "salida" ? "Leaving…" : "Leave demo"}
         </button>

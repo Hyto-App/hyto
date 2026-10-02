@@ -284,7 +284,7 @@ export function Bandeja({
                   </>
                 ) : null}
                 <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Mile only suggests. You approve every payment.</p>
-                <Link href={`/revision/${seleccion.id}`} className="mt-4 inline-block text-sm font-semibold">
+                <Link href={`/revision/${seleccion.id}`} className="hyto-btn-line mt-4">
                   Open review
                 </Link>
               </aside>

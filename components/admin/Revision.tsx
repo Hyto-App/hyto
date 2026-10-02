@@ -333,7 +333,7 @@ export function Revision({
             Try again
           </button>
         ) : (
-          <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="mt-6 inline-block text-sm font-medium">
+          <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="hyto-btn-line is-inline mt-6 px-5">
             Back to the event
           </Link>
         )}
@@ -378,7 +378,7 @@ export function Revision({
           {foto && tarea.tipoArchivo === "application/pdf" ? (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
               <p className="text-sm text-[var(--suave)]">Invoice PDF</p>
-              <a href={foto} className="text-sm font-medium underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+              <a href={foto} className="hyto-btn-line is-inline px-5" target="_blank" rel="noreferrer">
                 Open the invoice
               </a>
             </div>
@@ -563,7 +563,7 @@ export function Revision({
           {aviso ? <AvisoFirma mensaje={aviso} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
 
           {transaccion ? (
-            <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">
+            <a href={transaccion} className="hyto-btn-line is-inline mt-4 px-5">
               {TEXTO.viewChain}
             </a>
           ) : null}
@@ -580,7 +580,7 @@ export function Revision({
             <div className="mt-8 space-y-3">
               <p className="text-lg font-medium">Paid {formatearMonto(detalleMonto(tarea).cifra)}</p>
               {pago ? (
-                <a href={pago} className="inline-block text-sm font-semibold underline-offset-4 hover:underline">
+                <a href={pago} className="hyto-btn-line is-inline px-5">
                   {TEXTO.viewChain}
                 </a>
               ) : (
@@ -591,7 +591,7 @@ export function Revision({
                 </p>
               )}
               {credencial ? (
-                <a href={credencial} className="block text-sm text-[var(--suave)] underline-offset-4 hover:underline">
+                <a href={credencial} className="hyto-btn-line is-inline px-5">
                   Credential
                 </a>
               ) : null}
