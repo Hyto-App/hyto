@@ -1,6 +1,6 @@
 # Hyto — project brief
 
-Product behavior as of `main` at `2b9fad4` is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
+Product behavior as of `main` at `601d143` (PR #87 on top of `2b9fad4`) is in [README.md](README.md) and [AGENTS.md](AGENTS.md). This file keeps the pitch. The 27 September write-up that said funding and approval did not sign is obsolete.
 
 ## Pitch
 

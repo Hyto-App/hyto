@@ -1,6 +1,6 @@
 # Coding-agent prompts — 2026-09-30
 
-**Retired.** These prompts were written against `main` at `db82b93`, before the roleless shell (#85), the Figma redesign (#82), English server copy (#68), fund retry (#67), and reimbursement confirmation (#69).
+**Retired.** These prompts were written against `main` at `db82b93`, before the roleless shell (#85), the Figma redesign (#82), English server copy (#68), fund retry (#67), and reimbursement confirmation (#69). As of `601d143` (PR #87, Josué Valles, 2 October 2026) they are still retired.
 
 Do not paste them into an agent. They tell the agent to skip markdown, to treat global roles as the product model, and to follow line numbers that have moved.
 

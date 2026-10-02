@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `601d143` (2 October 2026, 12:17 a.m. Costa Rica): PR #87 refreshed the docs on top of `2b9fad4` (roleless events, invites, and one app shell). Product behavior is the `2b9fad4` tree. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -176,7 +176,7 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `601d143` (PR #87, Josué Valles). That push refreshed the docs, `.env.example`, the `0004` applied-on-Neon comment, and the schema inventory hash. Product behavior is still `2b9fad4`: Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
 
 There is still no real testnet USDC payment hash in the repo.
 

@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `601d143` (2 October 2026, 12:17 a.m. Costa Rica, PR #87). Product behavior is still `2b9fad4`. The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 
@@ -35,3 +35,15 @@ That note, and the rest of the coordination between people and agents, goes in t
 Work lands as a pull request from an updated `main`. Nobody pushes to `main`.
 
 The per-person prompts in [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md) described the 30 September audit against an older commit. Do not paste them into an agent as current instructions.
+
+## Still open
+
+Suggestions, not exclusive assignments. Detail is in [PLAN.md](PLAN.md).
+
+| Person | Still open |
+|---|---|
+| Josué | Receiver-trustline preflight, persist the predicted contract id, wallet-ownership proof, sponsored trustline on Account. Draft PR #18 (Google return drops the session). |
+| Abdiel | `LAYA_URL` is not visible in the repo. Open mailbox notes: PR #70, PR #79. |
+| Esteban | SVG and unknown image types, `nosniff` and CSP, production fail-closed JWT audience and issuer. |
+| Sebas | CI (`npm ci`, `tsc --noEmit`, `npm test`) and the env-dependent test in `lib/api/rutas.test.ts`. A real testnet payment, then Acta. |
+| Raúl | Draft PR #72 (camera-only evidence) and draft PR #80 (Laya questionnaire). PR #67, PR #68, and PR #69 are on `main`. |

@@ -51,4 +51,4 @@ Names only. The full list, taken from `process.env` reads in the app, is in [AGE
 | [ROLES.md](ROLES.md) | Event membership and how the team splits work. |
 | [PLAN.md](PLAN.md) | What is left. The September kickoff plan is retired. |
 | [CHANGELOG.md](CHANGELOG.md) | What landed. |
-| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note for `2b9fad4`. |
+| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note through `601d143`. |

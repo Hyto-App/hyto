@@ -4,27 +4,57 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
-Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+PR #87 (Josué Valles, `601d143`, 12:17 a.m. Costa Rica) refreshed these docs against `2b9fad4`, rewrote `.env.example` in English to match the names the code reads, marked `drizzle/0004_miembros_invitaciones.sql` as applied on Neon on 2026-10-01 (backup branch `pre-0004-backup`), and updated the schema inventory hash for that comment. Product behavior did not change in that push.
+
+The summary below is what had already landed after the 29 September changelog. Pull requests named here are not repeated in the later list.
 
 ### Changed
 
-- One app shell (Events, Tasks, Account) in the Figma redesign, with light and dark. #82.
-- Login no longer picks a global role. Creating an event (budget plus a 1 USDC balance check) makes that user the organizer. Teammates join by direct invite or an `HYTO-` code. Invites last 7 days. Tables `proyecto_miembros` and `proyecto_invitaciones`. Members see assigned tasks; the organizer sees all of them and assigns at `/eventos/[id]/tareas`. #85.
-- Server and UI copy are in English. #56, #68, #77.
-- If deploy succeeds and fund fails, the review screen resumes at fund. Pay stays hidden until the escrow balance reads as positive. #67.
-- A reimbursement must have `monto_confirmado` before deploy. #69.
-- Laya's score, when probabilities are present, follows the highest index (0 insuficiente, 1 parcial, 2 cumplió). #59.
-- Review failures are stored and can be retried, instead of a silent fixed script. #45.
-- The session follows the Cavos JWT expiry, capped at 24 hours. #54, #52.
-- The organizer is per event. Demo mode cannot create events. #44, #47.
-- Prepare and submit use an HMAC token (`HYTO_TOKEN_SECRET`).
-- Task owners are suggestions. Team coordination moves to the private repo Hyto-App/hyto-private. #66.
-- Stellar Raven is mandatory for agents. A code audit was recorded for 30 September. #62, #64, #65.
+- One app shell (Events, Tasks, Account) in the Figma redesign, with light and dark. Josué Valles, PR #82.
+- Login no longer picks a global role. Creating an event (budget plus a 1 USDC balance check) makes that user the organizer. Teammates join by direct invite or an `HYTO-` code. Invites last 7 days. Tables `proyecto_miembros` and `proyecto_invitaciones`. Members see assigned tasks; the organizer sees all of them and assigns at `/eventos/[id]/tareas`. Josué Valles, PR #85.
+- Server and UI copy are in English. Josué Valles, PR #56 and PR #77. Raúl (Milasur), PR #68.
+- If deploy succeeds and fund fails, the review screen resumes at fund. Pay stays hidden until the escrow balance reads as positive. Raúl (Milasur), PR #67.
+- A reimbursement must have `monto_confirmado` before deploy. Raúl (Milasur), PR #69.
+- Laya's score, when probabilities are present, follows the highest index (0 insuficiente, 1 parcial, 2 cumplió). Josué Valles, PR #59.
+- Review failures are stored and can be retried, instead of a silent fixed script. Josué Valles, PR #45.
+- The session follows the Cavos JWT expiry, capped at 24 hours. Josué Valles, PR #54 and PR #52.
+- The organizer is per event. Demo mode cannot create events. Josué Valles, PR #44 and PR #47.
+- Prepare and submit use an HMAC token (`HYTO_TOKEN_SECRET`). Josué Valles, PR #85.
+- Task owners are suggestions. Team coordination moves to the private repo Hyto-App/hyto-private. Josué Valles, PR #66.
+- Stellar Raven is mandatory for agents. A code audit was recorded for 30 September. Josué Valles, PR #62, PR #64, and PR #65.
+
+### Also on main since 29 September, not listed above
+
+#### 2026-09-30
+
+- Team suggestions from that day are notes, not commitments. Josué Valles, PR #63.
+
+#### 2026-09-29
+
+- `.env.example` lists the names `process.env` actually reads. Josué Valles, PR #20.
+- Local Postgres, migration, and the sample seed. Josué Valles, PR #21.
+- Central env config and a production-database safeguard. Josué Valles, PR #22.
+- Integration tests against local Postgres. Josué Valles, PR #27.
+- Postgres schema inventory. Josué Valles, PR #24.
+- Declared schema checked against queries, without writing to the database. Josué Valles, PR #25.
+- Clearer messages when sign-in fails. Josué Valles, PR #28.
+- Cavos JWT is verified and a session is required to write. Josué Valles, PR #23.
+- v2 actions to approve, release, dispute, and read the escrow. Josué Valles, PR #26.
+- Demo sign-in without Cavos. Josué Valles, PR #30.
+- Leave demo and switch role without getting stuck. Josué Valles, PR #36.
+- Escrow v2 backend to deploy and pay. Josué Valles, PR #38.
+- The review screen signs the payment in the browser. Josué Valles, PR #39.
+- A new Cavos email is stored as a volunteer. Josué Valles, PR #41.
+- Repo context for the team and for agents. Josué Valles, PR #43.
+- Demo evidence upload and the testnet USDC trustline route. Josué Valles, PR #50.
+- Abdiel's Figma file is the UI source of truth. Josué Valles, PR #58.
 
 ### Not in the repo yet
 
 - A successful real testnet USDC payment (`hash_pago`).
 - Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
+
+Who those items sit with is in [PLAN.md](PLAN.md) and [ROLES.md](ROLES.md). Owners there are suggestions.
 
 ## 2026-09-29
 

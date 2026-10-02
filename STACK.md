@@ -1,6 +1,6 @@
 # Stack
 
-Current as of `main` at `2b9fad4` (2 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
+Current as of `main` at `601d143` (2 October 2026, PR #87). Product behavior is still `2b9fad4`. Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
 One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Evidence, the AI review, and the report stay off-chain.
 
