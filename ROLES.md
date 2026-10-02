@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `1ee6f98` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 
@@ -8,7 +8,7 @@ Nobody picks "organizer" or "volunteer" at login. Membership is per event, in `p
 
 | Membership | How you get it | What you can do |
 |---|---|---|
-| Organizer | Create an event. The wallet must cover the budget plus 1 USDC. | See every task, invite people, assign tasks at `/eventos/[id]/tareas`, lock the budget, confirm a reimbursement, pay. |
+| Organizer | Create an event. The wallet must cover the budget plus 1 USDC. | See every task, invite people, assign tasks at `/eventos/[id]/tareas`, lock the budget, confirm a reimbursement, pay. A failed AI review does not remove lock or pay. |
 | Team | Invite (`rol: "team"`), direct or code. | See and submit evidence only on tasks assigned to you. |
 | Volunteer | Invite (`rol: "volunteer"`), or the default when the invite omits `team`. | Same visibility as team: assigned tasks only. |
 

@@ -4,7 +4,23 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
-Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+Docs now match `main` at `1ee6f98` (after #80 and #90). The previous docs refresh was #87 at `601d143`.
+
+### Changed
+
+- Mile is asked a questionnaire about Groq's written description, by task type. It classifies the text as work, a receipt, or something else, then asks only that path. Something else is insufficient. The last score is the ceiling. Other answers can only lower it. A yes does not raise the score. Reimbursement amount, date, and cap rules are unchanged. The UI says Mile. Env vars and the service stay `LAYA_*`. #80.
+- The organizer can lock the budget and pay when the AI review fails. The event pending count uses the same rule as the inbox. The event report shows Print and the budget bar. The evidence photo uses a sniffed content type for JPEG, PNG, GIF, and WebP. With demo login, the seed keeps a pending upload task and a booth task in review with a Met sample. #90.
+- Lock budget deploys and funds one Trustless Work multi-release escrow. The organizer is approver and release signer. The volunteer's `walletCobro` is the receiver. Approve and pay marks the milestone complete, approves it, and releases the funds. The task is marked paid only after that release is confirmed. The receiver needs a USDC trustline.
+
+### Not in the repo yet
+
+- Saving the volunteer's payout wallet on evidence upload. The client sends `tarea.walletCobro`, so Lock budget can fail with a message that asks for the photo. A fix is in progress (#94).
+- PR #93 (camera checks for work proof and file checks for receipts, migration `0005`). Open, not merged, not current behaviour.
+- A successful real testnet USDC payment (`hash_pago`).
+
+## 2026-10-02
+
+Docs matched `main` at `2b9fad4` (#87). Summary of what had landed after the 29 September changelog:
 
 ### Changed
 
@@ -25,12 +41,6 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 
 - A successful real testnet USDC payment (`hash_pago`).
 - Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
-
-## 2026-10-02
-
-### Cambiado
-
-- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
 
 ## 2026-09-29
 

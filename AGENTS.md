@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `1ee6f98` (2 October 2026): roleless events, invites, one app shell, the Mile questionnaire, and payment after a failed review. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -21,7 +21,7 @@ Facts that bound this app, checked on 2026-10-02:
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
+Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, and Mile scores that written description when configured. The organizer can pay the full milestone even if the review fails. The AI does not sign or move money.
 
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 
@@ -47,7 +47,7 @@ One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/
 | `/` | Landing. Signed-in users go to `/eventos`. |
 | `/eventos`, `/eventos/nuevo`, `/eventos/[id]` | List, create, event home. |
 | `/eventos/[id]/tareas` | Organizer assigns tasks. |
-| `/eventos/[id]/informe` | Printable report. `/informe` redirects to the first event. |
+| `/eventos/[id]/informe` | Report with Print and a budget bar. `/informe` redirects to the first event. |
 | `/revision/[id]` | Photo review and payment. |
 | `/join`, `/join/[secreto]` | Redeem an invite. |
 | `/mis-tareas`, `/tareas/[id]` | Assigned tasks and evidence upload. |
@@ -63,10 +63,10 @@ User-facing copy is English.
 | App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
 | API | Route handlers in `app/api`. |
 | Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
-| Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
+| Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`, which sniffs JPEG, PNG, GIF, and WebP before the stored type. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
-| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). |
+| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). The UI name is Mile. The service is still Laya (`lib/revision/laya.ts`, `LAYA_*`). The code builds the verdict (`lib/revision/armar.ts`). |
 
 `Almacen` (`lib/db/almacen.ts`) is the data interface. Production uses `almacenNeon()` (`lib/db/neon.ts`): Neon HTTP when the host is Neon, `pg` otherwise. Routes enter through `conAlmacen` (`lib/api/base.ts`). Without `DATABASE_URL` they say the database is not configured. Tests use `crearMemoria()`. Browser `localStorage` helpers still exist for the sample view.
 
@@ -93,31 +93,50 @@ If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wal
 
 ## Evidence and AI
 
-Upload and review call `revisar()` (`lib/revision/revisar.ts`).
+Upload and review call `revisar()` (`lib/revision/revisar.ts`). The screen calls the model Mile. Environment variables and the HTTP service stay `LAYA_*`.
 
 1. Groq (`qwen/qwen3.8-27b`) returns JSON with `texto`, `monto`, and `fecha`. The request uses `max_completion_tokens: 1024`, `reasoning_effort: "none"`, and `reasoning_format: "hidden"`. The file name `scout.ts` and the column `texto_scout` are old names.
-2. If `LAYA_URL` is set, `POST {LAYA_URL}/v1/systemone` (model `multilingual`) asks `choice`, `noul`, and `score`. When `probabilities` are present, the score is the highest index: 0 insuficiente, 1 parcial, 2 cumplió (`lib/revision/laya.ts`). `LAYA_API_KEY` is sent as Bearer when set.
+2. If `LAYA_URL` is set, Mile is asked about that written description, not the image (`lib/revision/laya-preguntas.ts`). `POST {LAYA_URL}/v1/systemone` (model `multilingual`) first classifies it as work, a receipt, or something else. Only the matching questionnaire follows. The task condition is filled into those questions. The final grade is the last score question (T10 for work, G5 for a receipt). Other answers can only lower it. A yes never raises it. "Something else" is `insuficiente`. `LAYA_API_KEY` is sent as Bearer when set. When a question returns `probabilities`, the label is the highest index.
 3. The code returns `cumplió`, `parcial`, or `insuficiente`. A reimbursement over the cap, or without amount and date, becomes `insuficiente`. `noul` false cannot be `cumplió`.
 
-Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
+Missing `GROQ_API_KEY`, a Groq failure, or a Laya failure is stored as `origen: "error"` and logged (`lib/revision/fallo.ts`). The screen says Mile is unavailable and offers Retry review. The fixed script `desdeGuion()` is not on this path. Without `LAYA_URL`, the stub runs and the origin is `"stub"`. The review screen labels origins (`lib/admin/vista.ts`: AI recommendation, sample recommendation, review failed). On upload, if Groq is configured, the handler waits 2.8 seconds and saves the verdict later if that is not enough.
 
-For a reimbursement, deploy and fund require `evidencias.monto_confirmado` (`POST /api/revision/:id/monto`). The receipt reading stays in `monto`.
+A failed review does not block Lock budget or Approve and pay (#90). A reimbursement still needs a confirmed amount before deploy. The receipt reading stays in `monto`.
 
-## Escrow
+`GET /api/evidencias/:id/foto` sets the content type from the bytes when they are JPEG, PNG, GIF, or WebP (`tipoDeFoto`). Otherwise it uses a declared `image/*` type, with `image/jpg` treated as JPEG, or `application/octet-stream`. The response is `inline`. The demo seed marker is still an SVG.
 
-Actions on `POST /api/firma`: `desplegar`, `fondear`, `marcar`, `aprobar`, `liberar`, `disputar`, `resolver`. The server returns an unsigned XDR plus an HMAC token (`lib/api/preparado.ts`, `HYTO_TOKEN_SECRET`, 10 minutes). The client signs with `wallet.signXdr` and posts to `POST /api/firma/enviar`. Submit is `POST /stellar/send-transaction`. Fee-bumps are rejected. The token binds the XDR fingerprint, action, task, and amount.
+With `HYTO_DEMO_LOGIN=1`, the seed keeps a demo event. The welcome task stays pending so a photo can be uploaded. The booth task is put back in review with a sample Met verdict (`asegurarCaminoDemo` in `lib/db/semilla.ts`).
 
-Deploy uses the organizer wallet, `wallet_cobro`, the task amount, and three server accounts (`HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, `HYTO_ESCROW_RESOLVER`). Those three must differ from each other and from the organizer and the receiver. Platform fee is 0.
+The event list pending count uses the same rule as the inbox (`enBandeja` in `lib/admin/vista.ts`): in review, or a non-error verdict on a task that is not paid. A failed review counts only while the task is in review.
 
-On the review screen (`lib/admin/remoto.ts`):
+## Payment
 
-1. **Lock budget** deploys, then funds. If deploy succeeds and fund fails, the button resumes at fund (`fondear` when a contract exists and the indexed balance is still zero).
-2. **Pay** runs mark, approve, and release (index 0). It is shown only when the task is in review, a contract exists, and the indexed balance is positive.
-3. **View payment** when the task is `pagado` and `hash_pago` is set (`https://stellar.expert/explorer/testnet/tx/<hash>`).
+One multi-release escrow per task, one milestone (index 0), full amount, platform fee 0. The browser signs. The AI has no contract role.
 
-The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id is still kept in the process-local map `contratosPreparados` (`lib/api/firma.ts`). A different instance can lose it.
+**Lock budget** (`desplegar`, then `fondear`):
 
-`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. `asegurarCobroUsdc` can call Cavos `addTrustline`, and that is not the path `PrepararUsdc` uses. There is no receiver-trustline check before deploy.
+- Deploys at `POST /escrow/multi-release/v2/deploy`, then funds that contract.
+- The organizer's session wallet is approver, service provider, and release signer.
+- The milestone receiver is `tareas.wallet_cobro` (the volunteer's payout account).
+- Admin, platform, and resolver come from `HYTO_ESCROW_ADMIN`, `HYTO_ESCROW_PLATFORM`, and `HYTO_ESCROW_RESOLVER`. Those three must differ from each other and from the organizer and the receiver.
+- If deploy succeeds and fund fails, the button resumes at fund while the indexed balance is still zero.
+- The organizer's USDC balance is checked again (amount plus 1 USDC).
+
+**Approve and pay** (`marcar`, then `aprobar`, then `liberar`, index 0):
+
+- Shown when the task is in review, a contract exists, and the indexed balance is positive. A failed AI review still allows it.
+- Mark records the milestone as completed. Approve approves it. Release sends the funds to `wallet_cobro`.
+- The task becomes `pagado` and stores `hash_pago` only after the release submit is confirmed and the escrow lists the milestone as released. Approve alone does not mark it paid.
+
+**View on blockchain** when the task is `pagado` and `hash_pago` is 64 hex digits (`https://stellar.expert/explorer/testnet/tx/<hash>`).
+
+Prepare returns an unsigned XDR plus an HMAC token (`lib/api/preparado.ts`, `HYTO_TOKEN_SECRET`, 10 minutes). The client signs with `wallet.signXdr` and posts to `POST /api/firma/enviar`. Submit is `POST /stellar/send-transaction`. Fee-bumps are rejected. The token binds the XDR fingerprint, action, task, and amount.
+
+The receiver must be able to hold classic USDC. Stellar requires a trustline (`changeTrust`) before an account can hold a non-native asset ([trustlines](https://developers.stellar.org/docs/learn/fundamentals/stellar-data-structures/accounts#trustlines)). Trustless Work rejects deploy with `ESCROW_RECEIVER_TRUSTLINE_MISSING` when a milestone receiver cannot hold the token. Hyto does not run that check before deploy. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. The signer pays the fee in testnet XLM (Friendbot). `asegurarCobroUsdc` can call Cavos `addTrustline`; `PrepararUsdc` does not use that path.
+
+The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id is still kept in the process-local map `contratosPreparados` (`lib/api/firma.ts`). A different instance can lose it.
+
+`npm run hito` does not replace the browser flow. No payment hash from a successful testnet payment is stored in the repo.
 
 ## Environment
 
@@ -138,8 +157,8 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `HYTO_CONFIRMAR_BASE_PRODUCCION` | Only `si` allows migrate or seed against those hosts. |
 | `BLOB_READ_WRITE_TOKEN` | Private Blob token. |
 | `GROQ_API_KEY` | Groq. Without it, review is stored as an error. |
-| `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
-| `LAYA_API_KEY` | Optional Bearer token for Laya. |
+| `LAYA_URL` | Mile's service URL. The name in the UI is Mile. Without it, the stub scores the description. |
+| `LAYA_API_KEY` | Optional Bearer token for that service. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
 | `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
 | `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |
@@ -176,20 +195,23 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `1ee6f98`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, the Mile questionnaire, payment after a failed review, reimbursement confirmation, and fund retry are in the code.
 
 There is still no real testnet USDC payment hash in the repo.
 
 Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
 
 1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
-2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
-3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
-4. **No CI.** There is no `.github/` workflow.
+2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. A later upload can still change `wallet_cobro` after deploy.
+3. **Payout wallet on upload.** The evidence form sends `tarea.walletCobro` (`lib/integrante/rutas.ts`). The server writes `wallet_cobro` only when that value differs from the task. A new volunteer address is not saved. Lock budget then returns "The task has no payout wallet…", and the screen shows "The volunteer needs to send their photo first, so we know where to pay." The photo can already be there. A fix is in progress (#94).
+4. **SVG upload.** `esImagen` accepts any `image/*`, including SVG. The photo route sniffs JPEG, PNG, GIF, and WebP, then falls back to the declared image type, so an SVG that does not match those bytes is still served as SVG. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
+5. **No CI.** There is no `.github/` workflow.
 
 Also still open: receiver-trustline preflight before deploy, persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
 
-Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
+Not merged, so not current behaviour: PR #93 (camera-only work proof and receipt file checks). It adds `drizzle/0005_evidencia_antifraude.sql`. Do not apply that migration until the PR is merged.
+
+Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), the Mile questionnaire (#80), lock and pay stay available when the review fails (#90), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
 
 ## Design
 
