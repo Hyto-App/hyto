@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
@@ -12,7 +13,7 @@ import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
-import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
+import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
@@ -25,7 +26,7 @@ import {
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
 import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
-import { frasePaso, mensajeClaro, pasosDePago, TEXTO } from "@/lib/ui/claro";
+import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, TEXTO, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
@@ -56,7 +57,18 @@ export function Revision({
   const [fondeado, setFondeado] = useState<boolean | null>(null);
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [aviso, escribirAviso] = useState<string | null>(null);
+  const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
+  const [falloCodigo, setFalloCodigo] = useState<string | null>(null);
+
+  function publicarAviso(
+    mensaje: string | null,
+    fallo: { paso: AccionCliente | null; codigo: string | null } | null = null,
+  ) {
+    escribirAviso(mensaje);
+    setFalloPaso(fallo?.paso ?? null);
+    setFalloCodigo(fallo?.codigo ?? null);
+  }
   const [reintentando, setReintentando] = useState(false);
   const [borrador, setBorrador] = useState("");
   const [confirmando, setConfirmando] = useState(false);
@@ -74,12 +86,12 @@ export function Revision({
     setReanudar(null);
     fondeoForzado.current = null;
     setWallet(null);
-    setAviso(null);
+    publicarAviso(null);
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
       if (!viva) return;
       if (!detalle) {
         setTarea(null);
-        setAviso("Could not load this review.");
+        publicarAviso("Could not load this review.");
         return;
       }
       setReal(true);
@@ -159,11 +171,11 @@ export function Revision({
       decidir("pendiente");
       return;
     }
-    setAviso(null);
+    publicarAviso(null);
     const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, { method: "POST" });
     const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
     if (!respuesta.ok) {
-      setAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
+      publicarAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
       return;
     }
     setTarea((actual) => (actual ? { ...actual, estado: "pendiente" } : actual));
@@ -172,10 +184,10 @@ export function Revision({
   function decidir(decision: "pagado" | "pendiente") {
     const guardado = guardarDecision(tareaId, decision);
     if (guardado.aviso) {
-      setAviso(guardado.aviso);
+      publicarAviso(guardado.aviso);
       return;
     }
-    setAviso(null);
+    publicarAviso(null);
     const vista = vistaAdmin(guardado.memoria);
     setTarea(vista.tareas.find((item) => item.id === tareaId) ?? null);
   }
@@ -183,11 +195,11 @@ export function Revision({
   async function reintentar() {
     if (reintentando || !tarea) return;
     setReintentando(true);
-    setAviso(null);
+    publicarAviso(null);
     try {
       const detalle = await reintentarRevision(tareaId);
       if (!detalle) {
-        setAviso("The review could not be retried.");
+        publicarAviso("The review could not be retried.");
         return;
       }
       setReal(true);
@@ -204,20 +216,20 @@ export function Revision({
     if (confirmando || !tarea || tarea.tipo !== "reembolso") return;
     const normal = normalizarMonto(borrador);
     if (!normal) {
-      setAviso(AVISO_MONTO_INVALIDO);
+      publicarAviso(AVISO_MONTO_INVALIDO);
       return;
     }
     const tope = normalizarMonto(tarea.tope ?? "") ?? normalizarMonto(tarea.monto);
     if (!tope || centavos(normal) > centavos(tope)) {
-      setAviso(AVISO_MONTO_TOPE);
+      publicarAviso(AVISO_MONTO_TOPE);
       return;
     }
     setConfirmando(true);
-    setAviso(null);
+    publicarAviso(null);
     try {
       const resultado = await confirmarMonto(tareaId, normal);
       if ("aviso" in resultado) {
-        setAviso(resultado.aviso);
+        publicarAviso(resultado.aviso);
         return;
       }
       setBorrador(resultado.montoConfirmado);
@@ -230,14 +242,14 @@ export function Revision({
   async function correr(acciones: readonly AccionCliente[]) {
     if (paso || !tarea) return;
     if (!wallet) {
-      setAviso(AVISO_REINGRESO);
+      publicarAviso(AVISO_REINGRESO);
       return;
     }
     if (acciones[0] !== "desplegar" && !contrato) {
-      setAviso("Lock the budget before you pay.");
+      publicarAviso("Lock the budget before you pay.");
       return;
     }
-    setAviso(null);
+    publicarAviso(null);
     let actual: AccionCliente | null = null;
     let pago: PagoFirmado | null = null;
     let contratoParcial: string | null = null;
@@ -263,11 +275,15 @@ export function Revision({
       }
       setReanudar(null);
       setHashPaso(pago.hash);
-      if (pago.aviso) setAviso(mensajeClaro(pago.aviso));
+      if (pago.aviso) publicarAviso(mensajeClaro(pago.aviso));
     } catch (error) {
       if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
       if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
-      setAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)));
+      const codigo = error instanceof ErrorFirmaCliente ? error.codigo : null;
+      publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
+        paso: actual,
+        codigo,
+      });
     } finally {
       setPaso(null);
       if (!pago && contratoParcial) setContrato(contratoParcial);
@@ -340,8 +356,7 @@ export function Revision({
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
-
-  const falloPago = Boolean(aviso) && /try again|didn't go through|cancelled|couldn't|isn't|not ready|sign in again/i.test(aviso ?? "");
+  const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
 
   return (
     <main className="hyto-page">
@@ -364,7 +379,14 @@ export function Revision({
       </header>
       <div className="hyto-review">
         <figure className="hyto-photo">
-          {foto ? (
+          {foto && tarea.tipoArchivo === "application/pdf" ? (
+            <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
+              <p className="text-sm text-[var(--suave)]">Invoice PDF</p>
+              <a href={foto} className="text-sm font-medium underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+                Open the invoice
+              </a>
+            </div>
+          ) : foto ? (
             <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
@@ -407,8 +429,14 @@ export function Revision({
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
-          {tarea.origen === "error" ? (
+          <EtiquetasNota etiquetas={tarea.etiquetas} />
+          {notaManual(tarea.codigo) ? (
+            <p className="mt-4 text-sm font-medium">{notaManual(tarea.codigo)}</p>
+          ) : tarea.origen === "error" ? (
             <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Mile is unavailable. No AI score for this photo.</p>
+          ) : null}
+          {notaCopia(tarea.motivoCopia) ? (
+            <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "")}</p>
           ) : null}
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-2 text-base leading-7">
@@ -476,10 +504,10 @@ export function Revision({
             </p>
           ) : null}
 
-          {falloPago && aviso ? (
+          {caja && aviso ? (
             <div className="hyto-callout mt-5">
-              <p className="font-semibold">Payment failed</p>
-              <p className="mt-1 text-sm">No USDC left the escrow.</p>
+              <p className="font-semibold">{tituloFallo(caja)}</p>
+              <p className="mt-1 text-sm">{detalleFallo(caja, aviso)}</p>
             </div>
           ) : null}
 

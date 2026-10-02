@@ -9,22 +9,27 @@ import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar
 
 test("la pastilla sin nota muestra la palabra y no un porcentaje", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: null }));
-  assert.equal(texto(), "Met");
+  assert.equal(texto(), "Completado");
   assert.equal(texto().includes("%"), false);
   assert.equal(document.querySelectorAll(".hyto-pill-ok").length, 1);
   await desmontar();
 });
 
-test("la palabra al lado de la pastilla usa el mismo color", async () => {
+test("el porcentaje y la etiqueta van juntos en la pastilla", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 84 }));
-  const palabra = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "Met");
+  const palabra = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "84% · Completado");
+  assert.match(palabra?.className ?? "", /hyto-pill /);
   assert.match(palabra?.className ?? "", /hyto-pill-ok/);
-  assert.equal(palabra?.className.includes("hyto-pill "), false);
   await desmontar();
 
   await montar(createElement(PastillaVeredicto, { veredicto: "insuficiente", nota: 40 }));
-  const mala = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "Insufficient");
+  const mala = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "40% · Insuficiente");
   assert.match(mala?.className ?? "", /hyto-pill-bad/);
+  await desmontar();
+
+  await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 64 }));
+  assert.equal(texto(), "64% · Parcialmente completado");
+  assert.match(document.querySelector(".hyto-pill")?.className ?? "", /hyto-pill-mid/);
   await desmontar();
 });
 
@@ -53,19 +58,19 @@ test("la bandeja separa las notas 49, 50, 79 y 80", async () => {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
     await esperar(() => texto().includes("Forty nine") && texto().includes("Eighty"));
 
-    await pulsar("Insufficient");
+    await pulsar("Insuficiente");
     assert.match(texto(), /Forty nine/);
     assert.equal(texto().includes("Fifty"), false);
     assert.equal(texto().includes("Seventy nine"), false);
     assert.equal(texto().includes("Eighty"), false);
 
-    await pulsar("Partial");
+    await pulsar("Parcialmente completado");
     assert.match(texto(), /Fifty/);
     assert.match(texto(), /Seventy nine/);
     assert.equal(texto().includes("Forty nine"), false);
     assert.equal(texto().includes("Eighty"), false);
 
-    await pulsar("Met");
+    await pulsar("Completado");
     assert.match(texto(), /Eighty/);
     assert.equal(texto().includes("Forty nine"), false);
     assert.equal(texto().includes("Fifty"), false);

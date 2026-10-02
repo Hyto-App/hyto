@@ -1,4 +1,6 @@
 import { tareasEjemploAdmin } from "@/lib/admin/ejemplo";
+import { snapshotEjemplo } from "@/lib/revision/razones-ejemplo";
+import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { IDENTIDADES } from "@/lib/integrante/identidades";
 import { demoHabilitado, usuarioDemo, usuariosDemo } from "@/lib/sesion/demo";
@@ -112,7 +114,7 @@ function filasVeredictos(idTarea: (id: string) => string, idEvidencia: (id: stri
         tareaId: idTarea(tarea.id),
         veredicto: tarea.veredicto,
         frase: texto,
-        textoScout: texto,
+        textoScout: unirDescripcion(texto, snapshotEjemplo(tarea.id)),
         choice: choiceDe(tarea),
         noul: "si",
         score: tarea.nota === null ? tarea.veredicto : String(tarea.nota),

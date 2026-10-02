@@ -3,6 +3,7 @@ import { cifraConfirmada } from "@/lib/escrow/monto";
 import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
+import type { EtiquetaNota, SeveridadNota } from "@/lib/revision/razones";
 
 export type DetalleRevision = {
   tarea: TareaAdmin;
@@ -63,7 +64,7 @@ export function botonesRevision(
       fondear: false,
       pagar: false,
       aprobarLocal: puede,
-      // The sample hides another-photo only in the Met band. The grade never pays.
+      // The sample hides another-photo only in the Completado band. The grade never pays.
       pedirOtra: puede && tarea.veredicto !== "cumplió",
     };
   }
@@ -251,6 +252,9 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     fecha: texto(datos.fecha),
     hashPago: pago.hashPago,
     credencialUrl: pago.credencialUrl,
+    tipoArchivo: texto(datos.tipoArchivo),
+    motivoCopia: texto(datos.motivoCopia),
+    etiquetas: leerEtiquetas(datos.etiquetas),
   };
 }
 
@@ -272,6 +276,28 @@ function estadoDe(valor: unknown): EstadoTarea {
 
 function veredictoDe(valor: unknown): TareaAdmin["veredicto"] {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
+  return null;
+}
+
+function leerEtiquetas(valor: unknown): EtiquetaNota[] | undefined {
+  if (!Array.isArray(valor)) return undefined;
+  const lista: EtiquetaNota[] = [];
+  for (const item of valor) {
+    if (!item || typeof item !== "object") continue;
+    const datos = item as Record<string, unknown>;
+    const id = texto(datos.id);
+    const etiqueta = texto(datos.texto);
+    const explicacion = texto(datos.explicacion);
+    const severidad = severidadDe(datos.severidad);
+    const preguntas = Array.isArray(datos.preguntas) ? datos.preguntas.filter((pregunta): pregunta is string => typeof pregunta === "string") : [];
+    if (!id || !etiqueta || !explicacion || !severidad) continue;
+    lista.push({ id, texto: etiqueta, explicacion, severidad, preguntas });
+  }
+  return lista;
+}
+
+function severidadDe(valor: unknown): SeveridadNota | null {
+  if (valor === "good" || valor === "warning" || valor === "problem") return valor;
   return null;
 }
 

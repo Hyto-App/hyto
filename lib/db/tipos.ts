@@ -40,6 +40,12 @@ export type EvidenciaFila = {
   montoConfirmado: string | null;
   fecha: string | null;
   creadaEn: string;
+  capturadaEn?: string | null;
+  frescura?: string | null;
+  sha256?: string | null;
+  phash?: string | null;
+  tipoArchivo?: string | null;
+  motivoCopia?: string | null;
 };
 
 export type VeredictoFila = {

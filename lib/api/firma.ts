@@ -5,6 +5,7 @@ import type { SesionFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { rechazoSiFondos } from "@/lib/escrow/saldo";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
+import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
@@ -304,6 +305,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   const fondos = await rechazoSiFondos(wallet, String(monto));
   if (fondos) return fondos;
   if (!secretoPreparado()) return sinSecreto();
+  const receptor = await estadoReceptorUsdc(tarea.walletCobro);
+  if (!receptor.listo) return respuestaReceptor(receptor);
   try {
     const listo = await prepararDespliegue(cuentas);
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);

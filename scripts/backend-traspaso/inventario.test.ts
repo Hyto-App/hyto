@@ -45,7 +45,14 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.equal(proyectoId?.claveForanea?.nombreEnNeon, "confirmar con Esteban");
 
   for (const tabla of inventario.tablas) {
-    assert.equal(tabla.indices.length, 0);
+    if (tabla.nombre === "evidencias") {
+      assert.deepEqual(
+        tabla.indices.map((indice) => indice.nombre).sort(),
+        ["evidencias_phash_idx", "evidencias_sha256_idx", "evidencias_phash_idx", "evidencias_sha256_idx"].sort(),
+      );
+    } else {
+      assert.equal(tabla.indices.length, 0);
+    }
     assert.equal(tabla.llavePrimaria.createIndexEnLaMigracion, false);
     assert.equal(tabla.llavePrimaria.nombreEnNeon, "confirmar con Esteban");
     for (const columna of tabla.columnas) {

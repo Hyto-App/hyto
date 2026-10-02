@@ -59,8 +59,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
-    assert.match(texto(), /64%/);
-    assert.match(texto(), /Partial/);
+    assert.match(texto(), /64% · Parcialmente completado/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -85,8 +84,7 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Sample recommendation/);
-    assert.match(texto(), /100%/);
-    assert.match(texto(), /Met/);
+    assert.match(texto(), /100% · Completado/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
   } finally {
@@ -219,6 +217,9 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     const lecturasAntes = lecturas;
     await pulsar("Lock budget");
     await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
+    assert.match(texto(), /Budget not locked/);
+    assert.equal(texto().includes("Payment failed"), false);
+    assert.equal(texto().includes("No USDC left the escrow."), false);
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
@@ -289,6 +290,91 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     assert.equal(listo.disabled, false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("lock budget shows the payout error and does not claim USDC left an escrow", async () => {
+  const aviso = "The volunteer's payout account isn't ready yet. Ask them to open the task in Hyto and tap Get ready to be paid.";
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url === "/api/firma") return json({ aviso, codigo: "receptor_no_listo" }, 409);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: null, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
+    await esperar(() => rotulo("Lock budget"));
+    await pulsar("Lock budget");
+    await esperar(() => texto().includes("Budget not locked"));
+    assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.equal(texto().includes("Payment failed"), false);
+    assert.equal(texto().includes("No USDC left the escrow."), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("pay still says the payment failed when release does not go through", async () => {
+  const contrato = "CSTAND";
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: 20 } });
+    if (method === "POST" && url === "/api/firma") {
+      return json({ aviso: "The milestone isn't ready. Try again.", codigo: "ESCROW_NOT_READY" }, 409);
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
+    await esperar(() => rotulo("Approve and pay"));
+    await pulsar("Approve and pay");
+    await esperar(() => texto().includes("Payment failed"));
+    assert.match(texto(), /No USDC left the escrow/);
+    assert.match(texto(), /The milestone isn't ready/);
+    assert.equal(texto().includes("Budget not locked"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("an error outside lock or pay does not use the payment box", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) {
+      return json({ aviso: "The photo isn't ready. Try again." }, 409);
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: null, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Ask for another photo"));
+    await pulsar("Ask for another photo");
+    await esperar(() => texto().includes("The photo isn't ready. Try again."));
+    assert.equal(texto().includes("Payment failed"), false);
+    assert.equal(texto().includes("Budget not locked"), false);
+    assert.equal(texto().includes("No USDC left the escrow."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

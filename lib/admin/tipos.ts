@@ -1,4 +1,5 @@
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
+import type { EtiquetaNota } from "@/lib/revision/razones";
 
 export type Veredicto = "cumplió" | "parcial" | "insuficiente";
 
@@ -24,6 +25,9 @@ export type TareaAdmin = {
   fecha: string | null;
   hashPago: string | null;
   credencialUrl: string | null;
+  tipoArchivo?: string | null;
+  motivoCopia?: string | null;
+  etiquetas?: EtiquetaNota[];
 };
 
 export type TareaCreada = {
