@@ -1,6 +1,6 @@
 # Stack
 
-Current as of `main` at `2b9fad4` (2 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
+Current as of `main` at `d755229` (2 October 2026, 03:01 Costa Rica). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
 One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Evidence, the AI review, and the report stay off-chain.
 
@@ -12,12 +12,12 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 | UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
 | Shell | Events, Tasks, Account. Same chrome for organizers and members. |
 | Host | Vercel. Push to `main` deploys https://hyto.vercel.app. Each PR gets a preview. |
-| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0004_miembros_invitaciones.sql`. `0004` was applied on 2026-10-01. |
-| Files | Private Vercel Blob. The photo is not written on-chain. |
+| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0005_evidencia_antifraude.sql`. `0004` was applied on 2026-10-01. `0005` is in the repo and is not recorded here as applied. |
+| Files | Private Vercel Blob. Evidence is not written on-chain. Work proof is a camera JPEG. A receipt is a PDF, JPEG, PNG, or WebP. |
 | Wallet | `@cavos/kit` 0.2.5. `chains: ["stellar"]`, `network: "testnet"`, `appSalt` `hyto`. Changing the salt later creates a different wallet. |
 | Escrow | `https://beta.api.trustlesswork.com`. Unsigned XDR from the server, `wallet.signXdr` in the browser, `POST /stellar/send-transaction`. Not the Cavos `TrustlessWorkEscrow` wrapper. |
 | USDC | Testnet issuer `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. SAC id derived for testnet in `lib/escrow/desplegar.ts`. |
-| AI | Groq vision, then Laya on the description. Neither signs. |
+| AI | Groq vision on images, then Laya on the description. A PDF is not sent to Groq. Neither signs. The screen says Mile. |
 | Report | `/eventos/[id]/informe`. "View payment" links to stellar.expert testnet when `hash_pago` exists. |
 
 `@stellar/stellar-sdk` is a dependency. The browser payment path uses Cavos, not the SDK, to sign.
@@ -25,8 +25,8 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 ## Payment path
 
 1. Create an event. The server checks Horizon: session wallet USDC must cover the task total plus 1 USDC (`lib/escrow/saldo.ts`). Default Horizon is testnet. `HYTO_STELLAR_NETWORK=public` (or `mainnet`) switches that read only.
-2. A member uploads a photo. The assigned member can set `wallet_cobro`. That field is not locked when a contract already exists.
-3. Groq describes the image (`max_completion_tokens` 1024, reasoning off). Laya, if `LAYA_URL` is set, answers the questionnaire. The code turns those answers into a grade from 0 to 100. The organizer still approves the payment.
+2. The assigned member submits evidence. A work task is a live camera JPEG with a short-lived HMAC token. A reimbursement is a PDF, JPEG, PNG, or WebP file. The payout account is that member's session address (`wallet_cobro`). A later upload can still replace it after a contract exists. A demo session does not set it.
+3. Groq describes an image (`max_completion_tokens` 1024, reasoning off). `GROQ_VISION_MODEL` overrides the default `qwen/qwen3.8-27b`. Laya, if `LAYA_URL` is set, answers the questionnaire. The code turns those answers into a grade from 0 to 100. A PDF skips Groq and is left for a person. The organizer still approves the payment.
 4. For a reimbursement, the organizer confirms `monto_confirmado` before deploy. The amount cannot exceed the cap.
 5. **Lock budget**: deploy, then fund. Platform fee is 0. Roles: organizer is approver, service provider, and release signer; platform, resolver, and admin come from env and must be distinct.
 6. **Pay**: mark, approve, release milestone index 0, only after the indexed balance is positive. The HMAC token from prepare must match the signed XDR.
@@ -40,15 +40,17 @@ A classic USDC balance requires a trustline. Trustless Work rejects deploy when 
 
 | Step | Detail |
 |---|---|
-| Describe | Groq `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1`. JSON keys `texto`, `monto`, `fecha`. |
-| Judge | `POST {LAYA_URL}/v1/systemone`, model `multilingual`. Optional `LAYA_API_KEY` as Bearer. |
-| Verdict | Grade 0–100 in `lib/revision/pesos.ts`, stored in `veredictos.score`. Bands for display: under 50 Insufficient, 50–79 Partial, 80+ Met. A bad reimbursement is capped at 40. |
+| Describe | Groq at `https://api.groq.com/openai/v1`. Default model `qwen/qwen3.8-27b`, or `GROQ_VISION_MODEL`. JSON keys `texto`, `monto`, `fecha`. PDFs are skipped. |
+| Judge | `POST {LAYA_URL}/v1/systemone`, model `multilingual`. Optional `LAYA_API_KEY` as Bearer. One classification question, then the work or invoice questions. |
+| Verdict | Grade 0–100 in `lib/revision/pesos.ts`, stored in `veredictos.score`. Bands for display: under 50 Insufficient, 50–79 Partial, 80+ Met. A bad reimbursement is capped at 40. A near-duplicate image is forced to insufficient. |
 
-No Groq key, or a failed call, stores `origen: "error"`. No `LAYA_URL` uses the stub (`origen: "stub"`). `desdeGuion()` remains in the tree for tests; the live review does not call it.
+No Groq key, a Groq failure, or a Laya failure stores `origen: "error"`. In production, a missing `LAYA_URL` is that same error. Outside production the stub still runs (`origen: "stub"`). `desdeGuion()` remains in the tree for tests; the live review does not call it.
 
 ## Data
 
 Tables: `usuarios`, `proyectos`, `tareas`, `evidencias`, `veredictos`, `sesiones`, `proyecto_miembros`, `proyecto_invitaciones`.
+
+`0005` adds nullable `capturada_en`, `frescura`, `sha256`, `phash`, `tipo_archivo`, and `motivo_copia` on `evidencias`, plus indexes on `sha256` and `phash`. New uploads return 503 until those columns exist.
 
 `usuarios.rol` is leftover from the global-role model. New signups are stored as `voluntario`. Access control uses `proyecto_miembros.rol` (`organizer`, `team`, `volunteer`).
 

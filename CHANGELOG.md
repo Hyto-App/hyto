@@ -4,7 +4,27 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
-Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+`main` is `d755229` (03:01, Costa Rica). This section is what landed after the docs refresh at `2b9fad4`. The grade bullet and the Spanish questionnaire note that were already on `main` are rewritten here with a pull request and an author. They are not repeated below.
+
+### Changed
+
+- Work tasks accept only a live camera JPEG. `POST /api/evidencias/token` issues an HMAC token of about 2 minutes, bound to the task and the signed-in user, using `HYTO_TOKEN_SECRET`. A missing, expired, or reused token is rejected. Reuse is remembered in process memory, so another instance can still accept the same token once. The bytes must be JPEG. The capture time must fall within 3 minutes of the token and of the server clock. If the JPEG has EXIF `DateTimeOriginal`, that time must fall in the same window. Receipts accept a PDF, JPEG, PNG, or WebP up to 8 MB, sniffed from the bytes. SVG and GIF are rejected on that path. The same SHA-256 cannot be stored twice. A near-duplicate image (64-bit dHash, Hamming distance 8) is stored and the recommendation is forced to insufficient. A PDF is not sent to Groq. The review is stored as needing a person, and the screen can open the invoice. The organizer can still confirm the amount and pay. `GET /api/revision/:id` only reads. `POST` can still run a review. `GROQ_VISION_MODEL` selects the vision model. If it is unset, the model is `qwen/qwen3.8-27b`. In production, a missing `LAYA_URL` is a review error and does not use the stub. `drizzle/0005_evidencia_antifraude.sql` adds the columns. The file says not to apply it to production without approval. A new upload returns 503 until those columns exist. C2PA is not checked. Josué Valles, PR #93.
+- The review grade is an integer from 0 to 100. It is the weighted sum of the answered questions (`PESOS_PREGUNTAS` in `lib/revision/pesos.ts`). Each path sums to 100. The grade is stored in `veredictos.score` and shown as a percentage. A band is only a color: under 50 Insufficient, 50–79 Partial, 80 or more Met. The percentage does not approve a payment. Classification `otra` scores 0. A reimbursement with no positive amount, no date, or an amount over the cap stays at 40 or below. A single grave answer can still leave the grade in the Met band. That cap is not in this pull request. Raúl (Milasur), PR #91.
+- The payout account is the assigned member's session address. The upload form no longer sends a wallet. A demo session does not set one. If the sign-in has no `G…` address, the photo is kept and the response says to sign in again. If the organizer locks the budget, a photo is already there, and the address is still empty, the server stores the member's newest non-demo session account before deploy. When that account is still missing, the screen says: "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task." A later upload can still replace `wallet_cobro` after a contract exists. Josué Valles, PR #94.
+- Lock budget and Pay stay available when the AI score fails. A reimbursement still needs a confirmed amount. The event pending count uses the same rule as the inbox. The report shows its title, Print, and the budget bar. The screen says Mile. The photo response sniffs JPEG, PNG, GIF, and WebP when serving a stored file. With demo login, the seed keeps Welcome table pending for upload and a Met booth task in review. Demo sessions still cannot sign. Josué Valles, PR #90.
+- Mile is asked a questionnaire about Groq's written description. It classifies the text as work, a receipt, or something else, then asks only that path. Something else scores 0 and does not ask the second set. The last score is the ceiling. Other answers can only lower it. A yes does not raise the score and does not approve payment. Reimbursement amount, date, and cap rules are unchanged. The service and the env vars stay `LAYA_*`. This note replaces the Spanish paragraph that landed with the same pull request. Raúl (Milasur), PR #80.
+
+### Not in the repo yet
+
+- A successful real testnet USDC payment (`hash_pago`). Acta stays out until one exists.
+- Production fail-closed checks for Cavos JWT audience and issuer, a proof that the client holds the wallet, and CI. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
+- New uploads reject SVG. The photo route can still serve a stored `image/*`, the demo marker is still an SVG, and `next.config.ts` still sets no `nosniff` or CSP.
+- The receiver's USDC trustline is still not checked before deploy. Open PR #100 would read the account on testnet Horizon first. It is not on `main`. The predicted contract id is still a process-local map. The Account screen still uses the self-paid trustline. `wallet.status === "ready"` is still not checked before `signXdr`.
+- `drizzle/0005_evidencia_antifraude.sql` is in the tree. This changelog does not record it as applied.
+
+## 2026-10-02
+
+Docs matched `main` at `2b9fad4`. Josué Valles, PR #87. Summary of what had landed after the 29 September changelog:
 
 ### Changed
 
@@ -13,25 +33,18 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 - Server and UI copy are in English. #56, #68, #77.
 - If deploy succeeds and fund fails, the review screen resumes at fund. Pay stays hidden until the escrow balance reads as positive. #67.
 - A reimbursement must have `monto_confirmado` before deploy. #69.
-- Laya's score, when probabilities are present, follows the highest index (0 insuficiente, 1 parcial, 2 cumplió). #59.
+- Laya's score, when probabilities are present, follows the highest index (0 insuficiente, 1 parcial, 2 cumplió). #59. PR #91, above, replaced that three-way score with a grade from 0 to 100.
 - Review failures are stored and can be retried, instead of a silent fixed script. #45.
 - The session follows the Cavos JWT expiry, capped at 24 hours. #54, #52.
 - The organizer is per event. Demo mode cannot create events. #44, #47.
 - Prepare and submit use an HMAC token (`HYTO_TOKEN_SECRET`).
 - Task owners are suggestions. Team coordination moves to the private repo Hyto-App/hyto-private. #66.
 - Stellar Raven is mandatory for agents. A code audit was recorded for 30 September. #62, #64, #65.
-- The review grade is a percentage from 0 to 100. It is the weighted sum of the answered questions (`PESOS_PREGUNTAS`). A band (Insufficient, Partial, Met) is only a color. The percentage does not approve a payment. A reimbursement with no amount, no date, or over the cap stays at 40 or below.
 
 ### Not in the repo yet
 
 - A successful real testnet USDC payment (`hash_pago`).
 - Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
-
-## 2026-10-02
-
-### Cambiado
-
-- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
 
 ## 2026-09-29
 
