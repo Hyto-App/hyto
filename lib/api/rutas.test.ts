@@ -796,3 +796,59 @@ test("las rutas que escriben responden 401 sin sesión", async () => {
     assert.equal(cuerpo.aviso, "Sign in to continue.");
   }
 });
+
+test("Sign in no crea usuario y Sign up no duplica la cuenta", async () => {
+  const almacen = crearMemoria();
+  const correo = "nuevo.voluntario@hyto.app";
+  const pedido = (intencion: string) =>
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: correo, token: token(correo), intencion }),
+    });
+
+  const ingreso = await crearSesionHttp(pedido("signin"), almacen);
+  assert.equal(ingreso.status, 404);
+  assert.equal(((await ingreso.json()) as { aviso: string }).aviso, "No Hyto account for this sign-in. Sign up first.");
+  assert.equal((await almacen.listarUsuarios()).some((usuario) => usuario.email === correo), false);
+
+  const alta = await crearSesionHttp(pedido("signup"), almacen);
+  assert.equal(alta.status, 200);
+  const cuerpo = (await alta.json()) as { nuevo: boolean; provisionar: boolean; rol: string; usuarioId: string };
+  assert.equal(cuerpo.nuevo, true);
+  assert.equal(cuerpo.provisionar, true);
+  assert.equal(cuerpo.rol, "voluntario");
+  const cookiesAlta = alta.headers.getSetCookie();
+  assert.equal(cookiesAlta.some((cookie) => cookie.startsWith("hyto_alta=1")), true);
+  assert.equal((await almacen.listarUsuarios()).filter((usuario) => usuario.email === correo).length, 1);
+
+  const repetida = await crearSesionHttp(pedido("signup"), almacen);
+  assert.equal(repetida.status, 200);
+  const cuerpoRepetido = (await repetida.json()) as { nuevo: boolean; usuarioId: string; provisionar: boolean };
+  assert.equal(cuerpoRepetido.nuevo, false);
+  assert.equal(cuerpoRepetido.provisionar, true);
+  assert.equal(cuerpoRepetido.usuarioId, cuerpo.usuarioId);
+  assert.equal((await almacen.listarUsuarios()).filter((usuario) => usuario.email === correo).length, 1);
+
+  const vuelta = await crearSesionHttp(pedido("signin"), almacen);
+  assert.equal(vuelta.status, 200);
+  const sesion = (await vuelta.json()) as { provisionar: boolean; nuevo: boolean; usuarioId: string };
+  assert.equal(sesion.provisionar, false);
+  assert.equal(sesion.nuevo, false);
+  assert.equal(sesion.usuarioId, cuerpo.usuarioId);
+  assert.equal(
+    vuelta.headers.getSetCookie().some((cookie) => cookie.includes("hyto_alta=") && cookie.includes("Max-Age=0")),
+    true,
+  );
+  assert.equal((await almacen.listarUsuarios()).filter((usuario) => usuario.email === correo).length, 1);
+
+  const rara = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: correo, token: token(correo), intencion: "register" }),
+    }),
+    almacen,
+  );
+  assert.equal(rara.status, 400);
+});

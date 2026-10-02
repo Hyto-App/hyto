@@ -1,7 +1,12 @@
 import type { AuthProvider, Identity } from "@cavos/kit";
 import { olvidarDireccionAdmin } from "@/lib/admin/memoria";
 import { borrarCavosLocal, recordarTokenCavos, userIdCavosGuardado } from "@/lib/auth/cavosSesion";
+import { debeProvisionar, type IntencionIngreso } from "@/lib/auth/intencion";
+import { completarAltaTestnet } from "@/lib/integrante/alta";
 import { APP_SALT, appIdPublico } from "@/lib/integrante/identidades";
+import type { BilleteraCobro } from "@/lib/integrante/tipos";
+
+const RED_STELLAR = "testnet" as const;
 
 export async function crearAuth() {
   const appId = appIdPublico();
@@ -20,7 +25,7 @@ export async function conectarStellar(auth: AuthProvider) {
   return Cavos.connect({
     chains: ["stellar"],
     defaultChain: "stellar",
-    network: "testnet",
+    network: RED_STELLAR,
     appSalt: APP_SALT,
     appId,
     vault: true,
@@ -40,34 +45,42 @@ export async function fijarWallet(direccion: string): Promise<{ ok: true } | { o
   return { ok: false, aviso };
 }
 
-export async function publicarSesion(email: string, token: string | null): Promise<{ ok: true; rol: string } | { ok: false; aviso: string }> {
+export async function publicarSesion(
+  email: string,
+  token: string | null,
+  intencion?: IntencionIngreso,
+): Promise<{ ok: true; rol: string; provisionar: boolean; nuevo: boolean } | { ok: false; aviso: string }> {
   if (!email || !token) return { ok: false, aviso: "Could not confirm sign-in." };
   const respuesta = await fetch("/api/sesion", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, token }),
+    body: JSON.stringify(intencion ? { email, token, intencion } : { email, token }),
   });
-  const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
+  const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown; provisionar?: unknown; nuevo?: unknown } | null;
   if (!respuesta.ok) {
     const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not sign in.";
     return { ok: false, aviso };
   }
-  return { ok: true, rol: typeof json?.rol === "string" ? json.rol : "" };
+  return {
+    ok: true,
+    rol: typeof json?.rol === "string" ? json.rol : "",
+    provisionar: json?.provisionar === true,
+    nuevo: json?.nuevo === true,
+  };
 }
 
-export async function entrarConCodigo(auth: AuthProvider, email: string, codigo: string): Promise<{ identity: Identity; aviso: string | null; direccion: string | null }> {
+export async function entrarConCodigo(
+  auth: AuthProvider,
+  email: string,
+  codigo: string,
+  intencion: IntencionIngreso = "signin",
+): Promise<{ identity: Identity; aviso: string | null; direccion: string | null }> {
   const identity = await authComo(auth).verifyOtp(email, codigo);
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
-  const sesion = await publicarSesion(identity.email ?? email, auth.getAuthToken?.() ?? null);
+  const sesion = await publicarSesion(identity.email ?? email, auth.getAuthToken?.() ?? null, intencion);
   if (!sesion.ok) return { identity, aviso: sesion.aviso, direccion: null };
-  const conectada = await conectarStellar(auth);
-  const billetera = conectada.wallet("stellar");
-  if (billetera.chain !== "stellar" || !billetera.address) {
-    return { identity, aviso: "Could not sign in.", direccion: null };
-  }
-  const guardada = await fijarWallet(billetera.address);
-  if (!guardada.ok) return { identity, aviso: guardada.aviso, direccion: billetera.address };
-  return { identity, aviso: null, direccion: billetera.address };
+  const cerrado = await cerrarConWallet(auth, sesion, intencion);
+  return { identity, aviso: cerrado.aviso, direccion: cerrado.direccion };
 }
 
 type AuthConOtp = AuthProvider & {
@@ -85,16 +98,30 @@ export async function urlGoogle(auth: AuthProvider, redirectUri: string): Promis
   return authComo(auth).getGoogleOAuthUrl(redirectUri);
 }
 
-export async function entrarConGoogle(auth: AuthProvider, busqueda: string, redirectUri: string) {
+export async function entrarConGoogle(auth: AuthProvider, busqueda: string, redirectUri: string, intencion: IntencionIngreso = "signin") {
   const identity = await authComo(auth).handleCallback(busqueda, redirectUri);
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
-  const sesion = await publicarSesion(identity.email ?? "", auth.getAuthToken?.() ?? null);
+  const sesion = await publicarSesion(identity.email ?? "", auth.getAuthToken?.() ?? null, intencion);
   if (!sesion.ok) return { aviso: sesion.aviso, direccion: null as string | null };
+  return cerrarConWallet(auth, sesion, intencion);
+}
+
+async function cerrarConWallet(
+  auth: AuthProvider,
+  sesion: { provisionar: boolean },
+  intencion: IntencionIngreso,
+): Promise<{ aviso: string | null; direccion: string | null }> {
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
-  if (billetera.chain !== "stellar" || !billetera.address) return { aviso: "Could not sign in.", direccion: null };
+  if (billetera.chain !== "stellar" || !billetera.address) {
+    return { aviso: "Could not sign in.", direccion: null };
+  }
   const guardada = await fijarWallet(billetera.address);
   if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address };
+  if (debeProvisionar(intencion, sesion.provisionar)) {
+    const alta = await completarAltaTestnet(billetera as BilleteraCobro);
+    if (!alta.ok) return { aviso: alta.aviso, direccion: billetera.address };
+  }
   return { aviso: null, direccion: billetera.address };
 }
 
