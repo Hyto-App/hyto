@@ -1,6 +1,30 @@
 # Changelog
 
-Lo más nuevo va arriba. Cada punto dice quién lo hizo y, si entró por pull request, el número.
+Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
+
+## 2026-10-02
+
+Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+
+### Changed
+
+- One app shell (Events, Tasks, Account) in the Figma redesign, with light and dark. #82.
+- Login no longer picks a global role. Creating an event (budget plus a 1 USDC balance check) makes that user the organizer. Teammates join by direct invite or an `HYTO-` code. Invites last 7 days. Tables `proyecto_miembros` and `proyecto_invitaciones`. Members see assigned tasks; the organizer sees all of them and assigns at `/eventos/[id]/tareas`. #85.
+- Server and UI copy are in English. #56, #68, #77.
+- If deploy succeeds and fund fails, the review screen resumes at fund. Pay stays hidden until the escrow balance reads as positive. #67.
+- A reimbursement must have `monto_confirmado` before deploy. #69.
+- Laya's score, when probabilities are present, follows the highest index (0 insuficiente, 1 parcial, 2 cumplió). #59.
+- Review failures are stored and can be retried, instead of a silent fixed script. #45.
+- The session follows the Cavos JWT expiry, capped at 24 hours. #54, #52.
+- The organizer is per event. Demo mode cannot create events. #44, #47.
+- Prepare and submit use an HMAC token (`HYTO_TOKEN_SECRET`).
+- Task owners are suggestions. Team coordination moves to the private repo Hyto-App/hyto-private. #66.
+- Stellar Raven is mandatory for agents. A code audit was recorded for 30 September. #62, #64, #65.
+
+### Not in the repo yet
+
+- A successful real testnet USDC payment (`hash_pago`).
+- Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
 
 ## 2026-09-29
 
