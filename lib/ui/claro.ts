@@ -1,4 +1,10 @@
 import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_HORIZON_RECEPTOR,
+  AVISO_RECEPTOR_NO_LISTO,
+  CODIGO_HORIZON_RECEPTOR,
+  CODIGO_RECEPTOR_NO_LISTO,
+} from "@/lib/escrow/receptorAvisos";
 
 export const TEXTO = {
   lockBudget: "Lock budget",
@@ -47,8 +53,8 @@ const EXACTO: Record<string, string> = {
   "This task already has an escrow.": "This task already has its budget locked.",
   "The submit succeeded and Trustless did not return the contract.":
     "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.",
-  "The task has no payout wallet. The volunteer has to submit evidence with their account.":
-    "The volunteer needs to send their photo first, so we know where to pay.",
+  "The task has no payout wallet. Ask the volunteer to sign in and open the task.":
+    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
   "Review pending": "Wait until the photo review finishes before locking the budget.",
   "The milestone amount has to be greater than zero.": "The amount has to be greater than zero.",
   "Only the organizer prepares the payment.": "Only the organizer can lock the budget and pay.",
@@ -68,6 +74,10 @@ const EXACTO: Record<string, string> = {
   "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM.": SALDO_RED,
   "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.": SALDO_RED,
   "Trustless Work rejected the request.": "The payment service rejected that step. Try again.",
+  [CODIGO_RECEPTOR_NO_LISTO]: AVISO_RECEPTOR_NO_LISTO,
+  [AVISO_RECEPTOR_NO_LISTO]: AVISO_RECEPTOR_NO_LISTO,
+  [CODIGO_HORIZON_RECEPTOR]: AVISO_HORIZON_RECEPTOR,
+  [AVISO_HORIZON_RECEPTOR]: AVISO_HORIZON_RECEPTOR,
 };
 
 const PATRONES: readonly (readonly [RegExp, string])[] = [
@@ -118,6 +128,26 @@ export function pasosDePago(entrada: {
     { nombre: "Lock budget", estado: bloqueo },
     { nombre: "Pay", estado: pago },
   ];
+}
+
+const PASOS_BLOQUEO = new Set(["desplegar", "fondear"]);
+const PASOS_PAGO = new Set(["marcar", "aprobar", "liberar"]);
+
+export type CajaFallo = "bloqueo" | "pago";
+
+export function cajaDeFallo(entrada: { paso: string | null; codigo: string | null }): CajaFallo | null {
+  if (entrada.paso && PASOS_BLOQUEO.has(entrada.paso)) return "bloqueo";
+  if (entrada.paso && PASOS_PAGO.has(entrada.paso)) return "pago";
+  if (entrada.codigo === CODIGO_RECEPTOR_NO_LISTO || entrada.codigo === CODIGO_HORIZON_RECEPTOR) return "bloqueo";
+  return null;
+}
+
+export function tituloFallo(caja: CajaFallo): string {
+  return caja === "bloqueo" ? "Budget not locked" : "Payment failed";
+}
+
+export function detalleFallo(caja: CajaFallo, aviso: string): string {
+  return caja === "bloqueo" ? aviso : "No USDC left the escrow.";
 }
 
 export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar"): string {

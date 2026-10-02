@@ -53,6 +53,33 @@ test("el candado de una tarea dura unos 30 segundos", () => {
   reiniciarCandadosRevision();
 });
 
+test("GET de la revisión no dispara una revisión nueva", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  await evidenciaReal(almacen, fotos, "stand");
+  const previa = process.env.GROQ_API_KEY;
+  process.env.GROQ_API_KEY = "clave-de-prueba";
+  let llamadas = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response("no", { status: 500 });
+  };
+  try {
+    const lectura = await leerRevisionHttp(almacen, fotos, "stand", false);
+    assert.equal(lectura.status, 200);
+    const vista = (await lectura.json()) as { tarea: { origen: string | null; veredicto: string | null } };
+    assert.equal(vista.tarea.origen, null);
+    assert.equal(vista.tarea.veredicto, null);
+    assert.equal(llamadas, 0);
+  } finally {
+    globalThis.fetch = original;
+    if (previa === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = previa;
+  }
+});
+
 describe("reintentar la revisión", { concurrency: false }, () => {
   test("no vuelve a correr si el veredicto no es un error, y sí si lo es", async () => {
     reiniciarCandadosRevision();

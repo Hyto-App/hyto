@@ -8,6 +8,9 @@ import {
   preguntasTrabajo,
   type Pregunta,
 } from "./laya-preguntas";
+import { noulCerca, probabilidadesCerca } from "./margen";
+import { motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo } from "./pesos";
+import { escribirSnapshot } from "./snapshot-razones";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -17,7 +20,6 @@ export function urlLaya(base: string): string {
   return `${limpia}/v1/systemone`;
 }
 
-const NIVELES = ["insuficiente", "parcial", "cumplió"] as const;
 const CLASE = ["trabajo", "factura", "otra"] as const;
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
 const V1 = ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"] as const;
@@ -92,49 +94,38 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
   return { f1, f2, f3, f4, g1, g2, g3, g4, g5 };
 }
 
-// The final score is T10 or G5. Other signals can only lower it. A yes never raises it.
+// The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
 export function senalesDeTrabajo(respuestas: RespuestasTrabajo): Senales {
-  let indice: 0 | 1 | 2 = respuestas.t10;
-  if (respuestas.v1 === "es_otra_cosa" || respuestas.t6 === "sin_empezar" || respuestas.v2 === 0) indice = 0;
-  else if (
-    respuestas.v4 ||
-    respuestas.t9 ||
-    respuestas.v1 === "no_se_puede_saber" ||
-    respuestas.v2 === 1 ||
-    respuestas.t6 === "a_medias" ||
-    respuestas.t6 === "no_claro" ||
-    !respuestas.v3 ||
-    !respuestas.t8
-  ) {
-    indice = limitar(indice, 1);
-  }
-  const noul =
-    respuestas.v1 === "es_lo_pedido" &&
-    respuestas.v2 === 2 &&
-    !respuestas.v4 &&
-    respuestas.t6 === "terminado" &&
-    !respuestas.t9 &&
-    respuestas.v3 &&
-    respuestas.t8;
-  return { choice: "trabajo", noul, score: NIVELES[indice] };
+  const nota = notaDeTrabajo(respuestas);
+  const motivos = motivosTrabajo(respuestas);
+  return {
+    choice: "trabajo",
+    noul: nota === 100,
+    score: String(nota),
+    ...(motivos.length > 0 ? { motivos } : {}),
+  };
 }
 
 export function senalesDeFactura(respuestas: RespuestasFactura): Senales {
-  let indice: 0 | 1 | 2 = respuestas.g5;
-  if (respuestas.f1 === "otro_gasto" || respuestas.f1 === "no_se_ve" || respuestas.f4 === 0) indice = 0;
-  else if (!respuestas.g2 || !respuestas.f2 || !respuestas.f3 || !respuestas.g3 || respuestas.f4 === 1) indice = limitar(indice, 1);
-  const noul =
-    respuestas.f1 === "coincide_con_lo_pedido" &&
-    respuestas.f2 &&
-    respuestas.f3 &&
-    respuestas.f4 === 2 &&
-    respuestas.g2 &&
-    respuestas.g3;
-  return { choice: "factura", noul, score: NIVELES[indice] };
+  const nota = notaDeFactura(respuestas);
+  const motivos = motivosFactura(respuestas);
+  return {
+    choice: "factura",
+    noul: nota === 100,
+    score: String(nota),
+    ...(motivos.length > 0 ? { motivos } : {}),
+  };
 }
 
-function limitar(indice: 0 | 1 | 2, tope: 0 | 1 | 2): 0 | 1 | 2 {
-  return indice > tope ? tope : indice;
+const IDS_TRABAJO = ["lugar", "v1", "v2", "v3", "v4", "t5", "t6", "t7", "t8", "t9", "t10"] as const;
+const IDS_FACTURA = ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"] as const;
+
+export function idsCerca(json: unknown, ids: readonly string[]): string[] {
+  const cerca: string[] = [];
+  for (const id of ids) {
+    if (nodoCerca(nodoDe(json, id))) cerca.push(id);
+  }
+  return cerca;
 }
 
 export async function preguntarLaya(
@@ -150,17 +141,42 @@ export async function preguntarLaya(
   const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(), fetchImpl, signal, clave);
   const clase = leerClase(claseJson);
   if (!clase) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  if (clase === "otra") return { choice: "otra", noul: false, score: "insuficiente" };
+  const cercaClase = idsCerca(claseJson, ["c1"]);
+  if (clase === "otra") {
+    return {
+      choice: "otra",
+      noul: false,
+      score: "0",
+      motivos: ["otra"],
+      detalle: escribirSnapshot({ clase: "otra", trabajo: null, factura: null, cerca: cercaClase }),
+    };
+  }
   if (clase === "trabajo") {
     const json = await enviar(base, texto, pedido, preguntasTrabajo(pedido), fetchImpl, signal, clave);
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
-    return senalesDeTrabajo(respuestas);
+    return {
+      ...senalesDeTrabajo(respuestas),
+      detalle: escribirSnapshot({
+        clase: "trabajo",
+        trabajo: respuestas,
+        factura: null,
+        cerca: [...cercaClase, ...idsCerca(json, IDS_TRABAJO)],
+      }),
+    };
   }
   const json = await enviar(base, texto, pedido, preguntasFactura(pedido), fetchImpl, signal, clave);
   const respuestas = leerFactura(json);
   if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
-  return senalesDeFactura(respuestas);
+  return {
+    ...senalesDeFactura(respuestas),
+    detalle: escribirSnapshot({
+      clase: "factura",
+      trabajo: null,
+      factura: respuestas,
+      cerca: [...cercaClase, ...idsCerca(json, IDS_FACTURA)],
+    }),
+  };
 }
 
 async function enviar(
@@ -290,6 +306,21 @@ function listaProbabilidades(probabilities: unknown): Array<number | null> | nul
   const lista: Array<number | null> = Array.from({ length: Math.max(...indices) + 1 }, () => null);
   for (const indice of indices) lista[indice] = numero(crudo[String(indice)]);
   return lista;
+}
+
+function nodoCerca(nodo: Record<string, unknown> | null): boolean {
+  if (!nodo) return false;
+  if ("probabilities" in nodo && probabilidadesCerca(listaNumeros(nodo.probabilities))) return true;
+  if (typeof nodo.noul === "number") return noulCerca(nodo.noul);
+  return false;
+}
+
+function listaNumeros(probabilities: unknown): number[] {
+  if (Array.isArray(probabilities)) return probabilities.map(numero).filter((valor): valor is number => valor !== null);
+  if (!probabilities || typeof probabilities !== "object") return [];
+  return Object.values(probabilities as Record<string, unknown>)
+    .map(numero)
+    .filter((valor): valor is number => valor !== null);
 }
 
 function numero(valor: unknown): number | null {

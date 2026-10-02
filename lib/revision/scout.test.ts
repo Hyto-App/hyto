@@ -29,10 +29,27 @@ test("el pedido apaga el razonamiento y sube el tope de tokens", async () => {
   });
   assert.equal(descripcion.texto, "Mesa");
   assert.equal(cuerpo.model, "qwen/qwen3.8-27b");
+  assert.deepEqual(cuerpo.response_format, { type: "json_object" });
   assert.equal(cuerpo.reasoning_effort, "none");
   assert.equal(cuerpo.reasoning_format, "hidden");
   assert.equal(typeof cuerpo.max_completion_tokens === "number" && cuerpo.max_completion_tokens >= 1024, true);
   assert.equal(cuerpo.max_tokens, undefined);
+});
+
+test("GROQ_VISION_MODEL cambia el modelo y si falta sigue el de siempre", async () => {
+  const previo = process.env.GROQ_VISION_MODEL;
+  process.env.GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+  try {
+    let modelo = "";
+    await describirFoto(FOTO, "image/jpeg", "clave", async (_input, init) => {
+      modelo = (JSON.parse(String(init?.body)) as { model: string }).model;
+      return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
+    });
+    assert.equal(modelo, "meta-llama/llama-4-scout-17b-16e-instruct");
+  } finally {
+    if (previo === undefined) delete process.env.GROQ_VISION_MODEL;
+    else process.env.GROQ_VISION_MODEL = previo;
+  }
 });
 
 test("sin clave de Groq no llama a la red", async () => {

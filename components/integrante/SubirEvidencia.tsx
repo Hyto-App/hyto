@@ -8,7 +8,7 @@ import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
-import { ErrorDeSesion, leerTarea, subirEvidencia } from "@/lib/integrante/rutas";
+import { ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
 type Fase = "cargando" | "inicio" | "camara" | "foto" | "enviando" | "lista" | "faltante";
@@ -28,6 +28,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sinCamara, setSinCamara] = useState(false);
+  const [capturadaEn, setCapturadaEn] = useState<string | null>(null);
+  const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [evento, setEvento] = useState<string | null>(null);
@@ -106,12 +108,14 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     };
   }, [fase]);
 
-  function usarFoto(blob: Blob) {
+  function usarFoto(blob: Blob, nombre: string | null, captura: string | null) {
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     const url = URL.createObjectURL(blob);
     fotoUrlRef.current = url;
     setFotoUrl(url);
     setFoto(blob);
+    setNombreArchivo(nombre);
+    setCapturadaEn(captura);
     setError(null);
     streamRef.current?.getTracks().forEach((pista) => pista.stop());
     streamRef.current = null;
@@ -122,7 +126,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     setError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
       setSinCamara(true);
-      archivoRef.current?.click();
+      setError("A camera is needed to photograph the finished work.");
       return;
     }
     try {
@@ -135,10 +139,11 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         return;
       }
       streamRef.current = stream;
+      setSinCamara(false);
       setFase("camara");
     } catch {
       setSinCamara(true);
-      setError("Could not open the camera.");
+      setError("A camera is needed to photograph the finished work.");
     }
   }
 
@@ -163,22 +168,42 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           setError("Could not take the photo.");
           return;
         }
-        usarFoto(blob);
+        usarFoto(blob, null, new Date().toISOString());
       },
       "image/jpeg",
       0.9,
     );
   }
 
+  function archivoPermitido(archivo: File): boolean {
+    const tipo = archivo.type.toLowerCase();
+    const nombre = archivo.name.toLowerCase();
+    if (tipo === "application/pdf" || nombre.endsWith(".pdf")) return true;
+    if (tipo === "image/jpeg" || tipo === "image/png" || tipo === "image/webp") return true;
+    return nombre.endsWith(".jpg") || nombre.endsWith(".jpeg") || nombre.endsWith(".png") || nombre.endsWith(".webp");
+  }
+
   function elegirArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
-    if (!archivo) return;
-    if (archivo.type && !archivo.type.startsWith("image/")) {
-      setError("Choose a photo.");
+    if (!archivo || tarea?.tipo !== "reembolso") return;
+    if (!archivoPermitido(archivo)) {
+      setError("Choose a PDF, JPEG, PNG, or WebP file.");
       return;
     }
-    usarFoto(archivo);
+    usarFoto(archivo, archivo.name, null);
+  }
+
+  function soltarArchivo(evento: React.DragEvent<HTMLButtonElement>) {
+    evento.preventDefault();
+    if (tarea?.tipo !== "reembolso") return;
+    const archivo = evento.dataTransfer.files?.[0];
+    if (!archivo) return;
+    if (!archivoPermitido(archivo)) {
+      setError("Choose a PDF, JPEG, PNG, or WebP file.");
+      return;
+    }
+    usarFoto(archivo, archivo.name, null);
   }
 
   async function enviar() {
@@ -187,7 +212,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     setFase("enviando");
     setError(null);
     try {
-      const resultado = await subirEvidencia(tarea, foto);
+      const token = tarea.tipo === "trabajo" ? await pedirTokenEvidencia(tarea.id) : undefined;
+      const resultado = await subirEvidencia(tarea, foto, {
+        token,
+        capturadaEn: capturadaEn ?? undefined,
+        nombre: nombreArchivo ?? undefined,
+      });
       setEvidencia(resultado.evidencia);
       setEjemplo(resultado.ejemplo);
       if (resultado.ejemplo) {
@@ -207,6 +237,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   function tomarOtra() {
     setEvidencia(null);
     setFoto(null);
+    setCapturadaEn(null);
+    setNombreArchivo(null);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -241,6 +273,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   }
 
   const mostrarRevision = tarea.tipo === "reembolso" && evidencia?.monto && evidencia.fecha;
+  const reembolso = tarea.tipo === "reembolso";
   const accion =
     fase === "camara"
       ? "Take photo"
@@ -248,8 +281,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         ? "Send"
         : fase === "enviando"
           ? "Sending…"
-          : sinCamara
-            ? "Choose photo"
+          : reembolso
+            ? "Choose a file"
             : "Open camera";
 
   const cerrada = tarea.estado !== "pendiente";
@@ -274,9 +307,9 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           <p className="hyto-amount text-2xl">{montoVisible}</p>
         </div>
         <p className="hyto-sub">
-          {tarea.tipo === "reembolso"
-            ? "Photograph the receipt so the amount and date are readable. The organizer checks it and sends the payment."
-            : "Photograph the finished work. The organizer checks it and sends the payment."}
+          {reembolso
+            ? "Upload the receipt or invoice as a PDF or an image. The organizer checks it and sends the payment."
+            : "Photograph the finished work with the camera. The organizer checks it and sends the payment."}
         </p>
       </header>
 
@@ -285,7 +318,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--acento)] text-2xl text-[var(--sobre-acento)]" aria-hidden="true">
             ✓
           </div>
-          <p className="mt-4 text-lg font-medium">Photo sent</p>
+          <p className="mt-4 text-lg font-medium">{reembolso ? "File sent" : "Photo sent"}</p>
           <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
           <article className="hyto-card mt-6 p-4 text-left">
             <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
@@ -305,36 +338,34 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         <div className="hyto-split">
           <div>
             <div className="hyto-photo">
-                {fotoUrl ? (
+                {fotoUrl && foto?.type === "application/pdf" ? (
+                  <div className="flex aspect-[4/5] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
+                    {nombreArchivo ?? "Invoice PDF"}
+                  </div>
+                ) : fotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={fotoUrl} alt="Evidence" />
                 ) : fase === "camara" ? (
                   <video ref={videoRef} playsInline muted aria-label="Camera preview" />
                 ) : (
                   <div className="flex aspect-[4/5] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-                    {tarea.tipo === "reembolso" ? "Photo of the receipt" : "Photo of the work"}
+                    {reembolso ? "PDF or image of the receipt" : "Photo of the work"}
                   </div>
                 )}
               </div>
-            {fase === "inicio" || fase === "camara" ? (
+            {reembolso && (fase === "inicio" || fase === "foto") ? (
               <button
                 type="button"
                 onClick={() => archivoRef.current?.click()}
                 onDragOver={(evento) => evento.preventDefault()}
-                onDrop={(evento) => {
-                  evento.preventDefault();
-                  const archivo = evento.dataTransfer.files?.[0];
-                  if (!archivo) return;
-                  if (archivo.type && !archivo.type.startsWith("image/")) {
-                    setError("Choose a photo.");
-                    return;
-                  }
-                  usarFoto(archivo);
-                }}
+                onDrop={soltarArchivo}
                 className="mt-3 w-full rounded-2xl border border-dashed border-[var(--borde)] px-4 py-4 text-sm text-[var(--suave)]"
               >
-                Choose a photo
+                Choose a PDF or image
               </button>
+            ) : null}
+            {!reembolso && sinCamara ? (
+              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">A camera is needed to photograph the finished work.</p>
             ) : null}
           </div>
           <div>
@@ -359,12 +390,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             <div className="hyto-actions">
               <BotonPrincipal
                 type="button"
-                disabled={fase === "enviando"}
+                disabled={fase === "enviando" || (!reembolso && sinCamara && fase === "inicio")}
                 aria-busy={fase === "enviando"}
                 onClick={() => {
                   if (fase === "camara") tomarFoto();
                   else if (fase === "foto") void enviar();
-                  else if (sinCamara || !navigator.mediaDevices?.getUserMedia) archivoRef.current?.click();
+                  else if (reembolso) archivoRef.current?.click();
                   else void abrirCamara();
                 }}
               >
@@ -377,7 +408,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
               ) : null}
               {fase === "foto" ? (
                 <button type="button" onClick={tomarOtra} className="hyto-btn-line">
-                  Take another
+                  {reembolso ? "Choose another file" : "Take another"}
                 </button>
               ) : null}
             </div>
@@ -393,7 +424,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
       {enviada && !cerrada ? (
         <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
-          Take another
+          {reembolso ? "Send another file" : "Take another"}
         </button>
       ) : null}
 
@@ -401,16 +432,17 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Sample task, until your own tasks load.</p>
       ) : null}
 
-      <input
-        ref={archivoRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        tabIndex={-1}
-        aria-hidden="true"
-        className="sr-only"
-        onChange={elegirArchivo}
-      />
+      {reembolso ? (
+        <input
+          ref={archivoRef}
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={elegirArchivo}
+        />
+      ) : null}
     </main>
   );
 }

@@ -5,6 +5,7 @@ import type { SesionFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { rechazoSiFondos } from "@/lib/escrow/saldo";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
+import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
@@ -36,6 +37,7 @@ export function huellaDeXdr(xdr: string): string {
 }
 
 const AVISO_SIN_SECRETO = "The server cannot sign this payment.";
+const AVISO_SIN_COBRO = "The task has no payout wallet. Ask the volunteer to sign in and open the task.";
 const AVISO_SIN_PREPARAR = "This signature was not prepared by the server.";
 const AVISO_VENCIDO = "This payment request has expired. Prepare it again.";
 const AVISO_NO_COINCIDE = "This signature does not match the prepared payment.";
@@ -264,13 +266,22 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
     return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
   }
-  if (!esCuenta(tarea.walletCobro)) {
-    return Response.json(
-      { aviso: "The task has no payout wallet. The volunteer has to submit evidence with their account." },
-      { status: 400 },
-    );
+  let evidencia;
+  try {
+    evidencia = await almacen.ultimaEvidencia(tarea.id);
+    if (!esCuenta(tarea.walletCobro) && evidencia) {
+      const recuperado = await almacen.walletDeUsuario(tarea.miembroId);
+      if (recuperado && esCuenta(recuperado)) {
+        await almacen.actualizarTarea(tarea.id, { walletCobro: recuperado });
+        tarea = { ...tarea, walletCobro: recuperado };
+      }
+    }
+  } catch {
+    return Response.json({ aviso: "The database is not ready." }, { status: 503 });
   }
-  const evidencia = await almacen.ultimaEvidencia(tarea.id);
+  if (!esCuenta(tarea.walletCobro)) {
+    return Response.json({ aviso: AVISO_SIN_COBRO }, { status: 400 });
+  }
   if (tarea.tipo === "reembolso") {
     if (!evidencia?.monto?.trim() && !evidencia?.montoConfirmado?.trim()) {
       return Response.json({ aviso: "Review pending" }, { status: 409 });
@@ -294,6 +305,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   const fondos = await rechazoSiFondos(wallet, String(monto));
   if (fondos) return fondos;
   if (!secretoPreparado()) return sinSecreto();
+  const receptor = await estadoReceptorUsdc(tarea.walletCobro);
+  if (!receptor.listo) return respuestaReceptor(receptor);
   try {
     const listo = await prepararDespliegue(cuentas);
     if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);

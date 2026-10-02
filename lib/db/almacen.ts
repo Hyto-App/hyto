@@ -31,15 +31,23 @@ export type Almacen = {
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(
     id: string,
-    cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado">>,
+    cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado" | "motivoCopia">>,
   ): Promise<void>;
   ultimaEvidencia(tareaId: string): Promise<EvidenciaFila | null>;
+  evidenciaPorSha256(sha256: string): Promise<EvidenciaFila | null>;
+  evidenciasCercanas(
+    phash: string,
+    distanciaMax: number,
+    exceptoId: string,
+  ): Promise<{ id: string; distancia: number }[]>;
+  listaParaAntifraude(): Promise<boolean>;
   guardarVeredicto(veredicto: VeredictoFila): Promise<void>;
   veredictoDe(evidenciaId: string): Promise<VeredictoFila | null>;
   crearSesion(sesion: SesionFila): Promise<void>;
   leerSesion(token: string): Promise<SesionFila | null>;
   borrarSesion(token: string): Promise<void>;
   guardarWallet(token: string, wallet: string): Promise<void>;
+  walletDeUsuario(usuarioId: string): Promise<string | null>;
   listarMiembros(proyectoId: string): Promise<ProyectoMiembro[]>;
   miembrosDeUsuario(usuarioId: string): Promise<ProyectoMiembro[]>;
   guardarMiembro(miembro: ProyectoMiembro): Promise<void>;

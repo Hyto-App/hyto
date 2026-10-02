@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
@@ -30,7 +31,7 @@ export function Bandeja({
 }: {
   proyectoId?: string;
   miembros?: { usuarioId: string; email: string }[];
-} = {}) {
+}) {
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
@@ -166,8 +167,9 @@ export function Bandeja({
                         <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo)}</span>
                         <span className="mt-2 flex items-center justify-between gap-2">
                           <span className="text-xs text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</span>
-                          {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} /> : null}
+                          {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
                         </span>
+                        <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
                       </span>
                     </div>
                   </button>
@@ -222,7 +224,8 @@ export function Bandeja({
             {seleccion ? (
               <aside className="hyto-panel">
                 <p className="text-sm text-[var(--suave)]">Recommendation</p>
-                <div className="mt-3">{seleccion.veredicto ? <PastillaVeredicto veredicto={seleccion.veredicto} /> : <p className="text-sm text-[var(--suave)]">No recommendation yet</p>}</div>
+                <div className="mt-3">{seleccion.veredicto ? <PastillaVeredicto veredicto={seleccion.veredicto} nota={seleccion.nota} /> : <p className="text-sm text-[var(--suave)]">No recommendation yet</p>}</div>
+                <EtiquetasNota etiquetas={seleccion.etiquetas} />
                 {seleccion.condicion ? (
                   <>
                     <p className="mt-5 text-sm font-medium">Photo must show</p>

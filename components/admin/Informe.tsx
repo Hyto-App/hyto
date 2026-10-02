@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { useVistaAdmin } from "@/components/admin/usarVista";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
+import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { conTarea } from "@/lib/admin/parche";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/lib/admin/vista";
@@ -109,7 +111,10 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                         <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
                         <p className="mt-1 text-lg font-semibold tracking-tight">{textoVisible(tarea.titulo)}</p>
                       </div>
-                      <PastillaEstado estado={tarea.estado} />
+                      <span className="flex flex-wrap items-center justify-end gap-2">
+                        {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
+                        <PastillaEstado estado={tarea.estado} />
+                      </span>
                     </div>
                     <p className="hyto-amount mt-4 text-xl">{cifra}</p>
                     <div className="hyto-bar mt-3" aria-hidden="true">
@@ -119,6 +124,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       <p className="mt-1 text-sm text-[var(--suave)]">Limit {formatearMonto(detalle.tope)}</p>
                     ) : null}
                     {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
+                    <EtiquetasNota etiquetas={tarea.etiquetas} />
                     {tarea.origen === "error" && tarea.frase ? (
                       <p role="alert" className="mt-3 text-sm leading-6">
                         {textoVisible(tarea.frase)}

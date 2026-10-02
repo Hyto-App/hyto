@@ -1,5 +1,6 @@
 import type { Veredicto } from "@/lib/admin/tipos";
-import { etiquetaVeredicto } from "@/lib/ui/etiquetas";
+import { etiquetaDesdeNota } from "@/lib/revision/pesos";
+import { etiquetaVeredicto, textoNota } from "@/lib/ui/etiquetas";
 
 const CLASE: Record<Veredicto, string> = {
   cumplió: "hyto-pill-ok",
@@ -7,11 +8,12 @@ const CLASE: Record<Veredicto, string> = {
   insuficiente: "hyto-pill-bad",
 };
 
-export function PastillaVeredicto({ veredicto }: { veredicto: Veredicto }) {
+export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Veredicto; nota?: number | null }) {
+  const banda = typeof nota === "number" ? etiquetaDesdeNota(nota) : veredicto;
   return (
-    <span className={`hyto-pill ${CLASE[veredicto]}`}>
+    <span className={`hyto-pill ${CLASE[banda]}`}>
       <i className="hyto-dot" aria-hidden="true" />
-      {etiquetaVeredicto(veredicto)}
+      {textoNota(etiquetaVeredicto(banda), nota)}
     </span>
   );
 }
