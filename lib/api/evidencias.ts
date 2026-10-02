@@ -10,6 +10,7 @@ import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/to
 import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
+import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -260,7 +261,7 @@ export async function guardarRevision(
     tareaId,
     veredicto: resultado.veredicto,
     frase: resultado.frase,
-    textoScout: resultado.texto,
+    textoScout: unirDescripcion(resultado.texto, resultado.detalle),
     choice: resultado.choice,
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { vistaAdmin } from "@/lib/admin/vista";
@@ -147,6 +148,7 @@ export function Bandeja({
                           <span className="text-xs text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</span>
                           {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
                         </span>
+                        <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
                       </span>
                     </div>
                   </button>
@@ -199,6 +201,7 @@ export function Bandeja({
               <aside className="hyto-panel">
                 <p className="text-sm text-[var(--suave)]">Recommendation</p>
                 <div className="mt-3">{seleccion.veredicto ? <PastillaVeredicto veredicto={seleccion.veredicto} nota={seleccion.nota} /> : <p className="text-sm text-[var(--suave)]">No recommendation yet</p>}</div>
+                <EtiquetasNota etiquetas={seleccion.etiquetas} />
                 {seleccion.condicion ? (
                   <>
                     <p className="mt-5 text-sm font-medium">Photo must show</p>

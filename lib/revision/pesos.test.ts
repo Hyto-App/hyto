@@ -7,7 +7,12 @@ import {
   TOPE_NOTA_REEMBOLSO,
   UMBRAL_CUMPLIO,
   UMBRAL_PARCIAL,
+  TOPE_FALTA_GRAVE,
+  TOPE_FALTA_SERIA,
+  calificar,
   etiquetaDesdeNota,
+  motivosFactura,
+  motivosTrabajo,
   notaDeFactura,
   notaDeTexto,
   notaDeTrabajo,
@@ -117,6 +122,41 @@ test("notaEntera recorta el rango y rechaza lo que no es finito", () => {
   assert.equal(notaEntera(150), 100);
   assert.equal(notaEntera(50.4), 50);
   assert.equal(notaEntera(50.6), 51);
+});
+
+test("calificar aplica el tope más bajo y deja los pesos como están", () => {
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), v1: "es_otra_cosa" }), 80);
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t6: "sin_empezar" }), 84);
+  assert.equal(notaDeFactura({ ...facturaPerfecta(), f1: "otro_gasto" }), 82);
+  assert.equal(notaDeFactura({ ...facturaPerfecta(), g2: false }), 80);
+  assert.deepEqual(motivosTrabajo({ ...trabajoPerfecto(), v1: "es_otra_cosa" }), ["no_coincide"]);
+  assert.deepEqual(motivosTrabajo({ ...trabajoPerfecto(), t6: "sin_empezar" }), ["sin_empezar"]);
+  assert.deepEqual(motivosFactura({ ...facturaPerfecta(), f1: "otro_gasto" }), ["otro_gasto"]);
+  assert.deepEqual(motivosFactura({ ...facturaPerfecta(), f1: "no_se_ve" }), []);
+  assert.deepEqual(motivosFactura({ ...facturaPerfecta(), g1: "otro_o_no_claro" }), []);
+  assert.deepEqual(motivosFactura({ ...facturaPerfecta(), g2: false }), ["gasto_no_razonable"]);
+
+  assert.deepEqual(calificar(100, ["otra"]), { nota: TOPE_FALTA_GRAVE, veredicto: "insuficiente", motivos: ["otra"] });
+  assert.equal(calificar(80, ["no_coincide"]).nota, 49);
+  assert.equal(calificar(84, ["sin_empezar"]).nota, 49);
+  assert.equal(calificar(82, ["otro_gasto"]).nota, 49);
+  assert.equal(calificar(80, ["gasto_no_razonable"]).nota, TOPE_FALTA_SERIA);
+  assert.equal(calificar(79, ["gasto_no_razonable"]).veredicto, "parcial");
+  assert.equal(calificar(100, ["reembolso"]).nota, TOPE_NOTA_REEMBOLSO);
+  assert.equal(calificar(90, ["gasto_no_razonable", "reembolso"]).nota, 40);
+  assert.equal(calificar(100, ["otro_gasto", "gasto_no_razonable"]).nota, 49);
+  assert.equal(calificar(90, ["no_coincide", "reembolso"]).nota, 40);
+  assert.deepEqual(calificar(80, ["no_coincide", "no_coincide"]).motivos, ["no_coincide"]);
+
+  assert.equal(calificar(49, []).veredicto, "insuficiente");
+  assert.equal(calificar(50, []).veredicto, "parcial");
+  assert.equal(calificar(79, []).veredicto, "parcial");
+  assert.equal(calificar(80, []).veredicto, "cumplió");
+
+  const soloV4 = notaDeTrabajo({ ...trabajoPerfecto(), v4: true });
+  assert.equal(soloV4, 90);
+  assert.equal(calificar(soloV4, []).nota, 90);
+  assert.equal(calificar(soloV4, []).veredicto, "cumplió");
 });
 
 test("la banda sale del porcentaje y no aprueba un pago por sí sola", () => {

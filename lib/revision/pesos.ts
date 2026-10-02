@@ -42,10 +42,15 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  *
  * Display bands, derived from the percentage. They do not approve a payment:
  * under 50 insuficiente, 50–79 parcial, 80–100 cumplió.
+ * The screen shows those bands as Insuficiente, Parcialmente completado, and Completado.
  *
- * Reimbursement safety cap (TOPE_NOTA_REEMBOLSO): if the amount is missing,
- * not a positive number, the date is missing, or the amount is over the task
- * cap, the grade cannot go above 40. That keeps the band at insuficiente.
+ * Caps live in calificar. They do not change PESOS_PREGUNTAS.
+ * - TOPE_FALTA_GRAVE (49): classification "otra", v1 es_otra_cosa, t6 sin_empezar,
+ *   or f1 otro_gasto (a different kind of expense). The band stays insuficiente.
+ * - TOPE_FALTA_SERIA (79): g2 is false. The band cannot be cumplió.
+ * - TOPE_NOTA_REEMBOLSO (40): the amount is missing, not positive, the date is
+ *   missing, or the amount is over the task cap.
+ * When more than one cap applies, the lowest one wins.
  */
 export const PESOS_PREGUNTAS = {
   trabajo: {
@@ -75,8 +80,55 @@ export const PESOS_PREGUNTAS = {
 } as const;
 
 export const TOPE_NOTA_REEMBOLSO = 40;
+export const TOPE_FALTA_GRAVE = 49;
+export const TOPE_FALTA_SERIA = 79;
 export const UMBRAL_PARCIAL = 50;
 export const UMBRAL_CUMPLIO = 80;
+
+export type MotivoTope =
+  | "otra"
+  | "no_coincide"
+  | "sin_empezar"
+  | "otro_gasto"
+  | "gasto_no_razonable"
+  | "reembolso";
+
+const TOPE_DE: Record<MotivoTope, number> = {
+  otra: TOPE_FALTA_GRAVE,
+  no_coincide: TOPE_FALTA_GRAVE,
+  sin_empezar: TOPE_FALTA_GRAVE,
+  otro_gasto: TOPE_FALTA_GRAVE,
+  gasto_no_razonable: TOPE_FALTA_SERIA,
+  reembolso: TOPE_NOTA_REEMBOLSO,
+};
+
+export function motivosTrabajo(respuestas: RespuestasTrabajo): MotivoTope[] {
+  const motivos: MotivoTope[] = [];
+  if (respuestas.v1 === "es_otra_cosa") motivos.push("no_coincide");
+  if (respuestas.t6 === "sin_empezar") motivos.push("sin_empezar");
+  return motivos;
+}
+
+export function motivosFactura(respuestas: RespuestasFactura): MotivoTope[] {
+  const motivos: MotivoTope[] = [];
+  if (respuestas.f1 === "otro_gasto") motivos.push("otro_gasto");
+  if (!respuestas.g2) motivos.push("gasto_no_razonable");
+  return motivos;
+}
+
+/** Every grade cap is applied here. The weights stay in notaDeTrabajo and notaDeFactura. */
+export function calificar(
+  nota: number,
+  motivos: readonly MotivoTope[],
+): { nota: number; veredicto: Veredicto; motivos: MotivoTope[] } {
+  const unicos: MotivoTope[] = [];
+  for (const motivo of motivos) {
+    if (!unicos.includes(motivo)) unicos.push(motivo);
+  }
+  let limitada = notaEntera(nota);
+  for (const motivo of unicos) limitada = Math.min(limitada, TOPE_DE[motivo]);
+  return { nota: limitada, veredicto: etiquetaDesdeNota(limitada), motivos: unicos };
+}
 
 export function notaDeTrabajo(respuestas: RespuestasTrabajo): number {
   const peso = PESOS_PREGUNTAS.trabajo;

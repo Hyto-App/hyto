@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Numeros } from "@/components/admin/Numeros";
 import { useVistaAdmin } from "@/components/admin/usarVista";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { reintentarRevision } from "@/lib/admin/remoto";
@@ -143,6 +144,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       <p className="mt-1 text-sm text-[var(--suave)]">Limit {formatearMonto(detalle.tope)}</p>
                     ) : null}
                     {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
+                    <EtiquetasNota etiquetas={tarea.etiquetas} />
                     {tarea.origen === "error" && tarea.frase ? (
                       <p role="alert" className="mt-3 text-sm leading-6">
                         {textoVisible(tarea.frase)}

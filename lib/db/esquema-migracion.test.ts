@@ -126,7 +126,6 @@ test("schema.ts coincide con la migración y neon no nombra columnas ausentes", 
     cruce.sinLector.map((columna) => `${columna.tabla}.${columna.columna}`),
     [
       "veredictos.tarea_id",
-      "veredictos.texto_scout",
       "veredictos.noul",
     ],
   );
