@@ -79,11 +79,9 @@ export function etiquetaChoice(choice: string): string {
 
 export function textoVisible(valor: string | null | undefined): string {
   if (!valor) return "";
-  const prefijo = /^(?:Ejemplo|Example)\. /.exec(valor);
-  const base = prefijo ? valor.slice(prefijo[0].length) : valor;
+  const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
   const directo = LEGADO[base] ?? base;
-  const visible = prefijo ? `Example. ${directo}` : directo;
-  return visible.replace(
+  return directo.replace(
     / Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g,
     (_todo, choice: string, condicion: string, evidencia: string) => {
       const met = condicion === "cumplida" ? "met" : "not met";
