@@ -70,6 +70,77 @@ test("la bandeja muestra un botón de reintento en cada revisión fallida", asyn
   }
 });
 
+test("tras un reintento la bandeja muestra el veredicto nuevo y el sondeo no lo pisa", async () => {
+  (globalThis as { __HYTO_SONDEO_MS?: number }).__HYTO_SONDEO_MS = 40;
+  reiniciarReintentoFondo();
+  let fase: "vieja" | "nueva" = "vieja";
+  let sondeos = 0;
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.startsWith("/api/eventos/evt/novedades")) {
+      sondeos += 1;
+      const nueva = fase === "nueva";
+      return json({
+        cursor: "a".repeat(32),
+        cambios: [
+          {
+            tareaId: "stand",
+            estado: "en revisión",
+            evidenciaId: "ev",
+            creadaEn: "2026-10-02T08:00:00.000Z",
+            veredicto: nueva ? "parcial" : "insuficiente",
+            origen: nueva ? "scout" : "error",
+            sello: (nueva ? "b" : "a").repeat(32),
+          },
+        ],
+      });
+    }
+    if (init?.method === "POST") {
+      fase = "nueva";
+      return json({
+        tarea: tarea({ origen: "scout", veredicto: "parcial", frase: "Banner ready." }),
+        foto: null,
+      });
+    }
+    if (url === "/api/tareas") {
+      return json({ tareas: [{ id: "stand", proyectoId: "evt", hashPago: null, contratoEscrow: null }] });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyecto: { nombre: "ZEEK" } });
+    if (url.startsWith("/api/revision/")) {
+      const nueva = fase === "nueva";
+      return json({
+        tarea: tarea({
+          origen: nueva ? "scout" : "error",
+          veredicto: nueva ? "parcial" : "insuficiente",
+          frase: nueva ? "Banner ready." : "The AI did not respond in time",
+        }),
+        foto: null,
+      });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Bandeja, { proyectoId: "evt" }));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 60));
+    });
+    assert.ok(botonReintento());
+    await pulsar("Retry review");
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 90));
+    });
+    assert.match(texto(), /Banner ready/);
+    assert.equal(texto().includes("The AI did not respond in time"), false);
+    assert.equal(sondeos >= 1, true);
+  } finally {
+    delete (globalThis as { __HYTO_SONDEO_MS?: number }).__HYTO_SONDEO_MS;
+    globalThis.fetch = anterior;
+    await desmontar();
+    reiniciarReintentoFondo();
+  }
+});
+
 test("el botón avisa si el reintento falla y muestra que está cargando", async () => {
   reiniciarReintentoFondo();
   const pendiente: { soltar: ((respuesta: Response) => void) | null } = { soltar: null };

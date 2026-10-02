@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { Numeros } from "@/components/admin/Numeros";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
+import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
-import { conTarea } from "@/lib/admin/parche";
-import type { DetalleRevision } from "@/lib/admin/remoto";
+import { fusionarVista } from "@/lib/admin/novedades";
+import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
 import { vistaAdmin } from "@/lib/admin/vista";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { iniciales } from "@/components/ui/Marca";
 import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
+
+const PROTECCION_REINTENTO_MS = 8_000;
 
 type Filtro = "all" | Veredicto;
 
@@ -35,23 +39,69 @@ export function Bandeja({
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
   const [elegida, setElegida] = useState<VistaAdmin | null>(null);
-  const [frescas, setFrescas] = useState<VistaAdmin | null>(null);
+  const [viva, setViva] = useState<VistaAdmin | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("all");
   const [selId, setSelId] = useState<string | null>(null);
-  const vista = frescas ?? elegida ?? base;
-  const vistaRef = useRef<VistaAdmin | null>(vista);
+  const vista = elegida ?? viva ?? base;
+  const vistaRef = useRef(vista);
   vistaRef.current = vista;
+  const elegidaRef = useRef(elegida);
+  elegidaRef.current = elegida;
+  const vivaRef = useRef(viva);
+  vivaRef.current = viva;
+  const generacion = useRef(0);
+  const aplicadoEn = useRef(new Map<string, number>());
 
   useEffect(() => {
-    setFrescas(null);
-  }, [base, elegida]);
+    generacion.current += 1;
+    setViva((actual) => (actual === null ? actual : null));
+  }, [base]);
 
   const aplicar = useCallback((detalle: DetalleRevision) => {
-    const origen = vistaRef.current;
-    if (!origen) return;
-    setFrescas(conTarea(origen, detalle.tarea));
+    aplicadoEn.current.set(detalle.tarea.id, Date.now());
+    const marca = generacion.current;
+    const origen = elegidaRef.current ? null : (vivaRef.current ?? vistaRef.current);
+    if (!origen || origen.ejemplo) return;
+    const fusion = fusionarVista(origen, [detalle.tarea]);
+    if (generacion.current !== marca || elegidaRef.current) return;
+    if (fusion !== origen) setViva(fusion);
   }, []);
+
+  const { reciente } = useNovedadesEvento({
+    proyectoId: proyectoId && vista && !vista.ejemplo && !elegida ? proyectoId : undefined,
+    tareas: (vista?.tareas ?? []).map((tarea) => ({
+      id: tarea.id,
+      estado: tarea.estado,
+      veredicto: tarea.veredicto,
+      origen: tarea.origen,
+    })),
+    exigirFoto: false,
+    alCambiar: async (ids) => {
+      const marca = generacion.current;
+      const actual = elegidaRef.current ? null : (vivaRef.current ?? vistaRef.current);
+      if (!actual || actual.ejemplo) return { ok: false, avisar: false };
+      const detalles = await Promise.all(ids.map((id) => cargarDetalleOrganizador(id)));
+      if (generacion.current !== marca || elegidaRef.current) return { ok: false, avisar: false };
+      if (detalles.some((detalle) => !detalle)) return { ok: false, avisar: false };
+      const ahora = Date.now();
+      let protegida = false;
+      const llegadas = detalles.flatMap((detalle) => {
+        if (!detalle) return [];
+        const cuando = aplicadoEn.current.get(detalle.tarea.id) ?? 0;
+        if (cuando > 0 && ahora - cuando < PROTECCION_REINTENTO_MS) {
+          protegida = true;
+          return [];
+        }
+        return [detalle.tarea];
+      });
+      const baseVista = vivaRef.current ?? vistaRef.current ?? actual;
+      const fusion = fusionarVista(baseVista, llegadas);
+      if (fusion !== baseVista) setViva(fusion);
+      if (protegida) return { ok: false, avisar: false };
+      return { ok: true, avisar: fusion !== actual };
+    },
+  });
 
   function usarEjemplo() {
     const guardado = volverAlEjemplo();
@@ -122,6 +172,7 @@ export function Bandeja({
       <Numeros resumen={vista.resumen} />
 
       <section className="mt-8">
+        <IndicadorActualizado activo={Boolean(proyectoId && !vista.ejemplo)} visible={reciente} />
         <div className="hyto-tabs mt-4 flex" role="tablist" aria-label="Filter submissions">
           {FILTROS.map((item) => (
             <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
