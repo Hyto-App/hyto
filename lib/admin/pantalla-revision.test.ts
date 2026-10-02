@@ -59,7 +59,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
-    assert.match(texto(), /64% · Parcialmente completado/);
+    assert.match(texto(), /64% · Partially completed/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -84,7 +84,7 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Sample recommendation/);
-    assert.match(texto(), /100% · Completado/);
+    assert.match(texto(), /100% · Completed/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
   } finally {
