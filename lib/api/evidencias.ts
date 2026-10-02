@@ -1,4 +1,5 @@
 import type { Fotos } from "@/lib/blob/fotos";
+import { marcadorPng } from "@/lib/blob/marcador";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
@@ -63,8 +64,6 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
   }
 }
 
-const MARCADOR_EJEMPLO = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" role="img" aria-label="Sample evidence"><rect width="64" height="48" fill="#ece7dc"/></svg>`;
-
 export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string, visor: Visor): Promise<Response> {
   try {
     await asegurarSemilla(almacen);
@@ -74,8 +73,13 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
     if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
-      return new Response(MARCADOR_EJEMPLO, {
-        headers: { "content-type": "image/svg+xml", "cache-control": "private, max-age=3600" },
+      const tarea = await almacen.leerTarea(evidencia.tareaId);
+      return new Response(Buffer.from(marcadorPng(tarea?.tipo === "reembolso" ? "reembolso" : "trabajo")), {
+        headers: {
+          "content-type": "image/png",
+          "cache-control": "private, max-age=3600",
+          "x-content-type-options": "nosniff",
+        },
       });
     }
     if (!fotos) return sinFotos();
