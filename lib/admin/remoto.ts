@@ -68,17 +68,22 @@ export function botonesRevision(
       pedirOtra: puede && tarea.veredicto !== "cumplió",
     };
   }
-  const abierto = tarea.estado !== "pagado";
+  // A release hash on an unpaid task means the release is on the ledger and the read model is behind.
+  const abierto = tarea.estado !== "pagado" && !pagoPendiente(tarea);
   const conContrato = Boolean(escrow.contrato);
   const bloqueado = tarea.tipo === "reembolso" && montoDeVista(tarea) === null;
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
     // A percentage never approves the payment. Pay follows the escrow balance.
-    pagar: !bloqueado && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
+    pagar: !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
     aprobarLocal: false,
     pedirOtra: tarea.estado === "en revisión",
   };
+}
+
+export function pagoPendiente(tarea: Pick<TareaAdmin, "estado" | "hashPago">): boolean {
+  return tarea.estado !== "pagado" && Boolean(tarea.hashPago?.trim());
 }
 
 export async function cargarDetalleOrganizador(tareaId: string, opciones: OpcionesRemoto = {}): Promise<DetalleRevision | null> {

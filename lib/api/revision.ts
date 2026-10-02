@@ -4,6 +4,7 @@ import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
+import { conciliarPagoPendiente } from "./firma";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
@@ -60,7 +61,10 @@ export async function leerRevisionHttp(
         if (reservado) liberarRevision(tareaId);
       }
     }
-    const actual = (await almacen.leerTarea(tareaId)) ?? tarea;
+    let actual = (await almacen.leerTarea(tareaId)) ?? tarea;
+    if (await conciliarPagoPendiente(almacen, actual).catch(() => false)) {
+      actual = (await almacen.leerTarea(tareaId)) ?? actual;
+    }
     const vista = await tareaAdmin(almacen, actual);
     return json({
       tarea: vista,

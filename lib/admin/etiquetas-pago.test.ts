@@ -26,6 +26,16 @@ test("las etiquetas no cambian los botones de pago", () => {
   assert.equal(botonesRevision(conEtiquetas, true, { contrato: null, fondeado: null }).desplegar, true);
 });
 
+test("un pago enviado que el indexador no muestra no ofrece fondear, pagar ni desplegar", () => {
+  const pendiente = tarea({ hashPago: "11".repeat(32) });
+  for (const fondeado of [true, false, null]) {
+    const botones = botonesRevision(pendiente, true, { contrato: "CABC", fondeado });
+    assert.equal(botones.desplegar, false);
+    assert.equal(botones.fondear, false);
+    assert.equal(botones.pagar, false);
+  }
+});
+
 test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {

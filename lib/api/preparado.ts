@@ -9,6 +9,8 @@ export type CargaPreparado = {
   accion: string;
   tareaId: string;
   monto: string;
+  // Predicted escrow id from the deploy prepare, so any instance can save it on submit.
+  contrato?: string;
   exp: number;
 };
 
@@ -49,7 +51,9 @@ export function secretoPreparado(env?: EntornoSecreto): string | null {
 }
 
 function canonico(carga: CargaPreparado): string {
-  return [carga.usuarioId, carga.sesionId, carga.huella, carga.accion, carga.tareaId, carga.monto, String(carga.exp)].join("\n");
+  const partes = [carga.usuarioId, carga.sesionId, carga.huella, carga.accion, carga.tareaId, carga.monto, String(carga.exp)];
+  if (carga.contrato) partes.push(`contrato:${carga.contrato}`);
+  return partes.join("\n");
 }
 
 function cargaValida(valor: unknown): valor is CargaPreparado {
@@ -62,6 +66,7 @@ function cargaValida(valor: unknown): valor is CargaPreparado {
     typeof datos.accion === "string" &&
     typeof datos.tareaId === "string" &&
     typeof datos.monto === "string" &&
+    (datos.contrato === undefined || typeof datos.contrato === "string") &&
     typeof datos.exp === "number" &&
     Number.isFinite(datos.exp)
   );
