@@ -231,6 +231,7 @@ function tareaMuestra(
 function isoEnMes(ahora: Date, delta: number): string {
   const actual = claveDeFecha(ahora) ?? "2026-10";
   const destino = desplazarMes(actual, delta);
+  if (delta === 0 && claveDeFecha(ahora) === destino) return new Date(ahora.getTime()).toISOString();
   const [anio, mes] = destino.split("-").map(Number);
   return new Date(Date.UTC(anio, mes - 1, 15, 18, 0, 0)).toISOString();
 }

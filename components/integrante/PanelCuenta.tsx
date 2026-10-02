@@ -123,11 +123,10 @@ function Direccion({ direccion }: { direccion: string }) {
   }, [copiado]);
 
   async function copiar() {
-    try {
-      await navigator.clipboard.writeText(direccion);
-      setFallo(false);
-      setCopiado(true);
-    } catch {
+    setFallo(false);
+    setCopiado(true);
+    const ok = (await copiarConPortapapeles(direccion)) || copiarConSeleccion(direccion);
+    if (!ok) {
       setCopiado(false);
       setFallo(true);
     }
@@ -140,7 +139,7 @@ function Direccion({ direccion }: { direccion: string }) {
         <span className="sr-only">{direccion}</span>
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="hyto-btn-line is-inline h-10 px-4 text-sm" onClick={() => void copiar()}>
+        <button type="button" className="hyto-btn-line is-inline h-10 px-4 text-sm" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? "Copied" : "Copy address"}
         </button>
         <a
@@ -210,7 +209,7 @@ function Grafico({ meses }: { meses: MesOrgullo[] }) {
         return (
           <li key={mes.clave} className="hyto-mes" aria-label={`${mes.etiquetaLarga}, ${formatearMonto(mes.total) || "US$0"}`}>
             <span className="hyto-mes-valor" aria-hidden="true">
-              {cifra > 0 ? formatearMonto(mes.total) : ""}
+              {cifra > 0 ? mes.total : ""}
             </span>
             <span className="hyto-mes-pista" aria-hidden="true">
               <span className={altura === 0 ? "hyto-mes-col is-zero" : "hyto-mes-col"} style={{ height: `${altura}%` }} />
@@ -326,6 +325,37 @@ function Recientes({ orgullo, muestra }: { orgullo: Orgullo; muestra: boolean })
       )}
     </section>
   );
+}
+
+async function copiarConPortapapeles(texto: string): Promise<boolean> {
+  const escribir = navigator.clipboard?.writeText?.bind(navigator.clipboard);
+  if (!escribir) return false;
+  try {
+    return await Promise.race([
+      escribir(texto).then(() => true, () => false),
+      new Promise<boolean>((resolver) => window.setTimeout(() => resolver(false), 400)),
+    ]);
+  } catch {
+    return false;
+  }
+}
+
+function copiarConSeleccion(texto: string): boolean {
+  const campo = document.createElement("textarea");
+  campo.value = texto;
+  campo.setAttribute("readonly", "");
+  campo.style.position = "fixed";
+  campo.style.left = "-9999px";
+  document.body.appendChild(campo);
+  campo.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch {
+    ok = false;
+  }
+  campo.remove();
+  return ok;
 }
 
 function direccionPublica(direccion: string | null): string | null {

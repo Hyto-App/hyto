@@ -865,7 +865,8 @@ a {
 }
 
 .hyto-mes-valor {
-  min-height: 2.4em;
+  width: 100%;
+  min-height: 1.2em;
   font-size: 11px;
   line-height: 1.2;
   text-align: center;
