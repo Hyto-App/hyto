@@ -47,6 +47,7 @@ export type Almacen = {
   leerSesion(token: string): Promise<SesionFila | null>;
   borrarSesion(token: string): Promise<void>;
   guardarWallet(token: string, wallet: string): Promise<void>;
+  walletDeUsuario(usuarioId: string): Promise<string | null>;
   listarMiembros(proyectoId: string): Promise<ProyectoMiembro[]>;
   miembrosDeUsuario(usuarioId: string): Promise<ProyectoMiembro[]>;
   guardarMiembro(miembro: ProyectoMiembro): Promise<void>;

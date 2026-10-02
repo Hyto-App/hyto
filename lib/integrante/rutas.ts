@@ -197,7 +197,6 @@ export async function subirEvidencia(
   if (opciones.token) cuerpo.set("token", opciones.token);
   if (opciones.capturadaEn) cuerpo.set("capturadaEn", opciones.capturadaEn);
   if (tarea.miembroId) cuerpo.set("miembroId", tarea.miembroId);
-  if (tarea.walletCobro) cuerpo.set("wallet", tarea.walletCobro);
 
   try {
     const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);

@@ -4,6 +4,7 @@ import { consultaPhashCercano } from "./sql";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
 import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
@@ -340,6 +341,12 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async guardarWallet(token, wallet) {
       await db.update(sesiones).set({ wallet }).where(eq(sesiones.token, token));
+    },
+    async walletDeUsuario(usuarioId) {
+      const id = usuarioId.trim();
+      if (!id) return null;
+      const filas = await db.select().from(sesiones).where(eq(sesiones.usuarioId, id));
+      return walletDeSesiones(filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol), wallet: fila.wallet ?? "" })));
     },
     async listarMiembros(proyectoId) {
       const filas = await db.select().from(proyectoMiembros).where(eq(proyectoMiembros.proyectoId, proyectoId));

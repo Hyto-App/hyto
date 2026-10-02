@@ -20,7 +20,11 @@ export type ActorEvidencia = {
   usuarioId: string;
   rol: Rol;
   demo?: boolean;
+  wallet?: string;
 };
+
+export const AVISO_SIN_CUENTA =
+  "This sign-in has no payout account. Sign in again and open the task so we know where to pay.";
 
 export type DepsEvidencia = {
   almacen: Almacen;
@@ -128,7 +132,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     const asignado = puedeFijarWallet(tarea, deps.actor);
     const demo = deps.actor?.demo === true && esProyectoDemo(await deps.almacen.leerProyecto(tarea.proyectoId));
-    const wallet = demo ? null : direccion(texto(form.get("wallet")));
+    const wallet = demo || !asignado ? null : direccion(deps.actor?.wallet ?? "");
     if (deps.actor && !asignado && !demo) {
       const aviso =
         wallet && wallet !== tarea.walletCobro
@@ -213,6 +217,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
     if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
+    const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
+    if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
     const cercanas = phash ? await deps.almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidencia.id) : [];
     const cerca = cercanas.length > 0;
@@ -232,7 +238,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       );
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
-    return json({ evidencia: evidenciaPublica(guardada) }, 201);
+    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
   } catch {
     return baseNoLista();
   }
@@ -326,8 +332,9 @@ async function puedeSubir(almacen: Almacen, tarea: TareaFila, actor: ActorEviden
 }
 
 function direccion(valor: string): string | null {
-  if (!/^G[A-Z2-7]{55}$/.test(valor)) return null;
-  return valor;
+  const limpio = valor.trim();
+  if (!/^G[A-Z2-7]{55}$/.test(limpio)) return null;
+  return limpio;
 }
 
 function puedeFijarWallet(tarea: TareaFila, actor: ActorEvidencia | undefined): boolean {

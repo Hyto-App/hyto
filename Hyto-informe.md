@@ -26,7 +26,7 @@ Positioning is teams and companies first. Volunteer events such as ZEEK are the 
 1. **Budget.** A signed-in user with enough USDC creates an event. Each task is its own escrow. The balance check is the task total plus 1 USDC.
 2. **People.** Organizer invites teammates with a direct link or an `HYTO-` code. Members see their tasks. The organizer assigns work.
 3. **Evidence.** Work or reimbursement, same camera: a photo of the work, or a photo of the receipt.
-4. **Review.** Groq describes the photo. Laya scores that description when `LAYA_URL` is set. The code says cumplió, parcial, or insuficiente. Neither model moves money.
+4. **Review.** Groq describes the photo. Laya answers a questionnaire when `LAYA_URL` is set. The code turns those answers into a grade from 0 to 100. Neither model moves money.
 5. **Pay.** The organizer confirms a reimbursement amount, locks the budget, then pays. The link appears after a real transaction hash. That hash is not in the repo yet.
 
 ## Problem

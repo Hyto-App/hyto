@@ -7,11 +7,16 @@ const CLASE: Record<Veredicto, string> = {
   insuficiente: "hyto-pill-bad",
 };
 
-export function PastillaVeredicto({ veredicto }: { veredicto: Veredicto }) {
+export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Veredicto; nota?: number | null }) {
+  const banda = etiquetaVeredicto(veredicto);
+  const porcentaje = typeof nota === "number" ? `${nota}%` : null;
   return (
-    <span className={`hyto-pill ${CLASE[veredicto]}`}>
-      <i className="hyto-dot" aria-hidden="true" />
-      {etiquetaVeredicto(veredicto)}
+    <span className="inline-flex items-center gap-2">
+      <span className={`hyto-pill ${CLASE[veredicto]}`} title={porcentaje ? banda : undefined}>
+        <i className="hyto-dot" aria-hidden="true" />
+        {porcentaje ?? banda}
+      </span>
+      {porcentaje ? <span className={`text-sm ${CLASE[veredicto]}`}>{banda}</span> : null}
     </span>
   );
 }

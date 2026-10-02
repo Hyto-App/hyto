@@ -125,6 +125,22 @@ test("un 403 no se guarda como evidencia de ejemplo", async () => {
   );
 });
 
+test("la subida no manda la cuenta de cobro de la tarea", async () => {
+  const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+  assert.ok(stand);
+  let wallet: FormDataEntryValue | null = "faltaba";
+  const fetchImpl: typeof fetch = async (input, init) => {
+    if (String(input).endsWith("/api/evidencias")) {
+      const cuerpo = init?.body;
+      wallet = cuerpo instanceof FormData ? cuerpo.get("wallet") : "sin-formulario";
+    }
+    return json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1", monto: null, fecha: null } });
+  };
+  const enviada = await subirEvidencia({ ...stand, walletCobro: "G" + "C".repeat(55) }, new Blob(["foto"]), { fetch: fetchImpl });
+  assert.equal(enviada.ejemplo, false);
+  assert.equal(wallet, null);
+});
+
 test("la evidencia real no inventa monto ni fecha", async () => {
   const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
   assert.ok(comida);

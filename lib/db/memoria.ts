@@ -1,4 +1,5 @@
 import { distanciaHamming } from "@/lib/evidencia/huella";
+import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import type {
   EvidenciaFila,
@@ -164,6 +165,11 @@ export function crearMemoria(): Almacen {
       const actual = sesiones.get(token);
       if (!actual) return;
       sesiones.set(token, { ...actual, wallet });
+    },
+    async walletDeUsuario(usuarioId) {
+      const id = usuarioId.trim();
+      if (!id) return null;
+      return walletDeSesiones([...sesiones.values()].filter((sesion) => sesion.usuarioId === id));
     },
     async listarMiembros(proyectoId) {
       return [...miembros.values()].filter((miembro) => miembro.proyectoId === proyectoId);

@@ -3,7 +3,7 @@ import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
 import { after, before, test } from "node:test";
 import { GET as leerEscrowHttp } from "../../app/api/escrow/[contrato]/route";
 import { POST as publicarEvidencia } from "../../app/api/evidencias/route";
-import { jpegDePrueba, tokenDePrueba } from "../evidencia/muestras";
+import { jpegDePrueba, jpegDistinto, tokenDePrueba } from "../evidencia/muestras";
 import { reiniciarTokensEvidencia } from "../evidencia/token";
 import { POST as enviarFirma } from "../../app/api/firma/enviar/route";
 import { POST as prepararFirma } from "../../app/api/firma/route";
@@ -11,7 +11,7 @@ import { POST as crearProyecto } from "../../app/api/proyectos/route";
 import { GET as leerRevision, POST as forzarRevision } from "../../app/api/revision/[id]/route";
 import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
-import { publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
+import { AVISO_SIN_CUENTA, publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHttp } from "./evidencias";
 import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
 import { leerRevisionHttp } from "./revision";
@@ -123,67 +123,105 @@ test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha"
   assert.equal(tarea?.estado, "en revisión");
 });
 
-test("solo el voluntario asignado fija la cuenta de cobro", async () => {
+test("la subida guarda la cuenta de la sesión del asignado, no la del formulario", async () => {
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();
   const propia = "G" + "A".repeat(55);
   const ajena = "G" + "B".repeat(55);
-  const pedir = (wallet: string) => {
+  const pedir = (wallet?: string) => {
     const cuerpo = new FormData();
     cuerpo.set("tareaId", "stand");
     cuerpo.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
-    cuerpo.set("wallet", wallet);
+    if (wallet) cuerpo.set("wallet", wallet);
     return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
   };
+  const previoError = console.error;
+  const previoAviso = console.warn;
+  console.error = () => undefined;
+  console.warn = () => undefined;
+  try {
+    const otro = await publicarEvidenciaHttp(pedir(ajena), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-2", rol: "voluntario", wallet: ajena },
+    });
+    assert.equal(otro.status, 403);
+    const sinWallet = new FormData();
+    sinWallet.set("tareaId", "stand");
+    sinWallet.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
+    const otroSinWallet = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: sinWallet }), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-2", rol: "voluntario", wallet: ajena },
+    });
+    assert.equal(otroSinWallet.status, 403);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+    assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
 
-  const otro = await publicarEvidenciaHttp(pedir(ajena), {
-    almacen,
-    fotos,
-    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
-  });
-  assert.equal(otro.status, 403);
-  const sinWallet = new FormData();
-  sinWallet.set("tareaId", "stand");
-  sinWallet.set("foto", new Blob([Uint8Array.from([4])], { type: "image/jpeg" }), "evidencia.jpg");
-  const otroSinWallet = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: sinWallet }), {
-    almacen,
-    fotos,
-    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
-  });
-  assert.equal(otroSinWallet.status, 403);
-  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
-  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+    const organizador = await publicarEvidenciaHttp(pedir(ajena), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "organizador", rol: "organizador", wallet: ajena },
+    });
+    assert.equal(organizador.status, 403);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
 
-  const organizador = await publicarEvidenciaHttp(pedir(ajena), {
-    almacen,
-    fotos,
-    actor: { usuarioId: "organizador", rol: "organizador" },
-  });
-  assert.equal(organizador.status, 403);
-  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+    reiniciarTokensEvidencia();
+    const subir = (jpeg: Uint8Array) => {
+      const cuerpo = new FormData();
+      cuerpo.set("tareaId", "stand");
+      cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+      cuerpo.set("wallet", ajena);
+      cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+      cuerpo.set("capturadaEn", new Date().toISOString());
+      return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+    };
 
-  const sinActor = await publicarEvidenciaHttp(pedir(propia), { almacen, fotos });
-  assert.equal(sinActor.status, 403);
-  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+    const sinCuenta = await publicarEvidenciaHttp(subir(await jpegDePrueba()), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: "no-es-cuenta" },
+    });
+    assert.equal(sinCuenta.status, 201);
+    assert.equal(((await sinCuenta.json()) as { aviso?: string }).aviso, AVISO_SIN_CUENTA);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
 
-  reiniciarTokensEvidencia();
-  const jpeg = await jpegDePrueba();
-  const propio = () => {
+    const asignado = await publicarEvidenciaHttp(subir(await jpegDistinto()), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: ` ${propia} ` },
+    });
+    assert.equal(asignado.status, 201);
+    assert.equal(((await asignado.json()) as { aviso?: string }).aviso, undefined);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+  } finally {
+    console.error = previoError;
+    console.warn = previoAviso;
+  }
+});
+
+test("la sesión demo no fija la cuenta de cobro", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const demo = process.env.HYTO_DEMO_LOGIN;
+  process.env.HYTO_DEMO_LOGIN = "1";
+  try {
+    await asegurarSemilla(almacen);
     const cuerpo = new FormData();
-    cuerpo.set("tareaId", "stand");
-    cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
-    cuerpo.set("wallet", propia);
-    cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
-    cuerpo.set("capturadaEn", new Date().toISOString());
-    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
-  };
-  const asignado = await publicarEvidenciaHttp(propio(), {
-    almacen,
-    fotos,
-    actor: { usuarioId: "voluntario-1", rol: "voluntario" },
-  });
-  assert.equal(asignado.status, 201);
-  assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+    cuerpo.set("tareaId", "demo-comida");
+    cuerpo.set("wallet", "G" + "B".repeat(55));
+    cuerpo.set("foto", new Blob([await jpegDePrueba()], { type: "image/jpeg" }), "evidencia.jpg");
+    const creada = await publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "demo-voluntario", rol: "voluntario", demo: true, wallet: "G" + "A".repeat(55) },
+    });
+    assert.equal(creada.status, 201);
+    assert.equal((await almacen.leerTarea("demo-comida"))?.walletCobro, "");
+  } finally {
+    if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = demo;
+  }
 });
 
 test("un archivo que no es imagen no pasa", async () => {
