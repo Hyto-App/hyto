@@ -200,6 +200,94 @@ test("la subida guarda la cuenta de la sesión del asignado, no la del formulari
   }
 });
 
+test("con escrow desplegado la cuenta de cobro no cambia", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const propia = "G" + "A".repeat(55);
+  const nueva = "G" + "B".repeat(55);
+  const contrato = "C" + "A".repeat(55);
+  const subir = (jpeg: Uint8Array<ArrayBuffer>) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+    cuerpo.set("capturadaEn", new Date().toISOString());
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+  const como = (wallet: string) => ({
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-1", rol: "voluntario" as const, wallet },
+  });
+  const previoError = console.error;
+  console.error = () => undefined;
+  try {
+    reiniciarTokensEvidencia();
+    await asegurarSemilla(almacen);
+
+    const primera = await publicarEvidenciaHttp(subir(await jpegDePrueba()), como(propia));
+    assert.equal(primera.status, 201);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+
+    await almacen.actualizarTarea("stand", { contratoEscrow: contrato });
+    const antes = await almacen.ultimaEvidencia("stand");
+
+    const otra = await publicarEvidenciaHttp(subir(await jpegDistinto()), como(nueva));
+    assert.equal(otra.status, 409);
+    assert.match(((await otra.json()) as { aviso: string }).aviso, /already locked to another payout account/);
+    const tarea = await almacen.leerTarea("stand");
+    assert.equal(tarea?.walletCobro, propia);
+    assert.equal(tarea?.contratoEscrow, contrato);
+    assert.equal((await almacen.ultimaEvidencia("stand"))?.id, antes?.id);
+
+    const misma = await publicarEvidenciaHttp(subir(await jpegDistinto()), como(` ${propia} `));
+    assert.equal(misma.status, 201);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+  } finally {
+    console.error = previoError;
+  }
+});
+
+test("sin escrow la cuenta de cobro se fija y se puede cambiar", async () => {
+  const almacen = crearMemoria();
+  const fotos = crearFotosMemoria();
+  const propia = "G" + "A".repeat(55);
+  const nueva = "G" + "B".repeat(55);
+  const subir = (jpeg: Uint8Array<ArrayBuffer>) => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+    cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+    cuerpo.set("capturadaEn", new Date().toISOString());
+    return new Request("http://local/api/evidencias", { method: "POST", body: cuerpo });
+  };
+  const previoError = console.error;
+  console.error = () => undefined;
+  try {
+    reiniciarTokensEvidencia();
+    await asegurarSemilla(almacen);
+    assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, null);
+
+    const primera = await publicarEvidenciaHttp(subir(await jpegDePrueba()), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: propia },
+    });
+    assert.equal(primera.status, 201);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, propia);
+
+    const segunda = await publicarEvidenciaHttp(subir(await jpegDistinto()), {
+      almacen,
+      fotos,
+      actor: { usuarioId: "voluntario-1", rol: "voluntario", wallet: nueva },
+    });
+    assert.equal(segunda.status, 201);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, nueva);
+  } finally {
+    console.error = previoError;
+  }
+});
+
 test("la sesión demo no fija la cuenta de cobro", async () => {
   const almacen = crearMemoria();
   const fotos = crearFotosMemoria();

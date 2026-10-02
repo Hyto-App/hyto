@@ -8,6 +8,7 @@ import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
 import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
+import { esContrato } from "@/lib/escrow/cuerpos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
@@ -26,6 +27,9 @@ export type ActorEvidencia = {
 
 export const AVISO_SIN_CUENTA =
   "This sign-in has no payout account. Sign in again and open the task so we know where to pay.";
+
+export const AVISO_COBRO_FIJO =
+  "The budget for this task is already locked to another payout account. Sign in with that wallet to submit evidence.";
 
 export type DepsEvidencia = {
   almacen: Almacen;
@@ -143,6 +147,9 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     }
     if (wallet && wallet !== tarea.walletCobro && !asignado) {
       return json({ aviso: "Only the person assigned to the task can set the payout account." }, 403);
+    }
+    if (wallet && wallet !== tarea.walletCobro && tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
+      return json({ aviso: AVISO_COBRO_FIJO }, 409);
     }
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
