@@ -23,6 +23,8 @@ export type TareaAdmin = {
   fecha: string | null;
   hashPago: string | null;
   credencialUrl: string | null;
+  tipoArchivo?: string | null;
+  motivoCopia?: string | null;
 };
 
 export type TareaCreada = {

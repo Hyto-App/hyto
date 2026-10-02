@@ -55,6 +55,8 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     montoRevisado: evidencia?.monto ?? null,
     montoConfirmado: evidencia?.montoConfirmado ?? null,
     fecha: evidencia?.fecha ?? null,
+    tipoArchivo: evidencia?.tipoArchivo ?? null,
+    motivoCopia: evidencia?.motivoCopia ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
   };

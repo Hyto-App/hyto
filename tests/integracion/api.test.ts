@@ -482,7 +482,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     texto.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
     const noImagen = await evidenciasPost(pedido("http://local/api/evidencias", texto, sesion));
     assert.equal(noImagen.status, 400);
-    assert.equal(avisoDe(await leer(noImagen)), "Choose a photo.");
+    assert.equal(avisoDe(await leer(noImagen)), "Take the photo with the camera.");
 
     const ajena = await evidenciasPost(pedido("http://local/api/evidencias", fotoDe("no-existe"), sesion));
     assert.equal(ajena.status, 404);
@@ -493,7 +493,7 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
     grande.set("foto", new Blob([new Uint8Array(8_000_001)], { type: "image/jpeg" }), "grande.jpg");
     const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande, sesion));
     assert.equal(pesada.status, 413);
-    assert.equal(avisoDe(await leer(pesada)), "The photo is too large.");
+    assert.equal(avisoDe(await leer(pesada)), "The file is too large.");
   });
 
   test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {

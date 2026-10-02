@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { desc, eq, sql } from "drizzle-orm";
+import { consultaPhashCercano } from "./sql";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -71,7 +72,43 @@ export function origenDeFila(valor: string): VeredictoFila["origen"] {
   return "scout";
 }
 
+function esColumnaAusente(error: unknown): boolean {
+  const mensaje = error instanceof Error ? error.message : String(error);
+  return /sha256|42703|does not exist|no existe|undefined column/i.test(mensaje);
+}
+
+function filasSql(resultado: unknown): Record<string, unknown>[] {
+  if (Array.isArray(resultado)) return resultado as Record<string, unknown>[];
+  if (resultado && typeof resultado === "object" && Array.isArray((resultado as { rows?: unknown }).rows)) {
+    return (resultado as { rows: Record<string, unknown>[] }).rows;
+  }
+  return [];
+}
+
+const columnasPrevias = {
+  id: evidencias.id,
+  tareaId: evidencias.tareaId,
+  blobId: evidencias.blobId,
+  monto: evidencias.monto,
+  fecha: evidencias.fecha,
+  creadaEn: evidencias.creadaEn,
+  montoConfirmado: evidencias.montoConfirmado,
+};
+
 export function crearAlmacenDesde(db: DbAlmacen): Almacen {
+  let antifraude: boolean | null = null;
+  async function columnasListas(): Promise<boolean> {
+    if (antifraude === true) return true;
+    try {
+      await db.execute(sql`select sha256 from evidencias limit 0`);
+      antifraude = true;
+      return true;
+    } catch (error) {
+      if (esColumnaAusente(error)) return false;
+      throw error;
+    }
+  }
+
   return {
     async listarUsuarios() {
       const filas = await db.select().from(usuarios);
@@ -170,16 +207,65 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       await db.update(tareas).set(cambio).where(eq(tareas.id, id));
     },
     async crearEvidencia(evidencia) {
-      await db.insert(evidencias).values(evidencia).onConflictDoNothing();
+      if (!(await columnasListas())) {
+        await db
+          .insert(evidencias)
+          .values({
+            id: evidencia.id,
+            tareaId: evidencia.tareaId,
+            blobId: evidencia.blobId,
+            monto: evidencia.monto,
+            fecha: evidencia.fecha,
+            creadaEn: evidencia.creadaEn,
+            montoConfirmado: evidencia.montoConfirmado,
+          })
+          .onConflictDoNothing();
+        return;
+      }
+      await db
+        .insert(evidencias)
+        .values({
+          id: evidencia.id,
+          tareaId: evidencia.tareaId,
+          blobId: evidencia.blobId,
+          monto: evidencia.monto,
+          fecha: evidencia.fecha,
+          creadaEn: evidencia.creadaEn,
+          montoConfirmado: evidencia.montoConfirmado,
+          capturadaEn: evidencia.capturadaEn ?? null,
+          frescura: evidencia.frescura ?? null,
+          sha256: evidencia.sha256 ?? null,
+          phash: evidencia.phash ?? null,
+          tipoArchivo: evidencia.tipoArchivo ?? null,
+          motivoCopia: evidencia.motivoCopia ?? null,
+        })
+        .onConflictDoNothing();
     },
     async leerEvidencia(id) {
+      if (!(await columnasListas())) {
+        const filas = await db.select(columnasPrevias).from(evidencias).where(eq(evidencias.id, id)).limit(1);
+        return filas[0] ?? null;
+      }
       const filas = await db.select().from(evidencias).where(eq(evidencias.id, id)).limit(1);
       return filas[0] ?? null;
     },
     async actualizarEvidencia(id, cambio) {
-      await db.update(evidencias).set(cambio).where(eq(evidencias.id, id));
+      const listo = await columnasListas();
+      const set = listo ? cambio : { monto: cambio.monto, fecha: cambio.fecha, montoConfirmado: cambio.montoConfirmado };
+      const limpio = Object.fromEntries(Object.entries(set).filter((entrada) => entrada[1] !== undefined));
+      if (Object.keys(limpio).length === 0) return;
+      await db.update(evidencias).set(limpio).where(eq(evidencias.id, id));
     },
     async ultimaEvidencia(tareaId) {
+      if (!(await columnasListas())) {
+        const filas = await db
+          .select(columnasPrevias)
+          .from(evidencias)
+          .where(eq(evidencias.tareaId, tareaId))
+          .orderBy(desc(evidencias.creadaEn))
+          .limit(1);
+        return filas[0] ?? null;
+      }
       const filas = await db
         .select()
         .from(evidencias)
@@ -187,6 +273,29 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         .orderBy(desc(evidencias.creadaEn))
         .limit(1);
       return filas[0] ?? null;
+    },
+    async evidenciaPorSha256(sha256) {
+      if (!(await columnasListas())) return null;
+      const filas = await db.select().from(evidencias).where(eq(evidencias.sha256, sha256)).limit(1);
+      return filas[0] ?? null;
+    },
+    async evidenciasCercanas(phash, distanciaMax, exceptoId) {
+      if (!(await columnasListas())) return [];
+      try {
+        const resultado = await db.execute(sql.raw(consultaPhashCercano(exceptoId, phash, distanciaMax)));
+        return filasSql(resultado).flatMap((fila) => {
+          const id = typeof fila.id === "string" ? fila.id : "";
+          const distancia = Number(fila.distancia);
+          if (!id || !Number.isFinite(distancia)) return [];
+          return [{ id, distancia }];
+        });
+      } catch (error) {
+        if (esColumnaAusente(error)) return [];
+        throw error;
+      }
+    },
+    async listaParaAntifraude() {
+      return columnasListas();
     },
     async guardarVeredicto(veredicto) {
       await db

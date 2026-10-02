@@ -168,12 +168,34 @@ export async function leerTarea(
   return { tarea: propia, ejemplo: lista.ejemplo, error: null };
 }
 
-export async function subirEvidencia(tarea: Tarea, foto: Blob, opciones: OpcionesRuta = {}): Promise<FotoEnviada> {
+export async function pedirTokenEvidencia(tareaId: string, opciones: OpcionesRuta = {}): Promise<string> {
+  const fetchImpl = opciones.fetch ?? fetch;
+  const base = opciones.baseUrl ?? "";
+  const respuesta = await pedir(
+    `${base}/api/evidencias/token`,
+    { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tareaId }) },
+    fetchImpl,
+  );
+  if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
+  if (!respuesta.ok) throw new Error(String(respuesta.status));
+  const json = (await leerJson(respuesta)) as { token?: unknown } | null;
+  const token = typeof json?.token === "string" ? json.token : "";
+  if (!token) throw new Error("forma");
+  return token;
+}
+
+export async function subirEvidencia(
+  tarea: Tarea,
+  foto: Blob,
+  opciones: OpcionesRuta & { token?: string; capturadaEn?: string; nombre?: string } = {},
+): Promise<FotoEnviada> {
   const fetchImpl = opciones.fetch ?? fetch;
   const base = opciones.baseUrl ?? "";
   const cuerpo = new FormData();
   cuerpo.set("tareaId", tarea.id);
-  cuerpo.set("foto", foto, "evidencia.jpg");
+  cuerpo.set("foto", foto, opciones.nombre ?? (foto.type === "application/pdf" ? "evidencia.pdf" : "evidencia.jpg"));
+  if (opciones.token) cuerpo.set("token", opciones.token);
+  if (opciones.capturadaEn) cuerpo.set("capturadaEn", opciones.capturadaEn);
   if (tarea.miembroId) cuerpo.set("miembroId", tarea.miembroId);
   if (tarea.walletCobro) cuerpo.set("wallet", tarea.walletCobro);
 

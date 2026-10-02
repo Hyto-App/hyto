@@ -1,4 +1,5 @@
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
+export { notaCopia, notaManual } from "@/lib/evidencia/copia";
 import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
 
 const MONTO = /^\d+([.,]\d{1,2})?$/;

@@ -11,6 +11,44 @@ function groq(texto: string): Response {
   return Response.json({ choices: [{ message: { content: JSON.stringify({ texto, monto: null, fecha: null }) } }] });
 }
 
+test("en producción, sin Laya, no se usa el stub que aprueba", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  const resultado = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: "clave",
+      layaUrl: null,
+      produccion: true,
+      fetchImpl: async () => groq("Banner visible."),
+    }),
+  );
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "sin_laya");
+  assert.equal(resultado.veredicto, "insuficiente");
+  assert.notEqual(resultado.texto, guionFijo("trabajo").texto);
+});
+
+test("un PDF no se manda al modelo y queda para revisión manual", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  let llamadas = 0;
+  const resultado = await conLog(() =>
+    revisar(tarea, { tipo: "application/pdf", bytes: new TextEncoder().encode("%PDF-1.4") }, {
+      claveGroq: "clave",
+      layaUrl: "https://laya.example",
+      fetchImpl: async () => {
+        llamadas += 1;
+        return groq("no");
+      },
+    }),
+  );
+  assert.equal(llamadas, 0);
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "pdf");
+  assert.equal(resultado.veredicto, "insuficiente");
+  assert.match(resultado.frase, /not approved automatically/);
+});
+
 test("si Scout responde y no hay Laya, el stub arma el veredicto", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "stand");
   assert.ok(tarea);

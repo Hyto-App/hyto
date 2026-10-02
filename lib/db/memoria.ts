@@ -1,3 +1,4 @@
+import { distanciaHamming } from "@/lib/evidencia/huella";
 import type { Almacen } from "./almacen";
 import type {
   EvidenciaFila,
@@ -128,6 +129,21 @@ export function crearMemoria(): Almacen {
       return [...evidencias.values()]
         .filter((evidencia) => evidencia.tareaId === tareaId)
         .sort((a, b) => (a.creadaEn < b.creadaEn ? 1 : -1))[0] ?? null;
+    },
+    async evidenciaPorSha256(sha256) {
+      return [...evidencias.values()].find((evidencia) => evidencia.sha256 === sha256) ?? null;
+    },
+    async evidenciasCercanas(phash, distanciaMax, exceptoId) {
+      const salida: { id: string; distancia: number }[] = [];
+      for (const evidencia of evidencias.values()) {
+        if (!evidencia.phash || evidencia.id === exceptoId) continue;
+        const distancia = distanciaHamming(phash, evidencia.phash);
+        if (distancia <= distanciaMax) salida.push({ id: evidencia.id, distancia });
+      }
+      return salida;
+    },
+    async listaParaAntifraude() {
+      return true;
     },
     async guardarVeredicto(veredicto) {
       veredictos.set(veredicto.evidenciaId, veredicto);
