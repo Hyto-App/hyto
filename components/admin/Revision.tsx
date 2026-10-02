@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
+import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, reintentarRevision } from "@/lib/admin/remoto";
+import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
@@ -107,10 +110,49 @@ export function Revision({
   }, [real, contrato]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
+  const tareaMontoRef = useRef(tarea);
+  tareaMontoRef.current = tarea;
   useEffect(() => {
-    if (!tarea || tarea.tipo !== "reembolso") return;
-    setBorrador(tarea.montoConfirmado ?? tarea.montoRevisado ?? "");
-  }, [claveMonto, tarea]);
+    const actual = tareaMontoRef.current;
+    if (!actual || actual.tipo !== "reembolso") return;
+    setBorrador(actual.montoConfirmado ?? actual.montoRevisado ?? "");
+  }, [claveMonto]);
+
+  const pasoRef = useRef(paso);
+  pasoRef.current = paso;
+  const confirmandoRef = useRef(confirmando);
+  confirmandoRef.current = confirmando;
+  const reintentandoRef = useRef(reintentando);
+  reintentandoRef.current = reintentando;
+  const fotoRef = useRef(foto);
+  fotoRef.current = foto;
+  const tareaRef = useRef(tarea);
+  tareaRef.current = tarea;
+
+  const { reciente } = useNovedadesEvento({
+    proyectoId: real && eventoId ? eventoId : undefined,
+    tareas: tarea
+      ? [{ id: tarea.id, estado: tarea.estado, veredicto: tarea.veredicto, origen: tarea.origen }]
+      : [],
+    exigirFoto: true,
+    fotoDe: (id) => (id === tareaId ? fotoRef.current : null),
+    alCambiar: async (ids) => {
+      if (pasoRef.current || confirmandoRef.current || reintentandoRef.current) {
+        return { ok: false, avisar: false };
+      }
+      if (!ids.includes(tareaId)) return { ok: true, avisar: false };
+      const detalle = await cargarDetalleOrganizador(tareaId);
+      if (!detalle || pasoRef.current || confirmandoRef.current || reintentandoRef.current) {
+        return { ok: false, avisar: false };
+      }
+      const previa = tareaRef.current;
+      const tareaIgual = previa ? mismaTareaAdmin(previa, detalle.tarea) : false;
+      const fotoIgual = fotoRef.current === detalle.foto;
+      if (!tareaIgual) setTarea(detalle.tarea);
+      if (!fotoIgual) setFoto(detalle.foto);
+      return { ok: true, avisar: !tareaIgual || !fotoIgual };
+    },
+  });
 
   async function pedirOtra() {
     if (!real) {
@@ -314,6 +356,7 @@ export function Revision({
           <p className="hyto-sub">
             {etiquetaTipo(tarea.tipo)} · {textoVisible(tarea.miembro)}
           </p>
+          <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
           <p className="hyto-amount text-2xl">{montoDeTarea(tarea)}</p>
