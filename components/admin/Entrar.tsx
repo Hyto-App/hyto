@@ -23,7 +23,9 @@ import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/Insig
 type Fase = "inicio" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
 
-const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
+type ResultadoGoogle = { aviso: string | null; direccion: string | null; guardada: boolean };
+
+const googleEnCurso = new Map<string, Promise<ResultadoGoogle>>();
 
 export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
   const modoDemo = useModoDemo();
@@ -96,21 +98,16 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     const codigoGoogle = params.get("cavos_auth_code");
     if (!codigoGoogle) return;
     let vivo = true;
-    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(codigoGoogle);
+    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(window.location.search, redirectLimpio());
     googleEnCurso.set(codigoGoogle, pendiente);
     void pendiente.then((resultado) => {
       if (!vivo) return;
-      if (resultado.direccion) {
-        const guardado = guardarDireccionAdmin(resultado.direccion);
-        if (!guardado.aviso) {
-          setDireccion(resultado.direccion);
-          setPedirIngreso(false);
-        }
-        setAviso(guardado.aviso ?? resultado.aviso);
-        setFase("inicio");
-        return;
+      if (resultado.guardada && resultado.direccion) {
+        setDireccion(resultado.direccion);
+        setPedirIngreso(false);
       }
       setAviso(resultado.aviso);
+      setFase(resultado.direccion ? "inicio" : "correo");
     });
     return () => {
       vivo = false;
@@ -471,18 +468,24 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   );
 }
 
-function iniciarGoogle(codigo: string): Promise<{ aviso: string | null; direccion: string | null }> {
+// The search and redirect are read before any await: the person can navigate
+// while Cavos loads, and the one-time code would be gone from the live URL.
+// The address is saved here, not in the effect, so an unmount cannot drop it.
+function iniciarGoogle(busqueda: string, redirect: string): Promise<ResultadoGoogle> {
   return (async () => {
-    const auth = await crearAuth();
-    if (!auth) {
-      console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
-      return { aviso: AVISO_CONFIG, direccion: null };
-    }
     try {
-      return await entrarConGoogle(auth, window.location.search, redirectLimpio());
+      const auth = await crearAuth();
+      if (!auth) {
+        console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+        return { aviso: AVISO_CONFIG, direccion: null, guardada: false };
+      }
+      const resultado = await entrarConGoogle(auth, busqueda, redirect);
+      if (!resultado.direccion) return { ...resultado, guardada: false };
+      const guardado = guardarDireccionAdmin(resultado.direccion);
+      return { aviso: guardado.aviso ?? resultado.aviso, direccion: resultado.direccion, guardada: !guardado.aviso };
     } catch (error) {
       console.error(error);
-      return { aviso: avisoDeIngreso(error).texto, direccion: null };
+      return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false };
     }
   })();
 }
