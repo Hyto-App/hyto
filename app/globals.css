@@ -400,6 +400,38 @@ a {
   background: var(--papel);
 }
 
+.hyto-entry {
+  display: grid;
+  gap: 10px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.hyto-entry-signup {
+  background: color-mix(in srgb, var(--acento) 28%, var(--papel));
+  box-shadow: inset 0 0 0 2px var(--acento);
+}
+
+.hyto-entry-signin {
+  background: var(--papel);
+  box-shadow: inset 0 0 0 1px var(--borde);
+}
+
+.hyto-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hyto-auth.is-signup .hyto-auth-hero {
+  background: color-mix(in srgb, var(--acento) 18%, var(--fondo));
+}
+
+.hyto-auth.is-signin .hyto-auth-hero {
+  background: var(--fondo);
+}
+
 .hyto-row {
   width: 100%;
   border-radius: 16px;

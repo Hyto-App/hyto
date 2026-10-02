@@ -1,6 +1,8 @@
 import { enProduccion } from "@/lib/config/entorno";
 
 export const COOKIE_SESION = "hyto_sesion";
+export const COOKIE_ALTA = "hyto_alta";
+export const ALTA_SEGUNDOS = 15 * 60;
 export const TOPE_SESION_SEGUNDOS = 24 * 60 * 60;
 export const SESION_SIN_EXP_SEGUNDOS = 8 * 60 * 60;
 
@@ -23,6 +25,12 @@ export function encabezadoCookie(token: string, segundos = SESION_SIN_EXP_SEGUND
 export function encabezadoCookieCerrada(): string {
   const segura = enProduccion() ? "; Secure" : "";
   return `${COOKIE_SESION}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${segura}`;
+}
+
+export function encabezadoAlta(activa: boolean): string {
+  const segura = enProduccion() ? "; Secure" : "";
+  if (!activa) return `${COOKIE_ALTA}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${segura}`;
+  return `${COOKIE_ALTA}=1; HttpOnly; SameSite=Lax; Path=/; Max-Age=${ALTA_SEGUNDOS}${segura}`;
 }
 
 export function leerCookie(request: Request, nombre: string): string | null {
