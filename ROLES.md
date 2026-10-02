@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `1ee6f98` (2 October 2026, 02:29 Costa Rica). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 
@@ -35,3 +35,15 @@ That note, and the rest of the coordination between people and agents, goes in t
 Work lands as a pull request from an updated `main`. Nobody pushes to `main`.
 
 The per-person prompts in [docs/AGENT-PROMPTS-2026-09-30.md](docs/AGENT-PROMPTS-2026-09-30.md) described the 30 September audit against an older commit. Do not paste them into an agent as current instructions.
+
+## What each person still has
+
+Suggestions, not assignments. Anything listed as a draft is not on `main`.
+
+| Person | On `main` as of 2 Oct 2026 | Still open |
+|---|---|---|
+| Abdiel Cole | The five P0 items from the 2 Oct UI audit shipped in #90 (Josué): demo path, inbox count, report, Mile label, photo. | P1/P2 from that audit were left for a later pass. Compare the Mile label with the Figma page "Nuevo diseño". Whether `LAYA_URL` is set in Vercel is not in the repo. |
+| Esteban | Review pipeline and data layer from earlier PRs. | Suggested: JWT `aud` and `iss` fail closed in production, prove wallet ownership, stop SVG evidence (JPEG/PNG/GIF/WebP are sniffed; other `image/*` still pass), add CI. |
+| Sebas | Escrow module and `npm run hito` from earlier PRs. No payment hash in the repo. | A real testnet USDC `hash_pago`. Receiver trustline check before deploy. Save the predicted contract id. Sponsored trustline on Account. Check `wallet.status === "ready"` before `signXdr`. |
+| Josué | #90. Lock and pay stay available when Mile fails. Pending count matches the inbox. Report, Mile label, and evidence photo repaired. | Draft #18 (keep the session when returning from Google) is not merged. |
+| Raúl | #80. Laya asks the approved questionnaire on the written description. The UI name is Mile; the service is still Laya. | Draft #72 (camera only, no gallery) and draft #91 (a 0–100 review score) are not merged. |

@@ -4,7 +4,20 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
-Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+`main` is `1ee6f98`. Newest first. The summary further down was already recorded against `2b9fad4` and is not repeated here.
+
+### Changed
+
+- The organizer can lock the budget and pay when Mile has no score (`origen: "error"`). A reimbursement still needs a confirmed amount inside the cap. With demo login on, the seed keeps Welcome table pending for an upload and puts the first unpaid Met demo task (normally the booth) in review. Josué Valles, #90.
+- The event card pending count uses the inbox rule: in review, or a non-error verdict, and not paid. Josué Valles, #90.
+- The event report always shows the title, Print, and the budget bar. Sample lines drop `Ejemplo.` / `Example.` before the rest is translated. Josué Valles, #90.
+- User-facing copy says Mile. `LAYA_URL` and the Laya service names are unchanged. Josué Valles, #90.
+- The review photo uses the file bytes when they are JPEG, PNG, GIF, or WebP, shows a spinner while loading, and says the photo could not be shown if it fails. Sample evidence uses its SVG marker. Josué Valles, #90.
+- Laya classifies the written description first (work, receipt, or other), then asks only that path. The final score can only go down. A yes does not approve payment. Amount, date, and the reimbursement cap are unchanged. Raúl (Milasur), #80.
+
+### Already on `main` before those two pulls
+
+Docs recorded this against `2b9fad4`. Summary of what landed after the 29 September changelog:
 
 ### Changed
 
@@ -24,13 +37,9 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 ### Not in the repo yet
 
 - A successful real testnet USDC payment (`hash_pago`).
-- Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
-
-## 2026-10-02
-
-### Cambiado
-
-- Laya recibe el cuestionario aprobado por Raúl. Primero clasifica la descripción (trabajo, factura u otra cosa). Después pregunta solo ese camino. El veredicto sale del puntaje final y baja si otra señal dice que falta algo o que el gasto no corresponde. Un sí suelto no aprueba el pago. Las reglas de monto, fecha y tope del reembolso siguen igual.
+- Production fail-closed checks for Cavos JWT audience and issuer, a proof of wallet ownership, SVG upload blocking, and CI. Those stay open. #90 sniffs JPEG, PNG, GIF, and WebP and still accepts other `image/*`. See [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md).
+- Receiver trustline preflight, a predicted contract id stored in the database, and a sponsored trustline on Account. Suggested owner: Sebas.
+- P1/P2 from the 2 October UI audit. Suggested owner: Abdiel. Drafts not on `main`: Raúl #72 and #91, Josué #18.
 
 ## 2026-09-29
 
