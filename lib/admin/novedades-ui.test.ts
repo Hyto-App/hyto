@@ -47,7 +47,7 @@ describe("pantalla en vivo", { concurrency: false }, () => {
       main.scrollTop = 80;
       fase = "nueva";
       espera.soltar?.(json(fotoDe("b", "insuficiente", "scout")));
-      await esperar(() => texto().includes("Updated just now") && texto().includes("Insuficiente"));
+      await esperar(() => texto().includes("Updated just now") && texto().includes("Insufficient"));
       assert.equal(document.querySelector("h3")?.textContent, "Check-in list");
       const fila = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Check-in list"));
       assert.equal(fila?.className.includes("is-on"), true);
