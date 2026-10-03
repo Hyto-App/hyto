@@ -4,6 +4,12 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
+### Changed
+
+- An organizer can edit a task's title, photo condition, amount, cap, and assignee until a photo is uploaded, the task has a payment, or the amount is locked in a payment. The server rejects the edit in those cases. There is no separate description field.
+
+## 2026-10-02
+
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
 
 ### Added
