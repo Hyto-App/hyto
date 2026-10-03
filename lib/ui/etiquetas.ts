@@ -8,9 +8,9 @@ const ESTADOS: Record<EstadoTarea, string> = {
 };
 
 const VEREDICTOS: Record<Veredicto, string> = {
-  cumplió: "Completado",
-  parcial: "Parcialmente completado",
-  insuficiente: "Insuficiente",
+  cumplió: "Completed",
+  parcial: "Partially completed",
+  insuficiente: "Insufficient",
 };
 
 const TIPOS: Record<string, string> = {
@@ -62,7 +62,7 @@ export function etiquetaVeredicto(veredicto: string): string {
   return limpio;
 }
 
-/** One string for the pill: "64% · Parcialmente completado", or the label alone when there is no percentage. */
+/** One string for the pill: "64% · Partially completed", or the label alone when there is no percentage. */
 export function textoNota(etiqueta: string, nota: number | null | undefined): string {
   if (typeof nota !== "number") return etiqueta;
   return `${nota}% · ${etiqueta}`;
@@ -79,11 +79,10 @@ export function etiquetaChoice(choice: string): string {
 
 export function textoVisible(valor: string | null | undefined): string {
   if (!valor) return "";
-  const prefijo = /^(?:Ejemplo|Example)\. /.exec(valor);
-  const base = prefijo ? valor.slice(prefijo[0].length) : valor;
+  // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
+  const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
   const directo = LEGADO[base] ?? base;
-  const visible = prefijo ? `Example. ${directo}` : directo;
-  return visible.replace(
+  return directo.replace(
     / Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g,
     (_todo, choice: string, condicion: string, evidencia: string) => {
       const met = condicion === "cumplida" ? "met" : "not met";
