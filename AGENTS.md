@@ -54,7 +54,7 @@ One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/
 | `/cuentas`, `/cuentas/preparar` | Wallet and USDC setup. |
 | `/proyectos/nuevo` | Redirects to `/eventos/nuevo`. |
 
-User-facing copy is English.
+User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` (`en` or `es`) and the dictionaries in `lib/ui/diccionario.ts`. Screens that are not wired yet stay in English.
 
 ## Stack
 

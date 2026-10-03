@@ -11,6 +11,10 @@ import type {
   VeredictoFila,
 } from "./tipos";
 
+export type CambioTarea = Partial<
+  Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow" | "miembroId" | "titulo" | "monto" | "tope" | "condicion">
+>;
+
 export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
@@ -23,10 +27,7 @@ export type Almacen = {
   asignarOrganizador(proyectoId: string, organizadorId: string): Promise<void>;
   listarTareas(): Promise<TareaFila[]>;
   leerTarea(id: string): Promise<TareaFila | null>;
-  actualizarTarea(
-    id: string,
-    cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow" | "miembroId">>,
-  ): Promise<void>;
+  actualizarTarea(id: string, cambio: CambioTarea): Promise<void>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(

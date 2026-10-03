@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { useTexto } from "@/components/ui/Idioma";
 import { leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
 
 export function Salir({ className = "" }: { className?: string }) {
   const demo = useModoDemo();
+  const t = useTexto();
   const [visible, setVisible] = useState(demo);
   const [saliendo, setSaliendo] = useState(false);
 
@@ -47,7 +49,7 @@ export function Salir({ className = "" }: { className?: string }) {
       disabled={saliendo}
       className={`hyto-btn-danger ${className}`.trim()}
     >
-      {saliendo ? "Signing out…" : "Sign out"}
+      {saliendo ? t("cuenta.signingOut") : t("cuenta.signOut")}
     </button>
   );
 }

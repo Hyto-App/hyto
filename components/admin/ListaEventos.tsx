@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Bienvenida } from "@/components/sesion/Bienvenida";
+import { useClaro, useTexto } from "@/components/ui/Idioma";
+import type { Clave } from "@/lib/ui/diccionario";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
 type Evento = { id: string; nombre: string; rol?: Rol; pendientes?: number };
 
-const ROL: Record<Exclude<Rol, null>, string> = {
-  organizer: "Organizer",
-  team: "Team",
-  volunteer: "Volunteer",
+const ROL: Record<Exclude<Rol, null>, Clave> = {
+  organizer: "eventos.organizer",
+  team: "eventos.team",
+  volunteer: "eventos.volunteer",
 };
 
 export function ListaEventos() {
+  const t = useTexto();
+  const claro = useClaro();
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
@@ -46,62 +51,61 @@ export function ListaEventos() {
     };
   }, [intento]);
 
-  if (!eventos) {
-    return (
-      <main className="hyto-page" aria-busy="true">
-        <div className="hyto-skel">
+  return (
+    <main className="hyto-page">
+      <Bienvenida />
+      {!eventos ? (
+        <div className="hyto-skel" aria-busy="true">
           <i />
           <span>
             <i />
             <i />
           </span>
         </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="hyto-page">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="hyto-title">Events</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-            + Create
-          </Link>
-          <Link href="/join" className="hyto-btn-line is-inline px-5">
-            Join with code
-          </Link>
-        </div>
-      </header>
-      {error ? (
-        <div className="hyto-card mt-6 px-6 py-10">
-          <p role="alert" className="text-lg font-semibold">
-            {error}
-          </p>
-          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
-            Try again
-          </button>
-        </div>
-      ) : eventos.length === 0 ? (
-        <div className="hyto-card mt-6 px-6 py-10">
-          <p className="text-lg font-semibold">No events yet.</p>
-          <p className="mt-2 text-sm text-[var(--suave)]">Create one or join with a code.</p>
-        </div>
       ) : (
-        <ul className="mt-6 grid gap-3">
-          {eventos.map((evento) => (
-            <li key={evento.id}>
-              <Link href={`/eventos/${evento.id}`} className="hyto-card block p-5">
-                <p className="text-lg font-semibold">{evento.nombre}</p>
-                <p className="mt-1 text-sm text-[var(--suave)]">
-                  {evento.rol ? ROL[evento.rol] : "Member"}
-                  {" · "}
-                  {evento.pendientes ?? 0} {evento.rol === "organizer" ? "to review" : "in review"}
-                </p>
+        <>
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="hyto-title">{t("eventos.title")}</h1>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+                {t("eventos.create")}
               </Link>
-            </li>
-          ))}
-        </ul>
+              <Link href="/join" className="hyto-btn-line is-inline px-5">
+                {t("eventos.joinCode")}
+              </Link>
+            </div>
+          </header>
+          {error ? (
+            <div className="hyto-card mt-6 px-6 py-10">
+              <p role="alert" className="text-lg font-semibold">
+                {claro(error)}
+              </p>
+              <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
+                {t("comunes.tryAgain")}
+              </button>
+            </div>
+          ) : eventos.length === 0 ? (
+            <div className="hyto-card mt-6 px-6 py-10">
+              <p className="text-lg font-semibold">{t("eventos.empty")}</p>
+              <p className="mt-2 text-sm text-[var(--suave)]">{t("eventos.emptyHelp")}</p>
+            </div>
+          ) : (
+            <ul className="mt-6 grid gap-3">
+              {eventos.map((evento) => (
+                <li key={evento.id}>
+                  <Link href={`/eventos/${evento.id}`} className="hyto-card block p-5">
+                    <p className="text-lg font-semibold">{evento.nombre}</p>
+                    <p className="mt-1 text-sm text-[var(--suave)]">
+                      {evento.rol ? t(ROL[evento.rol]) : t("eventos.member")}
+                      {" · "}
+                      {t(evento.rol === "organizer" ? "eventos.toReview" : "eventos.inReview", { n: evento.pendientes ?? 0 })}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </main>
   );

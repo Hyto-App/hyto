@@ -1,5 +1,7 @@
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
 export { notaCopia, notaManual } from "@/lib/evidencia/copia";
+import { texto } from "@/lib/ui/diccionario";
+import type { Idioma } from "@/lib/ui/idioma";
 import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
 
 const MONTO = /^\d+([.,]\d{1,2})?$/;
@@ -117,10 +119,10 @@ export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
   return orden.map((clave) => grupos.get(clave)!);
 }
 
-export function etiquetaOrigen(origen: TareaAdmin["origen"]): "AI recommendation" | "Sample recommendation" | "Review failed" | null {
-  if (origen === "scout") return "AI recommendation";
-  if (origen === "guion" || origen === "stub") return "Sample recommendation";
-  if (origen === "error") return "Review failed";
+export function etiquetaOrigen(origen: TareaAdmin["origen"], idioma: Idioma = "en"): string | null {
+  if (origen === "scout") return texto(idioma, "revision.origenIa");
+  if (origen === "guion" || origen === "stub") return texto(idioma, "revision.origenMuestra");
+  if (origen === "error") return texto(idioma, "revision.origenFallo");
   return null;
 }
 
