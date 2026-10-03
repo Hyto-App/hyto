@@ -10,6 +10,8 @@ Positioning is teams and companies first. Volunteer events such as ZEEK are the 
 
 **Line.** Ramp gave companies control of spend. Hyto takes the next step for any team: money committed before the work, every task checked, every payment recorded.
 
+"Ramp" in this line is [Ramp](https://ramp.com), the corporate card and spend-control company. It is not [Ramp Network](https://rampnetwork.com), the crypto on/off-ramp. Ramp Network is researched in [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md) (added by [#109](https://github.com/Hyto-App/hyto/pull/109)). It sells Circle mainnet USDC, not the testnet USDC Hyto locks, so it stays out of the Find Your Way / ZEEK demo and there is no mainnet cutover.
+
 ## Hackathon context (September 2026)
 
 | | |
