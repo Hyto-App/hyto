@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "./identidades";
-import { asegurarCuentaTestnet, esLlamadaTestnet, urlFriendbotTestnet } from "./friendbot";
+import { abrirCuentaTestnet, asegurarCuentaTestnet, esLlamadaTestnet, urlFriendbotTestnet } from "./friendbot";
 
 const DIRECCION = `G${"A".repeat(55)}`;
 
@@ -39,6 +39,22 @@ test("si la cuenta no existe, Friendbot de testnet la crea una sola vez", async 
   assert.equal(esLlamadaTestnet(friendbot[0] ?? "", "friendbot.stellar.org"), true);
   assert.equal(llamadas.some((url) => url.includes("mainnet") || url.includes("horizon.stellar.org/")), false);
 });
+
+for (const red of ["public", "mainnet"]) {
+  test(`con HYTO_STELLAR_NETWORK=${red} una cuenta ausente nunca llega a Friendbot`, async () => {
+    const llamadas: string[] = [];
+    const fetchImpl: typeof fetch = async (input) => {
+      llamadas.push(String(input));
+      return new Response("missing", { status: 404 });
+    };
+    const env = { ...process.env, HYTO_STELLAR_NETWORK: red };
+    await assert.rejects(() => asegurarCuentaTestnet(DIRECCION, fetchImpl, async () => {}, env), /stays on testnet/);
+    const directo = await abrirCuentaTestnet(DIRECCION, { fetch: fetchImpl, env, esperar: async () => {} });
+    assert.deepEqual(directo, { ok: false, motivo: "mainnet" });
+    assert.equal(llamadas.some((url) => url.includes("friendbot")), false);
+    assert.equal(llamadas.some((url) => new URL(url).hostname === "horizon.stellar.org"), false);
+  });
+}
 
 test("Friendbot no se llama si Horizon no se puede leer", async () => {
   const llamadas: string[] = [];
