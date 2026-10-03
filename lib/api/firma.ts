@@ -1,13 +1,14 @@
 import { createHash } from "node:crypto";
 import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
-import type { SesionFila } from "@/lib/db/tipos";
+import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { rechazoSiFondos } from "@/lib/escrow/saldo";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
 import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
+import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/lib/escrow/indexador";
 import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
@@ -19,9 +20,9 @@ import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@
 
 const FUNCION_DESPLIEGUE = "deploy";
 const FUNCION_LIBERACION = "release_funds";
+const CODIGO_INDEXADOR_ATRASADO = "STELLAR_TX_SUBMITTED_INDEXER_LAGGING";
 
-// contractId que devolvió el prepare de esta tarea. No viene del cliente.
-const contratosPreparados = new Map<string, string>();
+export type OpcionesEnvio = { sondeo?: OpcionesSondeo };
 
 export function huellaDeXdr(xdr: string): string {
   for (const red of [Networks.TESTNET, Networks.PUBLIC]) {
@@ -48,6 +49,7 @@ function tokenDePreparado(
   accion: string,
   tareaId: string | null,
   monto: string | null,
+  contrato: string | null = null,
 ): string | null {
   return emitirTokenPreparado({
     usuarioId: sesion.usuarioId,
@@ -56,6 +58,7 @@ function tokenDePreparado(
     accion,
     tareaId: tareaId ?? "",
     monto: monto ?? "",
+    ...(contrato ? { contrato } : {}),
   });
 }
 
@@ -115,7 +118,12 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   }
 }
 
-export async function enviarFirmaHttp(sesion: SesionFila, request: Request, almacen?: Almacen | null): Promise<Response> {
+export async function enviarFirmaHttp(
+  sesion: SesionFila,
+  request: Request,
+  almacen?: Almacen | null,
+  opciones: OpcionesEnvio = {},
+): Promise<Response> {
   const limitado = respuestaSiExcedido(request) ?? respuestaSiCuerpoGrande(request);
   if (limitado) return limitado;
   let body: unknown;
@@ -203,9 +211,13 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
     return respuestaDeErrorFirma(error, "Could not submit the payment.");
   }
   const hash = pago.hash ?? hashDeXdr(envio.xdr);
+  const contratoPreparado =
+    preparado.carga.accion === "desplegar" && preparado.carga.contrato && esContrato(preparado.carga.contrato)
+      ? preparado.carga.contrato
+      : null;
   let guardado: ResultadoGuardado = { aviso: null, estadoHttp: 200 };
   try {
-    guardado = await guardarResultado(sesion, envio, { ...pago, hash }, invocacion, base);
+    guardado = await guardarResultado(envio, { ...pago, hash }, invocacion, base, contratoPreparado, opciones.sondeo);
   } catch {
     guardado = { aviso: "The submit succeeded and it could not be saved.", estadoHttp: 200 };
   }
@@ -214,7 +226,7 @@ export async function enviarFirmaHttp(sesion: SesionFila, request: Request, alma
       hash,
       ledger: pago.ledger,
       codigo: pago.codigo,
-      contrato: pago.contrato,
+      contrato: guardado.contrato ?? pago.contrato,
       estado: pago.estado,
       ...(guardado.aviso ? { aviso: guardado.aviso } : {}),
     },
@@ -309,8 +321,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   if (!receptor.listo) return respuestaReceptor(receptor);
   try {
     const listo = await prepararDespliegue(cuentas);
-    if (listo.contrato && esContrato(listo.contrato)) contratosPreparados.set(tarea.id, listo.contrato);
-    const token = tokenDePreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto));
+    const predicho = listo.contrato && esContrato(listo.contrato) ? listo.contrato : null;
+    const token = tokenDePreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto), predicho);
     if (!token) return sinSecreto();
     return Response.json({ xdr: listo.xdr, hashPreparado: listo.hashPreparado, contrato: listo.contrato, monto, token });
   } catch (error) {
@@ -318,7 +330,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   }
 }
 
-type ResultadoGuardado = { aviso: string | null; estadoHttp: number };
+type ResultadoGuardado = { aviso: string | null; estadoHttp: number; contrato?: string };
 type Invocacion = { contrato: string; funcion: string };
 
 async function escrowYaGuardado(almacen: Almacen | null, tareaId: string | null): Promise<boolean> {
@@ -328,11 +340,12 @@ async function escrowYaGuardado(almacen: Almacen | null, tareaId: string | null)
 }
 
 async function guardarResultado(
-  sesion: SesionFila,
   envio: MetaEnvio,
   pago: PagoEnviado,
   invocacion: Invocacion,
   almacen: Almacen | null,
+  contratoPreparado: string | null,
+  sondeo: OpcionesSondeo | undefined,
 ): Promise<ResultadoGuardado> {
   if (!envio.tareaId) return { aviso: null, estadoHttp: 200 };
   if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
@@ -346,16 +359,16 @@ async function guardarResultado(
     if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
       return { aviso: "This task already has an escrow.", estadoHttp: 409 };
     }
-    const contrato = contratoDeServidor(pago, tarea.id);
-    if (typeof contrato !== "string") {
-      return {
-        aviso: contrato?.aviso ?? "The submit succeeded and Trustless did not return the contract.",
-        estadoHttp: 200,
-      };
+    const contrato = contratoDeServidor(pago, contratoPreparado);
+    if (!contrato) {
+      return { aviso: "The submit succeeded and Trustless did not return the contract.", estadoHttp: 200 };
     }
+    // Saved before any read so a refresh or another instance never offers a second deploy.
     await almacen.actualizarTarea(tarea.id, { contratoEscrow: contrato });
-    contratosPreparados.delete(tarea.id);
-    return { aviso: null, estadoHttp: 200 };
+    if (pago.codigo !== CODIGO_INDEXADOR_ATRASADO) return { aviso: null, estadoHttp: 200, contrato };
+    const indexado = await sondearEscrow(contrato, () => true, sondeo);
+    if (indexado) return { aviso: null, estadoHttp: 200, contrato };
+    return { aviso: AVISO_DESPLIEGUE_ATRASADO, estadoHttp: 200, contrato };
   }
   if (invocacion.funcion !== FUNCION_LIBERACION) {
     return {
@@ -369,42 +382,39 @@ async function guardarResultado(
   if (!envioConfirmado(pago, "v2")) {
     return { aviso: "The submit was not confirmed, so it was not marked paid.", estadoHttp: 200 };
   }
-  if (!pago.hash || !/^[a-fA-F0-9]{64}$/.test(pago.hash)) {
+  if (!esHashPago(pago.hash)) {
     return { aviso: "The submit succeeded and there is no hash to save the payment.", estadoHttp: 200 };
   }
-  let escrow: Record<string, unknown>;
-  try {
-    escrow = await leerEscrow(tarea.contratoEscrow);
-  } catch {
-    return { aviso: "Could not confirm the milestone is released, so it was not marked paid.", estadoHttp: 200 };
-  }
-  if (!hitoLiberado(escrow)) {
-    return { aviso: "The milestone is not listed as released yet, so it was not marked paid.", estadoHttp: 200 };
-  }
-  await almacen.actualizarTarea(tarea.id, { hashPago: pago.hash, estado: "pagado" });
+  // The release is on the ledger. Keep its hash so the task can be marked paid later without signing again.
+  if (tarea.hashPago !== pago.hash) await almacen.actualizarTarea(tarea.id, { hashPago: pago.hash });
+  const liberado = await sondearEscrow(tarea.contratoEscrow, hitoLiberado, sondeo);
+  if (!liberado) return { aviso: AVISO_LIBERACION_ATRASADA, estadoHttp: 200 };
+  await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
   return { aviso: null, estadoHttp: 200 };
 }
 
-function contratoDeServidor(pago: PagoEnviado, tareaId: string): string | { aviso: string } | null {
+const AVISO_DESPLIEGUE_ATRASADO =
+  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.";
+export const AVISO_LIBERACION_ATRASADA =
+  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.";
+
+function contratoDeServidor(pago: PagoEnviado, contratoPreparado: string | null): string | null {
   if (pago.contrato && esContrato(pago.contrato)) return pago.contrato;
-  if (pago.codigo === "STELLAR_TX_SUBMITTED_INDEXER_LAGGING") {
-    return {
-      aviso:
-        "The transaction entered the ledger, but the indexer did not return the contract. The escrow was not saved: check the hash again in a few seconds.",
-    };
-  }
-  const preparado = contratosPreparados.get(tareaId);
-  return preparado && esContrato(preparado) ? preparado : null;
+  return contratoPreparado;
 }
 
-function hitoLiberado(escrow: Record<string, unknown>): boolean {
-  const hitos = Array.isArray(escrow.milestones) ? escrow.milestones : [];
-  const hito = hitos[0];
-  if (!hito || typeof hito !== "object") return false;
-  const datos = hito as Record<string, unknown>;
-  if (datos.released === true) return true;
-  const flags = datos.flags && typeof datos.flags === "object" ? (datos.flags as Record<string, unknown>) : null;
-  return flags?.released === true;
+// A stored release hash on an unpaid task means the release was submitted and the read model was behind.
+export async function conciliarPagoPendiente(
+  almacen: Almacen,
+  tarea: TareaFila,
+  sondeo: OpcionesSondeo = { pausas: [] },
+): Promise<boolean> {
+  if (tarea.estado === "pagado" || !esHashPago(tarea.hashPago)) return false;
+  if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow)) return false;
+  const liberado = await sondearEscrow(tarea.contratoEscrow, hitoLiberado, sondeo);
+  if (!liberado) return false;
+  await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
+  return true;
 }
 
 type MetaEnvio = { xdr: string | null; accion: string | null; tareaId: string | null; token: string | null };

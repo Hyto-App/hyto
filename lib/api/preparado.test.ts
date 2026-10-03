@@ -56,6 +56,24 @@ test("sin secreto de servidor no firma ni verifica", () => {
   );
 });
 
+test("el contrato predicho viaja firmado y no se puede cambiar", () => {
+  const contrato = "C" + "A".repeat(55);
+  const esperado = { usuarioId: carga.usuarioId, sesionId: carga.sesionId, huella: carga.huella };
+  const token = emitirTokenPreparado({ ...carga, accion: "desplegar", contrato }, Date.now(), env);
+  assert.ok(token);
+  const ok = verificarTokenPreparado(token, esperado, Date.now(), env);
+  assert.equal(ok.ok && ok.carga.contrato, contrato);
+
+  const [cuerpo, mac] = token.split(".");
+  const datos = JSON.parse(Buffer.from(cuerpo, "base64url").toString("utf8")) as Record<string, unknown>;
+  const cambiado = Buffer.from(JSON.stringify({ ...datos, contrato: "C" + "B".repeat(55) })).toString("base64url");
+  assert.deepEqual(verificarTokenPreparado(`${cambiado}.${mac}`, esperado, Date.now(), env), { ok: false, codigo: "invalido" });
+  const sinContrato = { ...datos };
+  delete sinContrato.contrato;
+  const quitado = Buffer.from(JSON.stringify(sinContrato)).toString("base64url");
+  assert.deepEqual(verificarTokenPreparado(`${quitado}.${mac}`, esperado, Date.now(), env), { ok: false, codigo: "invalido" });
+});
+
 test("producción no usa la clave de pruebas y un secreto corto no firma", () => {
   const produccion = { NODE_ENV: "production", HYTO_TEST_SESSION_KEY: "clave-de-prueba" };
   assert.equal(emitirTokenPreparado(carga, Date.now(), produccion), null);
