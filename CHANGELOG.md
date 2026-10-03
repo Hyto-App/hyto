@@ -8,7 +8,7 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 
 ### Added
 
-- My tasks marks the volunteer's highest-paying tasks with a Best paid badge, including ties. Pay comes from the task amount, or the reimbursement cap. A Sort control next to the status filters offers Default and Highest pay. Empty or non-numeric amounts stay out of the ranking.
+- My tasks marks the volunteer's highest-paying tasks with a Best paid badge, including ties. Pay comes from the task amount, or the reimbursement cap. A Sort control next to the status filters offers Default and Highest pay. Empty or non-numeric amounts stay out of the ranking. #129.
 
 ### Changed
 
