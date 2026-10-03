@@ -9,7 +9,7 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 | Layer | Choice |
 |---|---|
 | App | Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4. App Router. |
-| UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
+| UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. English and Spanish dictionaries in `lib/ui/diccionario.ts` (cookie `hyto_idioma`, English fallback). Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
 | Shell | Events, Tasks, Account. Same chrome for organizers and members. |
 | Host | Vercel. Push to `main` deploys https://hyto.vercel.app. Each PR gets a preview. |
 | Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0004_miembros_invitaciones.sql`. `0004` was applied on 2026-10-01. |

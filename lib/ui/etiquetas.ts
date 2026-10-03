@@ -1,28 +1,37 @@
 import type { EstadoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
+import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import { type Clave, texto } from "@/lib/ui/diccionario";
+import type { Idioma } from "@/lib/ui/idioma";
 
-const ESTADOS: Record<EstadoTarea, string> = {
-  pendiente: "Pending",
-  "en revisión": "In review",
-  pagado: "Paid",
+const ESTADOS: Record<EstadoTarea, Clave> = {
+  pendiente: "estados.pendiente",
+  "en revisión": "estados.revision",
+  pagado: "estados.pagado",
 };
 
-const VEREDICTOS: Record<Veredicto, string> = {
-  cumplió: "Completed",
-  parcial: "Partially completed",
-  insuficiente: "Insufficient",
+const VEREDICTOS: Record<Veredicto, Clave> = {
+  cumplió: "veredictos.cumplio",
+  parcial: "veredictos.parcial",
+  insuficiente: "veredictos.insuficiente",
 };
 
-const TIPOS: Record<string, string> = {
-  trabajo: "Work",
-  reembolso: "Reimbursement",
+const TIPOS: Record<string, Clave> = {
+  trabajo: "tipos.trabajo",
+  reembolso: "tipos.reembolso",
 };
 
-const CHOICES: Record<string, string> = {
-  stand: "booth",
-  factura: "receipt",
-  trabajo: "work",
-  otra: "other",
+const CHOICES: Record<string, Clave> = {
+  stand: "choices.stand",
+  factura: "choices.factura",
+  trabajo: "choices.trabajo",
+  otra: "choices.otra",
+};
+
+const DIFICULTADES: Record<string, Clave> = {
+  easy: "clasificacion.easy",
+  medium: "clasificacion.medium",
+  hard: "clasificacion.hard",
 };
 
 const LEGADO: Record<string, string> = {
@@ -51,14 +60,18 @@ const LEGADO: Record<string, string> = {
     "Table set up, ZEEK banner facing forward, three open boxes. The back of the room is not visible.",
 };
 
-export function etiquetaEstado(estado: string): string {
-  if (estado in ESTADOS) return ESTADOS[estado as EstadoTarea];
+const INVERSO_LEGADO: Record<string, string> = Object.fromEntries(
+  Object.entries(LEGADO).map(([origen, ingles]) => [ingles, origen]),
+);
+
+export function etiquetaEstado(estado: string, idioma: Idioma = "en"): string {
+  if (estado in ESTADOS) return texto(idioma, ESTADOS[estado as EstadoTarea]);
   return estado;
 }
 
-export function etiquetaVeredicto(veredicto: string): string {
+export function etiquetaVeredicto(veredicto: string, idioma: Idioma = "en"): string {
   const limpio = veredicto.trim();
-  if (limpio in VEREDICTOS) return VEREDICTOS[limpio as Veredicto];
+  if (limpio in VEREDICTOS) return texto(idioma, VEREDICTOS[limpio as Veredicto]);
   return limpio;
 }
 
@@ -68,37 +81,40 @@ export function textoNota(etiqueta: string, nota: number | null | undefined): st
   return `${nota}% · ${etiqueta}`;
 }
 
-export function etiquetaTipo(tipo: string): string {
-  return TIPOS[tipo] ?? tipo;
+export function etiquetaTipo(tipo: string, idioma: Idioma = "en"): string {
+  const clave = TIPOS[tipo];
+  return clave ? texto(idioma, clave) : tipo;
 }
 
 /** Only high priority gets a label. Normal stays quiet. */
-export function etiquetaPrioridad(prioridad: string | null | undefined): string | null {
-  return prioridad === "high" ? "High priority" : null;
+export function etiquetaPrioridad(prioridad: string | null | undefined, idioma: Idioma = "en"): string | null {
+  return prioridad === "high" ? texto(idioma, "clasificacion.highPriority") : null;
 }
 
-export function etiquetaDificultad(dificultad: string | null | undefined): string | null {
-  if (dificultad === "easy") return "Easy";
-  if (dificultad === "medium") return "Medium";
-  if (dificultad === "hard") return "Hard";
-  return null;
+export function etiquetaDificultad(dificultad: string | null | undefined, idioma: Idioma = "en"): string | null {
+  const clave = dificultad ? DIFICULTADES[dificultad] : undefined;
+  return clave ? texto(idioma, clave) : null;
 }
 
-export function etiquetaChoice(choice: string): string {
+export function etiquetaChoice(choice: string, idioma: Idioma = "en"): string {
   const limpio = choice.trim();
-  return CHOICES[limpio] ?? limpio;
+  const clave = CHOICES[limpio];
+  return clave ? texto(idioma, clave) : limpio;
 }
 
-export function textoVisible(valor: string | null | undefined): string {
+export function textoVisible(valor: string | null | undefined, idioma: Idioma = "en"): string {
   if (!valor) return "";
   // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
   const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
-  const directo = LEGADO[base] ?? base;
-  return directo.replace(
-    / Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g,
-    (_todo, choice: string, condicion: string, evidencia: string) => {
-      const met = condicion === "cumplida" ? "met" : "not met";
-      return ` Category ${etiquetaChoice(choice.trim())}, condition ${met}, evidence ${etiquetaVeredicto(evidencia.trim())}.`;
-    },
-  );
+  const directo = idioma === "es" ? (INVERSO_LEGADO[base] ?? base) : (LEGADO[base] ?? base);
+  const frase = directo.replace(/ Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
+    const met = condicion === "cumplida";
+    return texto(idioma, "legado.category", {
+      choice: etiquetaChoice(choice.trim(), idioma),
+      condicion: texto(idioma, met ? "legado.met" : "legado.notMet"),
+      evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
+    });
+  });
+  if (idioma !== "es" || !frase.includes(MOTIVO_COPIA)) return frase;
+  return frase.replaceAll(MOTIVO_COPIA, texto("es", "revision.copia"));
 }

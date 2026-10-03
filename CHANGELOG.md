@@ -2,7 +2,25 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-03
+
+### Fixed
+
+- After the email code, sign-in closed onto "Signed in" on the landing and offered no way into the app. That state now shows "Take your first step" and "Get ready to be paid" (the same Spanish lines as the language selector). The button opens My tasks at `/mis-tareas`, the signed-in volunteer home, with or without assigned tasks. A wrong code, an expired code, and a browser that cannot store the address stay on the code step, which still has Confirm, Resend, and Close.
+
+### Added
+
+- The interface can be English (default) or Spanish. A selector in the shell, at the top of the signed-out landing, and in the sign-in sheet stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
+- Buttons whose label changes with the language size to the text: automatic width, horizontal padding, a minimum height, and wrapping. They do not clip the label.
+- Spanish covers the scrolling landing (`lib/ui/discurso.ts`), the welcome card, Best paid and Highest pay, the edit-task form, the animated verdict pill, and the volunteer's score. English stays the default.
+- The scrolling landing states the product in plain language. The hero keeps "Prove your worth. Get paid." and "A marketplace of small tasks. You get paid in dollars in crypto (USDC).", plus a practice-network note. Steps, who it is for, Mile, the question list, and the closing sign-in stay, and they read from `lib/ui/discurso.ts` so the same line is not repeated.
+
 ## 2026-10-02
+
+### Added
+
+- The signed-out page scrolls. It keeps the hero ("Prove your worth. Get paid."), then How it works in three steps, volunteer and organizer cards, Meet Mile, an honest testnet FAQ, and the same sign-in button at the end.
+- After sign-in, Events opens with a welcome card and "Take your first step". Get ready to be paid lives only there. Account no longer shows that button. Loading, error, success, and already-ready each have their own state. Demo mode hides the button.
 
 ### Changed
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -34,6 +35,9 @@ export function TareasEvento({
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string }[];
 }) {
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -71,7 +75,7 @@ export function TareasEvento({
         );
       }
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-      setAviso(cuerpo?.aviso ?? "Could not save priority and difficulty.");
+      setAviso(cuerpo?.aviso ?? t("clasificacion.saveFail"));
     }
   }
 
@@ -138,7 +142,7 @@ export function TareasEvento({
   if (filas.length === 0) {
     return (
       <main className="hyto-page">
-        <p className="text-lg font-semibold">No tasks yet.</p>
+        <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
       </main>
     );
   }
@@ -147,15 +151,15 @@ export function TareasEvento({
     <main className="hyto-page">
       <ul className="grid gap-3">
         {filas.map((tarea) => {
-          const prioridad = etiquetaPrioridad(tarea.prioridad);
-          const dificultad = etiquetaDificultad(tarea.dificultad);
+          const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
+          const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
           return (
             <li key={tarea.id} className="hyto-card grid gap-4 p-5">
               <div className="min-w-0">
-                <p className="text-lg font-semibold">{textoVisible(tarea.titulo)}</p>
+                <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(tarea.estado as EstadoTarea)} · {montoDeTarea(tarea)}
+                  {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
                 </p>
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -173,7 +177,7 @@ export function TareasEvento({
                     ) : null}
                   </div>
                 ) : null}
-                {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
+                {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
               </div>
               {editando && borrador ? (
                 <form
@@ -184,7 +188,7 @@ export function TareasEvento({
                   }}
                 >
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`titulo-${tarea.id}`}>
-                    Title
+                    {t("eventos.titleLabel")}
                     <input
                       id={`titulo-${tarea.id}`}
                       value={borrador.titulo}
@@ -193,7 +197,7 @@ export function TareasEvento({
                     />
                   </label>
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`condicion-${tarea.id}`}>
-                    Photo must show
+                    {t("eventos.photoMust")}
                     <input
                       id={`condicion-${tarea.id}`}
                       value={borrador.condicion}
@@ -202,7 +206,7 @@ export function TareasEvento({
                     />
                   </label>
                   <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${tarea.id}`}>
-                    Amount (USDC)
+                    {t("eventos.amount")}
                     <input
                       id={`monto-${tarea.id}`}
                       inputMode="decimal"
@@ -213,7 +217,7 @@ export function TareasEvento({
                   </label>
                   {tarea.tipo === "reembolso" ? (
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`tope-${tarea.id}`}>
-                      Limit (USDC)
+                      {t("eventos.limitUsdc")}
                       <input
                         id={`tope-${tarea.id}`}
                         inputMode="decimal"
@@ -224,14 +228,14 @@ export function TareasEvento({
                     </label>
                   ) : null}
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`asignar-editar-${tarea.id}`}>
-                    Assign
+                    {t("eventos.assign")}
                     <select
                       id={`asignar-editar-${tarea.id}`}
                       className="hyto-input mt-2"
                       value={borrador.miembroId}
                       onChange={(evento) => setBorrador({ ...borrador, miembroId: evento.target.value })}
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">{t("comunes.unassigned")}</option>
                       {miembros.map((persona) => (
                         <option key={persona.usuarioId} value={persona.usuarioId}>
                           {persona.email}
@@ -241,7 +245,7 @@ export function TareasEvento({
                   </label>
                   <div className="flex flex-wrap gap-2 sm:col-span-2">
                     <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando}>
-                      Save
+                      {t("eventos.save")}
                     </button>
                     <button
                       type="button"
@@ -251,14 +255,14 @@ export function TareasEvento({
                         setBorrador(null);
                       }}
                     >
-                      Cancel
+                      {t("eventos.cancel")}
                     </button>
                   </div>
                 </form>
               ) : (
                 <div>
                   <label className="text-sm" htmlFor={`asignar-${tarea.id}`}>
-                    Assign
+                    {t("eventos.assign")}
                     <select
                       id={`asignar-${tarea.id}`}
                       className="hyto-input mt-2"
@@ -267,7 +271,7 @@ export function TareasEvento({
                       aria-describedby={tarea.bloqueo ? `bloqueo-${tarea.id}` : undefined}
                       onChange={(evento) => void asignar(tarea.id, evento.target.value)}
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">{t("comunes.unassigned")}</option>
                       {miembros.map((persona) => (
                         <option key={persona.usuarioId} value={persona.usuarioId}>
                           {persona.email}
@@ -277,30 +281,30 @@ export function TareasEvento({
                   </label>
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
-                      {tarea.bloqueo}
+                      {claro(tarea.bloqueo)}
                     </p>
                   ) : (
                     <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => abrir(tarea)}>
-                      Edit
+                      {t("eventos.edit")}
                     </button>
                   )}
                 </div>
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm" htmlFor={`prioridad-${tarea.id}`}>
-                  Priority
+                  {t("clasificacion.priority")}
                   <select
                     id={`prioridad-${tarea.id}`}
                     className="hyto-input mt-2"
                     value={tarea.prioridad}
                     onChange={(evento) => void clasificar(tarea.id, { prioridad: evento.target.value as PrioridadTarea })}
                   >
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
+                    <option value="normal">{t("clasificacion.normal")}</option>
+                    <option value="high">{t("clasificacion.high")}</option>
                   </select>
                 </label>
                 <label className="text-sm" htmlFor={`dificultad-${tarea.id}`}>
-                  Difficulty
+                  {t("clasificacion.difficulty")}
                   <select
                     id={`dificultad-${tarea.id}`}
                     className="hyto-input mt-2"
@@ -309,10 +313,10 @@ export function TareasEvento({
                       void clasificar(tarea.id, { dificultad: evento.target.value === "" ? null : (evento.target.value as DificultadTarea) })
                     }
                   >
-                    <option value="">Not set</option>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
+                    <option value="">{t("clasificacion.notSet")}</option>
+                    <option value="easy">{t("clasificacion.easy")}</option>
+                    <option value="medium">{t("clasificacion.medium")}</option>
+                    <option value="hard">{t("clasificacion.hard")}</option>
                   </select>
                 </label>
               </div>
@@ -322,7 +326,7 @@ export function TareasEvento({
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </main>

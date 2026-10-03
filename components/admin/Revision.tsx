@@ -36,17 +36,10 @@ import {
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
 import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
-import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, TEXTO, tituloFallo } from "@/lib/ui/claro";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
-
-const PASO: Record<AccionCliente, string> = {
-  desplegar: TEXTO.settingUp,
-  fondear: TEXTO.locking,
-  marcar: TEXTO.checking,
-  aprobar: TEXTO.approving,
-  liberar: TEXTO.paying,
-};
 
 export function Revision({
   tareaId,
@@ -58,6 +51,9 @@ export function Revision({
   firmar?: (unsignedXdr: string) => Promise<string>;
 }) {
   const modoDemo = useModoDemo();
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
   const [tarea, setTarea] = useState<TareaAdmin | null | undefined>(undefined);
   const [foto, setFoto] = useState<string | null>(null);
   const [real, setReal] = useState(false);
@@ -314,7 +310,7 @@ export function Revision({
   if (tarea === undefined) {
     return (
       <main className="hyto-page" aria-busy="true">
-        <p className="text-[var(--suave)]">Loading…</p>
+        <p className="text-[var(--suave)]">{t("comunes.loading")}</p>
         <div className="mt-4 grid gap-3">
           {[0, 1].map((item) => (
             <div key={item} className="hyto-skel">
@@ -334,15 +330,15 @@ export function Revision({
     return (
       <main className="hyto-page">
         <p className="text-lg" role="alert">
-          {aviso ?? "We couldn't find that task."}
+          {claro(aviso ?? "We couldn't find that task.")}
         </p>
         {aviso ? (
           <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
-            Try again
+            {t("comunes.tryAgain")}
           </button>
         ) : (
           <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="hyto-btn-line is-inline mt-6 px-5">
-            Back to the event
+            {t("revision.backEvent")}
           </Link>
         )}
       </main>
@@ -355,26 +351,37 @@ export function Revision({
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
-  const origen = etiquetaOrigen(tarea.origen);
+  const origen = etiquetaOrigen(tarea.origen, idioma);
   const pago = enlacePago(tarea.hashPago);
   const pendiente = pagoPendiente(tarea);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
+  const avisoVisible = aviso ? claro(aviso) : null;
+  const etiquetaPaso = (accion: AccionCliente) =>
+    accion === "desplegar"
+      ? t("pago.settingUp")
+      : accion === "fondear"
+        ? t("pago.locking")
+        : accion === "marcar"
+          ? t("pago.checking")
+          : accion === "aprobar"
+            ? t("pago.approving")
+            : t("pago.paying");
 
   return (
     <main className="hyto-page">
       <p className="hyto-crumb print:hidden">
-        <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"}>Events</Link>
+        <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"}>{t("nav.events")}</Link>
         <span aria-hidden="true">/</span>
-        <span>Evidence review</span>
+        <span>{t("revision.crumb")}</span>
       </p>
       <header className="hyto-page-head">
         <div>
-          <h1 className="hyto-title">{textoVisible(tarea.titulo)}</h1>
+          <h1 className="hyto-title">{textoVisible(tarea.titulo, idioma)}</h1>
           <p className="hyto-sub">
-            {etiquetaTipo(tarea.tipo)} · {textoVisible(tarea.miembro)}
+            {etiquetaTipo(tarea.tipo, idioma)} · {textoVisible(tarea.miembro, idioma)}
           </p>
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
@@ -386,22 +393,22 @@ export function Revision({
         <figure className="hyto-photo">
           {foto && tarea.tipoArchivo === "application/pdf" ? (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
-              <p className="text-sm text-[var(--suave)]">Invoice PDF</p>
+              <p className="text-sm text-[var(--suave)]">{t("evidencia.invoicePdf")}</p>
               <a href={foto} className="hyto-btn-line is-inline px-5" target="_blank" rel="noreferrer">
-                Open the invoice
+                {t("revision.openInvoice")}
               </a>
             </div>
           ) : foto ? (
-            <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo)} />
+            <FotoEvidencia src={foto} alt={textoVisible(tarea.titulo, idioma)} />
           ) : tarea.frase ? (
             <div className="flex aspect-[4/5] flex-col justify-end bg-[var(--superficie-2)] p-8">
-              <p className="text-sm text-[var(--suave)]">Sample evidence</p>
-              <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo)}</p>
+              <p className="text-sm text-[var(--suave)]">{t("revision.sampleEvidence")}</p>
+              <p className="mt-2 text-lg font-medium leading-7">{textoVisible(tarea.titulo, idioma)}</p>
             </div>
           ) : (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-2 px-8 text-center text-sm text-[var(--suave)]">
-              <p>No photo yet</p>
-              <p>Waiting for the volunteer to send one.</p>
+              <p>{t("revision.noPhoto")}</p>
+              <p>{t("revision.waitingVolunteer")}</p>
             </div>
           )}
         </figure>
@@ -409,25 +416,25 @@ export function Revision({
         <section className="hyto-panel">
           {tarea.condicion ? (
             <>
-              <p className="text-sm font-medium">Photo must show</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p>
+              <p className="text-sm font-medium">{t("bandeja.photoMust")}</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p>
             </>
           ) : null}
           {real ? (
-            <ol className="mt-5 space-y-2 text-sm" aria-label="Payment steps">
+            <ol className="mt-5 space-y-2 text-sm" aria-label={t("revision.steps")}>
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
                 presupuestoListo: Boolean(contrato) && fondeado === true,
                 pagado: tarea.estado === "pagado",
-              }).map((item, indice) => (
+              }, idioma).map((item, indice) => (
                 <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
-                  {item.estado === "done" ? "Done" : item.estado === "now" ? "Now" : "Later"} · {indice + 1}. {item.nombre}
+                  {item.estado === "done" ? t("comunes.done") : item.estado === "now" ? t("comunes.now") : t("comunes.later")} · {indice + 1}. {item.nombre}
                 </li>
               ))}
             </ol>
           ) : (
-            <p className="mt-5 text-sm leading-6 text-[var(--suave)]">Sample review. The paid mark here stays on this device.</p>
+            <p className="mt-5 text-sm leading-6 text-[var(--suave)]">{t("revision.sampleReview")}</p>
           )}
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -436,19 +443,19 @@ export function Revision({
           </div>
           <EtiquetasNota etiquetas={tarea.etiquetas} />
           {notaManual(tarea.codigo) ? (
-            <p className="mt-4 text-sm font-medium">{notaManual(tarea.codigo)}</p>
+            <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
           ) : tarea.origen === "error" ? (
-            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">Mile is unavailable. No AI score for this photo.</p>
+            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">{t("revision.mileNo")}</p>
           ) : null}
           {notaCopia(tarea.motivoCopia) ? (
-            <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "")}</p>
+            <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "", idioma)}</p>
           ) : null}
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-2 text-base leading-7">
-              {textoVisible(tarea.frase)}
+              {textoVisible(tarea.frase, idioma)}
             </p>
           ) : tarea.frase ? (
-            <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase)}</p>
+            <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase, idioma)}</p>
           ) : null}
           {tarea.origen === "error" && real && tarea.estado !== "pagado" && !contrato ? (
             <AccionesRevisionFallida tareaId={tarea.id} onDetalle={aplicarDetalle} />
@@ -457,11 +464,11 @@ export function Revision({
           {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (
             <dl className="mt-6 grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-sm text-[var(--suave)]">Amount on the receipt</dt>
+                <dt className="text-sm text-[var(--suave)]">{t("revision.amountReceipt")}</dt>
                 <dd className="hyto-amount mt-1 text-xl">{formatearMonto(tarea.montoRevisado)}</dd>
               </div>
               <div>
-                <dt className="text-sm text-[var(--suave)]">Date</dt>
+                <dt className="text-sm text-[var(--suave)]">{t("comunes.date")}</dt>
                 <dd className="hyto-amount mt-1 text-xl">{formatearFecha(tarea.fecha)}</dd>
               </div>
             </dl>
@@ -476,7 +483,7 @@ export function Revision({
               }}
             >
               <label htmlFor="monto-confirmado" className="text-sm text-[var(--suave)]">
-                Amount to pay
+                {t("revision.amountToPay")}
               </label>
               <input
                 id="monto-confirmado"
@@ -489,7 +496,7 @@ export function Revision({
                 className="hyto-input mt-2"
               />
               <p id="monto-confirmado-ayuda" className="mt-2 text-sm leading-6 text-[var(--suave)]">
-                Up to {formatearMonto(tarea.tope ?? tarea.monto)}. Confirm this amount before deploying.
+                {t("revision.upTo", { monto: formatearMonto(tarea.tope ?? tarea.monto) })}
               </p>
               <button
                 type="button"
@@ -497,40 +504,40 @@ export function Revision({
                 onClick={() => void confirmar()}
                 className="hyto-btn-line mt-4 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {coincide ? "Amount confirmed" : confirmando ? "Confirming…" : "Confirm amount"}
+                {coincide ? t("revision.amountConfirmed") : confirmando ? t("revision.confirming") : t("revision.confirmAmount")}
               </button>
             </form>
           ) : tarea.tipo === "reembolso" && tarea.montoConfirmado ? (
             <p className="mt-6 text-sm text-[var(--suave)]">
-              Amount to pay{" "}
+              {t("revision.amountToPay")}{" "}
               <span className="text-xl font-semibold tracking-tight text-[var(--tinta)]">{formatearMonto(tarea.montoConfirmado)}</span>
             </p>
           ) : null}
 
           {caja && aviso ? (
             <div className="hyto-callout mt-5">
-              <p className="font-semibold">{tituloFallo(caja)}</p>
-              <p className="mt-1 text-sm">{detalleFallo(caja, aviso)}</p>
+              <p className="font-semibold">{tituloFallo(caja, idioma)}</p>
+              <p className="mt-1 text-sm">{detalleFallo(caja, avisoVisible ?? "", idioma)}</p>
             </div>
           ) : null}
 
           <div className="hyto-actions">
             {botones.aprobarLocal ? (
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
-                Approve
+                {t("revision.approve")}
               </BotonPrincipal>
             ) : null}
 
             {botones.pedirOtra ? (
               <button type="button" onClick={() => void pedirOtra()} className="hyto-btn-line">
-                Ask for another photo
+                {t("revision.askAnother")}
               </button>
             ) : null}
 
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  This sets aside {montoDeTarea(tarea)} for this task. You'll confirm it once.
+                  {t("revision.setsAside", { monto: montoDeTarea(tarea) })}
                 </p>
                 <BotonPrincipal
                   type="button"
@@ -538,25 +545,25 @@ export function Revision({
                   aria-busy={ocupado}
                   onClick={() => void correr(["desplegar", "fondear"])}
                 >
-                  {paso === "desplegar" || paso === "fondear" ? PASO[paso] : TEXTO.lockBudget}
+                  {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
                 </BotonPrincipal>
               </>
             ) : null}
             {botones.fondear ? (
               <>
-                <p className="text-sm leading-6 text-[var(--suave)]">The budget is set up. One more confirmation locks the money.</p>
+                <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
                 <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["fondear"])}>
-                  {paso === "fondear" ? PASO.fondear : TEXTO.finishLocking}
+                  {paso === "fondear" ? etiquetaPaso("fondear") : t("pago.finishLocking")}
                 </BotonPrincipal>
               </>
             ) : null}
             {botones.pagar ? (
               <>
                 {fondeado === true ? (
-                  <p className="text-sm leading-6 text-[var(--suave)]">Budget secured. The payment sends {montoDeTarea(tarea)}.</p>
+                  <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoDeTarea(tarea) })}</p>
                 ) : null}
                 <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
-                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? PASO[paso] : TEXTO.approvePay}
+                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
                 </BotonPrincipal>
               </>
             ) : null}
@@ -565,58 +572,56 @@ export function Revision({
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              {frasePaso(paso)}
+              {frasePaso(paso, idioma)}
             </p>
           ) : null}
 
-          {aviso ? <AvisoFirma mensaje={aviso} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
+          {avisoVisible ? <AvisoFirma mensaje={aviso ?? ""} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
 
           {real && pendiente ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              Payment sent. Waiting for the network to show it as released. Do not pay again.{" "}
+              {t("revision.paymentSent")}{" "}
               {pago ? (
                 <a href={pago} className="font-semibold underline-offset-4 hover:underline">
-                  {TEXTO.viewChain}
+                  {t("pago.viewChain")}
                 </a>
               ) : null}
             </p>
           ) : real && contrato && fondeado === null && tarea.estado !== "pagado" && !paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              Checking the locked budget on the network. Refresh in a few seconds if nothing shows up.
+              {t("revision.checkingBudget")}
             </p>
           ) : null}
 
           {transaccion ? (
             <a href={transaccion} className="hyto-btn-line is-inline mt-4 px-5">
-              {TEXTO.viewChain}
+              {t("pago.viewChain")}
             </a>
           ) : null}
 
           {real && (wallet || contrato) ? (
             <details className="mt-6 text-sm text-[var(--suave)]">
-              <summary className="cursor-pointer">Technical details</summary>
-              {wallet ? <p className="mt-2 font-mono">Your account {acortarDireccion(wallet)}</p> : null}
-              {contrato ? <p className="mt-2 font-mono">Budget reference {acortarDireccion(contrato)}</p> : null}
+              <summary className="cursor-pointer">{t("revision.technical")}</summary>
+              {wallet ? <p className="mt-2 font-mono">{t("revision.yourAccount", { direccion: acortarDireccion(wallet) })}</p> : null}
+              {contrato ? <p className="mt-2 font-mono">{t("revision.budgetRef", { direccion: acortarDireccion(contrato) })}</p> : null}
             </details>
           ) : null}
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">Paid {formatearMonto(detalleMonto(tarea).cifra)}</p>
+              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: formatearMonto(detalleMonto(tarea).cifra) })}</p>
               {pago ? (
                 <a href={pago} className="hyto-btn-line is-inline px-5">
-                  {TEXTO.viewChain}
+                  {t("pago.viewChain")}
                 </a>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {real
-                    ? "Paid. The blockchain link shows up once the network confirms it."
-                    : "This is a sample. A live payment adds a link to the blockchain."}
+                  {real ? t("revision.paidWait") : t("revision.samplePay")}
                 </p>
               )}
               {credencial ? (
                 <a href={credencial} className="hyto-btn-line is-inline px-5">
-                  Credential
+                  {t("revision.credential")}
                 </a>
               ) : null}
             </div>
@@ -628,6 +633,7 @@ export function Revision({
 }
 
 function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
+  const t = useTexto();
   const [lista, setLista] = useState(false);
   const [rota, setRota] = useState(false);
 
@@ -639,7 +645,7 @@ function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
   if (rota) {
     return (
       <div className="hyto-photo-nota">
-        <p>This photo could not be shown.</p>
+        <p>{t("revision.photoBroken")}</p>
       </div>
     );
   }
@@ -649,7 +655,7 @@ function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
       {lista ? null : (
         <div className="hyto-photo-nota" role="status">
           <span className="hyto-spinner" aria-hidden="true" />
-          <span className="sr-only">Loading photo</span>
+          <span className="sr-only">{t("revision.loadingPhoto")}</span>
         </div>
       )}
       <img

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import { useTexto } from "@/components/ui/Idioma";
 import type { RolDemo } from "@/lib/sesion/demo";
 
 type EstadoDemo = {
@@ -24,10 +25,11 @@ export function ProveedorModoDemo({
 
 export function InsigniaDemo() {
   const { activo } = useContext(Contexto);
+  const t = useTexto();
   if (!activo) return null;
   return (
     <span className="ml-2 inline-flex items-center rounded-full bg-[var(--acento)] px-2 py-0.5 align-middle text-xs font-semibold text-[var(--sobre-acento)]">
-      Demo mode
+      {t("entrar.demoMode")}
     </span>
   );
 }

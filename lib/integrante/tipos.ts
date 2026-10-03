@@ -1,3 +1,5 @@
+import type { Veredicto } from "@/lib/admin/tipos";
+
 export type TipoTarea = "trabajo" | "reembolso";
 
 export type EstadoTarea = "pendiente" | "en revisión" | "pagado";
@@ -19,6 +21,8 @@ export type Tarea = {
   estado: EstadoTarea;
   prioridad: PrioridadTarea;
   dificultad: DificultadTarea | null;
+  nota?: number | null;
+  veredicto?: Veredicto | null;
 };
 
 export type Evidencia = {

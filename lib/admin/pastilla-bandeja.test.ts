@@ -7,6 +7,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 test("la pastilla sin nota muestra la palabra y no un porcentaje", async () => {
@@ -34,6 +35,22 @@ test("el porcentaje y la etiqueta van juntos en la pastilla", async () => {
   assert.match(document.querySelector(".hyto-pill")?.className ?? "", /hyto-pill-mid/);
   await desmontar();
 });
+
+test("la pastilla sigue el idioma elegido", async () => {
+  await montar(
+    createElement(ProveedorIdioma, {
+      idioma: "es",
+      children: createElement(PastillaVeredicto, { veredicto: "parcial", nota: 64 }),
+    }),
+  );
+  const pill = document.querySelector(".hyto-pill");
+  assert.ok(pill instanceof HTMLElement);
+  assert.equal(pill.getAttribute("aria-label"), "64% · Parcialmente completado");
+  assert.equal(pill.textContent, "64% · Parcialmente completado");
+  assert.equal(pill.querySelector(".hyto-pill-vista")?.getAttribute("data-etiqueta"), "Parcialmente completado");
+  await desmontar();
+});
+
 
 test("la pastilla anuncia solo el texto final y esconde el número que se anima", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 64 }));
@@ -131,7 +148,8 @@ test("el movimiento de la pastilla es corto, ease-out, y se apaga si piden menos
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.hyto-pill-veredicto,\s*\.hyto-pill-veredicto \.hyto-dot \{\s*transition:\s*none/);
   assert.match(css, /@media print \{[\s\S]*?\.hyto-pill-vista \{\s*display:\s*none/);
   const voluntario = readFileSync("components/integrante/SubirEvidencia.tsx", "utf8");
-  assert.equal(voluntario.includes("PastillaVeredicto"), false);
+  assert.equal(voluntario.includes("PastillaVeredicto"), true);
+  assert.match(readFileSync("lib/integrante/nota.ts", "utf8"), /Your organizer makes the final call/);
 });
 
 test("la bandeja separa las notas 49, 50, 79 y 80", async () => {
