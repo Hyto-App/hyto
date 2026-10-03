@@ -1,54 +1,89 @@
 @import "tailwindcss";
 
-/* Light is the default. Dark is set on <html data-theme="dark">. */
+@theme {
+  --font-sans: var(--font-poppins), Poppins, ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Brand tokens. Dark is the default (<html data-theme="dark">); light is opt-in.
+ * Palette: lime #B7EE34, near black #08090C, navy #14162B, pink #FA0560 (#FF4D8D for small text on dark).
+ * Spacing follows an 8 px grid (--e-1 … --e-8). Type scale follows the mockups:
+ * title 30/38 500, h2 20 500, body 14–15 400, labels 12–13 500, helper 11–11.5.
+ */
 :root {
   --acento: #b7ee34;
   --sobre-acento: #08090c;
-  --acento-texto: #7fae0f;
+  --acento-texto: #4f7008;
   --fondo: #f4f5f0;
   --sidebar: #ffffff;
   --papel: #ffffff;
-  --superficie-2: #e9e9e9;
-  --tinta: #242427;
-  --suave: #6b6d70;
-  --linea: #e1e2de;
-  --borde: #c1c1c2;
+  --superficie-2: #eeefe9;
+  --tinta: #08090c;
+  --suave: #5e6070;
+  --linea: #e4e5df;
+  --borde: #c9cac3;
   --peligro: #c1004e;
   --peligro-punto: #fa0560;
   --sombra-boton: none;
+  --logo-iso: #08090c;
+  --foco: #4f7008;
   --pendiente-fondo: #f3f3f1;
-  --pendiente-tinta: #6b6d70;
+  --pendiente-tinta: #5e6070;
   --revision-fondo: #f3f3f1;
-  --revision-tinta: #242427;
+  --revision-tinta: #08090c;
   --pagado-fondo: #eef8c8;
   --pagado-tinta: #3d5a08;
   --insuficiente-fondo: #fde7ef;
   --insuficiente-tinta: #c1004e;
+
+  --e-1: 8px;
+  --e-2: 16px;
+  --e-3: 24px;
+  --e-4: 32px;
+  --e-5: 40px;
+  --e-6: 48px;
+  --e-8: 64px;
+  --ancho-max: 1120px;
+  --margen-lateral: 20px;
+
+  --texto-titulo: 30px;
+  --texto-h2: 20px;
+  --texto-cuerpo: 15px;
+  --texto-etiqueta: 13px;
+  --texto-aux: 11.5px;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
   --acento-texto: #b7ee34;
-  --fondo: #0b0c12;
+  --fondo: #08090c;
   --sidebar: #0e0f18;
-  --papel: #161830;
-  --superficie-2: #2d2f44;
-  --tinta: #e5e6ea;
-  --suave: #8a8c9a;
-  --linea: #1e1f24;
-  --borde: #626475;
+  --papel: #14162b;
+  --superficie-2: #1e2140;
+  --tinta: #f2f3f7;
+  --suave: #a3a6b8;
+  --linea: #1f2133;
+  --borde: #4a4d66;
   --peligro: #ff4d8d;
   --peligro-punto: #fa0560;
-  --sombra-boton: 0 0 28px color-mix(in srgb, var(--acento) 32%, transparent);
-  --pendiente-fondo: #1c1e2e;
-  --pendiente-tinta: #8a8c9a;
-  --revision-fondo: #1c1e2e;
-  --revision-tinta: #e5e6ea;
+  --sombra-boton: 0 8px 18px -10px rgba(124, 170, 10, 0.6);
+  --logo-iso: #b7ee34;
+  --foco: #b7ee34;
+  --pendiente-fondo: #1c1e33;
+  --pendiente-tinta: #a3a6b8;
+  --revision-fondo: #1c1e33;
+  --revision-tinta: #f2f3f7;
   --pagado-fondo: #1d2a12;
   --pagado-tinta: #b7ee34;
   --insuficiente-fondo: #3a1524;
   --insuficiente-tinta: #ff4d8d;
   color-scheme: dark;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --margen-lateral: 32px;
+  }
 }
 
 @media print {
@@ -61,7 +96,32 @@
 body {
   background: var(--fondo);
   color: var(--tinta);
-  font-family: var(--font-poppins), Poppins, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--texto-cuerpo);
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 button,
@@ -74,33 +134,58 @@ a {
 }
 
 .hyto-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--tinta);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  display: block;
+  height: 28px;
+  width: auto;
+  flex: none;
+  fill: var(--tinta);
 }
 
-.hyto-logo svg {
-  color: var(--acento);
+.hyto-logo .hyto-logo-iso,
+.hyto-isotipo {
+  fill: var(--logo-iso);
+}
+
+.hyto-isotipo {
+  display: block;
+  height: 24px;
+  width: auto;
+  flex: none;
+}
+
+.hyto-brand .hyto-logo {
+  height: 26px;
+}
+
+.hyto-eslogan {
+  font-size: var(--texto-titulo);
+  font-weight: 500;
+  line-height: 38px;
+  letter-spacing: -0.6px;
+  color: var(--tinta);
+}
+
+.hyto-eslogan em {
+  display: block;
+  font-style: normal;
+  color: var(--acento-texto);
 }
 
 .hyto-tema {
   display: inline-flex;
-  height: 32px;
+  height: 40px;
+  width: 40px;
+  flex: none;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--borde);
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 500;
   color: var(--suave);
 }
 
 .hyto-tema:hover {
   color: var(--tinta);
+  border-color: var(--tinta);
 }
 
 .hyto-nav a {
@@ -157,10 +242,10 @@ a {
   justify-content: center;
   gap: 8px;
   border-radius: 12px;
-  background: var(--acento);
-  padding: 0 18px;
+  background: linear-gradient(180deg, #c2f24d 0%, var(--acento) 100%);
+  padding: 0 var(--e-3);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--sobre-acento);
   text-decoration: none;
   box-shadow: var(--sombra-boton);
@@ -169,11 +254,6 @@ a {
 
 .hyto-btn:hover {
   filter: brightness(0.96);
-}
-
-.hyto-btn:focus-visible {
-  outline: 2px solid var(--tinta);
-  outline-offset: 2px;
 }
 
 .hyto-btn:disabled {
@@ -196,7 +276,7 @@ a {
   border-radius: 12px;
   border: 1px solid var(--borde);
   background: transparent;
-  padding: 0 18px;
+  padding: 0 var(--e-3);
   font-size: 15px;
   font-weight: 500;
   color: var(--tinta);
@@ -264,6 +344,7 @@ a {
 
 .hyto-page {
   width: 100%;
+  max-width: var(--ancho-max);
 }
 
 .hyto-crumb {
@@ -294,17 +375,17 @@ a {
 }
 
 .hyto-title {
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-size: var(--texto-titulo);
+  font-weight: 500;
+  letter-spacing: -0.6px;
+  line-height: 38px;
 }
 
 .hyto-sub {
-  margin-top: 6px;
+  margin-top: var(--e-1);
   max-width: 42rem;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 22px;
   color: var(--suave);
 }
 
@@ -426,9 +507,14 @@ a {
   border-radius: 12px;
   border: 1px solid var(--borde);
   background: color-mix(in srgb, var(--fondo) 55%, var(--papel));
-  padding: 0 14px;
+  padding: 0 var(--e-2);
+  font-size: 15px;
   color: var(--tinta);
   outline: none;
+}
+
+.hyto-input::placeholder {
+  color: var(--suave);
 }
 
 .hyto-input:focus {
@@ -603,17 +689,133 @@ a {
   background: var(--fondo);
 }
 
+/* Brand hero: sign-in dialog and landing. Mobile shows a compact band; it is never hidden. */
 .hyto-auth-hero {
-  display: none;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  overflow: hidden;
+  padding: var(--e-3) var(--margen-lateral) var(--e-4);
+  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 10%, transparent) 0, transparent 55%), var(--fondo);
 }
 
-.hyto-ring {
-  width: min(280px, 70%);
-  aspect-ratio: 1;
+.hyto-auth-hero > :not(.hyto-anillo) {
+  position: relative;
+  z-index: 1;
+}
+
+.hyto-auth-logo,
+.hyto-landing-logo {
+  height: 32px;
+  align-self: flex-start;
+}
+
+.hyto-auth-claim-sub,
+.hyto-landing-sub {
+  margin-top: var(--e-2);
+  max-width: 26rem;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+:root {
+  --anillo-pista: #dcddd6;
+  --anillo-arco: #08090c;
+}
+
+[data-theme="dark"] {
+  --anillo-pista: #2a2d4a;
+  --anillo-arco: #b7ee34;
+}
+
+.hyto-anillo {
+  position: absolute;
+  top: 56px;
+  right: -56px;
+  width: 168px;
+  height: 168px;
+  opacity: 0.9;
+}
+
+.hyto-roles {
+  display: none;
+  flex-wrap: wrap;
+  gap: var(--e-1) var(--e-3);
+  font-size: 12.5px;
+  color: var(--suave);
+}
+
+.hyto-roles li {
+  display: flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+.hyto-roles li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 50% 50%, transparent 42%, color-mix(in srgb, var(--acento) 80%, transparent) 43% 46%, transparent 47%),
-    conic-gradient(from 210deg, var(--acento), color-mix(in srgb, var(--acento) 15%, transparent) 40%, transparent 40%);
+  background: currentColor;
+}
+
+.hyto-cerrar {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 var(--e-2);
+  margin-right: calc(-1 * var(--e-2));
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.hyto-cerrar:hover {
+  color: var(--tinta);
+}
+
+/* Landing (signed out at /). */
+.hyto-landing {
+  display: grid;
+  min-height: 100dvh;
+}
+
+.hyto-landing-main {
+  display: flex;
+  flex-direction: column;
+  padding: var(--e-3) var(--margen-lateral) var(--e-3);
+}
+
+.hyto-landing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+
+.hyto-landing-copy {
+  position: relative;
+  margin-top: var(--e-5);
+  width: 100%;
+  max-width: 448px;
+}
+
+.hyto-landing-cta {
+  margin-top: var(--e-4);
+}
+
+.hyto-landing-legal {
+  margin-top: auto;
+  padding-top: var(--e-5);
+  font-size: var(--texto-aux);
+  line-height: 18px;
+  color: var(--suave);
+}
+
+.hyto-landing-panel {
+  display: none;
 }
 
 .hyto-steps {
@@ -658,7 +860,11 @@ a {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 8px;
+    padding: var(--e-2) var(--margen-lateral) var(--e-1);
+  }
+
+  .hyto-brand .hyto-logo {
+    height: 24px;
   }
 
   .hyto-foot {
@@ -743,7 +949,7 @@ a {
   }
 
   .hyto-main {
-    padding: 8px 20px 28px;
+    padding: var(--e-1) var(--margen-lateral) var(--e-4);
   }
 
   .hyto-btn,
@@ -807,13 +1013,33 @@ a {
   }
 
   .hyto-auth {
-    align-items: end;
+    grid-template-rows: max-content 1fr;
   }
 
   .hyto-auth-sheet {
-    border-radius: 24px 24px 0 0;
+    border-radius: 28px 28px 0 0;
     background: var(--papel);
-    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    padding: var(--e-3) var(--margen-lateral) calc(var(--e-3) + env(safe-area-inset-bottom));
+  }
+
+  .hyto-auth-claim .hyto-eslogan {
+    max-width: 280px;
+  }
+
+  /* The mobile brand band stays navy in both themes, as in the light mockup. */
+  .hyto-auth-hero {
+    --tinta: #f2f3f7;
+    --suave: #b9bbd0;
+    --logo-iso: #b7ee34;
+    --acento-texto: #b7ee34;
+    --anillo-pista: #2a2d4a;
+    --anillo-arco: #b7ee34;
+    color: var(--tinta);
+    background: radial-gradient(120% 90% at 100% 0%, rgba(183, 238, 52, 0.14) 0, transparent 50%), #14162b;
+  }
+
+  [data-theme="dark"] .hyto-auth-sheet {
+    background: var(--fondo);
   }
 }
 
@@ -837,7 +1063,7 @@ a {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 18px 8px;
+    padding: var(--e-3) var(--e-2) var(--e-1) 20px;
   }
 
   .hyto-nav {
@@ -855,7 +1081,7 @@ a {
   }
 
   .hyto-main {
-    padding: 28px 32px 48px;
+    padding: var(--e-4) var(--margen-lateral) var(--e-6);
   }
 
   .hyto-split {
@@ -877,17 +1103,106 @@ a {
   }
 
   .hyto-auth-hero {
-    display: flex;
-    flex-direction: column;
     justify-content: space-between;
-    padding: 36px 40px;
+    gap: var(--e-4);
+    padding: var(--e-6) var(--e-6) var(--e-5);
+  }
+
+  .hyto-auth-logo,
+  .hyto-landing-logo {
+    height: 44px;
+  }
+
+  .hyto-auth-hero .hyto-anillo {
+    top: 128px;
+    right: var(--e-6);
+    width: min(240px, 42%);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .hyto-auth-hero .hyto-roles,
+  .hyto-landing-panel .hyto-roles {
+    display: flex;
   }
 
   .hyto-auth-sheet {
-    margin: 28px;
-    border-radius: 24px;
+    margin: var(--e-3);
+    border-radius: 28px;
     background: var(--papel);
-    padding: 36px;
+    padding: var(--e-5);
+  }
+
+  .hyto-landing {
+    grid-template-columns: minmax(520px, 640px) minmax(0, 1fr);
+  }
+
+  .hyto-landing-main {
+    padding: var(--e-6) var(--e-8) var(--e-5) 96px;
+  }
+
+  .hyto-landing-copy {
+    margin-top: auto;
+    margin-bottom: auto;
+    padding-top: var(--e-5);
+  }
+
+  .hyto-landing .hyto-eslogan {
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.8px;
+  }
+
+  .hyto-landing-legal {
+    margin-top: 0;
+  }
+
+  .hyto-landing-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    margin: var(--e-3) var(--e-3) var(--e-3) 0;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--sidebar);
+    padding: var(--e-6);
+  }
+
+  [data-theme="dark"] .hyto-landing-panel {
+    background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 10%, transparent) 0, transparent 50%), var(--papel);
+  }
+
+  .hyto-landing-panel .hyto-anillo {
+    top: var(--e-8);
+    right: var(--e-8);
+    width: min(400px, 70%);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .hyto-landing-panel > :not(.hyto-anillo) {
+    position: relative;
+  }
+
+  .hyto-landing-panel-q {
+    max-width: 460px;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 36px;
+    letter-spacing: -0.5px;
+  }
+
+  .hyto-landing-panel-s {
+    margin-top: var(--e-1);
+    max-width: 420px;
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--suave);
+  }
+
+  .hyto-landing-panel .hyto-roles {
+    margin-top: var(--e-3);
   }
 
   .hyto-inbox {

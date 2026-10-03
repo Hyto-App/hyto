@@ -123,7 +123,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
   test("aprobar deja la tarea pagada en la revisión y en la memoria", async () => {
     await montar(createElement(Revision, { tareaId: "stand" }));
     assert.match(texto(), /Approve/);
-    assert.match(texto(), /100% · Completado/);
+    assert.match(texto(), /100% · Completed/);
     await pulsar("Approve");
     const plano = texto();
     assert.match(plano, /Paid/);
@@ -134,7 +134,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
   test("pedir otra foto saca la tarea de la revisión", async () => {
     await montar(createElement(Revision, { tareaId: "registro" }));
     assert.match(texto(), /Ask for another photo/);
-    assert.match(texto(), /Parcialmente completado/);
+    assert.match(texto(), /Partially completed/);
     await pulsar("Ask for another photo");
     const plano = texto();
     assert.equal(plano.includes("Ask for another photo"), false);
