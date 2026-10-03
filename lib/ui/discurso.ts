@@ -1,6 +1,6 @@
 /**
- * English speech for the public landing.
- * One flat map so a later language selector can replace this object.
+ * Public landing speech. `discurso` stays English so existing checks keep one source.
+ * `discursoEs` is the Costa Rica Spanish twin. `discursoDe` picks one; English is the default.
  * Keys stay stable. Components read these strings; they do not invent sentences.
  * `ctaSignIn` matches the Sign in button rendered by Entrar.
  */
@@ -91,6 +91,54 @@ export const discurso: Record<ClaveDiscurso, string> = {
   faqCryptoQuestion: "Do I need to know crypto?",
   faqCryptoAnswer: "No. You can pick a task and send a photo without learning crypto first.",
 };
+
+export const discursoEs: Record<ClaveDiscurso, string> = {
+  sloganLead: "Demuestra lo que vales.",
+  sloganPay: "Cobra.",
+  subheadline: "Un mercado de tareas cortas. Te pagan en dólares en cripto (USDC).",
+  networkLead: "Red de práctica.",
+  networkBody:
+    "Los dólares en cripto (USDC) son dólares digitales. Por ahora esta app corre en una red de práctica, así que el dinero es para probar Hyto. No es dinero real.",
+  ctaSignIn: "Entrar",
+  ctaDemo: "Probar el demo",
+  ctaDemoHelp: "No necesitas una cuenta. Abre una sesión de práctica como voluntario o como organizador.",
+  ctaDemoVolunteer: "Como voluntario",
+  ctaDemoOrganizer: "Como organizador",
+  ctaDemoBusy: "Abriendo…",
+  ctaDemoError: "No se pudo abrir el demo. Inténtalo de nuevo.",
+  stepsTitle: "Cómo funciona",
+  step1Title: "Elige una tarea",
+  step1Body: "Escoge un trabajo corto en un evento, como armar una mesa o una comida del equipo.",
+  step2Title: "Envía una foto",
+  step2Body: "Toma una foto que muestre que el trabajo está listo. Esa foto es tu prueba.",
+  step3Title: "Cobra",
+  step3Body: "Cuando quien organiza lo aprueba, recibes dólares en cripto (USDC).",
+  audienceTitle: "Para quién es",
+  workersTitle: "Voluntarios y trabajadores",
+  workersBody: "Únete a un evento, mira las tareas que te asignaron y cobra las que termines.",
+  organizersTitle: "Organizadores",
+  organizersBody: "Publica las tareas, aparta el dinero y aprueba cada pago antes de que salga.",
+  trustTitle: "Por qué puedes confiar en un pago",
+  trustApproveTitle: "Quien organiza aprueba cada pago",
+  trustApproveBody: "Una persona revisa la foto y decide. Hyto no paga solo.",
+  trustAiTitle: "La IA solo sugiere",
+  trustAiBody: "Un asistente lee la foto y sugiere una nota. No puede firmar ni mover el dinero.",
+  trustEscrowTitle: "El dinero se aparta antes del trabajo",
+  trustEscrowBody:
+    "Quien organiza aparta el monto de la tarea primero, así el pago está esperando cuando se aprueba el trabajo.",
+  legal: "El ingreso es con Cavos. Se crea una cuenta para guardar tu pago. No necesitas otra app de cripto.",
+  mileKicker: "Conoce a Mile",
+  closeKicker: "Empieza",
+  closeTitle: "¿Listo para demostrar lo que vales?",
+  faqKicker: "Preguntas",
+  faqTitle: "Antes de empezar",
+  faqCryptoQuestion: "¿Necesito saber de cripto?",
+  faqCryptoAnswer: "No. Puedes elegir una tarea y enviar una foto sin aprender cripto primero.",
+};
+
+export function discursoDe(idioma: "en" | "es"): Record<ClaveDiscurso, string> {
+  return idioma === "es" ? discursoEs : discurso;
+}
 
 export type BloqueDiscurso = { titulo: string; cuerpo: string };
 

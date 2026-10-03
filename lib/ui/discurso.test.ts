@@ -9,8 +9,11 @@ import {
   audienciasDiscurso,
   confianzaDiscurso,
   discurso,
+  discursoDe,
+  discursoEs,
   pasosDiscurso,
 } from "./discurso";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
 const FRASES = [
@@ -46,6 +49,42 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
   );
   assert.equal(audienciasDiscurso().length, 2);
   assert.equal(confianzaDiscurso().length, 3);
+});
+
+test("el discurso en español usa las mismas claves", () => {
+  assert.deepEqual(Object.keys(discursoEs).sort(), [...CLAVES_DISCURSO].sort());
+  for (const clave of CLAVES_DISCURSO) {
+    assert.ok(discursoEs[clave].trim().length > 0, clave);
+    assert.notEqual(discursoEs[clave], discurso[clave], clave);
+    assert.equal(JERGA.test(discursoEs[clave]), false, `${clave}: ${discursoEs[clave]}`);
+  }
+  assert.equal(discursoDe("en"), discurso);
+  assert.equal(discursoDe("es"), discursoEs);
+  const unido = Object.values(discursoEs).join("\n");
+  for (const frase of ["Demuestra lo que vales.", "Red de práctica.", "Elige una tarea", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
+    assert.ok(unido.includes(frase), frase);
+  }
+});
+
+test("la landing en español muestra el discurso y el selector", async () => {
+  await montar(
+    createElement(ProveedorIdioma, {
+      idioma: "es",
+      children: createElement(Landing, { demoHabilitado: false }),
+    }),
+  );
+  try {
+    const visible = texto();
+    for (const frase of ["Demuestra lo que vales.", "Red de práctica.", "Cómo funciona", "Para quién es", "Conoce a Mile", "¿Listo para demostrar lo que vales?", "Entrar"]) {
+      assert.ok(visible.includes(frase), frase);
+    }
+    assert.equal(visible.includes("Prove your worth."), false);
+    assert.equal(visible.includes("Practice network."), false);
+    assert.ok(document.querySelector(".hyto-landing-head .hyto-idioma"));
+    assert.equal(document.querySelector(".hyto-landing-head .hyto-idioma")?.getAttribute("aria-label"), "Idioma");
+  } finally {
+    await desmontar();
+  }
 });
 
 const EN_PAGINA = [

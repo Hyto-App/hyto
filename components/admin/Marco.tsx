@@ -4,14 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Icono, Logo, Tema } from "@/components/ui/Marca";
+import { SelectorIdioma, useTexto } from "@/components/ui/Idioma";
+import type { Clave } from "@/lib/ui/diccionario";
 
-const ENLACES = [
-  { href: "/eventos", etiqueta: "Events", icono: "projects" },
-  { href: "/mis-tareas", etiqueta: "Tasks", icono: "tasks" },
-  { href: "/cuentas", etiqueta: "Account", icono: "wallet" },
-] as const;
+const ENLACES: readonly { href: string; clave: Clave; icono: "projects" | "tasks" | "wallet" }[] = [
+  { href: "/eventos", clave: "nav.events", icono: "projects" },
+  { href: "/mis-tareas", clave: "nav.tasks", icono: "tasks" },
+  { href: "/cuentas", clave: "nav.account", icono: "wallet" },
+];
 
 export function Marco({ children }: { children: ReactNode; demoHabilitado?: boolean }) {
+  const t = useTexto();
   const ruta = usePathname();
   const eventos = ruta.startsWith("/eventos") || ruta.startsWith("/revision") || ruta === "/informe" || ruta.startsWith("/proyectos");
   const tareas = ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas");
@@ -23,15 +26,18 @@ export function Marco({ children }: { children: ReactNode; demoHabilitado?: bool
       <aside className="hyto-side print:hidden">
         <div className="hyto-brand">
           <Logo />
-          <Tema />
+          <div className="hyto-brand-acciones">
+            <SelectorIdioma />
+            <Tema />
+          </div>
         </div>
-        <nav className="hyto-nav" aria-label="Main">
+        <nav className="hyto-nav" aria-label={t("nav.main")}>
           {ENLACES.map((enlace) => {
             const activo = enlace.href === "/eventos" ? eventos : enlace.href === "/cuentas" ? cuenta : tareas;
             return (
               <Link key={enlace.href} href={enlace.href} className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}>
                 <Icono nombre={enlace.icono} />
-                <span>{enlace.etiqueta}</span>
+                <span>{t(enlace.clave)}</span>
               </Link>
             );
           })}
@@ -39,7 +45,7 @@ export function Marco({ children }: { children: ReactNode; demoHabilitado?: bool
       </aside>
       <div className="hyto-main">
         {foco ? (
-          <button type="button" className="hyto-atras" aria-label="Back" onClick={() => window.history.back()}>
+          <button type="button" className="hyto-atras" aria-label={t("nav.back")} onClick={() => window.history.back()}>
             ←
           </button>
         ) : null}

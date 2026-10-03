@@ -6,6 +6,9 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ### Added
 
+- The interface can be English (default) or Spanish. A selector in the shell, at the top of the signed-out landing, and in the sign-in sheet stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
+- Buttons whose label changes with the language size to the text: automatic width, horizontal padding, a minimum height, and wrapping. They do not clip the label.
+- Spanish covers the scrolling landing (`lib/ui/discurso.ts`), the welcome card, Best paid and Highest pay, the edit-task form, the animated verdict pill, and the volunteer's score. English stays the default.
 - The scrolling landing states the product in plain language. The hero keeps "Prove your worth. Get paid." and "A marketplace of small tasks. You get paid in dollars in crypto (USDC).", plus a practice-network note. Steps, who it is for, Mile, the question list, and the closing sign-in stay, and they read from `lib/ui/discurso.ts` so the same line is not repeated.
 
 ## 2026-10-02

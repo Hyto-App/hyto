@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { cookies } from "next/headers";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
+import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -39,13 +42,17 @@ export const viewport: Viewport = {
   themeColor: "#08090C",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const jar = await cookies();
+  const idioma = idiomaDe(jar.get(COOKIE_IDIOMA)?.value);
   return (
-    <html lang="en" className={poppins.variable} data-theme="dark" suppressHydrationWarning>
+    <html lang={idioma} className={poppins.variable} data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: TEMA_BOOT }} />
       </head>
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">
+        <ProveedorIdioma idioma={idioma}>{children}</ProveedorIdioma>
+      </body>
     </html>
   );
 }

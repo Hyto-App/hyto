@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -32,6 +33,9 @@ export function TareasEvento({
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string }[];
 }) {
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -116,7 +120,7 @@ export function TareasEvento({
   if (filas.length === 0) {
     return (
       <main className="hyto-page">
-        <p className="text-lg font-semibold">No tasks yet.</p>
+        <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
       </main>
     );
   }
@@ -129,11 +133,11 @@ export function TareasEvento({
           return (
             <li key={tarea.id} className={`hyto-card grid gap-3 p-5 ${editando ? "" : "sm:grid-cols-[1fr_16rem] sm:items-start"}`}>
               <div>
-                <p className="text-lg font-semibold">{textoVisible(tarea.titulo)}</p>
+                <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(tarea.estado as EstadoTarea)} · {montoDeTarea(tarea)}
+                  {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
                 </p>
-                {tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion)}</p> : null}
+                {tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
               </div>
               {editando && borrador ? (
                 <form
@@ -144,7 +148,7 @@ export function TareasEvento({
                   }}
                 >
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`titulo-${tarea.id}`}>
-                    Title
+                    {t("eventos.titleLabel")}
                     <input
                       id={`titulo-${tarea.id}`}
                       value={borrador.titulo}
@@ -153,7 +157,7 @@ export function TareasEvento({
                     />
                   </label>
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`condicion-${tarea.id}`}>
-                    Photo must show
+                    {t("eventos.photoMust")}
                     <input
                       id={`condicion-${tarea.id}`}
                       value={borrador.condicion}
@@ -162,7 +166,7 @@ export function TareasEvento({
                     />
                   </label>
                   <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${tarea.id}`}>
-                    Amount (USDC)
+                    {t("eventos.amount")}
                     <input
                       id={`monto-${tarea.id}`}
                       inputMode="decimal"
@@ -173,7 +177,7 @@ export function TareasEvento({
                   </label>
                   {tarea.tipo === "reembolso" ? (
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`tope-${tarea.id}`}>
-                      Limit (USDC)
+                      {t("eventos.limitUsdc")}
                       <input
                         id={`tope-${tarea.id}`}
                         inputMode="decimal"
@@ -184,14 +188,14 @@ export function TareasEvento({
                     </label>
                   ) : null}
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`asignar-editar-${tarea.id}`}>
-                    Assign
+                    {t("eventos.assign")}
                     <select
                       id={`asignar-editar-${tarea.id}`}
                       className="hyto-input mt-2"
                       value={borrador.miembroId}
                       onChange={(evento) => setBorrador({ ...borrador, miembroId: evento.target.value })}
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">{t("comunes.unassigned")}</option>
                       {miembros.map((persona) => (
                         <option key={persona.usuarioId} value={persona.usuarioId}>
                           {persona.email}
@@ -201,7 +205,7 @@ export function TareasEvento({
                   </label>
                   <div className="flex flex-wrap gap-2 sm:col-span-2">
                     <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando}>
-                      Save
+                      {t("eventos.save")}
                     </button>
                     <button
                       type="button"
@@ -211,14 +215,14 @@ export function TareasEvento({
                         setBorrador(null);
                       }}
                     >
-                      Cancel
+                      {t("eventos.cancel")}
                     </button>
                   </div>
                 </form>
               ) : (
                 <div>
                   <label className="text-sm" htmlFor={`asignar-${tarea.id}`}>
-                    Assign
+                    {t("eventos.assign")}
                     <select
                       id={`asignar-${tarea.id}`}
                       className="hyto-input mt-2"
@@ -227,7 +231,7 @@ export function TareasEvento({
                       aria-describedby={tarea.bloqueo ? `bloqueo-${tarea.id}` : undefined}
                       onChange={(evento) => void asignar(tarea.id, evento.target.value)}
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">{t("comunes.unassigned")}</option>
                       {miembros.map((persona) => (
                         <option key={persona.usuarioId} value={persona.usuarioId}>
                           {persona.email}
@@ -237,11 +241,11 @@ export function TareasEvento({
                   </label>
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
-                      {tarea.bloqueo}
+                      {claro(tarea.bloqueo)}
                     </p>
                   ) : (
                     <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => abrir(tarea)}>
-                      Edit
+                      {t("eventos.edit")}
                     </button>
                   )}
                 </div>
@@ -252,7 +256,7 @@ export function TareasEvento({
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </main>

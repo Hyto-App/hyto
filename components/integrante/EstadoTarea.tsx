@@ -1,4 +1,7 @@
+"use client";
+
 import type { EstadoTarea } from "@/lib/integrante/tipos";
+import { useIdioma } from "@/components/ui/Idioma";
 import { etiquetaEstado } from "@/lib/ui/etiquetas";
 
 const CLASE: Record<EstadoTarea, string> = {
@@ -8,10 +11,11 @@ const CLASE: Record<EstadoTarea, string> = {
 };
 
 export function PastillaEstado({ estado }: { estado: EstadoTarea }) {
+  const idioma = useIdioma();
   return (
     <span className={`hyto-pill ${CLASE[estado]}`}>
       <i className="hyto-dot" aria-hidden="true" />
-      {etiquetaEstado(estado)}
+      {etiquetaEstado(estado, idioma)}
     </span>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import type { Veredicto } from "@/lib/admin/tipos";
+import { useIdioma } from "@/components/ui/Idioma";
 import { etiquetaDesdeNota } from "@/lib/revision/pesos";
 import { etiquetaVeredicto, textoNota } from "@/lib/ui/etiquetas";
 
@@ -44,8 +45,9 @@ function escribir(nodo: HTMLElement, valor: number, exacto: boolean) {
 }
 
 export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Veredicto; nota?: number | null }) {
+  const idioma = useIdioma();
   const banda = typeof nota === "number" ? etiquetaDesdeNota(nota) : veredicto;
-  const etiqueta = etiquetaVeredicto(banda);
+  const etiqueta = etiquetaVeredicto(banda, idioma);
   const texto = textoNota(etiqueta, nota);
   const destino = typeof nota === "number" && Number.isFinite(nota) ? nota : null;
   const pillRef = useRef<HTMLSpanElement>(null);
@@ -96,7 +98,9 @@ export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Vered
     <span ref={pillRef} className={`${clase} hyto-pill-con-barra`} role="group" aria-label={texto}>
       <i className="hyto-dot" aria-hidden="true" />
       <span className="hyto-pill-vista" aria-hidden="true" data-etiqueta={etiqueta} />
-      <span className="hyto-pill-sr" aria-hidden="true">{texto}</span>
+      <span className="hyto-pill-sr" aria-hidden="true">
+        {texto}
+      </span>
       <span className="hyto-pill-bar" aria-hidden="true">
         <span />
       </span>

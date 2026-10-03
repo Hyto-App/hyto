@@ -7,7 +7,7 @@ import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
-import { mensajeClaro } from "@/lib/ui/claro";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
@@ -25,6 +25,9 @@ function filasIniciales(): CuentaPreparada[] {
 }
 
 export function CuentasDemo() {
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
   const [cuentas, setCuentas] = useState<CuentaPreparada[]>(filasIniciales);
   const [preparando, setPreparando] = useState(false);
   const preparandoRef = useRef(false);
@@ -75,7 +78,7 @@ export function CuentasDemo() {
       setPendiente(identidad);
       setCodigo("");
     } catch (error) {
-      setAviso(mensajeClaro(error instanceof Error ? error.message : "Could not prepare the account."));
+      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -93,7 +96,7 @@ export function CuentasDemo() {
       const identity = await auth.verifyOtp(identidad.email, codigo.trim());
       const sesion = await publicarSesion(identity.email ?? identidad.email, auth.getAuthToken?.() ?? null);
       if (!sesion.ok) {
-        setAviso(mensajeClaro(sesion.aviso));
+        setAviso(sesion.aviso);
         return;
       }
       const cuenta = await prepararIdentidad(identidad, auth);
@@ -105,10 +108,10 @@ export function CuentasDemo() {
       setCuentas((actuales) => actuales.map((item) => (item.id === cuenta.id ? cuenta : item)));
       setPendiente(null);
       setCodigo("");
-      if (avisoWallet) setAviso(mensajeClaro(avisoWallet));
-      else if (cuenta.detalle) setAviso(mensajeClaro(cuenta.detalle));
+      if (avisoWallet) setAviso(avisoWallet);
+      else if (cuenta.detalle) setAviso(cuenta.detalle);
     } catch (error) {
-      setAviso(mensajeClaro(error instanceof Error ? error.message : "Could not prepare the account."));
+      setAviso(error instanceof Error ? error.message : "Could not prepare the account.");
     } finally {
       preparandoRef.current = false;
       setPreparando(false);
@@ -116,20 +119,18 @@ export function CuentasDemo() {
   }
 
   const falta = siguiente();
-  const etiqueta = pendiente ? "Confirm" : preparando ? "Preparing…" : falta ? "Prepare accounts" : "Accounts ready";
+  const etiqueta = pendiente ? t("eventos.confirm") : preparando ? t("eventos.preparing") : falta ? t("eventos.prepareAccounts") : t("eventos.accountsReady");
 
   return (
     <main className="hyto-page">
       <header className="hyto-page-head">
         <div>
           <p className="hyto-crumb">
-            <Link href="/cuentas">Account</Link>
+            <Link href="/cuentas">{t("nav.account")}</Link>
             <InsigniaDemo />
           </p>
-          <h1 className="hyto-title mt-3">Accounts & wallet</h1>
-          <p className="hyto-sub">
-            One organizer and three volunteers. Each person confirms the code we email them. Then their account can receive the event payment.
-          </p>
+          <h1 className="hyto-title mt-3">{t("eventos.accountsTitle")}</h1>
+          <p className="hyto-sub">{t("eventos.accountsLead")}</p>
         </div>
       </header>
 
@@ -138,24 +139,24 @@ export function CuentasDemo() {
           const identidad = IDENTIDADES.find((item) => item.id === cuenta.id);
           return (
             <article key={cuenta.id} className="hyto-card flex flex-wrap items-center gap-4 p-5">
-              <span className="hyto-avatar">{iniciales(textoVisible(cuenta.nombre))}</span>
+              <span className="hyto-avatar">{iniciales(textoVisible(cuenta.nombre, idioma))}</span>
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre)}</h2>
+                <h2 className="text-lg font-semibold">{textoVisible(cuenta.nombre, idioma)}</h2>
                 <p className="mt-1 text-sm text-[var(--suave)]">{identidad?.email}</p>
                 {cuenta.direccion ? (
                   <details className="mt-2 text-sm">
-                    <summary className="cursor-pointer text-[var(--suave)]">Account details</summary>
+                    <summary className="cursor-pointer text-[var(--suave)]">{t("eventos.accountDetails")}</summary>
                     <p className="mt-1 font-mono">{acortarDireccion(cuenta.direccion)}</p>
                   </details>
                 ) : (
-                  <p className="mt-2 text-sm text-[var(--suave)]">Not set up yet</p>
+                  <p className="mt-2 text-sm text-[var(--suave)]">{t("eventos.notSetUp")}</p>
                 )}
               </div>
               <p className={`hyto-pill ${cuenta.usdcListo ? "hyto-pill-ok" : "hyto-pill-muted"}`}>
                 <i className="hyto-dot" aria-hidden="true" />
-                {cuenta.usdcListo ? "Ready to receive payment" : "Not ready to receive payment"}
+                {cuenta.usdcListo ? t("eventos.readyReceive") : t("eventos.notReadyReceive")}
               </p>
-              {cuenta.detalle ? <p className="w-full text-sm text-[var(--suave)]">{mensajeClaro(cuenta.detalle)}</p> : null}
+              {cuenta.detalle ? <p className="w-full text-sm text-[var(--suave)]">{claro(cuenta.detalle)}</p> : null}
             </article>
           );
         })}
@@ -163,7 +164,7 @@ export function CuentasDemo() {
 
       {pendiente ? (
         <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="codigo-cuenta">
-          Code for {textoVisible(pendiente.nombre)}
+          {t("eventos.codeFor", { name: textoVisible(pendiente.nombre, idioma) })}
           <input
             id="codigo-cuenta"
             inputMode="numeric"
@@ -183,7 +184,7 @@ export function CuentasDemo() {
 
       {aviso ? (
         <p role="alert" className="mt-4 text-sm leading-6 text-[var(--suave)]">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </main>

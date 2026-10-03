@@ -5,99 +5,167 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
+import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_SPAM, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
+import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
+import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import { type Clave, texto } from "@/lib/ui/diccionario";
+import type { Idioma } from "@/lib/ui/idioma";
 
 export const TEXTO = {
-  lockBudget: "Lock budget",
-  finishLocking: "Finish locking",
-  settingUp: "Setting up…",
-  locking: "Locking…",
-  approvePay: "Approve and pay",
-  checking: "Checking…",
-  approving: "Approving…",
-  paying: "Paying…",
-  viewChain: "View on blockchain",
-  preparePayout: "Get ready to be paid",
-  preparingPayout: "Getting ready…",
-  payoutReady: "Ready to be paid",
-  payoutDone: "Payout account ready",
-  checkingPayout: "Checking your payout account…",
-  saveProject: "Save project",
+  lockBudget: texto("en", "pago.lockBudget"),
+  finishLocking: texto("en", "pago.finishLocking"),
+  settingUp: texto("en", "pago.settingUp"),
+  locking: texto("en", "pago.locking"),
+  approvePay: texto("en", "pago.approvePay"),
+  checking: texto("en", "pago.checking"),
+  approving: texto("en", "pago.approving"),
+  paying: texto("en", "pago.paying"),
+  viewChain: texto("en", "pago.viewChain"),
+  preparePayout: texto("en", "pago.preparePayout"),
+  preparingPayout: texto("en", "pago.preparingPayout"),
+  payoutReady: texto("en", "pago.payoutReady"),
+  payoutDone: texto("en", "pago.payoutDone"),
+  checkingPayout: texto("en", "pago.checkingPayout"),
+  saveProject: texto("en", "pago.saveProject"),
 } as const;
 
-const ESPERA_RED = "That step didn't go through. Try again.";
-const SALDO_RED = "This account needs a little test balance for the network fee. Add some and try again.";
-const LISTO_COBRO = "The person who gets paid isn't ready to receive it yet. They should open Events and tap Get ready to be paid.";
-
-const EXACTO: Record<string, string> = {
-  "Could not submit the payment.": ESPERA_RED,
-  "Could not prepare the payment.": "We couldn't start that step. Try again.",
-  "Could not sign the payment.": "We couldn't complete that step. Try again.",
-  "Could not read the escrow.": "We couldn't check the budget. Try again.",
-  "Could not submit the USDC trustline.": "We couldn't finish setting up payouts. Try again.",
-  "Could not read the USDC trustline.": "We couldn't check whether this account can receive payment. Try again.",
-  "Could not prepare the USDC trustline.": "We couldn't get this account ready to receive payment. Try again.",
-  "Could not sign the USDC trustline.": "We couldn't confirm the payout setup. Try again.",
-  "Could not read the Stellar account.": "We couldn't check the payout account. Try again.",
-  "This session has no Stellar wallet. Sign in again to sign.": "Sign in again before you continue.",
-  "This session has no Stellar wallet.": "Sign in again before you continue.",
-  "This wallet is not on Stellar testnet yet.":
-    "This account isn't on the test network yet. Open Events and tap Get ready to be paid.",
-  "The wallet is not a Stellar account.": "That doesn't look like a payout account. Sign in again.",
-  "The wallet does not match this sign-in.": "That account doesn't match this sign-in. Sign in again.",
-  "This session's wallet did not sign the XDR.": "The confirmation didn't match this sign-in. Sign in again and retry.",
-  "The signed XDR is missing.": "The confirmation didn't arrive. Try again.",
-  "The signed XDR is too long.": "The confirmation couldn't be sent. Try again.",
-  "The transaction is not a testnet USDC trustline for this wallet.": "That confirmation doesn't match this account. Try again.",
-  "Preparation did not return the XDR.": "We couldn't prepare that step. Try again.",
-  "This task has no escrow yet. Deploy and fund it first.": "Lock the budget before you pay.",
-  "The transaction does not deploy the escrow.": "The budget wasn't locked. Try Lock budget again.",
-  "This task already has an escrow.": "This task already has its budget locked.",
-  "The submit succeeded and Trustless did not return the contract.":
-    "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.",
-  "The task has no payout wallet. Ask the volunteer to sign in and open the task.":
-    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
-  "Review pending": "Wait until the photo review finishes before locking the budget.",
-  "The milestone amount has to be greater than zero.": "The amount has to be greater than zero.",
-  "Only the organizer prepares the payment.": "Only the organizer can lock the budget and pay.",
-  "Only the dispute resolver can sign this resolution.": "Only the person who resolves disputes can do this.",
-  "Not enough XLM for the fee.": SALDO_RED,
-  "You rejected the signature.": "You cancelled the confirmation. Nothing was sent.",
-  "Your Cavos session expired.": AVISO_REINGRESO,
-  "Your Cavos session closed. Sign in again to sign.": AVISO_REINGRESO,
-  "Cavos is not configured for sign-in.": "Sign-in isn't set up yet.",
-  "Cavos is not configured.": "Sign-in isn't set up yet.",
-  "Accounts are waiting for the Cavos app id.": "Account setup isn't available yet.",
-  "The account did not land on Stellar.": "The payout account didn't open. Try again.",
-  "Demo mode cannot prepare USDC.": "Demo mode can't set up payouts. Sign in with your email to continue.",
-  "Demo mode: signatures are off": "Demo mode can't send payments. Sign in with your email to continue.",
+const EXACTO: Record<string, Clave> = {
+  "Could not submit the payment.": "errores.paso",
+  "Could not prepare the payment.": "errores.noInicio",
+  "Could not sign the payment.": "errores.noCompleto",
+  "Could not read the escrow.": "errores.noPresupuesto",
+  "Could not submit the USDC trustline.": "errores.noCobroFin",
+  "Could not read the USDC trustline.": "errores.noCobroCheck",
+  "Could not prepare the USDC trustline.": "errores.noCobroListo",
+  "Could not sign the USDC trustline.": "errores.noCobroConfirm",
+  "Could not read the Stellar account.": "errores.noCuentaPago",
+  "This session has no Stellar wallet. Sign in again to sign.": "errores.entrarOtraVez",
+  "This session has no Stellar wallet.": "errores.entrarOtraVez",
+  "This wallet is not on Stellar testnet yet.": "errores.noTestnet",
+  "The wallet is not a Stellar account.": "errores.noPareceCuenta",
+  "The wallet does not match this sign-in.": "errores.noCoincideIngreso",
+  "This session's wallet did not sign the XDR.": "errores.confirmacionNoCoincide",
+  "The signed XDR is missing.": "errores.confirmacionNoLlego",
+  "The signed XDR is too long.": "errores.confirmacionNoEnvio",
+  "The transaction is not a testnet USDC trustline for this wallet.": "errores.confirmacionNoCuenta",
+  "Preparation did not return the XDR.": "errores.noPreparar",
+  "This task has no escrow yet. Deploy and fund it first.": "errores.bloquearAntes",
+  "The transaction does not deploy the escrow.": "errores.presupuestoNoBloqueado",
+  "This task already has an escrow.": "errores.yaBloqueado",
+  "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
+  "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
+  "Review pending": "errores.esperaRevision",
+  "The milestone amount has to be greater than zero.": "errores.montoCero",
+  "Only the organizer prepares the payment.": "errores.soloOrganizador",
+  "Only the dispute resolver can sign this resolution.": "errores.soloResolver",
+  "Not enough XLM for the fee.": "errores.saldoRed",
+  "You rejected the signature.": "errores.cancelaste",
+  "Your Cavos session expired.": "errores.reingreso",
+  "Your Cavos session closed. Sign in again to sign.": "errores.reingreso",
+  [AVISO_REINGRESO]: "errores.reingreso",
+  "Cavos is not configured for sign-in.": "errores.sinConfig",
+  "Cavos is not configured.": "errores.sinConfig",
+  "Accounts are waiting for the Cavos app id.": "errores.cuentasNo",
+  "The account did not land on Stellar.": "errores.cuentaNoAbrio",
+  "Demo mode cannot prepare USDC.": "errores.demoCobro",
+  "Demo mode: signatures are off": "errores.demoPagos",
   "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If it is short, fund it with Friendbot.":
-    SALDO_RED,
-  "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM.": SALDO_RED,
-  "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.": SALDO_RED,
-  "Trustless Work rejected the request.": "The payment service rejected that step. Try again.",
-  [CODIGO_RECEPTOR_NO_LISTO]: AVISO_RECEPTOR_NO_LISTO,
-  [AVISO_RECEPTOR_NO_LISTO]: AVISO_RECEPTOR_NO_LISTO,
-  [CODIGO_HORIZON_RECEPTOR]: AVISO_HORIZON_RECEPTOR,
-  [AVISO_HORIZON_RECEPTOR]: AVISO_HORIZON_RECEPTOR,
+    "errores.saldoRed",
+  "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM.": "errores.saldoRed",
+  "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.": "errores.saldoRed",
+  "Trustless Work rejected the request.": "errores.servicioRechazo",
+  [CODIGO_RECEPTOR_NO_LISTO]: "errores.receptorNoListo",
+  [AVISO_RECEPTOR_NO_LISTO]: "errores.receptorNoListo",
+  [CODIGO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
+  [AVISO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
+  "Sign in to continue.": "errores.entrarContinuar",
+  [AVISO_GENERICO]: "errores.noEntrar",
+  [AVISO_CODIGO_INVALIDO]: "errores.codigoNo",
+  [AVISO_CODIGO_VENCIDO]: "errores.codigoVencio",
+  [AVISO_RED]: "errores.sinRed",
+  [AVISO_GOOGLE_CERRADO]: "errores.googleCerrado",
+  [AVISO_GOOGLE_BLOQUEADO]: "errores.googleBloqueado",
+  [AVISO_CONFIG]: "errores.sinConfig",
+  [AVISO_CORREO]: "errores.correo",
+  [AVISO_DEMO]: "errores.demoCorreo",
+  [AVISO_SPAM]: "errores.spam",
+  [AVISO_MONTO_INVALIDO]: "errores.montoInvalido",
+  [AVISO_MONTO_TOPE]: "errores.montoTope",
+  [AVISO_MONTO_TARDE]: "errores.montoTarde",
+  [MOTIVO_COPIA]: "revision.copia",
+  "Needs a manual review": "revision.manual",
+  "Could not sign in.": "entrar.couldNotSignIn",
+  "Could not leave demo mode.": "entrar.leaveDemoFail",
+  "Could not show the camera.": "evidencia.noCameraShow",
+  "Could not open the camera. Allow the camera and try again.": "evidencia.noCamera",
+  "The camera is not ready yet.": "evidencia.cameraNotReady",
+  "Could not take the photo.": "evidencia.noPhoto",
+  "Choose a PDF, JPEG, PNG, or WebP file.": "evidencia.badFile",
+  "Take the photo with the camera.": "evidencia.useCamera",
+  "Take the photo now. Photos from the gallery are not accepted.": "evidencia.gallery",
+  "Could not send. Try again.": "evidencia.noSend",
+  "We couldn't find that task.": "evidencia.noTask",
+  "Could not load this review.": "revision.noLoad",
+  "Could not ask for another photo.": "revision.noAsk",
+  "The review could not be retried.": "bandeja.retryFail",
+  "We couldn't load your account.": "cuenta.noLoad",
+  "Could not load events.": "eventos.noLoad",
+  "Could not create the invite.": "eventos.inviteFail",
+  "That code is not valid.": "eventos.joinInvalid",
+  "Could not assign that task.": "eventos.assignFail",
+  "Enter a name and at least one task with an amount.": "eventos.needFields",
+  "Could not create the event.": "eventos.createFail",
+  "Demo mode cannot create events. Sign in with your email to create one.": "eventos.demoCreate",
+  "Could not prepare the account.": "eventos.prepareFail",
+  "Account setup isn't available yet.": "errores.cuentasNo",
+  "Could not open the demo. Try again.": "entrar.demoOpenFail",
+  "Could not save that task.": "eventos.saveFail",
+  "Only the organizer can edit tasks.": "eventos.editOnly",
+  "This task already has a photo, so it can't be edited.": "eventos.editPhoto",
+  "This task already has a payment, so it can't be edited.": "eventos.editPaid",
+  "The amount is already locked in the payment, so this task can't be edited.": "eventos.editLocked",
+  "Enter a title.": "eventos.needTitle",
+  "Title is too long.": "eventos.titleLong",
+  "Enter what the photo must show.": "eventos.needPhoto",
+  "That note is too long.": "eventos.noteLong",
+  "Work tasks don't have a cap.": "eventos.noCap",
+  "Choose a person in this event.": "eventos.choosePerson",
+  "Nothing to save.": "eventos.nothingSave",
+  "That person is not in this event.": "eventos.notInEvent",
+  "We couldn't open this payout account on the test network. Open Events and tap Get ready to be paid.": "errores.faucetTestnet",
+  "Payout accounts are only opened on the test network.": "errores.soloTestnet",
 };
 
-const PATRONES: readonly (readonly [RegExp, string])[] = [
-  [/HYTO_ESCROW_|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "Payment setup isn't complete on the server. Ask whoever runs Hyto."],
-  [/Trustless Work did not authorize/i, "Payments aren't available right now. Ask whoever runs Hyto."],
-  [/already released|already paid/i, "This task is already paid."],
-  [/trustline|receiver/i, LISTO_COBRO],
-  [/insufficient balance|not enough usdc|balance must be equal/i, "There isn't enough money set aside yet. Finish locking the budget, then pay."],
-  [/fee-bump|friendbot|not enough xlm|\bxlm\b/i, SALDO_RED],
-  [/xdr|escrow|signer|contract id|soroban|stellar/i, ESPERA_RED],
+const PATRONES: readonly (readonly [RegExp, Clave])[] = [
+  [/HYTO_ESCROW_|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
+  [/Trustless Work did not authorize/i, "errores.pagosNoDisponibles"],
+  [/already released|already paid/i, "errores.yaPagada"],
+  [/trustline|receiver/i, "errores.listoCobro"],
+  [/insufficient balance|not enough usdc|balance must be equal/i, "errores.saldoInsuficiente"],
+  [/fee-bump|friendbot|not enough xlm|\bxlm\b/i, "errores.saldoRed"],
+  [/xdr|escrow|signer|contract id|soroban|stellar/i, "errores.paso"],
 ];
 
-export function mensajeClaro(mensaje: string): string {
+const CLAVES_CONOCIDAS = [...new Set([...Object.values(EXACTO), ...PATRONES.map((fila) => fila[1])])];
+const SALIDA_EN = new Map<string, Clave>();
+const SALIDA_ES = new Set<string>();
+for (const clave of CLAVES_CONOCIDAS) {
+  SALIDA_EN.set(texto("en", clave), clave);
+  SALIDA_ES.add(texto("es", clave));
+}
+
+const ESPERA = /^Wait (\d+) s before requesting another code$/;
+
+export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
   if (!limpio) return limpio;
-  const exacto = EXACTO[limpio];
-  if (exacto) return exacto;
-  for (const [patron, texto] of PATRONES) {
-    if (patron.test(limpio)) return texto;
+  const espera = ESPERA.exec(limpio);
+  if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
+  if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
+  const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
+  if (clave) return texto(idioma, clave);
+  for (const [patron, destino] of PATRONES) {
+    if (patron.test(limpio)) return texto(idioma, destino);
   }
   return limpio;
 }
@@ -107,28 +175,29 @@ export type PasoFlujo = {
   estado: "done" | "now" | "later";
 };
 
-export function pasosDePago(entrada: {
-  tieneVeredicto: boolean;
-  revisionFallida: boolean;
-  presupuestoListo: boolean;
-  pagado: boolean;
-}): PasoFlujo[] {
+export function pasosDePago(
+  entrada: {
+    tieneVeredicto: boolean;
+    revisionFallida: boolean;
+    presupuestoListo: boolean;
+    pagado: boolean;
+  },
+  idioma: Idioma = "en",
+): PasoFlujo[] {
+  const nombres = [
+    texto(idioma, "pago.reviewPhoto"),
+    texto(idioma, "pago.lockBudget"),
+    texto(idioma, "pago.pay"),
+  ];
   if (entrada.pagado) {
-    return [
-      { nombre: "Review the photo", estado: "done" },
-      { nombre: "Lock budget", estado: "done" },
-      { nombre: "Pay", estado: "done" },
-    ];
+    return nombres.map((nombre) => ({ nombre, estado: "done" }));
   }
   const revisionLista = entrada.tieneVeredicto || entrada.revisionFallida;
   const revision: PasoFlujo["estado"] = revisionLista ? "done" : "now";
   const bloqueo: PasoFlujo["estado"] = !revisionLista ? "later" : entrada.presupuestoListo ? "done" : "now";
   const pago: PasoFlujo["estado"] = revisionLista && entrada.presupuestoListo ? "now" : "later";
-  return [
-    { nombre: "Review the photo", estado: revision },
-    { nombre: "Lock budget", estado: bloqueo },
-    { nombre: "Pay", estado: pago },
-  ];
+  const estados: PasoFlujo["estado"][] = [revision, bloqueo, pago];
+  return nombres.map((nombre, indice) => ({ nombre, estado: estados[indice] }));
 }
 
 const PASOS_BLOQUEO = new Set(["desplegar", "fondear"]);
@@ -143,18 +212,18 @@ export function cajaDeFallo(entrada: { paso: string | null; codigo: string | nul
   return null;
 }
 
-export function tituloFallo(caja: CajaFallo): string {
-  return caja === "bloqueo" ? "Budget not locked" : "Payment failed";
+export function tituloFallo(caja: CajaFallo, idioma: Idioma = "en"): string {
+  return texto(idioma, caja === "bloqueo" ? "pago.budgetNotLocked" : "pago.paymentFailed");
 }
 
-export function detalleFallo(caja: CajaFallo, aviso: string): string {
-  return caja === "bloqueo" ? aviso : "No USDC left the escrow.";
+export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
+  return caja === "bloqueo" ? aviso : texto(idioma, "pago.noUsdcLeft");
 }
 
-export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar"): string {
-  if (accion === "desplegar") return "Setting up the budget. Keep this page open. It can take a minute.";
-  if (accion === "fondear") return "Locking the budget. Confirm in the window if it asks. It can take a minute.";
-  if (accion === "marcar") return "Recording that the work is done.";
-  if (accion === "aprobar") return "Approving the payment.";
-  return "Sending the payment. Keep this page open.";
+export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar", idioma: Idioma = "en"): string {
+  if (accion === "desplegar") return texto(idioma, "pago.settingUpLong");
+  if (accion === "fondear") return texto(idioma, "pago.lockingLong");
+  if (accion === "marcar") return texto(idioma, "pago.recording");
+  if (accion === "aprobar") return texto(idioma, "pago.approvingLong");
+  return texto(idioma, "pago.sending");
 }

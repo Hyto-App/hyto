@@ -2,25 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Entrar } from "@/components/admin/Entrar";
+import { SelectorIdioma, useClaro, useDiscurso } from "@/components/ui/Idioma";
 import { AnilloHitos, Logo, Tema } from "@/components/ui/Marca";
-import { mensajeClaro } from "@/lib/ui/claro";
 import { discurso } from "@/lib/ui/discurso";
 
 export function Hero({ demoHabilitado }: { demoHabilitado: boolean }) {
+  const copia = useDiscurso();
   return (
     <section className="hyto-landing-hero">
       <header className="hyto-landing-head">
         <Logo className="hyto-landing-logo" />
-        <Tema />
+        <div className="hyto-brand-acciones">
+          <SelectorIdioma className="hyto-landing-idioma" />
+          <Tema />
+        </div>
       </header>
       <div className="hyto-landing-copy">
         <h1 className="hyto-eslogan">
-          {discurso.sloganLead} <em>{discurso.sloganPay}</em>
+          {copia.sloganLead} <em>{copia.sloganPay}</em>
         </h1>
-        <p className="hyto-landing-pitch">{discurso.subheadline}</p>
+        <p className="hyto-landing-pitch">{copia.subheadline}</p>
         <p className="hyto-landing-note">
-          <strong>{discurso.networkLead} </strong>
-          {discurso.networkBody}
+          <strong>{copia.networkLead} </strong>
+          {copia.networkBody}
         </p>
         <div className={demoHabilitado ? "hyto-landing-cta hyto-landing-actions" : "hyto-landing-cta"}>
           <Entrar demoHabilitado={demoHabilitado} />
@@ -28,12 +32,14 @@ export function Hero({ demoHabilitado }: { demoHabilitado: boolean }) {
         </div>
       </div>
       <AnilloHitos />
-      <p className="hyto-landing-legal">{discurso.legal}</p>
+      <p className="hyto-landing-legal">{copia.legal}</p>
     </section>
   );
 }
 
 function ProbarDemo() {
+  const copia = useDiscurso();
+  const claro = useClaro();
   const [abierto, setAbierto] = useState(false);
   const [ocupado, setOcupado] = useState<"organizador" | "voluntario" | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -67,7 +73,7 @@ function ProbarDemo() {
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
       if (!respuesta.ok) {
         const texto = cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : discurso.ctaDemoError;
-        setAviso(mensajeClaro(texto) || discurso.ctaDemoError);
+        setAviso(texto);
         return;
       }
       const elegido = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rol;
@@ -90,11 +96,11 @@ function ProbarDemo() {
         aria-controls="opciones-demo"
         onClick={alternar}
       >
-        {discurso.ctaDemo}
+        {copia.ctaDemo}
       </button>
       {abierto ? (
         <div id="opciones-demo" className="hyto-landing-demo-panel">
-          <p>{discurso.ctaDemoHelp}</p>
+          <p>{copia.ctaDemoHelp}</p>
           <button
             ref={voluntarioRef}
             type="button"
@@ -103,7 +109,7 @@ function ProbarDemo() {
             aria-busy={ocupado === "voluntario"}
             onClick={() => void entrar("voluntario")}
           >
-            {ocupado === "voluntario" ? discurso.ctaDemoBusy : discurso.ctaDemoVolunteer}
+            {ocupado === "voluntario" ? copia.ctaDemoBusy : copia.ctaDemoVolunteer}
           </button>
           <button
             type="button"
@@ -112,11 +118,9 @@ function ProbarDemo() {
             aria-busy={ocupado === "organizador"}
             onClick={() => void entrar("organizador")}
           >
-            {ocupado === "organizador" ? discurso.ctaDemoBusy : discurso.ctaDemoOrganizer}
+            {ocupado === "organizador" ? copia.ctaDemoBusy : copia.ctaDemoOrganizer}
           </button>
-          {aviso ? (
-            <p role="alert">{aviso}</p>
-          ) : null}
+          {aviso ? <p role="alert">{claro(aviso)}</p> : null}
         </div>
       ) : null}
     </div>

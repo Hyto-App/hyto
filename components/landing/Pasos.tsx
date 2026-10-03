@@ -1,14 +1,18 @@
-import { discurso, pasosDiscurso } from "@/lib/ui/discurso";
+"use client";
+
+import { useDiscurso } from "@/components/ui/Idioma";
+import { pasosDiscurso } from "@/lib/ui/discurso";
 
 export function Pasos() {
+  const copia = useDiscurso();
   return (
     <section className="hyto-landing-band" aria-labelledby="hyto-pasos-title">
       <div className="hyto-landing-band-inner">
         <h2 id="hyto-pasos-title" className="hyto-landing-h">
-          {discurso.stepsTitle}
+          {copia.stepsTitle}
         </h2>
         <ol className="hyto-landing-steps">
-          {pasosDiscurso().map((paso, indice) => (
+          {pasosDiscurso(copia).map((paso, indice) => (
             <li key={paso.titulo} className="hyto-step-card">
               <span className="hyto-step-num" aria-hidden="true">
                 {indice + 1}
