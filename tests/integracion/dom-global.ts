@@ -7,6 +7,7 @@ const globales: Record<string, unknown> = {
   self: ventana,
   document: ventana.document,
   navigator: ventana.navigator,
+  sessionStorage: ventana.sessionStorage,
   HTMLElement: ventana.HTMLElement,
   HTMLInputElement: ventana.HTMLInputElement,
   HTMLButtonElement: ventana.HTMLButtonElement,

@@ -1,6 +1,7 @@
 import type { SesionFila } from "@/lib/db/tipos";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { xdrDemasiadoLargo } from "@/lib/escrow/limite";
+import { abrirCuentaTestnet, leerCuentaTestnet, type OpcionesCuentaTestnet } from "@/lib/integrante/friendbot";
 import { armarXdrUsdc, HORIZON_TESTNET, xdrEsTrustlineUsdc } from "@/lib/integrante/trustline";
 import { cuentaTieneUsdc } from "@/lib/integrante/usdc";
 import { sesionEsDemo } from "@/lib/sesion/demo";
@@ -8,32 +9,28 @@ import { json } from "./json";
 
 export const AVISO_USDC_DEMO = "Demo mode can't set up payouts. Sign in with your email to continue.";
 export const AVISO_USDC_SIN_WALLET = "Sign in again before setting up payouts.";
-export const AVISO_USDC_SIN_CUENTA = "This account isn't on the test network yet. Sign in again and retry.";
+export const AVISO_USDC_SIN_CUENTA = "We couldn't open this payout account on the test network. Try again.";
+export const AVISO_USDC_SOLO_TESTNET = "Payout accounts are only opened on the test network.";
 export const AVISO_USDC_XDR = "That confirmation doesn't match this account. Try again.";
 export const AVISO_USDC_ENVIO = "We couldn't finish setting up payouts. Try again.";
 export const AVISO_USDC_LECTURA = "We couldn't check the payout account. Try again.";
 
-type CuentaHorizon = {
-  sequence?: unknown;
-  balances?: { asset_code?: string; asset_issuer?: string }[];
-};
+type OpcionesUsdc = Omit<OpcionesCuentaTestnet, "fetch">;
 
 export async function leerUsdcHttp(sesion: SesionFila, fetchImpl: typeof fetch = fetch): Promise<Response> {
   const rechazo = rechazoDe(sesion);
   if (rechazo) return rechazo;
-  try {
-    const cuenta = await leerCuenta(sesion.wallet.trim(), fetchImpl);
-    if (!cuenta) return json({ listo: false });
-    return json({ listo: cuentaTieneUsdc(cuenta) });
-  } catch {
-    return json({ aviso: AVISO_USDC_LECTURA }, 502);
-  }
+  const cuenta = await leerCuentaTestnet(sesion.wallet.trim(), fetchImpl);
+  if (cuenta === "fallo") return json({ aviso: AVISO_USDC_LECTURA }, 502);
+  if (!cuenta) return json({ listo: false });
+  return json({ listo: cuentaTieneUsdc(cuenta) });
 }
 
 export async function publicarUsdcHttp(
   sesion: SesionFila,
   request: Request,
   fetchImpl: typeof fetch = fetch,
+  opciones: OpcionesUsdc = {},
 ): Promise<Response> {
   const rechazo = rechazoDe(sesion);
   if (rechazo) return rechazo;
@@ -46,7 +43,7 @@ export async function publicarUsdcHttp(
   }
   const accion = accionDe(body);
   if (!accion) return json({ aviso: "That action is not available." }, 400);
-  if (accion === "preparar") return preparar(wallet, fetchImpl);
+  if (accion === "preparar") return preparar(wallet, fetchImpl, opciones);
   const xdr = xdrDe(body);
   if (!xdr) return json({ aviso: "The signed transaction is missing." }, 400);
   if (xdrDemasiadoLargo(xdr)) return json({ aviso: "The signed transaction is too long." }, 400);
@@ -65,29 +62,18 @@ function rechazoDe(sesion: SesionFila): Response | null {
   return null;
 }
 
-async function preparar(wallet: string, fetchImpl: typeof fetch): Promise<Response> {
-  let cuenta: CuentaHorizon | null;
-  try {
-    cuenta = await leerCuenta(wallet, fetchImpl);
-  } catch {
-    return json({ aviso: AVISO_USDC_LECTURA }, 502);
+async function preparar(wallet: string, fetchImpl: typeof fetch, opciones: OpcionesUsdc): Promise<Response> {
+  const red = await abrirCuentaTestnet(wallet, { ...opciones, fetch: fetchImpl });
+  if (!red.ok) {
+    if (red.motivo === "lectura") return json({ aviso: AVISO_USDC_LECTURA }, 502);
+    if (red.motivo === "mainnet") return json({ aviso: AVISO_USDC_SOLO_TESTNET }, 400);
+    return json({ aviso: AVISO_USDC_SIN_CUENTA }, 502);
   }
-  if (!cuenta) return json({ aviso: AVISO_USDC_SIN_CUENTA }, 400);
-  if (cuentaTieneUsdc(cuenta)) return json({ listo: true });
-  const sequence = typeof cuenta.sequence === "string" || typeof cuenta.sequence === "number" ? String(cuenta.sequence) : "";
+  if (cuentaTieneUsdc(red.cuenta)) return json({ listo: true });
+  const { sequence: crudo } = red.cuenta;
+  const sequence = typeof crudo === "string" || typeof crudo === "number" ? String(crudo) : "";
   if (!/^\d+$/.test(sequence)) return json({ aviso: AVISO_USDC_LECTURA }, 502);
   return json({ xdr: armarXdrUsdc(wallet, sequence) });
-}
-
-async function leerCuenta(wallet: string, fetchImpl: typeof fetch): Promise<CuentaHorizon | null> {
-  const respuesta = await fetchImpl(`${HORIZON_TESTNET}/accounts/${encodeURIComponent(wallet)}`, {
-    signal: AbortSignal.timeout(4000),
-  });
-  if (respuesta.status === 404) return null;
-  if (!respuesta.ok) throw new Error("lectura");
-  const cuerpo = (await respuesta.json()) as CuentaHorizon;
-  if (!cuerpo || typeof cuerpo !== "object") throw new Error("lectura");
-  return cuerpo;
 }
 
 async function enviarHorizon(xdr: string, fetchImpl: typeof fetch): Promise<string> {
