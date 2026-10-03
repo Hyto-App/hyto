@@ -38,6 +38,13 @@ export const CLAVES_DISCURSO = [
   "trustEscrowTitle",
   "trustEscrowBody",
   "legal",
+  "mileKicker",
+  "closeKicker",
+  "closeTitle",
+  "faqKicker",
+  "faqTitle",
+  "faqCryptoQuestion",
+  "faqCryptoAnswer",
 ] as const;
 
 export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
@@ -76,6 +83,13 @@ export const discurso: Record<ClaveDiscurso, string> = {
   trustEscrowTitle: "The money is set aside before the work",
   trustEscrowBody: "The organizer sets the task amount aside first, so the payment is waiting when the work is approved.",
   legal: "Sign-in by Cavos. An account is created to hold your payment. You do not need a separate crypto app.",
+  mileKicker: "Meet Mile",
+  closeKicker: "Start",
+  closeTitle: "Ready to prove your worth?",
+  faqKicker: "Questions",
+  faqTitle: "Before you start",
+  faqCryptoQuestion: "Do I need to know crypto?",
+  faqCryptoAnswer: "No. You can pick a task and send a photo without learning crypto first.",
 };
 
 export type BloqueDiscurso = { titulo: string; cuerpo: string };
@@ -93,6 +107,10 @@ export function audienciasDiscurso(copia: Record<ClaveDiscurso, string> = discur
     { titulo: copia.workersTitle, cuerpo: copia.workersBody },
     { titulo: copia.organizersTitle, cuerpo: copia.organizersBody },
   ];
+}
+
+export function preguntasDiscurso(copia: Record<ClaveDiscurso, string> = discurso): readonly BloqueDiscurso[] {
+  return [{ titulo: copia.faqCryptoQuestion, cuerpo: copia.faqCryptoAnswer }];
 }
 
 export function confianzaDiscurso(copia: Record<ClaveDiscurso, string> = discurso): readonly BloqueDiscurso[] {

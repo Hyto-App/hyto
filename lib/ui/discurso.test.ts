@@ -48,21 +48,39 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
   assert.equal(confianzaDiscurso().length, 3);
 });
 
+const EN_PAGINA = [
+  "Prove your worth.",
+  "Get paid.",
+  "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
+  "Practice network.",
+  "This app runs on a practice network for now",
+  "Pick a task",
+  "Send a photo",
+  "Volunteers and workers",
+  "Organizers",
+  "The AI only suggests",
+  "Meet Mile",
+  "Do I need to know crypto?",
+  "Ready to prove your worth?",
+  "Sign in",
+];
+
 test("la landing muestra el discurso completo y esconde el demo si está apagado", async () => {
   await montar(createElement(Landing, { demoHabilitado: false }));
   try {
     const visible = texto();
-    for (const frase of FRASES) {
-      if (frase === "Try the demo") {
-        assert.equal(visible.includes(frase), false);
-        continue;
-      }
-      assert.ok(visible.includes(frase), frase);
-    }
+    for (const frase of EN_PAGINA) assert.ok(visible.includes(frase), frase);
+    assert.equal(visible.includes("Try the demo"), false);
     assert.equal(document.querySelectorAll("h1").length, 1);
-    assert.ok(document.getElementById("discurso-pasos"));
-    assert.ok(document.getElementById("discurso-audiencia"));
-    assert.ok(document.getElementById("discurso-confianza"));
+    assert.ok(document.querySelector("main.hyto-landing"));
+    assert.ok(document.querySelector(".hyto-landing-hero"));
+    assert.ok(document.getElementById("hyto-pasos-title"));
+    assert.ok(document.getElementById("hyto-roles-title"));
+    assert.ok(document.getElementById("hyto-mile-title"));
+    assert.ok(document.getElementById("hyto-faq-title"));
+    assert.ok(document.getElementById("hyto-cierre-title"));
+    assert.equal(visible.includes("Do small tasks for real events"), false);
+    assert.equal(visible.includes("Is this real money?"), false);
     const numeros = [...document.querySelectorAll("ol span[aria-hidden='true']")].map((nodo) => nodo.textContent);
     assert.deepEqual(numeros, ["1", "2", "3"]);
   } finally {

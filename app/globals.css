@@ -487,6 +487,91 @@ a {
   box-shadow: inset 0 0 0 1.5px currentColor;
 }
 
+.hyto-pill-veredicto {
+  --hyto-duracion: 1.2s;
+  --hyto-nota: 0;
+  --hyto-llenado: 0;
+  position: relative;
+  transition: color var(--hyto-duracion) ease-out;
+}
+
+.hyto-pill-veredicto .hyto-dot {
+  transition:
+    background-color var(--hyto-duracion) ease-out,
+    box-shadow var(--hyto-duracion) ease-out;
+}
+
+.hyto-pill-con-barra {
+  width: fit-content;
+  max-width: 100%;
+  padding-bottom: 7px;
+}
+
+.hyto-pill-vista {
+  font-variant-numeric: tabular-nums;
+  counter-reset: hyto-cuenta var(--hyto-nota);
+}
+
+.hyto-pill-vista::before {
+  content: counter(hyto-cuenta) "% · ";
+}
+
+.hyto-pill-vista::after {
+  content: attr(data-etiqueta);
+}
+
+.hyto-pill-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hyto-pill-bar {
+  position: absolute;
+  right: 10px;
+  bottom: 3px;
+  left: 10px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.hyto-pill-bar > span {
+  display: block;
+  height: 100%;
+  width: calc(var(--hyto-llenado) * 1%);
+  max-width: 100%;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-pill-veredicto,
+  .hyto-pill-veredicto .hyto-dot {
+    transition: none;
+  }
+
+  .hyto-pill-vista {
+    display: none;
+  }
+
+  .hyto-pill-sr {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+}
+
 .hyto-avatar {
   display: inline-flex;
   height: 36px;
@@ -776,19 +861,25 @@ a {
   color: var(--tinta);
 }
 
-/* Landing (signed out at /). */
+/* Signed-out landing. The hero fills the first screen. Sections below scroll with the page. */
 .hyto-landing {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
 }
 
-.hyto-landing-main {
+.hyto-landing-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
+  min-height: 100dvh;
+  overflow: hidden;
   padding: var(--e-3) var(--margen-lateral) var(--e-3);
 }
 
 .hyto-landing-head {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -797,9 +888,76 @@ a {
 
 .hyto-landing-copy {
   position: relative;
-  margin-top: var(--e-5);
+  z-index: 1;
+  margin-top: auto;
+  margin-bottom: auto;
   width: 100%;
-  max-width: 448px;
+  max-width: 28rem;
+  padding-top: var(--e-5);
+}
+
+.hyto-landing-lead {
+  margin-top: var(--e-2);
+  max-width: 26rem;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+.hyto-landing-pitch {
+  margin-top: var(--e-2);
+  max-width: 28rem;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--tinta);
+}
+
+.hyto-landing-note {
+  margin-top: var(--e-2);
+  max-width: 28rem;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--papel);
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--tinta);
+}
+
+.hyto-landing-note strong {
+  font-weight: 600;
+}
+
+.hyto-landing-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.hyto-landing-demo {
+  display: grid;
+  gap: 12px;
+}
+
+.hyto-landing-demo-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--papel);
+  padding: 16px;
+}
+
+.hyto-landing-demo-panel p {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--tinta);
+}
+
+@media (min-width: 640px) {
+  .hyto-landing-actions {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
 }
 
 .hyto-landing-cta {
@@ -807,15 +965,237 @@ a {
 }
 
 .hyto-landing-legal {
-  margin-top: auto;
-  padding-top: var(--e-5);
+  position: relative;
+  z-index: 1;
   font-size: var(--texto-aux);
   line-height: 18px;
   color: var(--suave);
 }
 
-.hyto-landing-panel {
-  display: none;
+.hyto-landing-hero .hyto-anillo {
+  top: 64px;
+  right: -48px;
+  width: 180px;
+  height: 180px;
+}
+
+.hyto-landing-band {
+  padding: var(--e-4) var(--margen-lateral) var(--e-2);
+}
+
+.hyto-landing-band-inner {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.hyto-landing-kicker {
+  font-size: var(--texto-etiqueta);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+}
+
+.hyto-landing-h {
+  margin-top: var(--e-1);
+  max-width: 36rem;
+  font-size: var(--texto-h2);
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  line-height: 28px;
+}
+
+.hyto-landing-intro {
+  margin-top: var(--e-1);
+  max-width: 36rem;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+.hyto-landing-steps,
+.hyto-landing-roles,
+.hyto-faq-list {
+  display: grid;
+  gap: var(--e-2);
+  margin-top: var(--e-3);
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-step-card,
+.hyto-role-card,
+.hyto-mile-card,
+.hyto-faq,
+.hyto-landing-close {
+  border-radius: 16px;
+  background: var(--papel);
+  padding: var(--e-3);
+}
+
+.hyto-step-num {
+  display: inline-flex;
+  height: 28px;
+  min-width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hyto-step-card h3,
+.hyto-role-card h3,
+.hyto-mile-card h2,
+.hyto-landing-close h2 {
+  margin-top: var(--e-2);
+  font-size: var(--texto-h2);
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  line-height: 28px;
+}
+
+.hyto-step-card p,
+.hyto-role-card p,
+.hyto-mile-card p,
+.hyto-landing-close p,
+.hyto-faq p {
+  margin-top: var(--e-1);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+.hyto-mile-card {
+  margin-top: 0;
+  background:
+    radial-gradient(80% 120% at 100% 0%, color-mix(in srgb, var(--acento) 16%, transparent), transparent 58%),
+    var(--papel);
+}
+
+.hyto-faq summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.hyto-faq summary:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.hyto-landing-close {
+  max-width: 28rem;
+}
+
+.hyto-landing-end {
+  padding-bottom: var(--e-8);
+}
+
+.hyto-welcome {
+  margin-bottom: var(--e-4);
+}
+
+.hyto-welcome-card {
+  padding: var(--e-4);
+  background:
+    radial-gradient(80% 100% at 100% 0%, color-mix(in srgb, var(--acento) 18%, transparent), transparent 58%),
+    var(--papel);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 28%, transparent);
+}
+
+.hyto-welcome-kicker {
+  font-size: var(--texto-etiqueta);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+}
+
+.hyto-welcome-card .hyto-title {
+  margin-top: var(--e-1);
+}
+
+.hyto-welcome-step {
+  margin-top: var(--e-4);
+  padding-top: var(--e-3);
+  border-top: 1px solid var(--linea);
+}
+
+.hyto-welcome-step-title {
+  font-size: var(--texto-h2);
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  line-height: 28px;
+}
+
+.hyto-welcome-note {
+  margin-top: var(--e-3);
+  max-width: 36rem;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+.hyto-payout.is-done .hyto-payout-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--e-2);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--acento-texto);
+}
+
+.hyto-payout-mark {
+  display: inline-flex;
+  height: 22px;
+  width: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (min-width: 1024px) {
+  .hyto-landing-hero {
+    padding: var(--e-6) var(--e-8) var(--e-5) 96px;
+  }
+
+  .hyto-landing-hero .hyto-anillo {
+    top: var(--e-8);
+    right: var(--e-8);
+    width: min(320px, 36vw);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .hyto-landing .hyto-eslogan {
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.8px;
+  }
+
+  .hyto-landing-band {
+    padding: var(--e-6) var(--e-8) var(--e-2);
+  }
+
+  .hyto-landing-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hyto-landing-roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .hyto-steps {
@@ -1121,8 +1501,7 @@ a {
     aspect-ratio: 1;
   }
 
-  .hyto-auth-hero .hyto-roles,
-  .hyto-landing-panel .hyto-roles {
+  .hyto-auth-hero .hyto-roles {
     display: flex;
   }
 
@@ -1131,78 +1510,6 @@ a {
     border-radius: 28px;
     background: var(--papel);
     padding: var(--e-5);
-  }
-
-  .hyto-landing {
-    grid-template-columns: minmax(520px, 640px) minmax(0, 1fr);
-  }
-
-  .hyto-landing-main {
-    padding: var(--e-6) var(--e-8) var(--e-5) 96px;
-  }
-
-  .hyto-landing-copy {
-    margin-top: auto;
-    margin-bottom: auto;
-    padding-top: var(--e-5);
-  }
-
-  .hyto-landing .hyto-eslogan {
-    font-size: 40px;
-    line-height: 48px;
-    letter-spacing: -0.8px;
-  }
-
-  .hyto-landing-legal {
-    margin-top: 0;
-  }
-
-  .hyto-landing-panel {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    margin: var(--e-3) var(--e-3) var(--e-3) 0;
-    overflow: hidden;
-    border-radius: 28px;
-    background: var(--sidebar);
-    padding: var(--e-6);
-  }
-
-  [data-theme="dark"] .hyto-landing-panel {
-    background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 10%, transparent) 0, transparent 50%), var(--papel);
-  }
-
-  .hyto-landing-panel .hyto-anillo {
-    top: var(--e-8);
-    right: var(--e-8);
-    width: min(400px, 70%);
-    height: auto;
-    aspect-ratio: 1;
-  }
-
-  .hyto-landing-panel > :not(.hyto-anillo) {
-    position: relative;
-  }
-
-  .hyto-landing-panel-q {
-    max-width: 460px;
-    font-size: 26px;
-    font-weight: 500;
-    line-height: 36px;
-    letter-spacing: -0.5px;
-  }
-
-  .hyto-landing-panel-s {
-    margin-top: var(--e-1);
-    max-width: 420px;
-    font-size: 14px;
-    line-height: 22px;
-    color: var(--suave);
-  }
-
-  .hyto-landing-panel .hyto-roles {
-    margin-top: var(--e-3);
   }
 
   .hyto-inbox {
@@ -1351,6 +1658,24 @@ a {
 }
 
 @media print {
+  .hyto-pill-veredicto,
+  .hyto-pill-veredicto .hyto-dot {
+    transition: none;
+  }
+
+  .hyto-pill-vista {
+    display: none;
+  }
+
+  .hyto-pill-sr {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+
   .hyto-side,
   .hyto-nav,
   .hyto-tema,

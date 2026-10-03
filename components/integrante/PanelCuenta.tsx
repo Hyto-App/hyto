@@ -164,7 +164,7 @@ function Direccion({ direccion }: { direccion: string }) {
 function textoSaldo(vista: VistaCuenta): string {
   if (vista.saldoEstado === "ok" && vista.walletMuestra) return "Sample balance";
   if (vista.saldoEstado === "ok") return "On this wallet now";
-  if (vista.saldoEstado === "ausente") return "This wallet is not on the test network yet. Tap Get ready to be paid to open it.";
+  if (vista.saldoEstado === "ausente") return "This wallet is not on the test network yet. Open Events and tap Get ready to be paid.";
   if (vista.saldoEstado === "error") return "We couldn't read the balance.";
   return "Add a wallet to see testnet USDC.";
 }

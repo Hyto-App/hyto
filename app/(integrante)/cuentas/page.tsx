@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Entrar } from "@/components/admin/Entrar";
 import { PanelCuenta } from "@/components/integrante/PanelCuenta";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
-import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { Salir } from "@/components/sesion/Salir";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { exigirPagina } from "@/lib/sesion/puerta";
@@ -28,11 +27,6 @@ export default async function PaginaCuentas() {
         <Salir />
       </div>
       <PanelCuenta />
-      {demo ? null : (
-        <div className="mt-8">
-          <PrepararUsdc />
-        </div>
-      )}
       {demo ? (
         <div className="mt-8 max-w-sm">
           <Entrar demoHabilitado={demoHabilitado()} />
