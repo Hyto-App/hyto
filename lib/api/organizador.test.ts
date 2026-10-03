@@ -191,8 +191,12 @@ test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", as
     const stand = { params: Promise.resolve({ id: "stand" }) };
     const zeekAjeno = await leerRevision(new Request("http://local/api/revision/stand", { headers: { cookie: cookie("dueño") } }), stand);
     assert.equal(zeekAjeno.status, 403);
+    assert.equal(llamadas, 0);
     const zeekGlobal = await leerRevision(new Request("http://local/api/revision/stand", { headers: { cookie: cookie("global") } }), stand);
     assert.equal(zeekGlobal.status, 200);
+    // The organizer's read checks the stored escrow once for a release that landed without a saved hash.
+    assert.equal(llamadas, 1);
+    llamadas = 0;
     const fantasma = await leerRevision(
       new Request("http://local/api/revision/hyto-sin-tarea", { headers: { cookie: cookie("global") } }),
       { params: Promise.resolve({ id: "hyto-sin-tarea" }) },
