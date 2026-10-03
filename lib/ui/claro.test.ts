@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import { cajaDeFallo, detalleFallo, mensajeClaro, pasosDePago, tituloFallo } from "./claro";
 
@@ -20,10 +21,17 @@ test("technical payment errors tell the person what to do", () => {
   assert.equal(mensajeClaro(AVISO_HORIZON_RECEPTOR).includes("Get ready to be paid"), false);
   assert.equal(
     mensajeClaro("This wallet is not on Stellar testnet yet."),
-    "This account isn't on the test network yet. Open Account and tap Get ready to be paid.",
+    "This account isn't on the test network yet. Open Events and tap Get ready to be paid.",
   );
   assert.equal(mensajeClaro("Sign in to continue."), "Sign in to continue.");
+  assert.equal(mensajeClaro("Your Cavos session expired."), AVISO_REINGRESO);
   assert.equal(mensajeClaro("  "), "");
+  assert.equal(mensajeClaro("Could not submit the payment.", "es"), "Ese paso no se completó. Intenta de nuevo.");
+  assert.equal(
+    mensajeClaro("Ese paso no se completó. Intenta de nuevo.", "es"),
+    "Ese paso no se completó. Intenta de nuevo.",
+  );
+  assert.equal(mensajeClaro("Wait 8 s before requesting another code", "es"), "Espera 8 s antes de pedir otro código");
 });
 
 test("the failure box follows the step, not words in the message", () => {

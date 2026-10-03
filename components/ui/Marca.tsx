@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTexto } from "@/components/ui/Idioma";
 import {
   TRANSFORM_MARCA,
   TRAZO_ISOTIPO,
@@ -50,9 +51,10 @@ export function Isotipo({ className, title = "Hyto" }: PropsMarca = {}) {
 
 /** The slogan, "Get paid." in the accent. A heading on the landing, a paragraph inside the sign-in dialog. */
 export function Eslogan({ como: Etiqueta = "p", className }: { como?: "h1" | "p"; className?: string }) {
+  const t = useTexto();
   return (
     <Etiqueta className={["hyto-eslogan", className].filter(Boolean).join(" ")}>
-      Prove your worth. <em>Get paid.</em>
+      {t("landing.esloganAntes")} <em>{t("landing.esloganAcento")}</em>
     </Etiqueta>
   );
 }
@@ -85,6 +87,7 @@ function aplicarTema(tema: "dark" | "light") {
 }
 
 export function Tema() {
+  const t = useTexto();
   const [tema, setTema] = useState<"dark" | "light" | null>(null);
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export function Tema() {
   }
 
   const oscuro = tema !== "light";
-  const etiqueta = oscuro ? "Switch to light theme" : "Switch to dark theme";
+  const etiqueta = oscuro ? t("tema.light") : t("tema.dark");
   return (
     <button type="button" className="hyto-tema" onClick={alternar} aria-label={etiqueta} title={etiqueta}>
       {oscuro ? <Sol /> : <Luna />}

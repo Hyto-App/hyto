@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
+import { useClaro, useTexto } from "@/components/ui/Idioma";
 
 export function Unirse({ secretoInicial = "" }: { secretoInicial?: string }) {
+  const t = useTexto();
+  const claro = useClaro();
   const router = useRouter();
   const [secreto, setSecreto] = useState(secretoInicial);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -32,19 +35,19 @@ export function Unirse({ secretoInicial = "" }: { secretoInicial?: string }) {
 
   return (
     <main className="hyto-page mx-auto max-w-lg">
-      <h1 className="hyto-title">Join with code</h1>
+      <h1 className="hyto-title">{t("eventos.joinTitle")}</h1>
       <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="codigo-join">
-        Code
+        {t("eventos.code")}
       </label>
       <input id="codigo-join" className="hyto-input mt-2" value={secreto} onChange={(evento) => setSecreto(evento.target.value)} />
       <div className="mt-4">
         <BotonPrincipal type="button" disabled={ocupado || !secreto.trim()} onClick={() => void enviar()}>
-          Join
+          {t("eventos.join")}
         </BotonPrincipal>
       </div>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </main>
