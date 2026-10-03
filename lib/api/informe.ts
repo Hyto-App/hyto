@@ -1,8 +1,8 @@
-import { bandejaDe, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
+import { bandejaDe, enBandeja, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
 import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
-import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
+import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
@@ -36,10 +36,37 @@ export async function armarInforme(almacen: Almacen, visor: Visor) {
   };
 }
 
+/**
+ * An upload always moves a task to "en revisión", so a real file on a "pendiente" task means the
+ * organizer asked for another photo. That verdict belongs to the old file and stays hidden until a new one arrives.
+ */
+export function veredictoVigente(
+  tarea: Pick<TareaFila, "estado">,
+  evidencia: Pick<EvidenciaFila, "blobId"> | null,
+  veredicto: VeredictoFila | null,
+): VeredictoFila | null {
+  if (!evidencia || !veredicto) return null;
+  if (tarea.estado === "pendiente" && !esBlobEjemplo(evidencia.blobId)) return null;
+  return veredicto;
+}
+
+export async function leerVeredictoVigente(
+  almacen: Almacen,
+  tarea: TareaFila,
+): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null }> {
+  const evidencia = await almacen.ultimaEvidencia(tarea.id);
+  const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  return { evidencia, veredicto: veredictoVigente(tarea, evidencia, fila) };
+}
+
+export async function tareaEnBandeja(almacen: Almacen, tarea: TareaFila): Promise<boolean> {
+  const { veredicto } = await leerVeredictoVigente(almacen, tarea);
+  return enBandeja({ estado: tarea.estado, veredicto: bandaDe(veredicto) });
+}
+
 export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>): Promise<TareaAdmin> {
   const mapa = nombres ?? new Map((await almacen.listarUsuarios()).map((usuario) => [usuario.id, usuario.nombre]));
-  const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
   return {
     id: tarea.id,
     titulo: tarea.titulo,

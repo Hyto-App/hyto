@@ -210,7 +210,7 @@ test("en demo, sin sesión solo se ve el proyecto demo y no ZEEK", async () => {
       params: Promise.resolve({ id: "ejemplo-demo-stand" }),
     });
     assert.equal(fotoDemo.status, 200);
-    assert.match(fotoDemo.headers.get("content-type") ?? "", /svg/);
+    assert.equal(fotoDemo.headers.get("content-type"), "image/png");
   } finally {
     restaurar(anterior);
     if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;

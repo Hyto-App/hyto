@@ -381,6 +381,56 @@ test("an error outside lock or pay does not use the payment box", async () => {
   }
 });
 
+test("a live review without a photo URL says No photo yet, not Sample evidence", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "Half of the booth is set up." }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("No photo yet"));
+    assert.equal(texto().includes("Sample evidence"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("asking for another photo removes the old verdict pill", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) return json({ estado: "pendiente" });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "Half of the booth is set up." }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("64% · Partially completed"));
+    await pulsar("Ask for another photo");
+    await esperar(() => !texto().includes("Partially completed"));
+    assert.equal(texto().includes("AI recommendation"), false);
+    assert.equal(texto().includes("Half of the booth is set up."), false);
+    assert.match(texto(), /Pending/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function rotulo(textoBoton: string): boolean {
   return [...document.querySelectorAll("button")].some((item) => item.textContent?.trim() === textoBoton);
 }

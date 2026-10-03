@@ -81,11 +81,22 @@ export function resumir(tareas: TareaAdmin[]): Resumen {
 export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendiente" | undefined): TareaAdmin {
   if (!decision) return tarea;
   if (decision === "pagado") return { ...tarea, estado: "pagado" };
-  return { ...tarea, estado: "pendiente", veredicto: null, nota: null };
+  return sinVeredicto({ ...tarea, estado: "pendiente" });
 }
 
+/** After "Ask for another photo" the AI result belongs to the old file. */
+export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
+  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [] };
+}
+
+/**
+ * One rule for the inbox list, its subtitle, and the event card count: a submission waits for the
+ * organizer when it is not paid and is either in review or still carries a current verdict.
+ * A task sent back for another photo has no current verdict, so it leaves the inbox.
+ */
 export function enBandeja(tarea: { estado: string; veredicto: string | null }): boolean {
-  return tarea.estado === "en revisión" || (tarea.veredicto !== null && tarea.estado !== "pagado");
+  if (tarea.estado === "pagado") return false;
+  return tarea.estado === "en revisión" || tarea.veredicto !== null;
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {

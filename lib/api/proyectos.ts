@@ -1,4 +1,4 @@
-import { enBandeja, normalizarMonto } from "@/lib/admin/vista";
+import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
@@ -6,6 +6,7 @@ import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/li
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
+import { tareaEnBandeja } from "./informe";
 import { baseNoLista, json } from "./json";
 import { tareaPublica } from "./tareas";
 
@@ -99,10 +100,7 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
 async function contarBandeja(almacen: Almacen, tareas: TareaFila[]): Promise<number> {
   let total = 0;
   for (const tarea of tareas) {
-    const evidencia = await almacen.ultimaEvidencia(tarea.id);
-    const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
-    const veredicto = fila && fila.origen !== "error" ? fila.veredicto : null;
-    if (enBandeja({ estado: tarea.estado, veredicto })) total += 1;
+    if (await tareaEnBandeja(almacen, tarea)) total += 1;
   }
   return total;
 }
