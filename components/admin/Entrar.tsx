@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle } from "@/lib/auth/cliente";
+import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle, type IngresoCerrado } from "@/lib/auth/cliente";
 import { guardarIntencion, leerIntencion, olvidarIntencion, type IntencionIngreso } from "@/lib/auth/intencion";
 import {
   AVISO_CONFIG,
@@ -25,9 +25,10 @@ import { AnilloHitos, Eslogan, Logo } from "@/components/ui/Marca";
 type Fase = "inicio" | "signup" | "signin" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
 
-type ResultadoGoogle = { aviso: string | null; direccion: string | null; guardada: boolean };
+/** `pendiente` is set when the person is signed in but Sign up testnet setup did not finish. */
+type ResultadoIngreso = { aviso: string | null; direccion: string | null; guardada: boolean; pendiente: string | null };
 
-const googleEnCurso = new Map<string, Promise<ResultadoGoogle>>();
+const googleEnCurso = new Map<string, Promise<ResultadoIngreso>>();
 
 export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
   const modoDemo = useModoDemo();
@@ -40,6 +41,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [altaPendiente, setAltaPendiente] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
   const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
@@ -109,11 +111,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     void pendiente.then((resultado) => {
       if (!vivo) return;
       if (resultado.guardada && resultado.direccion) {
-        setDireccion(resultado.direccion);
-        setPedirIngreso(false);
-        setAviso(null);
-        setFase("inicio");
-        window.location.assign("/");
+        entrarListo(resultado.direccion, resultado.pendiente);
         return;
       }
       setAviso(resultado.aviso);
@@ -122,6 +120,15 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       vivo = false;
     };
   }, []);
+
+  function entrarListo(direccionGuardada: string, pendiente: string | null) {
+    setDireccion(direccionGuardada);
+    setPedirIngreso(false);
+    setAviso(null);
+    setFase("inicio");
+    setAltaPendiente(pendiente);
+    if (!pendiente) window.location.assign("/");
+  }
 
   function iniciarEspera(segundos: number, visible: boolean) {
     const n = Math.max(1, Math.ceil(segundos));
@@ -192,20 +199,12 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setAviso(null);
     setOcupado("codigo");
     try {
-      const resultado = await entrarConCodigo(auth, correo, codigo.trim(), "signup");
-      if (!resultado.direccion || resultado.aviso) {
+      const resultado = guardarEnNavegador(await entrarConCodigo(auth, correo, codigo.trim(), "signup"));
+      if (!resultado.guardada || !resultado.direccion) {
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
       }
-      const guardado = guardarDireccionAdmin(resultado.direccion);
-      if (guardado.aviso) {
-        setAviso(guardado.aviso);
-        return;
-      }
-      setDireccion(resultado.direccion);
-      setPedirIngreso(false);
-      setFase("inicio");
-      window.location.assign("/");
+      entrarListo(resultado.direccion, resultado.pendiente);
     } catch (error) {
       mostrarFallo(error);
     } finally {
@@ -334,6 +333,16 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             <summary className="cursor-pointer">Account details</summary>
             <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
           </details>
+          {altaPendiente ? (
+            <div role="status" className="mt-2 grid gap-2 text-sm leading-6 text-[var(--suave)]">
+              <p>
+                {altaPendiente} Open Account and tap Get ready to be paid to finish setup on Stellar testnet.
+              </p>
+              <a href="/cuentas" className="hyto-btn-line is-inline px-5">
+                Open Account
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -542,21 +551,29 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 // The search, redirect, and intent are read before any await: the person can
 // navigate while Cavos loads, and the one-time code would be gone from the live
 // URL. The address is saved here, not in the effect, so an unmount cannot drop it.
-function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionIngreso): Promise<ResultadoGoogle> {
+// Once the server session holds the wallet, this browser stores it too. A
+// testnet setup failure after that point is a notice, not a failed sign-in.
+function guardarEnNavegador(cerrado: IngresoCerrado): ResultadoIngreso {
+  if (!cerrado.guardada || !cerrado.direccion) {
+    return { aviso: cerrado.aviso ?? AVISO_GENERICO, direccion: cerrado.direccion, guardada: false, pendiente: null };
+  }
+  const local = guardarDireccionAdmin(cerrado.direccion);
+  if (local.aviso) return { aviso: local.aviso, direccion: cerrado.direccion, guardada: false, pendiente: null };
+  return { aviso: null, direccion: cerrado.direccion, guardada: true, pendiente: cerrado.aviso };
+}
+
+function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionIngreso): Promise<ResultadoIngreso> {
   return (async () => {
     try {
       const auth = await crearAuth();
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
-        return { aviso: AVISO_CONFIG, direccion: null, guardada: false };
+        return { aviso: AVISO_CONFIG, direccion: null, guardada: false, pendiente: null };
       }
-      const resultado = await entrarConGoogle(auth, busqueda, redirect, intencion);
-      if (!resultado.direccion || resultado.aviso) return { ...resultado, guardada: false };
-      const guardado = guardarDireccionAdmin(resultado.direccion);
-      return { aviso: guardado.aviso, direccion: resultado.direccion, guardada: !guardado.aviso };
+      return guardarEnNavegador(await entrarConGoogle(auth, busqueda, redirect, intencion));
     } catch (error) {
       console.error(error);
-      return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false };
+      return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false, pendiente: null };
     }
   })().finally(() => olvidarIntencion());
 }

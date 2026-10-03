@@ -69,18 +69,24 @@ export async function publicarSesion(
   };
 }
 
+/**
+ * `guardada` is true once the server session holds this wallet. A Sign up whose
+ * testnet setup failed after that is still signed in: `aviso` explains what is
+ * left, and Get ready to be paid on Account finishes it.
+ */
+export type IngresoCerrado = { aviso: string | null; direccion: string | null; guardada: boolean };
+
 export async function entrarConCodigo(
   auth: AuthProvider,
   email: string,
   codigo: string,
   intencion: IntencionIngreso = "signin",
-): Promise<{ identity: Identity; aviso: string | null; direccion: string | null }> {
+): Promise<IngresoCerrado & { identity: Identity }> {
   const identity = await authComo(auth).verifyOtp(email, codigo);
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
   const sesion = await publicarSesion(identity.email ?? email, auth.getAuthToken?.() ?? null, intencion);
-  if (!sesion.ok) return { identity, aviso: sesion.aviso, direccion: null };
-  const cerrado = await cerrarConWallet(auth, sesion, intencion);
-  return { identity, aviso: cerrado.aviso, direccion: cerrado.direccion };
+  if (!sesion.ok) return { identity, aviso: sesion.aviso, direccion: null, guardada: false };
+  return { identity, ...(await cerrarConWallet(auth, sesion, intencion)) };
 }
 
 type AuthConOtp = AuthProvider & {
@@ -98,11 +104,16 @@ export async function urlGoogle(auth: AuthProvider, redirectUri: string): Promis
   return authComo(auth).getGoogleOAuthUrl(redirectUri);
 }
 
-export async function entrarConGoogle(auth: AuthProvider, busqueda: string, redirectUri: string, intencion: IntencionIngreso = "signin") {
+export async function entrarConGoogle(
+  auth: AuthProvider,
+  busqueda: string,
+  redirectUri: string,
+  intencion: IntencionIngreso = "signin",
+): Promise<IngresoCerrado> {
   const identity = await authComo(auth).handleCallback(busqueda, redirectUri);
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
   const sesion = await publicarSesion(identity.email ?? "", auth.getAuthToken?.() ?? null, intencion);
-  if (!sesion.ok) return { aviso: sesion.aviso, direccion: null as string | null };
+  if (!sesion.ok) return { aviso: sesion.aviso, direccion: null, guardada: false };
   return cerrarConWallet(auth, sesion, intencion);
 }
 
@@ -110,19 +121,19 @@ async function cerrarConWallet(
   auth: AuthProvider,
   sesion: { provisionar: boolean },
   intencion: IntencionIngreso,
-): Promise<{ aviso: string | null; direccion: string | null }> {
+): Promise<IngresoCerrado> {
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar" || !billetera.address) {
-    return { aviso: "Could not sign in.", direccion: null };
+    return { aviso: "Could not sign in.", direccion: null, guardada: false };
   }
   const guardada = await fijarWallet(billetera.address);
-  if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address };
+  if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address, guardada: false };
   if (debeProvisionar(intencion, sesion.provisionar)) {
     const alta = await completarAltaTestnet(billetera as BilleteraCobro);
-    if (!alta.ok) return { aviso: alta.aviso, direccion: billetera.address };
+    if (!alta.ok) return { aviso: alta.aviso, direccion: billetera.address, guardada: true };
   }
-  return { aviso: null, direccion: billetera.address };
+  return { aviso: null, direccion: billetera.address, guardada: true };
 }
 
 export function redirectLimpio(): string {

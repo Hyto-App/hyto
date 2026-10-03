@@ -22,7 +22,7 @@ export async function publicarAltaHttp(
     const red = await asegurarCuentaTestnet(wallet, fetchImpl, esperar);
     return json({ cuenta: true, friendbot: red.friendbot, usdc: red.usdc });
   } catch (error) {
-    const aviso = error instanceof Error && error.message.trim() ? error.message : "We couldn't fund the testnet account. Try Sign up again.";
+    const aviso = error instanceof Error && error.message.trim() ? error.message : "We couldn't fund the testnet account.";
     return json({ aviso }, 502);
   }
 }

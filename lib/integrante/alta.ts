@@ -5,7 +5,7 @@ export type AltaTestnet =
   | { ok: true; friendbot: boolean; trustline: boolean }
   | { ok: false; aviso: string };
 
-const AVISO_ALTA = "We couldn't finish Stellar testnet setup. Try Sign up again.";
+const AVISO_ALTA = "We couldn't finish Stellar testnet setup.";
 
 /**
  * Sign up only. Funds a missing testnet account with Friendbot, then opens USDC.
@@ -30,11 +30,11 @@ export async function completarAltaTestnet(
   try {
     const lista = await asegurarCobroUsdc(billetera, (direccion) => consultarUsdc(direccion, fetchImpl));
     if (!lista.usdcListo) {
-      return { ok: false, aviso: lista.detalle ?? "We couldn't add the USDC trustline on Stellar testnet. Try Sign up again." };
+      return { ok: false, aviso: lista.detalle ?? "We couldn't add the USDC trustline on Stellar testnet." };
     }
     return { ok: true, friendbot, trustline: !yaUsdc };
   } catch {
-    return { ok: false, aviso: "We couldn't add the USDC trustline on Stellar testnet. Try Sign up again." };
+    return { ok: false, aviso: "We couldn't add the USDC trustline on Stellar testnet." };
   }
 }
 

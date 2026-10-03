@@ -14,7 +14,7 @@ const estado = {
   creaciones: 0,
   fallaAuth: null as Error | null,
   resolverAuth: (_valor: unknown) => {},
-  resolverGoogle: (_valor: { aviso: string | null; direccion: string | null }) => {},
+  resolverGoogle: (_valor: { aviso: string | null; direccion: string | null; guardada: boolean }) => {},
   llamadas: [] as { busqueda: string; redirect: string; intencion: string }[],
 };
 
@@ -28,7 +28,7 @@ mock.module("@/lib/auth/cliente", {
         estado.resolverAuth = resolve;
       });
     },
-    entrarConCodigo: async () => ({ identity: {}, aviso: null, direccion: null }),
+    entrarConCodigo: async () => ({ identity: {}, aviso: null, direccion: null, guardada: false }),
     entrarConGoogle: async (_auth: unknown, busqueda: string, redirect: string, intencion = "signin") => {
       estado.llamadas.push({ busqueda, redirect, intencion });
       return new Promise((resolve) => {
@@ -84,7 +84,7 @@ test("si la persona navega mientras Cavos carga, el alta queda guardada con la U
     await vaciar();
   });
   await act(async () => {
-    estado.resolverGoogle({ aviso: null, direccion: DIRECCION });
+    estado.resolverGoogle({ aviso: null, direccion: DIRECCION, guardada: true });
     await vaciar();
   });
 
@@ -126,7 +126,7 @@ test("en Strict Mode el código de Google se canjea una sola vez y Sign in llega
     await vaciar();
   });
   await act(async () => {
-    estado.resolverGoogle({ aviso: null, direccion: DIRECCION });
+    estado.resolverGoogle({ aviso: null, direccion: DIRECCION, guardada: true });
     await vaciar();
   });
 
@@ -165,4 +165,62 @@ test("si crearAuth lanza, el canje termina con un aviso visible", async () => {
   } finally {
     console.error = original;
   }
+});
+
+test("si Friendbot falla después de guardar la wallet, la persona queda adentro con un aviso y el enlace a Account", async () => {
+  reiniciar();
+  window.sessionStorage.setItem(CLAVE_INTENCION, "signup");
+  window.location.href = "http://localhost/?cavos_auth_code=codigo-alta-blanda";
+  const { Entrar } = await import("../../components/admin/Entrar");
+  const { div, root } = montar();
+  await act(async () => {
+    root.render(createElement(Entrar));
+  });
+  await act(async () => {
+    estado.resolverAuth({});
+    await vaciar();
+  });
+  await act(async () => {
+    estado.resolverGoogle({ aviso: "We couldn't fund the testnet account.", direccion: DIRECCION, guardada: true });
+    await vaciar();
+  });
+
+  assert.equal(estado.llamadas[0]?.intencion, "signup");
+  assert.equal(leerMemoriaAdmin().direccion, DIRECCION);
+  assert.match(div.textContent ?? "", /Signed in/);
+  const aviso = div.querySelector('[role="status"]')?.textContent ?? "";
+  assert.match(aviso, /We couldn't fund the testnet account\./);
+  assert.match(aviso, /Get ready to be paid/);
+  assert.equal(div.querySelector('a[href="/cuentas"]')?.textContent, "Open Account");
+  assert.match(window.location.href, /cavos_auth_code=codigo-alta-blanda/, "a soft failure must not navigate away from the notice");
+  assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
+  await act(async () => {
+    root.unmount();
+  });
+});
+
+test("si la sesión no guardó la wallet, el navegador tampoco la guarda", async () => {
+  reiniciar();
+  window.sessionStorage.setItem(CLAVE_INTENCION, "signin");
+  window.location.href = "http://localhost/?cavos_auth_code=codigo-sin-wallet";
+  const { Entrar } = await import("../../components/admin/Entrar");
+  const { div, root } = montar();
+  await act(async () => {
+    root.render(createElement(Entrar));
+  });
+  await act(async () => {
+    estado.resolverAuth({});
+    await vaciar();
+  });
+  await act(async () => {
+    estado.resolverGoogle({ aviso: "Could not save this session's wallet.", direccion: DIRECCION, guardada: false });
+    await vaciar();
+  });
+
+  assert.equal(leerMemoriaAdmin().direccion, null);
+  assert.doesNotMatch(div.textContent ?? "", /Signed in/);
+  assert.match(div.querySelector('[role="status"]')?.textContent ?? "", /Could not save this session's wallet\./);
+  await act(async () => {
+    root.unmount();
+  });
 });
