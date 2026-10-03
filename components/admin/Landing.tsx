@@ -12,7 +12,7 @@ export function Landing({ demoHabilitado = false }: { demoHabilitado?: boolean }
         <header className="hyto-landing-head">
           <Logo className="hyto-landing-logo" />
           <div className="hyto-brand-acciones">
-            <SelectorIdioma />
+            <SelectorIdioma className="hyto-landing-idioma" />
             <Tema />
           </div>
         </header>

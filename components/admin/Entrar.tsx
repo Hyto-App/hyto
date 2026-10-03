@@ -366,9 +366,9 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
         </ul>
       </div>
       <div className="hyto-auth-sheet">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[20px] font-medium tracking-[-0.4px]">{t("entrar.title")}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SelectorIdioma />
             <button type="button" className="hyto-cerrar" onClick={() => setFase("inicio")}>
               {t("entrar.close")}

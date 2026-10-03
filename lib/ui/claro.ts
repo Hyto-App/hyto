@@ -109,6 +109,15 @@ const EXACTO: Record<string, Clave> = {
   "Could not ask for another photo.": "revision.noAsk",
   "The review could not be retried.": "bandeja.retryFail",
   "We couldn't load your account.": "cuenta.noLoad",
+  "Could not load events.": "eventos.noLoad",
+  "Could not create the invite.": "eventos.inviteFail",
+  "That code is not valid.": "eventos.joinInvalid",
+  "Could not assign that task.": "eventos.assignFail",
+  "Enter a name and at least one task with an amount.": "eventos.needFields",
+  "Could not create the event.": "eventos.createFail",
+  "Demo mode cannot create events. Sign in with your email to create one.": "eventos.demoCreate",
+  "Could not prepare the account.": "eventos.prepareFail",
+  "Account setup isn't available yet.": "errores.cuentasNo",
 };
 
 const PATRONES: readonly (readonly [RegExp, Clave])[] = [

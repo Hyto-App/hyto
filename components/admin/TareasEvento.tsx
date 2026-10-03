@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -22,6 +23,9 @@ export function TareasEvento({
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string }[];
 }) {
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -43,7 +47,7 @@ export function TareasEvento({
   if (filas.length === 0) {
     return (
       <main className="hyto-page">
-        <p className="text-lg font-semibold">No tasks yet.</p>
+        <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
       </main>
     );
   }
@@ -54,20 +58,20 @@ export function TareasEvento({
         {filas.map((tarea) => (
           <li key={tarea.id} className="hyto-card grid gap-3 p-5 sm:grid-cols-[1fr_16rem] sm:items-center">
             <div>
-              <p className="text-lg font-semibold">{textoVisible(tarea.titulo)}</p>
+              <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
               <p className="mt-1 text-sm text-[var(--suave)]">
-                {etiquetaEstado(tarea.estado as EstadoTarea)} · {montoDeTarea(tarea)}
+                {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
               </p>
             </div>
             <label className="text-sm" htmlFor={`asignar-${tarea.id}`}>
-              Assign
+              {t("eventos.assign")}
               <select
                 id={`asignar-${tarea.id}`}
                 className="hyto-input mt-2"
                 value={tarea.miembroId}
                 onChange={(evento) => void asignar(tarea.id, evento.target.value)}
               >
-                <option value="">Unassigned</option>
+                <option value="">{t("comunes.unassigned")}</option>
                 {miembros.map((persona) => (
                   <option key={persona.usuarioId} value={persona.usuarioId}>
                     {persona.email}
@@ -80,7 +84,7 @@ export function TareasEvento({
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </main>

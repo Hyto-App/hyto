@@ -6,7 +6,8 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ### Added
 
-- The interface can be English (default) or Spanish. A selector in the shell and on the landing and sign-in page stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
+- The interface can be English (default) or Spanish. A selector in the shell, at the top of the signed-out landing, and in the sign-in sheet stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
+- Buttons whose label changes with the language size to the text: automatic width, horizontal padding, a minimum height, and wrapping. They do not clip the label.
 
 ## 2026-10-02
 
