@@ -1,5 +1,6 @@
 import type {
   EvidenciaFila,
+  FondeoFila,
   PedidoCanje,
   Proyecto,
   ProyectoInvitacion,
@@ -27,6 +28,9 @@ export type Almacen = {
     id: string,
     cambio: Partial<Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow" | "miembroId">>,
   ): Promise<void>;
+  leerFondeo(tareaId: string): Promise<FondeoFila | null>;
+  // False when the marker could not be stored (for example, before drizzle/0006 is applied).
+  guardarFondeo(fondeo: FondeoFila): Promise<boolean>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(
