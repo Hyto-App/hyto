@@ -21,6 +21,7 @@ export const TEXTO = {
   approving: texto("en", "pago.approving"),
   paying: texto("en", "pago.paying"),
   viewChain: texto("en", "pago.viewChain"),
+  checkAgain: texto("en", "pago.checkAgain"),
   preparePayout: texto("en", "pago.preparePayout"),
   preparingPayout: texto("en", "pago.preparingPayout"),
   payoutReady: texto("en", "pago.payoutReady"),

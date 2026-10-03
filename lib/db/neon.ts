@@ -7,12 +7,22 @@ import { Pool } from "pg";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
-import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import {
+  evidencias,
+  fondeosEscrow,
+  proyectoInvitaciones,
+  proyectoMiembros,
+  proyectos,
+  sesiones,
+  tareas,
+  usuarios,
+  veredictos,
+} from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import type { ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
-const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
+const schema = { usuarios, proyectos, tareas, fondeosEscrow, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
 
@@ -76,6 +86,12 @@ export function origenDeFila(valor: string): VeredictoFila["origen"] {
 function esColumnaAusente(error: unknown): boolean {
   const mensaje = error instanceof Error ? error.message : String(error);
   return /sha256|42703|does not exist|no existe|undefined column/i.test(mensaje);
+}
+
+function esTablaAusente(error: unknown): boolean {
+  const mensaje = error instanceof Error ? error.message : String(error);
+  const codigo = error && typeof error === "object" ? (error as { code?: unknown }).code : null;
+  return codigo === "42P01" || /42P01|does not exist|no existe|undefined table/i.test(mensaje);
 }
 
 function filasSql(resultado: unknown): Record<string, unknown>[] {
@@ -206,6 +222,24 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async actualizarTarea(id, cambio) {
       await db.update(tareas).set(cambio).where(eq(tareas.id, id));
+    },
+    async leerFondeo(tareaId) {
+      try {
+        const filas = await db.select().from(fondeosEscrow).where(eq(fondeosEscrow.tareaId, tareaId)).limit(1);
+        return filas[0] ?? null;
+      } catch (error) {
+        if (esTablaAusente(error)) return null;
+        throw error;
+      }
+    },
+    async guardarFondeo(fondeo) {
+      try {
+        await db.insert(fondeosEscrow).values(fondeo).onConflictDoNothing();
+        return true;
+      } catch (error) {
+        if (esTablaAusente(error)) return false;
+        throw error;
+      }
     },
     async crearEvidencia(evidencia) {
       if (!(await columnasListas())) {

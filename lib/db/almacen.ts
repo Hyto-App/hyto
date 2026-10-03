@@ -1,5 +1,6 @@
 import type {
   EvidenciaFila,
+  FondeoFila,
   PedidoCanje,
   Proyecto,
   ProyectoInvitacion,
@@ -28,6 +29,9 @@ export type Almacen = {
   listarTareas(): Promise<TareaFila[]>;
   leerTarea(id: string): Promise<TareaFila | null>;
   actualizarTarea(id: string, cambio: CambioTarea): Promise<void>;
+  leerFondeo(tareaId: string): Promise<FondeoFila | null>;
+  // False when the marker could not be stored (for example, before drizzle/0007 is applied).
+  guardarFondeo(fondeo: FondeoFila): Promise<boolean>;
   crearEvidencia(evidencia: EvidenciaFila): Promise<void>;
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(

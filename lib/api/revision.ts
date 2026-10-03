@@ -4,7 +4,7 @@ import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
-import { conciliarPagoPendiente } from "./firma";
+import { conciliarPagoPendiente, fondeoDeTarea } from "./firma";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
@@ -66,11 +66,13 @@ export async function leerRevisionHttp(
       actual = (await almacen.leerTarea(tareaId)) ?? actual;
     }
     const vista = await tareaAdmin(almacen, actual);
+    const hashFondeo = await fondeoDeTarea(almacen, actual).catch(() => null);
     return json({
       tarea: vista,
       foto: evidencia ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
       contratoEscrow: actual.contratoEscrow,
+      hashFondeo,
       walletCobro: actual.walletCobro,
       wallet,
     });

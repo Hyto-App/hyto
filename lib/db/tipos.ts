@@ -32,6 +32,13 @@ export type TareaFila = {
   contratoEscrow: string | null;
 };
 
+export type FondeoFila = {
+  tareaId: string;
+  contrato: string;
+  hash: string;
+  creadoEn: string;
+};
+
 export type EvidenciaFila = {
   id: string;
   tareaId: string;

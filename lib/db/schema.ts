@@ -34,6 +34,15 @@ export const tareas = pgTable("tareas", {
   contratoEscrow: text("contrato_escrow"),
 });
 
+export const fondeosEscrow = pgTable("fondeos_escrow", {
+  tareaId: text("tarea_id")
+    .primaryKey()
+    .references(() => tareas.id),
+  contrato: text("contrato").notNull(),
+  hash: text("hash").notNull(),
+  creadoEn: text("creado_en").notNull(),
+});
+
 export const evidencias = pgTable("evidencias", {
   id: text("id").primaryKey(),
   tareaId: text("tarea_id")

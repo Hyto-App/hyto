@@ -32,10 +32,11 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "02dc28603fee77fc6463c8a72c672330fab7bb3b798c8925c01909aea3b5d2d1",
+      "sha256": "adfbad1a0d3eb1d5dabdf068dbc8dc8329532544c926b13adf32c6c5a953f4f0",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
+          "fondeosEscrow",
           "proyectoInvitaciones",
           "proyectoMiembros",
           "proyectos",
@@ -76,7 +77,8 @@
           "drizzle/0002_organizador_proyecto.sql",
           "drizzle/0003_monto_confirmado.sql",
           "drizzle/0004_miembros_invitaciones.sql",
-          "drizzle/0005_evidencia_antifraude.sql"
+          "drizzle/0005_evidencia_antifraude.sql",
+          "drizzle/0007_fondeos_escrow.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -159,6 +161,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "9a7b8f4572335b21d68679c381e1398ffbf4ceff68d8f77cbc03532822afd705",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0007_fondeos_escrow.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "a9162cf070bb91ddcaf032adb66427125c9afa2b084c0843c8423e4a9f266a57",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -2992,6 +3006,201 @@
           "origen": "sql"
         }
       ]
+    },
+    {
+      "nombre": "fondeos_escrow",
+      "esquemaPostgres": null,
+      "archivoMigracion": "drizzle/0007_fondeos_escrow.sql",
+      "archivoOrm": "lib/db/schema.ts",
+      "exportDrizzle": "fondeosEscrow",
+      "ifNotExists": true,
+      "rlsEnDrizzle": false,
+      "columnas": [
+        {
+          "nombre": "tarea_id",
+          "nombreEnDrizzle": "tareaId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "tarea_id"
+            ],
+            "tabla": "tareas",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": null,
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "no action",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": false,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "fondeos_escrow_tarea_id_tareas_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "FondeoFila",
+            "campo": "tareaId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "contrato",
+          "nombreEnDrizzle": "contrato",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "FondeoFila",
+            "campo": "contrato",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "hash",
+          "nombreEnDrizzle": "hash",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "FondeoFila",
+            "campo": "hash",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "creado_en",
+          "nombreEnDrizzle": "creadoEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "FondeoFila",
+            "campo": "creadoEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        }
+      ],
+      "llavePrimaria": {
+        "columnas": [
+          "tarea_id"
+        ],
+        "nombreEnSql": null,
+        "nombreEnNeon": "confirmar con Esteban",
+        "createIndexEnLaMigracion": false
+      },
+      "unicos": [],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "tarea_id"
+          ],
+          "tabla": "tareas",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": null,
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "no action",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": false,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "fondeos_escrow_tarea_id_tareas_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "indices": [],
+      "checks": []
     }
   ],
   "relaciones": [
@@ -3154,6 +3363,26 @@
       "onUpdateEnSql": null,
       "nombreEnSql": null,
       "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "fondeos_escrow",
+        "columnas": [
+          "tarea_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "tareas",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": null,
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
     }
   ],
   "columnasIdSinFk": [
@@ -3204,11 +3433,11 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "9fc7c949ce5657072859b196b9b332075ecacc64",
+    "sha": "c79f6ba70ce970d7222b32f14544bbc0d127fde2",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "feat: el organizador es de cada proyecto (#44)",
-    "archivosDeEsquemaIgualesAEseCommit": true,
+    "asunto": "Merge pull request #136 from Hyto-App/cursor/salida-tras-codigo-302f",
+    "archivosDeEsquemaIgualesAEseCommit": false,
     "archivosComparados": [
       {
         "ruta": "drizzle/0000_inicio.sql",
@@ -3216,7 +3445,7 @@
       },
       {
         "ruta": "lib/db/schema.ts",
-        "igual": true
+        "igual": false
       },
       {
         "ruta": "drizzle.config.ts",
@@ -3233,7 +3462,7 @@
       "numero": 15,
       "titulo": "Esteban: el veredicto de Laya sale del índice de score",
       "borrador": true,
-      "estado": "OPEN",
+      "estado": "CLOSED",
       "rama": "esteban/laya-ajustes",
       "base": "main",
       "head": "2858aebd46d54aa501a6d02f8b640c27509500ab",
@@ -3252,7 +3481,7 @@
       "numero": 16,
       "titulo": "Auditoría 2026-09-29",
       "borrador": true,
-      "estado": "OPEN",
+      "estado": "CLOSED",
       "rama": "auditoria/2026-09-29",
       "base": "main",
       "head": "cd43e282ec0aa860010d32f8136f2e5d7f3cda5b",
