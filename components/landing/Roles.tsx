@@ -2,7 +2,7 @@ export function Roles() {
   return (
     <section className="hyto-landing-band" aria-labelledby="hyto-roles-title">
       <div className="hyto-landing-band-inner">
-        <p className="hyto-landing-kicker">Who it is for</p>
+        <p className="hyto-landing-kicker">Who it's for</p>
         <h2 id="hyto-roles-title" className="hyto-landing-h">
           Volunteers and organizers
         </h2>

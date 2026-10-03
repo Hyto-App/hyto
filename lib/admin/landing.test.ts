@@ -42,7 +42,9 @@ test("la landing explica el producto y se puede recorrer", async () => {
       ["Get a task", "Send a photo", "Get paid", "For volunteers", "For organizers"],
     );
     assert.equal([...document.querySelectorAll("button")].filter((boton) => boton.textContent?.includes("Sign in")).length, 2);
-    assert.match(texto(), /Switch to (light|dark) theme/);
+    const tema = document.querySelector("button.hyto-tema");
+    assert.ok(tema instanceof HTMLButtonElement);
+    assert.match(tema.getAttribute("aria-label") ?? "", /Switch to (light|dark) theme/);
     assert.equal(/escrow|trustline|\bxdr\b|soroban/i.test(cuerpo), false);
     assert.equal(document.querySelector("main.hyto-landing") !== null, true);
     assert.equal(document.querySelector(".hyto-landing-hero") !== null, true);
