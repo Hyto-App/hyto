@@ -1,4 +1,6 @@
 import { conAlmacen } from "@/lib/api/base";
+
+export const maxDuration = 30;
 import { json } from "@/lib/api/json";
 import { AVISO_REVISION, estadoOrganizadorTarea, organizaAlguno } from "@/lib/api/organizador";
 import { leerRevisionHttp } from "@/lib/api/revision";

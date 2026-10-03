@@ -1,17 +1,73 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  TRANSFORM_MARCA,
+  TRAZO_ISOTIPO,
+  TRAZO_PALABRA,
+  VIEWBOX_ISOTIPO,
+  VIEWBOX_LOGO,
+} from "@/components/ui/marca/trazos";
 
 const TEMA_CLAVE = "hyto-tema";
 
-export function Logo() {
+type PropsMarca = { className?: string; title?: string };
+
+/** Official logo: lime isotipo + "hyto" in the text color (all #08090C in light). */
+export function Logo({ className, title = "Hyto" }: PropsMarca = {}) {
   return (
-    <span className="hyto-logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M13.4 1.2 3.6 13.4h6.4l-.8 9.4 10.2-12.6h-6.6L13.4 1.2Z" />
-      </svg>
-      hyto
-    </span>
+    <svg
+      className={["hyto-logo", className].filter(Boolean).join(" ")}
+      viewBox={VIEWBOX_LOGO}
+      role="img"
+      aria-label={title}
+    >
+      <title>{title}</title>
+      <g transform={TRANSFORM_MARCA}>
+        <path className="hyto-logo-iso" d={TRAZO_ISOTIPO} />
+        <path d={TRAZO_PALABRA} />
+      </g>
+    </svg>
+  );
+}
+
+/** Isotipo alone, for the mobile header, a collapsed sidebar, and icons. */
+export function Isotipo({ className, title = "Hyto" }: PropsMarca = {}) {
+  return (
+    <svg
+      className={["hyto-isotipo", className].filter(Boolean).join(" ")}
+      viewBox={VIEWBOX_ISOTIPO}
+      role="img"
+      aria-label={title}
+    >
+      <title>{title}</title>
+      <g transform={TRANSFORM_MARCA}>
+        <path d={TRAZO_ISOTIPO} />
+      </g>
+    </svg>
+  );
+}
+
+/** The slogan, "Get paid." in the accent. A heading on the landing, a paragraph inside the sign-in dialog. */
+export function Eslogan({ como: Etiqueta = "p", className }: { como?: "h1" | "p"; className?: string }) {
+  return (
+    <Etiqueta className={["hyto-eslogan", className].filter(Boolean).join(" ")}>
+      Prove your worth. <em>Get paid.</em>
+    </Etiqueta>
+  );
+}
+
+/** Decorative milestone ring from the mockups: one arc done, two milestones reached. */
+export function AnilloHitos({ className }: { className?: string }) {
+  return (
+    <svg className={["hyto-anillo", className].filter(Boolean).join(" ")} viewBox="0 0 170 170" fill="none" aria-hidden="true">
+      <circle cx="85" cy="85" r="70" stroke="var(--anillo-pista)" strokeWidth="8" />
+      <path d="M85 15a70 70 0 0 1 66 93" stroke="var(--anillo-arco)" strokeWidth="8" strokeLinecap="round" />
+      <circle cx="85" cy="15" r="8" fill="var(--anillo-arco)" />
+      <circle cx="151" cy="108" r="8" fill="var(--anillo-arco)" />
+      <circle cx="44" cy="142" r="6" fill="var(--anillo-pista)" />
+      <circle cx="18" cy="70" r="6" fill="var(--anillo-pista)" />
+    </svg>
   );
 }
 
@@ -25,7 +81,7 @@ export function iniciales(nombre: string): string {
 function aplicarTema(tema: "dark" | "light") {
   document.documentElement.dataset.theme = tema;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", tema === "dark" ? "#0B0C12" : "#F4F5F0");
+  if (meta) meta.setAttribute("content", tema === "dark" ? "#08090C" : "#F4F5F0");
 }
 
 export function Tema() {
@@ -33,8 +89,8 @@ export function Tema() {
 
   useEffect(() => {
     const guardado = window.localStorage.getItem(TEMA_CLAVE);
-    const oscuro = typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const siguiente = guardado === "dark" || guardado === "light" ? guardado : oscuro ? "dark" : "light";
+    // Dark is the brand default. Light only when the person picked it.
+    const siguiente = guardado === "light" ? "light" : "dark";
     aplicarTema(siguiente);
     setTema(siguiente);
   }, []);
@@ -46,10 +102,29 @@ export function Tema() {
     setTema(siguiente);
   }
 
+  const oscuro = tema !== "light";
+  const etiqueta = oscuro ? "Switch to light theme" : "Switch to dark theme";
   return (
-    <button type="button" className="hyto-tema" onClick={alternar} aria-label={tema === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
-      {tema === "dark" ? "Light" : "Dark"}
+    <button type="button" className="hyto-tema" onClick={alternar} aria-label={etiqueta} title={etiqueta}>
+      {oscuro ? <Sol /> : <Luna />}
     </button>
+  );
+}
+
+function Sol() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" />
+    </svg>
+  );
+}
+
+function Luna() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+    </svg>
   );
 }
 

@@ -264,7 +264,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             Try again
           </button>
         ) : (
-          <Link href="/mis-tareas" className="mt-6 inline-block text-sm font-medium">
+          <Link href="/mis-tareas" className="hyto-btn-line is-inline mt-6 px-5">
             Back to My tasks
           </Link>
         )}
@@ -359,7 +359,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
                 onClick={() => archivoRef.current?.click()}
                 onDragOver={(evento) => evento.preventDefault()}
                 onDrop={soltarArchivo}
-                className="mt-3 w-full rounded-2xl border border-dashed border-[var(--borde)] px-4 py-4 text-sm text-[var(--suave)]"
+                className="hyto-btn-line is-dashed mt-3"
               >
                 Choose a PDF or image
               </button>
@@ -423,7 +423,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       ) : null}
 
       {enviada && !cerrada ? (
-        <button type="button" onClick={tomarOtra} className="mt-4 text-sm text-[var(--suave)]">
+        <button type="button" onClick={tomarOtra} className="hyto-btn-line mt-4">
           {reembolso ? "Send another file" : "Take another"}
         </button>
       ) : null}
