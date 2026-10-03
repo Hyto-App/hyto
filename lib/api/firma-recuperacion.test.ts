@@ -164,7 +164,9 @@ test("deploy submit throws but the transaction landed: the predicted contract is
   }), almacen);
   assert.equal(otraVez.status, 409);
   assert.match(((await otraVez.json()) as { aviso: string }).aviso, /already has an escrow/);
-  assert.ok(visto.urls.every((url) => !url.includes("horizon.stellar.org") && !url.includes("mainnet")));
+  const hosts = new Set(visto.urls.map((url) => new URL(url).host));
+  hosts.delete("beta.api.trustlesswork.com");
+  assert.deepEqual([...hosts].sort(), ["horizon-testnet.stellar.org", "soroban-testnet.stellar.org"]);
 });
 
 test("deploy submit throws and the escrow read lags: the contract is still saved with the do-not-lock-again notice", async () => {
