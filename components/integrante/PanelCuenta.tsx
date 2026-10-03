@@ -139,11 +139,11 @@ function Direccion({ direccion }: { direccion: string }) {
         <span className="sr-only">{direccion}</span>
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="hyto-btn-line is-inline h-10 px-4 text-sm" aria-live="polite" onClick={() => void copiar()}>
+        <button type="button" className="hyto-btn-line is-inline px-5" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? "Copied" : "Copy address"}
         </button>
         <a
-          className="hyto-btn-line is-inline h-10 px-4 text-sm"
+          className="hyto-btn-line is-inline px-5"
           href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}
           target="_blank"
           rel="noreferrer"
@@ -164,7 +164,7 @@ function Direccion({ direccion }: { direccion: string }) {
 function textoSaldo(vista: VistaCuenta): string {
   if (vista.saldoEstado === "ok" && vista.walletMuestra) return "Sample balance";
   if (vista.saldoEstado === "ok") return "On this wallet now";
-  if (vista.saldoEstado === "ausente") return "This wallet is not on the test network yet.";
+  if (vista.saldoEstado === "ausente") return "This wallet is not on the test network yet. Tap Get ready to be paid to open it.";
   if (vista.saldoEstado === "error") return "We couldn't read the balance.";
   return "Add a wallet to see testnet USDC.";
 }

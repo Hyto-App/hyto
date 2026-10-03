@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Entrar } from "@/components/admin/Entrar";
 import { PanelCuenta } from "@/components/integrante/PanelCuenta";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
@@ -6,6 +7,8 @@ import { Salir } from "@/components/sesion/Salir";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { leerModoDemo } from "@/lib/sesion/vista";
+
+export const metadata: Metadata = { title: "Account" };
 
 export default async function PaginaCuentas() {
   const sesion = await exigirPagina();
@@ -20,8 +23,10 @@ export default async function PaginaCuentas() {
           </div>
           <p className="hyto-sub">{sesion.email}</p>
         </div>
-        <Salir />
       </header>
+      <div className="mb-6 max-w-sm">
+        <Salir />
+      </div>
       <PanelCuenta />
       {demo ? null : (
         <div className="mt-8">

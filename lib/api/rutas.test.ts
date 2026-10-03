@@ -443,10 +443,11 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
     almacen,
   );
   assert.equal(ajeno.status, 200);
-  const cuerpoAjeno = (await ajeno.json()) as { rol: string; email: string; nombre: string; usuarioId: string };
+  const cuerpoAjeno = (await ajeno.json()) as { rol: string; email: string; nombre: string; usuarioId: string; nuevo: boolean };
   assert.equal(cuerpoAjeno.rol, "voluntario");
   assert.equal(cuerpoAjeno.email, "nadie@demo.hyto");
   assert.equal(cuerpoAjeno.nombre, "nadie");
+  assert.equal(cuerpoAjeno.nuevo, true);
   assert.match(cuerpoAjeno.usuarioId, /^u-/);
 
   const repetido = await crearSesionHttp(
@@ -458,8 +459,9 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
     almacen,
   );
   assert.equal(repetido.status, 200);
-  const cuerpoRepetido = (await repetido.json()) as { rol: string; usuarioId: string };
+  const cuerpoRepetido = (await repetido.json()) as { rol: string; usuarioId: string; nuevo: boolean };
   assert.equal(cuerpoRepetido.rol, "voluntario");
+  assert.equal(cuerpoRepetido.nuevo, false);
   assert.equal(cuerpoRepetido.usuarioId, cuerpoAjeno.usuarioId);
   await almacen.insertarUsuario({
     id: "u-carrera",
@@ -482,8 +484,9 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
   );
   assert.equal(propia.status, 200);
   assert.match(propia.headers.get("set-cookie") ?? "", /hyto_sesion=/);
-  const cuerpo = (await propia.json()) as { rol: string; usuarioId: string };
+  const cuerpo = (await propia.json()) as { rol: string; usuarioId: string; nuevo: boolean };
   assert.equal(cuerpo.rol, "organizador");
+  assert.equal(cuerpo.nuevo, false);
   assert.equal(cuerpo.usuarioId, "organizador");
   const organizadores = (await almacen.listarUsuarios()).filter((usuario) => usuario.email === "organizador@demo.hyto");
   assert.equal(organizadores.length, 1);
@@ -796,6 +799,63 @@ test("la wallet de la sesión se guarda para poder resolver", async () => {
   );
   assert.equal(otra.status, 400);
   assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
+});
+
+test("solo el alta fondea la cuenta en testnet; un ingreso no vuelve a pedir Friendbot", async () => {
+  const almacen = crearMemoria();
+  await almacen.crearSesion({
+    token: "tok-alta",
+    email: "ana@hyto.app",
+    usuarioId: "ana",
+    rol: "voluntario",
+    expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    wallet: "",
+  });
+  const urls: string[] = [];
+  let lecturas = 0;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    urls.push(url);
+    if (url.startsWith("https://friendbot.stellar.org")) return new Response("{}", { status: 200 });
+    lecturas += 1;
+    if (lecturas === 1) return new Response("missing", { status: 404 });
+    return new Response(JSON.stringify({ sequence: "8", balances: [] }), { status: 200 });
+  };
+  const opciones = { fetch: fetchImpl, esperar: async () => undefined };
+  const pedido = (alta: boolean) =>
+    new Request("http://local/api/sesion/wallet", {
+      method: "POST",
+      headers: { cookie: "hyto_sesion=tok-alta", "content-type": "application/json" },
+      body: JSON.stringify(alta ? { wallet: RESOLUTOR, alta: true } : { wallet: RESOLUTOR }),
+    });
+
+  const ingreso = await fijarWalletHttp(pedido(false), almacen, opciones);
+  assert.equal(ingreso.status, 200);
+  assert.equal((await ingreso.json()).enRed, undefined);
+  assert.equal(urls.length, 0);
+
+  const alta = await fijarWalletHttp(pedido(true), almacen, opciones);
+  assert.equal(alta.status, 200);
+  assert.equal((await alta.json()).enRed, true);
+  assert.equal((await almacen.leerSesion("tok-alta"))?.wallet, RESOLUTOR);
+  assert.ok(urls.some((url) => url === `https://friendbot.stellar.org?addr=${RESOLUTOR}`));
+  assert.ok(urls.every((url) => url.startsWith("https://horizon-testnet.stellar.org/") || url.startsWith("https://friendbot.stellar.org?")));
+  assert.equal(urls.some((url) => url.includes("https://horizon.stellar.org/")), false);
+
+  urls.length = 0;
+  const publica = await fijarWalletHttp(pedido(true), almacen, {
+    fetch: async (input) => {
+      urls.push(String(input));
+      return new Response("missing", { status: 404 });
+    },
+    env: { ...process.env, HYTO_STELLAR_NETWORK: "public" },
+    esperar: async () => undefined,
+  });
+  assert.equal(publica.status, 200);
+  const cuerpo = (await publica.json()) as { enRed: boolean; aviso: string };
+  assert.equal(cuerpo.enRed, false);
+  assert.match(cuerpo.aviso, /only opened on the test network/);
+  assert.equal(urls.some((url) => url.includes("friendbot")), false);
 });
 
 test("si el ingreso trae wallet, no se guarda otra", async () => {

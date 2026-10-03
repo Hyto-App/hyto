@@ -68,27 +68,27 @@ test("el snapshot de trabajo ida y vuelta conserva las respuestas", () => {
   assert.equal(unirDescripcion(texto, escribirSnapshot(detalle)).split("@@hyto-razones@@").length, 2);
 });
 
-test("Falta grave: no coincide con lo pedido", () => {
+test("Serious issue: does not match the request", () => {
   const etiquetas = etiquetasDe(entrada({ trabajo: { ...trabajo(), v1: "es_otra_cosa" } }));
   const grave = etiquetas.find((etiqueta) => etiqueta.id === "cap_no_coincide");
-  assert.equal(grave?.texto, "Falta grave: no coincide con lo pedido");
+  assert.equal(grave?.texto, "Serious issue: does not match the request");
   assert.equal(grave?.severidad, "problem");
   assert.deepEqual(grave?.preguntas, ["v1"]);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.texto === "Not what was requested"), false);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "matches"), false);
 });
 
-test("Falta grave: el trabajo no empezó", () => {
+test("Serious issue: the work has not started", () => {
   const etiquetas = etiquetasDe(entrada({ trabajo: { ...trabajo(), t6: "sin_empezar" } }));
-  assert.equal(etiquetas[0]?.texto, "Falta grave: el trabajo no empezó");
+  assert.equal(etiquetas[0]?.texto, "Serious issue: the work has not started");
   assert.deepEqual(etiquetas[0]?.preguntas, ["t6"]);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "unfinished"), false);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "finished"), false);
 });
 
-test("Falta grave: es otro gasto", () => {
+test("Serious issue: a different expense", () => {
   const etiquetas = etiquetasDe(factura({ f1: "otro_gasto" }));
-  assert.equal(etiquetas.find((etiqueta) => etiqueta.id === "cap_otro_gasto")?.texto, "Falta grave: es otro gasto");
+  assert.equal(etiquetas.find((etiqueta) => etiqueta.id === "cap_otro_gasto")?.texto, "Serious issue: a different expense");
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "matches"), false);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.texto === "Not what was requested"), false);
 });
@@ -105,7 +105,7 @@ test("otra y una foto borrosa muestran la falta grave, el selfie y el desenfoque
     tope: null,
   });
   assert.deepEqual(ids(etiquetas), ["cap_otra", "photo_unclear", "selfie_or_empty"]);
-  assert.equal(etiquetas[0]?.texto, "Falta grave: no muestra trabajo ni comprobante");
+  assert.equal(etiquetas[0]?.texto, "Serious issue: no work or receipt shown");
   assert.deepEqual(etiquetas.find((etiqueta) => etiqueta.id === "photo_unclear")?.preguntas, ["c1"]);
 });
 
@@ -167,7 +167,7 @@ test("Receipt amount missing, Receipt date missing, No item named y Amount over 
 test("No puede ser Completado cuando el gasto no es razonable", () => {
   const etiquetas = etiquetasDe(factura({ g2: false }));
   const tope = etiquetas.find((etiqueta) => etiqueta.id === "cap_no_razonable");
-  assert.equal(tope?.texto, "No puede ser Completado: el gasto no es razonable");
+  assert.equal(tope?.texto, "Cannot be Completed: the expense is not reasonable");
   assert.equal(tope?.severidad, "warning");
   assert.deepEqual(tope?.preguntas, ["g2"]);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.texto === "Expense not reasonable for the task"), false);

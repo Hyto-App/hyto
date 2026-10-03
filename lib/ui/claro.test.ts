@@ -18,6 +18,10 @@ test("technical payment errors tell the person what to do", () => {
   assert.equal(mensajeClaro(AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(mensajeClaro(CODIGO_HORIZON_RECEPTOR), AVISO_HORIZON_RECEPTOR);
   assert.equal(mensajeClaro(AVISO_HORIZON_RECEPTOR).includes("Get ready to be paid"), false);
+  assert.equal(
+    mensajeClaro("This wallet is not on Stellar testnet yet."),
+    "This account isn't on the test network yet. Open Account and tap Get ready to be paid.",
+  );
   assert.equal(mensajeClaro("Sign in to continue."), "Sign in to continue.");
   assert.equal(mensajeClaro("  "), "");
 });
