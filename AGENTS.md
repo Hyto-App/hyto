@@ -117,6 +117,8 @@ On the review screen (`lib/admin/remoto.ts`):
 
 The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id from the deploy prepare is carried inside the HMAC token (`contrato`), and submit saves it to `tareas.contrato_escrow` even when the indexer lags, so no instance offers a second deploy. On release, the server polls the escrow read (`lib/escrow/indexador.ts`) until milestone 0 is released. If it times out, it keeps `hash_pago` with the task unpaid, hides fund and pay, and `GET /api/revision/:id` marks it `pagado` once the read shows the release.
 
+If the submit call to Trustless throws (timeout, dropped connection, a resubmit), `POST /api/firma/enviar` asks testnet RPC `getTransaction` (`lib/escrow/confirmacion.ts`, `https://soroban-testnet.stellar.org`) for the signed transaction's hash. `SUCCESS` is handled like a lagging submit: deploy saves the predicted contract from the token, release saves `hash_pago`. `FAILED` returns the original error. `NOT_FOUND` after about 7 seconds returns `HYTO_TX_NOT_CONFIRMED` with the hash and saves nothing. `GET /api/revision/:id` also reads the escrow once for an unpaid task with a contract and marks it `pagado` when milestone 0 is released, even with no stored hash.
+
 `npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. `asegurarCobroUsdc` can call Cavos `addTrustline`, and that is not the path `PrepararUsdc` uses. There is no receiver-trustline check before deploy.
 
 ## Environment

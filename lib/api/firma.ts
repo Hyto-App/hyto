@@ -9,7 +9,8 @@ import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/lib/escrow/indexador";
-import { enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
+import { confirmarEnRed, hashTestnetDeXdr, type OpcionesConfirmacion } from "@/lib/escrow/confirmacion";
+import { ErrorFirma, enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { leerInvocacion } from "@/lib/escrow/xdr";
@@ -21,8 +22,10 @@ import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@
 const FUNCION_DESPLIEGUE = "deploy";
 const FUNCION_LIBERACION = "release_funds";
 const CODIGO_INDEXADOR_ATRASADO = "STELLAR_TX_SUBMITTED_INDEXER_LAGGING";
+export const CODIGO_CONFIRMADO_EN_RED = "HYTO_TX_CONFIRMED_ON_TESTNET";
+export const CODIGO_SIN_CONFIRMAR = "HYTO_TX_NOT_CONFIRMED";
 
-export type OpcionesEnvio = { sondeo?: OpcionesSondeo };
+export type OpcionesEnvio = { sondeo?: OpcionesSondeo; red?: OpcionesConfirmacion };
 
 export function huellaDeXdr(xdr: string): string {
   for (const red of [Networks.TESTNET, Networks.PUBLIC]) {
@@ -208,7 +211,9 @@ export async function enviarFirmaHttp(
   try {
     pago = await enviar(envio.xdr);
   } catch (error) {
-    return respuestaDeErrorFirma(error, "Could not submit the payment.");
+    const recuperado = await recuperarEnvio(envio.xdr, error, opciones);
+    if ("respuesta" in recuperado) return recuperado.respuesta;
+    pago = recuperado.pago;
   }
   const hash = pago.hash ?? hashDeXdr(envio.xdr);
   const contratoPreparado =
@@ -365,7 +370,7 @@ async function guardarResultado(
     }
     // Saved before any read so a refresh or another instance never offers a second deploy.
     await almacen.actualizarTarea(tarea.id, { contratoEscrow: contrato });
-    if (pago.codigo !== CODIGO_INDEXADOR_ATRASADO) return { aviso: null, estadoHttp: 200, contrato };
+    if (pago.codigo !== CODIGO_INDEXADOR_ATRASADO && pago.codigo !== CODIGO_CONFIRMADO_EN_RED) return { aviso: null, estadoHttp: 200, contrato };
     const indexado = await sondearEscrow(contrato, () => true, sondeo);
     if (indexado) return { aviso: null, estadoHttp: 200, contrato };
     return { aviso: AVISO_DESPLIEGUE_ATRASADO, estadoHttp: 200, contrato };
@@ -379,7 +384,7 @@ async function guardarResultado(
   if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow) || invocacion.contrato !== tarea.contratoEscrow) {
     return { aviso: "The submit does not match this task's escrow, so it was not marked paid.", estadoHttp: 200 };
   }
-  if (!envioConfirmado(pago, "v2")) {
+  if (pago.codigo !== CODIGO_CONFIRMADO_EN_RED && !envioConfirmado(pago, "v2")) {
     return { aviso: "The submit was not confirmed, so it was not marked paid.", estadoHttp: 200 };
   }
   if (!esHashPago(pago.hash)) {
@@ -403,14 +408,44 @@ function contratoDeServidor(pago: PagoEnviado, contratoPreparado: string | null)
   return contratoPreparado;
 }
 
+const AVISO_SIN_CONFIRMAR =
+  "The network has not confirmed this step yet. It may still go through. Wait a minute and reload this page before you try again.";
+
+// The submit call can fail after the network already took the transaction (timeout, dropped connection,
+// a retry of a transaction that landed). Testnet RPC is the authority on whether it was applied.
+async function recuperarEnvio(
+  xdr: string,
+  error: unknown,
+  opciones: OpcionesEnvio,
+): Promise<{ pago: PagoEnviado } | { respuesta: Response }> {
+  const original = respuestaDeErrorFirma(error, "Could not submit the payment.");
+  // A missing or rejected server key stops the request before anything reaches the network.
+  if (error instanceof ErrorFirma && (error.estado === 401 || error.estado === 503)) return { respuesta: original };
+  const hash = hashTestnetDeXdr(xdr);
+  if (!hash) return { respuesta: original };
+  const ambiguo = !(error instanceof ErrorFirma) || error.estado >= 500 || error.estado === 408;
+  const estado = await confirmarEnRed(hash, ambiguo, { esperar: opciones.sondeo?.esperar, ...opciones.red });
+  if (estado === "SUCCESS") {
+    return {
+      pago: { hash, ledger: null, codigo: CODIGO_CONFIRMADO_EN_RED, contrato: null, estado: "SUCCESS", mensaje: null },
+    };
+  }
+  if (estado === "NOT_FOUND" && ambiguo) {
+    return { respuesta: Response.json({ aviso: AVISO_SIN_CONFIRMAR, codigo: CODIGO_SIN_CONFIRMAR, hash }, { status: 502 }) };
+  }
+  return { respuesta: original };
+}
+
 // A stored release hash on an unpaid task means the release was submitted and the read model was behind.
 export async function conciliarPagoPendiente(
   almacen: Almacen,
   tarea: TareaFila,
   sondeo: OpcionesSondeo = { pausas: [] },
 ): Promise<boolean> {
-  if (tarea.estado === "pagado" || !esHashPago(tarea.hashPago)) return false;
+  if (tarea.estado === "pagado") return false;
   if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow)) return false;
+  // Without a hash the release may still have landed (its submit failed before the network answered).
+  // Milestone 0 released on the escrow read is enough to stop offering fund or pay.
   const liberado = await sondearEscrow(tarea.contratoEscrow, hitoLiberado, sondeo);
   if (!liberado) return false;
   await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
