@@ -1,7 +1,6 @@
 import type { AuthProvider, Identity } from "@cavos/kit";
 import { olvidarDireccionAdmin } from "@/lib/admin/memoria";
 import { borrarCavosLocal, recordarTokenCavos, userIdCavosGuardado } from "@/lib/auth/cavosSesion";
-import { AVISO_FAUCET_TESTNET } from "@/lib/integrante/avisosRed";
 import { debeProvisionar, type IntencionIngreso } from "@/lib/auth/intencion";
 import { completarAltaTestnet } from "@/lib/integrante/alta";
 import { APP_SALT, appIdPublico } from "@/lib/integrante/identidades";
@@ -34,33 +33,16 @@ export async function conectarStellar(auth: AuthProvider) {
   });
 }
 
-/**
- * Saves the Cavos `G…` on the session.
- * Pass `alta: true` only for Sign up / a user row created in this sign-in
- * (`POST /api/sesion` → `nuevo: true`). That asks the server to open the
- * account on Stellar testnet. Returning Sign in must pass false.
- * Get ready to be paid still opens the account if this step did not finish.
- */
-export async function fijarWallet(
-  direccion: string,
-  alta = false,
-): Promise<{ ok: true; enRed: boolean | null; aviso: string | null } | { ok: false; aviso: string }> {
-  const cuerpo: { wallet: string; alta?: true } = { wallet: direccion };
-  if (alta) cuerpo.alta = true;
+export async function fijarWallet(direccion: string): Promise<{ ok: true } | { ok: false; aviso: string }> {
   const respuesta = await fetch("/api/sesion/wallet", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(cuerpo),
+    body: JSON.stringify({ wallet: direccion }),
   });
-  const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown; enRed?: unknown } | null;
-  if (!respuesta.ok) {
-    const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not save this session's wallet.";
-    return { ok: false, aviso };
-  }
-  const enRed = json && typeof json.enRed === "boolean" ? json.enRed : null;
-  const aviso = json && typeof json.aviso === "string" && json.aviso.trim() ? json.aviso : null;
-  if (alta && enRed === false) return { ok: true, enRed: false, aviso: aviso ?? AVISO_FAUCET_TESTNET };
-  return { ok: true, enRed, aviso: null };
+  if (respuesta.ok) return { ok: true };
+  const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
+  const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not save this session's wallet.";
+  return { ok: false, aviso };
 }
 
 export async function publicarSesion(

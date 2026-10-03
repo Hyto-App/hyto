@@ -2,7 +2,6 @@ import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
-import { asegurarCuentaEnTestnet, avisoDeCuenta, type OpcionesCuentaTestnet } from "@/lib/integrante/cuentaTestnet";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
@@ -90,11 +89,7 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
   return jsonCookies({ ok: true }, 200, [encabezadoCookieCerrada(), encabezadoAlta(false)]);
 }
 
-export async function fijarWalletHttp(
-  request: Request,
-  almacen: Almacen,
-  opciones: OpcionesCuentaTestnet = {},
-): Promise<Response> {
+export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   let body: unknown;
@@ -103,8 +98,7 @@ export async function fijarWalletHttp(
   } catch {
     return json({ aviso: "The body is not JSON." }, 400);
   }
-  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown; alta?: unknown }) : {};
-  const alta = datos.alta === true;
+  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
   const crudo = datos.wallet;
   if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
     return json({ aviso: "That doesn't look like a payout account. Sign in again." }, 400);
@@ -128,10 +122,7 @@ export async function fijarWalletHttp(
       return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
-    if (!alta || sesionEsDemo(sesion)) return json({ wallet }, 200);
-    const red = await asegurarCuentaEnTestnet(wallet, opciones);
-    const aviso = avisoDeCuenta(red);
-    return json(aviso ? { wallet, enRed: false, aviso } : { wallet, enRed: true }, 200);
+    return json({ wallet }, 200);
   } catch {
     return baseNoLista();
   }
