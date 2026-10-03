@@ -40,7 +40,7 @@ test("si la cuenta no existe, Friendbot de testnet la crea una sola vez", async 
   assert.equal(llamadas.some((url) => url.includes("mainnet") || url.includes("horizon.stellar.org/")), false);
 });
 
-for (const red of ["public", "mainnet"]) {
+for (const red of ["public", "mainnet", "MAINNET"]) {
   test(`con HYTO_STELLAR_NETWORK=${red} una cuenta ausente nunca llega a Friendbot`, async () => {
     const llamadas: string[] = [];
     const fetchImpl: typeof fetch = async (input) => {

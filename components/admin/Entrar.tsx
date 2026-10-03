@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle, type IngresoCerrado } from "@/lib/auth/cliente";
 import { guardarIntencion, leerIntencion, olvidarIntencion, type IntencionIngreso } from "@/lib/auth/intencion";
@@ -18,21 +19,40 @@ import {
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
+import { SelectorIdioma, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { AnilloHitos, Eslogan, Logo } from "@/components/ui/Marca";
 
 type Fase = "inicio" | "signup" | "signin" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
+type AuthMinimo = { sendOtp(email: string): Promise<void> };
+type ConfirmarCodigo = (auth: AuthMinimo, email: string, codigo: string, intencion: IntencionIngreso) => Promise<IngresoCerrado>;
+
+/** Signed-in volunteer home: tasks, and the shell that also opens account. */
+const DESTINO_TRAS_INGRESO = "/mis-tareas";
+
+/** Where Get ready to be paid finishes a Sign up whose testnet setup did not. */
+const DESTINO_ALTA_PENDIENTE = "/eventos";
 
 /** `pendiente` is set when the person is signed in but Sign up testnet setup did not finish. */
 type ResultadoIngreso = { aviso: string | null; direccion: string | null; guardada: boolean; pendiente: string | null };
 
 const googleEnCurso = new Map<string, Promise<ResultadoIngreso>>();
 
-export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
+export function Entrar({
+  demoHabilitado = false,
+  crear = crearAuth as () => Promise<AuthMinimo | null>,
+  confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
+}: {
+  demoHabilitado?: boolean;
+  crear?: () => Promise<AuthMinimo | null>;
+  confirmarCodigo?: ConfirmarCodigo;
+}) {
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
+  const t = useTexto();
+  const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(false);
   const [fase, setFase] = useState<Fase>("inicio");
@@ -44,7 +64,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const [altaPendiente, setAltaPendiente] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
-  const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
+  const authRef = useRef<AuthMinimo | null>(null);
   const dialogoRef = useRef<HTMLDivElement>(null);
   const enCurso = useRef(false);
   const esperaRef = useRef(0);
@@ -103,7 +123,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     if (!codigoGoogle) return;
     const intencion = leerIntencion();
     setFase(intencion === "signup" ? "signup" : "signin");
-    setAviso(intencion === "signup" ? "Setting up your Stellar testnet wallet…" : "Signing you in…");
+    setAviso(t(intencion === "signup" ? "entrar.settingUp" : "entrar.signingIn"));
     let vivo = true;
     const pendiente =
       googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(window.location.search, redirectLimpio(), intencion);
@@ -111,7 +131,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     void pendiente.then((resultado) => {
       if (!vivo) return;
       if (resultado.guardada && resultado.direccion) {
-        entrarListo(resultado.direccion, resultado.pendiente);
+        entrarListo(resultado.direccion, resultado.pendiente, true);
         return;
       }
       setAviso(resultado.aviso);
@@ -121,13 +141,19 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     };
   }, []);
 
-  function entrarListo(direccionGuardada: string, pendiente: string | null) {
+  /**
+   * Google leaves a one-time code in the URL, so a clean finish reloads `/`
+   * (the server sends a session to Events). The email code stays on the
+   * signed-in landing and its way into the app. A pending testnet setup never
+   * navigates, so the notice stays visible.
+   */
+  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean) {
     setDireccion(direccionGuardada);
     setPedirIngreso(false);
     setAviso(null);
     setFase("inicio");
     setAltaPendiente(pendiente);
-    if (!pendiente) window.location.assign("/");
+    if (recargar && !pendiente) window.location.assign("/");
   }
 
   function iniciarEspera(segundos: number, visible: boolean) {
@@ -169,7 +195,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setAviso(null);
     setOcupado("envio");
     try {
-      const auth = await crearAuth();
+      const auth = await crear();
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
         setAviso(AVISO_CONFIG);
@@ -199,12 +225,12 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setAviso(null);
     setOcupado("codigo");
     try {
-      const resultado = guardarEnNavegador(await entrarConCodigo(auth, correo, codigo.trim(), "signup"));
+      const resultado = guardarEnNavegador(await confirmarCodigo(auth, correo, codigo.trim(), "signup"));
       if (!resultado.guardada || !resultado.direccion) {
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
       }
-      entrarListo(resultado.direccion, resultado.pendiente);
+      entrarListo(resultado.direccion, resultado.pendiente, false);
     } catch (error) {
       mostrarFallo(error);
     } finally {
@@ -287,8 +313,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (modoDemo) {
     const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
-    const nombreRol = rolActual === "voluntario" ? "Volunteer demo account" : "Organizer demo account";
-    const nombreOtro = otro === "voluntario" ? "volunteer" : "organizer";
+    const nombreRol = rolActual === "voluntario" ? t("entrar.volunteerDemo") : t("entrar.organizerDemo");
     return (
       <div className="flex w-full flex-col items-stretch gap-3">
         <p className="text-sm text-[var(--suave)]">
@@ -301,7 +326,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           disabled={ocupado !== null}
           className="hyto-btn-line"
         >
-          {ocupado === "demo" ? "Switching…" : `Switch to the ${nombreOtro} demo account`}
+          {ocupado === "demo" ? t("entrar.switching") : t(otro === "voluntario" ? "entrar.switchVolunteer" : "entrar.switchOrganizer")}
         </button>
         <button
           type="button"
@@ -309,11 +334,11 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
           disabled={ocupado !== null}
           className="hyto-btn-danger"
         >
-          {ocupado === "salida" ? "Leaving…" : "Leave demo"}
+          {ocupado === "salida" ? t("entrar.leaving") : t("entrar.leaveDemo")}
         </button>
         {aviso ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
-            {aviso}
+            {claro(aviso)}
           </p>
         ) : null}
       </div>
@@ -325,24 +350,32 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (direccion && !pedirIngreso) {
     return (
-      <div className="flex items-center gap-3">
-        <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
-        <div>
-          <p className="text-sm font-medium">Signed in</p>
-          <details className="text-sm text-[var(--suave)]">
-            <summary className="cursor-pointer">Account details</summary>
-            <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
-          </details>
-          {altaPendiente ? (
-            <div role="status" className="mt-2 grid gap-2 text-sm leading-6 text-[var(--suave)]">
-              <p>
-                {altaPendiente} Open Account and tap Get ready to be paid to finish setup on Stellar testnet.
-              </p>
-              <a href="/cuentas" className="hyto-btn-line is-inline px-5">
-                Open Account
-              </a>
-            </div>
-          ) : null}
+      <div className="hyto-post-login">
+        <div className="flex items-center gap-3">
+          <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
+          <div>
+            <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
+            <details className="text-sm text-[var(--suave)]">
+              <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
+              <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+            </details>
+          </div>
+        </div>
+        {altaPendiente ? (
+          <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
+            <p>
+              {claro(altaPendiente)} {t("entrar.altaPendiente")}
+            </p>
+            <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
+              {t("entrar.openEvents")}
+            </a>
+          </div>
+        ) : null}
+        <div className="hyto-welcome-step">
+          <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
+          <Link href={DESTINO_TRAS_INGRESO} className="hyto-btn hyto-post-login-cta">
+            {t("pago.preparePayout")}
+          </Link>
         </div>
       </div>
     );
@@ -352,13 +385,11 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     return (
       <div className="grid gap-3">
         <section className="hyto-entry hyto-entry-signup" aria-labelledby="entrar-signup">
-          <p className="hyto-kicker">New to Hyto</p>
+          <p className="hyto-kicker">{t("entrar.newHere")}</p>
           <h2 id="entrar-signup" className="text-lg font-semibold tracking-tight">
-            Sign up
+            {t("entrar.signUp")}
           </h2>
-          <p className="text-sm leading-6 text-[var(--suave)]">
-            First time here. We'll create your Hyto account and a Stellar testnet wallet, fund it with Friendbot if the account is missing, and add the USDC trustline.
-          </p>
+          <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signUpBody")}</p>
           <button
             type="button"
             onClick={() => {
@@ -367,17 +398,15 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             }}
             className="hyto-btn"
           >
-            Sign up
+            {t("entrar.signUp")}
           </button>
         </section>
         <section className="hyto-entry hyto-entry-signin" aria-labelledby="entrar-signin">
-          <p className="hyto-kicker">Welcome back</p>
+          <p className="hyto-kicker">{t("entrar.welcomeBack")}</p>
           <h2 id="entrar-signin" className="text-lg font-semibold tracking-tight">
-            Sign in
+            {t("entrar.signIn")}
           </h2>
-          <p className="text-sm leading-6 text-[var(--suave)]">
-            You already have an account and a wallet. Google opens that session. We won't create a new account or set up Stellar again.
-          </p>
+          <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signInBody")}</p>
           <button
             type="button"
             onClick={() => {
@@ -386,13 +415,13 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             }}
             className="hyto-btn-line"
           >
-            Sign in
+            {t("entrar.signIn")}
           </button>
         </section>
-        {demoHabilitado ? <Demo demoHabilitado rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
+        {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
         {mensaje ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
-            {mensaje}
+            {claro(mensaje)}
           </p>
         ) : null}
       </div>
@@ -400,39 +429,39 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   }
 
   const alta = fase !== "signin";
-  const titulo = alta ? "Sign up" : "Sign in";
 
   return (
-    <div ref={dialogoRef} className={`hyto-auth ${alta ? "is-signup" : "is-signin"}`} role="dialog" aria-modal="true" aria-label={titulo}>
+    <div
+      ref={dialogoRef}
+      className={`hyto-auth ${alta ? "is-signup" : "is-signin"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t(alta ? "entrar.dialogSignUp" : "entrar.dialog")}
+    >
       <div className="hyto-auth-hero">
         <Logo className="hyto-auth-logo" />
         <AnilloHitos />
         <div className="hyto-auth-claim">
           <Eslogan />
-          <p className="hyto-auth-claim-sub">
-            {alta
-              ? "Create your account and a Stellar testnet wallet. Friendbot funds it if it's new, then we add the USDC trustline."
-              : "Google only. We restore your existing profile and wallet. Nothing new is created on Stellar."}
-          </p>
+          <p className="hyto-auth-claim-sub">{t("landing.sub")}</p>
         </div>
         <ul className="hyto-roles">
-          <li>Volunteers</li>
-          <li>Organizers</li>
-          <li>Paid via Stellar escrow</li>
+          <li>{t("landing.voluntarios")}</li>
+          <li>{t("landing.organizadores")}</li>
+          <li>{t("landing.escrow")}</li>
         </ul>
       </div>
       <div className="hyto-auth-sheet">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-[20px] font-medium tracking-[-0.4px]">{alta ? "Sign up for Hyto" : "Sign in to Hyto"}</h2>
-          <button type="button" className="hyto-cerrar" onClick={() => setFase("inicio")}>
-            Close
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[20px] font-medium tracking-[-0.4px]">{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <SelectorIdioma />
+            <button type="button" className="hyto-cerrar" onClick={() => setFase("inicio")}>
+              {t("entrar.close")}
+            </button>
+          </div>
         </div>
-        <p className="mt-2 text-sm leading-6 text-[var(--suave)]">
-          {alta
-            ? "Google creates your account and sets up Stellar testnet. Email works too."
-            : "Google only. We won't fund Friendbot, add a trustline, or create another wallet."}
-        </p>
+        <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
         {fase === "correo" || fase === "codigo" ? (
           <div className="hyto-steps mt-4" aria-hidden="true">
             <i className="is-on" />
@@ -443,9 +472,9 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
       {fase === "signup" ? (
         <>
           <button type="button" onClick={() => void google("signup")} disabled={ocupado !== null} className="hyto-btn">
-            {ocupado === "google" ? "Opening Google…" : "Sign up with Google"}
+            {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.googleSignUp")}
           </button>
-          <p className="text-center text-xs uppercase tracking-wide text-[var(--suave)]">or</p>
+          <p className="text-center text-xs uppercase tracking-wide text-[var(--suave)]">{t("entrar.or")}</p>
           <button
             type="button"
             onClick={() => {
@@ -455,15 +484,15 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="hyto-btn-line"
           >
-            Sign up with email
+            {t("entrar.emailSignUp")}
           </button>
         </>
       ) : null}
       {fase === "correo" ? (
         <>
-          <p className="text-sm leading-6 text-[var(--suave)]">We'll email you a code. You don't need a separate app.</p>
+          <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.emailCode")}</p>
           <label className="sr-only" htmlFor="correo-entrar">
-            Email
+            {t("entrar.email")}
           </label>
           <input
             id="correo-entrar"
@@ -474,18 +503,18 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
               setCorreo(evento.target.value);
               setAviso(null);
             }}
-            placeholder="Email"
+            placeholder={t("entrar.email")}
             disabled={ocupado !== null}
             className="hyto-input"
           />
-          {demo ? <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_DEMO}</p> : <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>}
+          {demo ? <p className="text-sm leading-6 text-[var(--suave)]">{claro(AVISO_DEMO)}</p> : <p className="text-sm leading-6 text-[var(--suave)]">{claro(AVISO_SPAM)}</p>}
           <button
             type="button"
             onClick={() => void enviarCodigo()}
             disabled={ocupado !== null || espera > 0 || demo}
             className="hyto-btn"
           >
-            {ocupado === "envio" ? "Sending…" : "Send code"}
+            {ocupado === "envio" ? t("entrar.sending") : t("entrar.sendCode")}
           </button>
           <button
             type="button"
@@ -496,15 +525,15 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             disabled={ocupado !== null}
             className="hyto-btn-line"
           >
-            Back
+            {t("entrar.back")}
           </button>
         </>
       ) : null}
       {fase === "codigo" ? (
         <>
-          <p className="text-sm leading-6 text-[var(--suave)]">{AVISO_SPAM}</p>
+          <p className="text-sm leading-6 text-[var(--suave)]">{claro(AVISO_SPAM)}</p>
           <label className="sr-only" htmlFor="codigo-entrar">
-            Code
+            {t("entrar.code")}
           </label>
           <input
             id="codigo-entrar"
@@ -512,36 +541,32 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
             autoComplete="one-time-code"
             value={codigo}
             onChange={(evento) => setCodigo(evento.target.value)}
-            placeholder="Code"
+            placeholder={t("entrar.code")}
             disabled={ocupado !== null}
             className="hyto-input"
           />
           <button type="button" onClick={() => void confirmar()} disabled={ocupado !== null} className="hyto-btn">
-            {ocupado === "codigo" ? "Creating account…" : "Create account"}
+            {ocupado === "codigo" ? t("entrar.creatingAccount") : t("entrar.createAccount")}
           </button>
           <button type="button" onClick={() => void enviarCodigo()} disabled={ocupado !== null || espera > 0} className="hyto-btn-line">
-            Resend code
+            {t("entrar.resend")}
           </button>
         </>
       ) : null}
       {fase === "signin" ? (
         <button type="button" onClick={() => void google("signin")} disabled={ocupado !== null} className="hyto-btn">
-          {ocupado === "google" ? "Opening Google…" : "Sign in with Google"}
+          {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.google")}
         </button>
       ) : null}
       {!alta && demoHabilitado ? (
-        <Demo demoHabilitado rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
+        <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
       ) : null}
       {mensaje ? (
         <p role="status" className="text-sm leading-6 text-[var(--suave)]">
-          {mensaje}
+          {claro(mensaje)}
         </p>
       ) : null}
-          <p className="text-xs leading-5 text-[var(--suave)]">
-            {alta
-              ? "Cavos on Stellar testnet. Sign up creates the wallet, uses Friendbot if the account is missing, and adds the USDC trustline."
-              : "Cavos on Stellar testnet. Sign in opens the wallet you already have."}
-          </p>
+          <p className="text-xs leading-5 text-[var(--suave)]">{t(alta ? "entrar.legalSignUp" : "entrar.legal")}</p>
         </div>
       </div>
     </div>
@@ -584,18 +609,18 @@ function Demo({
   ocupado,
   entrarDemo,
 }: {
-  demoHabilitado: boolean;
   rolDemo: "organizador" | "voluntario";
   setRolDemo: (rol: "organizador" | "voluntario") => void;
   ocupado: Ocupado | null;
   entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
 }) {
+  const t = useTexto();
   return (
     <div className="hyto-card grid gap-3 p-4">
-      <p className="text-sm font-medium">Try demo mode</p>
-      <p className="text-sm text-[var(--suave)]">No account needed</p>
+      <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
+      <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
       <label className="sr-only" htmlFor="rol-demo">
-        Demo session role
+        {t("entrar.demoRole")}
       </label>
       <select
         id="rol-demo"
@@ -607,11 +632,11 @@ function Demo({
         disabled={ocupado !== null}
         className="hyto-input"
       >
-        <option value="organizador">Organizer demo account</option>
-        <option value="voluntario">Volunteer demo account</option>
+        <option value="organizador">{t("entrar.organizerDemo")}</option>
+        <option value="voluntario">{t("entrar.volunteerDemo")}</option>
       </select>
       <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
-        {ocupado === "demo" ? "Signing in…" : "Enter as demo"}
+        {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
       </button>
     </div>
   );

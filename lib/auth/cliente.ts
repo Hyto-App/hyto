@@ -72,7 +72,7 @@ export async function publicarSesion(
 /**
  * `guardada` is true once the server session holds this wallet. A Sign up whose
  * testnet setup failed after that is still signed in: `aviso` explains what is
- * left, and Get ready to be paid on Account finishes it.
+ * left, and Get ready to be paid on Events finishes it.
  */
 export type IngresoCerrado = { aviso: string | null; direccion: string | null; guardada: boolean };
 
