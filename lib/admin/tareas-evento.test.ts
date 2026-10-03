@@ -4,7 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { TareasEvento } from "../../components/admin/TareasEvento";
-import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
+import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 async function elegir(selector: string, valor: string): Promise<void> {
   const nodo = document.querySelector(selector);
@@ -41,15 +41,18 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
             tope: null,
             estado: "pendiente",
             miembroId: "",
+            condicion: "Cajas cerradas",
             prioridad: "normal",
             dificultad: null,
+            bloqueo: null,
           },
         ],
       }),
     );
-    const rejilla = document.querySelector(".sm\\:grid-cols-3");
+    const rejilla = document.querySelector(".sm\\:grid-cols-2");
     assert.ok(rejilla);
     assert.match(rejilla.className, /grid-cols-1/);
+    assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Edit"), true);
     assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "normal");
     assert.equal((document.querySelector("#dificultad-t1") as HTMLSelectElement).value, "");
     assert.equal(texto().includes("High priority"), false);
@@ -67,6 +70,14 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
     assert.match(alta?.className ?? "", /hyto-pill /);
     assert.equal(alta?.className.includes("hyto-pill-bad"), false);
     assert.match(suave?.className ?? "", /hyto-pill-muted/);
+
+    await pulsar("Edit");
+    await escribir("#titulo-t1", "Cajas nuevas");
+    await pulsar("Save");
+    assert.equal(llamadas.at(-1)?.url, "/api/tareas/t1");
+    assert.equal((llamadas.at(-1)?.body as { titulo?: string; prioridad?: string }).titulo, "Cajas nuevas");
+    assert.equal((llamadas.at(-1)?.body as { prioridad?: string }).prioridad, undefined);
+    assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "high");
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

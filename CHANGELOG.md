@@ -4,6 +4,12 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
+### Changed
+
+- An organizer can edit a task's title, photo condition, amount, cap, and assignee until a photo is uploaded, the task has a payment, or the amount is locked in a payment. The server rejects the edit in those cases. There is no separate description field.
+
+## 2026-10-02
+
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
 
 ### Added
@@ -27,6 +33,7 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 - The review grade is a percentage from 0 to 100. It is the weighted sum of the answered questions (`PESOS_PREGUNTAS`). The screen shows Insuficiente, Parcialmente completado, or Completado next to the percentage. The percentage does not approve a payment.
 - `calificar` caps a grave fault at 49 (classification "otra", work that does not match, work not started, or a different kind of expense) and an unreasonable expense at 79. A reimbursement with no amount, no date, or over the cap stays at 40 or below. The lowest cap wins. Weights are unchanged.
 - Reason tags next to the grade explain the answers already collected, including the cap. They do not approve or pay.
+- The verdict pill counts up to its percentage and fills a thin bar in the label color (about 1.2s, ease-out). Reduced motion shows the final value at once. Screen readers get the final text only. The volunteer task screen still does not show the score.
 
 ### Not in the repo yet
 
