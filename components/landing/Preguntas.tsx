@@ -1,29 +1,18 @@
-const PREGUNTAS = [
-  {
-    pregunta: "Do I need to know crypto?",
-    respuesta:
-      "No. You do small tasks and send a photo. You get paid in digital dollars (USDC). Hyto creates the account for you.",
-  },
-  {
-    pregunta: "Is this real money?",
-    respuesta:
-      "Not yet. Hyto runs on the Stellar test network (testnet). These payments are practice money. They are not real dollars.",
-  },
-] as const;
+import { discurso, preguntasDiscurso } from "@/lib/ui/discurso";
 
 export function Preguntas() {
   return (
     <section className="hyto-landing-band" aria-labelledby="hyto-faq-title">
       <div className="hyto-landing-band-inner">
-        <p className="hyto-landing-kicker">Questions</p>
+        <p className="hyto-landing-kicker">{discurso.faqKicker}</p>
         <h2 id="hyto-faq-title" className="hyto-landing-h">
-          Before you start
+          {discurso.faqTitle}
         </h2>
         <div className="hyto-faq-list">
-          {PREGUNTAS.map((item) => (
-            <details key={item.pregunta} className="hyto-faq">
-              <summary>{item.pregunta}</summary>
-              <p>{item.respuesta}</p>
+          {preguntasDiscurso().map((item) => (
+            <details key={item.titulo} className="hyto-faq">
+              <summary>{item.titulo}</summary>
+              <p>{item.cuerpo}</p>
             </details>
           ))}
         </div>

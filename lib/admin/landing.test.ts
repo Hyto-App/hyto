@@ -17,18 +17,18 @@ test("la landing explica el producto y se puede recorrer", async () => {
     const cuerpo = texto();
     const orden = [
       "Prove your worth.",
-      "Do small tasks for real events. Send a photo. Get paid in digital dollars (USDC).",
+      "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
+      "Practice network.",
+      "not real cash",
       "How it works",
-      "For volunteers",
-      "No bank account needed. Your wallet is created for you.",
-      "For organizers",
-      "Lock the budget first. Pay only when you approve.",
+      "Pick a task",
+      "Who it is for",
+      "Volunteers and workers",
+      "Organizers",
+      "set the money aside",
       "Meet Mile",
-      "Mile reads each photo and suggests a score. People approve every payment.",
+      "The AI only suggests",
       "Do I need to know crypto?",
-      "Is this real money?",
-      "Stellar test network (testnet)",
-      "not real dollars",
       "Ready to prove your worth?",
     ];
     let cursor = -1;
@@ -39,7 +39,7 @@ test("la landing explica el producto y se puede recorrer", async () => {
     }
     assert.deepEqual(
       [...document.querySelectorAll("h3")].map((nodo) => nodo.textContent),
-      ["Get a task", "Send a photo", "Get paid", "For volunteers", "For organizers"],
+      ["Pick a task", "Send a photo", "Get paid", "Volunteers and workers", "Organizers"],
     );
     assert.equal([...document.querySelectorAll("button")].filter((boton) => boton.textContent?.includes("Sign in")).length, 2);
     const tema = document.querySelector("button.hyto-tema");

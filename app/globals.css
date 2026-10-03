@@ -904,6 +904,62 @@ a {
   color: var(--suave);
 }
 
+.hyto-landing-pitch {
+  margin-top: var(--e-2);
+  max-width: 28rem;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--tinta);
+}
+
+.hyto-landing-note {
+  margin-top: var(--e-2);
+  max-width: 28rem;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--papel);
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--tinta);
+}
+
+.hyto-landing-note strong {
+  font-weight: 600;
+}
+
+.hyto-landing-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.hyto-landing-demo {
+  display: grid;
+  gap: 12px;
+}
+
+.hyto-landing-demo-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--papel);
+  padding: 16px;
+}
+
+.hyto-landing-demo-panel p {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--tinta);
+}
+
+@media (min-width: 640px) {
+  .hyto-landing-actions {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
 .hyto-landing-cta {
   margin-top: var(--e-4);
 }

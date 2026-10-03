@@ -2,6 +2,12 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-03
+
+### Added
+
+- The scrolling landing states the product in plain language. The hero keeps "Prove your worth. Get paid." and "A marketplace of small tasks. You get paid in dollars in crypto (USDC).", plus a practice-network note. Steps, who it is for, Mile, the question list, and the closing sign-in stay, and they read from `lib/ui/discurso.ts` so the same line is not repeated.
+
 ## 2026-10-02
 
 ### Added
