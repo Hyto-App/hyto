@@ -48,6 +48,33 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
   }
 });
 
+test("una wallet ausente pide Get ready to be paid", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    responder({
+      demo: false,
+      muestra: false,
+      email: "ana@hyto.test",
+      wallet: WALLET,
+      walletMuestra: false,
+      saldo: null,
+      saldoEstado: "ausente",
+      orgullo: armarOrgullo([]),
+    })) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /not on the test network yet/);
+    assert.match(texto(), /Get ready to be paid/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
 test("copiar la dirección pública confirma en el botón", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;

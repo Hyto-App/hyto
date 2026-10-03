@@ -67,7 +67,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
             ? "Confirm in the window if it asks. This can take a minute."
             : estado === "error"
               ? aviso
-              : "This lets the account receive the event payment. You'll confirm once.";
+              : "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the event payment.";
   const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
 
   return (
