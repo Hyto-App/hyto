@@ -1,4 +1,5 @@
 import type { Veredicto } from "@/lib/admin/tipos";
+import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { tareasEjemplo } from "./ejemplos";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
@@ -99,6 +100,8 @@ function normalizarTarea(valor: unknown): Tarea | null {
     miembroId: texto(crudo.miembroId) ?? "",
     walletCobro: texto(crudo.walletCobro) ?? "",
     estado,
+    prioridad: prioridadGuardada(crudo.prioridad),
+    dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
   };

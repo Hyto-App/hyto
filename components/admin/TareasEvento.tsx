@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
-import { etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
-import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
+import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type FilaTareaEvento = {
   id: string;
@@ -15,6 +15,8 @@ export type FilaTareaEvento = {
   condicion: string;
   estado: string;
   miembroId: string;
+  prioridad: PrioridadTarea;
+  dificultad: DificultadTarea | null;
   bloqueo: string | null;
 };
 
@@ -55,6 +57,26 @@ export function TareasEvento({
       return;
     }
     setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
+  }
+
+  async function clasificar(tareaId: string, cambio: { prioridad?: PrioridadTarea; dificultad?: DificultadTarea | null }) {
+    setAviso(null);
+    const previa = filas.find((fila) => fila.id === tareaId);
+    setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, ...cambio } : fila)));
+    const respuesta = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/clasificar`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(cambio),
+    });
+    if (!respuesta.ok) {
+      if (previa) {
+        setFilas((actuales) =>
+          actuales.map((fila) => (fila.id === tareaId ? { ...fila, prioridad: previa.prioridad, dificultad: previa.dificultad } : fila)),
+        );
+      }
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+      setAviso(cuerpo?.aviso ?? t("clasificacion.saveFail"));
+    }
   }
 
   function abrir(tarea: FilaTareaEvento) {
@@ -129,15 +151,33 @@ export function TareasEvento({
     <main className="hyto-page">
       <ul className="grid gap-3">
         {filas.map((tarea) => {
+          const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
+          const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
           return (
-            <li key={tarea.id} className={`hyto-card grid gap-3 p-5 ${editando ? "" : "sm:grid-cols-[1fr_16rem] sm:items-start"}`}>
-              <div>
+            <li key={tarea.id} className="hyto-card grid gap-4 p-5">
+              <div className="min-w-0">
                 <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
                   {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
                 </p>
-                {tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
+                {prioridad || dificultad ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {prioridad ? (
+                      <span className="hyto-pill hyto-pill-ok">
+                        <i className="hyto-dot" aria-hidden="true" />
+                        {prioridad}
+                      </span>
+                    ) : null}
+                    {dificultad ? (
+                      <span className="hyto-pill hyto-pill-muted">
+                        <i className="hyto-dot" aria-hidden="true" />
+                        {dificultad}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+                {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
               </div>
               {editando && borrador ? (
                 <form
@@ -250,6 +290,36 @@ export function TareasEvento({
                   )}
                 </div>
               )}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-sm" htmlFor={`prioridad-${tarea.id}`}>
+                  {t("clasificacion.priority")}
+                  <select
+                    id={`prioridad-${tarea.id}`}
+                    className="hyto-input mt-2"
+                    value={tarea.prioridad}
+                    onChange={(evento) => void clasificar(tarea.id, { prioridad: evento.target.value as PrioridadTarea })}
+                  >
+                    <option value="normal">{t("clasificacion.normal")}</option>
+                    <option value="high">{t("clasificacion.high")}</option>
+                  </select>
+                </label>
+                <label className="text-sm" htmlFor={`dificultad-${tarea.id}`}>
+                  {t("clasificacion.difficulty")}
+                  <select
+                    id={`dificultad-${tarea.id}`}
+                    className="hyto-input mt-2"
+                    value={tarea.dificultad ?? ""}
+                    onChange={(evento) =>
+                      void clasificar(tarea.id, { dificultad: evento.target.value === "" ? null : (evento.target.value as DificultadTarea) })
+                    }
+                  >
+                    <option value="">{t("clasificacion.notSet")}</option>
+                    <option value="easy">{t("clasificacion.easy")}</option>
+                    <option value="medium">{t("clasificacion.medium")}</option>
+                    <option value="hard">{t("clasificacion.hard")}</option>
+                  </select>
+                </label>
+              </div>
             </li>
           );
         })}

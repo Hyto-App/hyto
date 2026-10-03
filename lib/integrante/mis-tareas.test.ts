@@ -19,6 +19,8 @@ const TAREAS: Tarea[] = [
     miembroId: "v",
     walletCobro: "",
     estado: "pagado",
+    prioridad: "normal",
+    dificultad: "hard",
   },
   {
     id: "media",
@@ -31,6 +33,8 @@ const TAREAS: Tarea[] = [
     miembroId: "v",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "high",
+    dificultad: "medium",
   },
   {
     id: "comida",
@@ -43,6 +47,8 @@ const TAREAS: Tarea[] = [
     miembroId: "v",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "high",
+    dificultad: "easy",
   },
   {
     id: "vacio",
@@ -55,6 +61,8 @@ const TAREAS: Tarea[] = [
     miembroId: "v",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "normal",
+    dificultad: null,
   },
 ];
 
@@ -97,7 +105,11 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
 
     const orden = document.querySelector("[aria-label='Sort tasks']");
     assert.ok(orden);
-    assert.equal(orden?.querySelectorAll("button").length, 2);
+    assert.equal(orden?.querySelectorAll("button").length, 3);
+    assert.deepEqual(
+      [...(orden?.querySelectorAll("button") ?? [])].map((boton) => boton.textContent),
+      ["Priority", "Highest pay", "Default"],
+    );
     assert.equal(orden?.querySelector("[aria-pressed='true']")?.textContent, "Default");
     assert.deepEqual(titulos(), ["Booth", "Meal", "Check-in", "Blank"]);
     assert.deepEqual(insignias().sort(), ["Booth", "Meal"]);
@@ -117,6 +129,23 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
 
     await pulsar("All");
     assert.deepEqual(titulos(), ["Booth", "Meal", "Check-in", "Blank"]);
+
+    const booth = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Booth");
+    const checkin = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Check-in");
+    const blank = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Blank");
+    const boothAltas = [...(booth?.querySelectorAll(".hyto-pill-ok") ?? [])].map((nodo) => nodo.textContent ?? "");
+    assert.equal(boothAltas.some((textoPildora) => textoPildora.includes("High priority")), false);
+    assert.match(booth?.querySelector(".hyto-pill-muted")?.textContent ?? "", /Hard/);
+    assert.equal(booth?.querySelector(".hyto-pill-muted")?.className.includes("hyto-pill-bad"), false);
+    assert.match(checkin?.querySelector(".hyto-pill-ok")?.textContent ?? "", /High priority/);
+    assert.match(checkin?.textContent ?? "", /Medium/);
+    assert.equal(checkin?.querySelector(".hyto-pill-ok")?.className.includes("hyto-pill "), true);
+    assert.equal(blank?.textContent?.includes("High priority"), false);
+    assert.equal(/\b(Easy|Medium|Hard)\b/.test(blank?.textContent ?? ""), false);
+
+    await pulsar("Priority");
+    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-pressed='true']")?.textContent, "Priority");
+    assert.deepEqual(titulos(), ["Check-in", "Meal", "Booth", "Blank"]);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

@@ -4,6 +4,7 @@ import { asegurarSemilla } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { leerDificultadEntrada, leerPrioridadEntrada } from "@/lib/tareas/clasificacion";
 import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { tareaEnBandeja } from "./informe";
@@ -164,6 +165,10 @@ function leerTarea(item: unknown, proyectoId: string): TareaBorrador | { aviso: 
     return { aviso: "Enter a valid email in Assign to." };
   }
   const topeTexto = typeof crudo.tope === "string" || typeof crudo.tope === "number" ? normalizarMonto(String(crudo.tope)) : null;
+  const prioridad = leerPrioridadEntrada(crudo.prioridad);
+  if (typeof prioridad !== "string") return prioridad;
+  const dificultad = leerDificultadEntrada(crudo.dificultad);
+  if (dificultad !== null && typeof dificultad !== "string") return dificultad;
   return {
     id: crypto.randomUUID(),
     proyectoId,
@@ -179,6 +184,8 @@ function leerTarea(item: unknown, proyectoId: string): TareaBorrador | { aviso: 
     hashPago: null,
     contratoEscrow: null,
     credencialUrl: null,
+    prioridad,
+    dificultad,
   };
 }
 

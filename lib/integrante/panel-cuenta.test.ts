@@ -27,6 +27,8 @@ function tarea(parcial: Partial<TareaFila> & Pick<TareaFila, "id" | "proyectoId"
     hashPago: null,
     credencialUrl: null,
     contratoEscrow: null,
+    prioridad: "normal",
+    dificultad: null,
     ...parcial,
   };
 }

@@ -9,6 +9,7 @@ import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
 import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import type { ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
@@ -467,6 +468,8 @@ function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
     ...fila,
     tipo: tipoDe(fila.tipo),
     estado: estadoDe(fila.estado),
+    prioridad: prioridadGuardada(fila.prioridad),
+    dificultad: dificultadGuardada(fila.dificultad),
   };
 }
 

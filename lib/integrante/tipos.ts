@@ -4,6 +4,10 @@ export type TipoTarea = "trabajo" | "reembolso";
 
 export type EstadoTarea = "pendiente" | "en revisión" | "pagado";
 
+export type PrioridadTarea = "normal" | "high";
+
+export type DificultadTarea = "easy" | "medium" | "hard";
+
 export type Tarea = {
   id: string;
   proyectoId: string;
@@ -15,6 +19,8 @@ export type Tarea = {
   miembroId: string;
   walletCobro: string;
   estado: EstadoTarea;
+  prioridad: PrioridadTarea;
+  dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
 };

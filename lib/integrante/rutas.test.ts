@@ -60,6 +60,8 @@ test("si la ruta responde, no se rellenan los ejemplos", async () => {
     miembroId: "voluntario-2",
     walletCobro: "GREAL",
     estado: "pagado",
+    prioridad: "normal",
+    dificultad: null,
   };
   const fetchImpl: typeof fetch = async () =>
     json({ tareas: [remota, { ...remota, id: "otra", miembroId: "voluntario-1", walletCobro: "GOTRA" }] });

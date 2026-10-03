@@ -1,5 +1,6 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
+import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
@@ -20,6 +21,8 @@ export function tareaPublica(tarea: TareaFila) {
     estado: tarea.estado,
     hashPago: tarea.hashPago,
     contratoEscrow: tarea.contratoEscrow,
+    prioridad: prioridadGuardada(tarea.prioridad),
+    dificultad: dificultadGuardada(tarea.dificultad),
   };
 }
 

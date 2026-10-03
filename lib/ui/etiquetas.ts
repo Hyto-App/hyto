@@ -28,6 +28,12 @@ const CHOICES: Record<string, Clave> = {
   otra: "choices.otra",
 };
 
+const DIFICULTADES: Record<string, Clave> = {
+  easy: "clasificacion.easy",
+  medium: "clasificacion.medium",
+  hard: "clasificacion.hard",
+};
+
 const LEGADO: Record<string, string> = {
   "Montar el stand": "Set up the booth",
   "Banner visible y mesa armada": "Banner visible and the table set up",
@@ -78,6 +84,16 @@ export function textoNota(etiqueta: string, nota: number | null | undefined): st
 export function etiquetaTipo(tipo: string, idioma: Idioma = "en"): string {
   const clave = TIPOS[tipo];
   return clave ? texto(idioma, clave) : tipo;
+}
+
+/** Only high priority gets a label. Normal stays quiet. */
+export function etiquetaPrioridad(prioridad: string | null | undefined, idioma: Idioma = "en"): string | null {
+  return prioridad === "high" ? texto(idioma, "clasificacion.highPriority") : null;
+}
+
+export function etiquetaDificultad(dificultad: string | null | undefined, idioma: Idioma = "en"): string | null {
+  const clave = dificultad ? DIFICULTADES[dificultad] : undefined;
+  return clave ? texto(idioma, clave) : null;
 }
 
 export function etiquetaChoice(choice: string, idioma: Idioma = "en"): string {

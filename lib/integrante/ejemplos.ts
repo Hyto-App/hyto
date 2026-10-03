@@ -14,6 +14,8 @@ const TAREAS: Tarea[] = [
     miembroId: "voluntario-1",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "normal",
+    dificultad: null,
   },
   {
     id: "registro",
@@ -26,6 +28,8 @@ const TAREAS: Tarea[] = [
     miembroId: "voluntario-2",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "normal",
+    dificultad: null,
   },
   {
     id: "bienvenida",
@@ -38,6 +42,8 @@ const TAREAS: Tarea[] = [
     miembroId: "voluntario-3",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "normal",
+    dificultad: null,
   },
   {
     id: "comida",
@@ -50,6 +56,8 @@ const TAREAS: Tarea[] = [
     miembroId: "voluntario-1",
     walletCobro: "",
     estado: "pendiente",
+    prioridad: "normal",
+    dificultad: null,
   },
 ];
 

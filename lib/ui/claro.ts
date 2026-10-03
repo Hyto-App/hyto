@@ -133,6 +133,10 @@ const EXACTO: Record<string, Clave> = {
   "Choose a person in this event.": "eventos.choosePerson",
   "Nothing to save.": "eventos.nothingSave",
   "That person is not in this event.": "eventos.notInEvent",
+  "Could not save priority and difficulty.": "clasificacion.saveFail",
+  "Only the organizer can set priority and difficulty.": "clasificacion.onlyOrganizer",
+  "Choose Normal or High.": "clasificacion.choosePriority",
+  "Choose Easy, Medium, Hard, or Not set.": "clasificacion.chooseDifficulty",
   "We couldn't open this payout account on the test network. Open Events and tap Get ready to be paid.": "errores.faucetTestnet",
   "Payout accounts are only opened on the test network.": "errores.soloTestnet",
 };

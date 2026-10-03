@@ -1,10 +1,11 @@
-export type OrdenTareas = "defecto" | "mayor";
+export type OrdenTareas = "defecto" | "mayor" | "prioridad";
 
 export type TareaConPago = {
   id: string;
   tipo: "trabajo" | "reembolso";
   monto: string | null;
   tope: string | null;
+  prioridad?: string | null;
 };
 
 export type GrupoEvento<T> = {
@@ -52,13 +53,17 @@ function compararPago(a: number | null, b: number | null): number {
   return b - a;
 }
 
+function rangoPrioridad(tarea: { prioridad?: string | null }): number {
+  return tarea.prioridad === "high" ? 0 : 1;
+}
+
 export function ordenarPorPago<T extends TareaConPago>(tareas: readonly T[], orden: OrdenTareas): T[] {
   const copia = [...tareas];
-  if (orden !== "mayor") return copia;
+  if (orden === "defecto") return copia;
   return copia
     .map((tarea, indice) => ({ tarea, indice }))
     .sort((a, b) => {
-      const diff = compararPago(pagoNumerico(a.tarea), pagoNumerico(b.tarea));
+      const diff = orden === "prioridad" ? rangoPrioridad(a.tarea) - rangoPrioridad(b.tarea) : compararPago(pagoNumerico(a.tarea), pagoNumerico(b.tarea));
       return diff === 0 ? a.indice - b.indice : diff;
     })
     .map((item) => item.tarea);

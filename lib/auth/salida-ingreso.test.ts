@@ -212,6 +212,8 @@ const TAREA: Tarea = {
   miembroId: "v",
   walletCobro: "",
   estado: "pendiente",
+  prioridad: "normal",
+  dificultad: null,
 };
 
 async function esperar(listo: () => boolean): Promise<void> {

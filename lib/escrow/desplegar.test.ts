@@ -91,6 +91,8 @@ test("el monto del escrow no pasa el tope de la tarea", () => {
     hashPago: null,
     credencialUrl: null,
     contratoEscrow: null,
+    prioridad: "normal",
+    dificultad: null,
   } satisfies TareaFila;
   assert.equal(montoDeTarea(tarea, null), 15);
   assert.equal(montoDeTarea({ ...tarea, tope: null }, null), 20);
@@ -112,6 +114,8 @@ test("un reembolso usa el monto confirmado y no la lectura del recibo", () => {
     hashPago: null,
     credencialUrl: null,
     contratoEscrow: null,
+    prioridad: "normal",
+    dificultad: null,
   } satisfies TareaFila;
   const evidencia = {
     id: "ev",

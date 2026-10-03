@@ -12,7 +12,20 @@ import type {
 } from "./tipos";
 
 export type CambioTarea = Partial<
-  Pick<TareaFila, "estado" | "walletCobro" | "hashPago" | "contratoEscrow" | "miembroId" | "titulo" | "monto" | "tope" | "condicion">
+  Pick<
+    TareaFila,
+    | "estado"
+    | "walletCobro"
+    | "hashPago"
+    | "contratoEscrow"
+    | "miembroId"
+    | "titulo"
+    | "monto"
+    | "tope"
+    | "condicion"
+    | "prioridad"
+    | "dificultad"
+  >
 >;
 
 export type Almacen = {

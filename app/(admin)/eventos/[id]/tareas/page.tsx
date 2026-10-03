@@ -36,6 +36,8 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
           condicion: tarea.condicion,
           estado: tarea.estado,
           miembroId: tarea.miembroId,
+          prioridad: tarea.prioridad,
+          dificultad: tarea.dificultad,
           bloqueo: avisoBloqueo(tarea, Boolean(evidencia)),
         };
       }),

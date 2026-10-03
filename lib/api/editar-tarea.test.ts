@@ -22,6 +22,8 @@ const trabajo: TareaFila = {
   hashPago: null,
   credencialUrl: null,
   contratoEscrow: null,
+  prioridad: "normal",
+  dificultad: null,
 };
 
 const reembolso: TareaFila = {

@@ -1,4 +1,4 @@
-import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
+import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type Rol = "organizador" | "voluntario";
 
@@ -30,6 +30,8 @@ export type TareaFila = {
   hashPago: string | null;
   credencialUrl: string | null;
   contratoEscrow: string | null;
+  prioridad: PrioridadTarea;
+  dificultad: DificultadTarea | null;
 };
 
 export type EvidenciaFila = {
