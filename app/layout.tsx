@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { cookies } from "next/headers";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
+import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -11,7 +14,7 @@ const poppins = Poppins({
 
 const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#08090C":"#F4F5F0");}catch(e){}})();`;
 
-const DESCRIPCION = "Prove your worth. Get paid. Hyto locks an event budget and pays each task in USDC on Stellar once the photo evidence is reviewed.";
+const DESCRIPCION = "Prove your worth. Get paid. Hyto is a marketplace of small tasks. Send a photo. Get paid in digital dollars (USDC).";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://hyto.vercel.app"),
@@ -39,13 +42,17 @@ export const viewport: Viewport = {
   themeColor: "#08090C",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const jar = await cookies();
+  const idioma = idiomaDe(jar.get(COOKIE_IDIOMA)?.value);
   return (
-    <html lang="en" className={poppins.variable} data-theme="dark" suppressHydrationWarning>
+    <html lang={idioma} className={poppins.variable} data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: TEMA_BOOT }} />
       </head>
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">
+        <ProveedorIdioma idioma={idioma}>{children}</ProveedorIdioma>
+      </body>
     </html>
   );
 }

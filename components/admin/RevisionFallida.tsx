@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useClaro, useTexto } from "@/components/ui/Idioma";
 import type { DetalleRevision } from "@/lib/admin/remoto";
 import {
   correrReintento,
@@ -69,6 +70,8 @@ export function BotonReintentarRevision({
   tareaId: string;
   onDetalle: (detalle: DetalleRevision) => void;
 }) {
+  const t = useTexto();
+  const claro = useClaro();
   const [manual, setManual] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const ocupado = useSyncExternalStore(
@@ -97,11 +100,11 @@ export function BotonReintentarRevision({
   return (
     <div className="mt-4 print:hidden">
       <button type="button" className="hyto-btn-line max-w-xs" onClick={() => void pulsar()} disabled={cargando} aria-busy={cargando}>
-        {cargando ? "Retrying…" : "Retry review"}
+        {cargando ? t("bandeja.retrying") : t("bandeja.retry")}
       </button>
       {aviso ? (
         <p role="alert" className="mt-2 text-sm leading-6">
-          {aviso}
+          {claro(aviso)}
         </p>
       ) : null}
     </div>
