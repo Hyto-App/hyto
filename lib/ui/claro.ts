@@ -16,6 +16,7 @@ export const TEXTO = {
   approving: "Approving…",
   paying: "Paying…",
   viewChain: "View on blockchain",
+  checkAgain: "Check again",
   preparePayout: "Get ready to be paid",
   preparingPayout: "Getting ready…",
   payoutReady: "Ready to be paid",

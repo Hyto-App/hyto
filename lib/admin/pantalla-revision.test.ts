@@ -236,6 +236,49 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
   }
 });
 
+test("after a confirmed fund, a zero indexed balance shows a wait state instead of Finish locking", async () => {
+  const hashFondeo = "ef".repeat(32);
+  let lecturasSaldo = 0;
+  const firmas: string[] = [];
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if ((init?.method ?? "GET") === "POST") firmas.push(url);
+    if (url.startsWith("/api/escrow/")) {
+      lecturasSaldo += 1;
+      return json({ escrow: { balance: lecturasSaldo > 1 ? 20 : 0 } });
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: "CSTAND" }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: "CSTAND", hashFondeo, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
+    await esperar(() => texto().includes("The budget is locked. Waiting for Trustless Work to show the balance."));
+    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(rotulo("Lock budget"), false);
+    assert.equal(rotulo("Approve and pay"), false);
+    const enlace = [...document.querySelectorAll("a")].find((item) => item.textContent === "View on blockchain");
+    assert.equal(enlace?.getAttribute("href"), `https://stellar.expert/explorer/testnet/tx/${hashFondeo}`);
+    for (let i = 0; i < 60 && !rotulo("Approve and pay"); i += 1) {
+      await act(async () => {
+        await new Promise((resolver) => setTimeout(resolver, 100));
+      });
+    }
+    assert.equal(rotulo("Approve and pay"), true);
+    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(texto().includes("Waiting for Trustless Work"), false);
+    assert.equal(lecturasSaldo, 2);
+    assert.deepEqual(firmas, []);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("un reembolso pide confirmar el monto antes de desplegar", async () => {
   const llamadas: { url: string; method: string; body: string | null }[] = [];
   const anterior = globalThis.fetch;

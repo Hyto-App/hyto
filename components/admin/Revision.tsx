@@ -21,6 +21,7 @@ import {
   pagoPendiente,
   type DetalleRevision,
 } from "@/lib/admin/remoto";
+import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
@@ -83,6 +84,9 @@ export function Revision({
   const [confirmando, setConfirmando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [hashFondeo, setHashFondeo] = useState<string | null>(null);
+  const [consultaFondo, setConsultaFondo] = useState<EstadoConsulta>(null);
+  const [vueltaFondo, setVueltaFondo] = useState(0);
 
   useEffect(() => {
     let viva = true;
@@ -91,6 +95,7 @@ export function Revision({
     setReal(false);
     setHashPaso(null);
     setContrato(null);
+    setHashFondeo(null);
     setFondeado(null);
     setReanudar(null);
     fondeoForzado.current = null;
@@ -107,6 +112,7 @@ export function Revision({
       setTarea(detalle.tarea);
       setFoto(detalle.foto);
       setContrato(detalle.contratoEscrow);
+      setHashFondeo(detalle.hashFondeo);
       setWallet(detalle.wallet);
     });
     return () => {
@@ -114,6 +120,7 @@ export function Revision({
     };
   }, [tareaId, modoDemo, intento]);
 
+  const fondeoEnviado = Boolean(hashFondeo);
   useEffect(() => {
     if (!real || !contrato) return;
     if (fondeoForzado.current === contrato) {
@@ -121,14 +128,35 @@ export function Revision({
       return;
     }
     let viva = true;
-    void leerFondeo(contrato).then((valor) => {
-      if (!viva || fondeoForzado.current === contrato || valor === null) return;
-      setFondeado(valor);
+    if (!fondeoEnviado) {
+      setConsultaFondo(null);
+      void leerFondeo(contrato).then((valor) => {
+        if (!viva || fondeoForzado.current === contrato || valor === null) return;
+        setFondeado(valor);
+      });
+      return () => {
+        viva = false;
+      };
+    }
+    // The fund is confirmed on testnet. Wait for the Trustless read to show the balance instead of offering to fund again.
+    setConsultaFondo("leyendo");
+    void consultarHasta({
+      leer: () => leerFondeo(contrato),
+      listo: (valor) => valor === true,
+      vivo: () => viva && fondeoForzado.current !== contrato,
+    }).then((resultado) => {
+      if (!viva || fondeoForzado.current === contrato) return;
+      if (!resultado.listo) {
+        setConsultaFondo("agotada");
+        return;
+      }
+      setConsultaFondo(null);
+      setFondeado(true);
     });
     return () => {
       viva = false;
     };
-  }, [real, contrato]);
+  }, [real, contrato, fondeoEnviado, vueltaFondo]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
   const tareaMontoRef = useRef(tarea);
@@ -213,6 +241,7 @@ export function Revision({
     setTarea(detalle.tarea);
     setFoto(detalle.foto);
     setContrato(detalle.contratoEscrow);
+    setHashFondeo(detalle.hashFondeo);
     setWallet(detalle.wallet);
   }, []);
 
@@ -297,6 +326,7 @@ export function Revision({
       if (contratoConocido) setContrato(contratoConocido);
       if (!pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
       if (fresco) {
+        setHashFondeo(fresco.hashFondeo);
         setTarea(fresco.tarea);
         setFoto(fresco.foto);
         setWallet(fresco.wallet ?? wallet);
@@ -349,7 +379,8 @@ export function Revision({
     );
   }
 
-  const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const botones = botonesRevision(tarea, real, { contrato, fondeado, fondeoEnviado });
+  const enlaceFondeo = enlacePago(hashFondeo);
   const esperaConfirmacion =
     real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const borradorNormal = normalizarMonto(borrador);
@@ -418,7 +449,7 @@ export function Revision({
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
-                presupuestoListo: Boolean(contrato) && fondeado === true,
+                presupuestoListo: Boolean(contrato) && (fondeado === true || fondeoEnviado),
                 pagado: tarea.estado === "pagado",
               }).map((item, indice) => (
                 <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
@@ -580,6 +611,24 @@ export function Revision({
                 </a>
               ) : null}
             </p>
+          ) : botones.verificarFondo && !paso ? (
+            <div className="mt-4" aria-live="polite">
+              <p className="text-sm leading-6 text-[var(--suave)]">
+                {consultaFondo === "agotada"
+                  ? "The budget is locked, but Trustless Work still shows no balance. Do not lock it again."
+                  : "The budget is locked. Waiting for Trustless Work to show the balance. Do not lock it again."}{" "}
+                {enlaceFondeo ? (
+                  <a href={enlaceFondeo} className="font-semibold underline-offset-4 hover:underline">
+                    {TEXTO.viewChain}
+                  </a>
+                ) : null}
+              </p>
+              {consultaFondo === "agotada" ? (
+                <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaFondo((actual) => actual + 1)}>
+                  {TEXTO.checkAgain}
+                </button>
+              ) : null}
+            </div>
           ) : real && contrato && fondeado === null && tarea.estado !== "pagado" && !paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
               Checking the locked budget on the network. Refresh in a few seconds if nothing shows up.

@@ -44,6 +44,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: false,
     fondear: false,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: true,
     pedirOtra: false,
   });
@@ -52,6 +53,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: true,
     fondear: false,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: false,
     pedirOtra: true,
   });
@@ -62,6 +64,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: false,
     fondear: true,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: false,
     pedirOtra: true,
   });
@@ -197,6 +200,34 @@ test("fondear solo aparece si el escrow desplegado todavía no tiene saldo", asy
   assert.equal(await leerFondeo(" C STAND ", { fetch: fetchImpl }), false);
   assert.deepEqual(llamadas, ["/api/escrow/C%20STAND"]);
   assert.equal(await leerFondeo("CSTAND", { fetch: async () => json({ aviso: "no" }, 401) }), null);
+});
+
+test("con un fondeo confirmado, un saldo indexado en 0 espera en vez de ofrecer fondear otra vez", async () => {
+  const enRevision = tarea();
+  const atrasado = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true });
+  assert.equal(atrasado.fondear, false);
+  assert.equal(atrasado.desplegar, false);
+  assert.equal(atrasado.pagar, false);
+  assert.equal(atrasado.verificarFondo, true);
+  assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null, fondeoEnviado: true }).verificarFondo, true);
+  const visto = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true, fondeoEnviado: true });
+  assert.equal(visto.pagar, true);
+  assert.equal(visto.verificarFondo, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: false }).fondear, true);
+  assert.equal(botonesRevision(enRevision, true, { contrato: null, fondeado: null, fondeoEnviado: true }).verificarFondo, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: null, fondeado: null, fondeoEnviado: true }).desplegar, true);
+  const pagada = tarea({ estado: "pagado", hashPago: HASH });
+  assert.equal(botonesRevision(pagada, true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+  assert.equal(botonesRevision(tarea({ hashPago: HASH }), true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+  assert.equal(botonesRevision(enRevision, false, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", contratoEscrow: "CSTAND" }] });
+    return json({ tarea: { id: "stand", titulo: "Set up the booth", tipo: "trabajo" }, contratoEscrow: "CSTAND", hashFondeo: HASH });
+  };
+  const detalle = await cargarDetalleOrganizador("stand", { fetch: fetchImpl });
+  assert.equal(detalle?.hashFondeo, HASH);
 });
 
 test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
