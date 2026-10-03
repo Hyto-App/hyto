@@ -180,3 +180,154 @@ test("sin getUserMedia el archivo viejo se rechaza y uno recién tomado sigue", 
     limpiarPantalla();
   }
 });
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+}
+
+const standRemoto = {
+  id: "stand",
+  titulo: "Set up the stand",
+  tipo: "trabajo",
+  monto: "20",
+  condicion: "The stand is up",
+  miembroId: "voluntario-1",
+  estado: "pendiente",
+  proyectoId: "zeek",
+};
+
+type Respuestas = { token?: () => Response; subida: (init?: RequestInit) => Response };
+
+async function enviarCaptura(respuestas: Respuestas): Promise<string[]> {
+  const pedidos: string[] = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    pedidos.push(`${init?.method ?? "GET"} ${url}`);
+    if (url.includes("/api/tareas")) return json({ tareas: [standRemoto] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    if (url.endsWith("/api/evidencias/token")) return respuestas.token ? respuestas.token() : json({ token: "t-1" });
+    if (url.endsWith("/api/evidencias") && init?.method === "POST") return respuestas.subida(init);
+    if (url.includes("/api/evidencias/")) return json({ id: "ev-1", tareaId: "stand", blobId: "blob-1" });
+    return json({}, 404);
+  };
+  await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "stand" }) }));
+  await act(async () => {
+    await new Promise((resolver) => setTimeout(resolver, 30));
+  });
+  await elegir(new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() }));
+  assert.ok(document.querySelector('img[alt="Evidence"]'));
+  await act(async () => {
+    boton("Send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await act(async () => {
+    await new Promise((resolver) => setTimeout(resolver, 30));
+  });
+  return pedidos;
+}
+
+function sinRevisionLocal() {
+  assert.doesNotMatch(JSON.stringify({ ...window.localStorage }), /en revisión/);
+}
+
+test("una foto de cámara que el servidor rechaza no dice Evidence sent", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  const aviso = "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved.";
+  try {
+    const pedidos = await enviarCaptura({ subida: () => json({ aviso }, 503) });
+    assert.ok(pedidos.includes("POST /api/evidencias"));
+    assert.doesNotMatch(texto(), /Evidence sent/);
+    assert.doesNotMatch(texto(), /Photo sent/);
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    assert.equal(boton("Send").textContent, "Send");
+    sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si la red cae al subir la foto de cámara, no hay envío de ejemplo", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  try {
+    await enviarCaptura({
+      subida: () => {
+        throw new Error("offline");
+      },
+    });
+    assert.doesNotMatch(texto(), /Evidence sent/);
+    assert.match(texto(), /Check your connection and try again/);
+    sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si el token de captura falla, se ve el aviso del servidor y no se sube nada", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  const aviso = "Evidence uploads are paused. Try again later.";
+  try {
+    const pedidos = await enviarCaptura({ token: () => json({ aviso }, 503), subida: () => json({}, 500) });
+    assert.ok(!pedidos.includes("POST /api/evidencias"));
+    assert.doesNotMatch(texto(), /Evidence sent/);
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  const aviso = "This sign-in has no payout account. Sign in again and open the task so we know where to pay.";
+  try {
+    await enviarCaptura({ subida: () => json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" }, aviso }, 201) });
+    assert.match(texto(), /Evidence sent, action needed/);
+    assert.match(texto(), /Photo sent/);
+    assert.doesNotMatch(texto(), /The organizer can review it now/);
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("una foto de cámara con 201 limpio dice Evidence sent y manda el token y la hora de captura", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  let cuerpo: FormData | null = null;
+  try {
+    await enviarCaptura({
+      subida: (init) => {
+        cuerpo = init?.body instanceof FormData ? init.body : null;
+        return json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" } }, 201);
+      },
+    });
+    const enviado = cuerpo as FormData | null;
+    assert.equal(enviado?.get("token"), "t-1");
+    assert.ok(!Number.isNaN(Date.parse(String(enviado?.get("capturadaEn")))));
+    assert.match(texto(), /Evidence sent/);
+    assert.doesNotMatch(texto(), /action needed/);
+    assert.match(texto(), /The organizer can review it now/);
+    sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
