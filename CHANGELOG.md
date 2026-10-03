@@ -8,10 +8,27 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 - The interface can be English (default) or Spanish. A selector in the shell, at the top of the signed-out landing, and in the sign-in sheet stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
 - Buttons whose label changes with the language size to the text: automatic width, horizontal padding, a minimum height, and wrapping. They do not clip the label.
+- Spanish covers the scrolling landing (`lib/ui/discurso.ts`), the welcome card, Best paid and Highest pay, the edit-task form, the animated verdict pill, and the volunteer's score. English stays the default.
+- The scrolling landing states the product in plain language. The hero keeps "Prove your worth. Get paid." and "A marketplace of small tasks. You get paid in dollars in crypto (USDC).", plus a practice-network note. Steps, who it is for, Mile, the question list, and the closing sign-in stay, and they read from `lib/ui/discurso.ts` so the same line is not repeated.
+
+## 2026-10-02
+
+### Added
+
+- The signed-out page scrolls. It keeps the hero ("Prove your worth. Get paid."), then How it works in three steps, volunteer and organizer cards, Meet Mile, an honest testnet FAQ, and the same sign-in button at the end.
+- After sign-in, Events opens with a welcome card and "Take your first step". Get ready to be paid lives only there. Account no longer shows that button. Loading, error, success, and already-ready each have their own state. Demo mode hides the button.
+
+### Changed
+
+- An organizer can edit a task's title, photo condition, amount, cap, and assignee until a photo is uploaded, the task has a payment, or the amount is locked in a payment. The server rejects the edit in those cases. There is no separate description field.
 
 ## 2026-10-02
 
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
+
+### Added
+
+- My tasks marks the volunteer's highest-paying tasks with a Best paid badge, including ties. Pay comes from the task amount, or the reimbursement cap. A Sort control next to the status filters offers Default and Highest pay. Empty or non-numeric amounts stay out of the ranking. #129.
 
 ### Changed
 
@@ -30,6 +47,7 @@ Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 Septembe
 - The review grade is a percentage from 0 to 100. It is the weighted sum of the answered questions (`PESOS_PREGUNTAS`). The screen shows Insuficiente, Parcialmente completado, or Completado next to the percentage. The percentage does not approve a payment.
 - `calificar` caps a grave fault at 49 (classification "otra", work that does not match, work not started, or a different kind of expense) and an unreasonable expense at 79. A reimbursement with no amount, no date, or over the cap stays at 40 or below. The lowest cap wins. Weights are unchanged.
 - Reason tags next to the grade explain the answers already collected, including the cap. They do not approve or pay.
+- The verdict pill counts up to its percentage and fills a thin bar in the label color (about 1.2s, ease-out). Reduced motion shows the final value at once. Screen readers get the final text only. The volunteer task screen still does not show the score.
 
 ### Not in the repo yet
 

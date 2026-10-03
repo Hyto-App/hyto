@@ -14,7 +14,7 @@ const poppins = Poppins({
 
 const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#08090C":"#F4F5F0");}catch(e){}})();`;
 
-const DESCRIPCION = "Prove your worth. Get paid. Hyto locks an event budget and pays each task in USDC on Stellar once the photo evidence is reviewed.";
+const DESCRIPCION = "Prove your worth. Get paid. Hyto is a marketplace of small tasks. Send a photo. Get paid in digital dollars (USDC).";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://hyto.vercel.app"),

@@ -118,6 +118,22 @@ const EXACTO: Record<string, Clave> = {
   "Demo mode cannot create events. Sign in with your email to create one.": "eventos.demoCreate",
   "Could not prepare the account.": "eventos.prepareFail",
   "Account setup isn't available yet.": "errores.cuentasNo",
+  "Could not open the demo. Try again.": "entrar.demoOpenFail",
+  "Could not save that task.": "eventos.saveFail",
+  "Only the organizer can edit tasks.": "eventos.editOnly",
+  "This task already has a photo, so it can't be edited.": "eventos.editPhoto",
+  "This task already has a payment, so it can't be edited.": "eventos.editPaid",
+  "The amount is already locked in the payment, so this task can't be edited.": "eventos.editLocked",
+  "Enter a title.": "eventos.needTitle",
+  "Title is too long.": "eventos.titleLong",
+  "Enter what the photo must show.": "eventos.needPhoto",
+  "That note is too long.": "eventos.noteLong",
+  "Work tasks don't have a cap.": "eventos.noCap",
+  "Choose a person in this event.": "eventos.choosePerson",
+  "Nothing to save.": "eventos.nothingSave",
+  "That person is not in this event.": "eventos.notInEvent",
+  "We couldn't open this payout account on the test network. Open Events and tap Get ready to be paid.": "errores.faucetTestnet",
+  "Payout accounts are only opened on the test network.": "errores.soloTestnet",
 };
 
 const PATRONES: readonly (readonly [RegExp, Clave])[] = [

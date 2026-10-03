@@ -1,3 +1,4 @@
+import type { Veredicto } from "@/lib/admin/tipos";
 import { tareasEjemplo } from "./ejemplos";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
@@ -98,7 +99,19 @@ function normalizarTarea(valor: unknown): Tarea | null {
     miembroId: texto(crudo.miembroId) ?? "",
     walletCobro: texto(crudo.walletCobro) ?? "",
     estado,
+    nota: notaCliente(crudo.nota),
+    veredicto: veredictoCliente(crudo.veredicto),
   };
+}
+
+function notaCliente(valor: unknown): number | null {
+  if (typeof valor !== "number" || !Number.isInteger(valor) || valor < 0 || valor > 100) return null;
+  return valor;
+}
+
+function veredictoCliente(valor: unknown): Veredicto | null {
+  if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
+  return null;
 }
 
 function normalizarEvidencia(valor: unknown, tareaId: string): Evidencia | null {

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { texto, type Clave } from "@/lib/ui/diccionario";
+import { discursoDe } from "@/lib/ui/discurso";
 import { guardarIdioma, type Idioma } from "@/lib/ui/idioma";
 
 type Estado = {
@@ -43,6 +44,10 @@ export function useTexto() {
 export function useClaro() {
   const idioma = useIdioma();
   return useCallback((mensaje: string) => mensajeClaro(mensaje, idioma), [idioma]);
+}
+
+export function useDiscurso() {
+  return discursoDe(useIdioma());
 }
 
 export function SelectorIdioma({ className = "" }: { className?: string }) {
