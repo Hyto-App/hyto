@@ -26,7 +26,7 @@ export const TEXTO = {
 
 const ESPERA_RED = "That step didn't go through. Try again.";
 const SALDO_RED = "This account needs a little test balance for the network fee. Add some and try again.";
-const LISTO_COBRO = "The person who gets paid isn't ready to receive it yet. They should open the task and tap Get ready to be paid.";
+const LISTO_COBRO = "The person who gets paid isn't ready to receive it yet. They should open Events and tap Get ready to be paid.";
 
 const EXACTO: Record<string, string> = {
   "Could not submit the payment.": ESPERA_RED,
@@ -41,7 +41,7 @@ const EXACTO: Record<string, string> = {
   "This session has no Stellar wallet. Sign in again to sign.": "Sign in again before you continue.",
   "This session has no Stellar wallet.": "Sign in again before you continue.",
   "This wallet is not on Stellar testnet yet.":
-    "This account isn't on the test network yet. Open Account and tap Get ready to be paid.",
+    "This account isn't on the test network yet. Open Events and tap Get ready to be paid.",
   "The wallet is not a Stellar account.": "That doesn't look like a payout account. Sign in again.",
   "The wallet does not match this sign-in.": "That account doesn't match this sign-in. Sign in again.",
   "This session's wallet did not sign the XDR.": "The confirmation didn't match this sign-in. Sign in again and retry.",
