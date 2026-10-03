@@ -23,7 +23,7 @@ export function SalirDemo() {
       type="button"
       onClick={() => void salir()}
       disabled={saliendo}
-      className="ml-3 align-middle text-sm text-[var(--suave)] underline-offset-2 hover:underline disabled:opacity-70"
+      className="hyto-btn-danger"
     >
       {saliendo ? "Leaving…" : "Leave demo"}
     </button>

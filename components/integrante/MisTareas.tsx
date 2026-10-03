@@ -156,7 +156,11 @@ export function MisTareas() {
                         <Link href={`/tareas/${tarea.id}`} className="hyto-btn mt-4">
                           Open camera
                         </Link>
-                      ) : null}
+                      ) : (
+                        <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line mt-4">
+                          View task
+                        </Link>
+                      )}
                     </article>
                   ))}
                 </div>

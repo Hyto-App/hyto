@@ -190,7 +190,7 @@ export function CrearProyecto() {
                   <button
                     type="button"
                     onClick={() => setFilas((actuales) => actuales.filter((item) => item.clave !== fila.clave))}
-                    className="mt-4 text-sm text-[var(--suave)]"
+                    className="hyto-btn-danger is-inline mt-4 px-5"
                   >
                     Remove {fila.titulo.trim() || "task"}
                   </button>
@@ -199,7 +199,7 @@ export function CrearProyecto() {
             ))}
           </div>
 
-          <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="mt-4 text-sm font-medium">
+          <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="hyto-btn-line is-inline mt-4 px-5">
             Add task
           </button>
         </div>
