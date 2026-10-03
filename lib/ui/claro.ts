@@ -40,7 +40,8 @@ const EXACTO: Record<string, string> = {
   "Could not read the Stellar account.": "We couldn't check the payout account. Try again.",
   "This session has no Stellar wallet. Sign in again to sign.": "Sign in again before you continue.",
   "This session has no Stellar wallet.": "Sign in again before you continue.",
-  "This wallet is not on Stellar testnet yet.": "This account isn't on the test network yet. Sign in again and retry.",
+  "This wallet is not on Stellar testnet yet.":
+    "This account isn't on the test network yet. Open Account and tap Get ready to be paid.",
   "The wallet is not a Stellar account.": "That doesn't look like a payout account. Sign in again.",
   "The wallet does not match this sign-in.": "That account doesn't match this sign-in. Sign in again.",
   "This session's wallet did not sign the XDR.": "The confirmation didn't match this sign-in. Sign in again and retry.",
