@@ -69,13 +69,20 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
               ? aviso
               : "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the event payment.";
   const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
+  const terminado = estado === "listo" || estado === "hecho";
+  const ocupado = estado === "comprobando" || estado === "preparando";
 
   return (
-    <div>
+    <div className={terminado ? "hyto-payout is-done" : "hyto-payout"} data-estado={estado} aria-busy={ocupado}>
       {estado === "error" && aviso ? (
         <AvisoFirma mensaje={aviso} className="text-sm text-[var(--suave)]" />
       ) : mensaje ? (
-        <p className="text-sm leading-6 text-[var(--suave)]" role="status" aria-live="polite">
+        <p className={terminado ? "hyto-payout-done" : "text-sm leading-6 text-[var(--suave)]"} role="status" aria-live="polite">
+          {terminado ? (
+            <span className="hyto-payout-mark" aria-hidden="true">
+              ✓
+            </span>
+          ) : null}
           {mensaje}
         </p>
       ) : null}

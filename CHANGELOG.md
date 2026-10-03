@@ -4,6 +4,11 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-02
 
+### Added
+
+- The signed-out page scrolls. It keeps the hero ("Prove your worth. Get paid."), then How it works in three steps, volunteer and organizer cards, Meet Mile, an honest testnet FAQ, and the same sign-in button at the end.
+- After sign-in, Events opens with a welcome card and "Take your first step". Get ready to be paid lives only there. Account no longer shows that button. Loading, error, success, and already-ready each have their own state. Demo mode hides the button.
+
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
 
 ### Changed
