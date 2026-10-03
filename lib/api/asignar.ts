@@ -1,4 +1,5 @@
 import type { Almacen } from "@/lib/db/almacen";
+import { avisoBloqueo } from "./editar-tarea";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
 
@@ -8,6 +9,8 @@ export async function asignarTareaHttp(request: Request, almacen: Almacen, tarea
   if (!(await esOrganizador(almacen, tarea.proyectoId, usuarioId))) {
     return json({ aviso: "Only the organizer can assign tasks." }, 403);
   }
+  const bloqueo = avisoBloqueo(tarea, Boolean(await almacen.ultimaEvidencia(tarea.id)));
+  if (bloqueo) return json({ aviso: bloqueo }, 409);
   let body: unknown;
   try {
     body = await request.json();
