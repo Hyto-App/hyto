@@ -195,16 +195,28 @@ export async function leerTarea(
 export async function pedirTokenEvidencia(tareaId: string, opciones: OpcionesRuta = {}): Promise<string> {
   const fetchImpl = opciones.fetch ?? fetch;
   const base = opciones.baseUrl ?? "";
-  const respuesta = await pedir(
-    `${base}/api/evidencias/token`,
-    { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tareaId }) },
-    fetchImpl,
-  );
+  let respuesta: Response;
+  try {
+    respuesta = await pedir(
+      `${base}/api/evidencias/token`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tareaId }) },
+      fetchImpl,
+    );
+  } catch {
+    throw new ErrorDeEnvio(AVISO_ENVIO_FALLIDO);
+  }
   if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
-  if (!respuesta.ok) throw new Error(String(respuesta.status));
-  const json = (await leerJson(respuesta)) as { token?: unknown } | null;
+  if (!respuesta.ok) {
+    throw new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+  }
+  let json: { token?: unknown } | null;
+  try {
+    json = (await leerJson(respuesta)) as { token?: unknown } | null;
+  } catch {
+    throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
+  }
   const token = typeof json?.token === "string" ? json.token : "";
-  if (!token) throw new Error("forma");
+  if (!token) throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
   return token;
 }
 
