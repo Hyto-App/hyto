@@ -54,6 +54,7 @@ export function botonesRevision(
   desplegar: boolean;
   fondear: boolean;
   pagar: boolean;
+  verificarFondo: boolean;
   aprobarLocal: boolean;
   pedirOtra: boolean;
 } {
@@ -63,6 +64,7 @@ export function botonesRevision(
       desplegar: false,
       fondear: false,
       pagar: false,
+      verificarFondo: false,
       aprobarLocal: puede,
       // The sample hides another-photo only in the Completed band. The grade never pays.
       pedirOtra: puede && tarea.veredicto !== "cumplió",
@@ -77,6 +79,8 @@ export function botonesRevision(
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
     // A percentage never approves the payment. Pay follows the escrow balance.
     pagar: !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
+    // Unknown balance: funding again could lock the budget twice and paying could release from an empty escrow. Only re-read.
+    verificarFondo: abierto && conContrato && escrow.fondeado === null,
     aprobarLocal: false,
     pedirOtra: tarea.estado === "en revisión",
   };

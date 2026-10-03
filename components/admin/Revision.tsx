@@ -21,6 +21,7 @@ import {
   pagoPendiente,
   type DetalleRevision,
 } from "@/lib/admin/remoto";
+import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
@@ -83,6 +84,10 @@ export function Revision({
   const [confirmando, setConfirmando] = useState(false);
   const fondeoForzado = useRef<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [consultaFondo, setConsultaFondo] = useState<EstadoConsulta>(null);
+  const [vueltaFondo, setVueltaFondo] = useState(0);
+  const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
+  const [vueltaPago, setVueltaPago] = useState(0);
 
   useEffect(() => {
     let viva = true;
@@ -121,14 +126,24 @@ export function Revision({
       return;
     }
     let viva = true;
-    void leerFondeo(contrato).then((valor) => {
-      if (!viva || fondeoForzado.current === contrato || valor === null) return;
-      setFondeado(valor);
+    setConsultaFondo("leyendo");
+    void consultarHasta({
+      leer: () => leerFondeo(contrato),
+      listo: (valor) => valor !== null,
+      vivo: () => viva && fondeoForzado.current !== contrato,
+    }).then((resultado) => {
+      if (!viva || fondeoForzado.current === contrato) return;
+      if (!resultado.listo) {
+        setConsultaFondo("agotada");
+        return;
+      }
+      setConsultaFondo(null);
+      setFondeado(resultado.valor);
     });
     return () => {
       viva = false;
     };
-  }, [real, contrato]);
+  }, [real, contrato, vueltaFondo]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
   const tareaMontoRef = useRef(tarea);
@@ -215,6 +230,34 @@ export function Revision({
     setContrato(detalle.contratoEscrow);
     setWallet(detalle.wallet);
   }, []);
+
+  const esperaPago = real && tarea ? pagoPendiente(tarea) : false;
+  useEffect(() => {
+    if (!esperaPago) {
+      setConsultaPago(null);
+      return;
+    }
+    let viva = true;
+    setConsultaPago("leyendo");
+    // GET /api/revision/:id marks the task paid once the read model shows milestone 0 released.
+    void consultarHasta({
+      leer: () => cargarDetalleOrganizador(tareaId),
+      listo: (detalle) => detalle !== null && !pagoPendiente(detalle.tarea),
+      inmediata: false,
+      vivo: () => viva && !pasoRef.current,
+    }).then((resultado) => {
+      if (!viva) return;
+      if (!resultado.listo || !resultado.valor) {
+        setConsultaPago("agotada");
+        return;
+      }
+      setConsultaPago(null);
+      aplicarDetalle(resultado.valor);
+    });
+    return () => {
+      viva = false;
+    };
+  }, [esperaPago, tareaId, vueltaPago, aplicarDetalle]);
 
   async function confirmar() {
     if (confirmando || !tarea || tarea.tipo !== "reembolso") return;
@@ -572,18 +615,36 @@ export function Revision({
           {aviso ? <AvisoFirma mensaje={aviso} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
 
           {real && pendiente ? (
-            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              Payment sent. Waiting for the network to show it as released. Do not pay again.{" "}
-              {pago ? (
-                <a href={pago} className="font-semibold underline-offset-4 hover:underline">
-                  {TEXTO.viewChain}
-                </a>
+            <div className="mt-4" aria-live="polite">
+              <p className="text-sm leading-6 text-[var(--suave)]">
+                {consultaPago === "agotada"
+                  ? "Payment sent. The network still hasn't shown it as released. Do not pay again."
+                  : "Payment sent. Waiting for the network to show it as released. Do not pay again."}{" "}
+                {pago ? (
+                  <a href={pago} className="font-semibold underline-offset-4 hover:underline">
+                    {TEXTO.viewChain}
+                  </a>
+                ) : null}
+              </p>
+              {consultaPago === "agotada" ? (
+                <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaPago((actual) => actual + 1)}>
+                  {TEXTO.checkAgain}
+                </button>
               ) : null}
-            </p>
-          ) : real && contrato && fondeado === null && tarea.estado !== "pagado" && !paso ? (
-            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-              Checking the locked budget on the network. Refresh in a few seconds if nothing shows up.
-            </p>
+            </div>
+          ) : botones.verificarFondo && !paso ? (
+            <div className="mt-4" aria-live="polite">
+              <p className="text-sm leading-6 text-[var(--suave)]">
+                {consultaFondo === "agotada"
+                  ? "We couldn't read the locked budget yet. Locking and paying stay off until we can, so nothing runs twice."
+                  : "Checking the locked budget on the network…"}
+              </p>
+              {consultaFondo === "agotada" ? (
+                <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaFondo((actual) => actual + 1)}>
+                  {TEXTO.checkAgain}
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           {transaccion ? (
