@@ -53,6 +53,8 @@ function filasTareas(proyectoId: string, idDe: (id: string) => string): TareaFil
     hashPago: tarea.hashPago,
     contratoEscrow: null,
     credencialUrl: tarea.credencialUrl,
+    prioridad: "normal",
+    dificultad: null,
   }));
 }
 

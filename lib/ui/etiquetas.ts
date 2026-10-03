@@ -72,6 +72,18 @@ export function etiquetaTipo(tipo: string): string {
   return TIPOS[tipo] ?? tipo;
 }
 
+/** Only high priority gets a label. Normal stays quiet. */
+export function etiquetaPrioridad(prioridad: string | null | undefined): string | null {
+  return prioridad === "high" ? "High priority" : null;
+}
+
+export function etiquetaDificultad(dificultad: string | null | undefined): string | null {
+  if (dificultad === "easy") return "Easy";
+  if (dificultad === "medium") return "Medium";
+  if (dificultad === "hard") return "Hard";
+  return null;
+}
+
 export function etiquetaChoice(choice: string): string {
   const limpio = choice.trim();
   return CHOICES[limpio] ?? limpio;

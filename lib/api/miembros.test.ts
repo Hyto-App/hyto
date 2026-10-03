@@ -140,6 +140,8 @@ test("pedir otra foto vuelve la tarea a pendiente y no toca un pago", async () =
         hashPago: null,
         contratoEscrow: null,
         credencialUrl: null,
+        prioridad: "normal",
+        dificultad: null,
       },
     ],
   );

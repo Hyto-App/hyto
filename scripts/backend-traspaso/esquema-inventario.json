@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "02dc28603fee77fc6463c8a72c672330fab7bb3b798c8925c01909aea3b5d2d1",
+      "sha256": "36d2bead2aad0bf799f7219d42490d01780612e0ca951f4b78ffd579fc8ce9a9",
       "detalle": {
         "exportacionesDeTabla": [
           "evidencias",
@@ -76,7 +76,8 @@
           "drizzle/0002_organizador_proyecto.sql",
           "drizzle/0003_monto_confirmado.sql",
           "drizzle/0004_miembros_invitaciones.sql",
-          "drizzle/0005_evidencia_antifraude.sql"
+          "drizzle/0005_evidencia_antifraude.sql",
+          "drizzle/0006_prioridad_dificultad.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -159,6 +160,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "9a7b8f4572335b21d68679c381e1398ffbf4ceff68d8f77cbc03532822afd705",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0006_prioridad_dificultad.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "830896e748e35a7e9bb376199814517e7ce052dba7016005c4271dcb885d642a",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -990,6 +1003,79 @@
             "aceptaNull": true,
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "prioridad",
+          "nombreEnDrizzle": "prioridad",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": "normal",
+          "defaultDeclaradoEnSql": true,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": "normal",
+          "defaultDeclaradoEnDrizzle": true,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "TareaFila",
+            "campo": "prioridad",
+            "tipoTs": "PrioridadTarea",
+            "literales": [
+              "normal",
+              "high"
+            ],
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
+          }
+        },
+        {
+          "nombre": "dificultad",
+          "nombreEnDrizzle": "dificultad",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "TareaFila",
+            "campo": "dificultad",
+            "tipoTs": "DificultadTarea",
+            "literales": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
           }
         }
       ],

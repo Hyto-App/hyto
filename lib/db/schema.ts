@@ -32,6 +32,9 @@ export const tareas = pgTable("tareas", {
   hashPago: text("hash_pago"),
   credencialUrl: text("credencial_url"),
   contratoEscrow: text("contrato_escrow"),
+  // Off-chain labels. They do not change the escrow amount or the USDC trustline.
+  prioridad: text("prioridad").notNull().default("normal"),
+  dificultad: text("dificultad"),
 });
 
 export const evidencias = pgTable("evidencias", {

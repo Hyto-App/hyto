@@ -6,15 +6,16 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
-import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { listarTareas } from "@/lib/integrante/rutas";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 
 type Filtro = "all" | EstadoTarea;
 
 const ORDENES: { id: OrdenTareas; etiqueta: string }[] = [
-  { id: "defecto", etiqueta: "Default" },
+  { id: "prioridad", etiqueta: "Priority" },
   { id: "mayor", etiqueta: "Highest pay" },
+  { id: "defecto", etiqueta: "Default" },
 ];
 
 const FILTROS: { id: Filtro; etiqueta: string }[] = [
@@ -23,6 +24,28 @@ const FILTROS: { id: Filtro; etiqueta: string }[] = [
   { id: "en revisión", etiqueta: etiquetaEstado("en revisión") },
   { id: "pagado", etiqueta: etiquetaEstado("pagado") },
 ];
+
+function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
+  const prioridad = etiquetaPrioridad(tarea.prioridad);
+  const dificultad = etiquetaDificultad(tarea.dificultad);
+  if (!prioridad && !dificultad) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      {prioridad ? (
+        <span className="hyto-pill hyto-pill-ok">
+          <i className="hyto-dot" aria-hidden="true" />
+          {prioridad}
+        </span>
+      ) : null}
+      {dificultad ? (
+        <span className="hyto-pill hyto-pill-muted">
+          <i className="hyto-dot" aria-hidden="true" />
+          {dificultad}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 function suma(tareas: Tarea[], estado: EstadoTarea): number {
   return tareas.filter((tarea) => tarea.estado === estado).reduce((total, tarea) => total + (Number(tarea.tope ?? tarea.monto) || 0), 0);
@@ -67,7 +90,7 @@ export function MisTareas() {
   const visibles = filtro === "all" ? tareas : tareas.filter((tarea) => tarea.estado === filtro);
   const cuenta = (estado: EstadoTarea) => tareas.filter((tarea) => tarea.estado === estado).length;
   const mejores = idsMejorPagadas(tareas);
-  const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "mayor" ? "seguir" : "unir");
+  const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
 
   return (
@@ -157,11 +180,12 @@ export function MisTareas() {
                   {grupo.tareas.map((tarea) => (
                     <article key={tarea.id} className="hyto-card p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
                           <h3 className="mt-1 text-xl font-semibold tracking-tight">{textoVisible(tarea.titulo)}</h3>
+                          <InsigniasClasificacion tarea={tarea} />
                         </div>
-                        <p className="hyto-amount text-lg">{montoDeTarea(tarea)}</p>
+                        <p className="hyto-amount shrink-0 text-lg">{montoDeTarea(tarea)}</p>
                       </div>
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <PastillaEstado estado={tarea.estado} />

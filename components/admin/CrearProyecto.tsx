@@ -7,7 +7,7 @@ import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { normalizarMonto } from "@/lib/admin/vista";
 import { formatearMonto } from "@/lib/integrante/formato";
-import type { TipoTarea } from "@/lib/integrante/tipos";
+import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 
 type Fila = {
@@ -17,12 +17,32 @@ type Fila = {
   monto: string;
   condicion: string;
   asignado: string;
+  prioridad: PrioridadTarea;
+  dificultad: DificultadTarea | "";
 };
 
-const FILA_INICIAL: Fila = { clave: "1", titulo: "", tipo: "trabajo", monto: "", condicion: "", asignado: "" };
+const FILA_INICIAL: Fila = {
+  clave: "1",
+  titulo: "",
+  tipo: "trabajo",
+  monto: "",
+  condicion: "",
+  asignado: "",
+  prioridad: "normal",
+  dificultad: "",
+};
 
 function filaNueva(): Fila {
-  return { clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`, titulo: "", tipo: "trabajo", monto: "", condicion: "", asignado: "" };
+  return {
+    clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    titulo: "",
+    tipo: "trabajo",
+    monto: "",
+    condicion: "",
+    asignado: "",
+    prioridad: "normal",
+    dificultad: "",
+  };
 }
 
 export function CrearProyecto() {
@@ -48,6 +68,8 @@ export function CrearProyecto() {
         monto: normalizarMonto(fila.monto),
         condicion: fila.condicion.trim(),
         asignado: fila.asignado.trim(),
+        prioridad: fila.prioridad,
+        dificultad: fila.dificultad || null,
       }))
       .filter((fila) => fila.titulo || fila.monto);
 
@@ -166,6 +188,34 @@ export function CrearProyecto() {
                       className="hyto-input mt-2"
                     />
                   </div>
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
+                    Priority
+                    <select
+                      id={`prioridad-${fila.clave}`}
+                      value={fila.prioridad}
+                      onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
+                      className="hyto-input mt-2"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
+                    Difficulty
+                    <select
+                      id={`dificultad-${fila.clave}`}
+                      value={fila.dificultad}
+                      onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
+                      className="hyto-input mt-2"
+                    >
+                      <option value="">Not set</option>
+                      <option value="easy">Easy</option>
+                      <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </label>
                 </div>
                 <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`condicion-${fila.clave}`}>
                   Photo must show

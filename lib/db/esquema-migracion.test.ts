@@ -37,9 +37,10 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0003_monto_confirmado.sql",
     "0004_miembros_invitaciones.sql",
     "0005_evidencia_antifraude.sql",
+    "0006_prioridad_dificultad.sql",
   ]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"]);
-  assert.equal(esperado.columnas.length, 66);
+  assert.equal(esperado.columnas.length, 68);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -97,6 +98,14 @@ test("la migración real declara las seis tablas y las relaciones que el código
   assert.equal(condicion?.defecto, "''");
   assert.equal(tope?.nullable, true);
   assert.equal(tope?.defecto, null);
+  const prioridad = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "prioridad");
+  const dificultad = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "dificultad");
+  assert.equal(prioridad?.tipo, "text");
+  assert.equal(prioridad?.nullable, false);
+  assert.equal(prioridad?.defecto, "'normal'");
+  assert.equal(dificultad?.tipo, "text");
+  assert.equal(dificultad?.nullable, true);
+  assert.equal(dificultad?.defecto, null);
 });
 
 test("un SQL que no es una tabla queda para confirmar y no se inventa una columna", () => {

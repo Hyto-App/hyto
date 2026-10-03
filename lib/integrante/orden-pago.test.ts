@@ -11,6 +11,7 @@ function tarea(
     monto: parcial.monto === undefined ? "10" : parcial.monto,
     tope: parcial.tope === undefined ? null : parcial.tope,
     proyectoId: parcial.proyectoId ?? "zeek",
+    prioridad: parcial.prioridad,
   };
 }
 
@@ -81,6 +82,23 @@ test("el orden por defecto conserva la lista y el mayor pago es estable", () => 
     tareas.map((item) => item.id),
     original,
   );
+});
+
+test("la prioridad alta va primero y un valor ausente cuenta como normal", () => {
+  const tareas = [
+    tarea({ id: "normal", monto: "40", prioridad: "normal" }),
+    tarea({ id: "alta-tarde", monto: "5", prioridad: "high" }),
+    tarea({ id: "alta-antes", monto: "1", prioridad: "high" }),
+    tarea({ id: "vacia" }),
+    tarea({ id: "rara", prioridad: "urgent" }),
+  ];
+  const original = tareas.map((item) => item.id);
+  assert.deepEqual(
+    ordenarPorPago(tareas, "prioridad").map((item) => item.id),
+    ["alta-tarde", "alta-antes", "normal", "vacia", "rara"],
+  );
+  assert.deepEqual(tareas.map((item) => item.id), original);
+  assert.deepEqual(ordenarPorPago(tareas, "mayor").map((item) => item.id)[0], "normal");
 });
 
 test("al ordenar por pago los eventos no se reagrupan por delante de un pago menor", () => {

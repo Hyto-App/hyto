@@ -1,4 +1,5 @@
 import type { Almacen } from "@/lib/db/almacen";
+import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila } from "@/lib/db/tipos";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
@@ -18,6 +19,8 @@ export function tareaPublica(tarea: TareaFila) {
     estado: tarea.estado,
     hashPago: tarea.hashPago,
     contratoEscrow: tarea.contratoEscrow,
+    prioridad: prioridadGuardada(tarea.prioridad),
+    dificultad: dificultadGuardada(tarea.dificultad),
   };
 }
 

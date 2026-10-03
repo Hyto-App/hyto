@@ -18,6 +18,8 @@ const tarea: TareaFila = {
   hashPago: null,
   credencialUrl: null,
   contratoEscrow: null,
+  prioridad: "normal",
+  dificultad: null,
 };
 
 test("el organizador puede dejar una tarea sin asignar", async () => {
