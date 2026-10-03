@@ -37,7 +37,7 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0003_monto_confirmado.sql",
     "0004_miembros_invitaciones.sql",
     "0005_evidencia_antifraude.sql",
-    "0006_fondeos_escrow.sql",
+    "0007_fondeos_escrow.sql",
   ]);
   assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "fondeos_escrow"]);
   assert.equal(esperado.columnas.length, 70);

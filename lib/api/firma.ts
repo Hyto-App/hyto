@@ -466,7 +466,7 @@ async function guardarFondeo(
     hash: pago.hash,
     creadoEn: new Date().toISOString(),
   });
-  if (!guardado) console.error("The fund marker was not stored. Apply drizzle/0006_fondeos_escrow.sql.");
+  if (!guardado) console.error("The fund marker was not stored. Apply drizzle/0007_fondeos_escrow.sql.");
   return { ...listo, contrato: invocacion.contrato };
 }
 

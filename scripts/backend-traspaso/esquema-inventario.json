@@ -78,7 +78,7 @@
           "drizzle/0003_monto_confirmado.sql",
           "drizzle/0004_miembros_invitaciones.sql",
           "drizzle/0005_evidencia_antifraude.sql",
-          "drizzle/0006_fondeos_escrow.sql"
+          "drizzle/0007_fondeos_escrow.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -167,7 +167,7 @@
       }
     },
     {
-      "ruta": "drizzle/0006_fondeos_escrow.sql",
+      "ruta": "drizzle/0007_fondeos_escrow.sql",
       "rol": "migracion",
       "presente": true,
       "lenguaje": "SQL",
@@ -3010,7 +3010,7 @@
     {
       "nombre": "fondeos_escrow",
       "esquemaPostgres": null,
-      "archivoMigracion": "drizzle/0006_fondeos_escrow.sql",
+      "archivoMigracion": "drizzle/0007_fondeos_escrow.sql",
       "archivoOrm": "lib/db/schema.ts",
       "exportDrizzle": "fondeosEscrow",
       "ifNotExists": true,
@@ -3433,10 +3433,10 @@
   ],
   "base": {
     "rama": "main",
-    "sha": "799963e59836c503b06de949c17fa17370f5b6ed",
+    "sha": "c79f6ba70ce970d7222b32f14544bbc0d127fde2",
     "shaCortoPedido": "ce9ff7c",
     "coincideConElShaPedido": false,
-    "asunto": "docs: auditoría UI/UX del 2 oct con capturas (#89)",
+    "asunto": "Merge pull request #136 from Hyto-App/cursor/salida-tras-codigo-302f",
     "archivosDeEsquemaIgualesAEseCommit": false,
     "archivosComparados": [
       {

@@ -229,7 +229,7 @@ test("la marca solo vale para el escrow actual de la tarea", async () => {
   assert.equal(await fondeoDeTarea(almacen, { ...tarea, contratoEscrow: null }), null);
 });
 
-test("sin la tabla de 0006 el envío del fondeo sigue respondiendo 200", async () => {
+test("sin la tabla de 0007 el envío del fondeo sigue respondiendo 200", async () => {
   const base = await almacenConEscrow();
   const almacen: Almacen = {
     ...base,

@@ -34,7 +34,7 @@ function dbQueFalla(error: Error): DbAlmacen {
   return { select: cadena, insert: cadena } as unknown as DbAlmacen;
 }
 
-test("antes de aplicar 0006 la marca de fondeo se lee como ausente y no corta el envío", async () => {
+test("antes de aplicar 0007 la marca de fondeo se lee como ausente y no corta el envío", async () => {
   const sinTabla = Object.assign(new Error('relation "fondeos_escrow" does not exist'), { code: "42P01" });
   const almacen = crearAlmacenDesde(dbQueFalla(sinTabla));
   assert.equal(await almacen.leerFondeo("stand"), null);
