@@ -24,7 +24,9 @@ import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/Insig
 type Fase = "inicio" | "signup" | "signin" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
 
-const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
+type ResultadoGoogle = { aviso: string | null; direccion: string | null; guardada: boolean };
+
+const googleEnCurso = new Map<string, Promise<ResultadoGoogle>>();
 
 export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
   const modoDemo = useModoDemo();
@@ -100,22 +102,17 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setFase(intencion === "signup" ? "signup" : "signin");
     setAviso(intencion === "signup" ? "Setting up your Stellar testnet wallet…" : "Signing you in…");
     let vivo = true;
-    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(codigoGoogle, intencion);
+    const pendiente =
+      googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(window.location.search, redirectLimpio(), intencion);
     googleEnCurso.set(codigoGoogle, pendiente);
     void pendiente.then((resultado) => {
       if (!vivo) return;
-      olvidarIntencion();
-      if (resultado.direccion && !resultado.aviso) {
-        const guardado = guardarDireccionAdmin(resultado.direccion);
-        if (!guardado.aviso) {
-          setDireccion(resultado.direccion);
-          setPedirIngreso(false);
-          setAviso(null);
-          setFase("inicio");
-          window.location.assign("/");
-          return;
-        }
-        setAviso(guardado.aviso);
+      if (resultado.guardada && resultado.direccion) {
+        setDireccion(resultado.direccion);
+        setPedirIngreso(false);
+        setAviso(null);
+        setFase("inicio");
+        window.location.assign("/");
         return;
       }
       setAviso(resultado.aviso);
@@ -543,20 +540,26 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   );
 }
 
-function iniciarGoogle(codigo: string, intencion: IntencionIngreso): Promise<{ aviso: string | null; direccion: string | null }> {
+// The search, redirect, and intent are read before any await: the person can
+// navigate while Cavos loads, and the one-time code would be gone from the live
+// URL. The address is saved here, not in the effect, so an unmount cannot drop it.
+function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionIngreso): Promise<ResultadoGoogle> {
   return (async () => {
-    const auth = await crearAuth();
-    if (!auth) {
-      console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
-      return { aviso: AVISO_CONFIG, direccion: null };
-    }
     try {
-      return await entrarConGoogle(auth, window.location.search, redirectLimpio(), intencion);
+      const auth = await crearAuth();
+      if (!auth) {
+        console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+        return { aviso: AVISO_CONFIG, direccion: null, guardada: false };
+      }
+      const resultado = await entrarConGoogle(auth, busqueda, redirect, intencion);
+      if (!resultado.direccion || resultado.aviso) return { ...resultado, guardada: false };
+      const guardado = guardarDireccionAdmin(resultado.direccion);
+      return { aviso: guardado.aviso, direccion: resultado.direccion, guardada: !guardado.aviso };
     } catch (error) {
       console.error(error);
-      return { aviso: avisoDeIngreso(error).texto, direccion: null };
+      return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false };
     }
-  })();
+  })().finally(() => olvidarIntencion());
 }
 
 function Demo({
