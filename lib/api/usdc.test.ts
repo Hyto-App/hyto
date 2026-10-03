@@ -11,6 +11,7 @@ import {
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
+import { FRIENDBOT_TESTNET } from "../integrante/cuentaTestnet";
 import { USDC } from "../integrante/identidades";
 import { armarXdrUsdc, HORIZON_TESTNET, xdrEsTrustlineUsdc } from "../integrante/trustline";
 import {
@@ -18,6 +19,7 @@ import {
   AVISO_USDC_ENVIO,
   AVISO_USDC_SIN_CUENTA,
   AVISO_USDC_SIN_WALLET,
+  AVISO_USDC_SOLO_TESTNET,
   AVISO_USDC_XDR,
   leerUsdcHttp,
   publicarUsdcHttp,
@@ -111,6 +113,7 @@ test("preparar arma el changeTrust de la wallet de la sesión e ignora otra cuen
   assert.equal(tx.operations[0]?.type, "changeTrust");
   assert.ok(urls.every((url) => url.startsWith(`${HORIZON_TESTNET}/accounts/${wallet}`)));
   assert.ok(urls.every((url) => !url.includes(OTRO)));
+  assert.equal(urls.some((url) => url.includes("friendbot")), false);
 });
 
 test("si USDC ya está abierto no hay XDR para firmar", async () => {
@@ -123,15 +126,72 @@ test("si USDC ya está abierto no hay XDR para firmar", async () => {
   assert.deepEqual(await alta.json(), { listo: true });
 });
 
-test("sin cuenta en testnet no se arma la trustline", async () => {
+test("sin cuenta en testnet Friendbot la abre y el changeTrust usa el emisor de USDC", async () => {
   const clave = Keypair.random();
-  const fetchImpl: typeof fetch = async () => new Response("missing", { status: 404 });
-  const respuesta = await publicarUsdcHttp(sesion(clave.publicKey()), pedido({ accion: "preparar" }), fetchImpl);
-  assert.equal(respuesta.status, 400);
-  assert.equal((await respuesta.json()).aviso, AVISO_USDC_SIN_CUENTA);
+  const wallet = clave.publicKey();
+  const urls: string[] = [];
+  let lecturas = 0;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    urls.push(url);
+    if (url.startsWith(FRIENDBOT_TESTNET)) return json({ successful: true });
+    lecturas += 1;
+    return lecturas === 1 ? new Response("missing", { status: 404 }) : cuenta("20");
+  };
+  const respuesta = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "preparar" }), fetchImpl, {
+    esperar: async () => undefined,
+  });
+  assert.equal(respuesta.status, 200);
+  const cuerpo = (await respuesta.json()) as { xdr?: string };
+  const tx = TransactionBuilder.fromXDR(cuerpo.xdr ?? "", Networks.TESTNET);
+  assert.ok(tx instanceof Transaction);
+  assert.equal(tx.source, wallet);
+  const op = tx.operations[0];
+  assert.equal(op?.type, "changeTrust");
+  assert.ok(op && op.type === "changeTrust" && op.line instanceof Asset);
+  if (op && op.type === "changeTrust" && op.line instanceof Asset) {
+    assert.equal(op.line.code, USDC.code);
+    assert.equal(op.line.issuer, USDC.issuer);
+  }
+  assert.equal(urls.filter((url) => url === `${FRIENDBOT_TESTNET}?addr=${encodeURIComponent(wallet)}`).length, 1);
+  assert.ok(urls.every((url) => url.startsWith(HORIZON_TESTNET) || url.startsWith(FRIENDBOT_TESTNET)));
+
+  const caido: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.startsWith(FRIENDBOT_TESTNET)) return json({ detail: "no" }, 503);
+    return new Response("missing", { status: 404 });
+  };
+  const fallo = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "preparar" }), caido, {
+    esperar: async () => undefined,
+  });
+  assert.equal(fallo.status, 502);
+  assert.equal((await fallo.json()).aviso, AVISO_USDC_SIN_CUENTA);
+
   const vacia = await publicarUsdcHttp(sesion(""), pedido({ accion: "preparar" }), fetchImpl);
   assert.equal(vacia.status, 400);
   assert.equal((await vacia.json()).aviso, AVISO_USDC_SIN_WALLET);
+});
+
+test("la red pública no fondea y consultar USDC no llama a Friendbot", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const urls: string[] = [];
+  const fetchImpl: typeof fetch = async (input) => {
+    urls.push(String(input));
+    return new Response("missing", { status: 404 });
+  };
+  const respuesta = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "preparar" }), fetchImpl, {
+    env: { ...process.env, HYTO_STELLAR_NETWORK: "public" },
+    esperar: async () => undefined,
+  });
+  assert.equal(respuesta.status, 400);
+  assert.equal((await respuesta.json()).aviso, AVISO_USDC_SOLO_TESTNET);
+  assert.equal(urls.some((url) => url.includes("friendbot")), false);
+
+  urls.length = 0;
+  const lectura = await leerUsdcHttp(sesion(wallet), fetchImpl);
+  assert.equal((await lectura.json()).listo, false);
+  assert.equal(urls.some((url) => url.includes("friendbot")), false);
 });
 
 test("el envío solo acepta el changeTrust firmado por la wallet de la sesión", async () => {

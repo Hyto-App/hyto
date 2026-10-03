@@ -64,7 +64,7 @@ export function botonesRevision(
       fondear: false,
       pagar: false,
       aprobarLocal: puede,
-      // The sample hides another-photo only in the Completado band. The grade never pays.
+      // The sample hides another-photo only in the Completed band. The grade never pays.
       pedirOtra: puede && tarea.veredicto !== "cumplió",
     };
   }

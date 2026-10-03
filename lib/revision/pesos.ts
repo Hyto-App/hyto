@@ -42,7 +42,7 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  *
  * Display bands, derived from the percentage. They do not approve a payment:
  * under 50 insuficiente, 50–79 parcial, 80–100 cumplió.
- * The screen shows those bands as Insuficiente, Parcialmente completado, and Completado.
+ * The screen shows those bands as Insufficient, Partially completed, and Completed.
  *
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
  * - TOPE_FALTA_GRAVE (49): classification "otra", v1 es_otra_cosa, t6 sin_empezar,

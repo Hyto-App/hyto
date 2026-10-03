@@ -8,7 +8,7 @@ import { mensajeClaro, TEXTO } from "@/lib/ui/claro";
 
 type Estado = "comprobando" | "listo" | "pendiente" | "preparando" | "hecho" | "error";
 
-const CLASE = "hyto-btn mt-3 w-auto px-5";
+const CLASE = "hyto-btn mt-4 max-w-sm";
 
 type Props = {
   consultar?: () => Promise<boolean>;
@@ -67,7 +67,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
             ? "Confirm in the window if it asks. This can take a minute."
             : estado === "error"
               ? aviso
-              : "This lets the account receive the event payment. You'll confirm once.";
+              : "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the event payment.";
   const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
 
   return (
@@ -80,14 +80,14 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
         </p>
       ) : null}
       {mostrarBoton ? (
-        <button type="button" className={`${CLASE} mt-3`} disabled={estado === "preparando"} aria-busy={estado === "preparando"} onClick={() => void correr()}>
+        <button type="button" className={CLASE} disabled={estado === "preparando"} aria-busy={estado === "preparando"} onClick={() => void correr()}>
           {estado === "preparando" ? TEXTO.preparingPayout : TEXTO.preparePayout}
         </button>
       ) : null}
       {estado === "hecho" && hash ? (
         <a
           href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
-          className="mt-2 inline-block text-sm font-semibold underline-offset-4 hover:underline"
+          className="hyto-btn-line is-inline mt-3 px-5"
         >
           {TEXTO.viewChain}
         </a>

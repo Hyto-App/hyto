@@ -6,16 +6,13 @@ import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 export function AvisoFirma({ mensaje, className }: { mensaje: string; className?: string }) {
   const reingreso = mensaje === AVISO_REINGRESO || mensaje === AVISO_ENTRAR;
   return (
-    <p className={className} role={reingreso ? "alert" : undefined}>
-      {mensaje}
+    <div className={className} role={reingreso ? "alert" : undefined}>
+      <p>{mensaje}</p>
       {reingreso ? (
-        <>
-          {" "}
-          <a href="/?signin=1" className="font-semibold underline underline-offset-2">
-            Sign in again
-          </a>
-        </>
+        <a href="/?signin=1" className="hyto-btn-line is-inline mt-3 px-5">
+          Sign in again
+        </a>
       ) : null}
-    </p>
+    </div>
   );
 }
