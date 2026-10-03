@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { guardarEstado, guardarEvidencia, leerMemoria } from "@/lib/integrante/almacen";
+import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
-import { ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
+import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
 type Fase = "cargando" | "inicio" | "camara" | "foto" | "enviando" | "lista" | "faltante";
@@ -29,6 +29,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [evidencia, setEvidencia] = useState<Evidencia | null>(null);
   const [ejemplo, setEjemplo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
   const [conCaptura, setConCaptura] = useState(false);
   const [capturadaEn, setCapturadaEn] = useState<string | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
@@ -234,15 +235,10 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         nombre: nombreArchivo ?? undefined,
       });
       setEvidencia(resultado.evidencia);
-      setEjemplo(resultado.ejemplo);
-      if (resultado.ejemplo) {
-        guardarEvidencia(resultado.evidencia);
-        guardarEstado(tarea.id, "en revisión");
-        setTarea({ ...tarea, estado: "en revisión" });
-      }
+      setAvisoEnvio(resultado.aviso);
       setFase("lista");
     } catch (err) {
-      setError(err instanceof ErrorDeSesion ? err.aviso : "Could not send. Try again.");
+      setError(err instanceof ErrorDeSesion || err instanceof ErrorDeEnvio ? err.aviso : "Could not send. Try again.");
       setFase("foto");
     } finally {
       enviandoRef.current = false;
@@ -251,6 +247,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
   function tomarOtra() {
     setEvidencia(null);
+    setAvisoEnvio(null);
     setFoto(null);
     setCapturadaEn(null);
     setNombreArchivo(null);
@@ -318,7 +315,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         </p>
         <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-          <h1 className="hyto-title">{enviada ? "Evidence sent" : fase === "foto" || fase === "enviando" ? "Upload evidence" : textoVisible(tarea.titulo)}</h1>
+          <h1 className="hyto-title">{enviada ? (avisoEnvio ? "Evidence sent, action needed" : "Evidence sent") : fase === "foto" || fase === "enviando" ? "Upload evidence" : textoVisible(tarea.titulo)}</h1>
           <p className="hyto-amount text-2xl">{montoVisible}</p>
         </div>
         <p className="hyto-sub">
@@ -330,11 +327,23 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
       {enviada ? (
         <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--acento)] text-2xl text-[var(--sobre-acento)]" aria-hidden="true">
-            ✓
-          </div>
+          {avisoEnvio ? (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-[var(--peligro)] text-2xl text-[var(--peligro)]" aria-hidden="true">
+              !
+            </div>
+          ) : (
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--acento)] text-2xl text-[var(--sobre-acento)]" aria-hidden="true">
+              ✓
+            </div>
+          )}
           <p className="mt-4 text-lg font-medium">{reembolso ? "File sent" : "Photo sent"}</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
+          {avisoEnvio ? (
+            <p role="alert" className="mt-2 text-sm leading-6 text-[var(--peligro)]">
+              {avisoEnvio} The organizer can't send the payment until this is fixed.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
+          )}
           <article className="hyto-card mt-6 p-4 text-left">
             <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
             <p className="mt-1 text-sm text-[var(--suave)]">{etiquetaEstado(tarea.estado)}</p>

@@ -1,4 +1,4 @@
-import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
+import { tareasEjemplo } from "./ejemplos";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
 const ESTADOS: EstadoTarea[] = ["pendiente", "en revisión", "pagado"];
@@ -24,7 +24,7 @@ export type ListaTareas = {
 
 export type FotoEnviada = {
   evidencia: Evidencia;
-  ejemplo: boolean;
+  aviso: string | null;
 };
 
 export class ErrorDeSesion extends Error {
@@ -36,6 +36,21 @@ export class ErrorDeSesion extends Error {
     this.aviso = aviso;
   }
 }
+
+export class ErrorDeEnvio extends Error {
+  readonly aviso: string;
+  readonly status: number | null;
+
+  constructor(aviso: string, status: number | null = null) {
+    super(aviso);
+    this.name = "ErrorDeEnvio";
+    this.aviso = aviso;
+    this.status = status;
+  }
+}
+
+export const AVISO_ENVIO_FALLIDO = "Could not send. Check your connection and try again.";
+export const AVISO_ENVIO_SIN_CONFIRMAR = "The server did not confirm the upload. Try again.";
 
 function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | undefined): Tarea[] {
   if (!estados) return tareas;
@@ -113,14 +128,23 @@ function listaDesdeJson(json: unknown): Tarea[] | null {
   return crudo.map(normalizarTarea).filter((tarea): tarea is Tarea => tarea !== null);
 }
 
-async function avisoDeAuth(respuesta: Response): Promise<string> {
+function avisoDe(json: unknown): string | null {
+  if (!json || typeof json !== "object") return null;
+  const aviso = (json as { aviso?: unknown }).aviso;
+  return typeof aviso === "string" && aviso.trim() ? aviso.trim() : null;
+}
+
+async function avisoDeRespuesta(respuesta: Response, porDefecto: string): Promise<string> {
   try {
-    const json = (await respuesta.json()) as { aviso?: unknown };
-    if (json && typeof json.aviso === "string" && json.aviso.trim()) return json.aviso.trim();
+    return avisoDe(await respuesta.json()) ?? porDefecto;
   } catch {
     // cuerpo vacío o no JSON
   }
-  return "Sign in to continue.";
+  return porDefecto;
+}
+
+async function avisoDeAuth(respuesta: Response): Promise<string> {
+  return avisoDeRespuesta(respuesta, "Sign in to continue.");
 }
 
 async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {
@@ -198,24 +222,33 @@ export async function subirEvidencia(
   if (opciones.capturadaEn) cuerpo.set("capturadaEn", opciones.capturadaEn);
   if (tarea.miembroId) cuerpo.set("miembroId", tarea.miembroId);
 
+  let respuesta: Response;
   try {
-    const respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
-    if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
-    if (!respuesta.ok) throw new Error(String(respuesta.status));
-    const creada = normalizarEvidencia(await leerJson(respuesta), tarea.id);
-    if (!creada) throw new Error("forma");
+    respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
+  } catch {
+    throw new ErrorDeEnvio(AVISO_ENVIO_FALLIDO);
+  }
+  if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
+  if (!respuesta.ok) {
+    throw new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+  }
 
-    try {
-      const lectura = await pedir(`${base}/api/evidencias/${creada.id}`, { method: "GET" }, fetchImpl);
-      if (!lectura.ok) return { evidencia: creada, ejemplo: false };
-      const leida = normalizarEvidencia(await leerJson(lectura), tarea.id);
-      return { evidencia: leida ?? creada, ejemplo: false };
-    } catch (error) {
-      if (error instanceof ErrorDeSesion) throw error;
-      return { evidencia: creada, ejemplo: false };
-    }
-  } catch (error) {
-    if (error instanceof ErrorDeSesion) throw error;
-    return { evidencia: evidenciaEjemplo(tarea), ejemplo: true };
+  let json: unknown;
+  try {
+    json = await leerJson(respuesta);
+  } catch {
+    throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
+  }
+  const creada = normalizarEvidencia(json, tarea.id);
+  if (!creada) throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
+  const aviso = avisoDe(json);
+
+  try {
+    const lectura = await pedir(`${base}/api/evidencias/${creada.id}`, { method: "GET" }, fetchImpl);
+    if (!lectura.ok) return { evidencia: creada, aviso };
+    const leida = normalizarEvidencia(await leerJson(lectura), tarea.id);
+    return { evidencia: leida ?? creada, aviso };
+  } catch {
+    return { evidencia: creada, aviso };
   }
 }

@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evidenciaEjemplo, tareasEjemplo } from "./ejemplos";
-import { ErrorDeSesion, leerTarea, listarTareas, subirEvidencia } from "./rutas";
+import { tareasEjemplo } from "./ejemplos";
+import {
+  AVISO_ENVIO_FALLIDO,
+  AVISO_ENVIO_SIN_CONFIRMAR,
+  ErrorDeEnvio,
+  ErrorDeSesion,
+  leerTarea,
+  listarTareas,
+  subirEvidencia,
+} from "./rutas";
 import type { Tarea } from "./tipos";
 
 function json(body: unknown, status = 200): Response {
@@ -65,21 +73,77 @@ test("si la ruta responde, no se rellenan los ejemplos", async () => {
   assert.equal(lista.tareas[0]?.estado, "pagado");
 });
 
-test("un reembolso de ejemplo trae monto y fecha; un trabajo no", async () => {
-  const fetchImpl: typeof fetch = async () => json("no", 500);
+test("un 503 con aviso falla con ese aviso y no devuelve evidencia de ejemplo", async () => {
   const comida = tareasEjemplo().find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const aviso = "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved.";
+  const fetchImpl: typeof fetch = async () => json({ aviso }, 503);
+  await assert.rejects(
+    () => subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl }),
+    (error: unknown) => {
+      assert.ok(error instanceof ErrorDeEnvio);
+      assert.ok(!(error instanceof ErrorDeSesion));
+      assert.equal(error.aviso, aviso);
+      assert.equal(error.status, 503);
+      return true;
+    },
+  );
+});
+
+test("un 500 sin cuerpo, un 409 o una red caída fallan; nunca hay ejemplo", async () => {
   const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
-  assert.ok(comida && stand);
+  assert.ok(stand);
 
-  const reembolso = await subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(reembolso.ejemplo, true);
-  assert.equal(reembolso.evidencia.monto, "12.40");
-  assert.equal(reembolso.evidencia.fecha, "2026-09-27");
+  const sinCuerpo: typeof fetch = async () => new Response("no", { status: 500 });
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: sinCuerpo }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_FALLIDO && error.status === 500,
+  );
 
-  const trabajo = await subirEvidencia(stand, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(trabajo.evidencia.monto, null);
-  assert.equal(trabajo.evidencia.fecha, null);
-  assert.deepEqual(trabajo.evidencia, evidenciaEjemplo(stand));
+  const repetida: typeof fetch = async () => json({ aviso: "This file was already submitted." }, 409);
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: repetida }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === "This file was already submitted.",
+  );
+
+  const red: typeof fetch = async () => {
+    throw new TypeError("network");
+  };
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: red }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_FALLIDO && error.status === null,
+  );
+});
+
+test("un 201 sin evidencia reconocible no cuenta como enviado", async () => {
+  const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+  assert.ok(stand);
+  const vacia: typeof fetch = async () => json({}, 201);
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: vacia }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_SIN_CONFIRMAR,
+  );
+
+  const html: typeof fetch = async () => new Response("<html></html>", { status: 201, headers: { "content-type": "text/html" } });
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: html }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_SIN_CONFIRMAR,
+  );
+});
+
+test("un 201 con aviso de cuenta de cobro devuelve el aviso", async () => {
+  const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+  assert.ok(stand);
+  const aviso = "This sign-in has no payout account. Sign in again and open the task so we know where to pay.";
+  const fetchImpl: typeof fetch = async (input) => {
+    if (String(input).endsWith("/api/evidencias")) {
+      return json({ evidencia: { id: "ev-9", tareaId: "stand", blobId: "blob-9", monto: null, fecha: null }, aviso }, 201);
+    }
+    return json({ id: "ev-9", tareaId: "stand", blobId: "blob-9", monto: null, fecha: null });
+  };
+  const enviada = await subirEvidencia(stand, new Blob(["foto"]), { fetch: fetchImpl });
+  assert.equal(enviada.evidencia.id, "ev-9");
+  assert.equal(enviada.aviso, aviso);
 });
 
 test("un 401 no se guarda como evidencia de ejemplo", async () => {
@@ -137,7 +201,7 @@ test("la subida no manda la cuenta de cobro de la tarea", async () => {
     return json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1", monto: null, fecha: null } });
   };
   const enviada = await subirEvidencia({ ...stand, walletCobro: "G" + "C".repeat(55) }, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.ejemplo, false);
+  assert.equal(enviada.aviso, null);
   assert.equal(wallet, null);
 });
 
@@ -153,7 +217,6 @@ test("la evidencia real no inventa monto ni fecha", async () => {
   };
 
   const enviada = await subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.ejemplo, false);
   assert.equal(enviada.evidencia.monto, null);
   assert.equal(enviada.evidencia.fecha, null);
 });
@@ -170,7 +233,6 @@ test("si la lectura trae monto y fecha, la pantalla puede mostrarlos", async () 
   };
 
   const enviada = await subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.ejemplo, false);
   assert.equal(enviada.evidencia.monto, "9.5");
   assert.equal(enviada.evidencia.fecha, "2026-09-28");
 });
