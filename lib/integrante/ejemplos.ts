@@ -1,4 +1,4 @@
-import type { Evidencia, Tarea } from "./tipos";
+import type { Tarea } from "./tipos";
 
 const PROYECTO = "zeek";
 
@@ -55,24 +55,4 @@ const TAREAS: Tarea[] = [
 
 export function tareasEjemplo(): Tarea[] {
   return TAREAS.map((tarea) => ({ ...tarea }));
-}
-
-export function evidenciaEjemplo(tarea: Tarea): Evidencia {
-  if (tarea.tipo === "reembolso") {
-    return {
-      id: `ejemplo-${tarea.id}`,
-      tareaId: tarea.id,
-      blobId: `ejemplo/${tarea.id}`,
-      monto: "12.40",
-      fecha: "2026-09-27",
-    };
-  }
-
-  return {
-    id: `ejemplo-${tarea.id}`,
-    tareaId: tarea.id,
-    blobId: `ejemplo/${tarea.id}`,
-    monto: null,
-    fecha: null,
-  };
 }

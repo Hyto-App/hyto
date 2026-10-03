@@ -12,7 +12,15 @@ import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
-import { botonesRevision, cargarDetalleOrganizador, confirmarMonto, leerFondeo, montoDeVista, type DetalleRevision } from "@/lib/admin/remoto";
+import {
+  botonesRevision,
+  cargarDetalleOrganizador,
+  confirmarMonto,
+  leerFondeo,
+  montoDeVista,
+  pagoPendiente,
+  type DetalleRevision,
+} from "@/lib/admin/remoto";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, vistaAdmin } from "@/lib/admin/vista";
@@ -333,7 +341,7 @@ export function Revision({
             Try again
           </button>
         ) : (
-          <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="mt-6 inline-block text-sm font-medium">
+          <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"} className="hyto-btn-line is-inline mt-6 px-5">
             Back to the event
           </Link>
         )}
@@ -349,6 +357,7 @@ export function Revision({
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
   const origen = etiquetaOrigen(tarea.origen);
   const pago = enlacePago(tarea.hashPago);
+  const pendiente = pagoPendiente(tarea);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
@@ -378,7 +387,7 @@ export function Revision({
           {foto && tarea.tipoArchivo === "application/pdf" ? (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
               <p className="text-sm text-[var(--suave)]">Invoice PDF</p>
-              <a href={foto} className="text-sm font-medium underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+              <a href={foto} className="hyto-btn-line is-inline px-5" target="_blank" rel="noreferrer">
                 Open the invoice
               </a>
             </div>
@@ -562,8 +571,23 @@ export function Revision({
 
           {aviso ? <AvisoFirma mensaje={aviso} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
 
+          {real && pendiente ? (
+            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
+              Payment sent. Waiting for the network to show it as released. Do not pay again.{" "}
+              {pago ? (
+                <a href={pago} className="font-semibold underline-offset-4 hover:underline">
+                  {TEXTO.viewChain}
+                </a>
+              ) : null}
+            </p>
+          ) : real && contrato && fondeado === null && tarea.estado !== "pagado" && !paso ? (
+            <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
+              Checking the locked budget on the network. Refresh in a few seconds if nothing shows up.
+            </p>
+          ) : null}
+
           {transaccion ? (
-            <a href={transaccion} className="mt-4 inline-block text-sm font-semibold underline-offset-4 hover:underline">
+            <a href={transaccion} className="hyto-btn-line is-inline mt-4 px-5">
               {TEXTO.viewChain}
             </a>
           ) : null}
@@ -580,7 +604,7 @@ export function Revision({
             <div className="mt-8 space-y-3">
               <p className="text-lg font-medium">Paid {formatearMonto(detalleMonto(tarea).cifra)}</p>
               {pago ? (
-                <a href={pago} className="inline-block text-sm font-semibold underline-offset-4 hover:underline">
+                <a href={pago} className="hyto-btn-line is-inline px-5">
                   {TEXTO.viewChain}
                 </a>
               ) : (
@@ -591,7 +615,7 @@ export function Revision({
                 </p>
               )}
               {credencial ? (
-                <a href={credencial} className="block text-sm text-[var(--suave)] underline-offset-4 hover:underline">
+                <a href={credencial} className="hyto-btn-line is-inline px-5">
                   Credential
                 </a>
               ) : null}

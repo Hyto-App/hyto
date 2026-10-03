@@ -9,6 +9,7 @@ import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
+import { leerRevisionHttp } from "./revision";
 
 const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
 let secretoPrevio: string | undefined;
@@ -41,7 +42,10 @@ function sesion(wallet: string): SesionFila {
   };
 }
 
-function tokenDe(xdr: string, meta: { accion: string; tareaId: string | null; monto: string | null }): string {
+function tokenDe(
+  xdr: string,
+  meta: { accion: string; tareaId: string | null; monto: string | null; contrato?: string },
+): string {
   const token = emitirTokenPreparado({
     usuarioId: "organizador",
     sesionId: "tok",
@@ -49,6 +53,7 @@ function tokenDe(xdr: string, meta: { accion: string; tareaId: string | null; mo
     accion: meta.accion,
     tareaId: meta.tareaId ?? "",
     monto: meta.monto ?? "",
+    ...(meta.contrato ? { contrato: meta.contrato } : {}),
   });
   if (!token) throw new Error("missing payment secret");
   return token;
@@ -232,7 +237,9 @@ test("un fee-bump no se envía y el aviso habla de XLM", async () => {
   }
 });
 
-test("el indexador atrasado no guarda el contrato de memoria", async () => {
+const SIN_ESPERA = { sondeo: { esperar: async () => {} } };
+
+test("el indexador atrasado guarda el contrato predicho del token y no ofrece otro despliegue", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -244,6 +251,7 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
   process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
   process.env.HYTO_ESCROW_ADMIN = ADMIN;
   const original = globalThis.fetch;
+  const lecturas: string[] = [];
   globalThis.fetch = async (input) => {
     const url = String(input);
     if (url.includes("horizon")) {
@@ -268,21 +276,37 @@ test("el indexador atrasado no guarda el contrato de memoria", async () => {
         { status: 200 },
       );
     }
+    if (url.includes(`/escrow/multi-release/v2/${CONTRATO_XDR}`)) {
+      lecturas.push(url);
+      return new Response(JSON.stringify({ status: 404, code: "ESCROW_NOT_FOUND" }), { status: 404 });
+    }
     throw new Error(`fetch inesperado: ${url}`);
   };
   try {
     const preparado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
     assert.equal(preparado.status, 200);
+    const { token } = (await preparado.json()) as { token: string };
     const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const carga = JSON.parse(Buffer.from(token.split(".")[0] ?? "", "base64url").toString("utf8")) as { contrato?: string };
+    assert.equal(carga.contrato, CONTRATO_XDR);
+    const tokenAlta = tokenDe(alta, { accion: "desplegar", tareaId: "registro", monto: "20", contrato: CONTRATO_XDR });
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
-      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "registro", monto: "20" }) }),
+      pedido({ xdr: alta, accion: "desplegar", tareaId: "registro", contrato: CONTRATO, token: tokenAlta }),
       almacen,
+      SIN_ESPERA,
     );
     assert.equal(enviado.status, 200);
-    const json = (await enviado.json()) as { aviso: string };
-    assert.match(json.aviso, /indexer/);
-    assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, null);
+    const json = (await enviado.json()) as { aviso: string; contrato: string };
+    assert.match(json.aviso, /indexing/);
+    assert.match(json.aviso, /Do not lock it again/);
+    assert.equal(json.contrato, CONTRATO_XDR);
+    assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, CONTRATO_XDR);
+    assert.equal(lecturas.length, 4);
+
+    const otraVez = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
+    assert.equal(otraVez.status, 409);
+    assert.match(((await otraVez.json()) as { aviso: string }).aviso, /already has an escrow/);
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior);
@@ -349,7 +373,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
   }
 });
 
-test("liberar sin el hito marcado como released no deja la tarea pagada", async () => {
+test("liberar con el hito atrasado guarda el hash, no marca pagado y una lectura posterior lo concilia", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -357,15 +381,18 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
   await almacen.actualizarTarea("comida", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
   process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
   const original = globalThis.fetch;
+  const estado = { liberado: false, lecturas: 0, envios: 0 };
   globalThis.fetch = async (input) => {
     const url = String(input);
     if (url.endsWith("/stellar/send-transaction")) {
+      estado.envios += 1;
       return new Response(
         JSON.stringify({ txHash: "11".repeat(32), ledger: 5, code: "STELLAR_TX_SUBMITTED", message: "ok" }),
         { status: 200 },
       );
     }
-    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ released: false }] }), {
+    estado.lecturas += 1;
+    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ released: estado.liberado }] }), {
       status: 200,
     });
   };
@@ -375,10 +402,67 @@ test("liberar sin el hito marcado como released no deja la tarea pagada", async 
       sesion(FIRMANTE_XDR),
       pedido({ xdr: pago, accion: "liberar", tareaId: "comida", token: tokenDe(pago, { accion: "liberar", tareaId: "comida", monto: null }) }),
       almacen,
+      SIN_ESPERA,
     );
     assert.equal(respuesta.status, 200);
-    assert.match(((await respuesta.json()) as { aviso: string }).aviso, /released/);
-    assert.notEqual((await almacen.leerTarea("comida"))?.estado, "pagado");
+    const cuerpo = (await respuesta.json()) as { aviso: string; hash: string };
+    assert.match(cuerpo.aviso, /Do not pay again/);
+    assert.equal(cuerpo.hash, "11".repeat(32));
+    assert.equal(estado.lecturas, 4);
+    const pendiente = await almacen.leerTarea("comida");
+    assert.notEqual(pendiente?.estado, "pagado");
+    assert.equal(pendiente?.hashPago, "11".repeat(32));
+
+    estado.liberado = true;
+    const revision = await leerRevisionHttp(almacen, null, "comida");
+    assert.equal(revision.status, 200);
+    const fila = await almacen.leerTarea("comida");
+    assert.equal(fila?.estado, "pagado");
+    assert.equal(fila?.hashPago, "11".repeat(32));
+    assert.equal(estado.envios, 1);
+  } finally {
+    globalThis.fetch = original;
+    reiniciarLimite();
+  }
+});
+
+test("liberar espera al indexador y marca pagado cuando el hito aparece liberado", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("stand", { walletCobro: RECEPTOR, contratoEscrow: CONTRATO_XDR });
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  const original = globalThis.fetch;
+  let lecturas = 0;
+  const pausas: number[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith("/stellar/send-transaction")) {
+      return new Response(
+        JSON.stringify({ txHash: "33".repeat(32), ledger: 7, code: "STELLAR_TX_SUBMITTED_INDEXER_LAGGING" }),
+        { status: 200 },
+      );
+    }
+    lecturas += 1;
+    return new Response(JSON.stringify({ contractId: CONTRATO_XDR, milestones: [{ released: lecturas >= 3 }] }), {
+      status: 200,
+    });
+  };
+  try {
+    const pago = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "release_funds", firmante: FIRMANTE_XDR });
+    const respuesta = await enviarFirmaHttp(
+      sesion(FIRMANTE_XDR),
+      pedido({ xdr: pago, accion: "liberar", tareaId: "stand", token: tokenDe(pago, { accion: "liberar", tareaId: "stand", monto: null }) }),
+      almacen,
+      { sondeo: { esperar: async (ms) => void pausas.push(ms) } },
+    );
+    assert.equal(respuesta.status, 200);
+    assert.equal(((await respuesta.json()) as { aviso?: string }).aviso, undefined);
+    assert.deepEqual(pausas, [1000, 2000]);
+    const fila = await almacen.leerTarea("stand");
+    assert.equal(fila?.estado, "pagado");
+    assert.equal(fila?.hashPago, "33".repeat(32));
   } finally {
     globalThis.fetch = original;
     reiniciarLimite();

@@ -115,7 +115,7 @@ On the review screen (`lib/admin/remoto.ts`):
 2. **Pay** runs mark, approve, and release (index 0). It is shown only when the task is in review, a contract exists, and the indexed balance is positive.
 3. **View payment** when the task is `pagado` and `hash_pago` is set (`https://stellar.expert/explorer/testnet/tx/<hash>`).
 
-The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id is still kept in the process-local map `contratosPreparados` (`lib/api/firma.ts`). A different instance can lose it.
+The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id from the deploy prepare is carried inside the HMAC token (`contrato`), and submit saves it to `tareas.contrato_escrow` even when the indexer lags, so no instance offers a second deploy. On release, the server polls the escrow read (`lib/escrow/indexador.ts`) until milestone 0 is released. If it times out, it keeps `hash_pago` with the task unpaid, hides fund and pay, and `GET /api/revision/:id` marks it `pagado` once the read shows the release.
 
 `npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. `asegurarCobroUsdc` can call Cavos `addTrustline`, and that is not the path `PrepararUsdc` uses. There is no receiver-trustline check before deploy.
 
@@ -187,7 +187,7 @@ Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open
 3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. The demo seed marker is an SVG on purpose.
 4. **No CI.** There is no `.github/` workflow.
 
-Also still open: receiver-trustline preflight before deploy, persisting the predicted contract id in the database, and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
+Also still open: receiver-trustline preflight before deploy and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
 
 Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
 

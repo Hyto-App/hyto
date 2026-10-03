@@ -32,6 +32,7 @@ test("Sign out borra la wallet local y entra al ingreso aunque el servidor falle
       await Promise.resolve();
     });
     assert.match(texto(), /Sign out/);
+    assert.match(document.querySelector("button")?.className ?? "", /hyto-btn-danger/);
     await pulsar("Sign out");
     assert.equal(deleteLlamado, true);
     assert.match(window.location.href, /signin=1/);
@@ -67,6 +68,8 @@ test("en demo siguen el cambio de rol y Sign out", async () => {
     });
     assert.match(texto(), /Leave demo/);
     assert.match(texto(), /Sign out/);
+    const clases = [...document.querySelectorAll("button")].map((boton) => boton.className).join(" ");
+    assert.match(clases, /hyto-btn-danger/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

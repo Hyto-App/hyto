@@ -1,6 +1,7 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
+import { asegurarCuentaEnTestnet, avisoDeCuenta, type OpcionesCuentaTestnet } from "@/lib/integrante/cuentaTestnet";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
@@ -36,6 +37,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
     let usuario = await almacen.usuarioPorEmail(email);
+    const nuevo = !usuario;
     if (!usuario) {
       const local = email.split("@")[0] ?? "";
       await almacen.insertarUsuario({
@@ -58,7 +60,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       wallet: walletDelToken(token) ?? "",
     });
     return json(
-      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre },
+      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, nuevo },
       200,
       { "set-cookie": encabezadoCookie(sesion, segundos) },
     );
@@ -77,7 +79,11 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
   return json({ ok: true }, 200, { "set-cookie": encabezadoCookieCerrada() });
 }
 
-export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
+export async function fijarWalletHttp(
+  request: Request,
+  almacen: Almacen,
+  opciones: OpcionesCuentaTestnet = {},
+): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   let body: unknown;
@@ -86,7 +92,8 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
   } catch {
     return json({ aviso: "The body is not JSON." }, 400);
   }
-  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
+  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown; alta?: unknown }) : {};
+  const alta = datos.alta === true;
   const crudo = datos.wallet;
   if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
     return json({ aviso: "That doesn't look like a payout account. Sign in again." }, 400);
@@ -110,7 +117,10 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
       return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
-    return json({ wallet }, 200);
+    if (!alta || sesionEsDemo(sesion)) return json({ wallet }, 200);
+    const red = await asegurarCuentaEnTestnet(wallet, opciones);
+    const aviso = avisoDeCuenta(red);
+    return json(aviso ? { wallet, enRed: false, aviso } : { wallet, enRed: true }, 200);
   } catch {
     return baseNoLista();
   }

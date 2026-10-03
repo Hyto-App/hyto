@@ -144,18 +144,18 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       />
                     ) : null}
                     {pago || credencial ? (
-                      <p className="mt-4 flex flex-wrap gap-4 text-sm">
+                      <div className="mt-4 flex flex-wrap gap-3">
                         {pago ? (
-                          <a href={pago} className="font-semibold underline-offset-4 hover:underline">
+                          <a href={pago} className="hyto-btn-line is-inline px-5">
                             {TEXTO.viewChain}
                           </a>
                         ) : null}
                         {credencial ? (
-                          <a href={credencial} className="text-[var(--suave)] underline-offset-4 hover:underline">
+                          <a href={credencial} className="hyto-btn-line is-inline px-5">
                             Credential
                           </a>
                         ) : null}
-                      </p>
+                      </div>
                     ) : null}
                   </div>
                 );
