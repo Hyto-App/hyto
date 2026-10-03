@@ -2,6 +2,12 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-03
+
+### Added
+
+- The public landing states the product in plain language: a marketplace of small tasks, paid in dollars in crypto (USDC). It shows three steps (pick a task, send a photo, get paid), who it is for, and why a person approves every payment. The speech lives in `lib/ui/discurso.ts`. A short note says the app runs on a practice network for now, so the money is not real cash.
+
 ## 2026-10-02
 
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:
