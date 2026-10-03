@@ -5,11 +5,17 @@ import { useEffect, useState } from "react";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { listarTareas } from "@/lib/integrante/rutas";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 
 type Filtro = "all" | EstadoTarea;
+
+const ORDENES: { id: OrdenTareas; etiqueta: string }[] = [
+  { id: "defecto", etiqueta: "Default" },
+  { id: "mayor", etiqueta: "Highest pay" },
+];
 
 const FILTROS: { id: Filtro; etiqueta: string }[] = [
   { id: "all", etiqueta: "All" },
@@ -30,6 +36,7 @@ export function MisTareas() {
   const [error, setError] = useState<string | null>(null);
   const [lista, setLista] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("all");
+  const [orden, setOrden] = useState<OrdenTareas>("defecto");
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
@@ -59,11 +66,8 @@ export function MisTareas() {
 
   const visibles = filtro === "all" ? tareas : tareas.filter((tarea) => tarea.estado === filtro);
   const cuenta = (estado: EstadoTarea) => tareas.filter((tarea) => tarea.estado === estado).length;
-  const porEvento = new Map<string, Tarea[]>();
-  for (const tarea of visibles) {
-    const clave = tarea.proyectoId || "event";
-    porEvento.set(clave, [...(porEvento.get(clave) ?? []), tarea]);
-  }
+  const mejores = idsMejorPagadas(tareas);
+  const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "mayor" ? "seguir" : "unir");
   const pendientes = cuenta("pendiente");
 
   return (
@@ -121,26 +125,36 @@ export function MisTareas() {
 
       {lista && tareas.length > 0 ? (
         <>
-          <div className="hyto-chips flex lg:hidden" role="tablist" aria-label="Filter tasks">
-            {FILTROS.map((item) => (
-              <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
-                {item.etiqueta} {item.id === "all" ? tareas.length : cuenta(item.id)}
-              </button>
-            ))}
-          </div>
-          <div className="hyto-tabs hidden lg:flex" role="tablist" aria-label="Filter tasks">
-            {FILTROS.map((item) => (
-              <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
-                {item.etiqueta} {item.id === "all" ? tareas.length : cuenta(item.id)}
-              </button>
-            ))}
+          <div className="flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
+            <div className="hyto-chips flex lg:hidden" role="tablist" aria-label="Filter tasks">
+              {FILTROS.map((item) => (
+                <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
+                  {item.etiqueta} {item.id === "all" ? tareas.length : cuenta(item.id)}
+                </button>
+              ))}
+            </div>
+            <div className="hyto-tabs hidden lg:flex lg:min-w-0 lg:flex-1" role="tablist" aria-label="Filter tasks">
+              {FILTROS.map((item) => (
+                <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
+                  {item.etiqueta} {item.id === "all" ? tareas.length : cuenta(item.id)}
+                </button>
+              ))}
+            </div>
+            <div className="hyto-chips flex items-center" role="group" aria-label="Sort tasks">
+              <span className="px-1 text-sm font-medium text-[var(--suave)]">Sort</span>
+              {ORDENES.map((item) => (
+                <button key={item.id} type="button" aria-pressed={orden === item.id} onClick={() => setOrden(item.id)}>
+                  {item.etiqueta}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid gap-8">
-            {[...porEvento.entries()].map(([proyectoId, grupo]) => (
-              <section key={proyectoId}>
-                <h2 className="text-sm font-semibold text-[var(--suave)]">{nombres[proyectoId] ?? "Event"}</h2>
+            {porEvento.map((grupo, indice) => (
+              <section key={`${grupo.proyectoId}-${indice}`}>
+                <h2 className="text-sm font-semibold text-[var(--suave)]">{nombres[grupo.proyectoId] ?? "Event"}</h2>
                 <div className="mt-3 grid gap-3">
-                  {grupo.map((tarea) => (
+                  {grupo.tareas.map((tarea) => (
                     <article key={tarea.id} className="hyto-card p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -149,8 +163,14 @@ export function MisTareas() {
                         </div>
                         <p className="hyto-amount text-lg">{montoDeTarea(tarea)}</p>
                       </div>
-                      <div className="mt-4">
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
                         <PastillaEstado estado={tarea.estado} />
+                        {mejores.has(tarea.id) ? (
+                          <span className="hyto-pill hyto-pill-ok">
+                            <i className="hyto-dot" aria-hidden="true" />
+                            Best paid
+                          </span>
+                        ) : null}
                       </div>
                       {tarea.estado === "pendiente" ? (
                         <Link href={`/tareas/${tarea.id}`} className="hyto-btn mt-4">
