@@ -131,7 +131,8 @@ test("el movimiento de la pastilla es corto, ease-out, y se apaga si piden menos
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.hyto-pill-veredicto,\s*\.hyto-pill-veredicto \.hyto-dot \{\s*transition:\s*none/);
   assert.match(css, /@media print \{[\s\S]*?\.hyto-pill-vista \{\s*display:\s*none/);
   const voluntario = readFileSync("components/integrante/SubirEvidencia.tsx", "utf8");
-  assert.equal(voluntario.includes("PastillaVeredicto"), false);
+  assert.equal(voluntario.includes("PastillaVeredicto"), true);
+  assert.match(readFileSync("lib/integrante/nota.ts", "utf8"), /Your organizer makes the final call/);
 });
 
 test("la bandeja separa las notas 49, 50, 79 y 80", async () => {
