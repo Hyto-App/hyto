@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
-import { botonesRevision, cargarDetalleOrganizador, cargarVistaOrganizador, escrowFondeado, leerFondeo, montoDeVista, reintentarRevision } from "./remoto";
+import { consultarHasta } from "./consulta-escrow";
+import {
+  botonesRevision,
+  cargarDetalleOrganizador,
+  cargarVistaOrganizador,
+  escrowFondeado,
+  leerFondeo,
+  montoDeVista,
+  pagoPendiente,
+  reintentarRevision,
+} from "./remoto";
 import type { TareaAdmin } from "./tipos";
 
 const HASH = "ab".repeat(32);
@@ -44,6 +54,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: false,
     fondear: false,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: true,
     pedirOtra: false,
   });
@@ -52,6 +63,7 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: true,
     fondear: false,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: false,
     pedirOtra: true,
   });
@@ -62,12 +74,20 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
     desplegar: false,
     fondear: true,
     pagar: false,
+    verificarFondo: false,
     aprobarLocal: false,
     pedirOtra: true,
   });
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).fondear, false);
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true }).pagar, true);
   assert.equal(botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null }).fondear, false);
+  const desconocido = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: null });
+  assert.equal(desconocido.pagar, false);
+  assert.equal(desconocido.desplegar, false);
+  assert.equal(desconocido.verificarFondo, true);
+  assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, { contrato: "CSTAND", fondeado: null }).verificarFondo, false);
+  assert.equal(botonesRevision(tarea({ hashPago: HASH }), true, { contrato: "CSTAND", fondeado: null }).verificarFondo, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: null, fondeado: null }).verificarFondo, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).desplegar, false);
   assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, conContrato).fondear, false);
   const error = botonesRevision(tarea({ origen: "error", veredicto: null }), true, conContrato);
@@ -197,6 +217,48 @@ test("fondear solo aparece si el escrow desplegado todavía no tiene saldo", asy
   assert.equal(await leerFondeo(" C STAND ", { fetch: fetchImpl }), false);
   assert.deepEqual(llamadas, ["/api/escrow/C%20STAND"]);
   assert.equal(await leerFondeo("CSTAND", { fetch: async () => json({ aviso: "no" }, 401) }), null);
+});
+
+test("un saldo ilegible se vuelve a leer hasta conocerlo, sin ofrecer fondear ni pagar mientras tanto", async () => {
+  const respuestas = [json({ aviso: "Trustless" }, 502), json({ escrow: { contractId: "CSTAND" } }), json({ escrow: { balance: "20" } })];
+  const resultado = await consultarHasta({
+    leer: () => leerFondeo("CSTAND", { fetch: async () => respuestas.shift() ?? json({ aviso: "no" }, 502) }),
+    listo: (valor) => valor !== null,
+    pausas: [1, 1, 1],
+    esperar: async () => {},
+  });
+  assert.deepEqual(resultado, { listo: true, valor: true });
+  assert.equal(botonesRevision(tarea(), true, { contrato: "CSTAND", fondeado: true }).pagar, true);
+});
+
+test("un pago pendiente se consulta hasta que /api/revision lo devuelve pagado", async () => {
+  let lecturas = 0;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: HASH, contratoEscrow: "CSTAND" }] });
+    if (url === "/api/revision/stand") {
+      lecturas += 1;
+      return json({
+        tarea: tarea({ estado: lecturas >= 3 ? "pagado" : "en revisión", hashPago: HASH }),
+        foto: null,
+        contratoEscrow: "CSTAND",
+        walletCobro: "GCOBRO",
+        wallet: "GORGANIZADOR",
+      });
+    }
+    return json({ aviso: "no" }, 404);
+  };
+  const resultado = await consultarHasta({
+    leer: () => cargarDetalleOrganizador("stand", { fetch: fetchImpl }),
+    listo: (detalle) => detalle !== null && !pagoPendiente(detalle.tarea),
+    inmediata: false,
+    pausas: [1, 1, 1, 1],
+    esperar: async () => {},
+  });
+  assert.equal(resultado.listo, true);
+  assert.equal(resultado.listo && resultado.valor?.tarea.estado, "pagado");
+  assert.equal(resultado.listo && resultado.valor?.tarea.hashPago, HASH);
+  assert.equal(lecturas, 3);
 });
 
 test("sin sesión de organizador la revisión vuelve al ejemplo", async () => {
