@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { FRASE_PAGO, notaDeTarea } from "@/lib/integrante/nota";
 import { etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
@@ -234,6 +236,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
         capturadaEn: capturadaEn ?? undefined,
         nombre: nombreArchivo ?? undefined,
       });
+      const fresco = await leerTarea(tarea.id, { miembroId: "" }, { muestra: demo });
+      if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
       setFase("lista");
@@ -300,6 +304,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const cerrada = tarea.estado !== "pendiente";
   const enviada = fase === "lista" || cerrada;
   const montoVisible = montoDeTarea(tarea);
+  const calificacion = notaDeTarea(tarea);
 
   return (
     <main className={`hyto-page ${enviada ? "mx-auto max-w-lg" : ""}`}>
@@ -347,9 +352,13 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
           <article className="hyto-card mt-6 p-4 text-left">
             <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
             <p className="mt-1 text-sm text-[var(--suave)]">{etiquetaEstado(tarea.estado)}</p>
-            <div className="mt-3">
+            <div className="mt-3 flex max-w-full flex-col items-start gap-2">
               <PastillaEstado estado={tarea.estado} />
+              {calificacion ? <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} /> : null}
             </div>
+            {calificacion && tarea.estado !== "pagado" ? (
+              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{FRASE_PAGO}.</p>
+            ) : null}
             <p className="hyto-amount mt-3">{montoVisible}</p>
           </article>
           <p className="mt-6 text-left text-sm text-[var(--suave)]">The organizer approves, then the payment leaves the escrow.</p>
