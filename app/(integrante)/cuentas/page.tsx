@@ -4,6 +4,7 @@ import { PanelCuenta } from "@/components/integrante/PanelCuenta";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { Salir } from "@/components/sesion/Salir";
+import { Texto } from "@/components/ui/Idioma";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { leerModoDemo } from "@/lib/sesion/vista";
@@ -18,7 +19,7 @@ export default async function PaginaCuentas() {
       <header className="hyto-page-head">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="hyto-title">Account</h1>
+            <Texto as="h1" clave="cuenta.titulo" className="hyto-title" />
             <InsigniaDemo />
           </div>
           <p className="hyto-sub">{sesion.email}</p>

@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
-import { mensajeClaro, TEXTO } from "@/lib/ui/claro";
 
 type Estado = "comprobando" | "listo" | "pendiente" | "preparando" | "hecho" | "error";
 
@@ -17,6 +17,8 @@ type Props = {
 
 export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion() }: Props) {
   const demo = useModoDemo();
+  const t = useTexto();
+  const claro = useClaro();
   const [estado, setEstado] = useState<Estado>("comprobando");
   const [aviso, setAviso] = useState<string | null>(null);
   const [hash, setHash] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       .catch((error: unknown) => {
         if (!viva) return;
         setEstado("error");
-        setAviso(mensajeClaro(error instanceof Error && error.message ? error.message : "We couldn't check whether this account can receive payment. Try again."));
+        setAviso(error instanceof Error && error.message ? error.message : "We couldn't check whether this account can receive payment. Try again.");
       });
     return () => {
       viva = false;
@@ -50,7 +52,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       setEstado("hecho");
     } catch (error) {
       setEstado("error");
-      setAviso(mensajeClaro(error instanceof Error && error.message ? error.message : "We couldn't get this account ready to receive payment. Try again."));
+      setAviso(error instanceof Error && error.message ? error.message : "We couldn't get this account ready to receive payment. Try again.");
     }
   }
 
@@ -58,16 +60,18 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
 
   const mensaje =
     estado === "comprobando"
-      ? TEXTO.checkingPayout
+      ? t("pago.checkingPayout")
       : estado === "listo"
-        ? TEXTO.payoutReady
+        ? t("pago.payoutReady")
         : estado === "hecho"
-          ? TEXTO.payoutDone
+          ? t("pago.payoutDone")
           : estado === "preparando"
-            ? "Confirm in the window if it asks. This can take a minute."
+            ? t("cuenta.confirmWindow")
             : estado === "error"
               ? aviso
-              : "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the event payment.";
+                ? claro(aviso)
+                : null
+              : t("cuenta.newAccount");
   const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
 
   return (
@@ -81,7 +85,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       ) : null}
       {mostrarBoton ? (
         <button type="button" className={CLASE} disabled={estado === "preparando"} aria-busy={estado === "preparando"} onClick={() => void correr()}>
-          {estado === "preparando" ? TEXTO.preparingPayout : TEXTO.preparePayout}
+          {estado === "preparando" ? t("pago.preparingPayout") : t("pago.preparePayout")}
         </button>
       ) : null}
       {estado === "hecho" && hash ? (
@@ -89,7 +93,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
           href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
           className="hyto-btn-line is-inline mt-3 px-5"
         >
-          {TEXTO.viewChain}
+          {t("pago.viewChain")}
         </a>
       ) : null}
     </div>

@@ -2,6 +2,12 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-03
+
+### Added
+
+- The interface can be English (default) or Spanish. A selector in the shell and on the landing and sign-in page stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.
+
 ## 2026-10-02
 
 Docs now match `main` at `2b9fad4`. Summary of what landed after the 29 September changelog:

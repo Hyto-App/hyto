@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 test("la pastilla sin nota muestra la palabra y no un porcentaje", async () => {
@@ -30,6 +31,17 @@ test("el porcentaje y la etiqueta van juntos en la pastilla", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 64 }));
   assert.equal(texto(), "64% · Partially completed");
   assert.match(document.querySelector(".hyto-pill")?.className ?? "", /hyto-pill-mid/);
+  await desmontar();
+});
+
+test("la pastilla sigue el idioma elegido", async () => {
+  await montar(
+    createElement(ProveedorIdioma, {
+      idioma: "es",
+      children: createElement(PastillaVeredicto, { veredicto: "parcial", nota: 64 }),
+    }),
+  );
+  assert.equal(texto(), "64% · Parcialmente completado");
   await desmontar();
 });
 

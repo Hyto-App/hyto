@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
@@ -37,6 +38,9 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [intento, setIntento] = useState(0);
   const [evento, setEvento] = useState<string | null>(null);
   const demo = useModoDemo();
+  const t = useTexto();
+  const claro = useClaro();
+  const idioma = useIdioma();
 
   useEffect(() => {
     let activo = true;
@@ -260,7 +264,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   if (fase === "cargando") {
     return (
       <main className="hyto-page">
-        <p className="text-[var(--suave)]">Loading…</p>
+        <p className="text-[var(--suave)]">{t("comunes.loading")}</p>
       </main>
     );
   }
@@ -269,15 +273,15 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     return (
       <main className="hyto-page">
         <p className="text-lg" role="alert">
-          {cargaError ?? "We couldn't find that task."}
+          {claro(cargaError ?? "We couldn't find that task.")}
         </p>
         {cargaError ? (
           <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
-            Try again
+            {t("comunes.tryAgain")}
           </button>
         ) : (
           <Link href="/mis-tareas" className="hyto-btn-line is-inline mt-6 px-5">
-            Back to My tasks
+            {t("evidencia.back")}
           </Link>
         )}
       </main>
@@ -288,14 +292,14 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const reembolso = tarea.tipo === "reembolso";
   const accion =
     fase === "camara"
-      ? "Take photo"
+      ? t("evidencia.takePhoto")
       : fase === "foto"
-        ? "Send"
+        ? t("evidencia.send")
         : fase === "enviando"
-          ? "Sending…"
+          ? t("evidencia.sending")
           : reembolso
-            ? "Choose a file"
-            : "Open camera";
+            ? t("evidencia.chooseFile")
+            : t("evidencia.openCamera");
 
   const cerrada = tarea.estado !== "pendiente";
   const enviada = fase === "lista" || cerrada;
@@ -305,23 +309,21 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     <main className={`hyto-page ${enviada ? "mx-auto max-w-lg" : ""}`}>
       <header className="mb-6">
         <p className="hyto-crumb">
-          <Link href="/mis-tareas">My tasks</Link>
+          <Link href="/mis-tareas">{t("tareas.title")}</Link>
           {tarea.proyectoId ? (
             <>
               <span aria-hidden="true">/</span>
-              <Link href={`/eventos/${tarea.proyectoId}`}>{textoVisible(evento ?? "Event")}</Link>
+              <Link href={`/eventos/${tarea.proyectoId}`}>{textoVisible(evento ?? t("comunes.event"), idioma)}</Link>
             </>
           ) : null}
         </p>
-        <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo)}</p>
+        <p className="mt-4 text-sm text-[var(--suave)]">{etiquetaTipo(tarea.tipo, idioma)}</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-          <h1 className="hyto-title">{enviada ? (avisoEnvio ? "Evidence sent, action needed" : "Evidence sent") : fase === "foto" || fase === "enviando" ? "Upload evidence" : textoVisible(tarea.titulo)}</h1>
+          <h1 className="hyto-title">{enviada ? (avisoEnvio ? t("evidencia.sentAction") : t("evidencia.sent")) : fase === "foto" || fase === "enviando" ? t("evidencia.upload") : textoVisible(tarea.titulo, idioma)}</h1>
           <p className="hyto-amount text-2xl">{montoVisible}</p>
         </div>
         <p className="hyto-sub">
-          {reembolso
-            ? "Upload the receipt or invoice as a PDF or an image. The organizer checks it and sends the payment."
-            : "Photograph the finished work with the camera. The organizer checks it and sends the payment."}
+          {reembolso ? t("evidencia.receiptHelp") : t("evidencia.photoHelp")}
         </p>
       </header>
 
@@ -336,27 +338,28 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
               ✓
             </div>
           )}
-          <p className="mt-4 text-lg font-medium">{reembolso ? "File sent" : "Photo sent"}</p>
+          <p className="mt-4 text-lg font-medium">{reembolso ? t("evidencia.fileSent") : t("evidencia.photoSent")}</p>
           {avisoEnvio ? (
             <p role="alert" className="mt-2 text-sm leading-6 text-[var(--peligro)]">
-              {avisoEnvio} The organizer can't send the payment until this is fixed.
+              {claro(avisoEnvio)}
+              {t("evidencia.fixSuffix")}
             </p>
           ) : (
-            <p className="mt-2 text-sm leading-6 text-[var(--suave)]">The organizer can review it now. This task shows Paid after they send the money.</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{t("evidencia.organizerNow")}</p>
           )}
           <article className="hyto-card mt-6 p-4 text-left">
-            <p className="font-semibold">{textoVisible(tarea.titulo)}</p>
-            <p className="mt-1 text-sm text-[var(--suave)]">{etiquetaEstado(tarea.estado)}</p>
+            <p className="font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
+            <p className="mt-1 text-sm text-[var(--suave)]">{etiquetaEstado(tarea.estado, idioma)}</p>
             <div className="mt-3">
               <PastillaEstado estado={tarea.estado} />
             </div>
             <p className="hyto-amount mt-3">{montoVisible}</p>
           </article>
-          <p className="mt-6 text-left text-sm text-[var(--suave)]">The organizer approves, then the payment leaves the escrow.</p>
+          <p className="mt-6 text-left text-sm text-[var(--suave)]">{t("evidencia.organizerApproves")}</p>
           <Link href="/mis-tareas" className="hyto-btn mt-6">
-            Back to My tasks
+            {t("evidencia.back")}
           </Link>
-          <p className="mt-4 text-sm text-[var(--suave)]">If the photo isn't clear, the organizer may ask for another one.</p>
+          <p className="mt-4 text-sm text-[var(--suave)]">{t("evidencia.anotherMaybe")}</p>
         </div>
       ) : (
         <div className="hyto-split">
@@ -364,16 +367,16 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             <div className="hyto-photo">
                 {fotoUrl && foto?.type === "application/pdf" ? (
                   <div className="flex aspect-[4/5] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-                    {nombreArchivo ?? "Invoice PDF"}
+                    {nombreArchivo ?? t("evidencia.invoicePdf")}
                   </div>
                 ) : fotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={fotoUrl} alt="Evidence" />
+                  <img src={fotoUrl} alt={t("evidencia.alt")} />
                 ) : fase === "camara" ? (
-                  <video ref={videoRef} playsInline muted aria-label="Camera preview" />
+                  <video ref={videoRef} playsInline muted aria-label={t("evidencia.camera")} />
                 ) : (
                   <div className="flex aspect-[4/5] items-center justify-center px-8 text-center text-sm text-[var(--suave)]">
-                    {reembolso ? "PDF or image of the receipt" : "Photo of the work"}
+                    {reembolso ? t("evidencia.receiptPlaceholder") : t("evidencia.workPlaceholder")}
                   </div>
                 )}
               </div>
@@ -385,28 +388,28 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
                 onDrop={soltarArchivo}
                 className="hyto-btn-line is-dashed mt-3"
               >
-                Choose a PDF or image
+                {t("evidencia.choosePdf")}
               </button>
             ) : null}
             {!reembolso && fase === "inicio" ? (
-              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">Take the photo now. Photos from the gallery are not accepted.</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{t("evidencia.gallery")}</p>
             ) : null}
           </div>
           <div>
             {tarea.condicion ? (
               <div className="hyto-card p-5">
-                <p className="text-sm font-medium">Your photo must show</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion)}</p>
+                <p className="text-sm font-medium">{t("evidencia.mustShow")}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p>
               </div>
             ) : null}
             {mostrarRevision ? (
               <dl className="hyto-card mt-4 grid grid-cols-2 gap-4 p-5">
                 <div>
-                  <dt className="text-sm text-[var(--suave)]">Amount</dt>
+                  <dt className="text-sm text-[var(--suave)]">{t("comunes.amount")}</dt>
                   <dd className="hyto-amount mt-1 text-2xl">{formatearMonto(evidencia.monto!)}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-[var(--suave)]">Date</dt>
+                  <dt className="text-sm text-[var(--suave)]">{t("comunes.date")}</dt>
                   <dd className="hyto-amount mt-1 text-2xl">{formatearFecha(evidencia.fecha!)}</dd>
                 </div>
               </dl>
@@ -427,12 +430,12 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
               </BotonPrincipal>
               {fase === "enviando" ? (
                 <p className="text-sm leading-6 text-[var(--suave)]" aria-live="polite">
-                  Sending the photo. The recommendation can take a few seconds.
+                  {t("evidencia.sendingNote")}
                 </p>
               ) : null}
               {fase === "foto" ? (
                 <button type="button" onClick={tomarOtra} className="hyto-btn-line">
-                  {reembolso ? "Choose another file" : "Take another"}
+                  {reembolso ? t("evidencia.chooseAnother") : t("evidencia.takeAnother")}
                 </button>
               ) : null}
             </div>
@@ -442,18 +445,18 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
 
       {error ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {error}
+          {claro(error)}
         </p>
       ) : null}
 
       {enviada && !cerrada ? (
         <button type="button" onClick={tomarOtra} className="hyto-btn-line mt-4">
-          {reembolso ? "Send another file" : "Take another"}
+          {reembolso ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
         </button>
       ) : null}
 
       {ejemplo ? (
-        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">Sample task, until your own tasks load.</p>
+        <p className="mt-6 text-sm leading-6 text-[var(--suave)]">{t("evidencia.sample")}</p>
       ) : null}
 
       {reembolso ? (
