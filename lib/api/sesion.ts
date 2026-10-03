@@ -1,12 +1,12 @@
+import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
-import { asegurarCuentaEnTestnet, avisoDeCuenta, type OpcionesCuentaTestnet } from "@/lib/integrante/cuentaTestnet";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
-import { COOKIE_SESION, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
+import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
-import { baseNoLista, json } from "./json";
+import { baseNoLista, json, jsonCookies } from "./json";
 
 export async function leerSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
@@ -31,14 +31,19 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   const crudo = body as Record<string, unknown>;
   const pedido = typeof crudo.email === "string" ? crudo.email : "";
   const token = typeof crudo.token === "string" ? crudo.token.trim() : "";
+  const intencion = intencionDe(crudo.intencion);
+  if (crudo.intencion !== undefined && !intencion) return json({ aviso: "Choose Sign up or Sign in." }, 400);
   const correo = await correoDelToken(token, pedido);
   if (!correo) return json({ aviso: "Could not confirm sign-in." }, 400);
   try {
     await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
     let usuario = await almacen.usuarioPorEmail(email);
-    const nuevo = !usuario;
+    let nuevo = false;
     if (!usuario) {
+      if (intencion === "signin") {
+        return json({ aviso: "No Hyto account for this sign-in. Sign up first." }, 404);
+      }
       const local = email.split("@")[0] ?? "";
       await almacen.insertarUsuario({
         id: `u-${crypto.randomUUID()}`,
@@ -47,6 +52,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
         rol: "voluntario",
       });
       usuario = await almacen.usuarioPorEmail(email);
+      nuevo = true;
     }
     if (!usuario) throw new Error("Could not register the user.");
     const segundos = segundosDeSesion(correo.exp);
@@ -59,10 +65,14 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       expiraEn: expiracion(segundos),
       wallet: walletDelToken(token) ?? "",
     });
-    return json(
-      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, nuevo },
+    const provisionar = intencion === "signup";
+    const cookies = [encabezadoCookie(sesion, segundos)];
+    if (provisionar) cookies.push(encabezadoAlta(true));
+    else if (intencion === "signin") cookies.push(encabezadoAlta(false));
+    return jsonCookies(
+      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, nuevo, provisionar },
       200,
-      { "set-cookie": encabezadoCookie(sesion, segundos) },
+      cookies,
     );
   } catch {
     return baseNoLista();
@@ -74,16 +84,12 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
   try {
     if (token) await almacen.borrarSesion(token);
   } catch {
-    return json({ aviso: "Could not sign out." }, 503, { "set-cookie": encabezadoCookieCerrada() });
+    return jsonCookies({ aviso: "Could not sign out." }, 503, [encabezadoCookieCerrada(), encabezadoAlta(false)]);
   }
-  return json({ ok: true }, 200, { "set-cookie": encabezadoCookieCerrada() });
+  return jsonCookies({ ok: true }, 200, [encabezadoCookieCerrada(), encabezadoAlta(false)]);
 }
 
-export async function fijarWalletHttp(
-  request: Request,
-  almacen: Almacen,
-  opciones: OpcionesCuentaTestnet = {},
-): Promise<Response> {
+export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
   let body: unknown;
@@ -92,8 +98,7 @@ export async function fijarWalletHttp(
   } catch {
     return json({ aviso: "The body is not JSON." }, 400);
   }
-  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown; alta?: unknown }) : {};
-  const alta = datos.alta === true;
+  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
   const crudo = datos.wallet;
   if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
     return json({ aviso: "That doesn't look like a payout account. Sign in again." }, 400);
@@ -117,10 +122,7 @@ export async function fijarWalletHttp(
       return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
-    if (!alta || sesionEsDemo(sesion)) return json({ wallet }, 200);
-    const red = await asegurarCuentaEnTestnet(wallet, opciones);
-    const aviso = avisoDeCuenta(red);
-    return json(aviso ? { wallet, enRed: false, aviso } : { wallet, enRed: true }, 200);
+    return json({ wallet }, 200);
   } catch {
     return baseNoLista();
   }

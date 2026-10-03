@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
-import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle } from "@/lib/auth/cliente";
+import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle, type IngresoCerrado } from "@/lib/auth/cliente";
+import { guardarIntencion, leerIntencion, olvidarIntencion, type IntencionIngreso } from "@/lib/auth/intencion";
 import {
   AVISO_CONFIG,
   AVISO_CORREO,
@@ -23,24 +24,30 @@ import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { AnilloHitos, Eslogan, Logo } from "@/components/ui/Marca";
 
-type Fase = "inicio" | "correo" | "codigo";
+type Fase = "inicio" | "signup" | "signin" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
 type AuthMinimo = { sendOtp(email: string): Promise<void> };
-type ResultadoCodigo = { aviso: string | null; direccion: string | null };
+type ConfirmarCodigo = (auth: AuthMinimo, email: string, codigo: string, intencion: IntencionIngreso) => Promise<IngresoCerrado>;
 
 /** Signed-in volunteer home: tasks, and the shell that also opens account. */
 const DESTINO_TRAS_INGRESO = "/mis-tareas";
 
-const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
+/** Where Get ready to be paid finishes a Sign up whose testnet setup did not. */
+const DESTINO_ALTA_PENDIENTE = "/eventos";
+
+/** `pendiente` is set when the person is signed in but Sign up testnet setup did not finish. */
+type ResultadoIngreso = { aviso: string | null; direccion: string | null; guardada: boolean; pendiente: string | null };
+
+const googleEnCurso = new Map<string, Promise<ResultadoIngreso>>();
 
 export function Entrar({
   demoHabilitado = false,
   crear = crearAuth as () => Promise<AuthMinimo | null>,
-  confirmarCodigo = entrarConCodigo as unknown as (auth: AuthMinimo, email: string, codigo: string) => Promise<ResultadoCodigo>,
+  confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
 }: {
   demoHabilitado?: boolean;
   crear?: () => Promise<AuthMinimo | null>;
-  confirmarCodigo?: (auth: AuthMinimo, email: string, codigo: string) => Promise<ResultadoCodigo>;
+  confirmarCodigo?: ConfirmarCodigo;
 }) {
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
@@ -54,6 +61,7 @@ export function Entrar({
   const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [altaPendiente, setAltaPendiente] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
   const authRef = useRef<AuthMinimo | null>(null);
@@ -65,7 +73,7 @@ export function Entrar({
     const ingreso = new URLSearchParams(window.location.search).get("signin") === "1";
     if (ingreso) {
       setPedirIngreso(true);
-      setFase("correo");
+      setFase("signin");
     }
     setDireccion(leerMemoriaAdmin().direccion);
   }, []);
@@ -113,19 +121,17 @@ export function Entrar({
     const params = new URLSearchParams(window.location.search);
     const codigoGoogle = params.get("cavos_auth_code");
     if (!codigoGoogle) return;
+    const intencion = leerIntencion();
+    setFase(intencion === "signup" ? "signup" : "signin");
+    setAviso(t(intencion === "signup" ? "entrar.settingUp" : "entrar.signingIn"));
     let vivo = true;
-    const pendiente = googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(codigoGoogle);
+    const pendiente =
+      googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(window.location.search, redirectLimpio(), intencion);
     googleEnCurso.set(codigoGoogle, pendiente);
     void pendiente.then((resultado) => {
       if (!vivo) return;
-      if (resultado.direccion) {
-        const guardado = guardarDireccionAdmin(resultado.direccion);
-        if (!guardado.aviso) {
-          setDireccion(resultado.direccion);
-          setPedirIngreso(false);
-        }
-        setAviso(guardado.aviso ?? resultado.aviso);
-        setFase("inicio");
+      if (resultado.guardada && resultado.direccion) {
+        entrarListo(resultado.direccion, resultado.pendiente, true);
         return;
       }
       setAviso(resultado.aviso);
@@ -134,6 +140,21 @@ export function Entrar({
       vivo = false;
     };
   }, []);
+
+  /**
+   * Google leaves a one-time code in the URL, so a clean finish reloads `/`
+   * (the server sends a session to Events). The email code stays on the
+   * signed-in landing and its way into the app. A pending testnet setup never
+   * navigates, so the notice stays visible.
+   */
+  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean) {
+    setDireccion(direccionGuardada);
+    setPedirIngreso(false);
+    setAviso(null);
+    setFase("inicio");
+    setAltaPendiente(pendiente);
+    if (recargar && !pendiente) window.location.assign("/");
+  }
 
   function iniciarEspera(segundos: number, visible: boolean) {
     const n = Math.max(1, Math.ceil(segundos));
@@ -204,20 +225,12 @@ export function Entrar({
     setAviso(null);
     setOcupado("codigo");
     try {
-      const resultado = await confirmarCodigo(auth, correo, codigo.trim());
-      if (!resultado.direccion) {
+      const resultado = guardarEnNavegador(await confirmarCodigo(auth, correo, codigo.trim(), "signup"));
+      if (!resultado.guardada || !resultado.direccion) {
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
       }
-      const guardado = guardarDireccionAdmin(resultado.direccion);
-      if (guardado.aviso) {
-        setAviso(guardado.aviso);
-        return;
-      }
-      setDireccion(resultado.direccion);
-      setPedirIngreso(false);
-      setFase("inicio");
-      if (resultado.aviso) setAviso(resultado.aviso);
+      entrarListo(resultado.direccion, resultado.pendiente, false);
     } catch (error) {
       mostrarFallo(error);
     } finally {
@@ -272,11 +285,12 @@ export function Entrar({
     }
   }
 
-  async function google() {
+  async function google(intencion: IntencionIngreso) {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
     setOcupado("google");
+    guardarIntencion(intencion);
     let salio = false;
     try {
       const auth = await crearAuth();
@@ -347,6 +361,16 @@ export function Entrar({
             </details>
           </div>
         </div>
+        {altaPendiente ? (
+          <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
+            <p>
+              {claro(altaPendiente)} {t("entrar.altaPendiente")}
+            </p>
+            <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
+              {t("entrar.openEvents")}
+            </a>
+          </div>
+        ) : null}
         <div className="hyto-welcome-step">
           <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
           <Link href={DESTINO_TRAS_INGRESO} className="hyto-btn hyto-post-login-cta">
@@ -359,21 +383,61 @@ export function Entrar({
 
   if (fase === "inicio") {
     return (
-      <button
-        type="button"
-        onClick={() => {
-          setAviso(null);
-          setFase("correo");
-        }}
-        className="hyto-btn"
-      >
-        {t("entrar.signIn")}
-      </button>
+      <div className="grid gap-3">
+        <section className="hyto-entry hyto-entry-signup" aria-labelledby="entrar-signup">
+          <p className="hyto-kicker">{t("entrar.newHere")}</p>
+          <h2 id="entrar-signup" className="text-lg font-semibold tracking-tight">
+            {t("entrar.signUp")}
+          </h2>
+          <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signUpBody")}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setAviso(null);
+              setFase("signup");
+            }}
+            className="hyto-btn"
+          >
+            {t("entrar.signUp")}
+          </button>
+        </section>
+        <section className="hyto-entry hyto-entry-signin" aria-labelledby="entrar-signin">
+          <p className="hyto-kicker">{t("entrar.welcomeBack")}</p>
+          <h2 id="entrar-signin" className="text-lg font-semibold tracking-tight">
+            {t("entrar.signIn")}
+          </h2>
+          <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signInBody")}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setAviso(null);
+              setFase("signin");
+            }}
+            className="hyto-btn-line"
+          >
+            {t("entrar.signIn")}
+          </button>
+        </section>
+        {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
+        {mensaje ? (
+          <p role="status" className="text-sm leading-6 text-[var(--suave)]">
+            {claro(mensaje)}
+          </p>
+        ) : null}
+      </div>
     );
   }
 
+  const alta = fase !== "signin";
+
   return (
-    <div ref={dialogoRef} className="hyto-auth" role="dialog" aria-modal="true" aria-label={t("entrar.dialog")}>
+    <div
+      ref={dialogoRef}
+      className={`hyto-auth ${alta ? "is-signup" : "is-signin"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t(alta ? "entrar.dialogSignUp" : "entrar.dialog")}
+    >
       <div className="hyto-auth-hero">
         <Logo className="hyto-auth-logo" />
         <AnilloHitos />
@@ -389,7 +453,7 @@ export function Entrar({
       </div>
       <div className="hyto-auth-sheet">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[20px] font-medium tracking-[-0.4px]">{t("entrar.title")}</h2>
+          <h2 className="text-[20px] font-medium tracking-[-0.4px]">{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
           <div className="flex flex-wrap items-center gap-2">
             <SelectorIdioma />
             <button type="button" className="hyto-cerrar" onClick={() => setFase("inicio")}>
@@ -397,12 +461,33 @@ export function Entrar({
             </button>
           </div>
         </div>
-        <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{t("entrar.intro")}</p>
-        <div className="hyto-steps mt-4" aria-hidden="true">
-          <i className="is-on" />
-          <i className={fase === "codigo" ? "is-on" : ""} />
-        </div>
+        <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
+        {fase === "correo" || fase === "codigo" ? (
+          <div className="hyto-steps mt-4" aria-hidden="true">
+            <i className="is-on" />
+            <i className={fase === "codigo" ? "is-on" : ""} />
+          </div>
+        ) : null}
         <div className="mt-6 grid gap-3">
+      {fase === "signup" ? (
+        <>
+          <button type="button" onClick={() => void google("signup")} disabled={ocupado !== null} className="hyto-btn">
+            {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.googleSignUp")}
+          </button>
+          <p className="text-center text-xs uppercase tracking-wide text-[var(--suave)]">{t("entrar.or")}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setAviso(null);
+              setFase("correo");
+            }}
+            disabled={ocupado !== null}
+            className="hyto-btn-line"
+          >
+            {t("entrar.emailSignUp")}
+          </button>
+        </>
+      ) : null}
       {fase === "correo" ? (
         <>
           <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.emailCode")}</p>
@@ -431,9 +516,16 @@ export function Entrar({
           >
             {ocupado === "envio" ? t("entrar.sending") : t("entrar.sendCode")}
           </button>
-          <p className="text-center text-xs uppercase tracking-wide text-[var(--suave)]">{t("entrar.or")}</p>
-          <button type="button" onClick={() => void google()} disabled={ocupado !== null} className="hyto-btn-line">
-            {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.google")}
+          <button
+            type="button"
+            onClick={() => {
+              setAviso(null);
+              setFase("signup");
+            }}
+            disabled={ocupado !== null}
+            className="hyto-btn-line"
+          >
+            {t("entrar.back")}
           </button>
         </>
       ) : null}
@@ -454,62 +546,98 @@ export function Entrar({
             className="hyto-input"
           />
           <button type="button" onClick={() => void confirmar()} disabled={ocupado !== null} className="hyto-btn">
-            {ocupado === "codigo" ? t("entrar.signingIn") : t("entrar.confirm")}
+            {ocupado === "codigo" ? t("entrar.creatingAccount") : t("entrar.createAccount")}
           </button>
           <button type="button" onClick={() => void enviarCodigo()} disabled={ocupado !== null || espera > 0} className="hyto-btn-line">
             {t("entrar.resend")}
           </button>
         </>
       ) : null}
-      {demoHabilitado ? (
-        <div className="hyto-card mt-2 grid gap-3 p-4">
-          <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
-          <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-          <label className="sr-only" htmlFor="rol-demo">
-            {t("entrar.demoRole")}
-          </label>
-          <select
-            id="rol-demo"
-            value={rolDemo}
-            onChange={(evento) => {
-              const valor = evento.target.value;
-              if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
-            }}
-            disabled={ocupado !== null}
-            className="hyto-input"
-          >
-            <option value="organizador">{t("entrar.organizerDemo")}</option>
-            <option value="voluntario">{t("entrar.volunteerDemo")}</option>
-          </select>
-          <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
-            {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
-          </button>
-        </div>
+      {fase === "signin" ? (
+        <button type="button" onClick={() => void google("signin")} disabled={ocupado !== null} className="hyto-btn">
+          {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.google")}
+        </button>
+      ) : null}
+      {!alta && demoHabilitado ? (
+        <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
       ) : null}
       {mensaje ? (
         <p role="status" className="text-sm leading-6 text-[var(--suave)]">
           {claro(mensaje)}
         </p>
       ) : null}
-          <p className="text-xs leading-5 text-[var(--suave)]">{t("entrar.legal")}</p>
+          <p className="text-xs leading-5 text-[var(--suave)]">{t(alta ? "entrar.legalSignUp" : "entrar.legal")}</p>
         </div>
       </div>
     </div>
   );
 }
 
-function iniciarGoogle(codigo: string): Promise<{ aviso: string | null; direccion: string | null }> {
+// The search, redirect, and intent are read before any await: the person can
+// navigate while Cavos loads, and the one-time code would be gone from the live
+// URL. The address is saved here, not in the effect, so an unmount cannot drop it.
+// Once the server session holds the wallet, this browser stores it too. A
+// testnet setup failure after that point is a notice, not a failed sign-in.
+function guardarEnNavegador(cerrado: IngresoCerrado): ResultadoIngreso {
+  if (!cerrado.guardada || !cerrado.direccion) {
+    return { aviso: cerrado.aviso ?? AVISO_GENERICO, direccion: cerrado.direccion, guardada: false, pendiente: null };
+  }
+  const local = guardarDireccionAdmin(cerrado.direccion);
+  if (local.aviso) return { aviso: local.aviso, direccion: cerrado.direccion, guardada: false, pendiente: null };
+  return { aviso: null, direccion: cerrado.direccion, guardada: true, pendiente: cerrado.aviso };
+}
+
+function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionIngreso): Promise<ResultadoIngreso> {
   return (async () => {
-    const auth = await crearAuth();
-    if (!auth) {
-      console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
-      return { aviso: AVISO_CONFIG, direccion: null };
-    }
     try {
-      return await entrarConGoogle(auth, window.location.search, redirectLimpio());
+      const auth = await crearAuth();
+      if (!auth) {
+        console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
+        return { aviso: AVISO_CONFIG, direccion: null, guardada: false, pendiente: null };
+      }
+      return guardarEnNavegador(await entrarConGoogle(auth, busqueda, redirect, intencion));
     } catch (error) {
       console.error(error);
-      return { aviso: avisoDeIngreso(error).texto, direccion: null };
+      return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false, pendiente: null };
     }
-  })();
+  })().finally(() => olvidarIntencion());
+}
+
+function Demo({
+  rolDemo,
+  setRolDemo,
+  ocupado,
+  entrarDemo,
+}: {
+  rolDemo: "organizador" | "voluntario";
+  setRolDemo: (rol: "organizador" | "voluntario") => void;
+  ocupado: Ocupado | null;
+  entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
+}) {
+  const t = useTexto();
+  return (
+    <div className="hyto-card grid gap-3 p-4">
+      <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
+      <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
+      <label className="sr-only" htmlFor="rol-demo">
+        {t("entrar.demoRole")}
+      </label>
+      <select
+        id="rol-demo"
+        value={rolDemo}
+        onChange={(evento) => {
+          const valor = evento.target.value;
+          if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
+        }}
+        disabled={ocupado !== null}
+        className="hyto-input"
+      >
+        <option value="organizador">{t("entrar.organizerDemo")}</option>
+        <option value="voluntario">{t("entrar.volunteerDemo")}</option>
+      </select>
+      <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
+        {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
+      </button>
+    </div>
+  );
 }

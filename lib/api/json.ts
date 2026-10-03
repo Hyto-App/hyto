@@ -5,6 +5,12 @@ export function json(body: unknown, status = 200, extra?: HeadersInit): Response
   });
 }
 
+export function jsonCookies(body: unknown, status: number, cookies: string[]): Response {
+  const headers = new Headers({ "content-type": "application/json" });
+  for (const cookie of cookies) headers.append("set-cookie", cookie);
+  return Response.json(body, { status, headers });
+}
+
 export function sinBase(): Response {
   return json({ aviso: "The database is not configured." }, 503);
 }
