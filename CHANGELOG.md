@@ -4,6 +4,10 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-03
 
+### Fixed
+
+- After the email code, sign-in closed onto "Signed in" on the landing and offered no way into the app. That state now shows "Take your first step" and "Get ready to be paid" (the same Spanish lines as the language selector). The button opens My tasks at `/mis-tareas`, the signed-in volunteer home, with or without assigned tasks. A wrong code, an expired code, and a browser that cannot store the address stay on the code step, which still has Confirm, Resend, and Close.
+
 ### Added
 
 - The interface can be English (default) or Spanish. A selector in the shell, at the top of the signed-out landing, and in the sign-in sheet stores `hyto_idioma` for a year. The root layout reads that cookie so the first paint matches. Copy lives in `lib/ui/diccionario.ts`. A missing Spanish string falls back to English. Internal task and verdict values are unchanged.

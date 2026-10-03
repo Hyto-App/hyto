@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlGoogle } from "@/lib/auth/cliente";
 import {
@@ -24,10 +25,23 @@ import { AnilloHitos, Eslogan, Logo } from "@/components/ui/Marca";
 
 type Fase = "inicio" | "correo" | "codigo";
 type Ocupado = "envio" | "google" | "codigo" | "demo" | "salida";
+type AuthMinimo = { sendOtp(email: string): Promise<void> };
+type ResultadoCodigo = { aviso: string | null; direccion: string | null };
+
+/** Signed-in volunteer home: tasks, and the shell that also opens account. */
+const DESTINO_TRAS_INGRESO = "/mis-tareas";
 
 const googleEnCurso = new Map<string, Promise<{ aviso: string | null; direccion: string | null }>>();
 
-export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean }) {
+export function Entrar({
+  demoHabilitado = false,
+  crear = crearAuth as () => Promise<AuthMinimo | null>,
+  confirmarCodigo = entrarConCodigo as unknown as (auth: AuthMinimo, email: string, codigo: string) => Promise<ResultadoCodigo>,
+}: {
+  demoHabilitado?: boolean;
+  crear?: () => Promise<AuthMinimo | null>;
+  confirmarCodigo?: (auth: AuthMinimo, email: string, codigo: string) => Promise<ResultadoCodigo>;
+}) {
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
   const t = useTexto();
@@ -42,7 +56,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
   const [aviso, setAviso] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
-  const authRef = useRef<Awaited<ReturnType<typeof crearAuth>>>(null);
+  const authRef = useRef<AuthMinimo | null>(null);
   const dialogoRef = useRef<HTMLDivElement>(null);
   const enCurso = useRef(false);
   const esperaRef = useRef(0);
@@ -160,7 +174,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setAviso(null);
     setOcupado("envio");
     try {
-      const auth = await crearAuth();
+      const auth = await crear();
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
         setAviso(AVISO_CONFIG);
@@ -190,7 +204,7 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
     setAviso(null);
     setOcupado("codigo");
     try {
-      const resultado = await entrarConCodigo(auth, correo, codigo.trim());
+      const resultado = await confirmarCodigo(auth, correo, codigo.trim());
       if (!resultado.direccion) {
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
@@ -322,14 +336,22 @@ export function Entrar({ demoHabilitado = false }: { demoHabilitado?: boolean })
 
   if (direccion && !pedirIngreso) {
     return (
-      <div className="flex items-center gap-3">
-        <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
-        <div>
-          <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
-          <details className="text-sm text-[var(--suave)]">
-            <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
-            <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
-          </details>
+      <div className="hyto-post-login">
+        <div className="flex items-center gap-3">
+          <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
+          <div>
+            <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
+            <details className="text-sm text-[var(--suave)]">
+              <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
+              <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+            </details>
+          </div>
+        </div>
+        <div className="hyto-welcome-step">
+          <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
+          <Link href={DESTINO_TRAS_INGRESO} className="hyto-btn hyto-post-login-cta">
+            {t("pago.preparePayout")}
+          </Link>
         </div>
       </div>
     );

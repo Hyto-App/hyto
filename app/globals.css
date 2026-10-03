@@ -1252,6 +1252,33 @@ a {
   line-height: 28px;
 }
 
+.hyto-post-login {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  justify-items: start;
+}
+
+.hyto-post-login .hyto-welcome-step {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.hyto-post-login-cta {
+  width: max-content;
+  max-width: 100%;
+  height: auto;
+  margin-top: 12px;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: break-word;
+}
+
 .hyto-welcome-note {
   margin-top: var(--e-3);
   max-width: 36rem;
