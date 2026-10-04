@@ -16,7 +16,7 @@ test("la landing explica el producto y se puede recorrer", async () => {
     });
     const cuerpo = texto();
     const orden = [
-      "Prove your worth.",
+      "Prove your worth,",
       "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
       "Practice network.",
       "not real cash",

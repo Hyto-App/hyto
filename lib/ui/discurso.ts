@@ -50,8 +50,8 @@ export const CLAVES_DISCURSO = [
 export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
 
 export const discurso: Record<ClaveDiscurso, string> = {
-  sloganLead: "Prove your worth.",
-  sloganPay: "Get paid.",
+  sloganLead: "Prove your worth,",
+  sloganPay: "get paid.",
   subheadline: "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
   networkLead: "Practice network.",
   networkBody:
@@ -93,8 +93,8 @@ export const discurso: Record<ClaveDiscurso, string> = {
 };
 
 export const discursoEs: Record<ClaveDiscurso, string> = {
-  sloganLead: "Demuestra lo que vales.",
-  sloganPay: "Cobra.",
+  sloganLead: "Demuestra tu valor,",
+  sloganPay: "recibe tu pago.",
   subheadline: "Un mercado de tareas cortas. Te pagan en dólares en cripto (USDC).",
   networkLead: "Red de práctica.",
   networkBody:

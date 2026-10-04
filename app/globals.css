@@ -497,14 +497,6 @@ a {
   text-transform: uppercase;
 }
 
-.hyto-auth.is-signup .hyto-auth-hero {
-  background: color-mix(in srgb, var(--acento) 18%, var(--fondo));
-}
-
-.hyto-auth.is-signin .hyto-auth-hero {
-  background: var(--fondo);
-}
-
 .hyto-row {
   width: 100%;
   border-radius: 16px;
@@ -904,38 +896,11 @@ a {
   width: 42%;
 }
 
-.hyto-auth {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  overflow: auto;
-  background: var(--fondo);
-}
-
-/* Brand hero: sign-in dialog and landing. Mobile shows a compact band; it is never hidden. */
-.hyto-auth-hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-3);
-  overflow: hidden;
-  padding: var(--e-3) var(--margen-lateral) var(--e-4);
-  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 10%, transparent) 0, transparent 55%), var(--fondo);
-}
-
-.hyto-auth-hero > :not(.hyto-anillo) {
-  position: relative;
-  z-index: 1;
-}
-
-.hyto-auth-logo,
 .hyto-landing-logo {
   height: 32px;
   align-self: flex-start;
 }
 
-.hyto-auth-claim-sub,
 .hyto-landing-sub {
   margin-top: var(--e-2);
   max-width: 26rem;
@@ -1573,36 +1538,6 @@ a {
     border-top: 1px solid var(--linea);
     border-left: 0;
   }
-
-  .hyto-auth {
-    grid-template-rows: max-content 1fr;
-  }
-
-  .hyto-auth-sheet {
-    border-radius: 28px 28px 0 0;
-    background: var(--papel);
-    padding: var(--e-3) var(--margen-lateral) calc(var(--e-3) + env(safe-area-inset-bottom));
-  }
-
-  .hyto-auth-claim .hyto-eslogan {
-    max-width: 280px;
-  }
-
-  /* The mobile brand band stays navy in both themes, as in the light mockup. */
-  .hyto-auth-hero {
-    --tinta: #f2f3f7;
-    --suave: #b9bbd0;
-    --logo-iso: #b7ee34;
-    --acento-texto: #b7ee34;
-    --anillo-pista: #2a2d4a;
-    --anillo-arco: #b7ee34;
-    color: var(--tinta);
-    background: radial-gradient(120% 90% at 100% 0%, rgba(183, 238, 52, 0.14) 0, transparent 50%), #14162b;
-  }
-
-  [data-theme="dark"] .hyto-auth-sheet {
-    background: var(--fondo);
-  }
 }
 
 @media (min-width: 1024px) {
@@ -1662,38 +1597,8 @@ a {
     margin-top: 20px;
   }
 
-  .hyto-auth {
-    grid-template-columns: 2fr 3fr;
-  }
-
-  .hyto-auth-hero {
-    justify-content: space-between;
-    gap: var(--e-4);
-    padding: var(--e-6) var(--e-6) var(--e-5);
-  }
-
-  .hyto-auth-logo,
   .hyto-landing-logo {
     height: 44px;
-  }
-
-  .hyto-auth-hero .hyto-anillo {
-    top: 128px;
-    right: var(--e-6);
-    width: min(240px, 42%);
-    height: auto;
-    aspect-ratio: 1;
-  }
-
-  .hyto-auth-hero .hyto-roles {
-    display: flex;
-  }
-
-  .hyto-auth-sheet {
-    margin: var(--e-3);
-    border-radius: 28px;
-    background: var(--papel);
-    padding: var(--e-5);
   }
 
   .hyto-inbox {
@@ -1872,5 +1777,1524 @@ a {
   .hyto-main {
     display: block !important;
     padding: 0 !important;
+  }
+}
+
+/*
+ * Sign-in screen (dark only, navy, never black). Only transform and opacity
+ * animate: no runtime blur and no backdrop-filter. The swirl bitmaps come
+ * pre-blurred. Every loop pauses while the tab is hidden ([data-oculto]).
+ */
+.hyto-login {
+  --l-acento: #b7ee34;
+  --l-sobre: #08090c;
+  --l-rosa: #fa0560;
+  --l-peligro: #ff4d8d;
+  --l-fondo: #0e1024;
+  --l-centro: #1d2148;
+  --l-sup: #1e2140;
+  --l-tinta: #f2f3f7;
+  --l-suave: #a3a6b8;
+  --l-tenue: #7d8099;
+  --l-linea: #23263f;
+  --l-guia: #262a45;
+  --l-borde: #4a4d66;
+  --l-foco: 0 0 0 3px rgba(183, 238, 52, 0.35);
+  --l-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --l-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --l-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --l-gutter: 12px;
+  --l-alto-top: 60px;
+  /* Shared pieces inside (language switch, logo, demo panel) read these. */
+  --fondo: var(--l-fondo);
+  --papel: #14162b;
+  --tinta: var(--l-tinta);
+  --suave: var(--l-suave);
+  --linea: var(--l-linea);
+  --acento: var(--l-acento);
+  --acento-texto: var(--l-acento);
+  --logo-iso: var(--l-acento);
+  --foco: var(--l-acento);
+  color-scheme: dark;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--l-tinta);
+  background: var(--l-fondo);
+  -webkit-font-smoothing: antialiased;
+  transition: opacity 240ms ease;
+}
+
+.hyto-login.is-saliendo {
+  opacity: 0;
+}
+
+.hyto-login-escena {
+  position: absolute;
+  inset: 0;
+  min-height: 100dvh;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  background: radial-gradient(ellipse 90% 40% at 50% 20%, var(--l-centro) 0%, rgba(20, 22, 43, 0.5) 50%, transparent 85%), var(--l-fondo);
+}
+
+.hyto-login-remolino {
+  position: absolute;
+  left: 50%;
+  top: 170px;
+  width: 820px;
+  height: 820px;
+  margin: -410px 0 0 -410px;
+  z-index: -3;
+  -webkit-mask-image: radial-gradient(circle 380px at 50% 50%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(circle 380px at 50% 50%, #000 30%, transparent 85%);
+  animation: hyto-login-aparece 1.2s ease both;
+}
+
+.hyto-login-capa {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 400ms ease,
+    transform 900ms var(--l-ease-out);
+}
+
+.hyto-login-capa img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  animation: hyto-login-giro var(--l-vuelta) linear infinite;
+}
+
+.hyto-login-capa.is-c img {
+  --l-giro: 18deg;
+  --l-vuelta: 120s;
+}
+
+.hyto-login-capa.is-b img {
+  --l-giro: -34deg;
+  --l-vuelta: 84s;
+  animation-direction: reverse;
+}
+
+.hyto-login-capa.is-a {
+  opacity: 0.85;
+}
+
+.hyto-login-capa.is-a img {
+  --l-giro: 52deg;
+  --l-vuelta: 100s;
+}
+
+.hyto-login.is-error .hyto-login-capa.is-a {
+  opacity: 0.55;
+}
+
+.hyto-login.is-exito .hyto-login-capa.is-a {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.hyto-login-vineta {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(to bottom, var(--l-fondo) 0, transparent 8%, transparent 40%, var(--l-fondo) 70%);
+}
+
+.hyto-login-lineas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.hyto-login-lineas i {
+  position: absolute;
+  background: var(--l-guia);
+}
+
+.hyto-login-lineas i.is-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform-origin: top;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 85%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 85%, transparent);
+}
+
+.hyto-login-lineas i.is-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform-origin: left;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.hyto-login-lineas .is-l {
+  left: var(--l-gutter);
+}
+
+.hyto-login-lineas .is-r {
+  right: var(--l-gutter);
+}
+
+.hyto-login-lineas .is-t {
+  top: var(--l-alto-top);
+}
+
+.hyto-login-lineas .is-b {
+  display: none;
+  bottom: var(--l-alto-top);
+}
+
+.hyto-login-lineas i.is-t::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 28%;
+  width: 160px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--l-acento));
+}
+
+.hyto-login-lineas b {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3px 0 0 -3px;
+  border: 1px solid var(--l-borde);
+  border-radius: 50%;
+  background: var(--l-fondo);
+}
+
+.hyto-login-lineas .is-1 {
+  left: var(--l-gutter);
+  top: var(--l-alto-top);
+}
+
+.hyto-login-lineas .is-2 {
+  left: calc(100% - var(--l-gutter));
+  top: var(--l-alto-top);
+}
+
+.hyto-login-lineas .is-3,
+.hyto-login-lineas .is-4 {
+  display: none;
+  top: calc(100% - var(--l-alto-top));
+  left: var(--l-gutter);
+}
+
+.hyto-login-lineas .is-4 {
+  left: calc(100% - var(--l-gutter));
+}
+
+/* Drawn once per session. */
+.hyto-login-lineas.is-dibujo i.is-v {
+  animation: hyto-login-traza-v 600ms var(--l-ease-out) both;
+}
+
+.hyto-login-lineas.is-dibujo i.is-h {
+  animation: hyto-login-traza-h 600ms var(--l-ease-out) both;
+}
+
+.hyto-login-lineas.is-dibujo .is-r {
+  animation-delay: 80ms;
+}
+
+.hyto-login-lineas.is-dibujo .is-t {
+  animation-delay: 160ms;
+}
+
+.hyto-login-lineas.is-dibujo .is-b {
+  animation-delay: 240ms;
+}
+
+.hyto-login-lineas.is-dibujo b {
+  animation: hyto-login-aparece 200ms ease 480ms both;
+}
+
+.hyto-login-lineas.is-dibujo i.is-t::after {
+  animation: hyto-login-punta 1.3s var(--l-ease-out) 600ms both;
+}
+
+.hyto-login-marco {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.hyto-login-top {
+  display: flex;
+  height: var(--l-alto-top);
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 var(--l-gutter);
+  padding: 0 12px;
+}
+
+.hyto-login-logo {
+  display: inline-flex;
+  border-radius: 8px;
+  background: none;
+  padding: 2px;
+}
+
+.hyto-login-logo .hyto-logo {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+.hyto-login .hyto-login-idioma {
+  border: 1px solid var(--l-linea);
+  background: rgba(20, 22, 43, 0.6);
+}
+
+.hyto-login .hyto-login-idioma button[aria-pressed="true"] {
+  background: var(--l-acento);
+  color: var(--l-sobre);
+}
+
+.hyto-login-grid {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 16px 16px;
+}
+
+.hyto-login-izq {
+  position: relative;
+  display: flex;
+  min-height: 236px;
+  flex: 1;
+  flex-direction: column;
+}
+
+.hyto-login-hero {
+  position: relative;
+  z-index: 1;
+  padding: 14px 8px 0;
+}
+
+.hyto-login-hero > *,
+.hyto-login-tarjeta {
+  animation: hyto-login-entra 480ms var(--l-ease-out) both;
+}
+
+.hyto-login-titulo {
+  animation-delay: 60ms;
+}
+
+.hyto-login-sub {
+  animation-delay: 120ms;
+}
+
+.hyto-login-tarjeta {
+  animation-delay: 180ms;
+}
+
+.hyto-login-chip {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--l-linea);
+  border-radius: 999px;
+  background: rgba(20, 22, 43, 0.7);
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.hyto-login-chip span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-rosa);
+  box-shadow: 0 0 0 4px rgba(250, 5, 96, 0.18);
+}
+
+.hyto-login.is-exito .hyto-login-chip span {
+  background: var(--l-acento);
+  box-shadow: 0 0 0 4px rgba(183, 238, 52, 0.2);
+}
+
+.hyto-login .hyto-login-titulo {
+  max-width: 15ch;
+  margin-top: 10px;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: var(--l-tinta);
+}
+
+.hyto-login .hyto-login-titulo em {
+  color: var(--l-acento);
+}
+
+.hyto-login-sub {
+  display: none;
+  max-width: 44ch;
+  margin-top: 18px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--l-suave);
+}
+
+/* Mile and the chest */
+.hyto-login-mile {
+  position: absolute;
+  right: 10px;
+  bottom: -8px;
+  z-index: 2;
+  width: 132px;
+  height: 132px;
+}
+
+.hyto-login-aura {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 160px;
+  height: 100px;
+  margin: -50px 0 0 -80px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(183, 238, 52, 0.2), transparent);
+}
+
+.hyto-login-mile.is-worry .hyto-login-aura {
+  background: radial-gradient(closest-side, rgba(250, 5, 96, 0.14), transparent);
+}
+
+.hyto-login-mile.is-win .hyto-login-aura {
+  background: radial-gradient(closest-side, rgba(183, 238, 52, 0.38), transparent);
+  transform: scale(1.3);
+}
+
+.hyto-login-cuerpo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 85%;
+  transition: transform 300ms var(--l-spring);
+}
+
+.hyto-login-cuerpo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.hyto-login-cuerpo img.is-on {
+  opacity: 1;
+}
+
+.hyto-login-mile.is-rest .hyto-login-cuerpo {
+  animation: hyto-login-flota 2.8s var(--l-ease-io) infinite alternate;
+}
+
+.hyto-login-mile.is-dive .hyto-login-cuerpo {
+  will-change: transform;
+  animation:
+    hyto-login-zambulle 380ms ease-in both,
+    hyto-login-tambalea 900ms var(--l-ease-io) 380ms infinite;
+}
+
+.hyto-login-mile.is-code .hyto-login-cuerpo {
+  animation: hyto-login-asoma 340ms var(--l-spring) both;
+}
+
+.hyto-login-mile.is-worry .hyto-login-cuerpo {
+  transform: translateY(10px) rotate(-6deg);
+}
+
+.hyto-login-mile.is-win .hyto-login-cuerpo {
+  will-change: transform;
+  animation: hyto-login-salta 520ms var(--l-spring) both;
+}
+
+.hyto-login-chispas i {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 2px;
+  background: var(--l-acento);
+  opacity: 0;
+  animation: hyto-login-chispa 700ms var(--l-ease-out) 120ms both;
+}
+
+.hyto-login-chispas i:nth-child(1) {
+  --l-x: -70px;
+  --l-y: -60px;
+}
+
+.hyto-login-chispas i:nth-child(2) {
+  --l-x: 74px;
+  --l-y: -52px;
+}
+
+.hyto-login-chispas i:nth-child(3) {
+  --l-x: -82px;
+  --l-y: 18px;
+}
+
+.hyto-login-chispas i:nth-child(4) {
+  --l-x: 84px;
+  --l-y: 24px;
+}
+
+/* Card: solid gradient, no backdrop blur over the rotating layers. */
+.hyto-login-tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(23, 26, 52, 0.94) 0%, rgba(14, 16, 34, 0.96) 100%);
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+  padding: 20px 20px 18px;
+}
+
+.hyto-login-tarjeta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(183, 238, 52, 0.35), transparent 30%, transparent 70%, rgba(108, 117, 232, 0.25));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.hyto-login.is-error .hyto-login-tarjeta::before {
+  background: linear-gradient(160deg, rgba(255, 77, 141, 0.45), transparent 35%, transparent 70%, rgba(108, 117, 232, 0.2));
+}
+
+.hyto-login-tarjeta h2 {
+  margin-top: 14px;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.hyto-login-cambio {
+  display: flex;
+  flex-direction: column;
+  animation: hyto-login-cambia 240ms var(--l-ease-out) both;
+}
+
+.hyto-login-pestanas {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--l-linea);
+  border-radius: 999px;
+  background: rgba(8, 9, 12, 0.45);
+  padding: 4px;
+  transition: opacity 200ms ease;
+}
+
+.hyto-login-indicador {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: var(--l-sup);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  transition: transform 280ms var(--l-ease-out);
+}
+
+.hyto-login-indicador[data-lado="der"] {
+  transform: translateX(100%);
+}
+
+.hyto-login-pestanas button {
+  position: relative;
+  height: 38px;
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--l-suave);
+  transition: color 200ms ease;
+}
+
+.hyto-login-pestanas button[aria-selected="true"] {
+  color: var(--l-tinta);
+}
+
+.hyto-login-volver {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--l-suave);
+}
+
+.hyto-login-pasos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-login-pasos li {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--l-tenue);
+}
+
+.hyto-login-pasos li.is-on {
+  color: var(--l-tinta);
+}
+
+.hyto-login-pasos i {
+  position: relative;
+  display: block;
+  height: 3px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--l-linea);
+}
+
+.hyto-login-pasos b {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: var(--l-acento);
+  transform-origin: left;
+  transition: transform 320ms var(--l-ease-out);
+}
+
+.hyto-login-pasos li.is-llenando b {
+  background: linear-gradient(90deg, rgba(183, 238, 52, 0.3), var(--l-acento));
+}
+
+.hyto-login-pasos li.is-llenando i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: hyto-login-brillo 1.1s linear infinite;
+}
+
+.hyto-login-pasos li.is-final b {
+  transition: transform 1.2s linear;
+}
+
+.hyto-login-lead {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--l-suave);
+}
+
+.hyto-login-lead strong {
+  font-weight: 500;
+  color: var(--l-tinta);
+}
+
+.hyto-login-btn {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  transition:
+    transform 200ms var(--l-ease-out),
+    opacity 200ms ease;
+}
+
+.hyto-login-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.hyto-login-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.hyto-login-btn.is-primario {
+  background: var(--l-acento);
+  color: var(--l-sobre);
+  box-shadow: 0 8px 18px -10px rgba(124, 170, 10, 0.6);
+}
+
+.hyto-login-btn.is-primario:disabled {
+  background: #2a2e4d;
+  color: var(--l-tenue);
+  box-shadow: none;
+}
+
+.hyto-login-btn.is-primario.is-ocupado:disabled {
+  background: rgba(183, 238, 52, 0.85);
+  color: var(--l-sobre);
+}
+
+.hyto-login-btn.is-fantasma {
+  border-color: var(--l-borde);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--l-tinta);
+}
+
+.hyto-login-btn.is-fantasma:disabled {
+  opacity: 0.4;
+}
+
+.hyto-login-btn.is-enlace {
+  min-height: 40px;
+  margin-top: 6px;
+  background: none;
+  color: var(--l-suave);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-login-etiqueta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  animation: hyto-login-aparece 150ms ease both;
+}
+
+.hyto-login-google {
+  margin-top: 16px;
+}
+
+.hyto-login-tarjeta.is-enviando .hyto-login-pestanas,
+.hyto-login-tarjeta.is-enviando .hyto-login-google {
+  opacity: 0.4;
+}
+
+.hyto-login-g {
+  width: 20px;
+  height: 20px;
+}
+
+.hyto-login-icono {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.hyto-login-o {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--l-tenue);
+}
+
+.hyto-login-o::before,
+.hyto-login-o::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--l-linea);
+}
+
+.hyto-login-etiqueta {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--l-tinta);
+}
+
+.hyto-login-campo {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  border: 1px solid var(--l-borde);
+  border-radius: 14px;
+  background: rgba(8, 9, 12, 0.4);
+  padding: 0 16px;
+  color: var(--l-suave);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.hyto-login-campo:focus-within {
+  border-color: var(--l-acento);
+  box-shadow: var(--l-foco);
+}
+
+.hyto-login-campo input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--l-tinta);
+}
+
+.hyto-login-campo input::placeholder {
+  color: var(--l-tenue);
+}
+
+.hyto-login-campo.is-bloqueado {
+  opacity: 0.75;
+}
+
+.hyto-login-candado {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(183, 238, 52, 0.15);
+  color: var(--l-acento);
+  animation: hyto-login-crece 240ms var(--l-spring) both;
+}
+
+.hyto-login-candado .hyto-login-icono {
+  width: 14px;
+  height: 14px;
+}
+
+.hyto-login-ayuda {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--l-suave);
+}
+
+.hyto-login-ayuda.is-chica {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--l-tenue);
+}
+
+.hyto-login-aviso {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--l-tinta);
+}
+
+.hyto-login-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--l-acento);
+}
+
+.hyto-login-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(8, 9, 12, 0.25);
+  border-top-color: var(--l-sobre);
+  border-radius: 50%;
+  animation: hyto-login-giro 0.8s linear infinite;
+}
+
+.hyto-login-legal {
+  margin-top: 12px;
+  border-top: 1px solid var(--l-linea);
+  padding-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--l-tenue);
+}
+
+.hyto-login-demo {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--l-tenue);
+}
+
+.hyto-login-demo button {
+  background: none;
+  padding: 0;
+  color: var(--l-acento);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-login-demo + .hyto-card {
+  margin-top: 10px;
+}
+
+.hyto-login-otp {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.hyto-login-otp input {
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  border: 1px solid var(--l-borde);
+  border-radius: 12px;
+  outline: 0;
+  background: rgba(8, 9, 12, 0.4);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--l-tinta);
+  caret-color: var(--l-acento);
+  animation: hyto-login-entra 240ms var(--l-ease-out) both;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.hyto-login-otp input.is-lleno {
+  border-color: #5d6185;
+  background: rgba(30, 33, 64, 0.6);
+}
+
+.hyto-login-otp input:focus {
+  border-color: var(--l-acento);
+  box-shadow: var(--l-foco);
+}
+
+.hyto-login-otp.is-mal input,
+.hyto-login-otp.is-vencido input {
+  border-color: var(--l-peligro);
+  background: rgba(58, 21, 36, 0.55);
+  color: #ffd0e0;
+}
+
+.hyto-login-otp.is-ok input {
+  border-color: var(--l-acento);
+  background: rgba(183, 238, 52, 0.14);
+  color: var(--l-acento);
+}
+
+.hyto-login-otp input:disabled {
+  opacity: 1;
+}
+
+.hyto-login-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  border: 1px solid rgba(255, 77, 141, 0.35);
+  border-radius: 14px;
+  background: rgba(58, 21, 36, 0.7);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #ffc2d6;
+  animation: hyto-login-cambia 260ms var(--l-ease-out) both;
+}
+
+.hyto-login-alerta .hyto-login-icono {
+  margin-top: 2px;
+  color: var(--l-peligro);
+}
+
+.hyto-login-alerta strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+.hyto-login-reenvio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--l-suave);
+}
+
+.hyto-login-reenvio button {
+  background: none;
+  padding: 0;
+  color: var(--l-acento);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  animation: hyto-login-aparece 200ms ease both;
+}
+
+.hyto-login-tenue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--l-tenue);
+}
+
+.hyto-login-tenue .hyto-login-icono {
+  width: 15px;
+  height: 15px;
+}
+
+.hyto-login-exito {
+  align-items: center;
+  padding: 14px 0 4px;
+  text-align: center;
+}
+
+.hyto-login-check {
+  position: relative;
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--l-acento);
+  color: var(--l-sobre);
+  box-shadow:
+    0 0 0 10px rgba(183, 238, 52, 0.12),
+    0 0 60px -6px rgba(183, 238, 52, 0.7);
+  animation: hyto-login-crece 420ms var(--l-spring) both;
+}
+
+.hyto-login-check::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--l-acento);
+  border-radius: 50%;
+  opacity: 0;
+  animation: hyto-login-onda 600ms var(--l-ease-out) both;
+}
+
+.hyto-login-check .hyto-login-icono {
+  width: 30px;
+  height: 30px;
+  stroke-width: 2.6;
+}
+
+.hyto-login-exito h2 {
+  margin-top: 16px;
+  font-size: 25px;
+}
+
+.hyto-login-barra {
+  width: 100%;
+  height: 4px;
+  margin-top: 22px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--l-linea);
+}
+
+.hyto-login-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--l-acento);
+  transform-origin: left;
+  animation: hyto-login-barra 1.2s linear both;
+}
+
+.hyto-login-exito .hyto-login-btn {
+  margin-top: 22px;
+}
+
+.hyto-login :focus-visible {
+  outline: 2px solid var(--l-acento);
+  outline-offset: 2px;
+}
+
+.hyto-login-campo input:focus-visible,
+.hyto-login-otp input:focus-visible {
+  outline: 0;
+}
+
+/* Success on a phone: Mile big in the center. */
+.hyto-login.is-exito .hyto-login-mile {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  align-self: center;
+  width: 230px;
+  height: 230px;
+  margin-top: 6px;
+}
+
+.hyto-login.is-exito .hyto-login-izq {
+  min-height: 0;
+}
+
+.hyto-login[data-oculto] *,
+.hyto-login[data-oculto] *::before,
+.hyto-login[data-oculto] *::after {
+  animation-play-state: paused !important;
+}
+
+.hyto-login[data-oculto] .hyto-login-capa img {
+  will-change: auto;
+}
+
+@media (min-width: 1024px) {
+  .hyto-login {
+    --l-gutter: clamp(24px, calc((100vw - 1200px) / 2), 120px);
+    --l-alto-top: 88px;
+  }
+
+  .hyto-login-escena {
+    background: radial-gradient(ellipse 70% 60% at 32% 46%, var(--l-centro) 0%, rgba(20, 22, 43, 0.55) 45%, transparent 78%), var(--l-fondo);
+  }
+
+  .hyto-login.is-exito .hyto-login-escena {
+    background: radial-gradient(ellipse 60% 55% at 32% 50%, #24304a 0%, rgba(20, 22, 43, 0.5) 48%, transparent 78%), var(--l-fondo);
+  }
+
+  .hyto-login-remolino {
+    left: 30%;
+    top: 50%;
+    width: 1240px;
+    height: 1240px;
+    margin: -620px 0 0 -620px;
+    -webkit-mask-image: radial-gradient(circle 600px at 50% 50%, #000 30%, transparent 85%);
+    mask-image: radial-gradient(circle 600px at 50% 50%, #000 30%, transparent 85%);
+  }
+
+  .hyto-login-vineta {
+    background:
+      radial-gradient(ellipse 85% 70% at 38% 48%, transparent 62%, var(--l-fondo) 100%),
+      linear-gradient(to bottom, var(--l-fondo) 0, transparent 12%, transparent 82%, var(--l-fondo) 100%);
+  }
+
+  .hyto-login-lineas .is-b,
+  .hyto-login-lineas .is-3,
+  .hyto-login-lineas .is-4 {
+    display: block;
+  }
+
+  .hyto-login-top {
+    padding: 0 28px;
+  }
+
+  .hyto-login-logo .hyto-logo {
+    height: 30px;
+  }
+
+  .hyto-login-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 468px;
+    align-items: center;
+    gap: 56px;
+    margin: 0 var(--l-gutter);
+    padding: 24px 48px calc(var(--l-alto-top) + 24px);
+  }
+
+  .hyto-login-izq,
+  .hyto-login.is-exito .hyto-login-izq {
+    min-height: 0;
+    justify-content: center;
+  }
+
+  .hyto-login-hero {
+    padding: 0;
+  }
+
+  .hyto-login-chip {
+    height: 32px;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .hyto-login .hyto-login-titulo {
+    max-width: none;
+    margin-top: 20px;
+    font-size: clamp(38px, 3.5vw, 50px);
+    line-height: 1.06;
+  }
+
+  .hyto-login-sub {
+    display: block;
+  }
+
+  .hyto-login-mile,
+  .hyto-login.is-exito .hyto-login-mile {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    align-self: flex-start;
+    width: 300px;
+    height: 300px;
+    margin: 22px 0 0 -14px;
+  }
+
+  .hyto-login-aura {
+    width: 340px;
+    height: 200px;
+    margin: -100px 0 0 -170px;
+  }
+
+  .hyto-login-tarjeta {
+    border-radius: 28px;
+    padding: 32px 36px 28px;
+  }
+
+  .hyto-login-tarjeta h2 {
+    margin-top: 20px;
+    font-size: 26px;
+  }
+
+  .hyto-login-pasos {
+    margin-top: 18px;
+  }
+
+  .hyto-login-lead {
+    margin-top: 8px;
+    font-size: 14.5px;
+  }
+
+  .hyto-login-btn {
+    min-height: 52px;
+    margin-top: 16px;
+    font-size: 15.5px;
+  }
+
+  .hyto-login-google {
+    margin-top: 22px;
+  }
+
+  .hyto-login-o {
+    margin: 20px 0 4px;
+  }
+
+  .hyto-login-etiqueta {
+    margin-top: 14px;
+  }
+
+  .hyto-login-campo {
+    min-height: 52px;
+  }
+
+  .hyto-login-ayuda {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .hyto-login-legal {
+    margin-top: 18px;
+    padding-top: 14px;
+    font-size: 12px;
+  }
+
+  .hyto-login-demo {
+    font-size: 12px;
+  }
+
+  .hyto-login-otp {
+    gap: 10px;
+  }
+
+  .hyto-login-otp input {
+    height: 62px;
+    border-radius: 14px;
+    font-size: 26px;
+  }
+
+  .hyto-login-reenvio {
+    margin-top: 16px;
+    font-size: 13px;
+  }
+
+  .hyto-login-alerta {
+    margin-top: 14px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+  }
+
+  .hyto-login-exito {
+    padding: 26px 0 6px;
+  }
+
+  .hyto-login-check {
+    width: 72px;
+    height: 72px;
+  }
+
+  .hyto-login-check .hyto-login-icono {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hyto-login-exito h2 {
+    margin-top: 22px;
+    font-size: 30px;
+  }
+}
+
+/*
+ * Reduced motion: the swirl stays still, lines appear drawn, Mile swaps poses
+ * with a 150 ms fade, no shake, and content swaps are opacity only.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hyto-login .hyto-login-capa img,
+  .hyto-login .hyto-login-cuerpo,
+  .hyto-login .hyto-login-capa {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .hyto-login .hyto-login-capa.is-c img {
+    transform: rotate(18deg) !important;
+  }
+
+  .hyto-login .hyto-login-capa.is-b img {
+    transform: rotate(-34deg) !important;
+  }
+
+  .hyto-login .hyto-login-capa.is-a img {
+    transform: rotate(52deg) !important;
+  }
+
+  .hyto-login .hyto-login-cuerpo img {
+    transition-duration: 150ms !important;
+  }
+
+  .hyto-login .hyto-login-chispas,
+  .hyto-login .hyto-login-pasos li.is-llenando i::after {
+    display: none;
+  }
+
+  .hyto-login .hyto-login-cambio,
+  .hyto-login .hyto-login-alerta,
+  .hyto-login .hyto-login-hero > *,
+  .hyto-login .hyto-login-tarjeta {
+    animation: hyto-login-aparece 150ms ease both !important;
+  }
+
+  .hyto-login .hyto-login-check,
+  .hyto-login .hyto-login-check::after,
+  .hyto-login .hyto-login-otp input {
+    animation: none !important;
+  }
+
+  .hyto-login .hyto-login-barra i {
+    animation: none !important;
+  }
+}
+
+@keyframes hyto-login-aparece {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hyto-login-entra {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-cambia {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-giro {
+  from {
+    transform: rotate(var(--l-giro, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--l-giro, 0deg) + 360deg));
+  }
+}
+
+@keyframes hyto-login-traza-v {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes hyto-login-traza-h {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes hyto-login-punta {
+  0% {
+    opacity: 0;
+    transform: translateX(-40vw);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-flota {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes hyto-login-zambulle {
+  0% {
+    transform: none;
+  }
+  32% {
+    transform: scaleY(0.92);
+  }
+  100% {
+    transform: translateY(4%);
+  }
+}
+
+@keyframes hyto-login-tambalea {
+  0%,
+  100% {
+    transform: translateY(4%) rotate(0deg);
+  }
+  25% {
+    transform: translateY(4%) rotate(5deg);
+  }
+  75% {
+    transform: translateY(4%) rotate(-5deg);
+  }
+}
+
+@keyframes hyto-login-asoma {
+  from {
+    transform: translateY(16px) scale(0.94);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-salta {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: translateY(-40px) scaleY(1.08);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-chispa {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4) rotate(45deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--l-x), var(--l-y)) scale(1) rotate(45deg);
+  }
+}
+
+@keyframes hyto-login-crece {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hyto-login-onda {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes hyto-login-brillo {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes hyto-login-barra {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }

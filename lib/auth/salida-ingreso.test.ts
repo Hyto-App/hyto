@@ -29,7 +29,12 @@ function salida(): HTMLElement {
 }
 
 async function llegarAlCodigo(
-  confirmarCodigo: (auth: { sendOtp(email: string): Promise<void> }, email: string, codigo: string) => Promise<{
+  confirmarCodigo: (
+    auth: { sendOtp(email: string): Promise<void> },
+    email: string,
+    codigo: string,
+    intencion: string,
+  ) => Promise<{
     aviso: string | null;
     direccion: string | null;
     guardada: boolean;
@@ -42,37 +47,46 @@ async function llegarAlCodigo(
     createElement(Entrar, {
       crear: async () => ({ sendOtp: async () => undefined }),
       confirmarCodigo,
+      esperaMinima: 0,
     }),
   );
   await act(async () => {
     await Promise.resolve();
   });
   await pulsar("Sign up");
-  await pulsar("Sign up with email");
-  await escribir("#correo-entrar", "ana@example.com");
-  await pulsar("Send code");
-  await escribir("#codigo-entrar", "123456");
+  await escribir('input[type="email"]', "ana@example.com");
+  await pulsar("Continue with email");
+  // The sixth digit sends the code on its own.
+  await escribir('input[autocomplete="one-time-code"]', "123456");
   } finally {
     if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
     else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
   }
 }
 
-test("tras el código, Get ready to be paid abre Mis tareas y no la landing ni Account", async () => {
+test("tras el código, la pantalla de éxito lleva a Mis tareas y no a la landing ni a Account", async () => {
   limpiarPantalla();
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
   try {
     await llegarAlCodigo(async () => ({ aviso: null, direccion: DIRECCION, guardada: true }));
-    await pulsar("Create account");
-    const enlace = salida();
-    assert.equal(enlace.getAttribute("href"), DESTINO);
-    assert.equal(enlace.textContent?.trim(), "Get ready to be paid");
-    assert.match(texto(), /Take your first step/);
-    assert.match(texto(), /Signed in/);
-    assert.equal(enlace.getAttribute("href") === "/", false);
-    assert.equal(enlace.getAttribute("href") === "/cuentas", false);
-    assert.equal(enlace.getAttribute("href") === "/eventos", false);
-    assert.equal(document.querySelector('[role="dialog"]'), null);
+    assert.match(texto(), /Check your email/);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+    assert.match(texto(), /You're in\./);
+    await pulsar("Go to my tasks");
+    assert.deepEqual(destinos, [DESTINO]);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    });
+    assert.deepEqual(destinos, [DESTINO, DESTINO]);
+    assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);
   } finally {
+    window.location.assign = asignar;
     await desmontar();
     limpiarPantalla();
   }
@@ -83,7 +97,6 @@ test("si el alta de testnet falla después del código, queda adentro con el avi
   window.history.replaceState(null, "", "/");
   try {
     await llegarAlCodigo(async () => ({ aviso: AVISO_CUENTA_FAUCET, direccion: DIRECCION, guardada: true }));
-    await pulsar("Create account");
     assert.match(texto(), /Signed in/);
     const aviso = document.querySelector('[role="status"]')?.textContent ?? "";
     assert.ok(aviso.includes(mensajeClaro(AVISO_CUENTA_FAUCET)), aviso);
@@ -103,7 +116,6 @@ test("si el servidor no guardó la wallet, el código no deja la dirección en e
   limpiarPantalla();
   try {
     await llegarAlCodigo(async () => ({ aviso: "Could not save this session's wallet.", direccion: DIRECCION, guardada: false }));
-    await pulsar("Create account");
     assert.match(texto(), /Could not save this session's wallet/);
     assert.doesNotMatch(texto(), /Signed in/);
     assert.equal(document.querySelector("a.hyto-post-login-cta"), null);
@@ -153,21 +165,26 @@ test("un código inválido, uno vencido o un navegador lleno siguen en el paso d
     await llegarAlCodigo(async () => {
       throw new Error('{"error":"invalid_code","message":"Invalid code"}');
     });
-    await pulsar("Create account");
-    assert.match(texto(), /That code does not match/);
-    assert.match(texto(), /Create account/);
+    assert.match(document.querySelector('[role="alert"]')?.textContent ?? "", /That code doesn't match/);
+    assert.ok(document.querySelector(".hyto-login-otp.is-mal"));
+    assert.match(texto(), /Try again/);
     assert.match(texto(), /Resend code/);
-    assert.match(texto(), /Close/);
     assert.equal(document.querySelector("a.hyto-post-login-cta"), null);
     assert.ok(document.querySelector('[role="dialog"]'));
+    // The next keystroke clears the cells and the error.
+    await escribir('input[autocomplete="one-time-code"]', "7");
+    assert.equal(document.querySelector('[role="alert"]'), null);
+    assert.equal(document.querySelector(".hyto-login-otp.is-mal"), null);
+    const celdas = [...document.querySelectorAll<HTMLInputElement>(".hyto-login-otp input")].map((celda) => celda.value);
+    assert.deepEqual(celdas, ["7", "", "", "", "", ""]);
 
     await llegarAlCodigo(async () => {
       throw new Error('{"error":"code_expired","message":"The code has expired"}');
     });
-    await pulsar("Create account");
-    assert.match(texto(), /That code expired/);
-    assert.match(texto(), /Resend code/);
-    assert.match(texto(), /Close/);
+    assert.match(document.querySelector('[role="alert"]')?.textContent ?? "", /That code expired/);
+    assert.equal(document.querySelector(".hyto-login-otp.is-mal"), null);
+    assert.match(texto(), /Request another code/);
+    assert.match(texto(), /Use another email/);
     assert.equal(document.querySelector("a.hyto-post-login-cta"), null);
 
     const respaldo = window.localStorage;
@@ -186,11 +203,9 @@ test("un código inválido, uno vencido o un navegador lleno siguen en el paso d
     });
     try {
       await llegarAlCodigo(async () => ({ aviso: null, direccion: DIRECCION, guardada: true }));
-      await pulsar("Create account");
       assert.match(texto(), /Could not save in this browser/);
       assert.match(texto(), /Create account/);
       assert.match(texto(), /Resend code/);
-      assert.match(texto(), /Close/);
       assert.equal(document.querySelector("a.hyto-post-login-cta"), null);
     } finally {
       Object.defineProperty(window, "localStorage", { configurable: true, value: respaldo });
