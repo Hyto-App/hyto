@@ -1,4 +1,4 @@
-import { reciboClaroActivo } from "./recibo-bandera";
+import { reciboClaroActivo, type EntornoRecibo } from "./recibo-bandera";
 import { decidirRecibo, type DecisionRecibo, type EntradaDecision } from "./recibo-decision";
 
 export type SalidaRecibo<T> =
@@ -12,7 +12,7 @@ export type SalidaRecibo<T> =
 export function aplicarReciboSiActivo<T>(
   existente: T,
   entrada: EntradaDecision,
-  env: { HYTO_RECIBO_CLARO?: string } = process.env,
+  env: EntornoRecibo = process.env,
 ): SalidaRecibo<T> {
   if (!reciboClaroActivo(env)) return { modo: "existente", resultado: existente };
   return { modo: "recibo", resultado: existente, decision: decidirRecibo(entrada) };
