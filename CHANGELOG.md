@@ -2,6 +2,12 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-04
+
+### Added
+
+- A separate receipt reading path, not wired into the live review. New files only. `HYTO_RECIBO_CLARO` defaults to `off`; `on` enables `aplicarReciboSiActivo`. With the flag off, Qwen, Mile/Laya, `normalizarMonto`, the 40 reimbursement cap, and escrow are unchanged. The new questions are yes / no / unclear. A printed total such as `15.179,99` is 15179.99 CRC, not dollars and not USDC. `02/10/2026` is 2026-10-02. A request of "2 de octubre" matches that day and month in any year. Missing or unclear data asks for clarification and does not apply the 40 cap. A hard reject happens only when a present fact contradicts the request. A colón total is not compared with the USDC cap; the organizer confirms the USDC to return. No exchange rate.
+
 ## 2026-10-03
 
 ### Fixed
