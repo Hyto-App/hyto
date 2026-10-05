@@ -6,6 +6,7 @@ import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
+import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 
 export function tareaPublica(tarea: TareaFila) {
@@ -67,6 +68,7 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
   const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
   const visible = notaPublica(fila);
   const rechazo = rechazoPublico(tarea);
+  const linea = lineaDeEnvio(tarea, evidencia, fila);
   return {
     ...tareaPublica(tarea),
     nota: visible?.nota ?? null,
@@ -75,6 +77,8 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
     rechazada: tarea.estado === "pendiente" && rechazo !== null,
     intentos: await almacen.contarEvidencias(tarea.id),
     revision: revisionPublica(tarea, fila),
+    etapa: linea.etapa,
+    enviadaEn: linea.enviadaEn,
   };
 }
 

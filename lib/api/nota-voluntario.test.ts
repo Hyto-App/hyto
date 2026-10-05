@@ -71,11 +71,15 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const plano = JSON.stringify(cuerpo);
   for (const clave of PROHIBIDO) assert.equal(plano.includes(clave), false, clave);
   assert.equal(stand.origen, undefined);
+  assert.equal(stand.etapa, null);
+  assert.equal(stand.enviadaEn, null);
   assert.deepEqual(Object.keys(stand).sort(), [
     "condicion",
     "contratoEscrow",
     "dificultad",
+    "enviadaEn",
     "estado",
+    "etapa",
     "hashPago",
     "id",
     "intentos",
@@ -104,7 +108,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const evento = await listarTareasHttp(almacen, { usuarioId: "voluntario-1", demo: false }, "evento");
   const sinNota = (await evento.json()) as { tareas: Registro[] };
   assert.equal(sinNota.tareas.some((tarea) => tarea.id === "stand"), true);
-  assert.equal(sinNota.tareas.some((tarea) => "nota" in tarea || "veredicto" in tarea), false);
+  assert.equal(sinNota.tareas.some((tarea) => "nota" in tarea || "veredicto" in tarea || "etapa" in tarea), false);
 
   await almacen.guardarVeredicto({ ...guardado, origen: "error", score: "40", frase: "SECRETO-LAYA", choice: "tiempo" });
   const fallo = await listarTareasHttp(almacen, { usuarioId: "voluntario-1", demo: false }, "mias");
@@ -147,6 +151,8 @@ type Registro = {
   hashPago?: string | null;
   contratoEscrow?: string | null;
   origen?: string;
+  etapa?: string | null;
+  enviadaEn?: string | null;
 };
 
 function fila(parcial: Partial<VeredictoFila> & Pick<VeredictoFila, "origen" | "score">): VeredictoFila {
