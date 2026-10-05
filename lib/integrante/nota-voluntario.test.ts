@@ -97,6 +97,7 @@ test("una tarea pagada muestra la nota y no dice que el pago sigue abierto", asy
     assert.match(texto(), /84% · Completed/);
     assert.match(texto(), /Paid/);
     assert.equal(texto().includes(FRASE_PAGO), false);
+    assert.equal(texto().includes("Take another"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -169,6 +170,8 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
         tareas: [
           tarea({
             estado: "en revisión",
+            etapa: "enviada_organizador",
+            enviadaEn: "2026-10-05T18:04:00.000Z",
             nota: 64,
             veredicto: "parcial",
             frase: "SECRETO-LAYA",
@@ -219,7 +222,34 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
   }
 });
 
-test("leerTarea conserva la nota y no copia la frase", async () => {
+test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  try {
+    await abrir(
+      tarea({
+        estado: "en revisión",
+        etapa: "enviada_organizador",
+        enviadaEn: "2026-10-05T18:04:00.000Z",
+        nota: 64,
+        veredicto: "parcial",
+      }),
+    );
+    assert.match(texto(), /Your photo already reached the organizer/);
+    assert.match(texto(), /Take another/);
+    await act(async () => {
+      [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.match(texto(), /Open camera/);
+    assert.equal(texto().includes("Your photo already reached the organizer"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("leerTarea conserva la nota, la etapa y no copia la frase", async () => {
   const fetchImpl: typeof fetch = async () =>
     json({
       tareas: [
@@ -237,6 +267,22 @@ test("leerTarea conserva la nota y no copia la frase", async () => {
   assert.equal(leida.tarea?.veredicto, "insuficiente");
   assert.equal("frase" in (leida.tarea ?? {}), false);
   assert.equal(JSON.stringify(leida).includes("SECRETO-LAYA"), false);
+
+  const conEtapa = await leerTarea("stand", { miembroId: "" }, {
+    fetch: async () =>
+      json({
+        tareas: [
+          tarea({
+            estado: "en revisión",
+            etapa: "enviada_organizador",
+            enviada_en: "2026-10-05T18:04:00.000Z",
+          }),
+        ],
+      }),
+  });
+  assert.equal(conEtapa.tarea?.etapa, "enviada_organizador");
+  assert.equal(conEtapa.tarea?.enviadaEn, "2026-10-05T18:04:00.000Z");
+  assert.equal("contratoEscrow" in (conEtapa.tarea ?? {}), false);
 });
 
 function medio(reducido: boolean): () => void {

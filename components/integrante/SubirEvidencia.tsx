@@ -340,7 +340,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             : t("evidencia.openCamera");
   const pista = fase === "inicio" ? (reembolso ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
 
-  const cerrada = tarea.estado !== "pendiente";
+  const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
   const revisando = fase === "enviando" || esperando;
   const montoVisible = montoDeTarea(tarea);
@@ -414,6 +414,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <p role="alert" className="hyto-enviada-aviso">
               {claro(avisoEnvio)}
               {t("evidencia.fixSuffix")}
+            </p>
+          ) : tarea.etapa === "enviada_organizador" ? (
+            <p className="mt-2 text-sm leading-6 text-[var(--suave)]" role="status">
+              {t("evidencia.reachedOrganizer")}
             </p>
           ) : (
             <p className="hyto-tarea-meta">{t("evidencia.greatJobSub")}</p>

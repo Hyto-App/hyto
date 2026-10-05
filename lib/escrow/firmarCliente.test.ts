@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   AVISO_DEMO_FIRMA,
+  AVISO_DISPOSITIVO,
   AVISO_FIRMA,
   AVISO_RECHAZO,
   AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
   AVISO_XLM,
+  type BilleteraSesion,
   ErrorFirmaCliente,
+  firmanteDe,
   firmarPasos,
   firmarYEnviar,
   mensajeFirmaVisible,
   pasosDesde,
+  traducirFirma,
 } from "./firmarCliente";
 
 const XDR = "UNSIGNED";
@@ -321,6 +325,48 @@ test("un token vencido y sin identidad no se puede refrescar", async () => {
     if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
     else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
   }
+});
+
+test("una billetera sin clave en este navegador no llega a signXdr", () => {
+  const billetera = (status: BilleteraSesion["status"]): BilleteraSesion => ({
+    address: "G" + "A".repeat(55),
+    status,
+    signXdr: async () => FIRMADO,
+    addTrustline: async () => "hash",
+  });
+  const lista = billetera("ready");
+  assert.equal(firmanteDe(lista), lista);
+  const sinDesplegar = billetera("undeployed");
+  assert.equal(firmanteDe(sinDesplegar), sinDesplegar);
+  assert.throws(
+    () => firmanteDe(billetera("needs-device-approval")),
+    (error: unknown) =>
+      error instanceof ErrorFirmaCliente && error.message === AVISO_DISPOSITIVO && error.codigo === "needs-device-approval",
+  );
+});
+
+test("los errores de clave del kit y del vault dicen que falta la clave en este navegador", async () => {
+  for (const crudo of [
+    "kit/stellar: this device is not an authorized signer of the wallet",
+    "kit/stellar: the control key for this address is not held by this device \u2014 approve this device first",
+    "kit/vault: this browser holds no key for the account",
+  ]) {
+    assert.equal(traducirFirma(new Error(crudo)).message, AVISO_DISPOSITIVO, crudo);
+  }
+  assert.equal(traducirFirma(new Error("kit/vault: the user rejected this transaction")).message, AVISO_RECHAZO);
+
+  const red = fetchDe([{ body: { xdr: XDR, token: "tok" } }]);
+  await assert.rejects(
+    () =>
+      firmarYEnviar("fondear", "stand", {}, {
+        fetch: red.fetch,
+        firmar: async () => {
+          throw new Error("kit/stellar: this device is not an authorized signer of the wallet");
+        },
+      }),
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_DISPOSITIVO,
+  );
+  assert.equal(red.llamadas.length, 1);
 });
 
 test("un rechazo de despliegue conserva el código del receptor", async () => {

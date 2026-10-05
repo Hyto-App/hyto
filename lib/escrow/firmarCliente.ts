@@ -1,5 +1,6 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
+import type { EstadoCuenta } from "@/lib/integrante/tipos";
 
 export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
 export const AVISO_XLM = "This account needs a little test balance for the network fee. Add some and try again.";
@@ -8,6 +9,8 @@ export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
 export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
+export const AVISO_DISPOSITIVO =
+  "This browser can't confirm for your account. Open Hyto in the browser where you signed up and try again there. If you can't, ask whoever runs Hyto.";
 
 export function mensajeFirmaVisible(mensaje: string): string {
   if (mensaje === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
@@ -166,18 +169,35 @@ function cuerpoEnvio(
   return cuerpo;
 }
 
-async function firmarConCavos(unsignedXdr: string): Promise<string> {
+export type BilleteraSesion = {
+  address: string;
+  status: EstadoCuenta;
+  signXdr: (unsignedXdr: string) => Promise<string>;
+  addTrustline: (asset: { code: string; issuer: string }) => Promise<string>;
+};
+
+export async function conectarBilleteraDeSesion(): Promise<BilleteraSesion> {
   const auth = await crearAuth();
   if (!auth) throw new ErrorFirmaCliente("Sign-in isn't set up yet.");
   if (!asegurarIdentidadCavos(auth)) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
   const conectada = await conectarStellar(auth);
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar") throw new ErrorFirmaCliente(AVISO_FIRMA);
-  return billetera.signXdr(unsignedXdr);
+  return billetera;
 }
 
-export function firmarXdrDeSesion(unsignedXdr: string): Promise<string> {
-  return firmarConCavos(unsignedXdr);
+/**
+ * Hyto connects without a passkey or social recovery, so the account key lives only in the browser
+ * storage where the account was created. Another browser, a cleared one, or another site gets
+ * `needs-device-approval`, and signing in again there does not bring the key back.
+ */
+export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
+  if (billetera.status !== "needs-device-approval") return billetera;
+  throw new ErrorFirmaCliente(AVISO_DISPOSITIVO, null, null, billetera.status);
+}
+
+async function firmarConCavos(unsignedXdr: string): Promise<string> {
+  return firmanteDe(await conectarBilleteraDeSesion()).signXdr(unsignedXdr);
 }
 
 async function postJson(
@@ -241,6 +261,7 @@ export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  if (esDispositivo(textoError)) return new ErrorFirmaCliente(AVISO_DISPOSITIVO);
   if (/demo/i.test(textoError) && /firma|desactiv|signature|disabled/i.test(textoError)) {
     return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
   }
@@ -253,6 +274,10 @@ function esSesionCavos(textoError: string): boolean {
     /registry lookup failed: 401/i.test(textoError) ||
     /kit\/auth: no identity/i.test(textoError)
   );
+}
+
+function esDispositivo(textoError: string): boolean {
+  return /not an authorized signer|not held by this device|approve this device|holds no key for the account/i.test(textoError);
 }
 
 function esRechazo(textoError: string): boolean {

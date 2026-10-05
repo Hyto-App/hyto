@@ -196,14 +196,14 @@ const standRemoto = {
   proyectoId: "zeek",
 };
 
-type Respuestas = { token?: () => Response; subida: (init?: RequestInit) => Response };
+type Respuestas = { token?: () => Response; subida: (init?: RequestInit) => Response; tareas?: () => Response };
 
 async function enviarCaptura(respuestas: Respuestas): Promise<string[]> {
   const pedidos: string[] = [];
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     pedidos.push(`${init?.method ?? "GET"} ${url}`);
-    if (url.includes("/api/tareas")) return json({ tareas: [standRemoto] });
+    if (url.includes("/api/tareas")) return respuestas.tareas ? respuestas.tareas() : json({ tareas: [standRemoto] });
     if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
     if (url.endsWith("/api/evidencias/token")) return respuestas.token ? respuestas.token() : json({ token: "t-1" });
     if (url.endsWith("/api/evidencias") && init?.method === "POST") return respuestas.subida(init);
@@ -261,6 +261,30 @@ test("si la red cae al subir la foto de cámara, no hay envío de ejemplo", asyn
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.match(texto(), /Check your connection and try again/);
     sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si la conexión se corta después de guardar la foto, la pantalla dice Sent y no muestra error", async () => {
+  limpiarPantalla();
+  definirCamara(undefined);
+  const original = globalThis.fetch;
+  let guardada = false;
+  try {
+    const pedidos = await enviarCaptura({
+      subida: () => {
+        guardada = true;
+        throw new TypeError("Failed to fetch");
+      },
+      tareas: () => json({ tareas: [{ ...standRemoto, estado: guardada ? "en revisión" : "pendiente" }] }),
+    });
+    assert.ok(pedidos.includes("POST /api/evidencias"));
+    assert.match(texto(), /Sent/);
+    assert.doesNotMatch(texto(), /Check your connection/);
+    assert.equal(document.querySelector('[role="alert"]'), null);
   } finally {
     globalThis.fetch = original;
     await desmontar();
