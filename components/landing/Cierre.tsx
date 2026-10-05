@@ -12,7 +12,8 @@ export function Cierre({ demoHabilitado }: { demoHabilitado: boolean }) {
           <p className="hyto-landing-kicker">{copia.closeKicker}</p>
           <h2 id="hyto-cierre-title">{copia.closeTitle}</h2>
           <div className="hyto-landing-cta">
-            <Entrar demoHabilitado={demoHabilitado} />
+            {/* The hero's Entrar answers ?signin=1 and the Google/Apple return. */}
+            <Entrar demoHabilitado={demoHabilitado} atiendeUrl={false} />
           </div>
         </article>
       </div>
