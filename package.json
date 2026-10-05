@@ -9,6 +9,8 @@
     "test:integracion": "tsx scripts/test-integracion.ts",
     "test:entrar": "node --experimental-test-module-mocks --import tsx --test --test-concurrency=1 tests/integracion/entrar-google.test.ts",
     "hito": "tsx scripts/hito-prueba.ts",
+    "banco:revision": "tsx scripts/banco-revision.ts",
+    "cuentas:usdc": "tsx scripts/cuentas-usdc.ts",
     "db:migrar": "tsx scripts/migrar.ts",
     "db:semilla": "tsx scripts/semilla.ts",
     "db:local": "tsx scripts/db-local.ts",

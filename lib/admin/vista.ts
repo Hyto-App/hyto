@@ -86,7 +86,7 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
 
 /** After "Ask for another photo" the AI result belongs to the old file. */
 export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
-  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [] };
+  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [], lectura: null };
 }
 
 /**

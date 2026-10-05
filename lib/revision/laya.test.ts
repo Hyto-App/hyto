@@ -182,13 +182,13 @@ test("cada pregunta de la factura resta solo su peso", () => {
   assert.equal(senalesDeFactura({ ...facturaBase(), g4: false }).score, "98");
 });
 
-test("el tope del reembolso deja la nota en 40 aunque el cuestionario sume 100", () => {
+test("un reembolso sobre el tope no llega a Completado aunque el cuestionario sume 100", () => {
   const senales = senalesDeFactura(facturaBase());
   const cerrado = cerrar("reembolso", "10", { texto: "Receipt for 20 dollars.", monto: "20.00", fecha: "2026-09-27" }, senales, "scout");
   assert.equal(senales.score, "100");
-  assert.equal(cerrado?.nota, 40);
-  assert.equal(cerrado?.score, "40");
-  assert.equal(cerrado?.veredicto, "insuficiente");
+  assert.equal(cerrado?.nota, 79);
+  assert.equal(cerrado?.score, "79");
+  assert.equal(cerrado?.veredicto, "parcial");
   assert.equal(cerrado?.noul, false);
 });
 

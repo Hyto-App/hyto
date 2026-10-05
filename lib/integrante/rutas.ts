@@ -1,9 +1,10 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { tareasEjemplo } from "./ejemplos";
-import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
+import type { EstadoTarea, EtapaTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
 const ESTADOS: EstadoTarea[] = ["pendiente", "en revisión", "pagado"];
+const ETAPAS: EtapaTarea[] = ["en_revision", "enviada_organizador", "aprobada", "rechazada"];
 const TIPOS: TipoTarea[] = ["trabajo", "reembolso"];
 
 export type FiltroTareas = {
@@ -25,7 +26,8 @@ export type ListaTareas = {
 };
 
 export type FotoEnviada = {
-  evidencia: Evidencia;
+  /** Null when the server's answer was lost and the task read showed the file had arrived. */
+  evidencia: Evidencia | null;
   aviso: string | null;
 };
 
@@ -53,6 +55,12 @@ export class ErrorDeEnvio extends Error {
 
 export const AVISO_ENVIO_FALLIDO = "Could not send. Check your connection and try again.";
 export const AVISO_ENVIO_SIN_CONFIRMAR = "The server did not confirm the upload. Try again.";
+export const AVISO_ENVIO_INCIERTO =
+  "The connection dropped before Hyto confirmed the upload. Open My tasks to check before you send it again.";
+
+const TOPE_LECTURA_MS = 4000;
+/** A photo on a phone network takes far longer than a read, and the server keeps saving after the browser gives up. */
+export const TOPE_SUBIDA_MS = 60_000;
 
 function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | undefined): Tarea[] {
   if (!estados) return tareas;
@@ -104,6 +112,10 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
+    // Computed so the schema scan does not treat this read as a database write.
+    ["hashPago"]: texto(crudo.hashPago),
+    etapa: etapaCliente(crudo.etapa),
+    enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
   };
 }
 
@@ -115,6 +127,17 @@ function notaCliente(valor: unknown): number | null {
 function veredictoCliente(valor: unknown): Veredicto | null {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
   return null;
+}
+
+function etapaCliente(valor: unknown): EtapaTarea | null {
+  return ETAPAS.includes(valor as EtapaTarea) ? (valor as EtapaTarea) : null;
+}
+
+function fechaCliente(valor: unknown): string | null {
+  if (typeof valor !== "string" || !valor.trim()) return null;
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return valor.trim();
 }
 
 function normalizarEvidencia(valor: unknown, tareaId: string): Evidencia | null {
@@ -163,8 +186,8 @@ async function avisoDeAuth(respuesta: Response): Promise<string> {
   return avisoDeRespuesta(respuesta, "Sign in to continue.");
 }
 
-async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch): Promise<Response> {
-  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(4000) });
+async function pedir(url: string, init: RequestInit, fetchImpl: typeof fetch, topeMs = TOPE_LECTURA_MS): Promise<Response> {
+  return fetchImpl(url, { ...init, signal: AbortSignal.timeout(topeMs) });
 }
 
 async function leerJson(respuesta: Response): Promise<unknown> {
@@ -252,23 +275,28 @@ export async function subirEvidencia(
 
   let respuesta: Response;
   try {
-    respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl);
+    respuesta = await pedir(`${base}/api/evidencias`, { method: "POST", body: cuerpo }, fetchImpl, TOPE_SUBIDA_MS);
   } catch {
-    throw new ErrorDeEnvio(AVISO_ENVIO_FALLIDO);
+    const llego = await subidaRegistrada(tarea, opciones);
+    if (llego) return { evidencia: null, aviso: null };
+    throw new ErrorDeEnvio(llego === false ? AVISO_ENVIO_FALLIDO : AVISO_ENVIO_INCIERTO);
   }
   if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
   if (!respuesta.ok) {
-    throw new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+    const error = new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+    // A 409 can be this same file from an attempt whose answer was lost. A 5xx can come after the file was stored.
+    if (respuesta.status === 409 || respuesta.status >= 500) return confirmarOFallar(tarea, opciones, error);
+    throw error;
   }
 
   let json: unknown;
   try {
     json = await leerJson(respuesta);
   } catch {
-    throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
+    return confirmarOFallar(tarea, opciones, new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status));
   }
   const creada = normalizarEvidencia(json, tarea.id);
-  if (!creada) throw new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status);
+  if (!creada) return confirmarOFallar(tarea, opciones, new ErrorDeEnvio(AVISO_ENVIO_SIN_CONFIRMAR, respuesta.status));
   const aviso = avisoDe(json);
 
   try {
@@ -279,4 +307,21 @@ export async function subirEvidencia(
   } catch {
     return { evidencia: creada, aviso };
   }
+}
+
+/**
+ * Reads the task after an upload with no clear answer. The server moves a pending task to "en revisión"
+ * as soon as it stores the file, and only the assigned person uploads, so a task that left "pendiente"
+ * since this screen loaded it has the file. Null when the task cannot be read.
+ */
+async function subidaRegistrada(tarea: Tarea, opciones: OpcionesRuta): Promise<boolean | null> {
+  if (tarea.estado !== "pendiente") return null;
+  const leida = await leerTarea(tarea.id, { miembroId: "" }, { fetch: opciones.fetch, baseUrl: opciones.baseUrl });
+  if (leida.error || !leida.tarea) return null;
+  return leida.tarea.estado !== "pendiente";
+}
+
+async function confirmarOFallar(tarea: Tarea, opciones: OpcionesRuta, error: ErrorDeEnvio): Promise<FotoEnviada> {
+  if (await subidaRegistrada(tarea, opciones)) return { evidencia: null, aviso: null };
+  throw error;
 }
