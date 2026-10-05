@@ -2,10 +2,14 @@ import { claveDeGroq, enProduccion, urlDeLaya } from "@/lib/config/entorno";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
 import { esPdf } from "@/lib/evidencia/tipo";
-import { cerrar, desdeFallo, stubLaya, type ResultadoRevision } from "./armar";
+import type { Idioma } from "@/lib/ui/idioma";
+import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { preguntarLaya } from "./laya";
-import { contextoParaLaya } from "./lectura";
+import { contextoParaLaya, montoSinUsd } from "./lectura";
+import { preguntarRequisitos } from "./requisitos-laya";
+import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
+import { decidirRequisitos, leerRequisitos, rechazoDeDecision, serializarRechazo } from "./requisitos";
 import { conReintentos, esperaReintento, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS, TOPE_LAYA_MS } from "./reintento";
 import { describirFoto } from "./scout";
 
@@ -17,6 +21,12 @@ export type ContextoRevision = {
   esperar?: (ms: number) => Promise<void>;
   presupuestoMs?: number;
   produccion?: boolean;
+  /** Overrides HYTO_MILE_REQUISITOS. Unset reads the environment, which defaults to off. */
+  mileActivo?: boolean;
+  /** Photos already saved for this task, including the one under review. */
+  intento?: number;
+  maxIntentos?: number;
+  idioma?: Idioma;
 };
 
 export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto: ContextoRevision): Promise<ResultadoRevision> {
@@ -40,11 +50,31 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       { ...repeticion, topeIntentoMs: TOPE_GROQ_MS },
     );
     const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
+    const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
       if (contexto.produccion ?? enProduccion()) return fallar(new FalloRevision("sin_laya", { fuente: "laya", providerMessage: "LAYA_URL" }));
       const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, stubLaya(tarea.tipo), "stub");
       if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "stub" }));
       return cerrado;
+    }
+    if (requisitos.length > 0) {
+      try {
+        const niveles = await conReintentos(
+          (signal) => preguntarRequisitos(contexto.layaUrl!, paraLaya, requisitos, fetchImpl, signal),
+          { ...repeticion, topeIntentoMs: TOPE_LAYA_MS },
+        );
+        const estructurado = niveles
+          ? cerrarRequisitos(tarea, descripcion, niveles, {
+              idioma: contexto.idioma ?? "en",
+              intento: contexto.intento ?? 1,
+              maxIntentos: contexto.maxIntentos ?? maxIntentosMile(),
+              ahora: new Date().toISOString(),
+            })
+          : null;
+        if (estructurado) return estructurado;
+      } catch (error) {
+        if (!(error instanceof FalloRevision)) throw error;
+      }
     }
     const senales = await conReintentos(
       (signal) => preguntarLaya(contexto.layaUrl!, paraLaya, tarea.condicion, fetchImpl, signal),
@@ -56,6 +86,56 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   } catch (error) {
     return fallar(error instanceof FalloRevision ? error : falloDeExcepcion(error, "revision", clave));
   }
+}
+
+function cerrarRequisitos(
+  tarea: TareaFila,
+  descripcion: Descripcion,
+  niveles: Array<0 | 1 | 2>,
+  contexto: { idioma: Idioma; intento: number; maxIntentos: number; ahora: string },
+): ResultadoRevision | null {
+  const requisitos = leerRequisitos(tarea.requisitos);
+  const decision = decidirRequisitos({
+    requisitos,
+    niveles,
+    idioma: contexto.idioma,
+    intento: contexto.intento,
+    maxIntentos: contexto.maxIntentos,
+  });
+  if (!decision) return null;
+  const monto = tarea.tipo === "reembolso" ? descripcion.monto : null;
+  const fecha = tarea.tipo === "reembolso" ? descripcion.fecha : null;
+  const armado = armarVeredicto({
+    tipo: tarea.tipo,
+    tope: tarea.tope,
+    monto,
+    fecha,
+    montoSinUsd: montoSinUsd(descripcion.lectura),
+    score: String(decision.puntaje),
+  });
+  if (!armado) return null;
+  const rechazo = rechazoDeDecision({ ...decision, puntaje: armado.nota }, contexto.intento, contexto.ahora);
+  return {
+    texto: descripcion.texto.trim(),
+    monto,
+    fecha,
+    ...(descripcion.lectura ? { lectura: descripcion.lectura } : {}),
+    choice: "requisitos",
+    noul: armado.nota === 100,
+    score: String(armado.nota),
+    veredicto: armado.veredicto,
+    nota: armado.nota,
+    frase: decision.notaMile,
+    origen: "scout",
+    codigo: null,
+    mile: {
+      accion: decision.accion,
+      rechazoJson: serializarRechazo(rechazo),
+      puntaje: armado.nota,
+      notaMile: decision.notaMile,
+      resultados: decision.resultados,
+    },
+  };
 }
 
 function fallar(fallo: FalloRevision): ResultadoRevision {

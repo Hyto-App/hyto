@@ -146,6 +146,14 @@ export function crearMemoria(): Almacen {
     async listaParaAntifraude() {
       return true;
     },
+    async columnasRequisitos() {
+      return true;
+    },
+    async contarEvidencias(tareaId) {
+      let total = 0;
+      for (const evidencia of evidencias.values()) if (evidencia.tareaId === tareaId) total += 1;
+      return total;
+    },
     async guardarVeredicto(veredicto) {
       veredictos.set(veredicto.evidenciaId, veredicto);
     },

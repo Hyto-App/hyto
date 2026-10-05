@@ -35,6 +35,10 @@ export const tareas = pgTable("tareas", {
   // Off-chain labels. They do not change the escrow amount or the USDC trustline.
   prioridad: text("prioridad").notNull().default("normal"),
   dificultad: text("dificultad"),
+  // JSON [{ id, texto }], at most 3. Null keeps condicion.
+  requisitos: text("requisitos"),
+  // JSON { nota, fallidos, en, origen, intento, puntaje, nota_mile, resultados }.
+  rechazo: text("rechazo"),
 });
 
 export const evidencias = pgTable("evidencias", {
@@ -68,6 +72,8 @@ export const veredictos = pgTable("veredictos", {
   noul: text("noul").notNull(),
   score: text("score").notNull(),
   origen: text("origen").notNull(),
+  // JSON of the structured Mile review. Null on the existing path.
+  mile: text("mile"),
 });
 
 export const sesiones = pgTable("sesiones", {

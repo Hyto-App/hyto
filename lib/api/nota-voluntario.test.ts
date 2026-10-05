@@ -19,6 +19,8 @@ const PROHIBIDO = [
   "detalle",
   "SECRETO-LAYA",
   "Category",
+  "textoScout",
+  "texto_scout",
 ];
 
 test("notaPublica solo sale con un entero de 0 a 100 y la banda de esa nota", () => {
@@ -68,6 +70,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   assert.equal(cuerpo.tareas.some((tarea) => tarea.id === "registro"), false);
   const plano = JSON.stringify(cuerpo);
   for (const clave of PROHIBIDO) assert.equal(plano.includes(clave), false, clave);
+  assert.equal(stand.origen, undefined);
   assert.equal(stand.etapa, null);
   assert.equal(stand.enviadaEn, null);
   assert.deepEqual(Object.keys(stand).sort(), [
@@ -79,11 +82,16 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "etapa",
     "hashPago",
     "id",
+    "intentos",
     "miembroId",
     "monto",
     "nota",
     "prioridad",
     "proyectoId",
+    "rechazada",
+    "rechazo",
+    "requisitos",
+    "revision",
     "tipo",
     "titulo",
     "tope",
@@ -142,6 +150,7 @@ type Registro = {
   veredicto?: string | null;
   hashPago?: string | null;
   contratoEscrow?: string | null;
+  origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
 };

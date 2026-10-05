@@ -4,6 +4,7 @@ import type { TareaFila } from "@/lib/db/tipos";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
+import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
 import { tareaPublica } from "./tareas";
 
 export const AVISO_SOLO_ORGANIZADOR = "Only the organizer can edit tasks.";
@@ -80,6 +81,11 @@ function leerCambio(body: unknown, tarea: TareaFila): { cambio: CambioTarea } | 
   if ("miembroId" in crudo) {
     if (typeof crudo.miembroId !== "string") return { aviso: "Choose a person in this event." };
     cambio.miembroId = crudo.miembroId.trim();
+  }
+  if ("requisitos" in crudo) {
+    const entrada = entradaRequisitos(crudo.requisitos);
+    if (!entrada.ok) return { aviso: entrada.aviso };
+    cambio.requisitos = serializarRequisitos(entrada.requisitos);
   }
   if (Object.keys(cambio).length === 0) return { aviso: "Nothing to save." };
   return { cambio };

@@ -271,7 +271,7 @@ function leerSiNo(json: unknown, id: string): boolean | null {
   return null;
 }
 
-function leerIndice(json: unknown, id: string): 0 | 1 | 2 | null {
+export function leerIndice(json: unknown, id: string): 0 | 1 | 2 | null {
   const nodo = nodoDe(json, id);
   if (!nodo) return null;
   if ("probabilities" in nodo) {

@@ -246,7 +246,8 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
-      setRecienSubida(true);
+      // A lost answer that the task read confirmed is already sent, not a fresh upload.
+      setRecienSubida(resultado.evidencia !== null);
       setFase("lista");
     } catch (err) {
       setError(err instanceof ErrorDeSesion || err instanceof ErrorDeEnvio ? err.aviso : "Could not send. Try again.");
