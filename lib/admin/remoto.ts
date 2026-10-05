@@ -1,6 +1,6 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import { cifraConfirmada } from "@/lib/escrow/monto";
-import type { TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
+import type { LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota, SeveridadNota } from "@/lib/revision/razones";
@@ -264,6 +264,20 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     tipoArchivo: texto(datos.tipoArchivo),
     motivoCopia: texto(datos.motivoCopia),
     etiquetas: leerEtiquetas(datos.etiquetas),
+    lectura: leerLectura(datos.lectura),
+  };
+}
+
+function leerLectura(valor: unknown): LecturaVisible | null {
+  if (!valor || typeof valor !== "object" || Array.isArray(valor)) return null;
+  const datos = valor as Record<string, unknown>;
+  const tasa = typeof datos.tasa === "number" && Number.isFinite(datos.tasa) && datos.tasa > 0 ? datos.tasa : null;
+  return {
+    moneda: texto(datos.moneda),
+    montoOriginal: texto(datos.montoOriginal),
+    tasa,
+    fechaImpresa: texto(datos.fechaImpresa),
+    comercio: texto(datos.comercio),
   };
 }
 

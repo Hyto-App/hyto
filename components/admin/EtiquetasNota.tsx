@@ -1,4 +1,4 @@
-import type { EtiquetaNota, SeveridadNota } from "@/lib/revision/razones";
+import { motivoPrincipal, type EtiquetaNota, type SeveridadNota } from "@/lib/revision/razones";
 
 const CLASE: Record<SeveridadNota, string> = {
   problem: "hyto-pill-bad",
@@ -36,5 +36,16 @@ export function EtiquetasNota({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The main reason, written next to the percentage. */
+export function MotivoNota({ etiquetas }: { etiquetas?: readonly EtiquetaNota[] | null }) {
+  const motivo = motivoPrincipal(etiquetas);
+  if (!motivo) return null;
+  return (
+    <span className="text-sm font-medium" title={motivo.explicacion} data-motivo={motivo.id}>
+      {motivo.texto}
+    </span>
   );
 }

@@ -35,16 +35,16 @@ const ORDEN = [
   "cap_no_razonable",
   "photo_unclear",
   "selfie_or_empty",
+  "amount_missing",
+  "currency_unknown",
+  "date_missing",
+  "over_cap",
   "unclear_match",
   "none_shown",
   "part_missing",
   "unfinished",
   "wrong_place",
-  "amount_missing",
-  "currency_unknown",
-  "date_missing",
   "no_item",
-  "over_cap",
   "low_detail",
   "matches",
   "finished",
@@ -322,6 +322,11 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   }
 
   return ordenarEtiquetas(etiquetas);
+}
+
+/** The reason shown next to the percentage. Tags are sorted, so a problem comes before a warning and a warning before a good sign. */
+export function motivoPrincipal(etiquetas: readonly EtiquetaNota[] | null | undefined): EtiquetaNota | null {
+  return etiquetas?.[0] ?? null;
 }
 
 export function ordenarEtiquetas(etiquetas: readonly EtiquetaNota[]): EtiquetaNota[] {
