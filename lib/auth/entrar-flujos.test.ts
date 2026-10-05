@@ -4,9 +4,11 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { Entrar } from "../../components/admin/Entrar";
-import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
-test("Sign up y Sign in se ven distintos y el ingreso no ofrece el alta", async () => {
+const JERGA = /\b(trustline|friendbot|soroban|xdr|wallet|stellar)\b/i;
+
+test("Sign in y Crear cuenta ofrecen Google y correo, sin jerga, en pestañas", async () => {
   limpiarPantalla();
   window.sessionStorage.clear();
   try {
@@ -17,26 +19,69 @@ test("Sign up y Sign in se ven distintos y el ingreso no ofrece el alta", async 
     const inicio = texto();
     assert.match(inicio, /Sign up/);
     assert.match(inicio, /Sign in/);
-    assert.match(inicio, /Friendbot/);
     assert.match(inicio, /won't create a new account/);
 
-    await pulsar("Sign up");
-    const alta = texto();
-    assert.match(alta, /Sign up with Google/);
-    assert.match(alta, /Sign up with email/);
-    assert.match(alta, /Stellar testnet/);
-    assert.doesNotMatch(alta, /Sign in with Google/);
-
-    await pulsar("Close");
     await pulsar("Sign in");
     const ingreso = texto();
-    assert.match(ingreso, /Sign in with Google/);
-    assert.match(ingreso, /Google only/);
-    assert.doesNotMatch(ingreso, /Sign up with Google/);
-    assert.doesNotMatch(ingreso, /Sign up with email/);
-    assert.doesNotMatch(ingreso, /Send code/);
+    assert.match(ingreso, /Continue with Google/);
+    assert.match(ingreso, /Continue with email/);
+    assert.match(ingreso, /Prove your worth,/);
+    assert.ok(document.querySelector('input[type="email"]'));
+    const pestanas = [...document.querySelectorAll('[role="tab"]')];
+    assert.deepEqual(
+      pestanas.map((pestana) => [pestana.textContent, pestana.getAttribute("aria-selected")]),
+      [
+        ["Sign in", "true"],
+        ["Create account", "false"],
+      ],
+    );
+    assert.doesNotMatch(ingreso, JERGA);
+
+    await pulsar("Create account");
+    const alta = texto();
+    assert.equal(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent, "Create account");
+    assert.match(alta, /Continue with Google/);
+    assert.match(alta, /Continue with email/);
+    assert.doesNotMatch(alta, JERGA);
+    const ids = [...document.querySelectorAll("[id]")].map((nodo) => nodo.id);
+    assert.equal(new Set(ids).size, ids.length, "duplicate ids");
   } finally {
     window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el código de Sign in viaja con la intención signin y el de Crear cuenta con signup", async () => {
+  const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+  process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-prueba";
+  const intenciones: string[] = [];
+  try {
+    for (const [boton, pestana] of [
+      ["Sign in", null],
+      ["Sign in", "Create account"],
+    ] as const) {
+      limpiarPantalla();
+      await montar(
+        createElement(Entrar, {
+          crear: async () => ({ sendOtp: async () => undefined }),
+          confirmarCodigo: async (_auth, _correo, _codigo, intencion) => {
+            intenciones.push(intencion);
+            throw new Error('{"error":"invalid_code","message":"Invalid code"}');
+          },
+          esperaMinima: 0,
+        }),
+      );
+      await pulsar(boton);
+      if (pestana) await pulsar(pestana);
+      await escribir('input[type="email"]', "ana@example.com");
+      await pulsar("Continue with email");
+      await escribir('input[autocomplete="one-time-code"]', "123456");
+    }
+    assert.deepEqual(intenciones, ["signin", "signup"]);
+  } finally {
+    if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+    else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
     await desmontar();
     limpiarPantalla();
   }

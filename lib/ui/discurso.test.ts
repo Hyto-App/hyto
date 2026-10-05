@@ -17,8 +17,8 @@ import { ProveedorIdioma } from "@/components/ui/Idioma";
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
 const FRASES = [
-  "Prove your worth.",
-  "Get paid.",
+  "Prove your worth,",
+  "get paid.",
   "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
   "Practice network.",
   "This app runs on a practice network for now",
@@ -61,7 +61,7 @@ test("el discurso en español usa las mismas claves", () => {
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Demuestra lo que vales.", "Red de práctica.", "Elige una tarea", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
+  for (const frase of ["Demuestra tu valor,", "Red de práctica.", "Elige una tarea", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
     assert.ok(unido.includes(frase), frase);
   }
 });
@@ -75,10 +75,10 @@ test("la landing en español muestra el discurso y el selector", async () => {
   );
   try {
     const visible = texto();
-    for (const frase of ["Demuestra lo que vales.", "Red de práctica.", "Cómo funciona", "Para quién es", "Conoce a Mile", "¿Listo para demostrar lo que vales?", "Entrar"]) {
+    for (const frase of ["Demuestra tu valor,", "Red de práctica.", "Cómo funciona", "Para quién es", "Conoce a Mile", "¿Listo para demostrar lo que vales?", "Entrar"]) {
       assert.ok(visible.includes(frase), frase);
     }
-    assert.equal(visible.includes("Prove your worth."), false);
+    assert.equal(visible.includes("Prove your worth,"), false);
     assert.equal(visible.includes("Practice network."), false);
     assert.ok(document.querySelector(".hyto-landing-head .hyto-idioma"));
     assert.equal(document.querySelector(".hyto-landing-head .hyto-idioma")?.getAttribute("aria-label"), "Idioma");
@@ -88,8 +88,8 @@ test("la landing en español muestra el discurso y el selector", async () => {
 });
 
 const EN_PAGINA = [
-  "Prove your worth.",
-  "Get paid.",
+  "Prove your worth,",
+  "get paid.",
   "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
   "Practice network.",
   "This app runs on a practice network for now",

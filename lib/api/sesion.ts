@@ -1,3 +1,4 @@
+import { AVISO_SIN_CUENTA } from "@/lib/auth/errores";
 import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
@@ -42,7 +43,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     let nuevo = false;
     if (!usuario) {
       if (intencion === "signin") {
-        return json({ aviso: "No Hyto account for this sign-in. Sign up first." }, 404);
+        return json({ aviso: AVISO_SIN_CUENTA }, 404);
       }
       const local = email.split("@")[0] ?? "";
       await almacen.insertarUsuario({

@@ -89,9 +89,8 @@ test("signin=1 abre el ingreso aunque la wallet siga guardada", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /Sign in with Google/);
-    assert.doesNotMatch(texto(), /Sign up with Google/);
-    assert.doesNotMatch(texto(), /Send code/);
+    assert.match(texto(), /Continue with Google/);
+    assert.equal(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent, "Sign in");
     assert.doesNotMatch(texto(), /GAAA/);
   } finally {
     window.history.replaceState(null, "", "/");
