@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { FalloRevision } from "./fallo";
-import { describirFoto, leerDescripcion } from "./scout";
+import { describirFoto, leerDescripcion, MODELO_VISION_DEFECTO, modeloVision, parametrosRazonamiento } from "./scout";
 
 const FOTO = new Uint8Array([1, 2, 3]);
 
@@ -40,16 +40,28 @@ test("GROQ_VISION_MODEL cambia el modelo y si falta sigue el de siempre", async 
   const previo = process.env.GROQ_VISION_MODEL;
   process.env.GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
   try {
-    let modelo = "";
+    let cuerpo: Record<string, unknown> = {};
     await describirFoto(FOTO, "image/jpeg", "clave", async (_input, init) => {
-      modelo = (JSON.parse(String(init?.body)) as { model: string }).model;
+      cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
     });
-    assert.equal(modelo, "meta-llama/llama-4-scout-17b-16e-instruct");
+    assert.equal(cuerpo.model, "meta-llama/llama-4-scout-17b-16e-instruct");
+    assert.equal("reasoning_effort" in cuerpo, false);
+    assert.equal("reasoning_format" in cuerpo, false);
+    assert.deepEqual(cuerpo.response_format, { type: "json_object" });
   } finally {
     if (previo === undefined) delete process.env.GROQ_VISION_MODEL;
     else process.env.GROQ_VISION_MODEL = previo;
   }
+  assert.equal(modeloVision({ NODE_ENV: "test" }), MODELO_VISION_DEFECTO);
+  assert.equal(modeloVision({ NODE_ENV: "test", GROQ_VISION_MODEL: "  " }), MODELO_VISION_DEFECTO);
+});
+
+test("solo un modelo Qwen 3 recibe los parámetros de razonamiento", () => {
+  assert.deepEqual(parametrosRazonamiento(MODELO_VISION_DEFECTO), { reasoning_effort: "none", reasoning_format: "hidden" });
+  assert.deepEqual(parametrosRazonamiento("Qwen/Qwen3-32B"), { reasoning_effort: "none", reasoning_format: "hidden" });
+  assert.deepEqual(parametrosRazonamiento("meta-llama/llama-4-maverick-17b-128e-instruct"), {});
+  assert.deepEqual(parametrosRazonamiento("openai/gpt-oss-120b"), {});
 });
 
 test("sin clave de Groq no llama a la red", async () => {

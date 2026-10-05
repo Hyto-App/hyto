@@ -455,6 +455,61 @@ async function confirmarDialogo(): Promise<void> {
   });
 }
 
+test("the review card shows the main reason next to the percentage and what the receipt printed", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        condicion: "Photo of the meal receipt",
+        origen: "scout",
+        veredicto: "parcial",
+        nota: 78,
+        frase: "A receipt from Soda La Esquina.",
+        montoRevisado: "13.66",
+        fecha: null,
+        etiquetas: [
+          {
+            id: "date_missing",
+            texto: "Receipt date missing",
+            explicacion: "The saved receipt has no date, so the grade cannot reach Completed.",
+            severidad: "warning",
+            preguntas: [],
+          },
+          { id: "matches", texto: "Matches the request", explicacion: "The answers say this expense is what was requested.", severidad: "good", preguntas: ["f1"] },
+        ],
+        lectura: { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" },
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await esperar(() => texto().includes("78% · Partially completed"));
+    const pill = document.querySelector('[aria-label="78% · Partially completed"]');
+    const motivo = document.querySelector("[data-motivo]");
+    assert.ok(pill instanceof HTMLElement);
+    assert.ok(motivo instanceof HTMLElement);
+    assert.equal(motivo.getAttribute("data-motivo"), "date_missing");
+    assert.equal(motivo.textContent, "Receipt date missing");
+    assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
+    assert.equal(motivo.parentElement, pill.closest("div"));
+    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Not shown/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function rotulo(textoBoton: string): boolean {
   return [...document.querySelectorAll("button")].some((item) => item.textContent?.trim() === textoBoton);
 }

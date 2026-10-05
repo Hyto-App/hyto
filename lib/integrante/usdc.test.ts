@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "./identidades";
 import type { BilleteraCobro } from "./tipos";
-import { asegurarCobroUsdc, consultarUsdc, cuentaTieneUsdc } from "./usdc";
+import { asegurarCobroUsdc, consultarUsdc, cuentaTieneUsdc, estadoCobro, xlmCubreTrustline } from "./usdc";
 
 function billetera(status: BilleteraCobro["status"]): BilleteraCobro & { llamadas: string[] } {
   const llamadas: string[] = [];
@@ -100,4 +100,34 @@ test("el saldo de USDC del emisor de testnet cuenta como listo", () => {
   );
   assert.equal(cuentaTieneUsdc({ balances: [{ asset_code: "XLM" }] }), false);
   assert.equal(cuentaTieneUsdc(null), false);
+});
+
+function nativo(balance: string, selling_liabilities = "0.0000000") {
+  return { asset_type: "native", balance, selling_liabilities };
+}
+
+test("el XLM propio tiene que cubrir la reserva de la trustline y la comisión, sin contar lo patrocinado ni lo comprometido", () => {
+  const sola = { subentry_count: 0, num_sponsoring: 0, num_sponsored: 0 };
+  // Minimum balance 1 XLM, plus 0.5 XLM for the new trustline, plus the 100-stroop fee.
+  assert.equal(xlmCubreTrustline({ ...sola, balances: [nativo("1.5000100")] }), true);
+  assert.equal(xlmCubreTrustline({ ...sola, balances: [nativo("1.5000099")] }), false);
+  assert.equal(xlmCubreTrustline({ ...sola, balances: [nativo("2.0000000", "0.5000000")] }), false);
+  assert.equal(xlmCubreTrustline({ ...sola, num_sponsoring: 1, balances: [nativo("2.0000000")] }), false);
+  assert.equal(xlmCubreTrustline({ subentry_count: 0, num_sponsoring: 0, num_sponsored: 2, balances: [nativo("0.0000000")] }), false);
+  assert.equal(xlmCubreTrustline({ subentry_count: 2, num_sponsoring: 0, num_sponsored: 4, balances: [nativo("0.5000100")] }), true);
+  assert.equal(xlmCubreTrustline({ balances: [nativo("100.0000000")] }), null);
+  assert.equal(xlmCubreTrustline({ ...sola, balances: [] }), null);
+  assert.equal(xlmCubreTrustline({ ...sola, balances: [nativo("diez")] }), null);
+});
+
+test("estadoCobro distingue la cuenta lista, la que no tiene XLM y la que solo necesita el changeTrust", () => {
+  const patrocinada = { subentry_count: 0, num_sponsoring: 0, num_sponsored: 2, balances: [nativo("0.0000000")] };
+  assert.equal(estadoCobro(null), "sin_cuenta");
+  assert.equal(estadoCobro(patrocinada), "sin_xlm");
+  assert.equal(
+    estadoCobro({ ...patrocinada, subentry_count: 1, num_sponsored: 3, balances: [...patrocinada.balances, { asset_code: "USDC", asset_issuer: USDC.issuer }] }),
+    "listo",
+  );
+  assert.equal(estadoCobro({ subentry_count: 0, num_sponsoring: 0, num_sponsored: 0, balances: [nativo("10000.0000000")] }), "falta_trustline");
+  assert.equal(estadoCobro({ balances: [] }), "falta_trustline");
 });

@@ -168,7 +168,7 @@ test("si crearAuth lanza, el canje termina con un aviso visible", async () => {
   }
 });
 
-test("si Friendbot falla después de guardar la wallet, la persona queda adentro con un aviso, el enlace a Events y la salida a Mis tareas", async () => {
+test("si Friendbot falla después de guardar la wallet, la persona queda adentro con un aviso, el enlace a Events y la salida a Events (/) como Google", async () => {
   reiniciar();
   window.sessionStorage.setItem(CLAVE_INTENCION, "signup");
   window.location.href = "http://localhost/?cavos_auth_code=codigo-alta-blanda";
@@ -193,7 +193,7 @@ test("si Friendbot falla después de guardar la wallet, la persona queda adentro
   assert.match(aviso, /We couldn't fund the testnet account\./);
   assert.match(aviso, /Get ready to be paid/);
   assert.equal(div.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
-  assert.equal(div.querySelector("a.hyto-post-login-cta")?.getAttribute("href"), "/mis-tareas");
+  assert.equal(div.querySelector("a.hyto-post-login-cta")?.getAttribute("href"), "/");
   assert.match(window.location.href, /cavos_auth_code=codigo-alta-blanda/, "a soft failure must not navigate away from the notice");
   assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
   await act(async () => {

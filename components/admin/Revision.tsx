@@ -6,7 +6,7 @@ import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
-import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
+import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
@@ -525,6 +525,7 @@ export function Revision({
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
+            {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} /> : null}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
           <EtiquetasNota etiquetas={tarea.etiquetas} />
@@ -547,15 +548,29 @@ export function Revision({
             <AccionesRevisionFallida tareaId={tarea.id} onDetalle={aplicarDetalle} />
           ) : null}
 
-          {tarea.tipo === "reembolso" && tarea.montoRevisado && tarea.fecha ? (
+          {tarea.tipo === "reembolso" && tarea.origen !== "error" && (tarea.montoRevisado || tarea.fecha || tarea.lectura?.montoOriginal) ? (
             <dl className="mt-6 grid grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm text-[var(--suave)]">{t("revision.amountReceipt")}</dt>
-                <dd className="hyto-amount mt-1 text-xl">{formatearMonto(tarea.montoRevisado)}</dd>
+                <dd className="hyto-amount mt-1 text-xl">{tarea.montoRevisado ? formatearMonto(tarea.montoRevisado) : t("revision.notShown")}</dd>
+                {tarea.lectura?.montoOriginal && tarea.lectura.moneda !== "USD" ? (
+                  <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">
+                    {tarea.montoRevisado && tarea.lectura.moneda && tarea.lectura.tasa
+                      ? t("revision.printedConverted", {
+                          monto: tarea.lectura.montoOriginal,
+                          tasa: String(tarea.lectura.tasa),
+                          moneda: tarea.lectura.moneda,
+                        })
+                      : t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
+                  </dd>
+                ) : null}
               </div>
               <div>
                 <dt className="text-sm text-[var(--suave)]">{t("comunes.date")}</dt>
-                <dd className="hyto-amount mt-1 text-xl">{formatearFecha(tarea.fecha)}</dd>
+                <dd className="hyto-amount mt-1 text-xl">{tarea.fecha ? formatearFecha(tarea.fecha) : t("revision.notShown")}</dd>
+                {!tarea.fecha && tarea.lectura?.fechaImpresa ? (
+                  <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">{t("revision.printedDate", { fecha: tarea.lectura.fechaImpresa })}</dd>
+                ) : null}
               </div>
             </dl>
           ) : null}

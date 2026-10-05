@@ -25,32 +25,41 @@ export function armarXdrUsdc(wallet: string, sequence: string): string {
 }
 
 export function xdrEsTrustlineUsdc(xdr: string, wallet: string): boolean {
+  return revisarXdrUsdc(xdr, wallet) === null;
+}
+
+export type MotivoXdrUsdc = "formato" | "cuenta" | "operacion" | "activo" | "limite" | "firma";
+
+/** Null when the XDR is one testnet USDC changeTrust from `wallet`, signed by `wallet`. */
+export function revisarXdrUsdc(xdr: string, wallet: string): MotivoXdrUsdc | null {
   let tx: FeeBumpTransaction | Transaction;
   try {
     tx = TransactionBuilder.fromXDR(xdr, Networks.TESTNET);
   } catch {
-    return false;
+    return "formato";
   }
-  if (tx instanceof FeeBumpTransaction || !(tx instanceof Transaction)) return false;
-  if (tx.networkPassphrase !== Networks.TESTNET) return false;
-  if (tx.source !== wallet || tx.operations.length !== 1) return false;
+  if (tx instanceof FeeBumpTransaction || !(tx instanceof Transaction)) return "formato";
+  if (tx.networkPassphrase !== Networks.TESTNET) return "formato";
+  if (tx.source !== wallet) return "cuenta";
+  if (tx.operations.length !== 1) return "operacion";
   const op = tx.operations[0];
-  if (!op || op.type !== "changeTrust" || !(op.line instanceof Asset)) return false;
-  if (op.source && op.source !== wallet) return false;
-  if (op.line.code !== USDC.code || op.line.issuer !== USDC.issuer) return false;
-  if (!(Number(op.limit) > 0)) return false;
+  if (!op || op.type !== "changeTrust" || !(op.line instanceof Asset)) return "operacion";
+  if (op.source && op.source !== wallet) return "cuenta";
+  if (op.line.code !== USDC.code || op.line.issuer !== USDC.issuer) return "activo";
+  if (!(Number(op.limit) > 0)) return "limite";
   let clave: Keypair;
   try {
     clave = Keypair.fromPublicKey(wallet);
   } catch {
-    return false;
+    return "cuenta";
   }
   const resumen = tx.hash();
-  return tx.signatures.some((firma) => {
+  const firmada = tx.signatures.some((firma) => {
     try {
       return clave.verify(resumen, firma.signature);
     } catch {
       return false;
     }
   });
+  return firmada ? null : "firma";
 }

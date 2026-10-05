@@ -24,7 +24,16 @@ export const AVISO_SOLO_TESTNET = "Stellar setup stays on testnet.";
 
 export type CuentaTestnet = {
   sequence?: unknown;
-  balances?: { asset_code?: string; asset_issuer?: string; asset_type?: string; balance?: string }[];
+  subentry_count?: unknown;
+  num_sponsoring?: unknown;
+  num_sponsored?: unknown;
+  balances?: {
+    asset_code?: string;
+    asset_issuer?: string;
+    asset_type?: string;
+    balance?: string;
+    selling_liabilities?: string;
+  }[];
 };
 
 export type MotivoCuenta = "lectura" | "faucet" | "pendiente" | "mainnet";

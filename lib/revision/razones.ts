@@ -1,4 +1,6 @@
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
+import { montoSinUsd, type LecturaEvidencia } from "./lectura";
 import type { DetalleRazones } from "./snapshot-razones";
 
 export type SeveridadNota = "good" | "warning" | "problem";
@@ -20,6 +22,9 @@ export type EntradaRazones = {
   monto: string | null;
   fecha: string | null;
   tope: string | null;
+  /** The task type. A reimbursement gets the saved amount and date tags even when Laya did not call it a receipt. */
+  tipo?: TipoTarea;
+  lectura?: LecturaEvidencia | null;
 };
 
 const ORDEN = [
@@ -30,15 +35,16 @@ const ORDEN = [
   "cap_no_razonable",
   "photo_unclear",
   "selfie_or_empty",
+  "amount_missing",
+  "currency_unknown",
+  "date_missing",
+  "over_cap",
   "unclear_match",
   "none_shown",
   "part_missing",
   "unfinished",
   "wrong_place",
-  "amount_missing",
-  "date_missing",
   "no_item",
-  "over_cap",
   "low_detail",
   "matches",
   "finished",
@@ -58,7 +64,9 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   const trabajo = entrada.clase === "trabajo" ? entrada.trabajo : null;
   const factura = entrada.clase === "factura" ? entrada.factura : null;
   const otra = entrada.clase === "otra";
-  const borroso = BORROSO.test(entrada.descripcion);
+  const borroso = entrada.lectura?.legible === false || BORROSO.test(entrada.descripcion);
+  const reembolso = entrada.clase === "factura" || entrada.tipo === "reembolso";
+  const sinUsd = reembolso && montoSinUsd(entrada.lectura);
 
   if (otra) {
     etiquetas.push(etiqueta(
@@ -191,7 +199,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
 
   const montoGuardado = centavos(entrada.monto) > 0;
   const fechaGuardada = Boolean(entrada.fecha?.trim());
-  if (factura && !factura.f2) {
+  if (factura && !factura.f2 && !sinUsd) {
     etiquetas.push(etiqueta(
       "amount_missing",
       "Receipt amount missing",
@@ -199,12 +207,26 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       "problem",
       ["f2"],
     ));
-  } else if (!montoGuardado && entrada.clase === "factura") {
+  } else if (!montoGuardado && reembolso && !sinUsd) {
     etiquetas.push(etiqueta(
       "amount_missing",
       "Receipt amount missing",
-      "The saved receipt has no positive amount.",
+      "The saved receipt has no positive amount, so the grade stays at 40% or less.",
       "problem",
+      [],
+    ));
+  }
+
+  if (sinUsd) {
+    const moneda = entrada.lectura?.moneda ?? null;
+    const impreso = entrada.lectura?.montoOriginal ?? "";
+    etiquetas.push(etiqueta(
+      "currency_unknown",
+      moneda ? `No rate for ${moneda}` : "Currency not shown",
+      moneda
+        ? `The receipt total ${impreso} is in ${moneda}, and Hyto has no rate for it, so it was not converted to US dollars. The grade cannot reach Completed. Check the amount before you confirm it.`
+        : `The receipt total ${impreso} shows no currency, so Hyto did not assume US dollars and did not convert it. The grade cannot reach Completed. Check the amount before you confirm it.`,
+      "warning",
       [],
     ));
   }
@@ -214,15 +236,17 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       "date_missing",
       "Receipt date missing",
       "The receipt answers do not give a date.",
-      "problem",
+      "warning",
       ["f3"],
     ));
-  } else if (!fechaGuardada && entrada.clase === "factura") {
+  } else if (!fechaGuardada && reembolso) {
     etiquetas.push(etiqueta(
       "date_missing",
       "Receipt date missing",
-      "The saved receipt has no date.",
-      "problem",
+      entrada.lectura?.fechaImpresa
+        ? `The printed date ${entrada.lectura.fechaImpresa} could not be read as a calendar date, so the grade cannot reach Completed.`
+        : "The saved receipt has no date, so the grade cannot reach Completed.",
+      "warning",
       [],
     ));
   }
@@ -243,8 +267,8 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "over_cap",
       "Amount over the cap",
-      "The amount is over the task cap, so the grade cannot go above 40.",
-      "problem",
+      "The amount is over the task cap, so the grade cannot reach Completed. You can pay up to the cap.",
+      "warning",
       ["tope"],
     ));
   }
@@ -298,6 +322,11 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   }
 
   return ordenarEtiquetas(etiquetas);
+}
+
+/** The reason shown next to the percentage. Tags are sorted, so a problem comes before a warning and a warning before a good sign. */
+export function motivoPrincipal(etiquetas: readonly EtiquetaNota[] | null | undefined): EtiquetaNota | null {
+  return etiquetas?.[0] ?? null;
 }
 
 export function ordenarEtiquetas(etiquetas: readonly EtiquetaNota[]): EtiquetaNota[] {

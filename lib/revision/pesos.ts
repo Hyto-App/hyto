@@ -48,9 +48,11 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
  * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar,
  *   or f1 otro_gasto (a different kind of expense). The band stays insuficiente.
- * - TOPE_FALTA_SERIA (79): g2 is false. The band cannot be cumplió.
- * - TOPE_NOTA_REEMBOLSO (40): the amount is missing, not positive, the date is
- *   missing, or the amount is over the task cap.
+ * - TOPE_FALTA_SERIA (79): g2 is false. The band cannot be cumplió. A reimbursement also stops at 79
+ *   when the purchase date is missing, when the printed total has no currency Hyto can convert to US
+ *   dollars, or when the dollar amount is over the task cap. The confirmed amount, which cannot pass
+ *   the cap, is what gets paid.
+ * - TOPE_NOTA_REEMBOLSO (40): a reimbursement with no positive total at all.
  * When more than one cap applies, the lowest one wins.
  */
 export const PESOS_PREGUNTAS = {
@@ -92,7 +94,10 @@ export type MotivoTope =
   | "sin_empezar"
   | "otro_gasto"
   | "gasto_no_razonable"
-  | "reembolso";
+  | "sin_monto"
+  | "sin_fecha"
+  | "moneda_sin_usd"
+  | "sobre_tope";
 
 const TOPE_DE: Record<MotivoTope, number> = {
   otra: TOPE_FALTA_GRAVE,
@@ -100,7 +105,10 @@ const TOPE_DE: Record<MotivoTope, number> = {
   sin_empezar: TOPE_FALTA_GRAVE,
   otro_gasto: TOPE_FALTA_GRAVE,
   gasto_no_razonable: TOPE_FALTA_SERIA,
-  reembolso: TOPE_NOTA_REEMBOLSO,
+  sin_monto: TOPE_NOTA_REEMBOLSO,
+  sin_fecha: TOPE_FALTA_SERIA,
+  moneda_sin_usd: TOPE_FALTA_SERIA,
+  sobre_tope: TOPE_FALTA_SERIA,
 };
 
 export function motivosTrabajo(respuestas: RespuestasTrabajo): MotivoTope[] {

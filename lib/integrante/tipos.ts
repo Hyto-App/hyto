@@ -4,13 +4,14 @@ export type TipoTarea = "trabajo" | "reembolso";
 
 export type EstadoTarea = "pendiente" | "en revisión" | "pagado";
 
+/** Timeline from mailbox #058. Absent until the member task API sends it. */
+export type EtapaTarea = "en_revision" | "enviada_organizador" | "aprobada" | "rechazada";
+
 export type PrioridadTarea = "normal" | "high";
 
 export type DificultadTarea = "easy" | "medium" | "hard";
 
 export type OrigenRechazo = "mile" | "organizador";
-
-export type EtapaTarea = "en_revision" | "enviada_organizador" | "aprobada" | "rechazada";
 
 /** One point of the #058 contract. At most 3. `cumple` stays null until a review says so. */
 export type RequisitoRevision = {
@@ -57,6 +58,8 @@ export type Tarea = {
   requisitos?: RequisitoRevision[];
   /** Confirmed reimbursement amount, when the API sends one. */
   montoPagado?: string | null;
+  /** ISO-8601 instant the latest photo was sent (`enviada_en`). */
+  enviadaEn?: string | null;
 };
 
 export type Evidencia = {

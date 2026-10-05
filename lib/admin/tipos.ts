@@ -5,6 +5,16 @@ export type Veredicto = "cumplió" | "parcial" | "insuficiente";
 
 export type Decision = "pagado" | "pendiente";
 
+/** What the receipt printed, before Hyto converted it. montoRevisado holds the dollar figure. */
+export type LecturaVisible = {
+  moneda: string | null;
+  montoOriginal: string | null;
+  /** Units of `moneda` per 1 USD used for the conversion. */
+  tasa: number | null;
+  fechaImpresa: string | null;
+  comercio: string | null;
+};
+
 export type TareaAdmin = {
   id: string;
   titulo: string;
@@ -28,6 +38,7 @@ export type TareaAdmin = {
   tipoArchivo?: string | null;
   motivoCopia?: string | null;
   etiquetas?: EtiquetaNota[];
+  lectura?: LecturaVisible | null;
 };
 
 export type TareaCreada = {

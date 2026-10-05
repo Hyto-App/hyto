@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { Numeros } from "@/components/admin/Numeros";
-import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
+import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
@@ -278,7 +278,16 @@ export function Bandeja({
             {seleccion ? (
               <aside className="hyto-panel">
                 <p className="text-sm text-[var(--suave)]">{t("bandeja.recommendation")}</p>
-                <div className="mt-3">{seleccion.veredicto ? <PastillaVeredicto veredicto={seleccion.veredicto} nota={seleccion.nota} /> : <p className="text-sm text-[var(--suave)]">{t("bandeja.noRecommendation")}</p>}</div>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  {seleccion.veredicto ? (
+                    <>
+                      <PastillaVeredicto veredicto={seleccion.veredicto} nota={seleccion.nota} />
+                      <MotivoNota etiquetas={seleccion.etiquetas} />
+                    </>
+                  ) : (
+                    <p className="text-sm text-[var(--suave)]">{t("bandeja.noRecommendation")}</p>
+                  )}
+                </div>
                 <EtiquetasNota etiquetas={seleccion.etiquetas} />
                 {seleccion.condicion ? (
                   <>

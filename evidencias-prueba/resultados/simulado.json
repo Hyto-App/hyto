@@ -1,0 +1,1379 @@
+{
+  "modo": "simulado",
+  "modeloVision": "simulado",
+  "laya": "simulada",
+  "crcPorUsd": 505,
+  "generadoEn": "2026-10-05T08:12:39.093Z",
+  "omitidos": [],
+  "casos": [
+    {
+      "id": "recibo-little-caesars-crc",
+      "etiqueta": "Little Caesars receipt in Costa Rican colones, total ₡7.350,00, dated 02/10/2026. Sharp and complete.",
+      "foto": "evidencias-prueba/recibo-little-caesars.jpg",
+      "esperado": {
+        "veredicto": "cumplió",
+        "motivo": "matches"
+      },
+      "antes": {
+        "nota": 40,
+        "veredicto": "insuficiente",
+        "detalle": "Reported in #039: amount and date missing, dollars assumed."
+      },
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "recibo",
+        "pais": "CR",
+        "moneda": "CRC",
+        "monto_original": "₡7.350,00",
+        "monto_usd": null,
+        "fecha": "02/10/2026",
+        "comercio": "Little Caesars",
+        "articulos": [
+          "Classic Pepperoni pizza",
+          "Crazy Bread",
+          "Soft drink 600 ml"
+        ],
+        "texto_completo": "A printed Little Caesars receipt photographed on a table in Costa Rica. It lists one Classic Pepperoni pizza, one Crazy Bread, and one 600 ml soft drink. The total is printed as ₡7.350,00, in Costa Rican colones, with sales tax included. The purchase date is printed as 02/10/2026 next to the time. The receipt is sharp and every line is readable. It is the meal receipt the organizer asked for.",
+        "legible": true,
+        "faltantes": []
+      },
+      "descripcion": "A printed Little Caesars receipt photographed on a table in Costa Rica. It lists one Classic Pepperoni pizza, one Crazy Bread, and one 600 ml soft drink. The total is printed as ₡7.350,00, in Costa Rican colones, with sales tax included. The purchase date is printed as 02/10/2026 next to the time. The receipt is sharp and every line is readable. It is the meal receipt the organizer asked for.",
+      "lectura": {
+        "tipo": "recibo",
+        "pais": "CR",
+        "moneda": "CRC",
+        "montoOriginal": "₡7.350,00",
+        "montoUsd": "14.55",
+        "tasa": 505,
+        "fecha": "2026-10-02",
+        "fechaImpresa": "02/10/2026",
+        "comercio": "Little Caesars",
+        "articulos": [
+          "Classic Pepperoni pizza",
+          "Crazy Bread",
+          "Soft drink 600 ml"
+        ],
+        "legible": true,
+        "faltantes": []
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Little Caesars.\nItems: Classic Pepperoni pizza, Crazy Bread, Soft drink 600 ml.\nTotal as printed: ₡7.350,00.\nCurrency: CRC (Costa Rican colones).\nTotal in US dollars: 14.55, converted by Hyto at 505 CRC per US dollar.\nPurchase date: 2026-10-02 (printed as 02/10/2026).\nCountry: CR.\nMissing from the photo: none.\nDescription: A printed Little Caesars receipt photographed on a table in Costa Rica. It lists one Classic Pepperoni pizza, one Crazy Bread, and one 600 ml soft drink. The total is printed as ₡7.350,00, in Costa Rican colones, with sales tax included. The purchase date is printed as 02/10/2026 next to the time. The receipt is sharp and every line is readable. It is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "factura"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Little Caesars.\nItems: Classic Pepperoni pizza, Crazy Bread, Soft drink 600 ml.\nTotal as printed: ₡7.350,00.\nCurrency: CRC (Costa Rican colones).\nTotal in US dollars: 14.55, converted by Hyto at 505 CRC per US dollar.\nPurchase date: 2026-10-02 (printed as 02/10/2026).\nCountry: CR.\nMissing from the photo: none.\nDescription: A printed Little Caesars receipt photographed on a table in Costa Rica. It lists one Classic Pepperoni pizza, one Crazy Bread, and one 600 ml soft drink. The total is printed as ₡7.350,00, in Costa Rican colones, with sales tax included. The purchase date is printed as 02/10/2026 next to the time. The receipt is sharp and every line is readable. It is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5"
+          ],
+          "respuestas": {
+            "f1": {
+              "choice": "coincide_con_lo_pedido"
+            },
+            "f2": {
+              "noul": true
+            },
+            "f3": {
+              "noul": true
+            },
+            "f4": {
+              "score": 2
+            },
+            "g1": {
+              "choice": "comida_o_bebida"
+            },
+            "g2": {
+              "noul": true
+            },
+            "g3": {
+              "noul": true
+            },
+            "g4": {
+              "noul": true
+            },
+            "g5": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "factura",
+        "trabajo": null,
+        "factura": {
+          "f1": "coincide_con_lo_pedido",
+          "f2": true,
+          "f3": true,
+          "f4": 2,
+          "g1": "comida_o_bebida",
+          "g2": true,
+          "g3": true,
+          "g4": true,
+          "g5": 2
+        },
+        "cerca": []
+      },
+      "monto": "14.55",
+      "fecha": "2026-10-02",
+      "nota": 100,
+      "veredicto": "cumplió",
+      "razones": [
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        },
+        {
+          "id": "amount_date",
+          "texto": "Amount and date found",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "matches",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "recibo-usd",
+      "etiqueta": "Subway receipt from the United States, total $12.40, dated 09/27/2026.",
+      "foto": "evidencias-prueba/recibo-usd.jpg",
+      "esperado": {
+        "veredicto": "cumplió",
+        "motivo": "matches"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "recibo",
+        "pais": "US",
+        "moneda": "USD",
+        "monto_original": "$12.40",
+        "monto_usd": "12.40",
+        "fecha": "09/27/2026",
+        "comercio": "Subway",
+        "articulos": [
+          "Turkey sub",
+          "Bottled water"
+        ],
+        "texto_completo": "A printed Subway receipt from a store in Miami, Florida. It lists one turkey sub and one bottled water. The total is printed as $12.40 in US dollars. The purchase date is printed as 09/27/2026. The receipt is sharp and readable. It is the meal receipt the organizer asked for.",
+        "legible": true,
+        "faltantes": []
+      },
+      "descripcion": "A printed Subway receipt from a store in Miami, Florida. It lists one turkey sub and one bottled water. The total is printed as $12.40 in US dollars. The purchase date is printed as 09/27/2026. The receipt is sharp and readable. It is the meal receipt the organizer asked for.",
+      "lectura": {
+        "tipo": "recibo",
+        "pais": "US",
+        "moneda": "USD",
+        "montoOriginal": "$12.40",
+        "montoUsd": "12.40",
+        "tasa": 1,
+        "fecha": "2026-09-27",
+        "fechaImpresa": "09/27/2026",
+        "comercio": "Subway",
+        "articulos": [
+          "Turkey sub",
+          "Bottled water"
+        ],
+        "legible": true,
+        "faltantes": []
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Subway.\nItems: Turkey sub, Bottled water.\nTotal as printed: $12.40.\nCurrency: USD (US dollars).\nTotal in US dollars: 12.40.\nPurchase date: 2026-09-27 (printed as 09/27/2026).\nCountry: US.\nMissing from the photo: none.\nDescription: A printed Subway receipt from a store in Miami, Florida. It lists one turkey sub and one bottled water. The total is printed as $12.40 in US dollars. The purchase date is printed as 09/27/2026. The receipt is sharp and readable. It is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "factura"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Subway.\nItems: Turkey sub, Bottled water.\nTotal as printed: $12.40.\nCurrency: USD (US dollars).\nTotal in US dollars: 12.40.\nPurchase date: 2026-09-27 (printed as 09/27/2026).\nCountry: US.\nMissing from the photo: none.\nDescription: A printed Subway receipt from a store in Miami, Florida. It lists one turkey sub and one bottled water. The total is printed as $12.40 in US dollars. The purchase date is printed as 09/27/2026. The receipt is sharp and readable. It is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5"
+          ],
+          "respuestas": {
+            "f1": {
+              "choice": "coincide_con_lo_pedido"
+            },
+            "f2": {
+              "noul": true
+            },
+            "f3": {
+              "noul": true
+            },
+            "f4": {
+              "score": 2
+            },
+            "g1": {
+              "choice": "comida_o_bebida"
+            },
+            "g2": {
+              "noul": true
+            },
+            "g3": {
+              "noul": true
+            },
+            "g4": {
+              "noul": true
+            },
+            "g5": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "factura",
+        "trabajo": null,
+        "factura": {
+          "f1": "coincide_con_lo_pedido",
+          "f2": true,
+          "f3": true,
+          "f4": 2,
+          "g1": "comida_o_bebida",
+          "g2": true,
+          "g3": true,
+          "g4": true,
+          "g5": 2
+        },
+        "cerca": []
+      },
+      "monto": "12.40",
+      "fecha": "2026-09-27",
+      "nota": 100,
+      "veredicto": "cumplió",
+      "razones": [
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        },
+        {
+          "id": "amount_date",
+          "texto": "Amount and date found",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "matches",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "recibo-sin-fecha",
+      "etiqueta": "Costa Rican meal receipt, total ₡6.900,00. The top is torn off, so there is no date.",
+      "foto": "evidencias-prueba/recibo-sin-fecha.jpg",
+      "esperado": {
+        "veredicto": "parcial",
+        "motivo": "date_missing"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "recibo",
+        "pais": "CR",
+        "moneda": "CRC",
+        "monto_original": "₡6.900,00",
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": "Soda La Esquina",
+        "articulos": [
+          "Casado con pollo",
+          "Fresco natural"
+        ],
+        "texto_completo": "A printed receipt from Soda La Esquina in Costa Rica. It lists one casado with chicken and one natural fruit drink. The total is printed as ₡6.900,00 in Costa Rican colones. The top of the receipt is torn off, so no purchase date is visible. The rest of the receipt is sharp and readable. It is a meal receipt, as the organizer asked.",
+        "legible": true,
+        "faltantes": [
+          "purchase date"
+        ]
+      },
+      "descripcion": "A printed receipt from Soda La Esquina in Costa Rica. It lists one casado with chicken and one natural fruit drink. The total is printed as ₡6.900,00 in Costa Rican colones. The top of the receipt is torn off, so no purchase date is visible. The rest of the receipt is sharp and readable. It is a meal receipt, as the organizer asked.",
+      "lectura": {
+        "tipo": "recibo",
+        "pais": "CR",
+        "moneda": "CRC",
+        "montoOriginal": "₡6.900,00",
+        "montoUsd": "13.66",
+        "tasa": 505,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": "Soda La Esquina",
+        "articulos": [
+          "Casado con pollo",
+          "Fresco natural"
+        ],
+        "legible": true,
+        "faltantes": [
+          "purchase date"
+        ]
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Soda La Esquina.\nItems: Casado con pollo, Fresco natural.\nTotal as printed: ₡6.900,00.\nCurrency: CRC (Costa Rican colones).\nTotal in US dollars: 13.66, converted by Hyto at 505 CRC per US dollar.\nPurchase date: not shown.\nCountry: CR.\nMissing from the photo: purchase date.\nDescription: A printed receipt from Soda La Esquina in Costa Rica. It lists one casado with chicken and one natural fruit drink. The total is printed as ₡6.900,00 in Costa Rican colones. The top of the receipt is torn off, so no purchase date is visible. The rest of the receipt is sharp and readable. It is a meal receipt, as the organizer asked.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "factura"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Soda La Esquina.\nItems: Casado con pollo, Fresco natural.\nTotal as printed: ₡6.900,00.\nCurrency: CRC (Costa Rican colones).\nTotal in US dollars: 13.66, converted by Hyto at 505 CRC per US dollar.\nPurchase date: not shown.\nCountry: CR.\nMissing from the photo: purchase date.\nDescription: A printed receipt from Soda La Esquina in Costa Rica. It lists one casado with chicken and one natural fruit drink. The total is printed as ₡6.900,00 in Costa Rican colones. The top of the receipt is torn off, so no purchase date is visible. The rest of the receipt is sharp and readable. It is a meal receipt, as the organizer asked.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5"
+          ],
+          "respuestas": {
+            "f1": {
+              "choice": "coincide_con_lo_pedido"
+            },
+            "f2": {
+              "noul": true
+            },
+            "f3": {
+              "noul": false
+            },
+            "f4": {
+              "score": 1
+            },
+            "g1": {
+              "choice": "comida_o_bebida"
+            },
+            "g2": {
+              "noul": true
+            },
+            "g3": {
+              "noul": true
+            },
+            "g4": {
+              "noul": true
+            },
+            "g5": {
+              "score": 1
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "factura",
+        "trabajo": null,
+        "factura": {
+          "f1": "coincide_con_lo_pedido",
+          "f2": true,
+          "f3": false,
+          "f4": 1,
+          "g1": "comida_o_bebida",
+          "g2": true,
+          "g3": true,
+          "g4": true,
+          "g5": 1
+        },
+        "cerca": []
+      },
+      "monto": "13.66",
+      "fecha": null,
+      "nota": 78,
+      "veredicto": "parcial",
+      "razones": [
+        {
+          "id": "date_missing",
+          "texto": "Receipt date missing",
+          "severidad": "warning"
+        },
+        {
+          "id": "part_missing",
+          "texto": "Part of the request missing",
+          "severidad": "warning"
+        },
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "date_missing",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "recibo-borroso",
+      "etiqueta": "A receipt so blurry that no total, date, or merchant can be read.",
+      "foto": "evidencias-prueba/recibo-borroso.jpg",
+      "esperado": {
+        "veredicto": "insuficiente",
+        "motivo": "photo_unclear"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "recibo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": null,
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": null,
+        "articulos": [],
+        "texto_completo": "A blurry photo of what looks like a small paper receipt held in a hand. The text is out of focus and cannot be read. No merchant name, items, total, or date can be made out. It cannot be confirmed that this is the meal receipt the organizer asked for.",
+        "legible": false,
+        "faltantes": [
+          "readable total",
+          "purchase date",
+          "merchant name",
+          "items"
+        ]
+      },
+      "descripcion": "A blurry photo of what looks like a small paper receipt held in a hand. The text is out of focus and cannot be read. No merchant name, items, total, or date can be made out. It cannot be confirmed that this is the meal receipt the organizer asked for.",
+      "lectura": {
+        "tipo": "recibo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": null,
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": null,
+        "articulos": [],
+        "legible": false,
+        "faltantes": [
+          "readable total",
+          "purchase date",
+          "merchant name",
+          "items"
+        ]
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: no, it is blurry, dark, or cut off.\nMerchant: not shown.\nItems: none named.\nTotal as printed: not shown.\nCurrency: not shown, so the total was not converted to US dollars.\nPurchase date: not shown.\nMissing from the photo: readable total; purchase date; merchant name; items.\nDescription: A blurry photo of what looks like a small paper receipt held in a hand. The text is out of focus and cannot be read. No merchant name, items, total, or date can be made out. It cannot be confirmed that this is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "factura"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: no, it is blurry, dark, or cut off.\nMerchant: not shown.\nItems: none named.\nTotal as printed: not shown.\nCurrency: not shown, so the total was not converted to US dollars.\nPurchase date: not shown.\nMissing from the photo: readable total; purchase date; merchant name; items.\nDescription: A blurry photo of what looks like a small paper receipt held in a hand. The text is out of focus and cannot be read. No merchant name, items, total, or date can be made out. It cannot be confirmed that this is the meal receipt the organizer asked for.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5"
+          ],
+          "respuestas": {
+            "f1": {
+              "choice": "no_se_ve"
+            },
+            "f2": {
+              "noul": false
+            },
+            "f3": {
+              "noul": false
+            },
+            "f4": {
+              "score": 0
+            },
+            "g1": {
+              "choice": "otro_o_no_claro"
+            },
+            "g2": {
+              "noul": false
+            },
+            "g3": {
+              "noul": false
+            },
+            "g4": {
+              "noul": false
+            },
+            "g5": {
+              "score": 0
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "factura",
+        "trabajo": null,
+        "factura": {
+          "f1": "no_se_ve",
+          "f2": false,
+          "f3": false,
+          "f4": 0,
+          "g1": "otro_o_no_claro",
+          "g2": false,
+          "g3": false,
+          "g4": false,
+          "g5": 0
+        },
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": null,
+      "nota": 9,
+      "veredicto": "insuficiente",
+      "razones": [
+        {
+          "id": "photo_unclear",
+          "texto": "Photo unclear or blurry",
+          "severidad": "problem"
+        },
+        {
+          "id": "amount_missing",
+          "texto": "Receipt amount missing",
+          "severidad": "problem"
+        },
+        {
+          "id": "none_shown",
+          "texto": "Requested parts are missing",
+          "severidad": "problem"
+        },
+        {
+          "id": "no_item",
+          "texto": "No item named",
+          "severidad": "problem"
+        },
+        {
+          "id": "cap_no_razonable",
+          "texto": "Cannot be Completed: the expense is not reasonable",
+          "severidad": "warning"
+        },
+        {
+          "id": "date_missing",
+          "texto": "Receipt date missing",
+          "severidad": "warning"
+        },
+        {
+          "id": "unclear_match",
+          "texto": "Match is unclear",
+          "severidad": "warning"
+        },
+        {
+          "id": "low_detail",
+          "texto": "Low detail",
+          "severidad": "warning"
+        }
+      ],
+      "motivo": "photo_unclear",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "recibo-sin-moneda",
+      "etiqueta": "Cropped receipt, total 7.350,00 with no currency symbol or name, dated 02/10/2026.",
+      "foto": "evidencias-prueba/recibo-sin-moneda.jpg",
+      "esperado": {
+        "veredicto": "parcial",
+        "motivo": "currency_unknown"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "recibo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": "7.350,00",
+        "monto_usd": null,
+        "fecha": "02/10/2026",
+        "comercio": "Soda El Parque",
+        "articulos": [
+          "Coffee",
+          "Empanada x2"
+        ],
+        "texto_completo": "A cropped photo of a printed receipt from Soda El Parque. It lists one coffee and two empanadas. The total is printed as 7.350,00 with no currency symbol or currency name visible. The purchase date is printed as 02/10/2026. The receipt is sharp and readable. It is a meal receipt, as the organizer asked.",
+        "legible": true,
+        "faltantes": [
+          "currency"
+        ]
+      },
+      "descripcion": "A cropped photo of a printed receipt from Soda El Parque. It lists one coffee and two empanadas. The total is printed as 7.350,00 with no currency symbol or currency name visible. The purchase date is printed as 02/10/2026. The receipt is sharp and readable. It is a meal receipt, as the organizer asked.",
+      "lectura": {
+        "tipo": "recibo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": "7.350,00",
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": "2026-10-02",
+        "fechaImpresa": "02/10/2026",
+        "comercio": "Soda El Parque",
+        "articulos": [
+          "Coffee",
+          "Empanada x2"
+        ],
+        "legible": true,
+        "faltantes": [
+          "currency"
+        ]
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Soda El Parque.\nItems: Coffee, Empanada x2.\nTotal as printed: 7.350,00.\nCurrency: not shown, so the total was not converted to US dollars.\nPurchase date: 2026-10-02 (printed as 02/10/2026).\nMissing from the photo: currency.\nDescription: A cropped photo of a printed receipt from Soda El Parque. It lists one coffee and two empanadas. The total is printed as 7.350,00 with no currency symbol or currency name visible. The purchase date is printed as 02/10/2026. The receipt is sharp and readable. It is a meal receipt, as the organizer asked.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "factura"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: a receipt or an invoice.\nReadable photo: yes.\nMerchant: Soda El Parque.\nItems: Coffee, Empanada x2.\nTotal as printed: 7.350,00.\nCurrency: not shown, so the total was not converted to US dollars.\nPurchase date: 2026-10-02 (printed as 02/10/2026).\nMissing from the photo: currency.\nDescription: A cropped photo of a printed receipt from Soda El Parque. It lists one coffee and two empanadas. The total is printed as 7.350,00 with no currency symbol or currency name visible. The purchase date is printed as 02/10/2026. The receipt is sharp and readable. It is a meal receipt, as the organizer asked.\nCondition: Photo of the meal receipt",
+          "preguntas": [
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "g1",
+            "g2",
+            "g3",
+            "g4",
+            "g5"
+          ],
+          "respuestas": {
+            "f1": {
+              "choice": "coincide_con_lo_pedido"
+            },
+            "f2": {
+              "noul": true
+            },
+            "f3": {
+              "noul": true
+            },
+            "f4": {
+              "score": 2
+            },
+            "g1": {
+              "choice": "comida_o_bebida"
+            },
+            "g2": {
+              "noul": true
+            },
+            "g3": {
+              "noul": true
+            },
+            "g4": {
+              "noul": true
+            },
+            "g5": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "factura",
+        "trabajo": null,
+        "factura": {
+          "f1": "coincide_con_lo_pedido",
+          "f2": true,
+          "f3": true,
+          "f4": 2,
+          "g1": "comida_o_bebida",
+          "g2": true,
+          "g3": true,
+          "g4": true,
+          "g5": 2
+        },
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": "2026-10-02",
+      "nota": 79,
+      "veredicto": "parcial",
+      "razones": [
+        {
+          "id": "currency_unknown",
+          "texto": "Currency not shown",
+          "severidad": "warning"
+        },
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "currency_unknown",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "trabajo-stand-ok",
+      "etiqueta": "Finished booth: ZEEK banner readable, table set up with a cloth and flyers.",
+      "foto": "evidencias-prueba/trabajo-stand-ok.jpg",
+      "esperado": {
+        "veredicto": "cumplió",
+        "motivo": "matches"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": null,
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": null,
+        "articulos": [
+          "ZEEK banner",
+          "folding table",
+          "tablecloth",
+          "flyers",
+          "laptop"
+        ],
+        "texto_completo": "An event booth inside a hall. A ZEEK banner hangs behind a folding table, facing the camera and fully readable. The table is covered with a black cloth and holds flyers, stickers, and a laptop. Two chairs stand behind the table. The booth looks finished and ready for visitors. This matches the request: the banner is visible and the table is set up.",
+        "legible": true,
+        "faltantes": []
+      },
+      "descripcion": "An event booth inside a hall. A ZEEK banner hangs behind a folding table, facing the camera and fully readable. The table is covered with a black cloth and holds flyers, stickers, and a laptop. Two chairs stand behind the table. The booth looks finished and ready for visitors. This matches the request: the banner is visible and the table is set up.",
+      "lectura": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": null,
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": null,
+        "articulos": [
+          "ZEEK banner",
+          "folding table",
+          "tablecloth",
+          "flyers",
+          "laptop"
+        ],
+        "legible": true,
+        "faltantes": []
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: ZEEK banner, folding table, tablecloth, flyers, laptop.\nMissing from the photo: none.\nDescription: An event booth inside a hall. A ZEEK banner hangs behind a folding table, facing the camera and fully readable. The table is covered with a black cloth and holds flyers, stickers, and a laptop. Two chairs stand behind the table. The booth looks finished and ready for visitors. This matches the request: the banner is visible and the table is set up.\nCondition: Banner visible and the table set up",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "trabajo"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: ZEEK banner, folding table, tablecloth, flyers, laptop.\nMissing from the photo: none.\nDescription: An event booth inside a hall. A ZEEK banner hangs behind a folding table, facing the camera and fully readable. The table is covered with a black cloth and holds flyers, stickers, and a laptop. Two chairs stand behind the table. The booth looks finished and ready for visitors. This matches the request: the banner is visible and the table is set up.\nCondition: Banner visible and the table set up",
+          "preguntas": [
+            "lugar",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "t5",
+            "t6",
+            "t7",
+            "t8",
+            "t9",
+            "t10"
+          ],
+          "respuestas": {
+            "lugar": {
+              "choice": "stand_o_mesa"
+            },
+            "v1": {
+              "choice": "es_lo_pedido"
+            },
+            "v2": {
+              "score": 2
+            },
+            "v3": {
+              "noul": true
+            },
+            "v4": {
+              "noul": false
+            },
+            "t5": {
+              "choice": "armar_o_montar"
+            },
+            "t6": {
+              "choice": "terminado"
+            },
+            "t7": {
+              "noul": true
+            },
+            "t8": {
+              "noul": true
+            },
+            "t9": {
+              "noul": false
+            },
+            "t10": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "trabajo",
+        "trabajo": {
+          "lugar": "stand_o_mesa",
+          "v1": "es_lo_pedido",
+          "v2": 2,
+          "v3": true,
+          "v4": false,
+          "t5": "armar_o_montar",
+          "t6": "terminado",
+          "t7": true,
+          "t8": true,
+          "t9": false,
+          "t10": 2
+        },
+        "factura": null,
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": null,
+      "nota": 100,
+      "veredicto": "cumplió",
+      "razones": [
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        },
+        {
+          "id": "finished",
+          "texto": "Finished",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "matches",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "trabajo-pared-sin-pintar",
+      "etiqueta": "The wall that had to be painted is still bare. The paint cans are closed.",
+      "foto": "evidencias-prueba/trabajo-pared-sin-pintar.jpg",
+      "esperado": {
+        "veredicto": "insuficiente",
+        "motivo": "cap_no_coincide"
+      },
+      "antes": null,
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": null,
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": null,
+        "articulos": [
+          "bare concrete wall",
+          "closed paint cans",
+          "dry roller"
+        ],
+        "texto_completo": "A grey concrete wall beside a doorway, seen from the front. The wall is bare, with no fresh paint on it. Two closed paint cans and a dry roller sit on the floor. Nothing shows that painting has started. The photo does not show the entrance wall painted white.",
+        "legible": true,
+        "faltantes": [
+          "painted wall"
+        ]
+      },
+      "descripcion": "A grey concrete wall beside a doorway, seen from the front. The wall is bare, with no fresh paint on it. Two closed paint cans and a dry roller sit on the floor. Nothing shows that painting has started. The photo does not show the entrance wall painted white.",
+      "lectura": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": null,
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": null,
+        "articulos": [
+          "bare concrete wall",
+          "closed paint cans",
+          "dry roller"
+        ],
+        "legible": true,
+        "faltantes": [
+          "painted wall"
+        ]
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: bare concrete wall, closed paint cans, dry roller.\nMissing from the photo: painted wall.\nDescription: A grey concrete wall beside a doorway, seen from the front. The wall is bare, with no fresh paint on it. Two closed paint cans and a dry roller sit on the floor. Nothing shows that painting has started. The photo does not show the entrance wall painted white.\nCondition: Entrance wall painted white, with no bare patches",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "trabajo"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: bare concrete wall, closed paint cans, dry roller.\nMissing from the photo: painted wall.\nDescription: A grey concrete wall beside a doorway, seen from the front. The wall is bare, with no fresh paint on it. Two closed paint cans and a dry roller sit on the floor. Nothing shows that painting has started. The photo does not show the entrance wall painted white.\nCondition: Entrance wall painted white, with no bare patches",
+          "preguntas": [
+            "lugar",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "t5",
+            "t6",
+            "t7",
+            "t8",
+            "t9",
+            "t10"
+          ],
+          "respuestas": {
+            "lugar": {
+              "choice": "pared_o_superficie"
+            },
+            "v1": {
+              "choice": "es_otra_cosa"
+            },
+            "v2": {
+              "score": 0
+            },
+            "v3": {
+              "noul": false
+            },
+            "v4": {
+              "noul": true
+            },
+            "t5": {
+              "choice": "pintar"
+            },
+            "t6": {
+              "choice": "sin_empezar"
+            },
+            "t7": {
+              "noul": true
+            },
+            "t8": {
+              "noul": true
+            },
+            "t9": {
+              "noul": true
+            },
+            "t10": {
+              "score": 0
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "trabajo",
+        "trabajo": {
+          "lugar": "pared_o_superficie",
+          "v1": "es_otra_cosa",
+          "v2": 0,
+          "v3": false,
+          "v4": true,
+          "t5": "pintar",
+          "t6": "sin_empezar",
+          "t7": true,
+          "t8": true,
+          "t9": true,
+          "t10": 0
+        },
+        "factura": null,
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": null,
+      "nota": 16,
+      "veredicto": "insuficiente",
+      "razones": [
+        {
+          "id": "cap_no_coincide",
+          "texto": "Serious issue: does not match the request",
+          "severidad": "problem"
+        },
+        {
+          "id": "cap_sin_empezar",
+          "texto": "Serious issue: the work has not started",
+          "severidad": "problem"
+        },
+        {
+          "id": "none_shown",
+          "texto": "Requested parts are missing",
+          "severidad": "problem"
+        },
+        {
+          "id": "part_missing",
+          "texto": "Part of the request missing",
+          "severidad": "problem"
+        }
+      ],
+      "motivo": "cap_no_coincide",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "salon-lleno",
+      "etiqueta": "A room full of attendees during a talk. Valid evidence for an attendance task.",
+      "foto": "evidencias-prueba/salon-lleno.jpg",
+      "esperado": {
+        "veredicto": "cumplió",
+        "motivo": "low_detail"
+      },
+      "antes": {
+        "nota": 0,
+        "veredicto": "insuficiente",
+        "detalle": "Reported in #044 (P0-B): a valid photo got 0% Insufficient."
+      },
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": null,
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": null,
+        "articulos": [
+          "rows of chairs",
+          "attendees",
+          "projector screen",
+          "speaker"
+        ],
+        "texto_completo": "A large meeting room seen from the back during a talk. Almost every chair is taken: about sixty people sit in rows facing a screen with slides. A speaker stands at the front next to the screen. The room looks full, which is what the organizer asked to see. Nothing requested seems to be missing.",
+        "legible": true,
+        "faltantes": []
+      },
+      "descripcion": "A large meeting room seen from the back during a talk. Almost every chair is taken: about sixty people sit in rows facing a screen with slides. A speaker stands at the front next to the screen. The room looks full, which is what the organizer asked to see. Nothing requested seems to be missing.",
+      "lectura": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": null,
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": null,
+        "articulos": [
+          "rows of chairs",
+          "attendees",
+          "projector screen",
+          "speaker"
+        ],
+        "legible": true,
+        "faltantes": []
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: rows of chairs, attendees, projector screen, speaker.\nMissing from the photo: none.\nDescription: A large meeting room seen from the back during a talk. Almost every chair is taken: about sixty people sit in rows facing a screen with slides. A speaker stands at the front next to the screen. The room looks full, which is what the organizer asked to see. Nothing requested seems to be missing.\nCondition: Photo of the room full of attendees during the talk",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "otra"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: rows of chairs, attendees, projector screen, speaker.\nMissing from the photo: none.\nDescription: A large meeting room seen from the back during a talk. Almost every chair is taken: about sixty people sit in rows facing a screen with slides. A speaker stands at the front next to the screen. The room looks full, which is what the organizer asked to see. Nothing requested seems to be missing.\nCondition: Photo of the room full of attendees during the talk",
+          "preguntas": [
+            "lugar",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "t5",
+            "t6",
+            "t7",
+            "t8",
+            "t9",
+            "t10"
+          ],
+          "respuestas": {
+            "lugar": {
+              "choice": "no_claro"
+            },
+            "v1": {
+              "choice": "es_lo_pedido"
+            },
+            "v2": {
+              "score": 2
+            },
+            "v3": {
+              "noul": true
+            },
+            "v4": {
+              "noul": false
+            },
+            "t5": {
+              "choice": "otra_o_no_claro"
+            },
+            "t6": {
+              "choice": "terminado"
+            },
+            "t7": {
+              "noul": false
+            },
+            "t8": {
+              "noul": true
+            },
+            "t9": {
+              "noul": false
+            },
+            "t10": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "trabajo",
+        "trabajo": {
+          "lugar": "no_claro",
+          "v1": "es_lo_pedido",
+          "v2": 2,
+          "v3": true,
+          "v4": false,
+          "t5": "otra_o_no_claro",
+          "t6": "terminado",
+          "t7": false,
+          "t8": true,
+          "t9": false,
+          "t10": 2
+        },
+        "factura": null,
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": null,
+      "nota": 96,
+      "veredicto": "cumplió",
+      "razones": [
+        {
+          "id": "low_detail",
+          "texto": "Low detail",
+          "severidad": "warning"
+        },
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        },
+        {
+          "id": "finished",
+          "texto": "Finished",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "low_detail",
+      "cumple": true,
+      "motivoCoincide": true
+    },
+    {
+      "id": "pinto-con-huevo",
+      "etiqueta": "A served plate of gallo pinto with a fried egg. Valid evidence for a breakfast task.",
+      "foto": "evidencias-prueba/pinto-con-huevo.jpg",
+      "esperado": {
+        "veredicto": "cumplió",
+        "motivo": "matches"
+      },
+      "antes": {
+        "nota": 0,
+        "veredicto": "insuficiente",
+        "detalle": "Reported in #044 (P0-C): a valid photo got 0% Insufficient."
+      },
+      "origen": "scout",
+      "codigo": null,
+      "qwen": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "monto_original": null,
+        "monto_usd": null,
+        "fecha": null,
+        "comercio": null,
+        "articulos": [
+          "gallo pinto",
+          "fried egg",
+          "plate",
+          "coffee"
+        ],
+        "texto_completo": "A white plate with gallo pinto, the Costa Rican rice and beans dish, and a fried egg on top. The plate sits on a table next to a fork and a cup of coffee. The food looks freshly served and complete. This matches the request for a photo of the breakfast served, gallo pinto with egg. Nothing requested is missing.",
+        "legible": true,
+        "faltantes": []
+      },
+      "descripcion": "A white plate with gallo pinto, the Costa Rican rice and beans dish, and a fried egg on top. The plate sits on a table next to a fork and a cup of coffee. The food looks freshly served and complete. This matches the request for a photo of the breakfast served, gallo pinto with egg. Nothing requested is missing.",
+      "lectura": {
+        "tipo": "trabajo",
+        "pais": null,
+        "moneda": null,
+        "montoOriginal": null,
+        "montoUsd": null,
+        "tasa": null,
+        "fecha": null,
+        "fechaImpresa": null,
+        "comercio": null,
+        "articulos": [
+          "gallo pinto",
+          "fried egg",
+          "plate",
+          "coffee"
+        ],
+        "legible": true,
+        "faltantes": []
+      },
+      "laya": [
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: gallo pinto, fried egg, plate, coffee.\nMissing from the photo: none.\nDescription: A white plate with gallo pinto, the Costa Rican rice and beans dish, and a fried egg on top. The plate sits on a table next to a fork and a cup of coffee. The food looks freshly served and complete. This matches the request for a photo of the breakfast served, gallo pinto with egg. Nothing requested is missing.\nCondition: Photo of the breakfast served: gallo pinto with egg",
+          "preguntas": [
+            "c1"
+          ],
+          "respuestas": {
+            "c1": {
+              "choice": "trabajo"
+            }
+          }
+        },
+        {
+          "estado": "Evidence type: work, a place, or a scene the organizer asked to see.\nReadable photo: yes.\nVisible objects: gallo pinto, fried egg, plate, coffee.\nMissing from the photo: none.\nDescription: A white plate with gallo pinto, the Costa Rican rice and beans dish, and a fried egg on top. The plate sits on a table next to a fork and a cup of coffee. The food looks freshly served and complete. This matches the request for a photo of the breakfast served, gallo pinto with egg. Nothing requested is missing.\nCondition: Photo of the breakfast served: gallo pinto with egg",
+          "preguntas": [
+            "lugar",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "t5",
+            "t6",
+            "t7",
+            "t8",
+            "t9",
+            "t10"
+          ],
+          "respuestas": {
+            "lugar": {
+              "choice": "stand_o_mesa"
+            },
+            "v1": {
+              "choice": "es_lo_pedido"
+            },
+            "v2": {
+              "score": 2
+            },
+            "v3": {
+              "noul": true
+            },
+            "v4": {
+              "noul": false
+            },
+            "t5": {
+              "choice": "vender_o_atender"
+            },
+            "t6": {
+              "choice": "terminado"
+            },
+            "t7": {
+              "noul": true
+            },
+            "t8": {
+              "noul": true
+            },
+            "t9": {
+              "noul": false
+            },
+            "t10": {
+              "score": 2
+            }
+          }
+        }
+      ],
+      "respuestas": {
+        "clase": "trabajo",
+        "trabajo": {
+          "lugar": "stand_o_mesa",
+          "v1": "es_lo_pedido",
+          "v2": 2,
+          "v3": true,
+          "v4": false,
+          "t5": "vender_o_atender",
+          "t6": "terminado",
+          "t7": true,
+          "t8": true,
+          "t9": false,
+          "t10": 2
+        },
+        "factura": null,
+        "cerca": []
+      },
+      "monto": null,
+      "fecha": null,
+      "nota": 100,
+      "veredicto": "cumplió",
+      "razones": [
+        {
+          "id": "matches",
+          "texto": "Matches the request",
+          "severidad": "good"
+        },
+        {
+          "id": "finished",
+          "texto": "Finished",
+          "severidad": "good"
+        }
+      ],
+      "motivo": "matches",
+      "cumple": true,
+      "motivoCoincide": true
+    }
+  ]
+}
