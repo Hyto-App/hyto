@@ -11,6 +11,11 @@ export function modeloVision(env: NodeJS.ProcessEnv = process.env): string {
   const pedido = env.GROQ_VISION_MODEL?.trim();
   return pedido || MODELO_VISION_DEFECTO;
 }
+
+/** Groq accepts reasoning_effort "none" only on Qwen 3 models, so any other model gets no reasoning parameters. */
+export function parametrosRazonamiento(modelo: string): { reasoning_effort?: "none"; reasoning_format?: "hidden" } {
+  return /^qwen\/qwen3/i.test(modelo.trim()) ? { reasoning_effort: "none", reasoning_format: "hidden" } : {};
+}
 const BASE = "https://api.groq.com/openai/v1";
 /** The structured reply carries a long description, so 1024 tokens could cut the JSON. */
 const MAX_TOKENS = 2048;
@@ -111,6 +116,7 @@ export async function describirFoto(
 ): Promise<Descripcion> {
   if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
   const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
+  const modelo = modeloVision();
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${BASE}/chat/completions`, {
@@ -120,11 +126,10 @@ export async function describirFoto(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: modeloVision(),
+        model: modelo,
         temperature: 0,
         max_completion_tokens: MAX_TOKENS,
-        reasoning_effort: "none",
-        reasoning_format: "hidden",
+        ...parametrosRazonamiento(modelo),
         response_format: { type: "json_object" },
         messages: [
           {
