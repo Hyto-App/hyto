@@ -558,9 +558,9 @@ export function Entrar({
   if (fase === "inicio") {
     return (
       <div className="grid gap-3">
-        <section className="hyto-entry hyto-entry-signup" aria-labelledby="entrar-signup">
+        <section className="hyto-entry hyto-entry-signup" aria-labelledby={`${ids}-signup`}>
           <p className="hyto-kicker">{t("entrar.newHere")}</p>
-          <h2 id="entrar-signup" className="text-lg font-semibold tracking-tight">
+          <h2 id={`${ids}-signup`} className="text-lg font-semibold tracking-tight">
             {t("entrar.signUp")}
           </h2>
           <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signUpBody")}</p>
@@ -572,9 +572,9 @@ export function Entrar({
             {t("entrar.signUp")}
           </button>
         </section>
-        <section className="hyto-entry hyto-entry-signin" aria-labelledby="entrar-signin">
+        <section className="hyto-entry hyto-entry-signin" aria-labelledby={`${ids}-signin`}>
           <p className="hyto-kicker">{t("entrar.welcomeBack")}</p>
-          <h2 id="entrar-signin" className="text-lg font-semibold tracking-tight">
+          <h2 id={`${ids}-signin`} className="text-lg font-semibold tracking-tight">
             {t("entrar.signIn")}
           </h2>
           <p className="text-sm leading-6 text-[var(--suave)]">{t("entrar.signInBody")}</p>
@@ -1003,15 +1003,16 @@ function Demo({
   entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
 }) {
   const t = useTexto();
+  const idRol = `${useId()}-rol-demo`;
   return (
     <div className="hyto-card grid gap-3 p-4">
       <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
       <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-      <label className="sr-only" htmlFor="rol-demo">
+      <label className="sr-only" htmlFor={idRol}>
         {t("entrar.demoRole")}
       </label>
       <select
-        id="rol-demo"
+        id={idRol}
         value={rolDemo}
         onChange={(evento) => {
           const valor = evento.target.value;
