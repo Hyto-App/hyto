@@ -43,7 +43,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
     `Reply with JSON only, using exactly these keys: ${CLAVES_LECTURA.join(", ")}.`,
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
-    "texto_completo: a detailed English description, 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed.",
+    "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed.",
     "legible: true if the photo is sharp and clear enough to judge. false if it is blurry, too dark, or cut off.",
     "pais: the country as a two-letter ISO code, such as CR for Costa Rica, only if the photo shows it (an address, a phone code, a tax id, or the currency). Otherwise null.",
     "moneda: the ISO 4217 code of the total. ₡, ¢, colones, or CRC is CRC, Costa Rican colones. Use USD only when the receipt shows US$, USD, or dollars, or a $ total on a receipt from Costa Rica or the United States. If the currency is not shown, use null. Never guess USD.",
@@ -52,7 +52,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     "fecha: the purchase date exactly as printed, such as 02/10/2026. Costa Rica writes the day first (DD/MM/YYYY). Null if there is no date.",
     "comercio: the store or business name, or null.",
     "articulos: a list of the items on the receipt, or of the main objects that prove the work. An empty list if there are none.",
-    "faltantes: a list of short English phrases naming what the organizer asked for that the photo does not show. An empty list if nothing is missing.",
+    "faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing.",
   ]
     .filter(Boolean)
     .join("\n");
