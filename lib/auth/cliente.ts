@@ -50,7 +50,9 @@ export async function publicarSesion(
   token: string | null,
   intencion?: IntencionIngreso,
 ): Promise<{ ok: true; rol: string; provisionar: boolean; nuevo: boolean } | { ok: false; aviso: string }> {
-  if (!email || !token) return { ok: false, aviso: "Could not confirm sign-in." };
+  // Apple can sign in without an email (the server then keys the account on the
+  // verified token), so only the token is required here.
+  if (!token) return { ok: false, aviso: "Could not confirm sign-in." };
   const respuesta = await fetch("/api/sesion", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -93,6 +95,7 @@ type AuthConOtp = AuthProvider & {
   verifyOtp(email: string, codigo: string): Promise<Identity>;
   handleCallback(busqueda: string, redirectUri?: string): Promise<Identity>;
   getGoogleOAuthUrl(redirectUri?: string): Promise<string>;
+  getAppleOAuthUrl(redirectUri?: string): Promise<string>;
   sendOtp(email: string): Promise<void>;
 };
 
@@ -102,6 +105,11 @@ function authComo(auth: AuthProvider): AuthConOtp {
 
 export async function urlGoogle(auth: AuthProvider, redirectUri: string): Promise<string> {
   return authComo(auth).getGoogleOAuthUrl(redirectUri);
+}
+
+/** Apple returns through the same `?cavos_auth_code=` callback as Google (`entrarConGoogle`). */
+export async function urlApple(auth: AuthProvider, redirectUri: string): Promise<string> {
+  return authComo(auth).getAppleOAuthUrl(redirectUri);
 }
 
 export async function entrarConGoogle(

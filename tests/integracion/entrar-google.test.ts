@@ -37,6 +37,7 @@ mock.module("@/lib/auth/cliente", {
     },
     redirectLimpio: () => `${window.location.origin}${window.location.pathname}`,
     urlGoogle: async () => "https://accounts.google.example/oauth",
+    urlApple: async () => "https://appleid.apple.example/oauth",
     publicarSesion: async () => ({ ok: true, rol: "organizador", provisionar: false, nuevo: false }),
     conectarStellar: async () => {
       throw new Error("no");
