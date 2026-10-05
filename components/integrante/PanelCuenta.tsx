@@ -12,6 +12,7 @@ import { textoVisible } from "@/lib/ui/etiquetas";
 type Estado = "cargando" | "listo" | "error";
 
 const EXPLORADOR = "https://stellar.expert/explorer/testnet/account/";
+const PASAPORTE_TESTNET = "https://demo.stellarpassport.xyz/auth/signup";
 
 const INSIGNIA: Record<string, { titulo: Clave; detalle: Clave }> = {
   "primera-tarea": { titulo: "cuenta.insigniaPrimera", detalle: "cuenta.insigniaPrimeraDetalle" },
@@ -66,17 +67,27 @@ export function PanelCuenta() {
     };
   }, [intento]);
 
-  if (estado === "cargando") return <Esqueleto />;
+  if (estado === "cargando") {
+    return (
+      <div className="grid gap-4">
+        <Esqueleto />
+        <PasaporteStellar />
+      </div>
+    );
+  }
   if (estado === "error" || !vista) {
     return (
-      <section className="hyto-card p-5 sm:p-6">
-        <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
-          {claro(aviso ?? "We couldn't load your account.")}
-        </p>
-        <button type="button" className="hyto-btn is-inline mt-4 px-5" onClick={() => setIntento((valor) => valor + 1)}>
-          {t("comunes.tryAgain")}
-        </button>
-      </section>
+      <div className="grid gap-4">
+        <section className="hyto-card p-5 sm:p-6">
+          <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
+            {claro(aviso ?? "We couldn't load your account.")}
+          </p>
+          <button type="button" className="hyto-btn is-inline mt-4 px-5" onClick={() => setIntento((valor) => valor + 1)}>
+            {t("comunes.tryAgain")}
+          </button>
+        </section>
+        <PasaporteStellar />
+      </div>
     );
   }
 
@@ -89,6 +100,7 @@ export function PanelCuenta() {
         </p>
       ) : null}
       <Billetera vista={vista} />
+      <PasaporteStellar />
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />
       <Insignias insignias={vista.orgullo.insignias} />
@@ -112,6 +124,19 @@ function Esqueleto() {
         <div className="hyto-skeleton h-24" />
       </div>
     </div>
+  );
+}
+
+function PasaporteStellar() {
+  const t = useTexto();
+  return (
+    <section className="hyto-card p-5 sm:p-6">
+      <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.pasaporteTitulo")}</h2>
+      <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.pasaporteDetalle")}</p>
+      <a className="hyto-btn is-inline mt-5 px-5" href={PASAPORTE_TESTNET} target="_blank" rel="noreferrer">
+        {t("cuenta.pasaporteAbrir")}
+      </a>
+    </section>
   );
 }
 

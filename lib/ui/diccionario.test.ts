@@ -31,4 +31,10 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "errores.horizonReceptor"), AVISO_HORIZON_RECEPTOR);
   assert.equal(texto("en", "errores.reingreso"), AVISO_REINGRESO);
   assert.equal(texto("es", "entrar.espera", { n: 12 }), "Espera 12 s antes de pedir otro código");
+  assert.equal(texto("en", "cuenta.pasaporteTitulo"), "Stellar Passport");
+  assert.equal(texto("es", "cuenta.pasaporteTitulo"), "Stellar Passport");
+  assert.equal(texto("en", "cuenta.pasaporteDetalle"), "It records participation and achievements in the Stellar ecosystem.");
+  assert.equal(texto("es", "cuenta.pasaporteDetalle"), "Registra la participación y los logros en el ecosistema Stellar.");
+  assert.equal(texto("en", "cuenta.pasaporteAbrir"), "Open on testnet");
+  assert.equal(texto("es", "cuenta.pasaporteAbrir"), "Abrir en testnet");
 });
