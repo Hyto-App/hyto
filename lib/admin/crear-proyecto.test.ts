@@ -78,3 +78,48 @@ test("crear evento manda la prioridad y la dificultad que elige el organizador",
     limpiarPantalla();
   }
 });
+
+test("create event rejects a negative amount with a clear amount error", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  let llamados = 0;
+  globalThis.fetch = (async () => {
+    llamados += 1;
+    return new Response("{}", { status: 500 });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(CrearProyecto), { push: () => undefined });
+    await escribir("#nombre-proyecto", "QA test (do not save)");
+    await escribir("#titulo-1", "Test");
+    await escribir("#monto-1", "-5");
+    await pulsar("Create event");
+    assert.match(texto(), /amount greater than zero/i);
+    assert.equal(llamados, 0);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("create event asks for a name when the name is empty", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  let llamados = 0;
+  globalThis.fetch = (async () => {
+    llamados += 1;
+    return new Response("{}", { status: 500 });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(CrearProyecto), { push: () => undefined });
+    await escribir("#titulo-1", "Test");
+    await escribir("#monto-1", "5");
+    await pulsar("Create event");
+    assert.match(texto(), /Enter an event name/);
+    assert.equal(llamados, 0);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});

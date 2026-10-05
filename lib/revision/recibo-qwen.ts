@@ -9,7 +9,7 @@ export type { MonedaRecibo };
 export const PEDIDO_RECIBO_QWEN = [
   "Look at the photo and transcribe the receipt.",
   "Reply with JSON only, using these keys:",
-  "texto: a full English paragraph that names the merchant, the item bought, the total as printed, the currency, and the purchase date. Keep every one of those facts. Do not compress the paragraph.",
+  "texto: a full English paragraph (English only — never Spanish) that names the merchant, the item bought, the total as printed, the currency, and the purchase date. Keep every one of those facts. Do not compress the paragraph.",
   "merchant: the store or brand, or null.",
   "item: one purchased product, or null.",
   "amount_raw: the total exactly as printed, keeping separators such as 15.179,99. Leave colones as colones. Do not drop the separators. Null if there is no total.",

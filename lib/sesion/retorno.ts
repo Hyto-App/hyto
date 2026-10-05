@@ -1,5 +1,6 @@
 /** Default signed-in landing when no safe return path was preserved. */
-export const DESTINO_TRAS_INGRESO = "/mis-tareas";
+/** Same default as Google sign-in: `/` then redirects signed-in users to Events. */
+export const DESTINO_TRAS_INGRESO = "/";
 
 export const CLAVE_RETORNO = "hyto-retorno";
 

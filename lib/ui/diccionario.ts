@@ -234,8 +234,8 @@ export const en = {
     codigoVencidoTitulo: "That code expired.",
     codigoVencidoCuerpo: "Request another one and we'll send it to the same email.",
     yaEntraste: "You're in.",
-    llevando: "Signed in. Taking you to your tasks…",
-    irTareas: "Go to my tasks",
+    llevando: "Signed in. Taking you in…",
+    irTareas: "Continue",
     soloMirar: "Just want to look?",
     probarDemo: "Try the demo",
     mile: {
@@ -804,8 +804,8 @@ export const es: Rama<typeof en> = {
     codigoVencidoTitulo: "Ese código venció.",
     codigoVencidoCuerpo: "Pide otro y te lo mandamos al mismo correo.",
     yaEntraste: "Ya entraste.",
-    llevando: "Sesión iniciada. Te llevamos a tus tareas…",
-    irTareas: "Ir a mis tareas",
+    llevando: "Sesión iniciada. Te estamos llevando…",
+    irTareas: "Continuar",
     soloMirar: "¿Solo quieres mirar?",
     probarDemo: "Probar el demo",
     mile: {

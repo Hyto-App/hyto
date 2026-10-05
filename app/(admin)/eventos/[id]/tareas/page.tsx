@@ -27,6 +27,7 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
       .filter((fila) => fila.proyectoId === id)
       .map(async (tarea) => {
         const evidencia = await almacen.ultimaEvidencia(tarea.id);
+        const tieneFoto = Boolean(evidencia);
         return {
           id: tarea.id,
           titulo: tarea.titulo,
@@ -38,7 +39,8 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
           miembroId: tarea.miembroId,
           prioridad: tarea.prioridad,
           dificultad: tarea.dificultad,
-          bloqueo: avisoBloqueo(tarea, Boolean(evidencia)),
+          bloqueo: avisoBloqueo(tarea, tieneFoto),
+          tieneFoto,
         };
       }),
   );
