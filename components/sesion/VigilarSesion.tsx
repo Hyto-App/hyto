@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { leerMemoriaAdmin } from "@/lib/admin/memoria";
+import { rutaRetornoSegura, urlSignin } from "@/lib/sesion/retorno";
 
 /** Query keys @cavos/kit's handleCallback reads on an OAuth return. */
 const CLAVES_RETORNO_OAUTH = ["cavos_auth_code", "auth_data", "zk_auth_data"] as const;
@@ -27,10 +28,8 @@ export function VigilarSesion() {
     fetch("/api/sesion", { method: "GET", cache: "no-store" })
       .then((respuesta) => {
         if (!viva || respuesta.ok || respuesta.status !== 401) return;
-        const destino = new URL(window.location.href);
-        destino.pathname = "/";
-        destino.search = "signin=1";
-        window.location.replace(destino.toString());
+        const aqui = rutaRetornoSegura(`${window.location.pathname}${window.location.search}`);
+        window.location.replace(new URL(urlSignin(aqui === "/" ? null : aqui), window.location.origin).toString());
       })
       .catch(() => undefined);
     return () => {

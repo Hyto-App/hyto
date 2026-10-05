@@ -4,11 +4,12 @@ import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { sesionEsDemo } from "./demo";
+import { urlSignin } from "./retorno";
 import { leerSesionActual } from "./vista";
 
-export async function exigirPagina(): Promise<SesionFila> {
+export async function exigirPagina(retorno?: string): Promise<SesionFila> {
   const sesion = await leerSesionActual();
-  if (!sesion) redirect("/?signin=1");
+  if (!sesion) redirect(urlSignin(retorno));
   return sesion;
 }
 

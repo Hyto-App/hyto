@@ -6,6 +6,6 @@ export const metadata: Metadata = { title: "Join an event" };
 
 export default async function PaginaJoinSecreto({ params }: { params: Promise<{ secreto: string }> }) {
   const { secreto } = await params;
-  await exigirPagina();
+  await exigirPagina(`/join/${encodeURIComponent(secreto)}`);
   return <Unirse secretoInicial={decodeURIComponent(secreto)} />;
 }
