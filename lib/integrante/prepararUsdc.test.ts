@@ -386,6 +386,53 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
   }
 });
 
+test("Sign in again cierra la sesión y vuelve a la misma página después de entrar", async () => {
+  limpiarPantalla();
+  window.history.replaceState(null, "", "/eventos");
+  const destinos: string[] = [];
+  const llamadas: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
+  const fetchOriginal = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    llamadas.push(`${init?.method ?? "GET"} ${String(input)}`);
+    return json({ ok: true });
+  };
+  try {
+    await montar(
+      createElement(PrepararUsdc, {
+        consultar: async () => false,
+        preparar: async () => {
+          throw new Error(AVISO_REINGRESO);
+        },
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await pulsar("Get ready to be paid");
+    const enlace = [...document.querySelectorAll("a")].find((item) => item.textContent === "Sign in again");
+    assert.ok(enlace);
+    let clic: MouseEvent | null = null;
+    await act(async () => {
+      clic = new MouseEvent("click", { bubbles: true, cancelable: true });
+      enlace.dispatchEvent(clic);
+      await new Promise((resolver) => setTimeout(resolver, 20));
+    });
+    assert.equal((clic as MouseEvent | null)?.defaultPrevented, true);
+    assert.ok(llamadas.includes("DELETE /api/sesion"), llamadas.join(", "));
+    assert.deepEqual(destinos, ["/?signin=1&next=%2Feventos"]);
+  } finally {
+    globalThis.fetch = fetchOriginal;
+    window.location.assign = asignar;
+    window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("en demo no aparece y en la revisión real sí", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
