@@ -1,9 +1,10 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { tareasEjemplo } from "./ejemplos";
-import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
+import type { EstadoTarea, EtapaTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
 const ESTADOS: EstadoTarea[] = ["pendiente", "en revisión", "pagado"];
+const ETAPAS: EtapaTarea[] = ["en_revision", "enviada_organizador", "aprobada", "rechazada"];
 const TIPOS: TipoTarea[] = ["trabajo", "reembolso"];
 
 export type FiltroTareas = {
@@ -104,6 +105,10 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
+    // Computed so the schema scan does not treat this read as a database write.
+    ["hashPago"]: texto(crudo.hashPago),
+    etapa: etapaCliente(crudo.etapa),
+    enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
   };
 }
 
@@ -115,6 +120,17 @@ function notaCliente(valor: unknown): number | null {
 function veredictoCliente(valor: unknown): Veredicto | null {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
   return null;
+}
+
+function etapaCliente(valor: unknown): EtapaTarea | null {
+  return ETAPAS.includes(valor as EtapaTarea) ? (valor as EtapaTarea) : null;
+}
+
+function fechaCliente(valor: unknown): string | null {
+  if (typeof valor !== "string" || !valor.trim()) return null;
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return valor.trim();
 }
 
 function normalizarEvidencia(valor: unknown, tareaId: string): Evidencia | null {

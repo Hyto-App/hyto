@@ -322,6 +322,7 @@ test("una foto de cámara con 201 limpio dice Evidence sent y manda el token y l
     assert.equal(enviado?.get("token"), "t-1");
     assert.ok(!Number.isNaN(Date.parse(String(enviado?.get("capturadaEn")))));
     assert.match(texto(), /Evidence sent/);
+    assert.match(texto(), /Photo uploaded successfully/);
     assert.doesNotMatch(texto(), /action needed/);
     assert.match(texto(), /The organizer can review it now/);
     sinRevisionLocal();
