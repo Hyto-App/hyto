@@ -4,9 +4,24 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-05
 
+### Fixed
+
+- Evidence review (#039). Qwen gets the task condition and returns a structured reading: type, country, currency, the total as printed and in dollars, date, merchant, items, a 4 to 8 sentence description, readability, and what is missing. A colón total such as `₡7.950,00` is read with the decimal comma and converted with the hand-updated `CRC_POR_USD`. A currency that is not printed is never assumed to be US dollars. Laya scores the whole reading instead of one short sentence. In the simulated evidence bank, the Little Caesars CRC receipt that got 40% Insufficient now lands in Completed.
+- Valid work photos got 0% (#044, salon-lleno and pinto-con-huevo). Photos now reach Groq upright from their EXIF orientation, and `GROQ_VISION_MODEL` can name a model that does not take Qwen's reasoning parameters.
+- A photo could be saved while the screen said "Could not send" (#040). The upload waits up to 60 seconds. When the answer is lost, the screen reads the task and says what really happened.
+- Old accounts could not finish Get ready to be paid (#044). It can run again: an open trustline counts as done, an account without XLM of its own (the Cavos relayer sponsored it) gets a sponsored trustline, and a failed submit reads the account again. Each failure has its own notice instead of "That step didn't go through". A browser that does not hold the account key says so and does not try to sign.
+- **Sign in again** signs out first and comes back to the same page. Before, it landed on Events with the same expired Cavos token.
+
+### Changed
+
+- Reimbursement caps (#039). No date, a currency Hyto cannot convert, or a dollar amount over the task cap stops the grade at 79 (Partially completed) with its own reason. Only a reimbursement with no total keeps the 40 cap.
+- The review card and the inbox write the main reason next to the percentage. A reimbursement shows the total as printed and the rate used.
+
 ### Added
 
-- A task can store up to 3 photo requirements (`requisitos`). Empty keeps the current `condicion` review. With `HYTO_MILE_REQUISITOS=on`, Mile scores each requirement as cumple, parcial, or no_cumple and can send the photo back (`rechazo.origen` `mile`) until `HYTO_MILE_INTENTOS` (default 3). The flag defaults to off, so production review is unchanged until someone applies `drizzle/0007_requisitos_rechazo.sql` and turns the flag on. Mile never pays.
+- `npm run banco:revision` runs labeled evidence cases through `revisar()`. It is simulated by default, live with `--vivo`, and compares runs with `--comparar`.
+- `npm run cuentas:usdc -- G…` reads testnet accounts and says what each one still needs before it can be paid. It changes nothing.
+- A task can store up to 3 photo requirements (`requisitos`). Empty keeps the structured evidence review. With `HYTO_MILE_REQUISITOS=on`, Mile scores each requirement as cumple, parcial, or no_cumple and can send the photo back (`rechazo.origen` `mile`) until `HYTO_MILE_INTENTOS` (default 3). The flag defaults to off, so the live review stays the structured reading until someone applies `drizzle/0007_requisitos_rechazo.sql` and turns the flag on. Mile never pays.
 
 ## 2026-10-04
 

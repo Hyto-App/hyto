@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
+import {
+  AVISO_USDC_FIRMANTE,
+  AVISO_USDC_LENTO,
+  AVISO_USDC_OTRA_CUENTA,
+  AVISO_USDC_PENDIENTE,
+  AVISO_USDC_SECUENCIA,
+  AVISO_USDC_SIN_XLM,
+  AVISO_USDC_VENCIDO,
+  CODIGO_USDC_SIN_XLM,
+} from "@/lib/integrante/avisosUsdc";
 import { cajaDeFallo, detalleFallo, mensajeClaro, pasosDePago, tituloFallo } from "./claro";
 
 test("technical payment errors tell the person what to do", () => {
@@ -32,6 +42,29 @@ test("technical payment errors tell the person what to do", () => {
     "Ese paso no se completó. Intenta de nuevo.",
   );
   assert.equal(mensajeClaro("Wait 8 s before requesting another code", "es"), "Espera 8 s antes de pedir otro código");
+});
+
+test("payout setup notices for old accounts keep their own words instead of the generic step error", () => {
+  const generico = mensajeClaro("Could not submit the payment.");
+  const saldo = mensajeClaro("Not enough XLM for the fee.");
+  for (const aviso of [
+    AVISO_DISPOSITIVO,
+    AVISO_USDC_SIN_XLM,
+    AVISO_USDC_SECUENCIA,
+    AVISO_USDC_FIRMANTE,
+    AVISO_USDC_VENCIDO,
+    AVISO_USDC_PENDIENTE,
+    AVISO_USDC_OTRA_CUENTA,
+    AVISO_USDC_LENTO,
+  ]) {
+    assert.equal(mensajeClaro(aviso), aviso);
+    assert.notEqual(mensajeClaro(aviso), generico);
+    assert.notEqual(mensajeClaro(aviso), saldo);
+    assert.notEqual(mensajeClaro(aviso, "es"), aviso);
+  }
+  assert.equal(mensajeClaro(CODIGO_USDC_SIN_XLM), AVISO_USDC_SIN_XLM);
+  assert.match(mensajeClaro(AVISO_DISPOSITIVO, "es"), /navegador donde creaste tu cuenta/);
+  assert.match(mensajeClaro(AVISO_USDC_SIN_XLM, "es"), /XLM de prueba/);
 });
 
 test("the failure box follows the step, not words in the message", () => {

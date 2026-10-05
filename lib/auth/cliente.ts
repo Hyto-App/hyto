@@ -148,7 +148,7 @@ export function redirectLimpio(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
-export async function cerrarSesionEnCliente(): Promise<void> {
+export async function cerrarSesionEnCliente(destino = "/?signin=1"): Promise<void> {
   await olvidarCavos();
   try {
     await fetch("/api/sesion", { method: "DELETE" });
@@ -160,7 +160,7 @@ export async function cerrarSesionEnCliente(): Promise<void> {
   } catch {
     // The redirect below is the logout. A storage failure does not cancel it.
   }
-  window.location.assign("/?signin=1");
+  window.location.assign(destino);
 }
 
 async function olvidarCavos(): Promise<void> {

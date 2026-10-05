@@ -1,6 +1,9 @@
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
+import { escribirLectura, leerLecturaGuardada, type LecturaEvidencia } from "./lectura";
 
 export const MARCA_RAZONES = "\n@@hyto-razones@@\n";
+/** Comes after the answer snapshot, so the snapshot stays the first line after MARCA_RAZONES. */
+export const MARCA_LECTURA = "\n@@hyto-lectura@@\n";
 
 export type ClaseSnapshot = "trabajo" | "factura" | "otra";
 
@@ -78,19 +81,30 @@ export function escribirSnapshot(detalle: DetalleRazones): string {
   return partes.join("&");
 }
 
-export function separarDescripcion(texto: string): { texto: string; detalle: DetalleRazones | null } {
-  const corte = texto.indexOf(MARCA_RAZONES);
-  if (corte < 0) return { texto, detalle: null };
+export function separarDescripcion(texto: string): {
+  texto: string;
+  detalle: DetalleRazones | null;
+  lectura: LecturaEvidencia | null;
+} {
+  const corteLectura = texto.indexOf(MARCA_LECTURA);
+  const sinLectura = corteLectura < 0 ? texto : texto.slice(0, corteLectura);
+  const corte = sinLectura.indexOf(MARCA_RAZONES);
+  const base = corte < 0 ? sinLectura : sinLectura.slice(0, corte);
   return {
-    texto: texto.slice(0, corte),
-    detalle: leerSnapshot(texto.slice(corte + MARCA_RAZONES.length)),
+    texto: base,
+    detalle: corte < 0 ? null : leerSnapshot(sinLectura.slice(corte + MARCA_RAZONES.length)),
+    lectura: corteLectura < 0 ? null : leerLecturaGuardada(texto.slice(corteLectura + MARCA_LECTURA.length), base),
   };
 }
 
-export function unirDescripcion(texto: string, detalle: string | null | undefined): string {
+export function unirDescripcion(
+  texto: string,
+  detalle: string | null | undefined,
+  lectura?: LecturaEvidencia | null,
+): string {
   const base = separarDescripcion(texto).texto;
-  if (!detalle) return base;
-  return `${base}${MARCA_RAZONES}${detalle}`;
+  const conDetalle = detalle ? `${base}${MARCA_RAZONES}${detalle}` : base;
+  return lectura ? `${conDetalle}${MARCA_LECTURA}${escribirLectura(lectura)}` : conDetalle;
 }
 
 export function leerSnapshot(crudo: string): DetalleRazones | null {

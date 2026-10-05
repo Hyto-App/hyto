@@ -6,6 +6,7 @@ import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { preguntarLaya } from "./laya";
+import { contextoParaLaya, montoSinUsd } from "./lectura";
 import { preguntarRequisitos } from "./requisitos-laya";
 import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
 import { decidirRequisitos, leerRequisitos, rechazoDeDecision, serializarRechazo } from "./requisitos";
@@ -45,9 +46,10 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   };
   try {
     const descripcion = await conReintentos(
-      (signal) => describirFoto(foto.bytes, foto.tipo, clave, fetchImpl, signal),
+      (signal) => describirFoto(foto.bytes, foto.tipo, clave, fetchImpl, signal, { condicion: tarea.condicion, tipoTarea: tarea.tipo }),
       { ...repeticion, topeIntentoMs: TOPE_GROQ_MS },
     );
+    const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
       if (contexto.produccion ?? enProduccion()) return fallar(new FalloRevision("sin_laya", { fuente: "laya", providerMessage: "LAYA_URL" }));
@@ -58,7 +60,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     if (requisitos.length > 0) {
       try {
         const niveles = await conReintentos(
-          (signal) => preguntarRequisitos(contexto.layaUrl!, descripcion.texto, requisitos, fetchImpl, signal),
+          (signal) => preguntarRequisitos(contexto.layaUrl!, paraLaya, requisitos, fetchImpl, signal),
           { ...repeticion, topeIntentoMs: TOPE_LAYA_MS },
         );
         const estructurado = niveles
@@ -75,7 +77,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       }
     }
     const senales = await conReintentos(
-      (signal) => preguntarLaya(contexto.layaUrl!, descripcion.texto, tarea.condicion, fetchImpl, signal),
+      (signal) => preguntarLaya(contexto.layaUrl!, paraLaya, tarea.condicion, fetchImpl, signal),
       { ...repeticion, topeIntentoMs: TOPE_LAYA_MS },
     );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
@@ -103,13 +105,21 @@ function cerrarRequisitos(
   if (!decision) return null;
   const monto = tarea.tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tarea.tipo === "reembolso" ? descripcion.fecha : null;
-  const armado = armarVeredicto({ tipo: tarea.tipo, tope: tarea.tope, monto, fecha, score: String(decision.puntaje) });
+  const armado = armarVeredicto({
+    tipo: tarea.tipo,
+    tope: tarea.tope,
+    monto,
+    fecha,
+    montoSinUsd: montoSinUsd(descripcion.lectura),
+    score: String(decision.puntaje),
+  });
   if (!armado) return null;
   const rechazo = rechazoDeDecision({ ...decision, puntaje: armado.nota }, contexto.intento, contexto.ahora);
   return {
     texto: descripcion.texto.trim(),
     monto,
     fecha,
+    ...(descripcion.lectura ? { lectura: descripcion.lectura } : {}),
     choice: "requisitos",
     noul: armado.nota === 100,
     score: String(armado.nota),
