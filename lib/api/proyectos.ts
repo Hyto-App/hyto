@@ -9,6 +9,7 @@ import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { tareaEnBandeja } from "./informe";
 import { baseNoLista, json } from "./json";
+import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
 import { tareaPublica } from "./tareas";
 
 export type FondosCreacion = { wallet: string; leerSaldo?: LectorSaldo };
@@ -175,6 +176,12 @@ function leerTarea(item: unknown, proyectoId: string): TareaBorrador | { aviso: 
   if (typeof prioridad !== "string") return prioridad;
   const dificultad = leerDificultadEntrada(crudo.dificultad);
   if (dificultad !== null && typeof dificultad !== "string") return dificultad;
+  let requisitos: string | null = null;
+  if ("requisitos" in crudo) {
+    const entrada = entradaRequisitos(crudo.requisitos);
+    if (!entrada.ok) return { aviso: entrada.aviso };
+    requisitos = serializarRequisitos(entrada.requisitos);
+  }
   return {
     id: crypto.randomUUID(),
     proyectoId,
@@ -192,6 +199,7 @@ function leerTarea(item: unknown, proyectoId: string): TareaBorrador | { aviso: 
     credencialUrl: null,
     prioridad,
     dificultad,
+    requisitos,
   };
 }
 

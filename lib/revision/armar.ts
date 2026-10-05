@@ -29,6 +29,17 @@ export type ResultadoRevision = Descripcion &
     frase: string;
     origen: OrigenRevision;
     codigo: string | null;
+    /**
+     * Set only when HYTO_MILE_REQUISITOS is on and the task has requisitos.
+     * rechazoJson is null when Mile leaves the photo with the organizer.
+     */
+    mile?: {
+      accion: "seguir" | "rechazar";
+      rechazoJson: string | null;
+      puntaje: number;
+      notaMile: string;
+      resultados: { id: string; texto: string; estado: "cumple" | "parcial" | "no_cumple"; observacion: string }[];
+    };
   };
 
 const NOTA_STUB_TRABAJO = 65;

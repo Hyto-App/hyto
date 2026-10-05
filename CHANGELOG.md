@@ -2,6 +2,12 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-05
+
+### Added
+
+- A task can store up to 3 photo requirements (`requisitos`). Empty keeps the current `condicion` review. With `HYTO_MILE_REQUISITOS=on`, Mile scores each requirement as cumple, parcial, or no_cumple and can send the photo back (`rechazo.origen` `mile`) until `HYTO_MILE_INTENTOS` (default 3). The flag defaults to off, so production review is unchanged until someone applies `drizzle/0007_requisitos_rechazo.sql` and turns the flag on. Mile never pays.
+
 ## 2026-10-04
 
 ### Added

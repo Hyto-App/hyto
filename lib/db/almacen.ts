@@ -25,6 +25,8 @@ export type CambioTarea = Partial<
     | "condicion"
     | "prioridad"
     | "dificultad"
+    | "requisitos"
+    | "rechazo"
   >
 >;
 
@@ -55,6 +57,9 @@ export type Almacen = {
     exceptoId: string,
   ): Promise<{ id: string; distancia: number }[]>;
   listaParaAntifraude(): Promise<boolean>;
+  /** True once migration 0007 is present. Memory is always ready. */
+  columnasRequisitos(): Promise<boolean>;
+  contarEvidencias(tareaId: string): Promise<number>;
   guardarVeredicto(veredicto: VeredictoFila): Promise<void>;
   veredictoDe(evidenciaId: string): Promise<VeredictoFila | null>;
   crearSesion(sesion: SesionFila): Promise<void>;

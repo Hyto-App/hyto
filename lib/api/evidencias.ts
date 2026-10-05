@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import { marcadorPng } from "@/lib/blob/marcador";
-import type { Almacen } from "@/lib/db/almacen";
+import type { Almacen, CambioTarea } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { aplicarCopia, MOTIVO_COPIA } from "@/lib/evidencia/copia";
@@ -12,7 +12,11 @@ import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { esContrato } from "@/lib/escrow/cuerpos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
+import { maxIntentosMile, mileRequisitosActivo } from "@/lib/revision/requisitos-bandera";
+import { leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisitos";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
+import { idiomaDe, COOKIE_IDIOMA } from "@/lib/ui/idioma";
+import type { Idioma } from "@/lib/ui/idioma";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -31,6 +35,8 @@ export const AVISO_SIN_CUENTA =
 
 export const AVISO_COBRO_FIJO =
   "The budget for this task is already locked to another payout account. Sign in with that wallet to submit evidence.";
+
+export const AVISO_TOPE_MILE = "Mile already checked the maximum number of attempts.";
 
 export type DepsEvidencia = {
   almacen: Almacen;
@@ -189,6 +195,12 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (!(await deps.almacen.listaParaAntifraude())) {
       return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
     }
+    const mileActivo = mileRequisitosActivo() && leerRequisitos(tarea.requisitos).length > 0;
+    let fotosPrevias = 0;
+    if (mileActivo) {
+      fotosPrevias = await deps.almacen.contarEvidencias(tareaId);
+      if (fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
+    }
 
     const sha256 = sha256De(bytes);
     if (await deps.almacen.evidenciaPorSha256(sha256)) {
@@ -228,6 +240,9 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     };
     await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
+    if (mileActivo && (await deps.almacen.columnasRequisitos())) {
+      await deps.almacen.actualizarTarea(tareaId, { rechazo: null });
+    }
     if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
@@ -237,7 +252,10 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
     const leida = await deps.fotos.leer(blobId);
-    const trabajo = (deps.revisarTarea ?? revisarPorDefecto)(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
+    const intento = mileActivo ? fotosPrevias + 1 : undefined;
+    const idioma = idiomaDePedido(request);
+    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
+    const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
     const conTope = !deps.revisarTarea && Boolean(contextoDesdeEntorno().claveGroq) && !esPdf(bytes);
     const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
     if (listo) {
@@ -256,8 +274,23 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   }
 }
 
-async function revisarPorDefecto(tarea: TareaFila, foto: Awaited<ReturnType<Fotos["leer"]>>): Promise<ResultadoRevision> {
-  return revisar(tarea, foto, contextoDesdeEntorno());
+async function revisarPorDefecto(
+  tarea: TareaFila,
+  foto: Awaited<ReturnType<Fotos["leer"]>>,
+  extra?: { intento?: number; idioma: Idioma },
+): Promise<ResultadoRevision> {
+  return revisar(tarea, foto, {
+    ...contextoDesdeEntorno(),
+    intento: extra?.intento,
+    idioma: extra?.idioma,
+  });
+}
+
+function idiomaDePedido(request: Request): Idioma {
+  const cookie = request.headers.get("cookie") ?? "";
+  const par = cookie.split(";").map((parte) => parte.trim()).find((parte) => parte.startsWith(`${COOKIE_IDIOMA}=`));
+  const valor = par ? decodeURIComponent(par.slice(COOKIE_IDIOMA.length + 1)) : null;
+  return idiomaDe(valor);
 }
 
 export async function guardarRevision(
@@ -277,8 +310,14 @@ export async function guardarRevision(
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,
     origen: resultado.origen,
+    mile: resultado.mile ? serializarRevisionMile(resultado.mile) : null,
   };
   await almacen.guardarVeredicto(veredicto);
+  if (resultado.mile && resultado.origen !== "error" && (await almacen.columnasRequisitos())) {
+    const cambio: CambioTarea = { rechazo: resultado.mile.rechazoJson };
+    if (resultado.mile.accion === "rechazar") cambio.estado = "pendiente";
+    await almacen.actualizarTarea(tareaId, cambio);
+  }
   if (resultado.origen === "error") return;
   const previa = await almacen.leerEvidencia(evidenciaId);
   const cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado">> = {

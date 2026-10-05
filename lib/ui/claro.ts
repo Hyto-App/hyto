@@ -138,6 +138,10 @@ const EXACTO: Record<string, Clave> = {
   "Only the organizer can set priority and difficulty.": "clasificacion.onlyOrganizer",
   "Choose Normal or High.": "clasificacion.choosePriority",
   "Choose Easy, Medium, Hard, or Not set.": "clasificacion.chooseDifficulty",
+  "Mile already checked the maximum number of attempts.": "mile.topeAviso",
+  "Requirements have to be a list.": "mile.requisitosLista",
+  "Enter at most 3 requirements.": "mile.requisitosMax",
+  "Demo mode cannot suggest requirements.": "mile.demoSugerir",
   "We couldn't open this payout account on the test network. Open Events and tap Get ready to be paid.": "errores.faucetTestnet",
   "Payout accounts are only opened on the test network.": "errores.soloTestnet",
 };

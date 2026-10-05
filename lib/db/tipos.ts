@@ -32,6 +32,10 @@ export type TareaFila = {
   contratoEscrow: string | null;
   prioridad: PrioridadTarea;
   dificultad: DificultadTarea | null;
+  /** JSON [{ id, texto }] or null. Absent until migration 0007 is applied. */
+  requisitos?: string | null;
+  /** JSON send-back. Absent until migration 0007 is applied. */
+  rechazo?: string | null;
 };
 
 export type EvidenciaFila = {
@@ -61,6 +65,8 @@ export type VeredictoFila = {
   noul: "si" | "no";
   score: string;
   origen: "scout" | "guion" | "stub" | "error";
+  /** JSON of the structured Mile review. Absent on the existing path. */
+  mile?: string | null;
 };
 
 export type RolEvento = "organizer" | "team" | "volunteer";

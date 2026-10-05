@@ -19,6 +19,8 @@ const PROHIBIDO = [
   "detalle",
   "SECRETO-LAYA",
   "Category",
+  "textoScout",
+  "texto_scout",
 ];
 
 test("notaPublica solo sale con un entero de 0 a 100 y la banda de esa nota", () => {
@@ -68,6 +70,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   assert.equal(cuerpo.tareas.some((tarea) => tarea.id === "registro"), false);
   const plano = JSON.stringify(cuerpo);
   for (const clave of PROHIBIDO) assert.equal(plano.includes(clave), false, clave);
+  assert.equal(stand.origen, undefined);
   assert.deepEqual(Object.keys(stand).sort(), [
     "condicion",
     "contratoEscrow",
@@ -75,15 +78,20 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "estado",
     "hashPago",
     "id",
+    "intentos",
     "miembroId",
     "monto",
     "nota",
     "prioridad",
-        "proyectoId",
-        "tipo",
-        "titulo",
-        "tope",
-        "veredicto",
+    "proyectoId",
+    "rechazada",
+    "rechazo",
+    "requisitos",
+    "revision",
+    "tipo",
+    "titulo",
+    "tope",
+    "veredicto",
     "walletCobro",
   ]);
 
@@ -138,6 +146,7 @@ type Registro = {
   veredicto?: string | null;
   hashPago?: string | null;
   contratoEscrow?: string | null;
+  origen?: string;
 };
 
 function fila(parcial: Partial<VeredictoFila> & Pick<VeredictoFila, "origen" | "score">): VeredictoFila {
