@@ -10,6 +10,7 @@ export const AVISO_GOOGLE_BLOQUEADO = "The browser blocked the Google window. Al
 export const AVISO_CONFIG = "Sign-in isn't set up yet.";
 export const AVISO_CORREO = "Enter a valid email.";
 export const AVISO_DEMO = "That demo email does not receive messages. Use a real email or sign in with Google.";
+export const AVISO_SIN_CUENTA = "No Hyto account for this sign-in. Sign up first.";
 export const AVISO_SPAM = "The code arrives by email. Check spam too.";
 
 export type AvisoIngreso = {

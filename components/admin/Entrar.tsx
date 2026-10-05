@@ -12,6 +12,7 @@ import {
   AVISO_CORREO,
   AVISO_DEMO,
   AVISO_GENERICO,
+  AVISO_SIN_CUENTA,
   AVISO_SPAM,
   ESPERA_TRAS_ENVIO,
   avisoDeIngreso,
@@ -21,7 +22,7 @@ import {
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdioma, useClaro, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { Eslogan, Logo } from "@/components/ui/Marca";
@@ -218,6 +219,11 @@ export function Entrar({
     if (ocupado !== null) return;
     setAviso(null);
     setPestana(intencion);
+  }
+
+  function irACrearCuenta() {
+    volverAlCorreo();
+    setPestana("signup");
   }
 
   function volverAlCorreo() {
@@ -641,7 +647,7 @@ export function Entrar({
           <button type="button" className="hyto-login-logo" onClick={() => fase !== "exito" && setFase("inicio")} aria-label={t("entrar.close")}>
             <Logo />
           </button>
-          <SelectorIdioma className="hyto-login-idioma" />
+          <SelectorIdiomaMenu className="hyto-login-idioma" />
         </header>
         <main className="hyto-login-grid">
           <div className="hyto-login-izq">
@@ -861,6 +867,11 @@ export function Entrar({
                 ) : (
                   <p className="hyto-login-ayuda">{t("entrar.autoConfirma")}</p>
                 )}
+                {alertaCodigo && aviso === AVISO_SIN_CUENTA ? (
+                  <button type="button" className="hyto-login-btn is-enlace" onClick={irACrearCuenta} disabled={ocupado !== null}>
+                    {t("entrar.irCrearCuenta")}
+                  </button>
+                ) : null}
                 {esperaVisible ? (
                   <p role="status" className="hyto-login-aviso">
                     {claro(textoEspera(espera))}
