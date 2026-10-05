@@ -37,4 +37,8 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "cuenta.pasaporteDetalle"), "Registra la participación y los logros en el ecosistema Stellar.");
   assert.equal(texto("en", "cuenta.pasaporteAbrir"), "Open on testnet");
   assert.equal(texto("es", "cuenta.pasaporteAbrir"), "Abrir en testnet");
+  assert.equal(texto("en", "evidencia.uploaded"), "Photo uploaded successfully");
+  assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
+  assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your photo already reached the organizer");
+  assert.equal(texto("es", "evidencia.reachedOrganizer"), "Tu foto ya le llegó al organizador");
 });

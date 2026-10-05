@@ -39,6 +39,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [evento, setEvento] = useState<string | null>(null);
+  const [recienSubida, setRecienSubida] = useState(false);
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -48,6 +49,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
     let activo = true;
     const memoria = leerMemoria();
     setCargaError(null);
+    setRecienSubida(false);
     leerTarea(tareaId, { miembroId: "" }, { estados: demo ? memoria.estados : undefined, muestra: demo }).then((resultado) => {
       if (!activo) return;
       if (resultado.error) {
@@ -244,6 +246,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
       if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
+      setRecienSubida(true);
       setFase("lista");
     } catch (err) {
       setError(err instanceof ErrorDeSesion || err instanceof ErrorDeEnvio ? err.aviso : "Could not send. Try again.");
@@ -256,6 +259,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
   function tomarOtra() {
     setEvidencia(null);
     setAvisoEnvio(null);
+    setRecienSubida(false);
     setFoto(null);
     setCapturadaEn(null);
     setNombreArchivo(null);
@@ -305,7 +309,7 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
             ? t("evidencia.chooseFile")
             : t("evidencia.openCamera");
 
-  const cerrada = tarea.estado !== "pendiente";
+  const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
   const montoVisible = montoDeTarea(tarea);
   const calificacion = notaDeTarea(tarea);
@@ -343,11 +347,21 @@ export function SubirEvidencia({ tareaId }: { tareaId: string }) {
               ✓
             </div>
           )}
-          <p className="mt-4 text-lg font-medium">{reembolso ? t("evidencia.fileSent") : t("evidencia.photoSent")}</p>
+          <p className="mt-4 text-lg font-medium" role={recienSubida && !avisoEnvio && !reembolso ? "status" : undefined}>
+            {recienSubida && !avisoEnvio && !reembolso
+              ? t("evidencia.uploaded")
+              : reembolso
+                ? t("evidencia.fileSent")
+                : t("evidencia.photoSent")}
+          </p>
           {avisoEnvio ? (
             <p role="alert" className="mt-2 text-sm leading-6 text-[var(--peligro)]">
               {claro(avisoEnvio)}
               {t("evidencia.fixSuffix")}
+            </p>
+          ) : tarea.etapa === "enviada_organizador" ? (
+            <p className="mt-2 text-sm leading-6 text-[var(--suave)]" role="status">
+              {t("evidencia.reachedOrganizer")}
             </p>
           ) : (
             <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{t("evidencia.organizerNow")}</p>
