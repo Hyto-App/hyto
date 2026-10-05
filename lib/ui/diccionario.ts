@@ -708,7 +708,7 @@ export const es: Rama<typeof en> = {
     legal: "El ingreso es con Cavos · tu billetera de Stellar se crea sola.",
     panel: "Cómo funciona Hyto",
     panelQ: "Bloquea el presupuesto. Revisa la foto. Paga el hito.",
-    panelS: "Quien organiza revisa y aprueba desde una sola bandeja. Mile, la revisión con IA, lee cada foto; las personas deciden cada pago.",
+    panelS: "Quien organiza revisa y aprueba desde una sola bandeja. Mile, el revisor con IA, lee cada foto; las personas deciden cada pago.",
     voluntarios: "Voluntarios",
     organizadores: "Organizadores",
     escrow: "Pago con depósito en Stellar",
