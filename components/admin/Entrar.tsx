@@ -21,7 +21,7 @@ import {
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdioma, useClaro, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { Eslogan, Logo } from "@/components/ui/Marca";
@@ -641,7 +641,7 @@ export function Entrar({
           <button type="button" className="hyto-login-logo" onClick={() => fase !== "exito" && setFase("inicio")} aria-label={t("entrar.close")}>
             <Logo />
           </button>
-          <SelectorIdioma className="hyto-login-idioma" />
+          <SelectorIdiomaMenu className="hyto-login-idioma" />
         </header>
         <main className="hyto-login-grid">
           <div className="hyto-login-izq">

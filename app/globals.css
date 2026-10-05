@@ -2052,14 +2052,72 @@ a {
   height: 22px;
 }
 
-.hyto-login .hyto-login-idioma {
-  border: 1px solid var(--l-linea);
-  background: rgba(20, 22, 43, 0.6);
+.hyto-idioma-menu {
+  position: relative;
+  display: inline-block;
 }
 
-.hyto-login .hyto-login-idioma button[aria-pressed="true"] {
-  background: var(--l-acento);
-  color: var(--l-sobre);
+.hyto-idioma-menu-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.hyto-idioma-menu-lista {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border-radius: 14px;
+}
+
+.hyto-idioma-menu-lista button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.hyto-login .hyto-idioma-menu-boton {
+  border: 1px solid var(--l-linea);
+  background: rgba(20, 22, 43, 0.6);
+  color: #fff;
+}
+
+.hyto-login .hyto-idioma-menu-lista {
+  border: 1px solid var(--l-linea);
+  background: #14162b;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.hyto-login .hyto-idioma-menu-lista button {
+  color: #fff;
+}
+
+.hyto-login .hyto-idioma-menu-lista button:hover,
+.hyto-login .hyto-idioma-menu-lista button:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.hyto-login .hyto-idioma-menu-lista button[aria-checked="true"] {
+  color: var(--l-acento);
+}
+
+.hyto-login .hyto-idioma-menu-boton:focus-visible {
+  outline: 2px solid var(--l-acento);
+  outline-offset: 2px;
 }
 
 .hyto-login-grid {

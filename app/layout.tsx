@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
-import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
+import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -44,7 +44,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const jar = await cookies();
-  const idioma = idiomaDe(jar.get(COOKIE_IDIOMA)?.value);
+  const guardado = jar.get(COOKIE_IDIOMA)?.value;
+  const idioma = guardado ? idiomaDe(guardado) : idiomaDeNavegador((await headers()).get("accept-language"));
   return (
     <html lang={idioma} className={poppins.variable} data-theme="dark" suppressHydrationWarning>
       <head>

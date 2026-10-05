@@ -19,3 +19,13 @@ export function guardarIdioma(idioma: Idioma): void {
   document.cookie = encabezadoIdioma(idioma, seguro);
   document.documentElement.lang = idioma;
 }
+
+/** Reads the first language of an Accept-Language header or navigator.language: es* is Spanish, anything else English. */
+export function idiomaDeNavegador(valor: string | null | undefined): Idioma {
+  const primero = (valor ?? "").split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
+  return primero === "es" || primero.startsWith("es-") ? "es" : "en";
+}
+
+export function hayCookieIdioma(cookies: string): boolean {
+  return cookies.split(";").some((par) => par.trim().startsWith(`${COOKIE_IDIOMA}=`));
+}
