@@ -112,7 +112,7 @@ async function subirConRespuesta(respuesta: () => Response): Promise<void> {
   await esperar();
   await elegirRecibo();
   assert.match(texto(), /Send/);
-  await pulsar("Send");
+  await pulsar("Send evidence");
   await esperar();
 }
 
@@ -150,13 +150,13 @@ test("un 201 con aviso de cobro no se muestra como envío limpio", async () => {
   }
 });
 
-test("un 201 sin aviso sí dice Evidence sent", async () => {
+test("un 201 sin aviso sí dice que la foto llegó", async () => {
   const original = globalThis.fetch;
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" } }, 201));
-    assert.match(texto(), /Evidence sent/);
+    assert.match(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /action needed/);
-    assert.match(texto(), /The organizer can review it now/);
+    assert.match(texto(), /as soon as the organizer approves it/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

@@ -77,7 +77,7 @@ test("sin nota real no hay porcentaje ni la frase del pago", async () => {
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ nota: null, veredicto: null, frase: "SECRETO-LAYA" }));
-    assert.match(texto(), /In review/);
+    assert.match(texto(), /Mile is checking your photo/);
     assert.equal(document.querySelector(".hyto-pill-veredicto"), null);
     assert.equal(texto().includes("%"), false);
     assert.equal(texto().includes(FRASE_PAGO), false);
@@ -199,7 +199,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send");
+    const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
     assert.ok(enviar instanceof HTMLButtonElement);
     await act(async () => {
       enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -207,7 +207,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.match(texto(), /Photo sent/);
+    assert.match(texto(), /Your photo arrived/);
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(texto().includes("SECRETO-LAYA"), false);
