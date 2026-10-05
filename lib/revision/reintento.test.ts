@@ -161,7 +161,7 @@ test("un corte de Laya se reintenta y Groq no se vuelve a llamar", async () => {
       claveGroq: "clave",
       layaUrl: "https://laya.example",
       esperar: async () => undefined,
-      fetchImpl: async (input) => {
+      fetchImpl: async (input, init) => {
         if (String(input).includes("groq")) {
           groq += 1;
           return Response.json({
@@ -170,12 +170,31 @@ test("un corte de Laya se reintenta y Groq no se vuelve a llamar", async () => {
         }
         laya += 1;
         if (laya < INTENTOS_REVISION) throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
-        return Response.json({ answers: { c1: { choice: "otra" } } });
+        const cuerpo = JSON.parse(String(init?.body)) as { questions?: Record<string, unknown> };
+        if (cuerpo.questions && "c1" in cuerpo.questions && !("v1" in cuerpo.questions)) {
+          return Response.json({ answers: { c1: { choice: "otra" } } });
+        }
+        return Response.json({
+          answers: {
+            lugar: { choice: "no_claro" },
+            v1: { choice: "es_otra_cosa" },
+            v2: { score: 0 },
+            v3: { noul: false },
+            v4: { noul: true },
+            t5: { choice: "otra_o_no_claro" },
+            t6: { choice: "sin_empezar" },
+            t7: { noul: false },
+            t8: { noul: false },
+            t9: { noul: true },
+            t10: { score: 0 },
+          },
+        });
       },
     }),
   );
   assert.equal(groq, 1);
-  assert.equal(laya, INTENTOS_REVISION);
+  // Timeouts on classify, then one classify + one match call after the last retry.
+  assert.equal(laya, INTENTOS_REVISION + 1);
   assert.equal(resultado.origen, "scout");
   assert.equal(resultado.veredicto, "insuficiente");
 });

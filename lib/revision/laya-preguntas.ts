@@ -61,13 +61,24 @@ function conPedido(texto: string, pedido: string): string {
   return texto.replaceAll("{pedido}", pedido.trim());
 }
 
-export function preguntasClasificacion(): PreguntasClasificacion {
+export function preguntasClasificacion(condicion: string): PreguntasClasificacion {
+  const pedido = condicion.trim();
   return {
-    c1: choice("What kind of evidence does the written description give? Pick one label. Use only what the description states.", {
-      trabajo: "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, or people working.",
-      factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
-      otra: "The description shows neither. For example, a selfie, a blurry image, or a scene with no work and no document.",
-    }),
+    c1: choice(
+      conPedido(
+        "What kind of evidence does the written description give? The organizer asked for: {pedido}. Pick one label. Use only what the description states.",
+        pedido,
+      ),
+      {
+        trabajo:
+          "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, people working, or other evidence that matches what the organizer asked for.",
+        factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
+        otra: conPedido(
+          "The description shows neither work, a receipt, nor what the organizer asked for ({pedido}). For example, a selfie, a blurry image, or an unrelated scene.",
+          pedido,
+        ),
+      },
+    ),
   };
 }
 

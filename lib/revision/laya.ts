@@ -138,30 +138,33 @@ export async function preguntarLaya(
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
   const pedido = condicion.trim();
-  const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(), fetchImpl, signal, clave);
+  const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(pedido), fetchImpl, signal, clave);
   const clase = leerClase(claseJson);
   if (!clase) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
   const cercaClase = idsCerca(claseJson, ["c1"]);
-  if (clase === "otra") {
-    return {
-      choice: "otra",
-      noul: false,
-      score: "0",
-      motivos: ["otra"],
-      detalle: escribirSnapshot({ clase: "otra", trabajo: null, factura: null, cerca: cercaClase }),
-    };
-  }
-  if (clase === "trabajo") {
+  if (clase === "otra" || clase === "trabajo") {
     const json = await enviar(base, texto, pedido, preguntasTrabajo(pedido), fetchImpl, signal, clave);
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
+    const cerca = [...cercaClase, ...idsCerca(json, IDS_TRABAJO)];
+    // "otra" used to force 0% before asking whether the photo matches the request.
+    // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
+    if (clase === "otra" && respuestas.v1 === "es_otra_cosa") {
+      return {
+        choice: "otra",
+        noul: false,
+        score: "0",
+        motivos: ["otra"],
+        detalle: escribirSnapshot({ clase: "otra", trabajo: null, factura: null, cerca }),
+      };
+    }
     return {
       ...senalesDeTrabajo(respuestas),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,
         factura: null,
-        cerca: [...cercaClase, ...idsCerca(json, IDS_TRABAJO)],
+        cerca,
       }),
     };
   }

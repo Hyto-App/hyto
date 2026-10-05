@@ -34,7 +34,8 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  * - g4 merchant named: yes = 1, no = 0
  * - g5 Laya's own final score: index 2 = 1, index 1 = 0.5, index 0 = 0
  *
- * Classification "otra" does not use these weights. The grade is 0.
+ * Classification "otra" forces grade 0 only when the match question also fails (v1 es_otra_cosa).
+ * Otherwise the work weights apply, so requested scene evidence is not forced to 0.
  *
  * A yes/no question gives full weight only to the answer that supports a valid
  * expense or a finished task. For "is something missing / unfinished", that
@@ -45,7 +46,7 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  * The screen shows those bands as Insufficient, Partially completed, and Completed.
  *
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
- * - TOPE_FALTA_GRAVE (49): classification "otra", v1 es_otra_cosa, t6 sin_empezar,
+ * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar,
  *   or f1 otro_gasto (a different kind of expense). The band stays insuficiente.
  * - TOPE_FALTA_SERIA (79): g2 is false. The band cannot be cumplió.
  * - TOPE_NOTA_REEMBOLSO (40): the amount is missing, not positive, the date is
