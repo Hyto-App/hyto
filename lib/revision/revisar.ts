@@ -5,6 +5,7 @@ import { esPdf } from "@/lib/evidencia/tipo";
 import { cerrar, desdeFallo, stubLaya, type ResultadoRevision } from "./armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { preguntarLaya } from "./laya";
+import { contextoParaLaya } from "./lectura";
 import { conReintentos, esperaReintento, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS, TOPE_LAYA_MS } from "./reintento";
 import { describirFoto } from "./scout";
 
@@ -35,9 +36,10 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   };
   try {
     const descripcion = await conReintentos(
-      (signal) => describirFoto(foto.bytes, foto.tipo, clave, fetchImpl, signal),
+      (signal) => describirFoto(foto.bytes, foto.tipo, clave, fetchImpl, signal, { condicion: tarea.condicion, tipoTarea: tarea.tipo }),
       { ...repeticion, topeIntentoMs: TOPE_GROQ_MS },
     );
+    const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
     if (!contexto.layaUrl) {
       if (contexto.produccion ?? enProduccion()) return fallar(new FalloRevision("sin_laya", { fuente: "laya", providerMessage: "LAYA_URL" }));
       const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, stubLaya(tarea.tipo), "stub");
@@ -45,7 +47,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       return cerrado;
     }
     const senales = await conReintentos(
-      (signal) => preguntarLaya(contexto.layaUrl!, descripcion.texto, tarea.condicion, fetchImpl, signal),
+      (signal) => preguntarLaya(contexto.layaUrl!, paraLaya, tarea.condicion, fetchImpl, signal),
       { ...repeticion, topeIntentoMs: TOPE_LAYA_MS },
     );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");

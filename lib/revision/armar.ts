@@ -2,6 +2,7 @@ import { centavos } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
+import type { LecturaEvidencia } from "./lectura";
 import { calificar, notaDeTexto, type MotivoTope } from "./pesos";
 
 export type Senales = {
@@ -16,8 +17,11 @@ export type Senales = {
 
 export type Descripcion = {
   texto: string;
+  /** US dollars. Null when the photo shows no total or its currency could not be converted. */
   monto: string | null;
   fecha: string | null;
+  /** The structured reading. Absent when the model sent the older one-sentence reply. */
+  lectura?: LecturaEvidencia | null;
 };
 
 export type OrigenRevision = "scout" | "guion" | "stub" | "error";
@@ -128,6 +132,7 @@ export function cerrar(
     texto: descripcion.texto.trim(),
     monto,
     fecha,
+    ...(descripcion.lectura ? { lectura: descripcion.lectura } : {}),
     ...senalesFinales,
     veredicto: armado.veredicto,
     nota: armado.nota,
