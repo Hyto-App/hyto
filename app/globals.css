@@ -2555,8 +2555,13 @@ a {
   margin-top: 16px;
 }
 
+.hyto-login-apple {
+  margin-top: 10px;
+}
+
 .hyto-login-tarjeta.is-enviando .hyto-login-pestanas,
-.hyto-login-tarjeta.is-enviando .hyto-login-google {
+.hyto-login-tarjeta.is-enviando .hyto-login-google,
+.hyto-login-tarjeta.is-enviando .hyto-login-apple {
   opacity: 0.4;
 }
 

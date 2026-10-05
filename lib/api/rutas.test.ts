@@ -977,3 +977,49 @@ test("Sign in no crea usuario y Sign up no duplica la cuenta", async () => {
   );
   assert.equal(rara.status, 400);
 });
+
+test("Apple sin correo entra con una dirección estable del sub y nunca toca otra cuenta", async () => {
+  const almacen = crearMemoria();
+  const apple = { sub: "001234.apple-sub.0987", firebase: { sign_in_provider: "apple.com" } };
+  const pedido = (intencion: string, extra: Record<string, unknown> = apple, email = "") =>
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, token: token(null, extra), intencion }),
+    });
+
+  const ingreso = await crearSesionHttp(pedido("signin"), almacen);
+  assert.equal(ingreso.status, 404);
+
+  const alta = await crearSesionHttp(pedido("signup"), almacen);
+  assert.equal(alta.status, 200);
+  const cuerpo = (await alta.json()) as { email: string; usuarioId: string; nuevo: boolean };
+  assert.equal(cuerpo.nuevo, true);
+  assert.match(cuerpo.email, /^apple-[0-9a-f]{32}@apple\.hyto\.invalid$/);
+
+  const vuelta = await crearSesionHttp(pedido("signin"), almacen);
+  assert.equal(vuelta.status, 200);
+  assert.equal(((await vuelta.json()) as { usuarioId: string }).usuarioId, cuerpo.usuarioId);
+
+  // Without Apple's provider marker an emailless token is still refused (Google and email codes unchanged).
+  const sinProveedor = await crearSesionHttp(pedido("signup", { sub: "otro" }), almacen);
+  assert.equal(sinProveedor.status, 400);
+  // No token can claim the reserved Apple address as its email.
+  const robo = await crearSesionHttp(pedido("signin", { sub: "otro", email: cuerpo.email }, cuerpo.email), almacen);
+  assert.equal(robo.status, 400);
+
+  // A private relay address is a normal email: it gets its own account.
+  const relay = "x8k2mq4p7r@privaterelay.appleid.com";
+  const conRelay = await crearSesionHttp(pedido("signup", { ...apple, sub: "relay-sub", email: relay }, relay), almacen);
+  assert.equal(conRelay.status, 200);
+  assert.equal(((await conRelay.json()) as { email: string }).email, relay);
+
+  // An Apple sign-in that shares an existing user's email opens that user, not a new one.
+  await asegurarSemilla(almacen);
+  const antes = (await almacen.listarUsuarios()).length;
+  const existente = await crearSesionHttp(pedido("signin", { ...apple, email: "organizador@demo.hyto" }), almacen);
+  assert.equal(existente.status, 200);
+  assert.equal(((await existente.json()) as { rol: string }).rol, "organizador");
+  assert.equal((await almacen.listarUsuarios()).length, antes);
+});
+

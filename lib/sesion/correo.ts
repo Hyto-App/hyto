@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { verificarJwt, type AjustesJwt } from "./jwt";
 
@@ -9,13 +10,26 @@ export type CorreoToken = {
 
 const CLAVES_WALLET = ["wallet", "stellarAddress", "stellar_address", "address"];
 
+export const EMISOR_APPLE = "https://appleid.apple.com";
+/**
+ * Apple can return a token without `email`. Hyto keys accounts on email, so that
+ * person gets a stable address built from the verified `sub`. `.invalid` is
+ * reserved (RFC 2606): no real inbox, no email code and no other provider can
+ * ever claim it, so it cannot collide with an existing user.
+ */
+export const DOMINIO_APPLE_SIN_CORREO = "apple.hyto.invalid";
+
 export async function correoDelToken(token: string, correoPedido: string, ajustes?: AjustesJwt): Promise<CorreoToken | null> {
   const claims = await verificarJwt(token, ajustes);
   if (!claims) return null;
   const sub = texto(claims.sub) || texto(claims.user_id) || texto(claims.uid);
   if (!sub) return null;
-  const claim = texto(claims.email).toLowerCase();
-  if (!claim.includes("@")) return null;
+  let claim = texto(claims.email).toLowerCase();
+  if (claim.endsWith(`@${DOMINIO_APPLE_SIN_CORREO}`)) return null;
+  if (!claim.includes("@")) {
+    if (!esApple(claims)) return null;
+    claim = correoAppleSinCorreo(sub);
+  }
   const pedido = correoPedido.trim().toLowerCase();
   if (pedido && pedido !== claim) return null;
   const exp = typeof claims.exp === "number" && Number.isFinite(claims.exp) ? claims.exp : null;
@@ -48,6 +62,18 @@ function walletEn(valor: unknown, profundidad: number): string | null {
     if (hallada) return hallada;
   }
   return null;
+}
+
+export function correoAppleSinCorreo(sub: string): string {
+  const huella = createHash("sha256").update(`apple:${sub}`).digest("hex").slice(0, 32);
+  return `apple-${huella}@${DOMINIO_APPLE_SIN_CORREO}`;
+}
+
+// Apple's own id_token, or a Firebase token minted from an Apple sign-in.
+function esApple(claims: Record<string, unknown>): boolean {
+  if (claims.iss === EMISOR_APPLE) return true;
+  const firebase = claims.firebase;
+  return Boolean(firebase && typeof firebase === "object" && (firebase as { sign_in_provider?: unknown }).sign_in_provider === "apple.com");
 }
 
 function texto(valor: unknown): string {

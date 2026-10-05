@@ -37,7 +37,8 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   const correo = await correoDelToken(token, pedido);
   if (!correo) {
     // Reason only: never log the token or the email.
-    const motivo = !token ? "missing token" : !pedido.trim() ? "missing email" : "token rejected (signature, expiry, issuer, audience, or email mismatch)";
+    // An empty email is valid (Apple can omit it); the token decides.
+    const motivo = !token ? "missing token" : "token rejected (signature, expiry, issuer, audience, or email missing/mismatch)";
     console.warn(`[api/sesion] Could not confirm sign-in: ${motivo}`);
     return json({ aviso: "Could not confirm sign-in." }, 400);
   }
