@@ -284,7 +284,7 @@ test("si la conexión se corta después de guardar la foto, la pantalla dice Evi
     });
     assert.ok(pedidos.includes("POST /api/evidencias"));
     assert.match(texto(), /Evidence sent/);
-    assert.match(texto(), /Photo sent/);
+    assert.match(texto(), /Photo uploaded successfully/);
     assert.doesNotMatch(texto(), /Check your connection/);
     assert.equal(document.querySelector('[role="alert"]'), null);
   } finally {
