@@ -1,4 +1,14 @@
-import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_USDC_FIRMANTE,
+  AVISO_USDC_LENTO,
+  AVISO_USDC_OTRA_CUENTA,
+  AVISO_USDC_PENDIENTE,
+  AVISO_USDC_SECUENCIA,
+  AVISO_USDC_SIN_XLM,
+  AVISO_USDC_VENCIDO,
+  CODIGO_USDC_SIN_XLM,
+} from "@/lib/integrante/avisosUsdc";
 import {
   AVISO_HORIZON_RECEPTOR,
   AVISO_RECEPTOR_NO_LISTO,
@@ -80,6 +90,15 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_RECEPTOR_NO_LISTO]: "errores.receptorNoListo",
   [CODIGO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
   [AVISO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
+  [AVISO_DISPOSITIVO]: "errores.dispositivo",
+  [CODIGO_USDC_SIN_XLM]: "errores.cobroSinXlm",
+  [AVISO_USDC_SIN_XLM]: "errores.cobroSinXlm",
+  [AVISO_USDC_SECUENCIA]: "errores.cobroSecuencia",
+  [AVISO_USDC_FIRMANTE]: "errores.cobroFirmante",
+  [AVISO_USDC_VENCIDO]: "errores.cobroVencido",
+  [AVISO_USDC_PENDIENTE]: "errores.cobroPendiente",
+  [AVISO_USDC_OTRA_CUENTA]: "errores.cobroOtraCuenta",
+  [AVISO_USDC_LENTO]: "errores.cobroLento",
   "Sign in to continue.": "errores.entrarContinuar",
   [AVISO_GENERICO]: "errores.noEntrar",
   [AVISO_CODIGO_INVALIDO]: "errores.codigoNo",

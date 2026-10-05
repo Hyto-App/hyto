@@ -81,7 +81,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 - `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
 - `GET /api/informe`.
 - `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]`.
-- `GET`, `POST /api/usdc` — read or prepare a classic `changeTrust` for the session wallet.
+- `GET`, `POST /api/usdc` — read or prepare a classic `changeTrust` for the session wallet. `preparar` answers `listo` when the USDC trustline is already open, and 409 `usdc_sin_xlm` when the account's own XLM cannot pay the new reserve and the fee.
 
 ## Sign-in
 
@@ -121,7 +121,9 @@ The organizer's USDC balance is checked again before deploy, fund, and submit (a
 
 If the submit call to Trustless throws (timeout, dropped connection, a resubmit), `POST /api/firma/enviar` asks testnet RPC `getTransaction` (`lib/escrow/confirmacion.ts`, `https://soroban-testnet.stellar.org`) for the signed transaction's hash. `SUCCESS` is handled like a lagging submit: deploy saves the predicted contract from the token, release saves `hash_pago`. `FAILED` returns the original error. `NOT_FOUND` after about 7 seconds returns `HYTO_TX_NOT_CONFIRMED` with the hash and saves nothing. `GET /api/revision/:id` also reads the escrow once for an unpaid task with a contract and marks it `pagado` when milestone 0 is released, even with no stored hash.
 
-`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. Account setup still prepares a self-paid `changeTrust` through `/api/usdc`. `asegurarCobroUsdc` can call Cavos `addTrustline`, and that is not the path `PrepararUsdc` uses. There is no receiver-trustline check before deploy.
+`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. There is no receiver-trustline check before deploy.
+
+**Get ready to be paid** (`prepararUsdcDeSesion` in `lib/integrante/prepararUsdc.ts`, server in `lib/api/usdc.ts`) can run again on an account that is half set up. `preparar` opens a missing testnet account with Friendbot, answers `listo` when the USDC trustline is already there, and otherwise returns a self-paid `changeTrust` when the account's own XLM covers one more 0.5 XLM reserve and the fee (`xlmCubreTrustline` in `lib/integrante/usdc.ts`). The browser refuses to sign when Cavos opens a different address from `sesiones.wallet`. An account with no XLM of its own (the Cavos relayer sponsors the reserves of the accounts it creates) gets 409 `usdc_sin_xlm`, and the browser then asks Cavos for a sponsored `addTrustline`, which the relayer pays. Horizon `tx_insufficient_balance` or `op_low_reserve` on submit takes the same path. When a submit fails, the server reads the account again and answers `listo` if the trustline is on the ledger anyway. Other Horizon codes map to the notices in `lib/integrante/avisosUsdc.ts`. The server logs `[api/usdc]` with the step, the Horizon codes, and the first and last four characters of the account, never the session token, the email, or the XDR. The browser gives each Cavos call 60 seconds (`TOPE_CAVOS_MS`) and writes the raw Cavos error to the console as `[usdc]`, with emails and tokens removed.
 
 ## Environment
 
@@ -192,9 +194,9 @@ Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open
 3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. Seeded sample evidence is served as a generated PNG (`lib/blob/marcador.ts`) with `nosniff`.
 4. **No CI.** There is no `.github/` workflow.
 
-Also still open: receiver-trustline preflight before deploy and a sponsored trustline on the Account screen (the self-paid `/api/usdc` path is what that screen calls). `wallet.status === "ready"` is not checked before `signXdr`.
+Also still open: receiver-trustline preflight before deploy, and recovery for a lost Cavos key. Hyto connects Cavos without a passkey or social recovery, so the account key lives only in the browser storage where the account was created. Another browser, cleared storage, or another site cannot sign, and signing in again there does not bring the key back. Each `*.vercel.app` preview is its own site, because `vercel.app` is a public suffix.
 
-Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script.
+Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script. Get ready to be paid can run again and uses a sponsored trustline for an account without XLM of its own. `needs-device-approval` is refused before `signXdr` with its own notice (`firmanteDe` in `lib/escrow/firmarCliente.ts`). `undeployed` still signs, because its control key exists before the account is on the ledger.
 
 ## Design
 
