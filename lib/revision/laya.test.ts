@@ -25,18 +25,22 @@ test("la URL de Laya apunta a systemone", () => {
   assert.equal(urlLaya("https://ejemplo.ts.net/v1/systemone/"), "https://ejemplo.ts.net/v1/systemone");
 });
 
-test("C1 clasifica la descripción con las tres etiquetas", () => {
-  const cuerpo = leerCuerpo(cuerpoLaya("A blank wall.", PEDIDO, preguntasClasificacion()));
+test("C1 clasifica la descripción con las tres etiquetas y el pedido", () => {
+  const cuerpo = leerCuerpo(cuerpoLaya("A blank wall.", PEDIDO, preguntasClasificacion(PEDIDO)));
   assert.equal(cuerpo.model, "multilingual");
   assert.equal(cuerpo.state, `A blank wall.\nCondition: ${PEDIDO}`);
   assert.deepEqual(Object.keys(cuerpo.questions), ["c1"]);
   const c1 = cuerpo.questions.c1;
   assert.equal(c1.type, "choice");
-  assert.equal(c1.instructions, "What kind of evidence does the written description give? Pick one label. Use only what the description states.");
+  assert.equal(
+    c1.instructions,
+    `What kind of evidence does the written description give? The organizer asked for: ${PEDIDO}. Pick one label. Use only what the description states.`,
+  );
   assert.deepEqual(c1.criteria, {
-    trabajo: "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, or people working.",
+    trabajo:
+      "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, people working, or other evidence that matches what the organizer asked for.",
     factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
-    otra: "The description shows neither. For example, a selfie, a blurry image, or a scene with no work and no document.",
+    otra: `The description shows neither work, a receipt, nor what the organizer asked for (${PEDIDO}). For example, a selfie, a blurry image, or an unrelated scene.`,
   });
 });
 
@@ -288,27 +292,119 @@ test("una factura no dispara las preguntas de trabajo", async () => {
   assert.deepEqual(resto, { choice: "factura", noul: true, score: "100" });
 });
 
-test("si la descripción no es trabajo ni factura, no hay segunda llamada", async () => {
+test("otra que no coincide con el pedido sigue en 0 tras la pregunta de match", async () => {
   let llamadas = 0;
-  const senales = await preguntarLaya("https://laya.example", "A blank wall.", PEDIDO, async () => {
+  const senales = await preguntarLaya("https://laya.example", "A blank wall.", PEDIDO, async (_input, init) => {
     llamadas += 1;
-    return Response.json({ answers: { c1: { choice: "otra" } } });
+    const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+    if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "otra" } } });
+    return Response.json({
+      answers: {
+        ...respuestasTrabajo(),
+        v1: { choice: "es_otra_cosa" },
+      },
+    });
   });
-  assert.equal(llamadas, 1);
+  assert.equal(llamadas, 2);
   const { detalle, ...resto } = senales;
-  assert.equal(detalle, "c=otra");
+  assert.equal(detalle?.startsWith("c=otra"), true);
   assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
 });
 
-test("un reembolso clasificado como otra se queda en 0", async () => {
+test("otra que sí coincide con el pedido no se fuerza a 0", async () => {
+  const pedido = "A photo of a hall full of people";
   let llamadas = 0;
-  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Photo of the meal receipt", async () => {
-    llamadas += 1;
-    return Response.json({ answers: { c1: { choice: "otra" } } });
-  });
-  assert.equal(llamadas, 1);
+  const senales = await preguntarLaya(
+    "https://laya.example",
+    "Young people dining in a large hall.",
+    pedido,
+    async (_input, init) => {
+      llamadas += 1;
+      const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+      if ("c1" in cuerpo.questions) {
+        assert.match(String(cuerpo.questions.c1 && (cuerpo.questions.c1 as { instructions?: string }).instructions), /hall full of people/);
+        return Response.json({ answers: { c1: { choice: "otra" } } });
+      }
+      return Response.json({
+        answers: {
+          ...respuestasTrabajo(),
+          lugar: { choice: "espacio_abierto" },
+          v1: { choice: "es_lo_pedido" },
+          t5: { choice: "vender_o_atender" },
+        },
+      });
+    },
+  );
+  assert.equal(llamadas, 2);
   const { detalle, ...resto } = senales;
-  assert.equal(detalle, "c=otra");
+  assert.equal(detalle?.startsWith("c=trabajo"), true);
+  assert.equal(resto.choice, "trabajo");
+  assert.notEqual(resto.score, "0");
+  assert.equal("motivos" in resto, false);
+  const cerrado = cerrar(
+    "trabajo",
+    null,
+    { texto: "Young people dining in a large hall.", monto: null, fecha: null },
+    senales,
+    "scout",
+  );
+  assert.ok((cerrado?.nota ?? 0) > 0);
+  assert.notEqual(cerrado?.veredicto, "insuficiente");
+});
+
+test("un selfie sin relación sigue insuficiente en 0", async () => {
+  let llamadas = 0;
+  const senales = await preguntarLaya("https://laya.example", "A close-up selfie with no work or receipt.", PEDIDO, async (_input, init) => {
+    llamadas += 1;
+    const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+    if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "otra" } } });
+    return Response.json({
+      answers: {
+        lugar: { choice: "no_claro" },
+        v1: { choice: "es_otra_cosa" },
+        v2: { score: 0 },
+        v3: { noul: false },
+        v4: { noul: true },
+        t5: { choice: "otra_o_no_claro" },
+        t6: { choice: "sin_empezar" },
+        t7: { noul: false },
+        t8: { noul: false },
+        t9: { noul: true },
+        t10: { score: 0 },
+      },
+    });
+  });
+  assert.equal(llamadas, 2);
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=otra"), true);
+  assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
+  const cerrado = cerrar(
+    "trabajo",
+    null,
+    { texto: "A close-up selfie with no work or receipt.", monto: null, fecha: null },
+    senales,
+    "scout",
+  );
+  assert.equal(cerrado?.nota, 0);
+  assert.equal(cerrado?.veredicto, "insuficiente");
+});
+
+test("un reembolso clasificado como otra sin match se queda en 0", async () => {
+  let llamadas = 0;
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Photo of the meal receipt", async (_input, init) => {
+    llamadas += 1;
+    const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+    if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "otra" } } });
+    return Response.json({
+      answers: {
+        ...respuestasTrabajo(),
+        v1: { choice: "es_otra_cosa" },
+      },
+    });
+  });
+  assert.equal(llamadas, 2);
+  const { detalle, ...resto } = senales;
+  assert.equal(detalle?.startsWith("c=otra"), true);
   assert.deepEqual(resto, { choice: "otra", noul: false, score: "0", motivos: ["otra"] });
   const cerrado = cerrar(
     "reembolso",

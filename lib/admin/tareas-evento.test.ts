@@ -45,6 +45,7 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
             prioridad: "normal",
             dificultad: null,
             bloqueo: null,
+            tieneFoto: false,
           },
         ],
       }),

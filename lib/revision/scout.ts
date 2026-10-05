@@ -13,7 +13,7 @@ const BASE = "https://api.groq.com/openai/v1";
 const MAX_TOKENS = 1024;
 
 const PEDIDO =
-  "Describe the photo in one short sentence, in English. If it is an invoice or a receipt, extract the amount in dollars (digits only, up to two decimals, no symbol) and the date as YYYY-MM-DD. If it is not a receipt, amount and date are null. Reply with JSON only, using the keys texto, monto, and fecha.";
+  "Describe the photo in one short sentence. The texto value MUST be English only — never Spanish or any other language. If it is an invoice or a receipt, extract the amount in dollars (digits only, up to two decimals, no symbol) and the date as YYYY-MM-DD. If it is not a receipt, amount and date are null. Reply with JSON only, using the keys texto, monto, and fecha.";
 
 export function leerDescripcion(texto: string): Descripcion | null {
   const inicio = texto.indexOf("{");

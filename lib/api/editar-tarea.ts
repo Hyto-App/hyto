@@ -14,6 +14,7 @@ export const AVISO_MONTO_BLOQUEADO = "The amount is already locked in the paymen
 const TITULO_MAX = 120;
 const CONDICION_MAX = 500;
 
+
 export function avisoBloqueo(tarea: Pick<TareaFila, "estado" | "hashPago" | "contratoEscrow">, tieneEvidencia: boolean): string | null {
   if (tarea.estado === "pagado" || Boolean(tarea.hashPago?.trim())) return AVISO_CON_PAGO;
   if (tarea.contratoEscrow?.trim()) return AVISO_MONTO_BLOQUEADO;

@@ -7,6 +7,7 @@ import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { normalizarMonto } from "@/lib/admin/vista";
+import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
@@ -64,33 +65,58 @@ export function CrearProyecto() {
       setAviso(AVISO_PROYECTO_DEMO);
       return;
     }
+    const nombreLimpio = nombre.trim();
+    if (!nombreLimpio) {
+      setAviso("Enter an event name.");
+      return;
+    }
+
     const tareas = filas
       .map((fila) => ({
         titulo: fila.titulo.trim(),
         tipo: fila.tipo,
         monto: normalizarMonto(fila.monto),
+        montoCrudo: fila.monto.trim(),
         condicion: fila.condicion.trim(),
         asignado: fila.asignado.trim(),
         prioridad: fila.prioridad,
         dificultad: fila.dificultad || null,
       }))
-      .filter((fila) => fila.titulo || fila.monto);
+      .filter((fila) => fila.titulo || fila.montoCrudo);
 
-    const nombreLimpio = nombre.trim();
-    const montosValidos = tareas.every((fila) => fila.titulo && fila.monto);
-    if (!nombreLimpio || tareas.length === 0 || !montosValidos) {
-      setAviso("Enter a name and at least one task with an amount.");
+    if (tareas.length === 0) {
+      setAviso("Add at least one task with a title and an amount.");
+      return;
+    }
+    if (tareas.some((fila) => !fila.titulo)) {
+      setAviso("Every task needs a title.");
+      return;
+    }
+    if (tareas.some((fila) => fila.montoCrudo && !fila.monto)) {
+      setAviso(AVISO_MONTO_INVALIDO);
+      return;
+    }
+    if (tareas.some((fila) => !fila.monto)) {
+      setAviso("Every task needs an amount greater than zero.");
       return;
     }
 
-    const respuesta = await fetch("/api/proyectos", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ nombre: nombreLimpio, tareas }),
-    });
+    const payload = tareas.map(({ montoCrudo: _omit, ...fila }) => fila);
+
+    let respuesta: Response;
+    try {
+      respuesta = await fetch("/api/proyectos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ nombre: nombreLimpio, tareas: payload }),
+      });
+    } catch {
+      setAviso("Could not reach the server. Check your connection and try again.");
+      return;
+    }
     const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string; proyecto?: { id?: string } } | null;
     if (!respuesta.ok || !cuerpo?.proyecto?.id) {
-      setAviso(cuerpo?.aviso ?? "Could not create the event.");
+      setAviso(cuerpo?.aviso ?? "Could not create the event. Please try again.");
       return;
     }
     router.push(`/eventos/${cuerpo.proyecto.id}`);

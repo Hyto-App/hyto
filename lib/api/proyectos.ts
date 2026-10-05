@@ -119,11 +119,12 @@ async function personasDelEvento(almacen: Almacen, proyectoId: string): Promise<
 type TareaBorrador = TareaFila & { asignado: string };
 
 function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; creadoEn: string }; tareas: TareaBorrador[] } | { aviso: string } {
-  if (!body || typeof body !== "object") return { aviso: "Enter a name and at least one task with an amount." };
+  if (!body || typeof body !== "object") return { aviso: "Enter an event name and at least one task." };
   const crudo = body as Record<string, unknown>;
   const nombre = typeof crudo.nombre === "string" ? crudo.nombre.trim() : "";
-  if (!nombre || !Array.isArray(crudo.tareas) || crudo.tareas.length === 0) {
-    return { aviso: "Enter a name and at least one task with an amount." };
+  if (!nombre) return { aviso: "Enter an event name." };
+  if (!Array.isArray(crudo.tareas) || crudo.tareas.length === 0) {
+    return { aviso: "Add at least one task with a title and an amount." };
   }
   const proyectoId = crypto.randomUUID();
   const ahora = new Date().toISOString();
@@ -152,12 +153,17 @@ async function asignarTareas(almacen: Almacen, organizadorId: string, tareas: Ta
 }
 
 function leerTarea(item: unknown, proyectoId: string): TareaBorrador | { aviso: string } {
-  if (!item || typeof item !== "object") return { aviso: "Enter a name and at least one task with an amount." };
+  if (!item || typeof item !== "object") return { aviso: "Add at least one task with a title and an amount." };
   const crudo = item as Record<string, unknown>;
   const titulo = typeof crudo.titulo === "string" ? crudo.titulo.trim() : "";
   const tipo: TipoTarea | null = crudo.tipo === "reembolso" ? "reembolso" : crudo.tipo === "trabajo" ? "trabajo" : null;
-  const monto = typeof crudo.monto === "string" || typeof crudo.monto === "number" ? normalizarMonto(String(crudo.monto)) : null;
-  if (!titulo || !tipo || !monto) return { aviso: "Enter a name and at least one task with an amount." };
+  const montoCrudo =
+    typeof crudo.monto === "string" || typeof crudo.monto === "number" ? String(crudo.monto).trim() : "";
+  const monto = montoCrudo ? normalizarMonto(montoCrudo) : null;
+  if (!titulo) return { aviso: "Every task needs a title." };
+  if (!tipo) return { aviso: "Every task needs a type (Work or Reimbursement)." };
+  if (montoCrudo && !monto) return { aviso: "Enter an amount greater than zero, with up to two decimals." };
+  if (!monto) return { aviso: "Every task needs an amount greater than zero." };
   const condicion = typeof crudo.condicion === "string" ? crudo.condicion.trim() : "";
   const miembroId = typeof crudo.miembroId === "string" ? crudo.miembroId.trim() : "";
   const asignado = emailDe(crudo.asignado);

@@ -256,20 +256,38 @@ test("la revisión clasifica y después manda solo las preguntas de la factura",
   assert.equal(cuerpos[1].questions?.t10, undefined);
 });
 
-test("si la descripción es otra cosa, la nota es 0 y no hay segunda llamada", async () => {
+test("si la descripción es un selfie sin match, la nota es 0 tras la pregunta de match", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "stand");
   assert.ok(tarea);
   let llamadasLaya = 0;
   const resultado = await revisar(tarea, FOTO, {
     claveGroq: "clave",
     layaUrl: "https://laya.example",
-    fetchImpl: async (input) => {
+    fetchImpl: async (input, init) => {
       if (String(input).includes("groq")) return groq("A blurry selfie.");
       llamadasLaya += 1;
-      return Response.json({ answers: { c1: { choice: "otra" } } });
+      const cuerpo = JSON.parse(String(init?.body)) as { questions?: Record<string, unknown> };
+      if (cuerpo.questions && "c1" in cuerpo.questions && !("v1" in cuerpo.questions)) {
+        return Response.json({ answers: { c1: { choice: "otra" } } });
+      }
+      return Response.json({
+        answers: {
+          lugar: { choice: "no_claro" },
+          v1: { choice: "es_otra_cosa" },
+          v2: { score: 0 },
+          v3: { noul: false },
+          v4: { noul: true },
+          t5: { choice: "otra_o_no_claro" },
+          t6: { choice: "sin_empezar" },
+          t7: { noul: false },
+          t8: { noul: false },
+          t9: { noul: true },
+          t10: { score: 0 },
+        },
+      });
     },
   });
-  assert.equal(llamadasLaya, 1);
+  assert.equal(llamadasLaya, 2);
   assert.equal(resultado.nota, 0);
   assert.equal(resultado.score, "0");
   assert.equal(resultado.choice, "otra");
@@ -324,9 +342,23 @@ test("la clave de Laya viaja solo si está configurada", async () => {
       llamadas += 1;
       autorizacion = new Headers(init?.headers).get("authorization") ?? "";
       if (llamadas === 1) return Response.json({ answers: { c1: { choice: "otra" } } });
-      return Response.json({});
+      return Response.json({
+        answers: {
+          lugar: { choice: "no_claro" },
+          v1: { choice: "es_otra_cosa" },
+          v2: { score: 0 },
+          v3: { noul: false },
+          v4: { noul: true },
+          t5: { choice: "otra_o_no_claro" },
+          t6: { choice: "sin_empezar" },
+          t7: { noul: false },
+          t8: { noul: false },
+          t9: { noul: true },
+          t10: { score: 0 },
+        },
+      });
     });
-    assert.equal(llamadas, 1);
+    assert.equal(llamadas, 2);
     assert.equal(autorizacion, "Bearer clave-compartida");
   } finally {
     if (previa === undefined) delete process.env.LAYA_API_KEY;

@@ -1,7 +1,7 @@
 import { compararFechaPedido, leerFechaRecibo, leerMontoRecibo, type MonedaRecibo } from "./recibo-parser";
 import type { RespuestaRecibo } from "./recibo-preguntas";
 
-export const MARCA_MONEDA_DISTINTA = "moneda distinta, el organizador confirma los USDC a devolver";
+export const MARCA_MONEDA_DISTINTA = "Different currency: the organizer confirms the USDC to return";
 
 export type RespuestasDecision = {
   comercio: RespuestaRecibo;

@@ -35,7 +35,13 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   const intencion = intencionDe(crudo.intencion);
   if (crudo.intencion !== undefined && !intencion) return json({ aviso: "Choose Sign up or Sign in." }, 400);
   const correo = await correoDelToken(token, pedido);
-  if (!correo) return json({ aviso: "Could not confirm sign-in." }, 400);
+  if (!correo) {
+    // Reason only: never log the token or the email.
+    // An empty email is valid (Apple can omit it); the token decides.
+    const motivo = !token ? "missing token" : "token rejected (signature, expiry, issuer, audience, or email missing/mismatch)";
+    console.warn(`[api/sesion] Could not confirm sign-in: ${motivo}`);
+    return json({ aviso: "Could not confirm sign-in." }, 400);
+  }
   try {
     await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
