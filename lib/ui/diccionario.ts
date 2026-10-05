@@ -439,6 +439,9 @@ export const en = {
     insigniaRachaDetalle: "Earnings three months in a row",
     confirmWindow: "Confirm in the window if it asks. This can take a minute.",
     newAccount: "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the event payment.",
+    pasaporteTitulo: "Stellar Passport",
+    pasaporteDetalle: "It records participation and achievements in the Stellar ecosystem.",
+    pasaporteAbrir: "Open on testnet",
   },
   estados: {
     pendiente: "Pending",
@@ -1009,6 +1012,9 @@ export const es: Rama<typeof en> = {
     insigniaRachaDetalle: "Ingresos tres meses seguidos",
     confirmWindow: "Confirma en la ventana si te lo pide. Puede tardar un minuto.",
     newAccount: "Si esta cuenta es nueva, primero la abrimos en la red de prueba. Confirmas una vez para que pueda recibir el pago del evento.",
+    pasaporteTitulo: "Stellar Passport",
+    pasaporteDetalle: "Registra la participación y los logros en el ecosistema Stellar.",
+    pasaporteAbrir: "Abrir en testnet",
   },
   estados: {
     pendiente: "Pendiente",
