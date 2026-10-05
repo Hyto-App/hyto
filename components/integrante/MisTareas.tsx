@@ -328,7 +328,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
                           <div className="hyto-tarea-fila">
-                            <BadgeTarea estado={tarea.estado} />
+                            <BadgeTarea estado={tarea.estado} rechazada={tarea.estado === "pendiente" && tarea.rechazada === true} />
                             <Monto tarea={tarea} />
                           </div>
                           <h3>{textoVisible(tarea.titulo, idioma)}</h3>
@@ -378,9 +378,27 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (
-                            <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
-                              {abierta ? <Icono nombre="camera" tamano={18} /> : null}
-                              {abierta ? t("tareas.uploadEvidence") : t("tareas.view")}
+                            <Link href={`/tareas/${tarea.id}`} className={abierta || tarea.rechazada ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                              {tarea.rechazada ? (
+                                <>
+                                  <Icono nombre="camera" tamano={18} />
+                                  {tarea.tipo === "reembolso" ? (
+                                    <>
+                                      <span className="hyto-solo-movil">{t("tareas.takeAnotherPhoto")}</span>
+                                      <span className="hyto-solo-escritorio">{t("tareas.chooseAnotherFile")}</span>
+                                    </>
+                                  ) : (
+                                    t("tareas.takeAnotherPhoto")
+                                  )}
+                                </>
+                              ) : abierta ? (
+                                <>
+                                  <Icono nombre="camera" tamano={18} />
+                                  {t("tareas.uploadEvidence")}
+                                </>
+                              ) : (
+                                t("tareas.view")
+                              )}
                             </Link>
                           ) : (
                             <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line">

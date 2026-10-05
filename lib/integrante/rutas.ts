@@ -1,6 +1,7 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { tareasEjemplo } from "./ejemplos";
+import { leerCamposRevision } from "./revision";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
 const ESTADOS: EstadoTarea[] = ["pendiente", "en revisión", "pagado"];
@@ -104,6 +105,7 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
+    ...leerCamposRevision(crudo, estado),
   };
 }
 

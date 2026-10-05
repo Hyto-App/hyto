@@ -374,7 +374,7 @@ test("an error outside lock or pay does not use the payment box", async () => {
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => rotulo("Ask for another photo"));
-    await pulsar("Ask for another photo");
+    await confirmarPedir();
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("Budget not locked"), false);
@@ -424,7 +424,7 @@ test("asking for another photo removes the old verdict pill", async () => {
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => texto().includes("64% · Partially completed"));
-    await pulsar("Ask for another photo");
+    await confirmarPedir();
     await esperar(() => !texto().includes("Partially completed"));
     assert.equal(texto().includes("AI recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
@@ -434,6 +434,17 @@ test("asking for another photo removes the old verdict pill", async () => {
     await desmontar();
   }
 });
+
+/** "Ask for another photo" opens the sheet. The submit inside confirms the existing action. */
+async function confirmarPedir(): Promise<void> {
+  await pulsar("Ask for another photo");
+  await esperar(() => texto().includes("What's missing?"));
+  const enviar = document.querySelector(".hyto-pedir button[type='submit']");
+  if (!enviar) throw new Error("No send-back confirm.");
+  await act(async () => {
+    enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
 
 /** The money buttons now open a ConfirmDialog first: confirm it. */
 async function confirmarDialogo(): Promise<void> {
