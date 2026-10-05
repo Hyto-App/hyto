@@ -67,8 +67,11 @@ export function Entrar({
   crear = crearAuth as () => Promise<AuthMinimo | null>,
   confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
   esperaMinima = ENVIO_MINIMO_MS,
+  abrirLogin = false,
 }: {
   demoHabilitado?: boolean;
+  /** Start on the email step instead of the sign up / sign in cards. */
+  abrirLogin?: boolean;
   crear?: () => Promise<AuthMinimo | null>;
   confirmarCodigo?: ConfirmarCodigo;
   /** Shortest time the sending state stays on screen, so it never flashes. */
@@ -79,8 +82,8 @@ export function Entrar({
   const t = useTexto();
   const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
-  const [pedirIngreso, setPedirIngreso] = useState(false);
-  const [fase, setFase] = useState<Fase>("inicio");
+  const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
+  const [fase, setFase] = useState<Fase>(abrirLogin ? "correo" : "inicio");
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
   const [correo, setCorreo] = useState("");
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
