@@ -8,6 +8,7 @@ import {
 import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_SIN_CUENTA, AVISO_SPAM, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -106,6 +107,9 @@ const EXACTO: Record<string, Clave> = {
   "Take the photo with the camera.": "evidencia.useCamera",
   "Take the photo now. Photos from the gallery are not accepted.": "evidencia.gallery",
   "Could not send. Try again.": "evidencia.noSend",
+  [AVISO_ENVIO_FALLIDO]: "evidencia.sendFailed",
+  [AVISO_ENVIO_SIN_CONFIRMAR]: "evidencia.sendUnconfirmed",
+  [AVISO_ENVIO_INCIERTO]: "evidencia.sendUnknown",
   "We couldn't find that task.": "evidencia.noTask",
   "Could not load this review.": "revision.noLoad",
   "Could not ask for another photo.": "revision.noAsk",

@@ -305,6 +305,9 @@ export const en = {
     badFile: "Choose a PDF, JPEG, PNG, or WebP file.",
     useCamera: "Take the photo with the camera.",
     noSend: "Could not send. Try again.",
+    sendFailed: "Could not send. Check your connection and try again.",
+    sendUnconfirmed: "The server did not confirm the upload. Try again.",
+    sendUnknown: "The connection dropped before Hyto confirmed the upload. Open My tasks to check before you send it again.",
     noTask: "We couldn't find that task.",
   },
   bandeja: {
@@ -882,6 +885,9 @@ export const es: Rama<typeof en> = {
     badFile: "Elige un PDF, JPEG, PNG o WebP.",
     useCamera: "Toma la foto con la cámara.",
     noSend: "No se pudo enviar. Intenta de nuevo.",
+    sendFailed: "No se pudo enviar. Revisa tu conexión e intenta de nuevo.",
+    sendUnconfirmed: "El servidor no confirmó el envío. Intenta de nuevo.",
+    sendUnknown: "La conexión se cortó antes de que Hyto confirmara el envío. Abre Mis tareas para revisar antes de enviarlo otra vez.",
     noTask: "No encontramos esa tarea.",
   },
   bandeja: {
