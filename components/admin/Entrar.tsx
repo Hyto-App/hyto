@@ -12,6 +12,7 @@ import {
   AVISO_CORREO,
   AVISO_DEMO,
   AVISO_GENERICO,
+  AVISO_SIN_CUENTA,
   AVISO_SPAM,
   ESPERA_TRAS_ENVIO,
   avisoDeIngreso,
@@ -218,6 +219,11 @@ export function Entrar({
     if (ocupado !== null) return;
     setAviso(null);
     setPestana(intencion);
+  }
+
+  function irACrearCuenta() {
+    volverAlCorreo();
+    setPestana("signup");
   }
 
   function volverAlCorreo() {
@@ -861,6 +867,11 @@ export function Entrar({
                 ) : (
                   <p className="hyto-login-ayuda">{t("entrar.autoConfirma")}</p>
                 )}
+                {alertaCodigo && aviso === AVISO_SIN_CUENTA ? (
+                  <button type="button" className="hyto-login-btn is-enlace" onClick={irACrearCuenta} disabled={ocupado !== null}>
+                    {t("entrar.irCrearCuenta")}
+                  </button>
+                ) : null}
                 {esperaVisible ? (
                   <p role="status" className="hyto-login-aviso">
                     {claro(textoEspera(espera))}

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useRef, useSt
 import { mensajeClaro } from "@/lib/ui/claro";
 import { texto, type Clave } from "@/lib/ui/diccionario";
 import { discursoDe } from "@/lib/ui/discurso";
-import { guardarIdioma, hayCookieIdioma, idiomaDeNavegador, type Idioma } from "@/lib/ui/idioma";
+import { guardarIdioma, type Idioma } from "@/lib/ui/idioma";
 
 type Estado = {
   idioma: Idioma;
@@ -22,14 +22,6 @@ export function ProveedorIdioma({ idioma, children }: { idioma: Idioma; children
   useEffect(() => {
     setActual(idioma);
     document.documentElement.lang = idioma;
-    // Client fallback: with no saved choice, follow the browser language (not saved until the user picks).
-    if (!hayCookieIdioma(document.cookie)) {
-      const detectado = idiomaDeNavegador(navigator.language);
-      if (detectado !== idioma) {
-        setActual(detectado);
-        document.documentElement.lang = detectado;
-      }
-    }
   }, [idioma]);
 
   const elegir = useCallback((siguiente: Idioma) => {

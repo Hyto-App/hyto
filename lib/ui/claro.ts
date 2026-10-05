@@ -5,7 +5,7 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
-import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_SPAM, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
+import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_SIN_CUENTA, AVISO_SPAM, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { type Clave, texto } from "@/lib/ui/diccionario";
@@ -90,6 +90,7 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_CORREO]: "errores.correo",
   [AVISO_DEMO]: "errores.demoCorreo",
   [AVISO_SPAM]: "errores.spam",
+  [AVISO_SIN_CUENTA]: "errores.sinCuenta",
   [AVISO_MONTO_INVALIDO]: "errores.montoInvalido",
   [AVISO_MONTO_TOPE]: "errores.montoTope",
   [AVISO_MONTO_TARDE]: "errores.montoTarde",
