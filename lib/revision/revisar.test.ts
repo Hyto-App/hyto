@@ -294,7 +294,7 @@ test("si la descripción es un selfie sin match, la nota es 0 tras la pregunta d
   assert.equal(resultado.veredicto, "insuficiente");
 });
 
-test("un reembolso sobre el tope queda en 40 aunque la factura sume 100", async () => {
+test("un reembolso sobre el tope queda en Parcial aunque la factura sume 100", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "comida");
   assert.ok(tarea);
   assert.equal(tarea.tope, "15");
@@ -328,8 +328,8 @@ test("un reembolso sobre el tope queda en 40 aunque la factura sume 100", async 
       });
     },
   });
-  assert.equal(resultado.nota, 40);
-  assert.equal(resultado.veredicto, "insuficiente");
+  assert.equal(resultado.nota, 79);
+  assert.equal(resultado.veredicto, "parcial");
 });
 
 test("la clave de Laya viaja solo si está configurada", async () => {

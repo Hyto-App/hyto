@@ -2,7 +2,7 @@ import { centavos } from "@/lib/admin/vista";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
-import type { LecturaEvidencia } from "./lectura";
+import { montoSinUsd, type LecturaEvidencia } from "./lectura";
 import { calificar, notaDeTexto, type MotivoTope } from "./pesos";
 
 export type Senales = {
@@ -67,42 +67,43 @@ export function stubLaya(tipo: TipoTarea): Senales {
   return { choice: "stand", noul: false, score: String(NOTA_STUB_TRABAJO) };
 }
 
-// The percentage is the result. It never approves a payment.
-export function armarVeredicto(entrada: {
+type EntradaReembolso = {
   tipo: TipoTarea;
   tope: string | null;
   monto: string | null;
   fecha: string | null;
-  score: string;
-  motivos?: readonly MotivoTope[];
-}): { nota: number; veredicto: Veredicto } | null {
+  /** A total was printed, but its currency is unknown or has no rate, so there is no dollar amount. */
+  montoSinUsd?: boolean;
+};
+
+// The percentage is the result. It never approves a payment.
+export function armarVeredicto(
+  entrada: EntradaReembolso & {
+    score: string;
+    motivos?: readonly MotivoTope[];
+  },
+): { nota: number; veredicto: Veredicto } | null {
   const nota = notaDeTexto(entrada.score);
   if (nota === null) return null;
-  const motivos = [...(entrada.motivos ?? [])];
-  if (reembolsoMalo(entrada)) motivos.push("reembolso");
+  const motivos = [...(entrada.motivos ?? []), ...motivosReembolso(entrada)];
   const calificado = calificar(nota, motivos);
   return { nota: calificado.nota, veredicto: calificado.veredicto };
 }
 
-export function limitarNotaReembolso(
-  nota: number,
-  entrada: { tipo: TipoTarea; tope: string | null; monto: string | null; fecha: string | null },
-): number {
-  return calificar(nota, reembolsoMalo(entrada) ? ["reembolso"] : []).nota;
+export function limitarNotaReembolso(nota: number, entrada: EntradaReembolso): number {
+  return calificar(nota, motivosReembolso(entrada)).nota;
 }
 
-function reembolsoMalo(entrada: {
-  tipo: TipoTarea;
-  tope: string | null;
-  monto: string | null;
-  fecha: string | null;
-}): boolean {
-  if (entrada.tipo !== "reembolso") return false;
+/** The saved amount and date name these caps. The confirmed amount, not this grade, bounds the payment. */
+export function motivosReembolso(entrada: EntradaReembolso): MotivoTope[] {
+  if (entrada.tipo !== "reembolso") return [];
+  const motivos: MotivoTope[] = [];
   const monto = centavos(entrada.monto);
   const tope = centavos(entrada.tope);
-  const incompleto = !entrada.monto || !entrada.fecha || monto <= 0;
-  const pasaTope = tope > 0 && monto > tope;
-  return incompleto || pasaTope;
+  if (!entrada.monto || monto <= 0) motivos.push(entrada.montoSinUsd ? "moneda_sin_usd" : "sin_monto");
+  if (!entrada.fecha) motivos.push("sin_fecha");
+  if (tope > 0 && monto > tope) motivos.push("sobre_tope");
+  return motivos;
 }
 
 export function fraseDe(texto: string, senales: Senales): string {
@@ -120,7 +121,15 @@ export function cerrar(
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
-  const armado = armarVeredicto({ tipo, tope, monto, fecha, score: senales.score, motivos: senales.motivos });
+  const armado = armarVeredicto({
+    tipo,
+    tope,
+    monto,
+    fecha,
+    montoSinUsd: montoSinUsd(descripcion.lectura),
+    score: senales.score,
+    motivos: senales.motivos,
+  });
   if (!armado) return null;
   const senalesFinales: Senales = {
     ...senales,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { armarVeredicto, cerrar, desdeGuion, fraseDe, guionFijo, limitarNotaReembolso } from "./armar";
-import { TOPE_NOTA_REEMBOLSO } from "./pesos";
+import { armarVeredicto, cerrar, desdeGuion, fraseDe, guionFijo, limitarNotaReembolso, motivosReembolso } from "./armar";
+import { TOPE_FALTA_SERIA, TOPE_NOTA_REEMBOLSO } from "./pesos";
 
 test("el guion de un trabajo queda en 65 por ciento", () => {
   const resultado = desdeGuion("trabajo", null);
@@ -26,26 +26,42 @@ test("el guion de un reembolso dentro del tope queda en 90 por ciento", () => {
   assert.equal(resultado.fecha, "2026-09-27");
 });
 
-test("un monto por encima del tope no pasa de 40 por ciento", () => {
+test("un monto por encima del tope no llega a Completado, y el pago confirmado sigue limitado al tope", () => {
   assert.deepEqual(
     armarVeredicto({ tipo: "reembolso", tope: "10", monto: "12.40", fecha: "2026-09-27", score: "100" }),
-    { nota: TOPE_NOTA_REEMBOLSO, veredicto: "insuficiente" },
+    { nota: TOPE_FALTA_SERIA, veredicto: "parcial" },
   );
 });
 
-test("sin monto o sin fecha el reembolso no pasa de 40 por ciento", () => {
+test("sin monto el reembolso no pasa de 40 por ciento", () => {
   assert.equal(
     armarVeredicto({ tipo: "reembolso", tope: "15", monto: null, fecha: "2026-09-27", score: "90" })?.nota,
-    TOPE_NOTA_REEMBOLSO,
-  );
-  assert.equal(
-    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "12.40", fecha: null, score: "90" })?.nota,
     TOPE_NOTA_REEMBOLSO,
   );
   assert.equal(
     armarVeredicto({ tipo: "reembolso", tope: "15", monto: "0", fecha: "2026-09-27", score: "90" })?.nota,
     TOPE_NOTA_REEMBOLSO,
   );
+});
+
+test("sin fecha el reembolso baja a Parcial y no se hunde a 40", () => {
+  assert.deepEqual(
+    armarVeredicto({ tipo: "reembolso", tope: "15", monto: "12.40", fecha: null, score: "90" }),
+    { nota: TOPE_FALTA_SERIA, veredicto: "parcial" },
+  );
+  assert.equal(armarVeredicto({ tipo: "reembolso", tope: "15", monto: "12.40", fecha: null, score: "70" })?.nota, 70);
+});
+
+test("un total impreso sin moneda no se toma como dólares y no pasa de 79", () => {
+  assert.deepEqual(
+    armarVeredicto({ tipo: "reembolso", tope: "15", monto: null, fecha: "2026-10-02", score: "100", montoSinUsd: true }),
+    { nota: TOPE_FALTA_SERIA, veredicto: "parcial" },
+  );
+  assert.deepEqual(motivosReembolso({ tipo: "reembolso", tope: "15", monto: null, fecha: null, montoSinUsd: true }), [
+    "moneda_sin_usd",
+    "sin_fecha",
+  ]);
+  assert.deepEqual(motivosReembolso({ tipo: "trabajo", tope: null, monto: null, fecha: null }), []);
 });
 
 test("un reembolso ya bajo no sube al tope de seguridad", () => {
@@ -76,7 +92,7 @@ test("una falta grave deja la nota en 49 aunque el peso crudo siga en cumplió",
   assert.match(cerrado?.frase ?? "", /grade 49%/);
 });
 
-test("g2 falso no pasa de 79 y el reembolso sin fecha baja al tope menor", () => {
+test("g2 falso no pasa de 79 y la falta de fecha tampoco", () => {
   assert.deepEqual(
     armarVeredicto({
       tipo: "reembolso",
@@ -97,7 +113,7 @@ test("g2 falso no pasa de 79 y el reembolso sin fecha baja al tope menor", () =>
       score: "80",
       motivos: ["gasto_no_razonable"],
     })?.nota,
-    40,
+    TOPE_FALTA_SERIA,
   );
   assert.equal(
     armarVeredicto({ tipo: "trabajo", tope: null, monto: null, fecha: null, score: "90", motivos: ["otra"] })?.nota,

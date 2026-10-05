@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { cerrar } from "./armar";
 import { CRC_POR_USD, convertirAUsd } from "./divisas";
 import { contextoParaLaya, leerLectura, montoSinUsd, type LecturaEvidencia } from "./lectura";
+import { etiquetasDe } from "./razones";
 import { describirFoto, leerDescripcion, pedidoVision } from "./scout";
 import { MARCA_LECTURA, MARCA_RAZONES, separarDescripcion, unirDescripcion } from "./snapshot-razones";
 
@@ -190,4 +192,29 @@ test("la lectura se guarda detrás del snapshot y una fila vieja se lee igual", 
   assert.equal(vieja.texto, "Table set up.");
   assert.equal(vieja.lectura, null);
   assert.equal(separarDescripcion(`Receipt.${MARCA_LECTURA}{roto`).lectura, null);
+});
+
+test("el veredicto lleva la lectura y la frase no muestra las marcas", () => {
+  const descripcion = leerDescripcion(JSON.stringify({ ...LITTLE_CAESARS, monto_original: "7.350,00", moneda: null, pais: null, texto_completo: "A receipt with a total of 7.350,00." }));
+  assert.ok(descripcion);
+  const cerrado = cerrar("reembolso", "15", descripcion, { choice: "factura", noul: true, score: "100" }, "scout");
+  assert.equal(cerrado?.nota, 79);
+  assert.equal(cerrado?.monto, null);
+  assert.equal(cerrado?.lectura?.montoOriginal, "7.350,00");
+  assert.equal(cerrado?.frase.includes("@@"), false);
+  const etiquetas = etiquetasDe({
+    clase: "factura",
+    trabajo: null,
+    factura: { f1: "coincide_con_lo_pedido", f2: true, f3: true, f4: 2, g1: "comida_o_bebida", g2: true, g3: true, g4: true, g5: 2 },
+    descripcion: descripcion.texto,
+    cerca: [],
+    monto: null,
+    fecha: "2026-10-02",
+    tope: "15",
+    lectura: descripcion.lectura,
+  });
+  assert.equal(etiquetas[0]?.id, "currency_unknown");
+  assert.equal(etiquetas[0]?.texto, "Currency not shown");
+  assert.match(etiquetas[0]?.explicacion ?? "", /did not assume US dollars/);
+  assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "amount_missing"), false);
 });

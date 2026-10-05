@@ -22,5 +22,7 @@ export function etiquetasDesdeVeredicto(entrada: {
     monto: entrada.monto,
     fecha: entrada.fecha,
     tope: entrada.tope,
+    tipo: entrada.tipo,
+    lectura: separado.lectura,
   });
 }
