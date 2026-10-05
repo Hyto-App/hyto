@@ -67,12 +67,19 @@ export function Entrar({
   crear = crearAuth as () => Promise<AuthMinimo | null>,
   confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
   esperaMinima = ENVIO_MINIMO_MS,
+  atiendeUrl = true,
 }: {
   demoHabilitado?: boolean;
   crear?: () => Promise<AuthMinimo | null>;
   confirmarCodigo?: ConfirmarCodigo;
   /** Shortest time the sending state stays on screen, so it never flashes. */
   esperaMinima?: number;
+  /**
+   * Opens the sign-in screen from the URL (?signin=1 or a Google/Apple return).
+   * The screen is a fixed full-page layer, so when a page renders more than one
+   * Entrar only one of them may do this, or the later one covers the first.
+   */
+  atiendeUrl?: boolean;
 }) {
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
@@ -102,7 +109,7 @@ export function Entrar({
   const reducido = useMovimientoReducido();
 
   useEffect(() => {
-    const ingreso = new URLSearchParams(window.location.search).get("signin") === "1";
+    const ingreso = atiendeUrl && new URLSearchParams(window.location.search).get("signin") === "1";
     if (ingreso) {
       setPedirIngreso(true);
       setPestana("signin");
@@ -152,6 +159,7 @@ export function Entrar({
   }, [fase, modoDemo, verCheck]);
 
   useEffect(() => {
+    if (!atiendeUrl) return;
     const params = new URLSearchParams(window.location.search);
     const codigoGoogle = params.get("cavos_auth_code");
     if (!codigoGoogle) return;
