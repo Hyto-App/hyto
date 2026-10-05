@@ -6,6 +6,13 @@ import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlApple, urlGoogle, type IngresoCerrado } from "@/lib/auth/cliente";
 import { guardarIntencion, leerIntencion, olvidarIntencion, type IntencionIngreso } from "@/lib/auth/intencion";
 import {
+  destinoTrasIngreso,
+  guardarRetorno,
+  leerRetorno,
+  olvidarRetorno,
+  rutaRetornoSegura,
+} from "@/lib/sesion/retorno";
+import {
   AVISO_CODIGO_INVALIDO,
   AVISO_CODIGO_VENCIDO,
   AVISO_CONFIG,
@@ -33,9 +40,6 @@ type Pose = "rest" | "dive" | "code" | "worry" | "win";
 type Ocupado = "envio" | "google" | "apple" | "codigo" | "demo" | "salida";
 type AuthMinimo = { sendOtp(email: string): Promise<void> };
 type ConfirmarCodigo = (auth: AuthMinimo, email: string, codigo: string, intencion: IntencionIngreso) => Promise<IngresoCerrado>;
-
-/** Signed-in volunteer home: tasks, and the shell that also opens account. */
-const DESTINO_TRAS_INGRESO = "/mis-tareas";
 
 /** Where Get ready to be paid finishes a Sign up whose testnet setup did not. */
 const DESTINO_ALTA_PENDIENTE = "/eventos";
@@ -87,6 +91,7 @@ export function Entrar({
   const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(false);
+  const [retorno, setRetorno] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>("inicio");
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
   const [correo, setCorreo] = useState("");
@@ -109,7 +114,16 @@ export function Entrar({
   const reducido = useMovimientoReducido();
 
   useEffect(() => {
-    const ingreso = atiendeUrl && new URLSearchParams(window.location.search).get("signin") === "1";
+    const params = new URLSearchParams(window.location.search);
+    const ingreso = atiendeUrl && params.get("signin") === "1";
+    const desdeUrl = rutaRetornoSegura(params.get("next"));
+    if (desdeUrl) {
+      setRetorno(desdeUrl);
+      guardarRetorno(desdeUrl);
+    } else if (atiendeUrl && params.get("cavos_auth_code")) {
+      // Google/Apple return lands on / with no next query; recover it from sessionStorage.
+      setRetorno(leerRetorno());
+    }
     if (ingreso) {
       setPedirIngreso(true);
       setPestana("signin");
@@ -196,7 +210,11 @@ export function Entrar({
     setAviso(null);
     setFase("inicio");
     setAltaPendiente(pendiente);
-    if (recargar && !pendiente) window.location.assign("/");
+    if (recargar && !pendiente) {
+      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), "/");
+      olvidarRetorno();
+      window.location.assign(destino);
+    }
   }
 
   function iniciarEspera(segundos: number, visible: boolean) {
@@ -241,7 +259,9 @@ export function Entrar({
   }
 
   function irATareas() {
-    window.location.assign(DESTINO_TRAS_INGRESO);
+    const destino = destinoTrasIngreso(retorno ?? leerRetorno());
+    olvidarRetorno();
+    window.location.assign(destino);
   }
 
   function celda(indice: number): HTMLInputElement | null {
@@ -445,6 +465,8 @@ export function Entrar({
     setAviso(null);
     setOcupado(proveedor);
     guardarIntencion(intencion);
+    const nextUrl = rutaRetornoSegura(new URLSearchParams(window.location.search).get("next")) ?? retorno;
+    if (nextUrl) guardarRetorno(nextUrl);
     let salio = false;
     try {
       const auth = await crearAuth();
@@ -555,7 +577,7 @@ export function Entrar({
         ) : null}
         <div className="hyto-welcome-step">
           <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
-          <Link href={DESTINO_TRAS_INGRESO} className="hyto-btn hyto-post-login-cta">
+          <Link href={destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
             {t("pago.preparePayout")}
           </Link>
         </div>

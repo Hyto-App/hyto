@@ -28,7 +28,8 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    assert.match(window.location.href, /\/\?signin=1$/);
+    assert.match(window.location.href, /\/\?signin=1(?:&|$)/);
+    assert.match(window.location.href, /next=%2Frevision%2Fstand/);
   } finally {
     globalThis.fetch = original;
     window.history.replaceState(null, "", "/");
