@@ -191,7 +191,7 @@ export function Entrar({
     setAviso(null);
     setFase("inicio");
     setAltaPendiente(pendiente);
-    if (recargar && !pendiente) window.location.assign("/");
+    if (recargar && !pendiente) window.location.assign(DESTINO_TRAS_INGRESO);
   }
 
   function iniciarEspera(segundos: number, visible: boolean) {
