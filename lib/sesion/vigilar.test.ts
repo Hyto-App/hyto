@@ -28,7 +28,8 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    assert.match(window.location.href, /\/\?signin=1$/);
+    assert.match(window.location.href, /\/\?signin=1(?:&|$)/);
+    assert.match(window.location.href, /next=%2Frevision%2Fstand/);
   } finally {
     globalThis.fetch = original;
     window.history.replaceState(null, "", "/");
@@ -75,6 +76,34 @@ test("el modo demo no manda al ingreso", async () => {
       await Promise.resolve();
     });
     assert.match(window.location.pathname, /mis-tareas/);
+  } finally {
+    globalThis.fetch = original;
+    window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el regreso de Google con cavos_auth_code no manda al ingreso aunque GET dé 401", async () => {
+  limpiarPantalla();
+  // Sesión vencida de antes: la wallet sigue en este navegador.
+  guardarWallet();
+  window.history.replaceState(null, "", "/?cavos_auth_code=abc123");
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+  };
+  try {
+    await montar(createElement(VigilarSesion));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    assert.equal(llamadas, 0);
+    assert.match(window.location.href, /\?cavos_auth_code=abc123$/);
+    assert.doesNotMatch(window.location.href, /signin=1/);
   } finally {
     globalThis.fetch = original;
     window.history.replaceState(null, "", "/");
