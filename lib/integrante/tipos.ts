@@ -24,7 +24,8 @@ export type RequisitoRevision = {
 /** Organizer (or Mile) send-back. Stored later by the backend; the client only reads it. */
 export type Rechazo = {
   nota: string | null;
-  fallidos: number[];
+  /** Ids of the failed requirements (`requisitos[].id`, e.g. "r1"), not list positions. */
+  fallidos: string[];
   en: string | null;
   origen: OrigenRechazo | null;
 };

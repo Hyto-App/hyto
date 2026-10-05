@@ -79,7 +79,7 @@ const TAREAS: Tarea[] = [
     etapa: "rechazada",
     rechazo: {
       nota: "The wristband is cropped out.",
-      fallidos: [0],
+      fallidos: ["0"],
       en: "2026-10-05T21:00:00.000Z",
       origen: "organizador",
     },

@@ -121,7 +121,7 @@ test("una tarea rechazada muestra el punto que falta y esconde la frase interna"
         estado: "pendiente",
         etapa: "rechazada",
         condicion: "Wristband visible; Table in frame",
-        rechazo: { nota: "Cropped", fallidos: [0], origen: "organizador" },
+        rechazo: { nota: "Cropped", fallidos: ["0"], origen: "organizador" },
         organizador: { nombre: "Organizer" },
         frase: "SECRETO-LAYA",
         contratoEscrow: "NO",

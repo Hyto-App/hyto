@@ -71,6 +71,20 @@ export function montoUsdc(tarea: Pick<Tarea, "tipo" | "monto" | "tope" | "montoP
   return valor.toLocaleString("en-US", { minimumFractionDigits: decimales, maximumFractionDigits: 2 });
 }
 
+/**
+ * Positions in the "must show" list that the send-back marks as failed.
+ * `fallidos` holds requirement ids; point N is `requisitos[N].id`, or `"N"` while the API sends no list.
+ */
+export function puntosFallidos(tarea: Pick<Tarea, "rechazo" | "requisitos">, total: number): number[] {
+  const ids = tarea.rechazo?.fallidos ?? [];
+  if (ids.length === 0) return [];
+  const salida: number[] = [];
+  for (let indice = 0; indice < total; indice += 1) {
+    if (ids.includes(tarea.requisitos?.[indice]?.id ?? String(indice))) salida.push(indice);
+  }
+  return salida;
+}
+
 export function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   const letras = partes.map((parte) => parte[0]?.toUpperCase() ?? "").join("");
@@ -90,13 +104,13 @@ export function clavePagoVisto(tareaId: string): string {
 /** Body the organizer sheet sends. The API ignores it until the review columns exist. */
 export function cuerpoPedirOtra(nota: string, fallidos: number[], puntos: string[]): {
   nota: string | null;
-  fallidos: number[];
-  rechazo: { nota: string | null; fallidos: number[]; origen: "organizador" };
+  fallidos: string[];
+  rechazo: { nota: string | null; fallidos: string[]; origen: "organizador" };
   requisitos: { id: string; texto: string; cumple: boolean }[];
 } {
   const limpia = sanearNota(nota);
   const indices = new Set(fallidos.filter((indice) => Number.isInteger(indice) && indice >= 0 && indice < puntos.length && indice < MAX_REQUISITOS));
-  const lista = [...indices].sort((a, b) => a - b);
+  const lista = [...indices].sort((a, b) => a - b).map(String);
   return {
     nota: limpia,
     fallidos: lista,
@@ -110,7 +124,7 @@ export function cuerpoPedirOtra(nota: string, fallidos: number[], puntos: string
 }
 
 function conFallidosDeRequisitos(rechazo: Rechazo | null, requisitos: RequisitoRevision[]): Rechazo | null {
-  const desdeRequisitos = requisitos.flatMap((requisito, indice) => (requisito.cumple === false ? [indice] : []));
+  const desdeRequisitos = requisitos.flatMap((requisito) => (requisito.cumple === false ? [requisito.id] : []));
   if (!rechazo) {
     if (desdeRequisitos.length === 0) return null;
     const motivo = requisitos.find((requisito) => requisito.cumple === false)?.motivo ?? null;
@@ -151,7 +165,7 @@ function leerRechazo(valor: unknown): Rechazo | null {
   }
   if (!crudo) return null;
   const nota = sanearNota(crudo.nota);
-  const fallidos = indices(crudo.fallidos, MAX_PUNTOS);
+  const fallidos = idsRequisito(crudo.fallidos, MAX_PUNTOS);
   const en = fechaIso(crudo.en);
   const origen: OrigenRechazo | null = crudo.origen === "mile" || crudo.origen === "organizador" ? crudo.origen : null;
   if (!nota && fallidos.length === 0 && !en && !origen) return null;
@@ -175,14 +189,15 @@ export function sanearNota(valor: unknown): string | null {
   return limpio.slice(0, MAX_NOTA);
 }
 
-function indices(valor: unknown, maximo: number): number[] {
+function idsRequisito(valor: unknown, maximo: number): string[] {
   if (!Array.isArray(valor)) return [];
-  const vistos = new Set<number>();
+  const vistos = new Set<string>();
   for (const item of valor) {
-    if (typeof item !== "number" || !Number.isInteger(item) || item < 0 || item >= maximo) continue;
-    vistos.add(item);
+    const id = textoCorto(item, 40);
+    if (id) vistos.add(id);
+    if (vistos.size === maximo) break;
   }
-  return [...vistos].sort((a, b) => a - b);
+  return [...vistos];
 }
 
 function etapaDe(valor: unknown): EtapaTarea | null {

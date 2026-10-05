@@ -10,7 +10,7 @@ import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
-import { iniciales, plazoVencido } from "@/lib/integrante/revision";
+import { iniciales, plazoVencido, puntosFallidos } from "@/lib/integrante/revision";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import type { Tarea } from "@/lib/integrante/tipos";
 
@@ -33,7 +33,7 @@ export function PantallaRechazada({
   const idioma = useIdioma();
   const titulo = textoVisible(tarea.titulo, idioma);
   const puntos = puntosDeCondicion(tarea.condicion);
-  const fallidos = tarea.rechazo?.fallidos ?? [];
+  const fallidos = puntosFallidos(tarea, puntos.length);
   const primero = fallidos.map((indice) => puntos[indice]).find((punto) => punto);
   const hayPuntosBien = fallidos.length > 0 && puntos.some((_, indice) => !fallidos.includes(indice));
   const cerrado = plazoVencido(tarea.venceEn);
@@ -41,7 +41,7 @@ export function PantallaRechazada({
   const nombre = tarea.organizador?.nombre?.trim() || "";
   const nota = tarea.rechazo?.nota ?? null;
   const reembolso = tarea.tipo === "reembolso";
-  const hora = horaDe(tarea.rechazo?.en, idioma);
+  const hora = horaDe(tarea.enviadaEn ?? tarea.rechazo?.en, idioma);
 
   return (
     <main className="hyto-page hyto-tarea hyto-rechazada">

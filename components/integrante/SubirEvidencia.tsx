@@ -17,7 +17,8 @@ import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
-import { estaRechazada } from "@/lib/integrante/revision";
+import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
+import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, seguirConsultando } from "@/lib/integrante/seguimiento";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
@@ -357,10 +358,11 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const calificacion = notaDeTarea(tarea);
   const titulo = textoVisible(tarea.titulo, idioma);
   const esPdf = foto?.type === "application/pdf";
-  const hora = enviadaEn ? enviadaEn.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit" }) : null;
+  const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
+  const hora = momentoEnvio ? momentoEnvio.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit" }) : null;
   const meta = [evento ? textoVisible(evento, idioma) : null].filter(Boolean).join("");
   const rechazada = estaRechazada(tarea);
-  const puntosFallidos = reintentando && rechazada ? (tarea.rechazo?.fallidos ?? null) : null;
+  const fallidosMarcados = reintentando && rechazada ? puntosFallidos(tarea, puntosDeCondicion(tarea.condicion).length) : null;
 
   if (tarea.estado === "pagado") {
     return <PantallaPagada tarea={tarea} titulo={titulo} />;
@@ -547,7 +549,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           {!reembolso && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
         </div>
         <div className="hyto-tarea-col">
-          <Checklist condicion={tarea.condicion} fallidos={puntosFallidos} />
+          <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
           {mostrarRevision ? (
             <dl className="hyto-tarjeta hyto-dato-leido">
               <div>
