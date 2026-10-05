@@ -22,7 +22,7 @@ export type AjustesJwt = {
   ahora?: number;
   /** `null` no comprueba `iss`. Ausente: se lee `CAVOS_JWT_ISSUER` (lista separada por coma). */
   emisor?: string | null;
-  /** `null` no comprueba `aud`. Ausente: se lee `CAVOS_JWT_AUDIENCE`. */
+  /** `null` no comprueba `aud`. Ausente: se lee `CAVOS_JWT_AUDIENCE` (lista separada por coma: Google y Apple tienen client id distinto). */
   audiencia?: string | null;
   /** Ausente: se lee el entorno. Arreglo vacío: hay verificación y ninguna clave sirve. */
   claves?: JsonWebKey[];
@@ -105,8 +105,10 @@ function listaEmisores(valor: string | null): string[] | null {
 }
 
 function audCoincide(aud: unknown, esperado: string): boolean {
-  if (typeof aud === "string") return aud === esperado;
-  return Array.isArray(aud) && aud.some((item) => item === esperado);
+  const permitidas = listaEmisores(esperado);
+  if (!permitidas) return false;
+  if (typeof aud === "string") return permitidas.includes(aud);
+  return Array.isArray(aud) && aud.some((item) => typeof item === "string" && permitidas.includes(item));
 }
 
 function tiempos(claims: Record<string, unknown>, ahoraMs: number): boolean {

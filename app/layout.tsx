@@ -27,11 +27,13 @@ export const metadata: Metadata = {
     title: "Hyto · Prove your worth. Get paid.",
     description: DESCRIPCION,
     url: "/",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Hyto · Prove your worth. Get paid." }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Hyto · Prove your worth. Get paid.",
     description: DESCRIPCION,
+    images: ["/twitter-image"],
   },
 };
 

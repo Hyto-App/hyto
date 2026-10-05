@@ -69,6 +69,16 @@ export function etiquetaEstado(estado: string, idioma: Idioma = "en"): string {
   return estado;
 }
 
+/**
+ * Upload moves the task to "en revisión". If a photo still sits on "pendiente"
+ * (for example after "ask for another photo"), the Tasks tab should not look
+ * empty: show In review whenever a photo is present.
+ */
+export function estadoConFoto(estado: string, tieneFoto: boolean): string {
+  if (tieneFoto && estado === "pendiente") return "en revisión";
+  return estado;
+}
+
 export function etiquetaVeredicto(veredicto: string, idioma: Idioma = "en"): string {
   const limpio = veredicto.trim();
   if (limpio in VEREDICTOS) return texto(idioma, VEREDICTOS[limpio as Veredicto]);
@@ -107,14 +117,23 @@ export function textoVisible(valor: string | null | undefined, idioma: Idioma = 
   // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
   const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
   const directo = idioma === "es" ? (INVERSO_LEGADO[base] ?? base) : (LEGADO[base] ?? base);
-  const frase = directo.replace(/ Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
-    const met = condicion === "cumplida";
-    return texto(idioma, "legado.category", {
-      choice: etiquetaChoice(choice.trim(), idioma),
-      condicion: texto(idioma, met ? "legado.met" : "legado.notMet"),
-      evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
+  const frase = directo
+    .replace(/ Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
+      const met = condicion === "cumplida";
+      return texto(idioma, "legado.category", {
+        choice: etiquetaChoice(choice.trim(), idioma),
+        condicion: texto(idioma, met ? "legado.met" : "legado.notMet"),
+        evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
+      });
+    })
+    .replace(/ Category ([^,]+), condition (met|not met), evidence ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
+      const met = condicion === "met";
+      return texto(idioma, "legado.category", {
+        choice: etiquetaChoice(choice.trim(), idioma),
+        condicion: texto(idioma, met ? "legado.met" : "legado.notMet"),
+        evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
+      });
     });
-  });
   if (idioma !== "es" || !frase.includes(MOTIVO_COPIA)) return frase;
   return frase.replaceAll(MOTIVO_COPIA, texto("es", "revision.copia"));
 }

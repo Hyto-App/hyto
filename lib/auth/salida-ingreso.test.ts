@@ -13,7 +13,7 @@ import type { Tarea } from "../integrante/tipos";
 import { mensajeClaro } from "../ui/claro";
 
 const DIRECCION = `G${"B".repeat(55)}`;
-const DESTINO = "/mis-tareas";
+const DESTINO = "/";
 
 function memoriaFirmada(): void {
   window.localStorage.setItem(
@@ -64,7 +64,49 @@ async function llegarAlCodigo(
   }
 }
 
-test("tras el código, la pantalla de éxito lleva a Mis tareas y no a la landing ni a Account", async () => {
+test("tras el código con next=/join/CODE vuelve al join y no a Mis tareas", async () => {
+  limpiarPantalla();
+  window.history.replaceState(null, "", "/?signin=1&next=%2Fjoin%2FCODE");
+  window.sessionStorage.clear();
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
+  const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+  process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-prueba";
+  try {
+    await montar(
+      createElement(Entrar, {
+        crear: async () => ({ sendOtp: async () => undefined }),
+        confirmarCodigo: async () => ({ aviso: null, direccion: DIRECCION, guardada: true }),
+        esperaMinima: 0,
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await escribir('input[type="email"]', "ana@example.com");
+    await pulsar("Continue with email");
+    await escribir('input[autocomplete="one-time-code"]', "123456");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+    assert.match(texto(), /You're in\./);
+    await pulsar("Continue");
+    assert.deepEqual(destinos, ["/join/CODE"]);
+  } finally {
+    if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+    else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
+    window.location.assign = asignar;
+    window.history.replaceState(null, "", "/");
+    window.sessionStorage.clear();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("tras el código, la pantalla de éxito lleva a Events (/) como Google y no a Mis tareas", async () => {
   limpiarPantalla();
   const destinos: string[] = [];
   const asignar = window.location.assign.bind(window.location);
@@ -78,7 +120,7 @@ test("tras el código, la pantalla de éxito lleva a Mis tareas y no a la landin
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
     assert.match(texto(), /You're in\./);
-    await pulsar("Go to my tasks");
+    await pulsar("Continue");
     assert.deepEqual(destinos, [DESTINO]);
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));

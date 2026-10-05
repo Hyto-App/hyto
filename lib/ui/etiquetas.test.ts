@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { etiquetaVeredicto, textoNota, textoVisible } from "./etiquetas";
+import { estadoConFoto, etiquetaVeredicto, textoNota, textoVisible } from "./etiquetas";
 
 test("las frases de ejemplo se traducen sin el prefijo Ejemplo o Example", () => {
   assert.equal(
@@ -36,4 +36,11 @@ test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(textoNota(etiquetaVeredicto("parcial", "es"), 64), "64% · Parcialmente completado");
   assert.equal(textoVisible("Set up the booth", "es"), "Montar el stand");
   assert.equal(textoVisible("Montar el stand", "es"), "Montar el stand");
+});
+
+test("estadoConFoto shows In review when a photo exists on a pending task", () => {
+  assert.equal(estadoConFoto("pendiente", true), "en revisión");
+  assert.equal(estadoConFoto("pendiente", false), "pendiente");
+  assert.equal(estadoConFoto("en revisión", true), "en revisión");
+  assert.equal(estadoConFoto("pagado", true), "pagado");
 });

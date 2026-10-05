@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey, type KeyObject } from "node:crypto";
 import test from "node:test";
-import { correoDelToken, walletDelToken } from "./correo";
+import { correoAppleSinCorreo, correoDelToken, walletDelToken } from "./correo";
 import { HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
 
 delete process.env.CAVOS_JWT_JWK;
@@ -273,3 +273,32 @@ test("rechaza un token sin sujeto", async () => {
   assert.equal(await correoDelToken(payload(claims({ sub: undefined })), "organizador@demo.hyto", sinClave), null);
   assert.equal(await correoDelToken("no-es-token", "organizador@demo.hyto", sinClave), null);
 });
+
+test("Apple sin correo usa una dirección .invalid estable; los demás emisores siguen exigiendo correo", async () => {
+  const apple = parClave("apple");
+  const EMISOR_APPLE = "https://appleid.apple.com";
+  const ajustes: AjustesJwt = { ...sinClave, emisor: `${EMISOR_GOOGLE},${EMISOR_APPLE}`, claves: [{ ...apple.jwk, iss: EMISOR_APPLE }, { ...google.jwk, iss: EMISOR_GOOGLE }] };
+  const sinCorreo = firmar(claims({ iss: EMISOR_APPLE, sub: "001234.abc.0987", email: undefined }), apple.privateKey, "apple");
+  const correo = await correoDelToken(sinCorreo, "", ajustes);
+  assert.equal(correo?.correo, correoAppleSinCorreo("001234.abc.0987"));
+  assert.match(correo?.correo ?? "", /^apple-[0-9a-f]{32}@apple\.hyto\.invalid$/);
+  assert.equal((await correoDelToken(sinCorreo, "", ajustes))?.correo, correo?.correo);
+  assert.equal(await correoDelToken(sinCorreo, "otro@example.com", ajustes), null);
+
+  const relay = "abc123@privaterelay.appleid.com";
+  const conRelay = firmar(claims({ iss: EMISOR_APPLE, email: relay }), apple.privateKey, "apple");
+  assert.equal((await correoDelToken(conRelay, relay, ajustes))?.correo, relay);
+
+  const googleSinCorreo = firmar(claims({ iss: EMISOR_GOOGLE, email: undefined }), google.privateKey, "google");
+  assert.equal(await correoDelToken(googleSinCorreo, "", ajustes), null);
+  const reservado = firmar(claims({ iss: EMISOR_GOOGLE, email: correo?.correo }), google.privateKey, "google");
+  assert.equal(await correoDelToken(reservado, "", ajustes), null);
+});
+
+test("la audiencia acepta varios client id separados por coma (Google y Apple)", async () => {
+  const token = firmar(claims({ aud: "com.hyto.apple" }));
+  assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "google-client, com.hyto.apple" }))?.correo, "organizador@demo.hyto");
+  assert.equal(await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "google-client" }), null);
+  assert.equal(await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: " , " }), null);
+});
+

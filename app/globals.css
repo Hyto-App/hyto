@@ -1012,6 +1012,12 @@ a {
   padding-top: var(--e-5);
 }
 
+/* The open sign-in screen is fixed but lives inside this z-index: 1 layer, so
+   lift the layer over its siblings (the legal line) while the screen is open. */
+.hyto-landing-copy:has(.hyto-login) {
+  z-index: 2;
+}
+
 .hyto-landing-lead {
   margin-top: var(--e-2);
   max-width: 26rem;
@@ -2555,8 +2561,13 @@ a {
   margin-top: 16px;
 }
 
+.hyto-login-apple {
+  margin-top: 10px;
+}
+
 .hyto-login-tarjeta.is-enviando .hyto-login-pestanas,
-.hyto-login-tarjeta.is-enviando .hyto-login-google {
+.hyto-login-tarjeta.is-enviando .hyto-login-google,
+.hyto-login-tarjeta.is-enviando .hyto-login-apple {
   opacity: 0.4;
 }
 
