@@ -37,7 +37,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     });
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
-    assert.match(texto(), /Add a wallet to see testnet USDC/);
+    assert.match(texto(), /Add a wallet to see your USDC/);
     assert.match(texto(), /US\$0/);
     assert.equal(texto().includes("Demo sample"), false);
     assert.equal(document.querySelectorAll(".hyto-badge.is-on").length, 0);

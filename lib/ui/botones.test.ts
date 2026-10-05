@@ -13,7 +13,7 @@ function bloque(selector: string): string {
 }
 
 test("language and action buttons size to their label", () => {
-  for (const selector of [".hyto-idioma button", ".hyto-btn {", ".hyto-btn-line {", ".hyto-btn-danger {", ".hyto-cerrar {", ".hyto-chips button", ".hyto-opcion {"]) {
+  for (const selector of [".hyto-idioma button", ".hyto-btn {", ".hyto-btn-line {", ".hyto-btn-danger {", ".hyto-cerrar {", ".hyto-opcion {"]) {
     const regla = bloque(selector);
     assert.equal(regla.includes("text-overflow"), false, selector);
     assert.equal(regla.includes("overflow: hidden"), false, selector);
@@ -21,6 +21,13 @@ test("language and action buttons size to their label", () => {
     assert.match(regla, /height:\s*auto/, selector);
     assert.match(regla, /max-width:\s*100%/, selector);
   }
+  // Filter chips stay on one line and the row scrolls sideways (redesign spec §4); they must not be clipped.
+  const chips = bloque(".hyto-chips button");
+  assert.match(chips, /white-space:\s*nowrap/);
+  assert.equal(chips.includes("text-overflow"), false);
+  assert.equal(chips.includes("overflow: hidden"), false);
+  assert.match(chips, /height:\s*auto/);
+  assert.match(bloque(".hyto-chips {"), /overflow-x:\s*auto/);
   const idioma = bloque(".hyto-idioma button");
   assert.match(idioma, /min-width:\s*36px/);
   assert.match(idioma, /width:\s*auto/);

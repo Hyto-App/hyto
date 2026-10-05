@@ -23,6 +23,8 @@ export type Tarea = {
   dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
+  /** Deadline. Optional until the backend sends it (spec §9); only shown when present. */
+  venceEn?: string | null;
 };
 
 export type Evidencia = {
