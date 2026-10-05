@@ -200,9 +200,9 @@ export function Entrar({
 
   /**
    * Google leaves a one-time code in the URL, so a clean finish reloads `/`
-   * (the server sends a session to Events). The email code stays on the
-   * signed-in landing and its way into the app. A pending testnet setup never
-   * navigates, so the notice stays visible.
+   * (the server sends a session to Events). Email code uses the same destination
+   * (safe `next` / return path, else `/` → Events), matching Google. A pending
+   * testnet setup never navigates, so the notice stays visible.
    */
   function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean) {
     setDireccion(direccionGuardada);

@@ -12,7 +12,7 @@ export type { MonedaTrabajo, ProgresoTrabajo };
 export const PEDIDO_TRABAJO_QWEN = [
   "Look at the photo and describe the work.",
   "Reply with JSON only, using these keys:",
-  "texto: a full English paragraph that names the visible work, the place, any count of what was done, whether it is finished, partly done, or not started, and any date or time printed in the photo. Keep every one of those facts. Do not compress the paragraph into one short sentence.",
+  "texto: a full English paragraph (English only — never Spanish) that names the visible work, the place, any count of what was done, whether it is finished, partly done, or not started, and any date or time printed in the photo. Keep every one of those facts. Do not compress the paragraph into one short sentence.",
   "work: the work that is visible, or null.",
   "place: the place, or null.",
   "quantity_raw: the count of work done, as printed or as a digit, or null. Do not invent a count.",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
-import { etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
+import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type FilaTareaEvento = {
@@ -18,6 +18,7 @@ export type FilaTareaEvento = {
   prioridad: PrioridadTarea;
   dificultad: DificultadTarea | null;
   bloqueo: string | null;
+  tieneFoto: boolean;
 };
 
 type Borrador = {
@@ -159,7 +160,7 @@ export function TareasEvento({
               <div className="min-w-0">
                 <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
+                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
                 </p>
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">

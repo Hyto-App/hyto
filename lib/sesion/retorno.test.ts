@@ -67,3 +67,8 @@ test("el retorno de OAuth se guarda en sessionStorage y se valida al leer", () =
   olvidarRetorno(almacenamiento);
   assert.equal(leerRetorno(almacenamiento), null);
 });
+
+test("default signed-in landing matches Google (Events via /)", () => {
+  assert.equal(DESTINO_TRAS_INGRESO, "/");
+  assert.equal(destinoTrasIngreso(null), "/");
+});

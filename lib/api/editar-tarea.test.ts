@@ -5,6 +5,7 @@ import type { Almacen } from "../db/almacen";
 import type { EvidenciaFila, TareaFila } from "../db/tipos";
 import { asignarTareaHttp } from "./asignar";
 import { AVISO_CON_FOTO, AVISO_CON_PAGO, AVISO_MONTO_BLOQUEADO, AVISO_SOLO_ORGANIZADOR, editarTareaHttp } from "./editar-tarea";
+import { estadoConFoto } from "../ui/etiquetas";
 
 const CREADO = "2026-10-02T00:00:00.000Z";
 
@@ -157,4 +158,11 @@ test("el cuerpo no puede cambiar el estado ni el contrato", async () => {
   assert.equal(fila?.estado, "pendiente");
   assert.equal(fila?.contratoEscrow, null);
   assert.equal(fila?.walletCobro, "");
+});
+
+test("estadoConFoto shows In review when a photo exists on a pending task", () => {
+  assert.equal(estadoConFoto("pendiente", true), "en revisión");
+  assert.equal(estadoConFoto("pendiente", false), "pendiente");
+  assert.equal(estadoConFoto("en revisión", true), "en revisión");
+  assert.equal(estadoConFoto("pagado", true), "pagado");
 });
