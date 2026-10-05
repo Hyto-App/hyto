@@ -1,7 +1,9 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import { ajustarParaVision } from "@/lib/evidencia/vision";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
+import { CLAVES_LECTURA, leerLectura } from "./lectura";
 
 export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
 
@@ -9,13 +11,58 @@ export function modeloVision(env: NodeJS.ProcessEnv = process.env): string {
   const pedido = env.GROQ_VISION_MODEL?.trim();
   return pedido || MODELO_VISION_DEFECTO;
 }
+
+/** Groq accepts reasoning_effort "none" only on Qwen 3 models, so any other model gets no reasoning parameters. */
+export function parametrosRazonamiento(modelo: string): { reasoning_effort?: "none"; reasoning_format?: "hidden" } {
+  return /^qwen\/qwen3/i.test(modelo.trim()) ? { reasoning_effort: "none", reasoning_format: "hidden" } : {};
+}
 const BASE = "https://api.groq.com/openai/v1";
-const MAX_TOKENS = 1024;
+/** The structured reply carries a long description, so 1024 tokens could cut the JSON. */
+const MAX_TOKENS = 2048;
+const MAX_CONDICION = 600;
 
-const PEDIDO =
-  "Describe the photo in one short sentence. The texto value MUST be English only — never Spanish or any other language. If it is an invoice or a receipt, extract the amount in dollars (digits only, up to two decimals, no symbol) and the date as YYYY-MM-DD. If it is not a receipt, amount and date are null. Reply with JSON only, using the keys texto, monto, and fecha.";
+export type ContextoPedido = {
+  /** What the organizer asked the photo to show. */
+  condicion?: string | null;
+  tipoTarea?: TipoTarea | null;
+};
 
-export function leerDescripcion(texto: string): Descripcion | null {
+/** The prompt sent with the photo. The task condition is part of it, so the description answers the request. */
+export function pedidoVision(contexto: ContextoPedido = {}): string {
+  const condicion = contexto.condicion?.replace(/\s+/g, " ").trim().slice(0, MAX_CONDICION) ?? "";
+  const tarea =
+    contexto.tipoTarea === "reembolso"
+      ? "This is a reimbursement task, so the photo should be a receipt or an invoice."
+      : contexto.tipoTarea === "trabajo"
+        ? "This is a work task, so the photo should show the place, the people, the objects, the food, or the result the organizer asked for."
+        : "";
+  return [
+    "You read a photo that a volunteer sent as evidence for a task.",
+    condicion ? `The organizer asked for: "${condicion}".` : "",
+    tarea,
+    "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
+    `Reply with JSON only, using exactly these keys: ${CLAVES_LECTURA.join(", ")}.`,
+    'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
+    "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed.",
+    "legible: true if the photo is sharp and clear enough to judge. false if it is blurry, too dark, or cut off.",
+    "pais: the country as a two-letter ISO code, such as CR for Costa Rica, only if the photo shows it (an address, a phone code, a tax id, or the currency). Otherwise null.",
+    "moneda: the ISO 4217 code of the total. ₡, ¢, colones, or CRC is CRC, Costa Rican colones. Use USD only when the receipt shows US$, USD, or dollars, or a $ total on a receipt from Costa Rica or the United States. If the currency is not shown, use null. Never guess USD.",
+    "monto_original: the total exactly as printed, keeping its symbol and separators, such as ₡7.950,00 or 15.179,99. Costa Rican receipts often use a dot for thousands and a comma for decimals. Null if there is no total.",
+    "monto_usd: the total in US dollars only when the receipt itself prints it in US dollars. Otherwise null. Do not convert colones or any other currency.",
+    "fecha: the purchase date exactly as printed, such as 02/10/2026. Costa Rica writes the day first (DD/MM/YYYY). Null if there is no date.",
+    "comercio: the store or business name, or null.",
+    "articulos: a list of the items on the receipt, or of the main objects that prove the work. An empty list if there are none.",
+    "faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Reads the structured reply. The older reply with only texto, monto, and fecha is still read the
+ * old way: a dollar amount and a YYYY-MM-DD date, or null.
+ */
+export function leerDescripcion(texto: string, contexto: ContextoPedido = {}): Descripcion | null {
   const inicio = texto.indexOf("{");
   const fin = texto.lastIndexOf("}");
   if (inicio < 0 || fin <= inicio) return null;
@@ -25,8 +72,12 @@ export function leerDescripcion(texto: string): Descripcion | null {
   } catch {
     return null;
   }
-  if (!json || typeof json !== "object") return null;
+  if (!json || typeof json !== "object" || Array.isArray(json)) return null;
   const crudo = json as Record<string, unknown>;
+  const lectura = leerLectura(crudo, { pedido: contexto.condicion ?? null });
+  if (lectura) {
+    return { texto: lectura.textoCompleto, monto: lectura.montoUsd, fecha: lectura.fecha, lectura };
+  }
   const frase = typeof crudo.texto === "string" ? crudo.texto.trim() : "";
   if (!frase) return null;
   return {
@@ -61,9 +112,11 @@ export async function describirFoto(
   clave: string,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
+  contexto: ContextoPedido = {},
 ): Promise<Descripcion> {
   if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
   const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
+  const modelo = modeloVision();
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${BASE}/chat/completions`, {
@@ -73,17 +126,16 @@ export async function describirFoto(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: modeloVision(),
+        model: modelo,
         temperature: 0,
         max_completion_tokens: MAX_TOKENS,
-        reasoning_effort: "none",
-        reasoning_format: "hidden",
+        ...parametrosRazonamiento(modelo),
         response_format: { type: "json_object" },
         messages: [
           {
             role: "user",
             content: [
-              { type: "text", text: PEDIDO },
+              { type: "text", text: pedidoVision(contexto) },
               { type: "image_url", image_url: { url: `data:${imagen.tipo};base64,${Buffer.from(imagen.bytes).toString("base64")}` } },
             ],
           },
@@ -111,7 +163,7 @@ export async function describirFoto(
       secreto: clave,
     });
   }
-  const descripcion = leerDescripcion(contenido);
+  const descripcion = leerDescripcion(contenido, contexto);
   if (!descripcion) {
     const cortado = choice?.finish_reason === "length" || (contenido.includes("{") && !contenido.includes("}"));
     throw new FalloRevision("respuesta", {

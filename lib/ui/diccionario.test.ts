@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
+import {
+  AVISO_USDC_FIRMANTE,
+  AVISO_USDC_LENTO,
+  AVISO_USDC_OTRA_CUENTA,
+  AVISO_USDC_PENDIENTE,
+  AVISO_USDC_SECUENCIA,
+  AVISO_USDC_SIN_XLM,
+  AVISO_USDC_VENCIDO,
+} from "@/lib/integrante/avisosUsdc";
 import { en, es, leerTexto, rutas, texto, type FuenteTextos } from "./diccionario";
 
 test("English and Spanish dictionaries have the same keys", () => {
@@ -30,6 +39,14 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "errores.receptorNoListo"), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(texto("en", "errores.horizonReceptor"), AVISO_HORIZON_RECEPTOR);
   assert.equal(texto("en", "errores.reingreso"), AVISO_REINGRESO);
+  assert.equal(texto("en", "errores.dispositivo"), AVISO_DISPOSITIVO);
+  assert.equal(texto("en", "errores.cobroSinXlm"), AVISO_USDC_SIN_XLM);
+  assert.equal(texto("en", "errores.cobroSecuencia"), AVISO_USDC_SECUENCIA);
+  assert.equal(texto("en", "errores.cobroFirmante"), AVISO_USDC_FIRMANTE);
+  assert.equal(texto("en", "errores.cobroVencido"), AVISO_USDC_VENCIDO);
+  assert.equal(texto("en", "errores.cobroPendiente"), AVISO_USDC_PENDIENTE);
+  assert.equal(texto("en", "errores.cobroOtraCuenta"), AVISO_USDC_OTRA_CUENTA);
+  assert.equal(texto("en", "errores.cobroLento"), AVISO_USDC_LENTO);
   assert.equal(texto("es", "entrar.espera", { n: 12 }), "Espera 12 s antes de pedir otro código");
   assert.equal(texto("en", "cuenta.pasaporteTitulo"), "Stellar Passport");
   assert.equal(texto("es", "cuenta.pasaporteTitulo"), "Stellar Passport");

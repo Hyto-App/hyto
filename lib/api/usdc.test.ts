@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 import {
   Account,
   Asset,
@@ -11,9 +11,17 @@ import {
   TransactionBuilder,
 } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
+import {
+  AVISO_USDC_FIRMANTE,
+  AVISO_USDC_PENDIENTE,
+  AVISO_USDC_SECUENCIA,
+  AVISO_USDC_SIN_XLM,
+  AVISO_USDC_VENCIDO,
+  CODIGO_USDC_SIN_XLM,
+} from "../integrante/avisosUsdc";
 import { FRIENDBOT_TESTNET } from "../integrante/friendbot";
 import { USDC } from "../integrante/identidades";
-import { armarXdrUsdc, HORIZON_TESTNET, xdrEsTrustlineUsdc } from "../integrante/trustline";
+import { armarXdrUsdc, HORIZON_TESTNET, revisarXdrUsdc, xdrEsTrustlineUsdc } from "../integrante/trustline";
 import {
   AVISO_USDC_DEMO,
   AVISO_USDC_ENVIO,
@@ -26,6 +34,20 @@ import {
 } from "./usdc";
 
 const OTRO = "G" + "B".repeat(55);
+
+const avisos: string[] = [];
+const warnOriginal = console.warn;
+
+beforeEach(() => {
+  avisos.length = 0;
+  console.warn = (...partes: unknown[]) => {
+    avisos.push(partes.map((parte) => (typeof parte === "string" ? parte : JSON.stringify(parte))).join(" "));
+  };
+});
+
+afterEach(() => {
+  console.warn = warnOriginal;
+});
 
 function sesion(wallet: string, email = "ana@hyto.app", rol: SesionFila["rol"] = "voluntario"): SesionFila {
   return {
@@ -268,4 +290,154 @@ test("el envío solo acepta el changeTrust firmado por la wallet de la sesión",
   const fallo = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "enviar", xdr: firmado }), async () => json({ title: "no" }, 400));
   assert.equal(fallo.status, 502);
   assert.equal((await fallo.json()).aviso, AVISO_USDC_ENVIO);
+});
+
+const NATIVO_CERO = { asset_type: "native", balance: "0.0000000", buying_liabilities: "0.0000000", selling_liabilities: "0.0000000" };
+const USDC_ABIERTO = { asset_type: "credit_alphanum4", asset_code: "USDC", asset_issuer: USDC.issuer, balance: "0.0000000" };
+
+/** The shape Horizon returns for a Cavos account the relayer created and sponsors: no XLM of its own. */
+function patrocinada(extra: Record<string, unknown> = {}): Response {
+  return json({ sequence: "4294967296", subentry_count: 0, num_sponsoring: 0, num_sponsored: 2, balances: [NATIVO_CERO], ...extra });
+}
+
+test("una cuenta antigua patrocinada con 0 XLM recibe usdc_sin_xlm en vez de un changeTrust que Horizon rechazaría", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const urls: string[] = [];
+  const fetchImpl: typeof fetch = async (input) => {
+    urls.push(String(input));
+    return patrocinada();
+  };
+  const legado: SesionFila = { ...sesion(wallet, "abdiel@hyto.app"), token: "secreto-de-sesion" };
+  const respuesta = await publicarUsdcHttp(legado, pedido({ accion: "preparar" }), fetchImpl);
+  assert.equal(respuesta.status, 409);
+  assert.deepEqual(await respuesta.json(), { aviso: AVISO_USDC_SIN_XLM, codigo: CODIGO_USDC_SIN_XLM, wallet });
+  assert.equal(urls.some((url) => url.startsWith(FRIENDBOT_TESTNET)), false);
+  assert.equal(avisos.length, 1);
+  const linea = avisos[0] ?? "";
+  assert.match(linea, /^\[api\/usdc\] /);
+  assert.match(linea, /"paso":"preparar"/);
+  assert.match(linea, /"motivo":"sin_xlm"/);
+  assert.ok(linea.includes(`${wallet.slice(0, 4)}…${wallet.slice(-4)}`));
+  assert.equal(linea.includes(wallet), false);
+  assert.doesNotMatch(linea, /abdiel@hyto\.app|secreto-de-sesion/);
+});
+
+test("una cuenta antigua con XLM propio y entradas de datos recibe el changeTrust y la cuenta que lo firma", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const fetchImpl: typeof fetch = async () =>
+    json({
+      sequence: "77",
+      subentry_count: 3,
+      num_sponsoring: 0,
+      num_sponsored: 0,
+      balances: [{ asset_type: "native", balance: "10.0000000", selling_liabilities: "0.0000000" }],
+    });
+  const respuesta = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "preparar" }), fetchImpl);
+  assert.equal(respuesta.status, 200);
+  const cuerpo = (await respuesta.json()) as { xdr?: string; wallet?: string };
+  assert.equal(cuerpo.wallet, wallet);
+  assert.equal(revisarXdrUsdc(firmar(cuerpo.xdr ?? "", clave), wallet), null);
+  assert.deepEqual(avisos, []);
+});
+
+test("una cuenta antigua que ya tiene USDC queda lista aunque no tenga XLM, sin firmar nada", async () => {
+  const clave = Keypair.random();
+  const fetchImpl: typeof fetch = async () =>
+    patrocinada({ subentry_count: 1, num_sponsored: 3, balances: [NATIVO_CERO, USDC_ABIERTO] });
+  const preparada = await publicarUsdcHttp(sesion(clave.publicKey()), pedido({ accion: "preparar" }), fetchImpl);
+  assert.deepEqual(await preparada.json(), { listo: true });
+  const lectura = await leerUsdcHttp(sesion(clave.publicKey()), fetchImpl);
+  assert.deepEqual(await lectura.json(), { listo: true });
+  assert.deepEqual(avisos, []);
+});
+
+test("cada rechazo de Horizon al enviar da un aviso que se puede seguir y queda registrado sin el XDR", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const firmado = firmar(armarXdrUsdc(wallet, "9"), clave);
+  const codigos = (transaction: string, operations?: string[]) =>
+    json({ extras: { result_codes: operations ? { transaction, operations } : { transaction } } }, 400);
+  const sinXlm = { aviso: AVISO_USDC_SIN_XLM, codigo: CODIGO_USDC_SIN_XLM, wallet };
+  const casos: [string, () => Response, number, Record<string, unknown>, RegExp][] = [
+    ["tx_insufficient_balance", () => codigos("tx_insufficient_balance"), 409, sinXlm, /tx_insufficient_balance/],
+    ["op_low_reserve", () => codigos("tx_failed", ["op_low_reserve"]), 409, sinXlm, /op_low_reserve/],
+    ["tx_bad_seq", () => codigos("tx_bad_seq"), 409, { aviso: AVISO_USDC_SECUENCIA }, /tx_bad_seq/],
+    ["tx_too_late", () => codigos("tx_too_late"), 409, { aviso: AVISO_USDC_VENCIDO }, /tx_too_late/],
+    ["tx_bad_auth", () => codigos("tx_bad_auth"), 400, { aviso: AVISO_USDC_FIRMANTE }, /tx_bad_auth/],
+    ["504 de Horizon", () => json({ title: "Timeout" }, 504), 502, { aviso: AVISO_USDC_PENDIENTE }, /"estado":504/],
+    [
+      "red caída",
+      () => {
+        throw new TypeError("fetch failed");
+      },
+      502,
+      { aviso: AVISO_USDC_PENDIENTE },
+      /"motivo":"TypeError"/,
+    ],
+    ["otro código", () => codigos("tx_failed", ["op_malformed"]), 502, { aviso: AVISO_USDC_ENVIO }, /op_malformed/],
+  ];
+  for (const [nombre, horizon, estado, cuerpo, registro] of casos) {
+    avisos.length = 0;
+    const fetchImpl: typeof fetch = async (input) => {
+      if (String(input) === `${HORIZON_TESTNET}/transactions`) return horizon();
+      return json({ sequence: "9", balances: [NATIVO_CERO] });
+    };
+    const respuesta = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "enviar", xdr: firmado }), fetchImpl);
+    assert.equal(respuesta.status, estado, nombre);
+    assert.deepEqual(await respuesta.json(), cuerpo, nombre);
+    assert.equal(avisos.length, 1, nombre);
+    assert.match(avisos[0] ?? "", /"paso":"enviar"/, nombre);
+    assert.match(avisos[0] ?? "", registro, nombre);
+    assert.equal((avisos[0] ?? "").includes(firmado), false, nombre);
+  }
+});
+
+test("si el envío falla pero la trustline ya está en el ledger, responde listo sin hash", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const firmado = firmar(armarXdrUsdc(wallet, "9"), clave);
+  const fetchImpl: typeof fetch = async (input) => {
+    if (String(input) === `${HORIZON_TESTNET}/transactions`) return json({ title: "Timeout" }, 504);
+    return json({ sequence: "10", balances: [NATIVO_CERO, USDC_ABIERTO] });
+  };
+  const respuesta = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "enviar", xdr: firmado }), fetchImpl);
+  assert.equal(respuesta.status, 200);
+  assert.deepEqual(await respuesta.json(), { listo: true, hash: null });
+});
+
+test("un XDR que no vale dice por qué en el registro", async () => {
+  const clave = Keypair.random();
+  const wallet = clave.publicKey();
+  const ajena = Keypair.random();
+  const construir = (operacion: ReturnType<typeof Operation.changeTrust> | ReturnType<typeof Operation.payment>) =>
+    new TransactionBuilder(new Account(wallet, "9"), { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+      .addOperation(operacion)
+      .setTimeout(30)
+      .build()
+      .toXDR();
+  const sinFirma = armarXdrUsdc(wallet, "9");
+  assert.equal(revisarXdrUsdc(firmar(sinFirma, clave), wallet), null);
+  assert.equal(revisarXdrUsdc("no-es-xdr", wallet), "formato");
+  assert.equal(revisarXdrUsdc(firmar(armarXdrUsdc(ajena.publicKey(), "9"), ajena), wallet), "cuenta");
+  assert.equal(
+    revisarXdrUsdc(firmar(construir(Operation.payment({ destination: ajena.publicKey(), asset: Asset.native(), amount: "1" })), clave), wallet),
+    "operacion",
+  );
+  assert.equal(revisarXdrUsdc(firmar(construir(Operation.changeTrust({ asset: new Asset("USDC", ajena.publicKey()) })), clave), wallet), "activo");
+  assert.equal(
+    revisarXdrUsdc(firmar(construir(Operation.changeTrust({ asset: new Asset(USDC.code, USDC.issuer), limit: "0" })), clave), wallet),
+    "limite",
+  );
+  assert.equal(revisarXdrUsdc(sinFirma, wallet), "firma");
+  assert.equal(revisarXdrUsdc(firmar(sinFirma, ajena), wallet), "firma");
+
+  const rechazo = await publicarUsdcHttp(sesion(wallet), pedido({ accion: "enviar", xdr: firmar(sinFirma, ajena) }), async () => {
+    throw new Error("no debería llegar a Horizon");
+  });
+  assert.equal(rechazo.status, 400);
+  assert.equal((await rechazo.json()).aviso, AVISO_USDC_XDR);
+  assert.equal(avisos.length, 1);
+  assert.match(avisos[0] ?? "", /"motivo":"xdr_firma"/);
 });

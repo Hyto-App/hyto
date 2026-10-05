@@ -276,7 +276,7 @@ export async function guardarRevision(
     tareaId,
     veredicto: resultado.veredicto,
     frase: resultado.frase,
-    textoScout: unirDescripcion(resultado.texto, resultado.detalle),
+    textoScout: unirDescripcion(resultado.texto, resultado.detalle, resultado.lectura),
     choice: resultado.choice,
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,
