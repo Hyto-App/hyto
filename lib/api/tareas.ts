@@ -5,6 +5,7 @@ import { asegurarSemilla } from "@/lib/db/semilla";
 import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
+import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 
 export function tareaPublica(tarea: TareaFila) {
@@ -38,10 +39,13 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
   const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
   const visible = notaPublica(fila);
+  const linea = lineaDeEnvio(tarea, evidencia, fila);
   return {
     ...tareaPublica(tarea),
     nota: visible?.nota ?? null,
     veredicto: visible?.veredicto ?? null,
+    etapa: linea.etapa,
+    enviadaEn: linea.enviadaEn,
   };
 }
 

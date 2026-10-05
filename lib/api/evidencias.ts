@@ -14,6 +14,7 @@ import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import { accesoEvidencia, type Visor } from "./alcance";
+import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 
 const MAX_BYTES = 8_000_000;
@@ -114,6 +115,8 @@ export async function emitirTokenEvidenciaHttp(request: Request, deps: DepsEvide
     if (tarea.tipo !== "trabajo") return json({ aviso: "Receipts do not use a camera check." }, 400);
     const permitido = await puedeSubir(deps.almacen, tarea, deps.actor);
     if (!permitido) return json({ aviso: "Only the person assigned to the task can submit evidence." }, 403);
+    // TODO(intentos): the attempt cap is not decided. Replace the photo until the task is paid.
+    if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
     const token = emitirTokenEvidencia({ usuarioId: deps.actor.usuarioId, tareaId });
     if (!token) return json({ aviso: "Evidence checks are not configured." }, 503);
     return json({ token });
@@ -155,6 +158,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (wallet && wallet !== tarea.walletCobro && tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
       return json({ aviso: AVISO_COBRO_FIJO }, 409);
     }
+    // TODO(intentos): the attempt cap is not decided. Replace the photo until the task is paid.
+    if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
     const tipo = tipoPorBytes(bytes);
@@ -232,8 +237,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
-    const cercanas = phash ? await deps.almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidencia.id) : [];
-    const cerca = cercanas.length > 0;
+    const cerca = phash ? await esCopiaAjena(deps.almacen, phash, evidencia.id, tareaId) : false;
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
     const leida = await deps.fotos.leer(blobId);
@@ -272,7 +276,7 @@ export async function guardarRevision(
     tareaId,
     veredicto: resultado.veredicto,
     frase: resultado.frase,
-    textoScout: unirDescripcion(resultado.texto, resultado.detalle),
+    textoScout: unirDescripcion(resultado.texto, resultado.detalle, resultado.lectura),
     choice: resultado.choice,
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,
@@ -335,6 +339,16 @@ function textoCampo(cuerpo: unknown): string {
   if (!cuerpo || typeof cuerpo !== "object") return "";
   const tareaId = (cuerpo as { tareaId?: unknown }).tareaId;
   return typeof tareaId === "string" ? tareaId.trim() : "";
+}
+
+/** A later photo of the same task is a retake, not a copy of someone else's file. */
+async function esCopiaAjena(almacen: Almacen, phash: string, evidenciaId: string, tareaId: string): Promise<boolean> {
+  const cercanas = await almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidenciaId);
+  for (const cerca of cercanas) {
+    const fila = await almacen.leerEvidencia(cerca.id);
+    if (!fila || fila.tareaId !== tareaId) return true;
+  }
+  return false;
 }
 
 async function puedeSubir(almacen: Almacen, tarea: TareaFila, actor: ActorEvidencia): Promise<boolean> {

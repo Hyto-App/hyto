@@ -3,12 +3,14 @@ import test from "node:test";
 import { tareasEjemplo } from "./ejemplos";
 import {
   AVISO_ENVIO_FALLIDO,
+  AVISO_ENVIO_INCIERTO,
   AVISO_ENVIO_SIN_CONFIRMAR,
   ErrorDeEnvio,
   ErrorDeSesion,
   leerTarea,
   listarTareas,
   subirEvidencia,
+  TOPE_SUBIDA_MS,
 } from "./rutas";
 import type { Tarea } from "./tipos";
 
@@ -113,8 +115,80 @@ test("un 500 sin cuerpo, un 409 o una red caída fallan; nunca hay ejemplo", asy
   };
   await assert.rejects(
     () => subirEvidencia(stand, new Blob(["foto"]), { fetch: red }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_INCIERTO && error.status === null,
+  );
+});
+
+function standDeEjemplo(): Tarea {
+  const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+  assert.ok(stand);
+  return stand;
+}
+
+function servidor(estado: string, subida: () => Response): { fetch: typeof fetch; pedidos: string[] } {
+  const pedidos: string[] = [];
+  return {
+    pedidos,
+    fetch: async (input, init) => {
+      const url = String(input).replace(/\?.*$/, "");
+      pedidos.push(`${init?.method ?? "GET"} ${url}`);
+      if (url.endsWith("/api/tareas")) return json({ tareas: [{ ...standDeEjemplo(), estado }] });
+      return subida();
+    },
+  };
+}
+
+test("si la respuesta de la subida se pierde y la tarea ya está en revisión, la foto cuenta como enviada", async () => {
+  const stand = standDeEjemplo();
+  assert.equal(stand.estado, "pendiente");
+  assert.equal(TOPE_SUBIDA_MS >= 30_000, true);
+
+  const cortada = servidor("en revisión", () => {
+    throw new DOMException("The operation timed out.", "TimeoutError");
+  });
+  assert.deepEqual(await subirEvidencia(stand, new Blob(["foto"]), { fetch: cortada.fetch }), { evidencia: null, aviso: null });
+  assert.deepEqual(cortada.pedidos, ["POST /api/evidencias", "GET /api/tareas"]);
+
+  const pendiente = servidor("pendiente", () => {
+    throw new TypeError("network");
+  });
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: pendiente.fetch }),
     (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_FALLIDO && error.status === null,
   );
+});
+
+test("un 409 o un 5xx con la tarea ya en revisión cuentan como enviada; con la tarea pendiente se ve el aviso", async () => {
+  const stand = standDeEjemplo();
+  const repetido = () => json({ aviso: "This file was already submitted." }, 409);
+  assert.deepEqual(await subirEvidencia(stand, new Blob(["foto"]), { fetch: servidor("en revisión", repetido).fetch }), {
+    evidencia: null,
+    aviso: null,
+  });
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: servidor("pendiente", repetido).fetch }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === "This file was already submitted." && error.status === 409,
+  );
+
+  const pasarela = () => new Response("Gateway Timeout", { status: 504 });
+  assert.deepEqual(await subirEvidencia(stand, new Blob(["foto"]), { fetch: servidor("en revisión", pasarela).fetch }), {
+    evidencia: null,
+    aviso: null,
+  });
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: servidor("pendiente", pasarela).fetch }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === AVISO_ENVIO_FALLIDO && error.status === 504,
+  );
+});
+
+test("un rechazo 400 no lee la tarea: el servidor no guardó nada", async () => {
+  const stand = standDeEjemplo();
+  const rechazo = servidor("en revisión", () => json({ aviso: "Take the photo with the camera." }, 400));
+  await assert.rejects(
+    () => subirEvidencia(stand, new Blob(["foto"]), { fetch: rechazo.fetch }),
+    (error: unknown) => error instanceof ErrorDeEnvio && error.aviso === "Take the photo with the camera." && error.status === 400,
+  );
+  assert.deepEqual(rechazo.pedidos, ["POST /api/evidencias"]);
 });
 
 test("un 201 sin evidencia reconocible no cuenta como enviado", async () => {
@@ -144,7 +218,7 @@ test("un 201 con aviso de cuenta de cobro devuelve el aviso", async () => {
     return json({ id: "ev-9", tareaId: "stand", blobId: "blob-9", monto: null, fecha: null });
   };
   const enviada = await subirEvidencia(stand, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.evidencia.id, "ev-9");
+  assert.equal(enviada.evidencia?.id, "ev-9");
   assert.equal(enviada.aviso, aviso);
 });
 
@@ -219,8 +293,8 @@ test("la evidencia real no inventa monto ni fecha", async () => {
   };
 
   const enviada = await subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.evidencia.monto, null);
-  assert.equal(enviada.evidencia.fecha, null);
+  assert.equal(enviada.evidencia?.monto, null);
+  assert.equal(enviada.evidencia?.fecha, null);
 });
 
 test("si la lectura trae monto y fecha, la pantalla puede mostrarlos", async () => {
@@ -235,8 +309,8 @@ test("si la lectura trae monto y fecha, la pantalla puede mostrarlos", async () 
   };
 
   const enviada = await subirEvidencia(comida, new Blob(["foto"]), { fetch: fetchImpl });
-  assert.equal(enviada.evidencia.monto, "9.5");
-  assert.equal(enviada.evidencia.fecha, "2026-09-28");
+  assert.equal(enviada.evidencia?.monto, "9.5");
+  assert.equal(enviada.evidencia?.fecha, "2026-09-28");
 });
 
 test("la evidencia de ejemplo no abre la tarea de otro integrante", async () => {

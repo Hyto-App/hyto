@@ -142,10 +142,16 @@ test("calificar aplica el tope más bajo y deja los pesos como están", () => {
   assert.equal(calificar(82, ["otro_gasto"]).nota, 49);
   assert.equal(calificar(80, ["gasto_no_razonable"]).nota, TOPE_FALTA_SERIA);
   assert.equal(calificar(79, ["gasto_no_razonable"]).veredicto, "parcial");
-  assert.equal(calificar(100, ["reembolso"]).nota, TOPE_NOTA_REEMBOLSO);
-  assert.equal(calificar(90, ["gasto_no_razonable", "reembolso"]).nota, 40);
+  assert.equal(calificar(100, ["sin_monto"]).nota, TOPE_NOTA_REEMBOLSO);
+  assert.equal(calificar(90, ["gasto_no_razonable", "sin_monto"]).nota, 40);
   assert.equal(calificar(100, ["otro_gasto", "gasto_no_razonable"]).nota, 49);
-  assert.equal(calificar(90, ["no_coincide", "reembolso"]).nota, 40);
+  assert.equal(calificar(90, ["no_coincide", "sin_monto"]).nota, 40);
+  assert.equal(calificar(100, ["sin_fecha"]).nota, TOPE_FALTA_SERIA);
+  assert.equal(calificar(100, ["sin_fecha"]).veredicto, "parcial");
+  assert.equal(calificar(64, ["sin_fecha"]).nota, 64);
+  assert.equal(calificar(100, ["moneda_sin_usd"]).nota, TOPE_FALTA_SERIA);
+  assert.equal(calificar(100, ["sobre_tope"]).nota, TOPE_FALTA_SERIA);
+  assert.equal(calificar(100, ["sin_fecha", "sin_monto"]).nota, TOPE_NOTA_REEMBOLSO);
   assert.deepEqual(calificar(80, ["no_coincide", "no_coincide"]).motivos, ["no_coincide"]);
 
   assert.equal(calificar(49, []).veredicto, "insuficiente");
