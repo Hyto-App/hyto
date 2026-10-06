@@ -12,6 +12,7 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(etiquetaOrigen("error"), "Review failed");
   assert.equal(etiquetaOrigen(null), null);
   assert.equal(notaManual("pdf"), "Needs a manual review");
+  assert.equal(notaManual("sin_texto"), "Needs a manual review");
   assert.equal(notaManual("sin_clave"), null);
   assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
   assert.equal(notaCopia("   "), null);

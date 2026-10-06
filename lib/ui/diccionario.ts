@@ -370,7 +370,7 @@ export const en = {
     sentAction: "Evidence sent, action needed",
     sent: "Evidence sent",
     upload: "Upload evidence",
-    receiptHelp: "Upload the receipt or invoice as a PDF or an image. The organizer checks it and sends the payment.",
+    receiptHelp: "Upload the receipt or invoice as a PDF, a text file, or an image. The organizer checks it and sends the payment.",
     photoHelp: "Photograph the finished work with the camera. The organizer checks it and sends the payment.",
     fileSent: "File sent",
     photoSent: "Photo sent",
@@ -382,11 +382,12 @@ export const en = {
     organizerCall: "Your organizer makes the final call",
     anotherMaybe: "If the photo isn't clear, the organizer may ask for another one.",
     invoicePdf: "Invoice PDF",
+    textFile: "Text file",
     alt: "Evidence",
     camera: "Camera preview",
-    receiptPlaceholder: "PDF or image of the receipt",
+    receiptPlaceholder: "PDF, text, or image of the receipt",
     workPlaceholder: "Photo of the work",
-    choosePdf: "Choose a PDF or image",
+    choosePdf: "Choose a PDF, text file, or image",
     gallery: "Take the photo now. Photos from the gallery are not accepted.",
     mustShow: "Your photo must show",
     takePhoto: "Take photo",
@@ -404,15 +405,15 @@ export const en = {
     cameraNotReady: "The camera is not ready yet.",
     noPhoto: "Could not take the photo.",
     badFile:
-      "Choose a PDF, JPEG, PNG, or WebP file. Send stays off until the type is one of those.\n1. Check the file type. Hyto accepts only PDF, JPEG, PNG, and WebP.\n2. Export or save the file in one of those formats.\n3. Choose it again.",
+      "Choose a PDF, HTML, text, JPEG, PNG, or WebP file. Send stays off until the type is one of those.\n1. Check the file type. Hyto accepts PDF, HTML, TXT, MD, JPEG, PNG, and WebP.\n2. Export or save the file in one of those formats.\n3. Choose it again.",
     archivoVacio:
-      "This file is empty (0 bytes), so Send stays off.\n1. Choose a JPEG, PNG, WebP, or PDF that has content.\n2. If the download stopped early, download the file again.\n3. Choose that file. Send turns on when it is a real photo or PDF.",
+      "This file is empty (0 bytes), so Send stays off.\n1. Choose a JPEG, PNG, WebP, PDF, or text file that has content.\n2. If the download stopped early, download the file again.\n3. Choose that file. Send turns on when it is a real photo, PDF, or text file.",
     archivoFalso:
-      "This file is not a real JPEG, PNG, WebP, or PDF, so Send stays off. Renaming a text file to .jpg does not make it a photo.\n1. Open the file and check that you can see the photo or the PDF pages.\n2. Export or save it as JPEG, PNG, WebP, or PDF.\n3. Choose the new file.",
+      "This file is not a real JPEG, PNG, WebP, PDF, or text file, so Send stays off. Renaming a text file to .jpg does not make it a photo.\n1. Open the file and check that you can see the photo, the PDF pages, or the text.\n2. Export or save it as JPEG, PNG, WebP, PDF, HTML, or TXT.\n3. Choose the new file.",
     archivoPequena:
       "This image is too small to review, so Send stays off. It has to be at least 8×8 pixels (a 1×1 image is rejected).\n1. Take or export a larger photo.\n2. Choose that file.\n3. Send turns on when the photo is large enough.",
     archivoGrande:
-      "This file is larger than 10 MB, so Send stays off.\n1. Export a JPEG, PNG, WebP, or PDF under 10 MB.\n2. For a photo, lower the size or quality. For a PDF, compress it.\n3. Choose the smaller file.",
+      "This file is larger than 10 MB, so Send stays off.\n1. Export a JPEG, PNG, WebP, PDF, or text file under 10 MB.\n2. For a photo, lower the size or quality. For a PDF, compress it.\n3. Choose the smaller file.",
     useCamera: "Take the photo with the camera.",
     noSend: "Could not send. Try again.",
     sendFailed: "Could not send. Check your connection and try again.",
@@ -506,6 +507,7 @@ export const en = {
   revision: {
     crumb: "Evidence review",
     openInvoice: "Open the invoice",
+    openFile: "Open the file",
     sampleEvidence: "Sample evidence",
     noPhoto: "No photo yet",
     waitingVolunteer: "Waiting for the volunteer to send one.",
@@ -1142,7 +1144,7 @@ export const es: Rama<typeof en> = {
     sentAction: "Evidencia enviada, hay que corregir algo",
     sent: "Evidencia enviada",
     upload: "Subir evidencia",
-    receiptHelp: "Sube el comprobante o la factura en PDF o en imagen. Quien organiza lo revisa y envía el pago.",
+    receiptHelp: "Sube el comprobante o la factura en PDF, en texto o en imagen. Quien organiza lo revisa y envía el pago.",
     photoHelp: "Toma la foto del trabajo terminado con la cámara. Quien organiza lo revisa y envía el pago.",
     fileSent: "Archivo enviado",
     photoSent: "Foto enviada",
@@ -1154,11 +1156,12 @@ export const es: Rama<typeof en> = {
     organizerCall: "Quien organiza toma la decisión final",
     anotherMaybe: "Si la foto no se ve bien, pueden pedirte otra.",
     invoicePdf: "PDF de la factura",
+    textFile: "Archivo de texto",
     alt: "Evidencia",
     camera: "Vista de la cámara",
-    receiptPlaceholder: "PDF o imagen del comprobante",
+    receiptPlaceholder: "PDF, texto o imagen del comprobante",
     workPlaceholder: "Foto del trabajo",
-    choosePdf: "Elegir un PDF o una imagen",
+    choosePdf: "Elegir un PDF, un texto o una imagen",
     gallery: "Toma la foto ahora. No se aceptan fotos de la galería.",
     mustShow: "Tu foto debe mostrar",
     takePhoto: "Tomar foto",
@@ -1176,15 +1179,15 @@ export const es: Rama<typeof en> = {
     cameraNotReady: "La cámara todavía no está lista.",
     noPhoto: "No se pudo tomar la foto.",
     badFile:
-      "Elige un PDF, JPEG, PNG o WebP. Enviar sigue apagado hasta que el tipo sea uno de esos.\n1. Revisa el tipo. Hyto solo acepta PDF, JPEG, PNG y WebP.\n2. Exporta o guarda el archivo en uno de esos formatos.\n3. Elígelo otra vez.",
+      "Elige un PDF, HTML, texto, JPEG, PNG o WebP. Enviar sigue apagado hasta que el tipo sea uno de esos.\n1. Revisa el tipo. Hyto acepta PDF, HTML, TXT, MD, JPEG, PNG y WebP.\n2. Exporta o guarda el archivo en uno de esos formatos.\n3. Elígelo otra vez.",
     archivoVacio:
-      "Este archivo está vacío (0 bytes), así que Enviar sigue apagado.\n1. Elige un JPEG, PNG, WebP o PDF que tenga contenido.\n2. Si la descarga se cortó, descárgalo otra vez.\n3. Elige ese archivo. Enviar se activa cuando es una foto o un PDF de verdad.",
+      "Este archivo está vacío (0 bytes), así que Enviar sigue apagado.\n1. Elige un JPEG, PNG, WebP, PDF o archivo de texto que tenga contenido.\n2. Si la descarga se cortó, descárgalo otra vez.\n3. Elige ese archivo. Enviar se activa cuando es una foto, un PDF o un texto de verdad.",
     archivoFalso:
-      "Este archivo no es un JPEG, PNG, WebP o PDF de verdad, así que Enviar sigue apagado. Cambiarle el nombre a un texto para que diga .jpg no lo convierte en foto.\n1. Abre el archivo y comprueba que se ve la foto o las páginas del PDF.\n2. Expórtalo o guárdalo como JPEG, PNG, WebP o PDF.\n3. Elige el archivo nuevo.",
+      "Este archivo no es un JPEG, PNG, WebP, PDF o texto de verdad, así que Enviar sigue apagado. Cambiarle el nombre a un texto para que diga .jpg no lo convierte en foto.\n1. Abre el archivo y comprueba que se ve la foto, las páginas del PDF o el texto.\n2. Expórtalo o guárdalo como JPEG, PNG, WebP, PDF, HTML o TXT.\n3. Elige el archivo nuevo.",
     archivoPequena:
       "Esta imagen es demasiado pequeña para revisarla, así que Enviar sigue apagado. Tiene que medir al menos 8×8 píxeles (una imagen de 1×1 se rechaza).\n1. Toma o exporta una foto más grande.\n2. Elige ese archivo.\n3. Enviar se activa cuando la foto es lo bastante grande.",
     archivoGrande:
-      "Este archivo pesa más de 10 MB, así que Enviar sigue apagado.\n1. Exporta un JPEG, PNG, WebP o PDF de menos de 10 MB.\n2. En una foto, baja el tamaño o la calidad. En un PDF, comprímelo.\n3. Elige el archivo más chico.",
+      "Este archivo pesa más de 10 MB, así que Enviar sigue apagado.\n1. Exporta un JPEG, PNG, WebP, PDF o texto de menos de 10 MB.\n2. En una foto, baja el tamaño o la calidad. En un PDF, comprímelo.\n3. Elige el archivo más chico.",
     useCamera: "Toma la foto con la cámara.",
     noSend: "No se pudo enviar. Intenta de nuevo.",
     sendFailed: "No se pudo enviar. Revisa tu conexión e intenta de nuevo.",
@@ -1278,6 +1281,7 @@ export const es: Rama<typeof en> = {
   revision: {
     crumb: "Revisión de la evidencia",
     openInvoice: "Abrir la factura",
+    openFile: "Abrir el archivo",
     sampleEvidence: "Evidencia de ejemplo",
     noPhoto: "Todavía no hay foto",
     waitingVolunteer: "Esperando a que la persona voluntaria envíe una.",

@@ -8,7 +8,7 @@ import { evaluarFrescura, fechaExif } from "@/lib/evidencia/frescura";
 import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
-import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
+import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
@@ -98,6 +98,7 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
         "content-type": tipoDeFoto(foto.tipo, foto.bytes),
         "cache-control": "private, max-age=3600",
         "content-disposition": disposicionDe(foto.tipo, foto.bytes),
+        "x-content-type-options": "nosniff",
       },
     });
   } catch {
@@ -170,7 +171,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
-    const validado = validarBytes(bytes);
+    const validado = validarBytes(bytes, { tipo: foto.type, nombre: nombreDeArchivo(foto) });
     if (!validado.ok) {
       const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
       if (camara) return json({ aviso: "Take the photo with the camera." }, 400);
@@ -215,7 +216,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     }
 
     let phash: string | null = null;
-    if (tipo !== "application/pdf") {
+    if (esImagen(tipo)) {
       try {
         phash = await phashDe(bytes);
       } catch {
@@ -262,7 +263,9 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const idioma = idiomaDePedido(request);
     const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
-    const conTope = !deps.revisarTarea && Boolean(contextoDesdeEntorno().claveGroq) && !esPdf(bytes);
+    const entorno = contextoDesdeEntorno();
+    const textual = esEvidenciaTextual({ tipo, bytes });
+    const conTope = !deps.revisarTarea && (textual ? Boolean(entorno.layaUrl) : Boolean(entorno.claveGroq));
     const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
     if (listo) {
       await guardarRevision(deps.almacen, evidencia.id, tareaId, listo);
@@ -402,6 +405,11 @@ function texto(valor: FormDataEntryValue | null): string {
   return typeof valor === "string" ? valor.trim() : "";
 }
 
+function nombreDeArchivo(entrada: Blob): string {
+  if (typeof File !== "undefined" && entrada instanceof File) return entrada.name;
+  return "";
+}
+
 export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
   const olido = tipoPorBytes(bytes);
   if (olido) return olido;
@@ -410,11 +418,15 @@ export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
   if (limpio === "image/jpg" || limpio === "image/pjpeg") return "image/jpeg";
   if (limpio.startsWith("image/")) return limpio;
   if (limpio === "application/pdf") return "application/pdf";
+  if (limpio === "text/html" || limpio === "text/plain" || limpio === "text/markdown") return "text/plain";
   return "application/octet-stream";
 }
 
 function disposicionDe(declarado: string, bytes: Uint8Array): string {
-  return tipoDeFoto(declarado, bytes) === "application/pdf" ? 'inline; filename="invoice.pdf"' : "inline";
+  const tipo = tipoDeFoto(declarado, bytes);
+  if (tipo === "application/pdf") return 'inline; filename="invoice.pdf"';
+  if (tipo === "text/plain") return 'inline; filename="evidencia.txt"';
+  return "inline";
 }
 
 function avisoToken(codigo: string): string {

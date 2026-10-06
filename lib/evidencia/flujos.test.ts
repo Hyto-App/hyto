@@ -74,9 +74,9 @@ test("un trabajo exige cámara, JPEG y frescura; un reembolso acepta PDF y recha
       tarea: { origen: string; codigo: string | null; veredicto: string | null; frase: string; tipoArchivo: string | null };
     };
     assert.equal(revision.tarea.origen, "error");
-    assert.equal(revision.tarea.codigo, "pdf");
+    assert.equal(revision.tarea.codigo, "sin_texto");
     assert.equal(revision.tarea.veredicto, null);
-    assert.match(revision.tarea.frase, /PDF needs a person/);
+    assert.match(revision.tarea.frase, /no readable text/);
     assert.equal(revision.tarea.tipoArchivo, "application/pdf");
     assert.match(revision.foto, /\/foto$/);
 
@@ -88,6 +88,30 @@ test("un trabajo exige cámara, JPEG y frescura; un reembolso acepta PDF y recha
   } finally {
     console.error = previo;
   }
+});
+
+test("un reembolso acepta un txt y un html y no les calcula phash", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  const listo = async () => ({ ...desdeGuion("reembolso", "15"), origen: "scout" as const });
+
+  const txt = new FormData();
+  txt.set("tareaId", "comida");
+  txt.set("foto", new Blob(["Team meal receipt"], { type: "text/plain" }), "nota.txt");
+  assert.equal((await publicarEvidenciaHttp(pedido(txt), { almacen, fotos, actor, revisarTarea: listo })).status, 201);
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.tipoArchivo, "text/plain");
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.phash ?? null, null);
+
+  const html = new FormData();
+  html.set("tareaId", "comida");
+  html.set("foto", new Blob(["<p>Another receipt</p>"], { type: "text/html" }), "nota.html");
+  assert.equal((await publicarEvidenciaHttp(pedido(html), { almacen, fotos, actor, revisarTarea: listo })).status, 201);
+  const guardada = await almacen.ultimaEvidencia("comida");
+  assert.equal(guardada?.tipoArchivo, "text/html");
+  assert.equal(guardada?.phash ?? null, null);
+  assert.equal(guardada?.sha256?.length, 64);
 });
 
 test("una foto cercana deja el veredicto en insuficiente", async () => {

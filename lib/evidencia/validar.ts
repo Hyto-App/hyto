@@ -1,5 +1,5 @@
 import type { TipoEvidencia } from "@/lib/evidencia/tipo";
-import { tipoPorBytes } from "@/lib/evidencia/tipo";
+import { tipoPorBytes, tipoTextoDeclarado } from "@/lib/evidencia/tipo";
 import { texto, type Clave } from "@/lib/ui/diccionario";
 
 /** Rejects a ~30 MB upload. 10 MB is enough for a receipt or a camera photo. */
@@ -36,21 +36,29 @@ export function avisoArchivo(motivo: MotivoArchivo): string {
   return texto("en", CLAVES[motivo]);
 }
 
-type BlobLeible = { size: number; arrayBuffer: () => Promise<ArrayBuffer> };
+type BlobLeible = { size: number; arrayBuffer: () => Promise<ArrayBuffer>; type?: string; name?: string };
 
 /** Size is checked before the bytes are read, so a 30 MB file is refused without decoding it. */
 export async function evaluarArchivo(archivo: BlobLeible, opciones?: { soloJpeg?: boolean }): Promise<ArchivoValido | ArchivoInvalido> {
   if (archivo.size <= 0) return { ok: false, motivo: "vacio" };
   if (archivo.size > MAX_BYTES_ARCHIVO) return { ok: false, motivo: "grande" };
   const bytes = new Uint8Array(await archivo.arrayBuffer());
-  return validarBytes(bytes, opciones);
+  return validarBytes(bytes, { soloJpeg: opciones?.soloJpeg, tipo: archivo.type, nombre: archivo.name });
 }
 
-export function validarBytes(bytes: Uint8Array, opciones?: { soloJpeg?: boolean }): ArchivoValido | ArchivoInvalido {
+export function validarBytes(
+  bytes: Uint8Array,
+  opciones?: { soloJpeg?: boolean; tipo?: string | null; nombre?: string | null },
+): ArchivoValido | ArchivoInvalido {
   if (bytes.byteLength === 0) return { ok: false, motivo: "vacio" };
   if (bytes.byteLength > MAX_BYTES_ARCHIVO) return { ok: false, motivo: "grande" };
   const tipo = tipoPorBytes(bytes);
-  if (!tipo) return { ok: false, motivo: "falso" };
+  if (!tipo) {
+    const textual = tipoTextoDeclarado(opciones?.tipo ?? "", opciones?.nombre ?? "", bytes);
+    if (!textual) return { ok: false, motivo: "falso" };
+    if (opciones?.soloJpeg) return { ok: false, motivo: "tipo" };
+    return { ok: true, tipo: textual, ancho: null, alto: null };
+  }
   if (opciones?.soloJpeg && tipo !== "image/jpeg") return { ok: false, motivo: "tipo" };
   if (tipo === "application/pdf") return { ok: true, tipo, ancho: null, alto: null };
   const medidas = medidasDe(bytes, tipo);

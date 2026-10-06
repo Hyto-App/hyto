@@ -1,7 +1,8 @@
 import { claveDeGemini, claveDeGroq, enProduccion, urlDeLaya } from "@/lib/config/entorno";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
-import { esPdf } from "@/lib/evidencia/tipo";
+import { esEvidenciaTextual } from "@/lib/evidencia/tipo";
+import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
@@ -34,12 +35,6 @@ export type ContextoRevision = {
 
 export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto: ContextoRevision): Promise<ResultadoRevision> {
   if (!foto) return fallar(new FalloRevision("sin_foto", { fuente: "revision", providerMessage: "foto" }));
-  if (foto.tipo === "application/pdf" || esPdf(foto.bytes)) {
-    return fallar(new FalloRevision("pdf", { fuente: "revision", providerMessage: "pdf" }));
-  }
-  const clave = contexto.claveGroq;
-  const claveGemini = contexto.claveGemini?.trim() || null;
-  if (!clave && !claveGemini) return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
   const fetchImpl = contexto.fetchImpl ?? fetch;
   const ahora = contexto.ahora ?? Date.now;
   const repeticion = {
@@ -48,8 +43,14 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     deadline: ahora() + (contexto.presupuestoMs ?? PRESUPUESTO_REVISION_MS),
     pausas: PAUSAS_REINTENTO_MS,
   };
+  const claveGemini = contexto.claveGemini?.trim() || null;
+  if (!esEvidenciaTextual(foto) && !contexto.claveGroq && !claveGemini) {
+    return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
+  }
   try {
-    const descripcion = await describirConReserva(foto, tarea, clave, claveGemini, fetchImpl, repeticion);
+    const descripcion = esEvidenciaTextual(foto)
+      ? await transcribirEvidencia(foto)
+      : await describirConReserva(foto, tarea, contexto.claveGroq, claveGemini, fetchImpl, repeticion);
     const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
@@ -85,7 +86,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;
   } catch (error) {
-    return fallar(error instanceof FalloRevision ? error : falloDeExcepcion(error, "revision", clave));
+    return fallar(error instanceof FalloRevision ? error : falloDeExcepcion(error, "revision", contexto.claveGroq));
   }
 }
 

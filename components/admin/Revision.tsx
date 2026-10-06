@@ -26,6 +26,7 @@ import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { esTipoDocumento } from "@/lib/evidencia/tipo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
@@ -477,11 +478,13 @@ export function Revision({
       </header>
       <div className="hyto-review">
         <figure className="hyto-photo">
-          {foto && tarea.tipoArchivo === "application/pdf" ? (
+          {foto && esTipoDocumento(tarea.tipoArchivo) ? (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
-              <p className="text-sm text-[var(--suave)]">{t("evidencia.invoicePdf")}</p>
+              <p className="text-sm text-[var(--suave)]">
+                {tarea.tipoArchivo === "application/pdf" ? t("evidencia.invoicePdf") : t("evidencia.textFile")}
+              </p>
               <a href={foto} className="hyto-btn-line is-inline px-5" target="_blank" rel="noreferrer">
-                {t("revision.openInvoice")}
+                {tarea.tipoArchivo === "application/pdf" ? t("revision.openInvoice") : t("revision.openFile")}
               </a>
             </div>
           ) : foto ? (
