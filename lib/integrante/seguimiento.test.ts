@@ -4,9 +4,9 @@ import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, LIMITE_SEGUIMIENTO_MS, seguir
 
 const enRevision = { estado: "en revisión", nota: null } as const;
 
-test("polls every 3 s for up to 30 s", () => {
+test("polls every 3 s for up to 60 s", () => {
   assert.equal(INTERVALO_SEGUIMIENTO_MS, 3000);
-  assert.equal(LIMITE_SEGUIMIENTO_MS, 30000);
+  assert.equal(LIMITE_SEGUIMIENTO_MS, 60000);
 });
 
 test("waits only for a sent task without a grade", () => {
@@ -17,10 +17,11 @@ test("waits only for a sent task without a grade", () => {
   assert.equal(esperaRevision({ estado: "pagado", nota: null }), false);
 });
 
-test("stops when the grade arrives, the state changes or 30 s pass", () => {
+test("stops when the grade arrives, the state changes or 60 s pass", () => {
   assert.equal(seguirConsultando(enRevision, enRevision, 3000), true);
   assert.equal(seguirConsultando(enRevision, { estado: "en revisión", nota: 80 }, 3000), false);
   assert.equal(seguirConsultando(enRevision, { estado: "pagado", nota: null }, 3000), false);
   assert.equal(seguirConsultando(enRevision, { estado: "pendiente", nota: null }, 3000), false);
-  assert.equal(seguirConsultando(enRevision, enRevision, 30000), false);
+  assert.equal(seguirConsultando(enRevision, enRevision, 30000), true);
+  assert.equal(seguirConsultando(enRevision, enRevision, 60000), false);
 });
