@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
+import { jpegDePrueba } from "../evidencia/muestras";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 
 if (typeof URL.createObjectURL !== "function") {
@@ -62,7 +63,12 @@ async function elegir(archivo: File) {
   });
   await act(async () => {
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
   });
+}
+
+async function jpegReciente(): Promise<File> {
+  return new File([await jpegDePrueba()], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
 }
 
 test("con cámara en vivo no abre la galería", async () => {
@@ -171,7 +177,7 @@ test("sin getUserMedia el archivo viejo se rechaza y uno recién tomado sigue", 
     assert.match(texto(), /Photos from the gallery are not accepted/);
     assert.equal(document.querySelector('img[alt="Evidence"]'), null);
 
-    await elegir(new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() }));
+    await elegir(await jpegReciente());
     assert.ok(document.querySelector('img[alt="Evidence"]'));
     assert.equal(boton("Send evidence").textContent, "Send evidence");
   } finally {
@@ -214,7 +220,7 @@ async function enviarCaptura(respuestas: Respuestas): Promise<string[]> {
   await act(async () => {
     await new Promise((resolver) => setTimeout(resolver, 30));
   });
-  await elegir(new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() }));
+  await elegir(await jpegReciente());
   assert.ok(document.querySelector('img[alt="Evidence"]'));
   await act(async () => {
     boton("Send evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));

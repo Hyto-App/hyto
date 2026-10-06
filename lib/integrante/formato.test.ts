@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "./formato";
+import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -25,4 +25,11 @@ test("montos y fechas del integrante", () => {
   );
   assert.equal(montoDeTarea({ tipo: "reembolso", monto: "", tope: null }), "");
   assert.equal(acortarDireccion("GABCDE1234567890WXYZ"), "GABCDE…WXYZ");
+});
+
+test("una hora se muestra en Costa Rica (UTC-6), no en UTC-7", () => {
+  const hora = formatearHora("2026-10-06T16:08:00.000Z", "en");
+  assert.match(hora ?? "", /^10:08\sAM$/);
+  assert.equal(hora?.startsWith("9:"), false);
+  assert.equal(formatearHora("no-es-fecha", "en"), null);
 });

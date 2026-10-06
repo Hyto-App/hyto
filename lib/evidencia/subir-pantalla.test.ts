@@ -2,6 +2,7 @@ import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
 import { File as ArchivoNode } from "node:buffer";
 import test from "node:test";
+import sharp from "sharp";
 import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
@@ -95,6 +96,7 @@ async function elegirRecibo(): Promise<void> {
   Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
   await act(async () => {
     entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
   });
 }
 
@@ -114,6 +116,62 @@ async function subirConRespuesta(respuesta: () => Response): Promise<void> {
   assert.match(texto(), /Send/);
   await pulsar("Send evidence");
   await esperar();
+}
+
+test("un jpg vacío, un texto renombrado y una imagen de 1×1 dejan Enviar apagado", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode([], "empty.jpg", { type: "image/jpeg" }));
+    const enviar = botonEnvio();
+    assert.equal(enviar.disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1\./);
+    assert.match(texto(), /empty \(0 bytes\)|está vacío|0 bytes/);
+
+    await soltarEnInput(new ArchivoNode(["not a photo"], "fake_image.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /Renaming a text file|no lo convierte en foto/);
+
+    const minuscula = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    })
+      .jpeg()
+      .toBuffer();
+    await soltarEnInput(new ArchivoNode([minuscula], "tiny.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1×1/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+function botonEnvio(): HTMLButtonElement {
+  const encontrado = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
+  if (!(encontrado instanceof HTMLButtonElement)) throw new Error("Sin botón Send evidence.");
+  return encontrado;
+}
+
+async function soltarEnInput(archivo: ArchivoNode): Promise<void> {
+  const entrada = document.querySelector('input[type="file"]');
+  if (!(entrada instanceof window.HTMLInputElement)) throw new Error("Sin selector de archivo.");
+  Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
+  await act(async () => {
+    entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
+  });
 }
 
 test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent", async () => {
