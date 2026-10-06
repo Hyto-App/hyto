@@ -89,7 +89,7 @@ test("un trabajo exige cámara, JPEG y frescura; un reembolso acepta PDF y recha
     assert.equal(duplicada.status, 200);
     assert.equal((await almacen.ultimaEvidencia("comida"))?.id, idFactura);
     assert.equal((await almacen.veredictoDe(idFactura))?.origen, "error");
-    assert.equal((await almacen.veredictoDe(idFactura))?.choice, "pdf");
+    assert.equal((await almacen.veredictoDe(idFactura))?.choice, "sin_texto");
   } finally {
     console.error = previo;
   }
