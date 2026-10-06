@@ -42,8 +42,10 @@ import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
+import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
 /** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
 type Fase = "inicio" | "correo" | "codigo" | "enlace" | "exito";
@@ -89,10 +91,13 @@ export function Entrar({
   crear = crearAuth as () => Promise<AuthMinimo | null>,
   confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
   esperaMinima = ENVIO_MINIMO_MS,
+  abrirLogin = false,
   atiendeUrl = true,
   politica: cargarPolitica = politicaDeCavos,
 }: {
   demoHabilitado?: boolean;
+  /** Start on the email step instead of the sign up / sign in cards. */
+  abrirLogin?: boolean;
   crear?: () => Promise<AuthMinimo | null>;
   confirmarCodigo?: ConfirmarCodigo;
   /** Shortest time the sending state stays on screen, so it never flashes. */
@@ -114,9 +119,9 @@ export function Entrar({
   const t = useTexto();
   const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
-  const [pedirIngreso, setPedirIngreso] = useState(false);
+  const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
   const [retorno, setRetorno] = useState<string | null>(null);
-  const [fase, setFase] = useState<Fase>("inicio");
+  const [fase, setFase] = useState<Fase>(abrirLogin ? "correo" : "inicio");
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
   const [correo, setCorreo] = useState("");
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
@@ -1318,32 +1323,13 @@ function Escena() {
   );
 }
 
-const POSES: Pose[] = ["rest", "dive", "code", "worry", "win"];
+const ESTADO_MILE: Record<Pose, EstadoAnimado> = { rest: "reposo", dive: "buscando", code: "buscando", worry: "rechazado", win: "lo-tengo" };
 
-/** Mile and the chest. Every pose is loaded once; a state change crossfades them. */
+/** Mile and the chest, animated by code. The status text stays in the aria-live region of the card. */
 function Mile({ pose }: { pose: Pose }) {
   return (
-    <div className={`hyto-login-mile is-${pose}`} aria-hidden="true">
-      <span className="hyto-login-aura" />
-      <div className="hyto-login-cuerpo">
-        {POSES.map((nombre) => (
-          <img
-            key={nombre}
-            src={`/login/mile-${nombre}.svg`}
-            alt=""
-            decoding="async"
-            className={nombre === pose ? "is-on" : ""}
-          />
-        ))}
-      </div>
-      {pose === "win" ? (
-        <span className="hyto-login-chispas">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-      ) : null}
+    <div className={`hyto-login-mile is-${pose}`}>
+      <MileAnimada estado={ESTADO_MILE[pose]} llena tocable />
     </div>
   );
 }

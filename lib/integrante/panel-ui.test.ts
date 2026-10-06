@@ -37,11 +37,11 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     });
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
-    assert.match(texto(), /Add a wallet to see testnet USDC/);
+    assert.match(texto(), /Add a wallet to see your USDC/);
     assert.match(texto(), /Stellar Passport/);
     assert.match(texto(), /participation and achievements in the Stellar ecosystem/);
     const pasaporte = document.querySelector("a[href='https://demo.stellarpassport.xyz/auth/signup']");
-    assert.equal(pasaporte?.textContent, "Open on testnet");
+    assert.equal(pasaporte?.textContent, "Open Stellar Passport");
     assert.equal(pasaporte?.getAttribute("target"), "_blank");
     assert.equal(pasaporte?.getAttribute("rel"), "noreferrer");
     assert.match(texto(), /US\$0/);

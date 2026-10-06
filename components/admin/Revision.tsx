@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
@@ -37,6 +38,8 @@ import {
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
 import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { puntosDeCondicion } from "@/lib/integrante/puntos";
+import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -65,6 +68,9 @@ export function Revision({
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
+  const [hojaPedir, setHojaPedir] = useState(false);
+  const [notaPedir, setNotaPedir] = useState("");
+  const [fallidosPedir, setFallidosPedir] = useState<number[]>([]);
   const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
   const [falloCodigo, setFalloCodigo] = useState<string | null>(null);
 
@@ -84,6 +90,7 @@ export function Revision({
   const [vueltaFondo, setVueltaFondo] = useState(0);
   const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
   const [vueltaPago, setVueltaPago] = useState(0);
+  const [confirmacion, setConfirmacion] = useState<{ clave: "bloquear" | "fondear" | "pagar"; abierto: boolean } | null>(null);
 
   useEffect(() => {
     let viva = true;
@@ -192,18 +199,33 @@ export function Revision({
     },
   });
 
+  function abrirPedir() {
+    setNotaPedir("");
+    setFallidosPedir([]);
+    setHojaPedir(true);
+  }
+
   async function pedirOtra() {
+    if (!tarea) return;
+    const puntos = puntosDeCondicion(tarea.condicion);
+    const cuerpo = cuerpoPedirOtra(notaPedir, fallidosPedir, puntos);
     if (!real) {
+      setHojaPedir(false);
       decidir("pendiente");
       return;
     }
     publicarAviso(null);
-    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, { method: "POST" });
-    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(cuerpo),
+    });
+    const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
     if (!respuesta.ok) {
-      publicarAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
+      publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
       return;
     }
+    setHojaPedir(false);
     setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
   }
 
@@ -402,6 +424,27 @@ export function Revision({
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
   const avisoVisible = aviso ? claro(aviso) : null;
+  const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
+    const cifra = montoDeVista(tarea);
+    const monto = cifra === null ? undefined : cifra.toFixed(2);
+    if (clave === "pagar")
+      return {
+        titulo: t("confirmar.payTitle"),
+        monto,
+        destinatario: tarea.miembro ? { nombre: tarea.miembro } : undefined,
+        detalle: t("confirmar.payDetail"),
+        irreversible: true,
+        confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
+        onConfirmar: () => correr(pasosDesde(reanudar)),
+      };
+    return {
+      titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
+      monto,
+      detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
+      confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
+      onConfirmar: () => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
+    };
+  };
   const etiquetaPaso = (accion: AccionCliente) =>
     accion === "desplegar"
       ? t("pago.settingUp")
@@ -587,9 +630,47 @@ export function Revision({
             ) : null}
 
             {botones.pedirOtra ? (
-              <button type="button" onClick={() => void pedirOtra()} className="hyto-btn-line">
+              <button type="button" onClick={abrirPedir} className="hyto-btn-line">
                 {t("revision.askAnother")}
               </button>
+            ) : null}
+
+            {hojaPedir && tarea && botones.pedirOtra ? (
+              <form
+                className="hyto-tarjeta hyto-pedir"
+                onSubmit={(evento) => {
+                  evento.preventDefault();
+                  void pedirOtra();
+                }}
+              >
+                <h2>{t("revision.whatsMissing")}</h2>
+                <ul>
+                  {puntosDeCondicion(tarea.condicion).map((punto, indice) => (
+                    <li key={`${indice}-${punto}`}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={fallidosPedir.includes(indice)}
+                          onChange={() =>
+                            setFallidosPedir((actual) => (actual.includes(indice) ? actual.filter((item) => item !== indice) : [...actual, indice]))
+                          }
+                        />
+                        <span>{punto}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <label className="hyto-pedir-nota">
+                  {t("revision.messageFor", { name: textoVisible(tarea.miembro, idioma) || t("comunes.unassigned") })}
+                  <textarea maxLength={280} value={notaPedir} onChange={(evento) => setNotaPedir(evento.target.value)} />
+                </label>
+                <div className="hyto-pedir-acciones">
+                  <button type="button" className="hyto-btn-line" onClick={() => setHojaPedir(false)}>
+                    {t("revision.cancelAsk")}
+                  </button>
+                  <BotonPrincipal type="submit">{t("revision.askAnother")}</BotonPrincipal>
+                </div>
+              </form>
             ) : null}
 
             {puedeDesplegar || esperaConfirmacion ? (
@@ -601,7 +682,7 @@ export function Revision({
                   type="button"
                   disabled={ocupado || !puedeDesplegar}
                   aria-busy={ocupado}
-                  onClick={() => void correr(["desplegar", "fondear"])}
+                  onClick={() => setConfirmacion({ clave: "bloquear", abierto: true })}
                 >
                   {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
                 </BotonPrincipal>
@@ -610,7 +691,7 @@ export function Revision({
             {botones.fondear ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
-                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(["fondear"])}>
+                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "fondear", abierto: true })}>
                   {paso === "fondear" ? etiquetaPaso("fondear") : t("pago.finishLocking")}
                 </BotonPrincipal>
               </>
@@ -620,13 +701,20 @@ export function Revision({
                 {fondeado === true ? (
                   <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoDeTarea(tarea) })}</p>
                 ) : null}
-                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => void correr(pasosDesde(reanudar))}>
+                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
                   {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
                 </BotonPrincipal>
               </>
             ) : null}
           </div>
 
+          {confirmacion ? (
+            <ConfirmDialog
+              abierto={confirmacion.abierto}
+              onCerrar={() => setConfirmacion((actual) => (actual ? { ...actual, abierto: false } : actual))}
+              {...datosConfirmacion(confirmacion.clave)}
+            />
+          ) : null}
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
