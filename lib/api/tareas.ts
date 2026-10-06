@@ -73,6 +73,7 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
     ...tareaPublica(tarea),
     nota: visible?.nota ?? null,
     veredicto: visible?.veredicto ?? null,
+    revisionFallida: fila?.origen === "error",
     rechazo,
     rechazada: tarea.estado === "pendiente" && rechazo !== null,
     intentos: await almacen.contarEvidencias(tarea.id),

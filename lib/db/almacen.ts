@@ -47,7 +47,7 @@ export type Almacen = {
   leerEvidencia(id: string): Promise<EvidenciaFila | null>;
   actualizarEvidencia(
     id: string,
-    cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado" | "motivoCopia">>,
+    cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado" | "motivoCopia" | "creadaEn">>,
   ): Promise<void>;
   ultimaEvidencia(tareaId: string): Promise<EvidenciaFila | null>;
   evidenciaPorSha256(sha256: string): Promise<EvidenciaFila | null>;
@@ -61,6 +61,8 @@ export type Almacen = {
   columnasRequisitos(): Promise<boolean>;
   contarEvidencias(tareaId: string): Promise<number>;
   guardarVeredicto(veredicto: VeredictoFila): Promise<void>;
+  /** Drops the row so a re-review is "in progress" again. No row means not reviewed yet. */
+  borrarVeredicto(evidenciaId: string): Promise<void>;
   veredictoDe(evidenciaId: string): Promise<VeredictoFila | null>;
   crearSesion(sesion: SesionFila): Promise<void>;
   leerSesion(token: string): Promise<SesionFila | null>;
