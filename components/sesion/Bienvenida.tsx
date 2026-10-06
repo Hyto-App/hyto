@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useTexto } from "@/components/ui/Idioma";
@@ -8,16 +9,21 @@ import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/inte
 type Props = {
   consultar?: () => Promise<boolean>;
   preparar?: () => Promise<UsdcListo>;
+  /** Optional control shown inside the card, on the kicker row (the "Hide" button on Events). */
+  accion?: ReactNode;
 };
 
-export function Bienvenida({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion() }: Props) {
+export function Bienvenida({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion(), accion }: Props) {
   const demo = useModoDemo();
   const t = useTexto();
 
   return (
     <section className="hyto-welcome" aria-labelledby="hyto-welcome-title">
       <article className="hyto-card hyto-welcome-card">
-        <p className="hyto-welcome-kicker">{t("bienvenida.kicker")}</p>
+        <div className="hyto-welcome-cabeza">
+          <p className="hyto-welcome-kicker">{t("bienvenida.kicker")}</p>
+          {accion ? <div className="hyto-welcome-ocultar">{accion}</div> : null}
+        </div>
         <p id="hyto-welcome-title" className="hyto-title">
           {t("bienvenida.title")}
         </p>

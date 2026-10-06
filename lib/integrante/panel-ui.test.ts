@@ -46,8 +46,8 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.equal(pasaporte?.getAttribute("rel"), "noreferrer");
     assert.match(texto(), /US\$0/);
     assert.equal(texto().includes("Demo sample"), false);
-    assert.equal(document.querySelectorAll(".hyto-badge.is-on").length, 0);
-    assert.equal(document.querySelectorAll(".hyto-badge").length, 6);
+    assert.equal(document.querySelectorAll(".hyto-logro.is-on").length, 0);
+    assert.equal(document.querySelectorAll(".hyto-logro").length, 6);
   } finally {
     globalThis.fetch = original;
     await desmontar();

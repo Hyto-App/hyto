@@ -821,9 +821,18 @@ a {
   color: var(--suave);
 }
 
+/* Task type toggle on Create event. A label that does not fit drops to its own row whole
+   instead of breaking mid-word ("Reimburseme / nt"). */
+.hyto-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .hyto-opcion {
   box-sizing: border-box;
-  width: 100%;
+  flex: 1 1 0;
+  min-width: fit-content;
   max-width: 100%;
   min-height: 48px;
   height: auto;
@@ -1430,7 +1439,8 @@ a {
     display: contents;
   }
 
-  .hyto-nav-escritorio,
+  /* Compound selector: the later `.hyto-nav { display: flex }` must not bring the desktop nav back. */
+  .hyto-nav.hyto-nav-escritorio,
   .hyto-foot-escritorio {
     display: none;
   }
@@ -1616,7 +1626,8 @@ a {
     grid-template-columns: 256px minmax(0, 1fr);
   }
 
-  .hyto-nav-movil,
+  /* Compound selector: the later `.hyto-nav { display: flex }` must not bring the mobile nav back. */
+  .hyto-nav.hyto-nav-movil,
   .hyto-solo-movil {
     display: none;
   }
@@ -1787,13 +1798,16 @@ a {
   height: 34px;
 }
 
-.hyto-badge {
+/* Milestone card on Account. Not `.hyto-badge`: that name is the one-line status pill (nowrap, 26px tall). */
+.hyto-logro {
+  min-width: 0;
   border-radius: 14px;
   border: 1px solid var(--linea);
   padding: 14px;
+  overflow-wrap: break-word;
 }
 
-.hyto-badge.is-on {
+.hyto-logro.is-on {
   border-color: color-mix(in srgb, var(--acento) 75%, var(--borde));
   background: var(--pagado-fondo);
 }
@@ -4062,11 +4076,19 @@ a {
   }
 }
 
-/* Welcome card that can be hidden */
+/* Welcome card that can be hidden: the Hide button sits inside the card, on the kicker row. */
+.hyto-welcome-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .hyto-welcome-ocultar {
   display: flex;
+  flex: none;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin: -8px -12px -8px 0;
 }
 
 .hyto-welcome-ocultar button {

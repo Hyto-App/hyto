@@ -335,7 +335,7 @@ function Insignias({ insignias }: { insignias: InsigniaOrgullo[] }) {
         {insignias.map((insignia) => {
           const nombres = INSIGNIA[insignia.id];
           return (
-          <li key={insignia.id} className={insignia.obtenida ? "hyto-badge is-on" : "hyto-badge"}>
+          <li key={insignia.id} className={insignia.obtenida ? "hyto-logro is-on" : "hyto-logro"}>
             <p className="font-medium">{nombres ? t(nombres.titulo) : insignia.titulo}</p>
             <p className="mt-1 text-sm text-[var(--suave)]">{nombres ? t(nombres.detalle) : insignia.detalle}</p>
             <p className={`mt-3 text-xs font-semibold ${insignia.obtenida ? "text-[var(--acento-texto)]" : "text-[var(--suave)]"}`}>

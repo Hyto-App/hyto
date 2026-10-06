@@ -174,7 +174,7 @@ export function CrearProyecto() {
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-sm text-[var(--suave)]">{t("eventos.type")}</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t("eventos.type")}>
+                    <div className="hyto-opciones mt-2" role="group" aria-label={t("eventos.type")}>
                       <button
                         type="button"
                         aria-pressed={fila.tipo === "trabajo"}
