@@ -402,3 +402,15 @@ function jwt(payload: Record<string, unknown>): string {
   const parte = (valor: Record<string, unknown>) => Buffer.from(JSON.stringify(valor)).toString("base64url");
   return `${parte({ alg: "none" })}.${parte(payload)}.x`;
 }
+
+test("con la recuperación de Cavos (enclave), un navegador sin la llave pide entrar otra vez", async () => {
+  const { AVISO_SIN_RESPALDO } = await import("@/lib/auth/errores");
+  assert.equal(
+    traducirFirma(new Error("kit/stellar: this wallet is protected by recovery. Sign in with Google, Apple or an email link to continue.")).message,
+    AVISO_SESION_CAVOS,
+  );
+  assert.equal(
+    traducirFirma(new Error("kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.")).message,
+    AVISO_SIN_RESPALDO,
+  );
+});
