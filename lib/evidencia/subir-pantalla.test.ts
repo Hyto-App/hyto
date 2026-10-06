@@ -164,7 +164,7 @@ function botonEnvio(): HTMLButtonElement {
   return encontrado;
 }
 
-async function soltarEnInput(archivo: File): Promise<void> {
+async function soltarEnInput(archivo: ArchivoNode): Promise<void> {
   const entrada = document.querySelector('input[type="file"]');
   if (!(entrada instanceof window.HTMLInputElement)) throw new Error("Sin selector de archivo.");
   Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
