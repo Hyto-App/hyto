@@ -103,6 +103,7 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?:
     revision: revisionPublica(tarea, fila),
     etapa: linea.etapa,
     enviadaEn: linea.enviadaEn,
+    tipoArchivo: evidencia?.tipoArchivo ?? null,
   };
 }
 

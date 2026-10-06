@@ -171,6 +171,16 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
+    // Same bytes are a duplicate before any image decode or AI review, so the 409 does not wait on Mile.
+    if (!(await deps.almacen.listaParaAntifraude())) {
+      return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
+    }
+    const sha256 = sha256De(bytes);
+    const previa = await deps.almacen.evidenciaPorSha256(sha256);
+    const veredictoPrevio = previa && previa.tareaId === tareaId ? await deps.almacen.veredictoDe(previa.id) : null;
+    const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
+    if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
+
     const validado = validarBytes(bytes, { tipo: foto.type, nombre: nombreDeArchivo(foto) });
     if (!validado.ok) {
       const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
@@ -200,18 +210,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       frescura = fresco.frescura;
     }
 
-    if (!(await deps.almacen.listaParaAntifraude())) {
-      return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
-    }
-
-    // The same bytes on another task, or on this task after a real grade, stay a duplicate.
+    // The same bytes on another task, or on this task after a real grade, were rejected above.
     // The same bytes on this task with no row, or with an error row, are a retry: run the review again.
-    const sha256 = sha256De(bytes);
-    const previa = await deps.almacen.evidenciaPorSha256(sha256);
-    const veredictoPrevio = previa && previa.tareaId === tareaId ? await deps.almacen.veredictoDe(previa.id) : null;
-    const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
-    if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
-
     const mileActivo = mileRequisitosActivo() && leerRequisitos(tarea.requisitos).length > 0;
     let fotosPrevias = 0;
     if (mileActivo) {

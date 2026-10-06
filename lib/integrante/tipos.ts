@@ -65,8 +65,10 @@ export type Tarea = {
   requisitos?: RequisitoRevision[];
   /** Confirmed reimbursement amount, when the API sends one. */
   montoPagado?: string | null;
-  /** ISO-8601 instant the latest photo was sent (`enviada_en`). */
+  /** ISO-8601 instant the latest file was sent (`enviada_en`). */
   enviadaEn?: string | null;
+  /** MIME type of the latest file, when the task list sends it. */
+  tipoArchivo?: string | null;
 };
 
 export type Evidencia = {

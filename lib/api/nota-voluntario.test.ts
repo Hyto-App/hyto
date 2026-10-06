@@ -97,6 +97,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "revision",
     "revisionFallida",
     "tipo",
+    "tipoArchivo",
     "titulo",
     "tope",
     "veredicto",

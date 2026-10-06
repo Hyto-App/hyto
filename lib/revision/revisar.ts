@@ -8,7 +8,8 @@ import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type Re
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
 import { preguntarLaya } from "./laya";
-import { contextoParaLaya, montoSinUsd } from "./lectura";
+import { montoSinUsd } from "./lectura";
+import { estructurarTranscripcion, textoParaLaya } from "./texto-estructurado";
 import { preguntarRequisitos } from "./requisitos-laya";
 import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
 import { decidirRequisitos, leerRequisitos, rechazoDeDecision, serializarRechazo } from "./requisitos";
@@ -48,10 +49,13 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
   }
   try {
-    const descripcion = esEvidenciaTextual(foto)
+    const cruda = esEvidenciaTextual(foto)
       ? await transcribirEvidencia(foto)
       : await describirConReserva(foto, tarea, contexto.claveGroq, claveGemini, fetchImpl, repeticion);
-    const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
+    const descripcion = esEvidenciaTextual(foto)
+      ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
+      : cruda;
+    const paraLaya = textoParaLaya(descripcion);
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
       if (contexto.produccion ?? enProduccion()) return fallar(new FalloRevision("sin_laya", { fuente: "laya", providerMessage: "LAYA_URL" }));

@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { proyectosVisibles, puedeVerTarea, visorSesion, type Visor } from "@/lib/api/alcance";
 import type { Almacen } from "@/lib/db/almacen";
@@ -7,9 +8,27 @@ import { sesionEsDemo } from "./demo";
 import { urlSignin } from "./retorno";
 import { leerSesionActual } from "./vista";
 
+/** A prefetch often arrives without the session cookie. Redirecting it would send the person to sign-in. */
+export async function esPrefetch(): Promise<boolean> {
+  const pedido = await headers();
+  const marcas = [
+    pedido.get("next-router-prefetch"),
+    pedido.get("next-router-segment-prefetch"),
+    pedido.get("purpose"),
+    pedido.get("sec-purpose"),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return marcas.split(/\s+/).some((marca) => marca === "1" || marca.includes("prefetch"));
+}
+
 export async function exigirPagina(retorno?: string): Promise<SesionFila> {
   const sesion = await leerSesionActual();
-  if (!sesion) redirect(urlSignin(retorno));
+  if (!sesion) {
+    if (await esPrefetch()) notFound();
+    redirect(urlSignin(retorno));
+  }
   return sesion;
 }
 

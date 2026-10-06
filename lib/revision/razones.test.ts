@@ -146,13 +146,17 @@ test("Work unfinished y Not done at the requested place", () => {
 });
 
 test("Receipt amount missing, Receipt date missing, No item named y Amount over the cap", () => {
-  const sinMonto = etiquetasDe(factura({ f2: false }, { monto: "12.40", fecha: "2026-09-27", tope: "15" }));
+  const sinMonto = etiquetasDe(factura({ f2: false }, { monto: null, fecha: "2026-09-27", tope: "15" }));
   assert.equal(sinMonto.find((etiqueta) => etiqueta.id === "amount_missing")?.texto, "Receipt amount missing");
   assert.deepEqual(sinMonto.find((etiqueta) => etiqueta.id === "amount_missing")?.preguntas, ["f2"]);
   assert.equal(sinMonto.some((etiqueta) => etiqueta.id === "amount_date"), false);
-  const sinFecha = etiquetasDe(factura({ f3: false }, { monto: "12.40", fecha: "2026-09-27", tope: "15" }));
+  const conMonto = etiquetasDe(factura({ f2: false }, { monto: "12.40", fecha: "2026-09-27", tope: "15" }));
+  assert.equal(conMonto.some((etiqueta) => etiqueta.id === "amount_missing"), false);
+  const sinFecha = etiquetasDe(factura({ f3: false }, { monto: "12.40", fecha: null, tope: "15" }));
   assert.equal(sinFecha.find((etiqueta) => etiqueta.id === "date_missing")?.texto, "Receipt date missing");
   assert.deepEqual(sinFecha.find((etiqueta) => etiqueta.id === "date_missing")?.preguntas, ["f3"]);
+  const conFecha = etiquetasDe(factura({ f3: false }, { monto: "12.40", fecha: "2026-09-27", tope: "15" }));
+  assert.equal(conFecha.some((etiqueta) => etiqueta.id === "date_missing"), false);
   const guardado = etiquetasDe(factura({}, { monto: null, fecha: null, tope: "15" }));
   assert.deepEqual(guardado.find((etiqueta) => etiqueta.id === "amount_missing")?.preguntas, []);
   assert.equal(guardado.find((etiqueta) => etiqueta.id === "amount_missing")?.explicacion.includes("saved"), true);

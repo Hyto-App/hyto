@@ -16,7 +16,7 @@ import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
-import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado } from "@/lib/evidencia/tipo";
+import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
 import { formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
@@ -426,9 +426,11 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const montoVisible = montoDeTarea(tarea);
   const calificacion = notaDeTarea(tarea);
   const insuficiente = calificacion?.veredicto === "insuficiente";
+  const parcial = calificacion?.veredicto === "parcial";
   const mileSinTerminar = reintentoMile;
   const titulo = textoVisible(tarea.titulo, idioma);
   const esDocumento = foto ? esDocumentoDeclarado(foto.type, nombreArchivo ?? "") : false;
+  const documental = esDocumento || esMimeDocumental(tarea.tipoArchivo);
   const etiquetaDocumento =
     nombreArchivo ?? (foto?.type === "application/pdf" ? t("evidencia.invoicePdf") : t("evidencia.textFile"));
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
@@ -491,14 +493,14 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           <MileAnimada estado="buscando" tamano={140} />
           <div>
             <span className="hyto-badge hyto-badge-rev">{t("evidencia.checking")}</span>
-            <h2>{t("evidencia.mileChecking")}</h2>
+            <h2>{t(documental ? "evidencia.mileCheckingFile" : "evidencia.mileChecking")}</h2>
             <p>{t("evidencia.fewSeconds")}</p>
           </div>
         </section>
         {vistaFoto ? (
           <div className="hyto-visor hyto-visor-chico">
             {vistaFoto}
-            <span className="hyto-visor-pill">{t("evidencia.onePhoto")}</span>
+            <span className="hyto-visor-pill">{documental ? etiquetaDocumento : t("evidencia.onePhoto")}</span>
           </div>
         ) : null}
         <Checklist condicion={tarea.condicion} revisando />
@@ -530,15 +532,19 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                 ? t("evidencia.sentAction")
                 : insuficiente
                   ? nombre
-                    ? t("evidencia.notEnoughName", { name: nombre })
-                    : t("evidencia.notEnough")
-                  : nombre
-                    ? t("evidencia.greatJobName", { name: nombre })
-                    : t("evidencia.greatJob")}
+                    ? t(documental ? "evidencia.notEnoughNameFile" : "evidencia.notEnoughName", { name: nombre })
+                    : t(documental ? "evidencia.notEnoughFile" : "evidencia.notEnough")
+                  : parcial
+                    ? nombre
+                      ? t("evidencia.partialName", { name: nombre })
+                      : t("evidencia.partial")
+                    : nombre
+                      ? t(documental ? "evidencia.greatJobNameFile" : "evidencia.greatJobName", { name: nombre })
+                      : t(documental ? "evidencia.greatJobFile" : "evidencia.greatJob")}
           </h1>
           {mileSinTerminar ? (
             <p role="status" className="hyto-enviada-aviso">
-              {t("evidencia.mileRetry")}
+              {t(documental ? "evidencia.mileRetryFile" : "evidencia.mileRetry")}
             </p>
           ) : avisoEnvio ? (
             <p role="alert" className="hyto-enviada-aviso">
@@ -552,7 +558,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {t("evidencia.reachedOrganizer")}
             </p>
           ) : (
-            <p className="hyto-tarea-meta">{t("evidencia.greatJobSub")}</p>
+            <p className="hyto-tarea-meta">{t(parcial ? "evidencia.partialSub" : "evidencia.greatJobSub")}</p>
           )}
         </header>
         <article className="hyto-tarjeta hyto-resumen">
@@ -565,7 +571,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                 {hora
                   ? nombreEvento
                     ? t("evidencia.sentAt", { event: textoVisible(nombreEvento, idioma), time: hora })
-                    : t("evidencia.photoSentAt", { time: hora })
+                    : t(documental ? "evidencia.fileSentAt" : "evidencia.photoSentAt", { time: hora })
                   : meta}
               </p>
             ) : null}
@@ -584,6 +590,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           revisionCerrada={esperaAgotada || !!avisoEnvio}
           mileSinTerminar={mileSinTerminar}
           monto={montoVisible}
+          archivo={documental}
         />
         <div className="hyto-enviada-acciones">
           {mileSinTerminar ? (

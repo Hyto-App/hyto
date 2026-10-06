@@ -113,6 +113,7 @@ function normalizarTarea(valor: unknown): Tarea | null {
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
     revisionFallida: crudo.revisionFallida === true,
+    tipoArchivo: texto(crudo.tipoArchivo),
     evento: texto(crudo.evento),
     notas: notasCliente(crudo.notas),
     ...leerCamposRevision(crudo, estado),

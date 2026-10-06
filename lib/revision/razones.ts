@@ -330,13 +330,46 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
  */
 function sinContradicciones(etiquetas: EtiquetaNota[], entrada: EntradaRazones): EtiquetaNota[] {
   const ids = new Set(etiquetas.map((etiqueta) => etiqueta.id));
-  const items = (entrada.lectura?.articulos ?? []).some((item) => item.trim().length > 0);
+  const items = itemsPresentes(entrada);
   const coincide = ids.has("matches");
+  const monto = montoPresente(entrada);
+  const fecha = fechaPresente(entrada);
+  const completo = detalleCompleto(entrada, monto, fecha, items);
   return etiquetas.filter((etiqueta) => {
     if (etiqueta.id === "no_item" && items) return false;
-    if (coincide && (etiqueta.id === "part_missing" || etiqueta.id === "none_shown")) return false;
+    if (etiqueta.id === "amount_missing" && monto) return false;
+    if (etiqueta.id === "date_missing" && fecha) return false;
+    if (etiqueta.id === "low_detail" && completo) return false;
+    if (coincide && (etiqueta.id === "part_missing" || etiqueta.id === "none_shown" || (etiqueta.id === "amount_missing" && monto))) return false;
     return true;
   });
+}
+
+function montoPresente(entrada: EntradaRazones): boolean {
+  if (centavos(entrada.monto) > 0) return true;
+  if (entrada.lectura?.montoUsd && centavos(entrada.lectura.montoUsd) > 0) return true;
+  if (entrada.lectura?.montoOriginal && /\d/.test(entrada.lectura.montoOriginal)) return true;
+  return /\b(?:total|importe|usd|us\$)\b[^\n]{0,40}\d/i.test(entrada.descripcion);
+}
+
+function fechaPresente(entrada: EntradaRazones): boolean {
+  if (entrada.fecha?.trim()) return true;
+  if (entrada.lectura?.fecha) return true;
+  return /(?:fecha|date)\s*:?\s*\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}/i.test(entrada.descripcion);
+}
+
+function itemsPresentes(entrada: EntradaRazones): boolean {
+  return (entrada.lectura?.articulos ?? []).some((item) => item.trim().length > 0);
+}
+
+/** Notes that already name the receipt are not "low detail", even if two answers were unsure. */
+function detalleCompleto(entrada: EntradaRazones, monto: boolean, fecha: boolean, items: boolean): boolean {
+  if (entrada.lectura?.legible === false || BORROSO.test(entrada.descripcion)) return false;
+  const notas = `${entrada.descripcion}\n${entrada.lectura?.textoCompleto ?? ""}`.trim();
+  if (notas.length < 40) return false;
+  const reembolso = entrada.clase === "factura" || entrada.tipo === "reembolso";
+  if (!reembolso) return notas.length >= 160;
+  return monto && fecha && (items || notas.length >= 80);
 }
 
 /** The reason shown next to the percentage. Tags are sorted, so a problem comes before a warning and a warning before a good sign. */

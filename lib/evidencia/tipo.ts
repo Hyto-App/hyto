@@ -107,6 +107,12 @@ export function esEvidenciaTextual(foto: { tipo: string; bytes: Uint8Array }, no
   return claseTextual(foto.tipo, foto.bytes, nombre) !== null;
 }
 
+/** A stored type that is a PDF or a text file, with no bytes to sniff. */
+export function esMimeDocumental(tipo: string | null | undefined): boolean {
+  const mime = (tipo ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+  return mime === "application/pdf" || mime === "text/html" || mime === "text/plain" || mime === "text/markdown";
+}
+
 export function esPdfDeclarado(tipo: string, bytes: Uint8Array): boolean {
   return mimeDe(tipo) === "application/pdf" || esPdf(bytes);
 }

@@ -11,6 +11,7 @@ import {
 import { noulCerca, probabilidadesCerca } from "./margen";
 import { motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
+import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -111,10 +112,24 @@ export function esReciboEscrito(texto: string): boolean {
   return /Evidence type:\s*a receipt or an invoice\b/i.test(texto);
 }
 
-/** Items listed in the reading are named, even when Laya answered g3 with no. */
-export function corregirFactura(respuestas: RespuestasFactura, texto: string): RespuestasFactura {
-  if (respuestas.g3 || !itemsNombrados(texto)) return respuestas;
-  return { ...respuestas, g3: true };
+/**
+ * The notes already name an amount, a date, or an item when Laya said they were missing.
+ * A date that matches the request, with an amount, is not "not reasonable".
+ */
+export function corregirFactura(respuestas: RespuestasFactura, texto: string, condicion = ""): RespuestasFactura {
+  let siguiente = respuestas;
+  if (!siguiente.f2 && montoEscrito(texto)) siguiente = { ...siguiente, f2: true };
+  if (!siguiente.f3 && fechaEscrita(texto)) siguiente = { ...siguiente, f3: true };
+  if (!siguiente.g3 && itemsNombrados(texto)) siguiente = { ...siguiente, g3: true };
+  if (
+    !siguiente.g2 &&
+    siguiente.f1 === "coincide_con_lo_pedido" &&
+    montoEscrito(texto) &&
+    fechaCoincideConPedido(texto, condicion)
+  ) {
+    siguiente = { ...siguiente, g2: true };
+  }
+  return siguiente;
 }
 
 function itemsNombrados(texto: string): boolean {
@@ -190,7 +205,7 @@ export async function preguntarLaya(
   const json = await enviar(base, texto, pedido, preguntasFactura(pedido), fetchImpl, signal, clave);
   const leidas = leerFactura(json);
   if (!leidas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
-  const respuestas = corregirFactura(leidas, texto);
+  const respuestas = corregirFactura(leidas, texto, pedido);
   return {
     ...senalesDeFactura(respuestas),
     detalle: escribirSnapshot({

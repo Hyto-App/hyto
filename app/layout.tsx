@@ -5,6 +5,8 @@ import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
