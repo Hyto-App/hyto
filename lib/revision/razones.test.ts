@@ -11,9 +11,9 @@ test("cada etiqueta del ejemplo sale de respuestas que la sostienen", () => {
   const stand = ids(etiquetasEjemplo("stand"));
   assert.deepEqual(stand, ["matches", "finished"]);
   const registro = etiquetasEjemplo("registro");
-  assert.deepEqual(ids(registro), ["part_missing", "unfinished", "matches"]);
+  assert.deepEqual(ids(registro), ["unfinished", "matches"]);
   assert.equal(registro[0]?.severidad, "problem");
-  assert.equal(registro[0]?.preguntas.includes("v4"), true);
+  assert.equal(registro.some((etiqueta) => etiqueta.id === "part_missing"), false);
   assert.equal(registro.find((etiqueta) => etiqueta.id === "photo_unclear"), undefined);
   const comida = ids(etiquetasEjemplo("comida"));
   assert.deepEqual(comida, ["matches", "amount_date"]);
@@ -125,12 +125,12 @@ test("un trabajo no se marca como selfie aunque la palabra aparezca", () => {
 });
 
 test("Part of the request missing y Requested parts are missing", () => {
-  const media = etiquetasDe(entrada({ trabajo: { ...trabajo(), v2: 1 } }));
+  const media = etiquetasDe(entrada({ trabajo: { ...trabajo(), v1: "no_se_puede_saber", v2: 1 } }));
   const parte = media.find((etiqueta) => etiqueta.id === "part_missing");
   assert.equal(parte?.texto, "Part of the request missing");
   assert.equal(parte?.severidad, "warning");
   assert.deepEqual(parte?.preguntas, ["v2"]);
-  const ninguna = etiquetasDe(entrada({ trabajo: { ...trabajo(), v2: 0, v4: true } }));
+  const ninguna = etiquetasDe(entrada({ trabajo: { ...trabajo(), v1: "no_se_puede_saber", v2: 0, v4: true } }));
   assert.equal(ninguna.find((etiqueta) => etiqueta.id === "none_shown")?.severidad, "problem");
   assert.equal(ninguna.find((etiqueta) => etiqueta.id === "part_missing")?.severidad, "problem");
   assert.deepEqual(ninguna.find((etiqueta) => etiqueta.id === "part_missing")?.preguntas, ["v4"]);
@@ -158,6 +158,27 @@ test("Receipt amount missing, Receipt date missing, No item named y Amount over 
   assert.equal(guardado.find((etiqueta) => etiqueta.id === "amount_missing")?.explicacion.includes("saved"), true);
   const item = etiquetasDe(factura({ g3: false }));
   assert.equal(item.find((etiqueta) => etiqueta.id === "no_item")?.texto, "No item named");
+  const conItems = etiquetasDe({
+    ...factura({ g3: false, f4: 1 }),
+    lectura: {
+      tipo: "recibo",
+      pais: "CR",
+      moneda: "CRC",
+      montoOriginal: "₡1.000",
+      montoUsd: null,
+      tasa: null,
+      fecha: null,
+      fechaImpresa: null,
+      comercio: "Super",
+      articulos: ["Arroz", "Huevos"],
+      textoCompleto: "A receipt listing Arroz and Huevos.",
+      legible: true,
+      faltantes: [],
+    },
+  });
+  assert.equal(conItems.some((etiqueta) => etiqueta.id === "no_item"), false);
+  assert.equal(conItems.some((etiqueta) => etiqueta.id === "matches"), true);
+  assert.equal(conItems.some((etiqueta) => etiqueta.id === "part_missing"), false);
   const tope = etiquetasDe(factura({}, { monto: "20", fecha: "2026-09-27", tope: "15" }));
   assert.equal(tope.find((etiqueta) => etiqueta.id === "over_cap")?.texto, "Amount over the cap");
   assert.deepEqual(tope.find((etiqueta) => etiqueta.id === "over_cap")?.preguntas, ["tope"]);

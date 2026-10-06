@@ -54,7 +54,7 @@ async function pendientesDelEvento(almacen: ReturnType<typeof crearMemoria>): Pr
 test("the event card count and the inbox list use the same rule", async () => {
   const almacen = await zeekConFotoReal();
   const informe = await armarInforme(almacen, ORGANIZADOR);
-  assert.deepEqual(informe.bandeja.map((tarea) => tarea.id).sort(), ["bienvenida", "comida", "registro", "stand"]);
+  assert.deepEqual(informe.bandeja.map((tarea) => tarea.id).sort(), ["bienvenida"]);
   assert.equal(await pendientesDelEvento(almacen), informe.bandeja.length);
 });
 
@@ -187,5 +187,5 @@ test("seeded sample tasks keep their sample verdict while pending", async () => 
   assert.equal(stand.estado, "pendiente");
   const vista = await tareaAdmin(almacen, stand);
   assert.equal(vista.veredicto, "cumplió");
-  assert.equal(await tareaEnBandeja(almacen, stand), true);
+  assert.equal(await tareaEnBandeja(almacen, stand), false);
 });

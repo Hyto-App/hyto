@@ -45,6 +45,10 @@ export type Tarea = {
   dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
+  /** Event name from the task list, so the subtitle does not wait on a second request. */
+  evento?: string | null;
+  /** Reviewer notes. The raw model text is not included. */
+  notas?: { id: string; texto: string; explicacion: string; severidad: "good" | "warning" | "problem"; preguntas: string[] }[];
   /** Deadline. Optional until the backend sends it (spec §9); only shown when present. */
   venceEn?: string | null;
   /** True only while the task is still pending and the review sent it back. */

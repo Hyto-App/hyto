@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import sharp from "sharp";
 import { publicarEvidenciaHttp } from "@/lib/api/evidencias";
 import { leerRevisionHttp } from "@/lib/api/revision";
 import { crearFotosMemoria } from "@/lib/blob/fotos";
@@ -83,8 +84,9 @@ test("un trabajo exige cámara, JPEG y frescura; un reembolso acepta PDF y recha
     const otra = new FormData();
     otra.set("tareaId", "comida");
     otra.set("foto", new Blob([PDF_MINIMO], { type: "application/pdf" }), "factura.pdf");
-    const duplicada = await publicarEvidenciaHttp(pedido(otra), { almacen, fotos, actor });
-    assert.equal(duplicada.status, 409);
+    const reintento = await publicarEvidenciaHttp(pedido(otra), { almacen, fotos, actor });
+    assert.equal(reintento.status, 201);
+    assert.equal((await almacen.veredictoDe((await almacen.ultimaEvidencia("comida"))?.id ?? ""))?.origen, "error");
   } finally {
     console.error = previo;
   }
@@ -114,7 +116,7 @@ test("un reembolso acepta un txt y un html y no les calcula phash", async () => 
   assert.equal(guardada?.sha256?.length, 64);
 });
 
-test("una foto cercana deja el veredicto en insuficiente", async () => {
+test("un recibo con el mismo layout en otra tarea no es copia; el mismo archivo sí", async () => {
   reiniciarTokensEvidencia();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -145,9 +147,101 @@ test("una foto cercana deja el veredicto en insuficiente", async () => {
   });
   assert.equal(creada.status, 201);
   const evidencia = await almacen.ultimaEvidencia("registro");
+  assert.equal(evidencia?.motivoCopia ?? null, null);
+  assert.equal((await almacen.veredictoDe(evidencia?.id ?? ""))?.veredicto, "cumplió");
+
+  const mismo = new FormData();
+  mismo.set("tareaId", "registro");
+  mismo.set("token", tokenDePrueba("voluntario-2", "registro"));
+  mismo.set("capturadaEn", new Date().toISOString());
+  mismo.set("foto", new Blob([primero], { type: "image/jpeg" }), "evidencia.jpg");
+  const repetida = await publicarEvidenciaHttp(pedido(mismo), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+    revisarTarea: async () => cumplio(),
+  });
+  assert.equal(repetida.status, 409);
+});
+
+test("el mismo archivo en la misma tarea se vuelve a revisar si Mile no terminó", async () => {
+  reiniciarTokensEvidencia();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const jpeg = await jpegDePrueba();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  let veces = 0;
+  const subir = () => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+    cuerpo.set("capturadaEn", new Date().toISOString());
+    cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+    return publicarEvidenciaHttp(pedido(cuerpo), {
+      almacen,
+      fotos,
+      actor,
+      revisarTarea: async () => {
+        veces += 1;
+        if (veces === 1) return { ...cumplio(), origen: "error" as const, veredicto: "insuficiente" as const, score: "error" };
+        return cumplio();
+      },
+    });
+  };
+  assert.equal((await subir()).status, 201);
+  const primera = await almacen.ultimaEvidencia("stand");
+  assert.equal((await almacen.veredictoDe(primera?.id ?? ""))?.origen, "error");
+  const guardadas = await almacen.contarEvidencias("stand");
+  assert.equal((await subir()).status, 201);
+  assert.equal(await almacen.contarEvidencias("stand"), guardadas);
+  assert.equal((await almacen.ultimaEvidencia("stand"))?.id, primera?.id);
+  assert.equal((await almacen.veredictoDe(primera?.id ?? ""))?.veredicto, "cumplió");
+  assert.equal((await subir()).status, 409);
+});
+
+test("una foto casi igual en la misma tarea es copia; un layout parecido en otra no", async () => {
+  reiniciarTokensEvidencia();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const primero = await jpegDePrueba();
+  const segundo = await jpegDistinto();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  const cuerpo = new FormData();
+  cuerpo.set("tareaId", "stand");
+  cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+  cuerpo.set("capturadaEn", new Date().toISOString());
+  cuerpo.set("foto", new Blob([primero], { type: "image/jpeg" }), "evidencia.jpg");
+  assert.equal((await publicarEvidenciaHttp(pedido(cuerpo), { almacen, fotos, actor, revisarTarea: async () => cumplio() })).status, 201);
+  const previa = await almacen.ultimaEvidencia("stand");
+  assert.ok(previa);
+  const hashSegundo = await phashDe(segundo);
+  previa.phash = hashSegundo;
+
+  const retoma = new FormData();
+  retoma.set("tareaId", "stand");
+  retoma.set("token", tokenDePrueba("voluntario-1", "stand"));
+  retoma.set("capturadaEn", new Date().toISOString());
+  retoma.set("foto", new Blob([segundo], { type: "image/jpeg" }), "evidencia.jpg");
+  const creada = await publicarEvidenciaHttp(pedido(retoma), { almacen, fotos, actor, revisarTarea: async () => cumplio() });
+  assert.equal(creada.status, 201);
+  const evidencia = await almacen.ultimaEvidencia("stand");
   assert.equal(evidencia?.motivoCopia, MOTIVO_COPIA);
   assert.equal((await almacen.veredictoDe(evidencia?.id ?? ""))?.veredicto, "insuficiente");
-  assert.match((await almacen.veredictoDe(evidencia?.id ?? ""))?.frase ?? "", /earlier submission/);
+
+  const rojo = new Uint8Array(await sharp({
+    create: { width: 16, height: 16, channels: 3, background: { r: 200, g: 20, b: 20 } },
+  }).jpeg().toBuffer());
+  const fila = await almacen.ultimaEvidencia("stand");
+  assert.ok(fila);
+  fila.phash = await phashDe(rojo);
+  const recibo = new FormData();
+  recibo.set("tareaId", "comida");
+  recibo.set("foto", new Blob([rojo], { type: "image/jpeg" }), "recibo.jpg");
+  const factura = await publicarEvidenciaHttp(pedido(recibo), { almacen, fotos, actor, revisarTarea: async () => cumplio() });
+  assert.equal(factura.status, 201);
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.motivoCopia ?? null, null);
 });
 
 test("sin la migración 0005 no se guarda el archivo y la lectura sigue", async () => {

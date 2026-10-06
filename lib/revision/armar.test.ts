@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { armarVeredicto, cerrar, desdeGuion, fraseDe, guionFijo, limitarNotaReembolso, motivosReembolso } from "./armar";
+import { armarVeredicto, cerrar, desdeGuion, fraseConNota, fraseDe, guionFijo, limitarNotaReembolso, motivosReembolso } from "./armar";
 import { TOPE_FALTA_SERIA, TOPE_NOTA_REEMBOLSO } from "./pesos";
 
 test("el guion de un trabajo queda en 65 por ciento", () => {
@@ -124,4 +124,10 @@ test("g2 falso no pasa de 79 y la falta de fecha tampoco", () => {
 test("la frase muestra el porcentaje", () => {
   const guion = guionFijo("trabajo");
   assert.match(fraseDe(guion.texto, guion), /Category booth, grade 65%/);
+});
+
+test("la frase usa la nota guardada aunque el texto traiga otro porcentaje", () => {
+  assert.equal(fraseConNota("Receipt. Category receipt, grade 78%.", 58), "Receipt. Category receipt, grade 58%.");
+  assert.equal(fraseConNota("Receipt. Category receipt, grade 58%.", 58), "Receipt. Category receipt, grade 58%.");
+  assert.equal(fraseConNota(null, 58), null);
 });

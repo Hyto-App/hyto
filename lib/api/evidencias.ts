@@ -203,16 +203,35 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (!(await deps.almacen.listaParaAntifraude())) {
       return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
     }
+    const sha256 = sha256De(bytes);
+    const duplicado = await clasificarDuplicado(deps.almacen, sha256, tareaId);
+    if (duplicado.tipo === "otra" || duplicado.tipo === "hecha") {
+      return json({ aviso: "This file was already submitted." }, 409);
+    }
+
     const mileActivo = mileRequisitosActivo() && leerRequisitos(tarea.requisitos).length > 0;
     let fotosPrevias = 0;
-    if (mileActivo) {
+    if (duplicado.tipo === "nuevo" && mileActivo) {
       fotosPrevias = await deps.almacen.contarEvidencias(tareaId);
       if (fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
     }
 
-    const sha256 = sha256De(bytes);
-    if (await deps.almacen.evidenciaPorSha256(sha256)) {
-      return json({ aviso: "This file was already submitted." }, 409);
+    if (duplicado.tipo === "reintentar") {
+      if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
+      if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
+      const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
+      if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
+      const idioma = idiomaDePedido(request);
+      const intento = mileActivo ? await deps.almacen.contarEvidencias(tareaId) : undefined;
+      await correrRevision(deps, tarea, duplicado.evidencia, {
+        cerca: false,
+        intento,
+        idioma,
+        bytes,
+        tipo,
+      });
+      const guardada = (await deps.almacen.leerEvidencia(duplicado.evidencia.id)) ?? duplicado.evidencia;
+      return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
     }
 
     let phash: string | null = null;
@@ -255,23 +274,13 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
-    const cerca = phash ? await esCopiaAjena(deps.almacen, phash, evidencia.id, tareaId) : false;
+    const cerca =
+      phash && tarea.tipo !== "reembolso" ? await esCopiaAjena(deps.almacen, phash, evidencia.id, tareaId) : false;
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
-    const leida = await deps.fotos.leer(blobId);
-    const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
-    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
-    const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
-    const entorno = contextoDesdeEntorno();
-    const textual = esEvidenciaTextual({ tipo, bytes });
-    const conTope = !deps.revisarTarea && (textual ? Boolean(entorno.layaUrl) : Boolean(entorno.claveGroq));
-    const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
-    if (listo) {
-      await guardarRevision(deps.almacen, evidencia.id, tareaId, listo);
-    } else if (deps.continuar) {
-      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo));
-    }
+    const intento = mileActivo ? fotosPrevias + 1 : undefined;
+    await correrRevision(deps, tarea, evidencia, { cerca, intento, idioma, bytes, tipo });
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
     return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
   } catch {
@@ -442,12 +451,56 @@ function textoCampo(cuerpo: unknown): string {
   return typeof tareaId === "string" ? tareaId.trim() : "";
 }
 
-/** A later photo of the same task is a retake, not a copy of someone else's file. */
+type Duplicado =
+  | { tipo: "nuevo" }
+  | { tipo: "otra" | "hecha" }
+  | { tipo: "reintentar"; evidencia: EvidenciaFila };
+
+/**
+ * Identical bytes on another task stay a 409. The same file on this task is reviewed again
+ * only when Mile never finished (no verdict, or an error verdict). A finished grade stays 409.
+ */
+async function clasificarDuplicado(almacen: Almacen, sha256: string, tareaId: string): Promise<Duplicado> {
+  const previa = await almacen.evidenciaPorSha256(sha256);
+  if (!previa) return { tipo: "nuevo" };
+  if (previa.tareaId !== tareaId) return { tipo: "otra" };
+  const veredicto = await almacen.veredictoDe(previa.id);
+  if (!veredicto || veredicto.origen === "error") return { tipo: "reintentar", evidencia: previa };
+  return { tipo: "hecha" };
+}
+
+async function correrRevision(
+  deps: DepsEvidencia,
+  tarea: TareaFila,
+  evidencia: EvidenciaFila,
+  extra: { cerca: boolean; intento: number | undefined; idioma: Idioma; bytes: Uint8Array; tipo: string },
+): Promise<void> {
+  if (!deps.fotos) return;
+  const leida = await deps.fotos.leer(evidencia.blobId);
+  const revisarAhora =
+    deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento: extra.intento, idioma: extra.idioma }));
+  const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, extra.cerca));
+  const entorno = contextoDesdeEntorno();
+  const textual = esEvidenciaTextual({ tipo: extra.tipo, bytes: extra.bytes });
+  const conTope = !deps.revisarTarea && (textual ? Boolean(entorno.layaUrl) : Boolean(entorno.claveGroq));
+  const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
+  if (listo) {
+    await guardarRevision(deps.almacen, evidencia.id, tarea.id, listo);
+  } else if (deps.continuar) {
+    deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tarea.id, trabajo));
+  }
+}
+
+/**
+ * Near-duplicates are only this task, and only a work photo. A receipt is judged by sha256.
+ * Another task's similar layout is not a copy. A later, different photo on this task is a retake
+ * unless the hash is within UMBRAL_COPIA of a photo already on this task.
+ */
 async function esCopiaAjena(almacen: Almacen, phash: string, evidenciaId: string, tareaId: string): Promise<boolean> {
   const cercanas = await almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidenciaId);
   for (const cerca of cercanas) {
     const fila = await almacen.leerEvidencia(cerca.id);
-    if (!fila || fila.tareaId !== tareaId) return true;
+    if (fila && fila.tareaId === tareaId) return true;
   }
   return false;
 }

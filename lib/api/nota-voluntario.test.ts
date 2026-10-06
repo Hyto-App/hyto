@@ -80,12 +80,14 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "enviadaEn",
     "estado",
     "etapa",
+    "evento",
     "hashPago",
     "id",
     "intentos",
     "miembroId",
     "monto",
     "nota",
+    "notas",
     "prioridad",
     "proyectoId",
     "rechazada",
@@ -98,6 +100,8 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "veredicto",
     "walletCobro",
   ]);
+  assert.equal(stand.evento, "ZEEK");
+  assert.deepEqual(stand.notas, []);
 
   const ajenas = await listarTareasHttp(almacen, { usuarioId: "voluntario-2", demo: false }, "mias");
   const deOtro = (await ajenas.json()) as { tareas: Registro[] };
@@ -153,6 +157,8 @@ type Registro = {
   origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
+  evento?: string | null;
+  notas?: unknown[];
 };
 
 function fila(parcial: Partial<VeredictoFila> & Pick<VeredictoFila, "origen" | "score">): VeredictoFila {

@@ -66,13 +66,14 @@ export function preguntasClasificacion(condicion: string): PreguntasClasificacio
   return {
     c1: choice(
       conPedido(
-        "What kind of evidence does the written description give? The organizer asked for: {pedido}. Pick one label. Use only what the description states.",
+        "What kind of evidence does the written description give? The organizer asked for: {pedido}. Pick one label. Use only what the description states. A receipt, invoice, or purchase is factura, never trabajo.",
         pedido,
       ),
       {
         trabajo:
           "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, people working, or other evidence that matches what the organizer asked for.",
-        factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
+        factura:
+          "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price. If it is a purchase, pick factura even when the request sounds like an errand.",
         otra: conPedido(
           "The description shows neither work, a receipt, nor what the organizer asked for ({pedido}). For example, a selfie, a blurry image, or an unrelated scene.",
           pedido,
@@ -156,7 +157,9 @@ export function preguntasFactura(condicion: string): PreguntasFactura {
         pedido,
       ),
     ),
-    g3: siNo("Does the written description name at least one item that was bought, such as fuel, paint, or food?"),
+    g3: siNo(
+      "Does the written description name at least one item that was bought, such as fuel, paint, or food? Answer yes when any item is named, including in an Items list. Do not answer no if an item is named.",
+    ),
     g4: siNo("Does the written description name the store or business where the purchase was made?"),
     g5: niveles(conPedido("Overall, how well does the written description show that this expense fits the organizer's request: {pedido}?", pedido), [
       "The expense does not fit the request, or the description does not say what was bought.",

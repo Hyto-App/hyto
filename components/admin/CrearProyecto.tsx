@@ -8,6 +8,7 @@ import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { normalizarMonto } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
+import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
@@ -213,9 +214,16 @@ export function CrearProyecto() {
                       id={`monto-${fila.clave}`}
                       inputMode="decimal"
                       value={fila.monto}
-                      onChange={(evento) => cambiar(fila.clave, { monto: evento.target.value })}
+                      aria-invalid={avisoMontoEntrada(fila.monto) ? true : undefined}
+                      aria-describedby={avisoMontoEntrada(fila.monto) ? `monto-error-${fila.clave}` : undefined}
+                      onChange={(evento) => cambiar(fila.clave, { monto: escribirMonto(evento.target.value) })}
                       className="hyto-input mt-2"
                     />
+                    {avisoMontoEntrada(fila.monto) ? (
+                      <p id={`monto-error-${fila.clave}`} role="alert" className="mt-2 text-sm text-[var(--peligro)]">
+                        {avisoMontoEntrada(fila.monto)}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

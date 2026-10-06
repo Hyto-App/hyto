@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
@@ -13,6 +14,7 @@ import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
+import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
@@ -71,7 +73,7 @@ function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: nu
         <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
       </div>
       <div>
-        <b>{cifra(revision)}</b>
+        <b>{revision}</b>
         <span>{t("tareas.inReviewShort")}</span>
       </div>
       <div>
@@ -135,16 +137,28 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
 
   useEffect(() => {
     let activo = true;
+    let reloj = 0;
     setLista(false);
     setError(null);
-    listarTareas({ miembroId: "" }, { muestra: demo }).then((resultado) => {
-      if (!activo) return;
-      setTareas(resultado.tareas);
-      setEjemplo(resultado.ejemplo);
-      setError(resultado.error);
-      setLista(true);
-    });
-    void fetch("/api/proyectos")
+    const cargar = (vez: number) => {
+      listarTareas({ miembroId: "" }, { muestra: demo }).then((resultado) => {
+        if (!activo) return;
+        if (resultado.error && vez < 2) {
+          reloj = window.setTimeout(() => cargar(vez + 1), 400);
+          return;
+        }
+        setTareas(resultado.tareas);
+        setEjemplo(resultado.ejemplo);
+        setError(resultado.error);
+        setLista(true);
+      });
+    };
+    cargar(0);
+    const alMostrar = (evento: PageTransitionEvent) => {
+      if (evento.persisted) cargar(2);
+    };
+    window.addEventListener("pageshow", alMostrar);
+    void fetch("/api/proyectos", { cache: "no-store" })
       .then(async (respuesta) => (respuesta.ok ? respuesta.json() : null))
       .then((cuerpo: { proyectos?: { id: string; nombre: string }[] } | null) => {
         if (!activo || !cuerpo?.proyectos) return;
@@ -155,6 +169,8 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
       .catch(() => undefined);
     return () => {
       activo = false;
+      window.clearTimeout(reloj);
+      window.removeEventListener("pageshow", alMostrar);
     };
   }, [demo, intento]);
 
@@ -164,10 +180,13 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
   const ganado = suma(tareas, "pagado");
-  const enRevision = suma(tareas, "en revisión");
+  const enRevision = contarEnRevision(tareas);
   const idAbierta = porEvento.flatMap((grupo) => grupo.tareas).find((tarea) => tarea.estado === "pendiente")?.id ?? null;
   const eventosDeTareas = new Set(tareas.map((tarea) => tarea.proyectoId));
-  const nombreDelEvento = (proyectoId: string) => textoVisible(nombres[proyectoId], idioma) || t("comunes.event");
+  const nombreDelEvento = (proyectoId: string) => {
+    const enTarea = tareas.find((tarea) => tarea.proyectoId === proyectoId)?.evento;
+    return textoVisible(nombres[proyectoId] || enTarea, idioma) || t("comunes.event");
+  };
   const filtros: { id: Filtro; etiqueta: string; total: number }[] = [
     { id: "all", etiqueta: t("tareas.filterAll"), total: tareas.length },
     { id: "pendiente", etiqueta: t("tareas.filterPending"), total: cuenta("pendiente") },
@@ -364,6 +383,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                             typeof tarea.nota === "number" && tarea.veredicto ? (
                               <div className="mt-3">
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
+                                <EtiquetasNota etiquetas={tarea.notas} />
                               </div>
                             ) : (
                               <p className="hyto-nota-mile hyto-nota-mile-rev">
