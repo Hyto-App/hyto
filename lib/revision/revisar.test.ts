@@ -365,3 +365,138 @@ test("la clave de Laya viaja solo si está configurada", async () => {
     else process.env.LAYA_API_KEY = previa;
   }
 });
+
+test("si Groq responde, Gemini no se llama aunque haya clave", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  const urls: string[] = [];
+  const resultado = await revisar(tarea, FOTO, {
+    claveGroq: "clave",
+    claveGemini: "clave-gemini",
+    layaUrl: null,
+    fetchImpl: async (input) => {
+      urls.push(String(input));
+      return groq("Banner de Groq.");
+    },
+  });
+  assert.equal(urls.some((url) => url.includes("generativelanguage.googleapis.com")), false);
+  assert.equal(urls.every((url) => url.includes("api.groq.com")), true);
+  assert.equal(resultado.origen, "stub");
+  assert.match(resultado.frase, /Banner de Groq/);
+});
+
+test("si Groq falla y hay clave de Gemini, la descripción sale de Gemini", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let groqLlamadas = 0;
+  let gemini = 0;
+  const resultado = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: "clave",
+      claveGemini: "clave-gemini",
+      layaUrl: null,
+      fetchImpl: async (input, init) => {
+        const url = String(input);
+        if (url.includes("api.groq.com")) {
+          groqLlamadas += 1;
+          return new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 });
+        }
+        assert.match(url, /generativelanguage\.googleapis\.com\/v1beta\/openai\/chat\/completions$/);
+        assert.equal(new Headers(init?.headers).get("authorization"), "Bearer clave-gemini");
+        gemini += 1;
+        return groq("Banner leído por Gemini.");
+      },
+    }),
+  );
+  assert.equal(groqLlamadas, 1);
+  assert.equal(gemini, 1);
+  assert.equal(resultado.origen, "stub");
+  assert.equal(resultado.codigo, null);
+  assert.match(resultado.frase, /Banner leído por Gemini/);
+  assert.equal(resultado.frase.includes("Rate limit"), false);
+});
+
+test("sin clave de Groq, Gemini describe la foto y su fallo es el que queda", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  const urls: string[] = [];
+  const logrado = await revisar(tarea, FOTO, {
+    claveGroq: null,
+    claveGemini: "clave-gemini",
+    layaUrl: null,
+    fetchImpl: async (input) => {
+      urls.push(String(input));
+      return groq("Banner leído por Gemini.");
+    },
+  });
+  assert.equal(urls.some((url) => url.includes("api.groq.com")), false);
+  assert.equal(urls.some((url) => url.includes("generativelanguage.googleapis.com")), true);
+  assert.match(logrado.frase, /Banner leído por Gemini/);
+
+  const caido = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: null,
+      claveGemini: "clave-gemini",
+      layaUrl: null,
+      fetchImpl: async () => new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 }),
+    }),
+  );
+  assert.equal(caido.origen, "error");
+  assert.equal(caido.codigo, "cupo");
+});
+
+test("si Groq falla y no hay clave de Gemini, queda el fallo de Groq", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let llamadas = 0;
+  const resultado = await conLog(() =>
+    revisar(tarea, FOTO, {
+      claveGroq: "clave-super-secreta",
+      layaUrl: "https://laya.example",
+      fetchImpl: async (input) => {
+        llamadas += 1;
+        assert.match(String(input), /api\.groq\.com/);
+        return new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 });
+      },
+    }),
+  );
+  assert.equal(llamadas, 1);
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "cupo");
+  assert.match(resultado.frase, /quota/);
+  assert.equal(resultado.frase.includes("clave-super-secreta"), false);
+});
+
+test("si Gemini también falla, se informa el fallo original de Groq", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let gemini = 0;
+  const logs: unknown[][] = [];
+  const previo = console.error;
+  console.error = (...args: unknown[]) => {
+    logs.push(args);
+  };
+  try {
+    const resultado = await revisar(tarea, FOTO, {
+      claveGroq: "clave",
+      claveGemini: "clave-gemini",
+      layaUrl: null,
+      fetchImpl: async (input) => {
+        const url = String(input);
+        if (url.includes("api.groq.com")) {
+          return new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 });
+        }
+        gemini += 1;
+        return new Response(JSON.stringify({ error: { message: "invalid gemini key" } }), { status: 401 });
+      },
+    });
+    assert.equal(gemini, 1);
+    assert.equal(resultado.origen, "error");
+    assert.equal(resultado.codigo, "cupo");
+    assert.match(resultado.frase, /quota/);
+    assert.match(JSON.stringify(logs), /cupo/);
+    assert.equal(JSON.stringify(logs).includes("invalid gemini key"), false);
+  } finally {
+    console.error = previo;
+  }
+});

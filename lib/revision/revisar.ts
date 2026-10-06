@@ -1,20 +1,23 @@
-import { claveDeGroq, enProduccion, urlDeLaya } from "@/lib/config/entorno";
+import { claveDeGemini, claveDeGroq, enProduccion, urlDeLaya } from "@/lib/config/entorno";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
 import { esPdf } from "@/lib/evidencia/tipo";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
+import { describirFotoGemini } from "./gemini";
 import { preguntarLaya } from "./laya";
 import { contextoParaLaya, montoSinUsd } from "./lectura";
 import { preguntarRequisitos } from "./requisitos-laya";
 import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
 import { decidirRequisitos, leerRequisitos, rechazoDeDecision, serializarRechazo } from "./requisitos";
-import { conReintentos, esperaReintento, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS, TOPE_LAYA_MS } from "./reintento";
+import { conReintentos, esperaReintento, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS, TOPE_LAYA_MS, type OpcionesReintento } from "./reintento";
 import { describirFoto } from "./scout";
 
 export type ContextoRevision = {
   claveGroq: string | null;
+  /** When set, Gemini describes the photo only after the Groq vision call fails. */
+  claveGemini?: string | null;
   layaUrl: string | null;
   fetchImpl?: typeof fetch;
   ahora?: () => number;
@@ -35,7 +38,8 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     return fallar(new FalloRevision("pdf", { fuente: "revision", providerMessage: "pdf" }));
   }
   const clave = contexto.claveGroq;
-  if (!clave) return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
+  const claveGemini = contexto.claveGemini?.trim() || null;
+  if (!clave && !claveGemini) return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
   const fetchImpl = contexto.fetchImpl ?? fetch;
   const ahora = contexto.ahora ?? Date.now;
   const repeticion = {
@@ -45,10 +49,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     pausas: PAUSAS_REINTENTO_MS,
   };
   try {
-    const descripcion = await conReintentos(
-      (signal) => describirFoto(foto.bytes, foto.tipo, clave, fetchImpl, signal, { condicion: tarea.condicion, tipoTarea: tarea.tipo }),
-      { ...repeticion, topeIntentoMs: TOPE_GROQ_MS },
-    );
+    const descripcion = await describirConReserva(foto, tarea, clave, claveGemini, fetchImpl, repeticion);
     const paraLaya = descripcion.lectura ? contextoParaLaya(descripcion.lectura) : descripcion.texto;
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
@@ -138,6 +139,41 @@ function cerrarRequisitos(
   };
 }
 
+/** Groq first. Gemini runs on the same deadline only when Groq throws and a key is set. */
+async function describirConReserva(
+  foto: FotoLeida,
+  tarea: TareaFila,
+  claveGroq: string | null,
+  claveGemini: string | null,
+  fetchImpl: typeof fetch,
+  repeticion: Omit<OpcionesReintento, "topeIntentoMs">,
+): Promise<Descripcion> {
+  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo };
+  const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
+  if (!claveGroq) {
+    return conReintentos(
+      (signal) => describirFotoGemini(foto.bytes, foto.tipo, claveGemini ?? "", fetchImpl, signal, pedido),
+      opciones,
+    );
+  }
+  try {
+    return await conReintentos(
+      (signal) => describirFoto(foto.bytes, foto.tipo, claveGroq, fetchImpl, signal, pedido),
+      opciones,
+    );
+  } catch (error) {
+    if (!(error instanceof FalloRevision) || !claveGemini) throw error;
+    try {
+      return await conReintentos(
+        (signal) => describirFotoGemini(foto.bytes, foto.tipo, claveGemini, fetchImpl, signal, pedido),
+        opciones,
+      );
+    } catch {
+      throw error;
+    }
+  }
+}
+
 function fallar(fallo: FalloRevision): ResultadoRevision {
   registrarFallo(fallo);
   return desdeFallo(fallo);
@@ -146,6 +182,7 @@ function fallar(fallo: FalloRevision): ResultadoRevision {
 export function contextoDesdeEntorno(fetchImpl?: typeof fetch): ContextoRevision {
   return {
     claveGroq: claveDeGroq(),
+    claveGemini: claveDeGemini(),
     layaUrl: urlDeLaya(),
     fetchImpl,
   };

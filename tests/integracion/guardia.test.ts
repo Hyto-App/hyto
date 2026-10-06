@@ -54,6 +54,7 @@ test("cerrar escrituras remotas borra Blob y la URL y anula los ganchos", async 
     DATABASE_URL: "postgres://user:clave@ep-prueba.us-east-2.aws.neon.tech/neondb",
     BLOB_READ_WRITE_TOKEN: "token-remoto",
     GROQ_API_KEY: "groq",
+    GEMINI_API_KEY: "gemini",
     LAYA_URL: "https://laya.example",
     LAYA_API_KEY: "laya",
     TRUSTLESS_API_KEY: "trustless",
@@ -69,6 +70,7 @@ test("cerrar escrituras remotas borra Blob y la URL y anula los ganchos", async 
   assert.equal(env.DATABASE_URL, undefined);
   assert.equal(env.BLOB_READ_WRITE_TOKEN, undefined);
   assert.equal(env.GROQ_API_KEY, undefined);
+  assert.equal(env.GEMINI_API_KEY, undefined);
   assert.equal(env.CAVOS_JWKS_URL, undefined);
   assert.equal(await ganchos.__HYTO_ALMACEN_PRUEBA?.(), null);
   assert.equal(ganchos.__HYTO_FOTOS_PRUEBA?.(), null);
