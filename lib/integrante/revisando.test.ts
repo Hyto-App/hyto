@@ -6,7 +6,7 @@ import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
-import { INTERVALO_SEGUIMIENTO_MS } from "./seguimiento";
+import { INTERVALO_SEGUIMIENTO_MS, LIMITE_SEGUIMIENTO_MS } from "./seguimiento";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -59,6 +59,47 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
     assert.match(texto(), /What happens now/);
     assert.match(texto(), /84% · Completed/);
   } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  const ahoraPrevio = Date.now;
+  let ahora = 1_700_000_000_000;
+  Date.now = () => ahora;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [{ ...base, nota: null, veredicto: null }] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "stand" }) }));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /Mile is checking your photo/);
+    ahora += LIMITE_SEGUIMIENTO_MS;
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 300));
+    });
+    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Send the photo again/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Mile checks your photo/);
+    const reintentar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Try again");
+    assert.ok(reintentar instanceof HTMLButtonElement);
+    await act(async () => {
+      reintentar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.match(texto(), /Open camera/);
+    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+  } finally {
+    Date.now = ahoraPrevio;
     globalThis.fetch = anterior;
     await desmontar();
     limpiarPantalla();

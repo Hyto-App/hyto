@@ -133,7 +133,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     };
   }, [fase]);
 
-  // Spec §6.5: the AI review runs after the upload. Ask again every 3 s, up to 30 s, until the grade or a new state arrives.
+  // The review runs after the upload. Ask again every 3 s, up to 60 s, until the grade or a new state arrives.
   const esperando = fase === "lista" && !!tarea && !ejemplo && !avisoEnvio && !esperaAgotada && esperaRevision(tarea);
   useEffect(() => {
     if (!esperando) return;
@@ -410,6 +410,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const revisando = fase === "enviando" || esperando;
   const montoVisible = montoDeTarea(tarea);
   const calificacion = notaDeTarea(tarea);
+  const mileSinTerminar = esperaAgotada && !calificacion && !avisoEnvio && !cerrada;
   const titulo = textoVisible(tarea.titulo, idioma);
   const esPdf = foto?.type === "application/pdf";
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
@@ -496,7 +497,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     return (
       <main className="hyto-page hyto-tarea hyto-enviada">
         <header className="hyto-enviada-cab">
-          {avisoEnvio ? (
+          {mileSinTerminar || avisoEnvio ? (
             <div className="hyto-enviada-alerta" aria-hidden="true">
               !
             </div>
@@ -504,9 +505,19 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <MileAnimada estado="lo-tengo" tamano={64} />
           )}
           <h1 className="hyto-tarea-titulo">
-            {avisoEnvio ? t("evidencia.sentAction") : nombre ? t("evidencia.greatJobName", { name: nombre }) : t("evidencia.greatJob")}
+            {mileSinTerminar
+              ? t("evidencia.mileCouldntFinish")
+              : avisoEnvio
+                ? t("evidencia.sentAction")
+                : nombre
+                  ? t("evidencia.greatJobName", { name: nombre })
+                  : t("evidencia.greatJob")}
           </h1>
-          {avisoEnvio ? (
+          {mileSinTerminar ? (
+            <p role="status" className="hyto-enviada-aviso">
+              {t("evidencia.mileRetry")}
+            </p>
+          ) : avisoEnvio ? (
             <p role="alert" className="hyto-enviada-aviso">
               {claro(avisoEnvio)}
               {t("evidencia.fixSuffix")}
@@ -536,12 +547,27 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           </div>
           <p className="hyto-amount">{montoVisible}</p>
         </article>
-        <LineaRevision tarea={tarea} revisionCerrada={esperaAgotada || !!avisoEnvio} monto={montoVisible} />
+        <LineaRevision
+          tarea={tarea}
+          revisionCerrada={esperaAgotada || !!avisoEnvio}
+          mileSinTerminar={mileSinTerminar}
+          monto={montoVisible}
+        />
         <div className="hyto-enviada-acciones">
-          <Link href="/mis-tareas" className="hyto-btn hyto-btn-grande">
-            {t("evidencia.backToTasks")}
-          </Link>
-          {!cerrada ? (
+          {mileSinTerminar ? (
+            <button type="button" onClick={tomarOtra} className="hyto-btn hyto-btn-grande">
+              {t("comunes.tryAgain")}
+            </button>
+          ) : (
+            <Link href="/mis-tareas" className="hyto-btn hyto-btn-grande">
+              {t("evidencia.backToTasks")}
+            </Link>
+          )}
+          {mileSinTerminar ? (
+            <Link href="/mis-tareas" className="hyto-btn-line">
+              {t("evidencia.backToTasks")}
+            </Link>
+          ) : !cerrada ? (
             <button type="button" onClick={tomarOtra} className="hyto-btn-line">
               {reembolso ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
             </button>

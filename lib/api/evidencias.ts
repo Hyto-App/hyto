@@ -11,8 +11,9 @@ import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/to
 import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
+import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
+import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
-import type { ResultadoRevision } from "@/lib/revision/armar";
 import { maxIntentosMile, mileRequisitosActivo } from "@/lib/revision/requisitos-bandera";
 import { leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisitos";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
@@ -266,11 +267,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (listo) {
       await guardarRevision(deps.almacen, evidencia.id, tareaId, listo);
     } else if (deps.continuar) {
-      deps.continuar(
-        trabajo
-          .then((resultado) => guardarRevision(deps.almacen, evidencia.id, tareaId, resultado))
-          .catch(() => undefined),
-      );
+      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo));
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
     return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
@@ -347,6 +344,58 @@ function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {
       },
     );
   });
+}
+
+/** Hard stop for the review that continues after the upload response. A row is stored either way. */
+export const TOPE_REVISION_FONDO_MS = 25_000;
+
+export function cerrarRevisionEnFondo(
+  almacen: Almacen,
+  evidenciaId: string,
+  tareaId: string,
+  trabajo: Promise<ResultadoRevision>,
+  ms = TOPE_REVISION_FONDO_MS,
+): Promise<void> {
+  return conTopeDuro(trabajo, ms)
+    .then((resultado) => guardarRevision(almacen, evidenciaId, tareaId, resultado))
+    .catch((error: unknown) => guardarFalloDeRevision(almacen, evidenciaId, tareaId, error));
+}
+
+function veredictoDeTiempo(): ResultadoRevision {
+  const fallo = new FalloRevision("tiempo", { fuente: "revision" });
+  registrarFallo(fallo);
+  return desdeFallo(fallo);
+}
+
+function conTopeDuro(trabajo: Promise<ResultadoRevision>, ms: number): Promise<ResultadoRevision> {
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
+  const limite = new Promise<ResultadoRevision>((resolve) => {
+    temporizador = setTimeout(() => resolve(veredictoDeTiempo()), ms);
+  });
+  const vigilado = trabajo.then(
+    (valor) => valor,
+    (error: unknown) => Promise.reject(error),
+  );
+  // A rejection that arrives after the timeout already won must not surface as unhandled.
+  vigilado.catch(() => undefined);
+  return Promise.race([vigilado, limite]).finally(() => {
+    if (temporizador !== undefined) clearTimeout(temporizador);
+  });
+}
+
+async function guardarFalloDeRevision(
+  almacen: Almacen,
+  evidenciaId: string,
+  tareaId: string,
+  error: unknown,
+): Promise<void> {
+  const fallo = falloDeExcepcion(error, "revision");
+  registrarFallo(fallo);
+  try {
+    await guardarRevision(almacen, evidenciaId, tareaId, desdeFallo(fallo));
+  } catch (guardado) {
+    console.error("[revision]", guardado instanceof Error ? guardado.message : "could not store the failure");
+  }
 }
 
 function texto(valor: FormDataEntryValue | null): string {
