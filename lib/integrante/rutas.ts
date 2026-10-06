@@ -112,6 +112,7 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
+    revisionFallida: crudo.revisionFallida === true,
     ...leerCamposRevision(crudo, estado),
     enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
   };

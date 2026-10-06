@@ -203,50 +203,62 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (!(await deps.almacen.listaParaAntifraude())) {
       return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
     }
+
+    // The same bytes on another task, or on this task after a real grade, stay a duplicate.
+    // The same bytes on this task with no row, or with an error row, are a retry: run the review again.
+    const sha256 = sha256De(bytes);
+    const previa = await deps.almacen.evidenciaPorSha256(sha256);
+    const veredictoPrevio = previa && previa.tareaId === tareaId ? await deps.almacen.veredictoDe(previa.id) : null;
+    const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
+    if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
+
     const mileActivo = mileRequisitosActivo() && leerRequisitos(tarea.requisitos).length > 0;
     let fotosPrevias = 0;
     if (mileActivo) {
       fotosPrevias = await deps.almacen.contarEvidencias(tareaId);
-      if (fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
+      if (!reintento && fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
     }
 
-    const sha256 = sha256De(bytes);
-    if (await deps.almacen.evidenciaPorSha256(sha256)) {
-      return json({ aviso: "This file was already submitted." }, 409);
-    }
-
-    let phash: string | null = null;
-    if (esImagen(tipo)) {
-      try {
-        phash = await phashDe(bytes);
-      } catch {
-        return json({ aviso: "Could not read the photo." }, 400);
+    let evidencia: EvidenciaFila;
+    if (reintento && previa) {
+      if (veredictoPrevio) await deps.almacen.borrarVeredicto(previa.id);
+      const creadaEn = new Date(ahora).toISOString();
+      await deps.almacen.actualizarEvidencia(previa.id, { creadaEn });
+      evidencia = { ...previa, creadaEn };
+    } else {
+      let phash: string | null = null;
+      if (esImagen(tipo)) {
+        try {
+          phash = await phashDe(bytes);
+        } catch {
+          return json({ aviso: "Could not read the photo." }, 400);
+        }
       }
-    }
 
-    const archivo = new Blob([bytes], { type: tipo });
-    let blobId: string;
-    try {
-      blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);
-    } catch {
-      return json({ aviso: "Could not save the file." }, 502);
+      const archivo = new Blob([bytes], { type: tipo });
+      let blobId: string;
+      try {
+        blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);
+      } catch {
+        return json({ aviso: "Could not save the file." }, 502);
+      }
+      evidencia = {
+        id: crypto.randomUUID(),
+        tareaId,
+        blobId,
+        monto: null,
+        montoConfirmado: null,
+        fecha: null,
+        creadaEn: new Date(ahora).toISOString(),
+        capturadaEn,
+        frescura,
+        sha256,
+        phash,
+        tipoArchivo: tipo,
+        motivoCopia: null,
+      };
+      await deps.almacen.crearEvidencia(evidencia);
     }
-    const evidencia: EvidenciaFila = {
-      id: crypto.randomUUID(),
-      tareaId,
-      blobId,
-      monto: null,
-      montoConfirmado: null,
-      fecha: null,
-      creadaEn: new Date(ahora).toISOString(),
-      capturadaEn,
-      frescura,
-      sha256,
-      phash,
-      tipoArchivo: tipo,
-      motivoCopia: null,
-    };
-    await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
     if (mileActivo && (await deps.almacen.columnasRequisitos())) {
       await deps.almacen.actualizarTarea(tareaId, { rechazo: null });
@@ -255,10 +267,10 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
-    const cerca = phash ? await esCopiaAjena(deps.almacen, phash, evidencia.id, tareaId) : false;
+    const cerca = evidencia.phash ? await esCopiaAjena(deps.almacen, evidencia.phash, evidencia.id, tareaId) : false;
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
-    const leida = await deps.fotos.leer(blobId);
+    const leida = await deps.fotos.leer(evidencia.blobId);
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
     const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
@@ -273,7 +285,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo));
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
-    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
+    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, reintento ? 200 : 201);
   } catch {
     return baseNoLista();
   }
