@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { montoDeTarea } from "@/lib/integrante/formato";
+import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
@@ -94,6 +95,11 @@ export function TareasEvento({
 
   async function guardar(tarea: FilaTareaEvento) {
     if (!borrador || guardando) return;
+    const montoMal = avisoMontoEntrada(borrador.monto) ?? (tarea.tipo === "reembolso" ? avisoMontoEntrada(borrador.tope) : null);
+    if (montoMal) {
+      setAviso(montoMal);
+      return;
+    }
     setAviso(null);
     setGuardando(true);
     const cuerpo: Record<string, string> = {
@@ -212,9 +218,15 @@ export function TareasEvento({
                       id={`monto-${tarea.id}`}
                       inputMode="decimal"
                       value={borrador.monto}
-                      onChange={(evento) => setBorrador({ ...borrador, monto: evento.target.value })}
+                      aria-invalid={avisoMontoEntrada(borrador.monto) ? true : undefined}
+                      onChange={(evento) => setBorrador({ ...borrador, monto: escribirMonto(evento.target.value) })}
                       className="hyto-input mt-2"
                     />
+                    {avisoMontoEntrada(borrador.monto) ? (
+                      <p role="alert" className="mt-2 text-sm text-[var(--peligro)]">
+                        {avisoMontoEntrada(borrador.monto)}
+                      </p>
+                    ) : null}
                   </label>
                   {tarea.tipo === "reembolso" ? (
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`tope-${tarea.id}`}>
@@ -223,7 +235,8 @@ export function TareasEvento({
                         id={`tope-${tarea.id}`}
                         inputMode="decimal"
                         value={borrador.tope}
-                        onChange={(evento) => setBorrador({ ...borrador, tope: evento.target.value })}
+                        aria-invalid={avisoMontoEntrada(borrador.tope) ? true : undefined}
+                        onChange={(evento) => setBorrador({ ...borrador, tope: escribirMonto(evento.target.value) })}
                         className="hyto-input mt-2"
                       />
                     </label>

@@ -123,6 +123,13 @@ export function fraseDe(texto: string, senales: Senales): string {
   return `${texto.trim()} Category ${etiquetaChoice(senales.choice)}, grade ${grado}.`;
 }
 
+/** The sentence and the pill both show the stored grade. A stale "grade N%" in the text is rewritten. */
+export function fraseConNota(frase: string | null, nota: number | null): string | null {
+  if (!frase) return null;
+  if (nota === null) return frase;
+  return frase.replace(/\bgrade \d{1,3}%/g, `grade ${nota}%`);
+}
+
 export function cerrar(
   tipo: TipoTarea,
   tope: string | null,

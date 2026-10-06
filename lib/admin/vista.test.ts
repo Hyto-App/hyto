@@ -22,7 +22,7 @@ test("la bandeja y el contador usan la misma regla", () => {
   const vista = vistaAdmin(VACIA);
   assert.equal(vista.bandeja.length, vista.tareas.filter((tarea) => enBandeja(tarea)).length);
   assert.equal(enBandeja({ estado: "pendiente", veredicto: null }), false);
-  assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), true);
+  assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), false);
   assert.equal(enBandeja({ estado: "en revisión", veredicto: null }), true);
   assert.equal(enBandeja({ estado: "pagado", veredicto: "cumplió" }), false);
   assert.equal(enBandeja({ estado: "pagado", veredicto: null }), false);

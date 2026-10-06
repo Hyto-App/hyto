@@ -2,12 +2,16 @@ import type { Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { asegurarSemilla } from "@/lib/db/semilla";
-import type { TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
+import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
+import type { EtiquetaNota } from "@/lib/revision/razones";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
+
+const PRIVADA = { "cache-control": "private, no-store" };
 
 export function tareaPublica(tarea: TareaFila) {
   return {
@@ -63,7 +67,24 @@ export function notaPublica(fila: VeredictoFila | null): { nota: number; veredic
   return { nota, veredicto: etiquetaDesdeNota(nota) };
 }
 
-export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
+/** Reviewer notes the member can read. The raw model text stays on the verdict row. */
+export function notasPublicas(
+  fila: VeredictoFila | null,
+  evidencia: Pick<EvidenciaFila, "monto" | "fecha"> | null,
+  tarea: Pick<TareaFila, "tope" | "tipo">,
+): EtiquetaNota[] {
+  if (!fila || fila.origen === "error") return [];
+  return etiquetasDesdeVeredicto({
+    textoScout: fila.textoScout,
+    origen: fila.origen,
+    monto: evidencia?.monto ?? null,
+    fecha: evidencia?.fecha ?? null,
+    tope: tarea.tope,
+    tipo: tarea.tipo,
+  });
+}
+
+export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>) {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
   const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
   const visible = notaPublica(fila);
@@ -71,9 +92,11 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila) {
   const linea = lineaDeEnvio(tarea, evidencia, fila);
   return {
     ...tareaPublica(tarea),
+    evento: nombres?.get(tarea.proyectoId) ?? null,
     nota: visible?.nota ?? null,
     veredicto: visible?.veredicto ?? null,
     revisionFallida: fila?.origen === "error",
+    notas: notasPublicas(fila, evidencia, tarea),
     rechazo,
     rechazada: tarea.estado === "pendiente" && rechazo !== null,
     intentos: await almacen.contarEvidencias(tarea.id),
@@ -87,8 +110,9 @@ export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: 
   try {
     await asegurarSemilla(almacen);
     const tareas = alcance === "mias" ? await tareasPropias(almacen, visor) : await tareasVisibles(almacen, visor);
-    if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) });
-    return json({ tareas: await Promise.all(tareas.map((tarea) => tareaConNota(almacen, tarea))) });
+    if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) }, 200, PRIVADA);
+    const nombres = new Map((await almacen.listarProyectos()).map((proyecto) => [proyecto.id, proyecto.nombre]));
+    return json({ tareas: await Promise.all(tareas.map((tarea) => tareaConNota(almacen, tarea, nombres))) }, 200, PRIVADA);
   } catch {
     return baseNoLista();
   }

@@ -5,14 +5,16 @@ import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "./avisos";
 import { COOKIE_SESION, leerCookie, vigente } from "./cookie";
 
+const PRIVADA = { "cache-control": "private, no-store" };
+
 export async function exigirSesion(request: Request): Promise<SesionFila | Response> {
   const token = leerCookie(request, COOKIE_SESION);
-  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
   const almacen = await almacenNeon();
   if (!almacen) return sinBase();
   try {
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
     return { ...sesion, wallet: sesion.wallet ?? "" };
   } catch {
     return baseNoLista();
