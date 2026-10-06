@@ -69,4 +69,8 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
   assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your photo already reached the organizer");
   assert.equal(texto("es", "evidencia.reachedOrganizer"), "Tu foto ya le llegó al organizador");
+  assert.equal(texto("en", "evidencia.mileCouldntFinish"), "Mile couldn't finish — retry");
+  assert.equal(texto("es", "evidencia.mileCouldntFinish"), "Mile no pudo terminar — reintenta");
+  assert.equal(texto("en", "evidencia.mileRetry"), "The review did not finish. Send the photo again.");
+  assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envía la foto otra vez.");
 });
