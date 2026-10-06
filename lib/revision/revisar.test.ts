@@ -560,7 +560,37 @@ test("un html se limpia y Laya recibe el texto, no las etiquetas", async () => {
   assert.equal(resultado.texto.includes("alert"), false);
   assert.equal(resultado.texto.includes("color:red"), false);
   assert.equal(resultado.monto, null);
-  assert.equal(resultado.nota, 40);
+  assert.equal(resultado.lectura?.montoOriginal?.includes("12.40"), true);
+  assert.equal(resultado.nota, 79);
+});
+
+test("un txt con total y fecha no se queda en 40 aunque Laya diga que faltan", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  const pedido = { ...tarea, condicion: "Receipt dated 02/10/2026 for the team meal" };
+  const cuerpo = ["Mini super", "Fecha: 02/10/2026", "Team meal", "TOTAL USD 8.00"].join("\n");
+  const resultado = await revisar(pedido, { tipo: "text/plain", bytes: new TextEncoder().encode(cuerpo) }, {
+    claveGroq: null,
+    layaUrl: "https://laya.example",
+    fetchImpl: async (_input, init) => {
+      const preguntas = (JSON.parse(String(init?.body)) as { questions?: Record<string, unknown> }).questions ?? {};
+      if ("c1" in preguntas && !("f1" in preguntas)) return Response.json({ answers: { c1: { choice: "factura" } } });
+      return Response.json({
+        answers: {
+          ...FACTURA_SI,
+          f2: { noul: false },
+          f3: { noul: false },
+          g2: { noul: false },
+          g3: { noul: false },
+        },
+      });
+    },
+  });
+  assert.equal(resultado.monto, "8");
+  assert.equal(resultado.fecha, "2026-10-02");
+  assert.equal(resultado.nota !== null && resultado.nota > 40, true);
+  assert.notEqual(resultado.veredicto, "insuficiente");
+  assert.equal(resultado.lectura?.articulos.includes("Team meal"), true);
 });
 
 test("un PDF con texto se extrae y Laya lo puntúa sin visión", async () => {

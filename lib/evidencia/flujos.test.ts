@@ -177,13 +177,18 @@ test("el mismo archivo se vuelve a revisar si no hay nota o la nota es un error,
   assert.equal((await almacen.veredictoDe("ev-vacia"))?.origen, "scout");
   assert.equal((await almacen.veredictoDe("ev-vacia"))?.score, "80");
 
+  let revisionesDuplicado = 0;
   const repetida = await publicarEvidenciaHttp(form(), {
     almacen,
     fotos,
     actor,
-    revisarTarea: async () => desdeGuion("trabajo", null),
+    revisarTarea: async () => {
+      revisionesDuplicado += 1;
+      return desdeGuion("trabajo", null);
+    },
   });
   assert.equal(repetida.status, 409);
+  assert.equal(revisionesDuplicado, 0);
   assert.match(((await repetida.json()) as { aviso: string }).aviso, /already submitted/);
   assert.equal((await almacen.veredictoDe("ev-vacia"))?.score, "80");
 

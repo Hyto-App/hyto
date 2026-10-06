@@ -248,7 +248,9 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.match(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Great job/);
+    assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(texto().includes("SECRETO-LAYA"), false);

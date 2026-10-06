@@ -319,7 +319,7 @@ export const CASOS_BANCO: readonly CasoBanco[] = [
       monto: "20",
       tope: null,
     },
-    esperado: { veredicto: "cumplió", motivo: "low_detail" },
+    esperado: { veredicto: "cumplió", motivo: "matches" },
     antes: { nota: 0, veredicto: "insuficiente", detalle: "Reported in #044 (P0-B): a valid photo got 0% Insufficient." },
     simulado: {
       qwen: {

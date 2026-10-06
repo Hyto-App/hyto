@@ -22,11 +22,13 @@ export function LineaRevision({
   revisionCerrada,
   monto,
   mileSinTerminar = false,
+  archivo = false,
 }: {
   tarea: TareaLinea;
   revisionCerrada: boolean;
   monto: string;
   mileSinTerminar?: boolean;
+  archivo?: boolean;
 }) {
   const t = useTexto();
   const calificacion = notaDeTarea(tarea);
@@ -46,7 +48,7 @@ export function LineaRevision({
       clave: "mile",
       estado: mileSinTerminar ? "ahora" : revisada ? "hecho" : "ahora",
       rosa: mileSinTerminar,
-      titulo: mileSinTerminar ? t("evidencia.mileCouldntFinish") : t("evidencia.stepMile"),
+      titulo: mileSinTerminar ? t("evidencia.mileCouldntFinish") : t(archivo ? "evidencia.stepMileFile" : "evidencia.stepMile"),
       detalle: detalleMile.length > 0 ? <>{detalleMile}</> : undefined,
     },
     rechazada

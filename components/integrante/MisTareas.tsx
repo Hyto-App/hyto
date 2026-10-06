@@ -18,6 +18,7 @@ import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
+import { esMimeDocumental } from "@/lib/evidencia/tipo";
 import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 
 type Filtro = "all" | EstadoTarea;
@@ -385,10 +386,15 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                                 <EtiquetasNota etiquetas={tarea.notas} />
                               </div>
+                            ) : tarea.revisionFallida ? (
+                              <p className="hyto-nota-mile hyto-nota-mile-rev">
+                                <Mile estado="cara-neutra" tamano={28} />
+                                <span>{t("evidencia.mileCouldntFinish")}</span>
+                              </p>
                             ) : (
                               <p className="hyto-nota-mile hyto-nota-mile-rev">
                                 <Mile estado="cara-neutra" tamano={28} />
-                                <span>{t("tareas.mileReviewing")}</span>
+                                <span>{t(esMimeDocumental(tarea.tipoArchivo) ? "tareas.mileReviewingFile" : "tareas.mileReviewing")}</span>
                               </p>
                             )
                           ) : null}

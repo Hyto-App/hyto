@@ -25,7 +25,7 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
   try {
     await montar(createElement(VigilarSesion));
     await act(async () => {
-      await new Promise((resolver) => setTimeout(resolver, 30));
+      await new Promise((resolver) => setTimeout(resolver, 1200));
     });
     assert.match(window.location.href, /\/\?signin=1(?:&|$)/);
     assert.match(window.location.href, /next=%2Frevision%2Fstand/);
@@ -37,17 +37,48 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
   }
 });
 
-test("un 401 suelto no cierra la sesión; dos seguidos sí", async () => {
+test("un 401 suelto no cierra la sesión; tres seguidos sí", async () => {
+  const ya = async () => undefined;
   let llamadas = 0;
   const fetchImpl: typeof fetch = async () => {
     llamadas += 1;
     if (llamadas === 1) return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
     return new Response(JSON.stringify({ ok: true }), { status: 200 });
   };
-  assert.equal(await sesionCerrada(fetchImpl), false);
+  assert.equal(await sesionCerrada(fetchImpl, ya), false);
   assert.equal(llamadas, 2);
-  const siempre: typeof fetch = async () => new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
-  assert.equal(await sesionCerrada(siempre), true);
+  let seguidas = 0;
+  const siempre: typeof fetch = async () => {
+    seguidas += 1;
+    return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+  };
+  assert.equal(await sesionCerrada(siempre, ya), true);
+  assert.equal(seguidas, 3);
+});
+
+test("si el servidor ya leyó la sesión, un 401 no manda al ingreso", async () => {
+  limpiarPantalla();
+  guardarWallet();
+  window.history.replaceState(null, "", "/mis-tareas");
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+  };
+  try {
+    await montar(createElement(VigilarSesion, { confirmada: true }));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.equal(llamadas, 0);
+    assert.match(window.location.pathname, /mis-tareas/);
+  } finally {
+    globalThis.fetch = original;
+    window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
 });
 
 test("sin wallet guardada un 401 no cambia de pantalla", async () => {

@@ -12,20 +12,32 @@ export function esRetornoOAuth(params: URLSearchParams): boolean {
   return CLAVES_RETORNO_OAUTH.some((clave) => Boolean(params.get(clave)));
 }
 
-/** A single 401 during a deploy is not enough to sign the person out. Two in a row are. */
-export async function sesionCerrada(fetchImpl: typeof fetch = fetch): Promise<boolean> {
+const ESPERA_ENTRE_401_MS = 400;
+
+/**
+ * A single 401 during a deploy is not enough to sign the person out.
+ * Three in a row, with a pause between them, are. Two instant 401s on a cold start are not.
+ */
+export async function sesionCerrada(fetchImpl: typeof fetch = fetch, esperar: (ms: number) => Promise<void> = espera): Promise<boolean> {
   const leer = () => fetchImpl("/api/sesion", { method: "GET", cache: "no-store" });
-  const primera = await leer();
-  if (primera.ok || primera.status !== 401) return false;
-  const segunda = await leer();
-  return !segunda.ok && segunda.status === 401;
+  for (let intento = 0; intento < 3; intento += 1) {
+    const respuesta = await leer();
+    if (respuesta.ok || respuesta.status !== 401) return false;
+    if (intento < 2) await esperar(ESPERA_ENTRE_401_MS);
+  }
+  return true;
 }
 
-export function VigilarSesion() {
+function espera(ms: number): Promise<void> {
+  return new Promise((resolver) => setTimeout(resolver, ms));
+}
+
+export function VigilarSesion({ confirmada = false }: { confirmada?: boolean }) {
   const demo = useModoDemo();
 
   useEffect(() => {
-    if (demo) return;
+    // The server already read this cookie from Postgres. A 401 on the follow-up fetch must not sign them out.
+    if (demo || confirmada) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("signin") === "1") return;
     // A Google/Apple return carries a one-time Cavos code that Entrar is still
@@ -44,7 +56,7 @@ export function VigilarSesion() {
     return () => {
       viva = false;
     };
-  }, [demo]);
+  }, [confirmada, demo]);
 
   return null;
 }
