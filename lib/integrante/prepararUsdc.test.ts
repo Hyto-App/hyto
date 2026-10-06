@@ -9,6 +9,7 @@ import { PrepararUsdc } from "../../components/sesion/PrepararUsdc";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import {
   AVISO_DISPOSITIVO,
+  AVISO_PASSKEY,
   AVISO_RECHAZO,
   AVISO_REINGRESO,
   type BilleteraSesion,
@@ -137,6 +138,26 @@ test("una cuenta antigua sin su clave en este navegador da un aviso que dice qu�
   assert.equal(avisos.length, 1);
   assert.match(avisos[0] ?? "", /^\[usdc\] .*needs-device-approval/);
   assert.doesNotMatch(mensajeClaro(AVISO_DISPOSITIVO), /didn't go through/);
+});
+
+test("con una llave de acceso guardada, un navegador sin la clave pide usarla en vez de mandar al navegador original", async () => {
+  const red = servidor(() => json({ xdr: "UNSIGNED", wallet: WALLET }));
+  const cuenta = billetera({ status: "needs-device-approval", passkeyRestore: true });
+  await assert.rejects(
+    () => prepararUsdcDeSesion({ fetch: red.fetch, conectar: conCuenta(cuenta) }),
+    (error: unknown) => error instanceof Error && error.message === AVISO_PASSKEY,
+  );
+  assert.deepEqual(cuenta.llamadas, []);
+  assert.deepEqual(red.vistos, ["preparar"]);
+  assert.equal(mensajeClaro(AVISO_PASSKEY), AVISO_PASSKEY);
+});
+
+test("un navegador que recuperó la clave con la llave de acceso firma como el original", async () => {
+  const red = servidor((accion) => (accion === "preparar" ? json({ xdr: "UNSIGNED", wallet: WALLET }) : json({ listo: true, hash: "h" })));
+  const cuenta = billetera({ status: "ready", passkeyRestore: true });
+  const listo = await prepararUsdcDeSesion({ fetch: red.fetch, conectar: conCuenta(cuenta) });
+  assert.equal(listo.hash, "h");
+  assert.deepEqual(cuenta.llamadas, ["firmar:UNSIGNED"]);
 });
 
 test("el error crudo de Cavos no llega a la pantalla y la consola lo guarda sin correo ni token", async () => {
@@ -368,7 +389,7 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
   }
   try {
     await fallarCon(AVISO_DISPOSITIVO);
-    assert.match(texto(), /Open Hyto in the browser where you signed up/);
+    assert.match(texto(), /Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey/);
     assert.doesNotMatch(texto(), /didn't go through/);
     assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
     assert.match(texto(), /Get ready to be paid/);

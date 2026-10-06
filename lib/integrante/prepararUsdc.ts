@@ -2,6 +2,7 @@ import { AVISO_CONFIG } from "@/lib/auth/errores";
 import {
   AVISO_DEMO_FIRMA,
   AVISO_DISPOSITIVO,
+  AVISO_PASSKEY,
   AVISO_RECHAZO,
   AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
@@ -158,7 +159,7 @@ function traducir(error: unknown): string {
   if (!firma) return AVISO_USDC_LENTO;
   if (firma.message === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
   if (firma.message === AVISO_DEMO_FIRMA) return AVISO_DEMO_COBRO;
-  if ([AVISO_XLM, AVISO_DISPOSITIVO, AVISO_CONFIG].includes(firma.message)) return firma.message;
+  if ([AVISO_XLM, AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_CONFIG].includes(firma.message)) return firma.message;
   return AVISO_CONFIRMAR;
 }
 

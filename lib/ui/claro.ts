@@ -1,4 +1,10 @@
-import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_PASSKEY_CANCELADA,
+  AVISO_PASSKEY_FALLO,
+  AVISO_PASSKEY_SIN_CLAVE,
+  AVISO_PASSKEY_SIN_SOPORTE,
+} from "@/lib/auth/avisosPasskey";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -91,6 +97,11 @@ const EXACTO: Record<string, Clave> = {
   [CODIGO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
   [AVISO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
   [AVISO_DISPOSITIVO]: "errores.dispositivo",
+  [AVISO_PASSKEY]: "errores.passkey",
+  [AVISO_PASSKEY_SIN_SOPORTE]: "errores.passkeySinSoporte",
+  [AVISO_PASSKEY_SIN_CLAVE]: "errores.passkeySinClave",
+  [AVISO_PASSKEY_CANCELADA]: "errores.passkeyCancelada",
+  [AVISO_PASSKEY_FALLO]: "errores.passkeyFallo",
   [CODIGO_USDC_SIN_XLM]: "errores.cobroSinXlm",
   [AVISO_USDC_SIN_XLM]: "errores.cobroSinXlm",
   [AVISO_USDC_SECUENCIA]: "errores.cobroSecuencia",
