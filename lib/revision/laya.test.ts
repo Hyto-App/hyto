@@ -3,7 +3,9 @@ import test from "node:test";
 import { cerrar } from "./armar";
 import { FalloRevision } from "./fallo";
 import {
+  corregirFactura,
   cuerpoLaya,
+  esReciboEscrito,
   leerClase,
   leerFactura,
   leerTrabajo,
@@ -34,12 +36,13 @@ test("C1 clasifica la descripción con las tres etiquetas y el pedido", () => {
   assert.equal(c1.type, "choice");
   assert.equal(
     c1.instructions,
-    `What kind of evidence does the written description give? The organizer asked for: ${PEDIDO}. Pick one label. Use only what the description states.`,
+    `What kind of evidence does the written description give? The organizer asked for: ${PEDIDO}. Pick one label. Use only what the description states. A receipt, invoice, or purchase is factura, never trabajo.`,
   );
   assert.deepEqual(c1.criteria, {
     trabajo:
       "The description shows a place or a physical result of work, such as a wall, a stand, a cleaned area, people working, or other evidence that matches what the organizer asked for.",
-    factura: "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price.",
+    factura:
+      "The description shows a receipt or an invoice, a paper or screen with a store name, items, and a price. If it is a purchase, pick factura even when the request sounds like an errand.",
     otra: `The description shows neither work, a receipt, nor what the organizer asked for (${PEDIDO}). For example, a selfie, a blurry image, or an unrelated scene.`,
   });
 });
@@ -111,7 +114,10 @@ test("una factura manda las nueve preguntas y no inventa un pedido distinto", ()
     preguntas.g2.instructions,
     `The organizer asked for: ${pedido}. Is the expense category a reasonable cost for this task? For example, fuel for a transport task, or paint for a painting task.`,
   );
-  assert.equal(preguntas.g3.instructions, "Does the written description name at least one item that was bought, such as fuel, paint, or food?");
+  assert.equal(
+    preguntas.g3.instructions,
+    "Does the written description name at least one item that was bought, such as fuel, paint, or food? Answer yes when any item is named, including in an Items list. Do not answer no if an item is named.",
+  );
   assert.equal(preguntas.g4.instructions, "Does the written description name the store or business where the purchase was made?");
   assert.equal(preguntas.g5.instructions, `Overall, how well does the written description show that this expense fits the organizer's request: ${pedido}?`);
   assertListaDeTres(preguntas.f4.criteria, [
@@ -428,6 +434,24 @@ test("si el segundo llamado falla, la revisión falla", async () => {
   assert.equal(llamadas, 2);
   assert.equal(error.code, "proveedor");
   assert.equal(error.status, 502);
+});
+
+test("un recibo que Laya llama trabajo se puntúa como factura y nombra los ítems", async () => {
+  const texto = "Evidence type: a receipt or an invoice.\nItems: Arroz, Huevos.\nTotal as printed: ₡7.950,00.";
+  assert.equal(esReciboEscrito(texto), true);
+  const ids: string[][] = [];
+  const senales = await preguntarLaya("https://laya.example", texto, "Photo of the meal receipt", async (_input, init) => {
+    const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+    ids.push(Object.keys(cuerpo.questions));
+    if (ids.length === 1) return Response.json({ answers: { c1: { choice: "trabajo" } } });
+    return Response.json({ answers: { ...respuestasFactura(), g3: { noul: false } } });
+  });
+  assert.deepEqual(ids[1], ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
+  assert.equal(senales.choice, "factura");
+  assert.match(senales.detalle ?? "", /g3=1/);
+  const base = facturaBase();
+  assert.equal(corregirFactura({ ...base, g3: false }, texto).g3, true);
+  assert.equal(corregirFactura({ ...base, g3: false }, "Items: none named.").g3, false);
 });
 
 function assertListaDeTres(criterios: readonly string[], esperados: [string, string, string]) {

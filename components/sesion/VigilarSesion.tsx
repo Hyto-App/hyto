@@ -12,6 +12,15 @@ export function esRetornoOAuth(params: URLSearchParams): boolean {
   return CLAVES_RETORNO_OAUTH.some((clave) => Boolean(params.get(clave)));
 }
 
+/** A single 401 during a deploy is not enough to sign the person out. Two in a row are. */
+export async function sesionCerrada(fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  const leer = () => fetchImpl("/api/sesion", { method: "GET", cache: "no-store" });
+  const primera = await leer();
+  if (primera.ok || primera.status !== 401) return false;
+  const segunda = await leer();
+  return !segunda.ok && segunda.status === 401;
+}
+
 export function VigilarSesion() {
   const demo = useModoDemo();
 
@@ -25,9 +34,9 @@ export function VigilarSesion() {
     if (esRetornoOAuth(params)) return;
     if (!leerMemoriaAdmin().direccion) return;
     let viva = true;
-    fetch("/api/sesion", { method: "GET", cache: "no-store" })
-      .then((respuesta) => {
-        if (!viva || respuesta.ok || respuesta.status !== 401) return;
+    void sesionCerrada()
+      .then((cerrada) => {
+        if (!viva || !cerrada) return;
         const aqui = rutaRetornoSegura(`${window.location.pathname}${window.location.search}`);
         window.location.replace(new URL(urlSignin(aqui === "/" ? null : aqui), window.location.origin).toString());
       })

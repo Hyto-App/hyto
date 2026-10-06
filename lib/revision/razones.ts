@@ -321,7 +321,22 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     ));
   }
 
-  return ordenarEtiquetas(etiquetas);
+  return ordenarEtiquetas(sinContradicciones(etiquetas, entrada));
+}
+
+/**
+ * A clear match is not also "missing", and named items are not "no item named".
+ * The grade itself is unchanged; only the flags the screen shows.
+ */
+function sinContradicciones(etiquetas: EtiquetaNota[], entrada: EntradaRazones): EtiquetaNota[] {
+  const ids = new Set(etiquetas.map((etiqueta) => etiqueta.id));
+  const items = (entrada.lectura?.articulos ?? []).some((item) => item.trim().length > 0);
+  const coincide = ids.has("matches");
+  return etiquetas.filter((etiqueta) => {
+    if (etiqueta.id === "no_item" && items) return false;
+    if (coincide && (etiqueta.id === "part_missing" || etiqueta.id === "none_shown")) return false;
+    return true;
+  });
 }
 
 /** The reason shown next to the percentage. Tags are sorted, so a problem comes before a warning and a warning before a good sign. */

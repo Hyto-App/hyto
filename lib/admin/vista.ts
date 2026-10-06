@@ -91,12 +91,13 @@ export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
 
 /**
  * One rule for the inbox list, its subtitle, and the event card count: a submission waits for the
- * organizer when it is not paid and is either in review or still carries a current verdict.
- * A task sent back for another photo has no current verdict, so it leaves the inbox.
+ * organizer only while the task is in review. A pending task is not counted, even when a sample
+ * verdict is still stored on it. A task sent back for another photo leaves the inbox.
  */
 export function enBandeja(tarea: { estado: string; veredicto: string | null }): boolean {
   if (tarea.estado === "pagado") return false;
-  return tarea.estado === "en revisión" || tarea.veredicto !== null;
+  // A pending row can still carry a sample verdict. That is not a photo waiting for review.
+  return tarea.estado === "en revisión";
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {

@@ -7,7 +7,6 @@ import { crearFotosMemoria } from "@/lib/blob/fotos";
 import { crearMemoria } from "@/lib/db/memoria";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { desdeGuion } from "@/lib/revision/armar";
-import { phashDe } from "@/lib/evidencia/phash";
 import { jpegDePrueba, jpegDistinto, tokenDePrueba } from "@/lib/evidencia/muestras";
 import { reiniciarTokensEvidencia } from "@/lib/evidencia/token";
 
@@ -42,9 +41,6 @@ test("el voluntario reemplaza la foto mientras no está pagada y la etapa sigue 
   assert.equal(envio?.etapa, "rechazada");
   assert.equal(envio?.enviadaEn, (await almacen.ultimaEvidencia("stand"))?.creadaEn);
 
-  const previa = await almacen.ultimaEvidencia("stand");
-  assert.ok(previa);
-  previa.phash = await phashDe(segunda);
   const reemplazo = await subir(almacen, fotos, segunda);
   assert.equal(reemplazo.status, 201);
   const ultima = await almacen.ultimaEvidencia("stand");

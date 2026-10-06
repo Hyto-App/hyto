@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
@@ -77,6 +78,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         return;
       }
       setTarea(resultado.tarea);
+      if (resultado.tarea.evento) setEvento(resultado.tarea.evento);
       setEjemplo(resultado.ejemplo);
       const guardada = memoria.evidencias[resultado.tarea.id];
       if (resultado.tarea.estado !== "pendiente") {
@@ -431,7 +433,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     nombreArchivo ?? (foto?.type === "application/pdf" ? t("evidencia.invoicePdf") : t("evidencia.textFile"));
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
   const hora = momentoEnvio ? formatearHora(momentoEnvio, idioma) : null;
-  const meta = [evento ? textoVisible(evento, idioma) : null].filter(Boolean).join("");
+  const nombreEvento = (evento || tarea.evento || "").trim();
+  const meta = [nombreEvento ? textoVisible(nombreEvento, idioma) : null].filter(Boolean).join("");
   const rechazada = estaRechazada(tarea);
   const fallidosMarcados = reintentando && rechazada ? puntosFallidos(tarea, puntosDeCondicion(tarea.condicion).length) : null;
 
@@ -444,7 +447,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <>
         <PantallaRechazada
           tarea={tarea}
-          evento={evento}
+          evento={nombreEvento || null}
           onReintentar={empezarReintento}
           onArchivo={reembolso ? () => archivoRef.current?.click() : undefined}
         />
@@ -468,7 +471,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <div>
         <p className="hyto-eyebrow">{t("evidencia.upload")}</p>
         <h1 className="hyto-tarea-titulo">{titulo}</h1>
-        {evento ? <p className="hyto-tarea-meta">{textoVisible(evento, idioma)}</p> : null}
+        {nombreEvento ? <p className="hyto-tarea-meta">{textoVisible(nombreEvento, idioma)}</p> : null}
       </div>
       <span className="hyto-chip-monto">{montoVisible}</span>
     </header>
@@ -557,12 +560,19 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           <div>
             <PastillaEstado estado={tarea.estado} />
             <h2>{titulo}</h2>
-            {evento || hora ? (
-              <p className="hyto-tarea-meta">{hora ? t("evidencia.sentAt", { event: evento ? textoVisible(evento, idioma) : t("comunes.event"), time: hora }) : meta}</p>
+            {nombreEvento || hora ? (
+              <p className="hyto-tarea-meta">
+                {hora
+                  ? nombreEvento
+                    ? t("evidencia.sentAt", { event: textoVisible(nombreEvento, idioma), time: hora })
+                    : t("evidencia.photoSentAt", { time: hora })
+                  : meta}
+              </p>
             ) : null}
             {calificacion ? (
               <div className="hyto-resumen-nota">
                 <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
+                <EtiquetasNota etiquetas={tarea.notas} />
                 <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
               </div>
             ) : null}

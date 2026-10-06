@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
-import { VigilarSesion } from "../../components/sesion/VigilarSesion";
+import { sesionCerrada, VigilarSesion } from "../../components/sesion/VigilarSesion";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { desmontar, limpiarPantalla, montar } from "../../tests/integracion/montar";
 
@@ -25,8 +25,7 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
   try {
     await montar(createElement(VigilarSesion));
     await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
+      await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(window.location.href, /\/\?signin=1(?:&|$)/);
     assert.match(window.location.href, /next=%2Frevision%2Fstand/);
@@ -36,6 +35,19 @@ test("una sesión vencida con wallet guardada abre el ingreso", async () => {
     await desmontar();
     limpiarPantalla();
   }
+});
+
+test("un 401 suelto no cierra la sesión; dos seguidos sí", async () => {
+  let llamadas = 0;
+  const fetchImpl: typeof fetch = async () => {
+    llamadas += 1;
+    if (llamadas === 1) return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+  assert.equal(await sesionCerrada(fetchImpl), false);
+  assert.equal(llamadas, 2);
+  const siempre: typeof fetch = async () => new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+  assert.equal(await sesionCerrada(siempre), true);
 });
 
 test("sin wallet guardada un 401 no cambia de pantalla", async () => {

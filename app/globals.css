@@ -650,27 +650,19 @@ a {
 }
 
 .hyto-pill-vista {
-  font-variant-numeric: tabular-nums;
-  counter-reset: hyto-cuenta var(--hyto-nota);
-}
-
-.hyto-pill-vista::before {
-  content: counter(hyto-cuenta) "% · ";
-}
-
-.hyto-pill-vista::after {
-  content: attr(data-etiqueta);
+  display: none;
 }
 
 .hyto-pill-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+  font-variant-numeric: tabular-nums;
+  position: static;
+  width: auto;
+  height: auto;
   padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
   border: 0;
 }
 

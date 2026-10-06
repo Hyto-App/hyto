@@ -4,6 +4,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto, lecturaDesdeVeredicto } from "@/lib/revision/mostrar-razones";
+import { fraseConNota } from "@/lib/revision/armar";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
@@ -79,7 +80,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     estado: tarea.estado,
     veredicto: bandaDe(veredicto),
     nota: notaDe(veredicto),
-    frase: veredicto?.frase ?? null,
+    frase: fraseConNota(veredicto?.frase ?? null, notaDe(veredicto)),
     origen: veredicto?.origen ?? null,
     codigo: veredicto?.origen === "error" ? veredicto.choice : null,
     montoRevisado: evidencia?.monto ?? null,

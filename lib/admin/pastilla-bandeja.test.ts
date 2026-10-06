@@ -145,6 +145,7 @@ test("el movimiento de la pastilla es corto, ease-out, y se apaga si piden menos
   assert.match(css, /--hyto-duracion:\s*1\.2s/);
   assert.match(css, /transition:\s*color var\(--hyto-duracion\) ease-out/);
   assert.match(css, /width:\s*calc\(var\(--hyto-llenado\) \* 1%\)/);
+  assert.equal(css.includes("counter(hyto-cuenta)"), false);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.hyto-pill-veredicto,\s*\.hyto-pill-veredicto \.hyto-dot \{\s*transition:\s*none/);
   assert.match(css, /@media print \{[\s\S]*?\.hyto-pill-vista \{\s*display:\s*none/);
   const voluntario = readFileSync("components/integrante/SubirEvidencia.tsx", "utf8");

@@ -267,7 +267,11 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
-    const cerca = evidencia.phash ? await esCopiaAjena(deps.almacen, evidencia.phash, evidencia.id, tareaId) : false;
+    // Receipts are judged by identical bytes only. A work photo is a copy only when it matches this task.
+    const cerca =
+      evidencia.phash && tarea.tipo !== "reembolso"
+        ? await esCopiaAjena(deps.almacen, evidencia.phash, evidencia.id, tareaId)
+        : false;
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
     const leida = await deps.fotos.leer(evidencia.blobId);
@@ -454,12 +458,16 @@ function textoCampo(cuerpo: unknown): string {
   return typeof tareaId === "string" ? tareaId.trim() : "";
 }
 
-/** A later photo of the same task is a retake, not a copy of someone else's file. */
+/**
+ * Near-duplicates are only this task, and only a work photo. A receipt is judged by sha256.
+ * Another task's similar layout is not a copy. A later, different photo on this task is a retake
+ * unless the hash is within UMBRAL_COPIA of a photo already on this task.
+ */
 async function esCopiaAjena(almacen: Almacen, phash: string, evidenciaId: string, tareaId: string): Promise<boolean> {
   const cercanas = await almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidenciaId);
   for (const cerca of cercanas) {
     const fila = await almacen.leerEvidencia(cerca.id);
-    if (!fila || fila.tareaId !== tareaId) return true;
+    if (fila && fila.tareaId === tareaId) return true;
   }
   return false;
 }
