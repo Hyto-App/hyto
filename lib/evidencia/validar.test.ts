@@ -43,6 +43,22 @@ test("un archivo vacío, un texto renombrado y una imagen de 1×1 no pasan; un P
   assert.equal(pdf.ok, true);
   if (pdf.ok) assert.equal(pdf.tipo, "application/pdf");
 
+  const nota = validarBytes(new TextEncoder().encode("Team meal receipt\n"), { tipo: "text/plain", nombre: "nota.txt" });
+  assert.equal(nota.ok, true);
+  if (nota.ok) assert.equal(nota.tipo, "text/plain");
+
+  const html = validarBytes(new TextEncoder().encode("<p>Receipt</p>"), { tipo: "text/html", nombre: "nota.html" });
+  assert.equal(html.ok, true);
+  if (html.ok) assert.equal(html.tipo, "text/html");
+
+  const markdown = validarBytes(new TextEncoder().encode("# Receipt\n"), { tipo: "", nombre: "nota.md" });
+  assert.equal(markdown.ok, true);
+  if (markdown.ok) assert.equal(markdown.tipo, "text/markdown");
+
+  const binario = validarBytes(Uint8Array.from([0, 1, 2, 3]), { tipo: "text/plain", nombre: "nota.txt" });
+  assert.equal(binario.ok, false);
+  if (!binario.ok) assert.equal(binario.motivo, "falso");
+
   assert.match(avisoArchivo("vacio"), /1\.\s/);
   assert.match(avisoArchivo("falso"), /Renaming a text file/);
   assert.match(avisoArchivo("pequena"), /1×1/);

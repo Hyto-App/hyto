@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { pdfConTexto } from "../evidencia/muestras";
 import { tareasSemilla } from "../db/semilla";
 import { guionFijo } from "./armar";
 import { preguntarLaya } from "./laya";
@@ -28,7 +29,7 @@ test("en producción, sin Laya, no se usa el stub que aprueba", async () => {
   assert.notEqual(resultado.texto, guionFijo("trabajo").texto);
 });
 
-test("un PDF no se manda al modelo y queda para revisión manual", async () => {
+test("un PDF sin texto no se manda al modelo y explica que no se puede leer", async () => {
   const tarea = tareasSemilla().find((item) => item.id === "comida");
   assert.ok(tarea);
   let llamadas = 0;
@@ -44,8 +45,9 @@ test("un PDF no se manda al modelo y queda para revisión manual", async () => {
   );
   assert.equal(llamadas, 0);
   assert.equal(resultado.origen, "error");
-  assert.equal(resultado.codigo, "pdf");
+  assert.equal(resultado.codigo, "sin_texto");
   assert.equal(resultado.veredicto, "insuficiente");
+  assert.match(resultado.frase, /no readable text/);
   assert.match(resultado.frase, /not approved automatically/);
 });
 
@@ -364,4 +366,141 @@ test("la clave de Laya viaja solo si está configurada", async () => {
     if (previa === undefined) delete process.env.LAYA_API_KEY;
     else process.env.LAYA_API_KEY = previa;
   }
+});
+
+const FACTURA_SI = {
+  f1: { choice: "coincide_con_lo_pedido" },
+  f2: { noul: true },
+  f3: { noul: true },
+  f4: { score: 2 },
+  g1: { choice: "comida_o_bebida" },
+  g2: { noul: true },
+  g3: { noul: true },
+  g4: { noul: true },
+  g5: { score: 2 },
+};
+
+function layaCon(frase: string): typeof fetch {
+  return async (input, init) => {
+    const url = String(input);
+    assert.equal(/groq|generativelanguage|googleapis/i.test(url), false, url);
+    const cuerpo = JSON.parse(String(init?.body)) as { state?: string; questions?: Record<string, unknown> };
+    assert.match(cuerpo.state ?? "", new RegExp(frase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    const preguntas = cuerpo.questions ?? {};
+    if ("c1" in preguntas && !("f1" in preguntas)) return Response.json({ answers: { c1: { choice: "factura" } } });
+    return Response.json({ answers: FACTURA_SI });
+  };
+}
+
+test("un txt se transcribe y llega a Laya sin pasar por visión", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  const resultado = await revisar(tarea, { tipo: "text/plain", bytes: new TextEncoder().encode("Team meal receipt\n") }, {
+    claveGroq: null,
+    layaUrl: "https://laya.example",
+    fetchImpl: layaCon("Team meal receipt"),
+  });
+  assert.equal(resultado.origen, "scout");
+  assert.equal(resultado.texto, "Team meal receipt");
+  assert.equal(resultado.monto, null);
+  assert.equal(resultado.fecha, null);
+  assert.equal(resultado.nota, 40);
+  assert.equal(resultado.veredicto, "insuficiente");
+});
+
+test("un html se limpia y Laya recibe el texto, no las etiquetas", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  const html = "<html><style>p{color:red}</style><script>alert(1)</script><h1>Market</h1><p>Team meal &amp; receipt<br>Total 12.40</p></html>";
+  const resultado = await revisar(tarea, { tipo: "text/html", bytes: new TextEncoder().encode(html) }, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    fetchImpl: layaCon("Team meal & receipt"),
+  });
+  assert.equal(resultado.origen, "scout");
+  assert.match(resultado.texto, /# Market/);
+  assert.match(resultado.texto, /Team meal & receipt/);
+  assert.match(resultado.texto, /Total 12.40/);
+  assert.equal(resultado.texto.includes("<p>"), false);
+  assert.equal(resultado.texto.includes("alert"), false);
+  assert.equal(resultado.texto.includes("color:red"), false);
+  assert.equal(resultado.monto, null);
+  assert.equal(resultado.nota, 40);
+});
+
+test("un PDF con texto se extrae y Laya lo puntúa sin visión", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  const resultado = await revisar(
+    tarea,
+    { tipo: "application/octet-stream", bytes: pdfConTexto("Team meal receipt") },
+    {
+      claveGroq: null,
+      layaUrl: "https://laya.example",
+      fetchImpl: layaCon("Team meal receipt"),
+    },
+  );
+  assert.equal(resultado.origen, "scout");
+  assert.match(resultado.texto, /Team meal receipt/);
+  assert.equal(resultado.monto, null);
+  assert.equal(resultado.fecha, null);
+  assert.equal(resultado.nota, 40);
+});
+
+test("una imagen sigue pasando por la visión", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "stand");
+  assert.ok(tarea);
+  let groqLlamadas = 0;
+  const resultado = await revisar(tarea, FOTO, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      if (url.includes("groq")) {
+        groqLlamadas += 1;
+        return groq("Banner visible.");
+      }
+      const cuerpo = JSON.parse(String(init?.body)) as { state?: string; questions?: Record<string, unknown> };
+      assert.match(cuerpo.state ?? "", /Banner visible/);
+      const preguntas = cuerpo.questions ?? {};
+      if ("c1" in preguntas && !("v1" in preguntas)) return Response.json({ answers: { c1: { choice: "trabajo" } } });
+      return Response.json({
+        answers: {
+          lugar: { choice: "stand_o_mesa" },
+          v1: { choice: "es_lo_pedido" },
+          v2: { score: 2 },
+          v3: { noul: true },
+          v4: { noul: false },
+          t5: { choice: "armar_o_montar" },
+          t6: { choice: "terminado" },
+          t7: { noul: true },
+          t8: { noul: true },
+          t9: { noul: false },
+          t10: { score: 2 },
+        },
+      });
+    },
+  });
+  assert.equal(groqLlamadas, 1);
+  assert.equal(resultado.origen, "scout");
+  assert.match(resultado.texto, /Banner visible/);
+  assert.equal(resultado.nota !== null, true);
+});
+
+test("un PDF de una página vacía falla con un mensaje claro", async () => {
+  const tarea = tareasSemilla().find((item) => item.id === "comida");
+  assert.ok(tarea);
+  const resultado = await conLog(() =>
+    revisar(tarea, { tipo: "application/pdf", bytes: pdfConTexto("") }, {
+      claveGroq: "clave",
+      layaUrl: "https://laya.example",
+      fetchImpl: async () => {
+        throw new Error("la visión no debía correr");
+      },
+    }),
+  );
+  assert.equal(resultado.origen, "error");
+  assert.equal(resultado.codigo, "sin_texto");
+  assert.match(resultado.frase, /PDF has no readable text/);
+  assert.match(resultado.frase, /not approved automatically/);
 });

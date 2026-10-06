@@ -63,7 +63,7 @@ test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async (
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Choose a file/);
-    assert.match(texto(), /Choose a PDF or image/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
     assert.doesNotMatch(texto(), /Open camera/);
   } finally {
     globalThis.fetch = original;
@@ -173,6 +173,35 @@ async function soltarEnInput(archivo: ArchivoNode): Promise<void> {
     await new Promise((resolver) => setTimeout(resolver, 40));
   });
 }
+
+test("un txt y un html de reembolso dejan Enviar encendido", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode(["Team meal receipt"], "nota.txt", { type: "text/plain" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.txt/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+
+    await soltarEnInput(new ArchivoNode(["<p>Receipt</p>"], "nota.html", { type: "text/html" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.html/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.equal(document.querySelector('input[type="file"]')?.getAttribute("accept")?.includes("text/plain"), true);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
 
 test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent", async () => {
   const original = globalThis.fetch;

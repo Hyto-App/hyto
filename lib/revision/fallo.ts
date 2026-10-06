@@ -1,4 +1,13 @@
-export type CodigoFalloRevision = "sin_clave" | "sin_laya" | "pdf" | "cupo" | "tiempo" | "proveedor" | "respuesta" | "sin_foto";
+export type CodigoFalloRevision =
+  | "sin_clave"
+  | "sin_laya"
+  | "pdf"
+  | "sin_texto"
+  | "cupo"
+  | "tiempo"
+  | "proveedor"
+  | "respuesta"
+  | "sin_foto";
 
 export type FuenteRevision = "groq" | "laya" | "revision";
 
@@ -6,6 +15,7 @@ const MENSAJES: Record<CodigoFalloRevision, string> = {
   sin_clave: "AI review is not configured",
   sin_laya: "AI scoring is not configured",
   pdf: "This PDF needs a person to review it. Automatic reading is not available, and it is not approved automatically.",
+  sin_texto: "This file has no readable text, so it is not approved automatically.",
   cupo: "The AI quota is used up",
   tiempo: "The AI did not respond in time",
   proveedor: "The AI could not finish the review",

@@ -136,7 +136,7 @@ const EXACTO: Record<string, Clave> = {
   "Could not open the camera. Allow the camera and try again.": "evidencia.noCamera",
   "The camera is not ready yet.": "evidencia.cameraNotReady",
   "Could not take the photo.": "evidencia.noPhoto",
-  "Choose a PDF, JPEG, PNG, or WebP file.": "evidencia.badFile",
+  "Choose a PDF, HTML, text, JPEG, PNG, or WebP file.": "evidencia.badFile",
   [texto("en", "evidencia.badFile")]: "evidencia.badFile",
   [texto("en", "evidencia.archivoVacio")]: "evidencia.archivoVacio",
   [texto("en", "evidencia.archivoFalso")]: "evidencia.archivoFalso",
