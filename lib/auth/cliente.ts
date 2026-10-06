@@ -18,10 +18,22 @@ export async function crearAuth() {
   return new CavosAuth({ appId, persistSession: true });
 }
 
-export async function conectarStellar(auth: AuthProvider) {
+export type OpcionesConexion = {
+  /**
+   * Ask the Cavos vault to restore the account key from a passkey the person added, when this
+   * browser does not hold it yet. Cavos shows its own "Verify it's you" window. A browser that
+   * already holds the key, or an account with no passkey, sees no prompt and connects as before.
+   */
+  passkey?: boolean;
+};
+
+/** The name the OS passkey sheet shows. The passkey itself belongs to the Cavos vault origin. */
+export const NOMBRE_PASSKEY = "Hyto";
+
+export async function conectarStellar(auth: AuthProvider, opciones: OpcionesConexion = {}) {
   const appId = appIdPublico();
   if (!appId) throw new Error("Sign-in is waiting for the Cavos app id.");
-  const { Cavos } = await import("@cavos/kit");
+  const { Cavos, PasskeyPrf } = await import("@cavos/kit");
   return Cavos.connect({
     chains: ["stellar"],
     defaultChain: "stellar",
@@ -30,6 +42,7 @@ export async function conectarStellar(auth: AuthProvider) {
     appId,
     vault: true,
     auth,
+    ...(opciones.passkey ? { passkeyPrf: new PasskeyPrf({ rpName: NOMBRE_PASSKEY }) } : {}),
   });
 }
 

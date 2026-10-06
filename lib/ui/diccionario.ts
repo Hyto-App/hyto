@@ -451,6 +451,13 @@ export const en = {
     pasaporteTitulo: "Stellar Passport",
     pasaporteDetalle: "It records participation and achievements in the Stellar ecosystem.",
     pasaporteAbrir: "Open on testnet",
+    passkeyTitulo: "Use Hyto on other devices",
+    passkeyDetalle:
+      "Your account key is stored in this browser. Add a passkey so your phone or another computer can open it too. Save the passkey where you keep your passwords. It works like a key to your account, so keep it to yourself.",
+    passkeyAgregar: "Add a passkey",
+    passkeyAgregando: "Adding…",
+    passkeyListo: "Passkey added. On another device, sign in to Hyto and choose Use passkey when it asks.",
+    passkeyAviso: "Add a passkey on Account to use Hyto on your other devices.",
   },
   estados: {
     pendiente: "Pending",
@@ -544,7 +551,13 @@ export const en = {
     noCobroConfirm: "We couldn't confirm the payout setup. Try again.",
     noCuentaPago: "We couldn't check the payout account. Try again.",
     dispositivo:
-      "This browser can't confirm for your account. Open Hyto in the browser where you signed up and try again there. If you can't, ask whoever runs Hyto.",
+      "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.",
+    passkey: "Confirm with your passkey to use your account in this browser. Try again and choose Use passkey when it asks.",
+    passkeySinSoporte: "This browser can't create a passkey. Try a current version of Chrome, Safari or Edge.",
+    passkeySinClave:
+      "This browser doesn't have your account key, so it can't add a passkey. Open Hyto in the browser where you signed up and add it there.",
+    passkeyCancelada: "You cancelled. No passkey was added.",
+    passkeyFallo: "We couldn't add the passkey. Try again.",
     cobroSinXlm: "This payout account has no test XLM for the network fee. Try again in a few minutes, or ask whoever runs Hyto.",
     cobroSecuencia: "The payout account changed while it was getting ready. Try again.",
     cobroFirmante: "This sign-in can't confirm for this payout account. Sign in again and retry.",
@@ -1055,6 +1068,13 @@ export const es: Rama<typeof en> = {
     pasaporteTitulo: "Stellar Passport",
     pasaporteDetalle: "Registra la participación y los logros en el ecosistema Stellar.",
     pasaporteAbrir: "Abrir en testnet",
+    passkeyTitulo: "Usa Hyto en otros dispositivos",
+    passkeyDetalle:
+      "La clave de tu cuenta está guardada en este navegador. Agrega una llave de acceso para que tu teléfono u otra computadora también puedan abrirla. Guárdala donde guardas tus contraseñas. Funciona como una llave de tu cuenta, así que no la compartas.",
+    passkeyAgregar: "Agregar llave de acceso",
+    passkeyAgregando: "Agregando…",
+    passkeyListo: "Llave de acceso agregada. En otro dispositivo, entra a Hyto y elige Use passkey cuando lo pida.",
+    passkeyAviso: "Agrega una llave de acceso en Cuenta para usar Hyto en tus otros dispositivos.",
   },
   estados: {
     pendiente: "Pendiente",
@@ -1148,7 +1168,13 @@ export const es: Rama<typeof en> = {
     noCobroConfirm: "No pudimos confirmar la preparación del cobro. Intenta de nuevo.",
     noCuentaPago: "No pudimos revisar la cuenta de cobro. Intenta de nuevo.",
     dispositivo:
-      "Este navegador no puede confirmar por tu cuenta. Abre Hyto en el navegador donde creaste tu cuenta e inténtalo ahí. Si no puedes, avísale a quien administra Hyto.",
+      "Este navegador todavía no tiene la clave de tu cuenta. Abre Hyto una vez en el navegador donde creaste tu cuenta, ve a Cuenta y toca Agregar llave de acceso. Luego vuelve a intentarlo aquí y usa esa llave.",
+    passkey: "Confirma con tu llave de acceso para usar tu cuenta en este navegador. Intenta de nuevo y elige Use passkey cuando lo pida.",
+    passkeySinSoporte: "Este navegador no puede crear llaves de acceso. Prueba con una versión reciente de Chrome, Safari o Edge.",
+    passkeySinClave:
+      "Este navegador no tiene la clave de tu cuenta, así que no puede agregar una llave de acceso. Abre Hyto en el navegador donde creaste tu cuenta y agrégala ahí.",
+    passkeyCancelada: "Cancelaste. No se agregó ninguna llave de acceso.",
+    passkeyFallo: "No pudimos agregar la llave de acceso. Intenta de nuevo.",
     cobroSinXlm: "Esta cuenta de cobro no tiene XLM de prueba para la comisión de la red. Intenta de nuevo en unos minutos o avísale a quien administra Hyto.",
     cobroSecuencia: "La cuenta de cobro cambió mientras se preparaba. Intenta de nuevo.",
     cobroFirmante: "Este ingreso no puede confirmar por esta cuenta de cobro. Vuelve a entrar e intenta de nuevo.",

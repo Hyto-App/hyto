@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { acortarDireccion, formatearFecha, formatearMonto } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
@@ -100,6 +101,7 @@ export function PanelCuenta() {
         </p>
       ) : null}
       <Billetera vista={vista} />
+      {vista.muestra ? null : <PasskeyCuenta />}
       <PasaporteStellar />
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />
