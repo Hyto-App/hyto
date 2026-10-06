@@ -1,4 +1,10 @@
-import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_PASSKEY_CANCELADA,
+  AVISO_PASSKEY_FALLO,
+  AVISO_PASSKEY_SIN_CLAVE,
+  AVISO_PASSKEY_SIN_SOPORTE,
+} from "@/lib/auth/avisosPasskey";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -15,7 +21,7 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
-import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_SIN_CUENTA, AVISO_SPAM, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
+import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
@@ -91,6 +97,11 @@ const EXACTO: Record<string, Clave> = {
   [CODIGO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
   [AVISO_HORIZON_RECEPTOR]: "errores.horizonReceptor",
   [AVISO_DISPOSITIVO]: "errores.dispositivo",
+  [AVISO_PASSKEY]: "errores.passkey",
+  [AVISO_PASSKEY_SIN_SOPORTE]: "errores.passkeySinSoporte",
+  [AVISO_PASSKEY_SIN_CLAVE]: "errores.passkeySinClave",
+  [AVISO_PASSKEY_CANCELADA]: "errores.passkeyCancelada",
+  [AVISO_PASSKEY_FALLO]: "errores.passkeyFallo",
   [CODIGO_USDC_SIN_XLM]: "errores.cobroSinXlm",
   [AVISO_USDC_SIN_XLM]: "errores.cobroSinXlm",
   [AVISO_USDC_SECUENCIA]: "errores.cobroSecuencia",
@@ -111,6 +122,9 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_DEMO]: "errores.demoCorreo",
   [AVISO_SPAM]: "errores.spam",
   [AVISO_SIN_CUENTA]: "errores.sinCuenta",
+  [AVISO_SPAM_ENLACE]: "errores.spamEnlace",
+  [AVISO_METODO_RECUPERACION]: "errores.metodoRecuperacion",
+  [AVISO_SIN_RESPALDO]: "errores.sinRespaldo",
   [AVISO_MONTO_INVALIDO]: "errores.montoInvalido",
   [AVISO_MONTO_TOPE]: "errores.montoTope",
   [AVISO_MONTO_TARDE]: "errores.montoTarde",
@@ -161,6 +175,10 @@ const EXACTO: Record<string, Clave> = {
   "Only the organizer can set priority and difficulty.": "clasificacion.onlyOrganizer",
   "Choose Normal or High.": "clasificacion.choosePriority",
   "Choose Easy, Medium, Hard, or Not set.": "clasificacion.chooseDifficulty",
+  "Mile already checked the maximum number of attempts.": "mile.topeAviso",
+  "Requirements have to be a list.": "mile.requisitosLista",
+  "Enter at most 3 requirements.": "mile.requisitosMax",
+  "Demo mode cannot suggest requirements.": "mile.demoSugerir",
   "We couldn't open this payout account on the test network. Open Events and tap Get ready to be paid.": "errores.faucetTestnet",
   "Payout accounts are only opened on the test network.": "errores.soloTestnet",
 };

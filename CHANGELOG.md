@@ -21,6 +21,7 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 - `npm run banco:revision` runs labeled evidence cases through `revisar()`. It is simulated by default, live with `--vivo`, and compares runs with `--comparar`.
 - `npm run cuentas:usdc -- G…` reads testnet accounts and says what each one still needs before it can be paid. It changes nothing.
+- A task can store up to 3 photo requirements (`requisitos`). Empty keeps the structured evidence review. With `HYTO_MILE_REQUISITOS=on`, Mile scores each requirement as cumple, parcial, or no_cumple and can send the photo back (`rechazo.origen` `mile`) until `HYTO_MILE_INTENTOS` (default 3). The flag defaults to off, so the live review stays the structured reading until someone applies `drizzle/0007_requisitos_rechazo.sql` and turns the flag on. Mile never pays.
 
 ## 2026-10-04
 

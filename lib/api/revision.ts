@@ -5,6 +5,8 @@ import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
 import { conciliarPagoPendiente } from "./firma";
+import { rechazoPublico, revisionPublica } from "./tareas";
+import { leerRequisitos } from "@/lib/revision/requisitos";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
@@ -66,8 +68,12 @@ export async function leerRevisionHttp(
       actual = (await almacen.leerTarea(tareaId)) ?? actual;
     }
     const vista = await tareaAdmin(almacen, actual);
+    const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
     return json({
       tarea: vista,
+      requisitos: leerRequisitos(actual.requisitos),
+      rechazo: rechazoPublico(actual),
+      revision: revisionPublica(actual, fila),
       foto: evidencia ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
       contratoEscrow: actual.contratoEscrow,

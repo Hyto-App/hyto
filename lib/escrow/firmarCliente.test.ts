@@ -4,6 +4,7 @@ import {
   AVISO_DEMO_FIRMA,
   AVISO_DISPOSITIVO,
   AVISO_FIRMA,
+  AVISO_PASSKEY,
   AVISO_RECHAZO,
   AVISO_REINGRESO,
   AVISO_SESION_CAVOS,
@@ -343,6 +344,13 @@ test("una billetera sin clave en este navegador no llega a signXdr", () => {
     (error: unknown) =>
       error instanceof ErrorFirmaCliente && error.message === AVISO_DISPOSITIVO && error.codigo === "needs-device-approval",
   );
+  assert.throws(
+    () => firmanteDe({ ...billetera("needs-device-approval"), passkeyRestore: true }),
+    (error: unknown) =>
+      error instanceof ErrorFirmaCliente && error.message === AVISO_PASSKEY && error.codigo === "needs-device-approval",
+  );
+  const restaurada = { ...billetera("ready"), passkeyRestore: true };
+  assert.equal(firmanteDe(restaurada), restaurada);
 });
 
 test("los errores de clave del kit y del vault dicen que falta la clave en este navegador", async () => {
@@ -354,6 +362,10 @@ test("los errores de clave del kit y del vault dicen que falta la clave en este 
     assert.equal(traducirFirma(new Error(crudo)).message, AVISO_DISPOSITIVO, crudo);
   }
   assert.equal(traducirFirma(new Error("kit/vault: the user rejected this transaction")).message, AVISO_RECHAZO);
+  assert.equal(
+    traducirFirma(new Error("kit/secret: this passkey does not hold this wallet's key")).message,
+    AVISO_PASSKEY,
+  );
 
   const red = fetchDe([{ body: { xdr: XDR, token: "tok" } }]);
   await assert.rejects(
@@ -390,3 +402,15 @@ function jwt(payload: Record<string, unknown>): string {
   const parte = (valor: Record<string, unknown>) => Buffer.from(JSON.stringify(valor)).toString("base64url");
   return `${parte({ alg: "none" })}.${parte(payload)}.x`;
 }
+
+test("con la recuperación de Cavos (enclave), un navegador sin la llave pide entrar otra vez", async () => {
+  const { AVISO_SIN_RESPALDO } = await import("@/lib/auth/errores");
+  assert.equal(
+    traducirFirma(new Error("kit/stellar: this wallet is protected by recovery. Sign in with Google, Apple or an email link to continue.")).message,
+    AVISO_SESION_CAVOS,
+  );
+  assert.equal(
+    traducirFirma(new Error("kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.")).message,
+    AVISO_SIN_RESPALDO,
+  );
+});

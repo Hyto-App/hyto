@@ -1,5 +1,6 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
+import { AVISO_SIN_RESPALDO, esMetodoRecuperacion, esSinRespaldo } from "@/lib/auth/errores";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
 
 export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
@@ -10,7 +11,9 @@ export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm 
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_DISPOSITIVO =
-  "This browser can't confirm for your account. Open Hyto in the browser where you signed up and try again there. If you can't, ask whoever runs Hyto.";
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
+export const AVISO_PASSKEY =
+  "Confirm with your passkey to use your account in this browser. Try again and choose Use passkey when it asks.";
 
 export function mensajeFirmaVisible(mensaje: string): string {
   if (mensaje === AVISO_SESION_CAVOS) return AVISO_REINGRESO;
@@ -172,6 +175,8 @@ function cuerpoEnvio(
 export type BilleteraSesion = {
   address: string;
   status: EstadoCuenta;
+  /** True when a passkey the person added can restore this account in another browser. */
+  passkeyRestore?: boolean;
   signXdr: (unsignedXdr: string) => Promise<string>;
   addTrustline: (asset: { code: string; issuer: string }) => Promise<string>;
 };
@@ -180,20 +185,24 @@ export async function conectarBilleteraDeSesion(): Promise<BilleteraSesion> {
   const auth = await crearAuth();
   if (!auth) throw new ErrorFirmaCliente("Sign-in isn't set up yet.");
   if (!asegurarIdentidadCavos(auth)) throw new ErrorFirmaCliente(AVISO_SESION_CAVOS);
-  const conectada = await conectarStellar(auth);
+  // Passkey mode only matters in a browser without the key: the Cavos vault then opens the copy of
+  // the key that a passkey added on Account protects. Everywhere else it connects as before.
+  const conectada = await conectarStellar(auth, { passkey: true });
   const billetera = conectada.wallet("stellar");
   if (billetera.chain !== "stellar") throw new ErrorFirmaCliente(AVISO_FIRMA);
   return billetera;
 }
 
 /**
- * Hyto connects without a passkey or social recovery, so the account key lives only in the browser
- * storage where the account was created. Another browser, a cleared one, or another site gets
- * `needs-device-approval`, and signing in again there does not bring the key back.
+ * The account key lives in the Cavos vault storage of the browser where the account was created.
+ * Another browser, a cleared one, or another site gets `needs-device-approval` unless the person
+ * added a passkey on Account (the vault then restores the key with it at connect). With a passkey
+ * on file, `needs-device-approval` means the passkey prompt was dismissed or did not open the key.
  */
 export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
   if (billetera.status !== "needs-device-approval") return billetera;
-  throw new ErrorFirmaCliente(AVISO_DISPOSITIVO, null, null, billetera.status);
+  const aviso = billetera.passkeyRestore ? AVISO_PASSKEY : AVISO_DISPOSITIVO;
+  throw new ErrorFirmaCliente(aviso, null, null, billetera.status);
 }
 
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
@@ -261,6 +270,11 @@ export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  // Enclave recovery: this browser lost the key and the fresh sign-in proof is gone. A new sign-in
+  // brings one, and the vault restores the key with it.
+  if (esMetodoRecuperacion(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  if (esSinRespaldo(textoError)) return new ErrorFirmaCliente(AVISO_SIN_RESPALDO);
+  if (esPasskeyAjena(textoError)) return new ErrorFirmaCliente(AVISO_PASSKEY);
   if (esDispositivo(textoError)) return new ErrorFirmaCliente(AVISO_DISPOSITIVO);
   if (/demo/i.test(textoError) && /firma|desactiv|signature|disabled/i.test(textoError)) {
     return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403);
@@ -278,6 +292,11 @@ function esSesionCavos(textoError: string): boolean {
 
 function esDispositivo(textoError: string): boolean {
   return /not an authorized signer|not held by this device|approve this device|holds no key for the account/i.test(textoError);
+}
+
+/** The vault found a passkey copy of the key, but the passkey the person picked does not open it. */
+function esPasskeyAjena(textoError: string): boolean {
+  return /passkey does not hold this wallet's key/i.test(textoError);
 }
 
 function esRechazo(textoError: string): boolean {

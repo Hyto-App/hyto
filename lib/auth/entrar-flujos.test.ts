@@ -1,5 +1,6 @@
 import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
+import { POLITICA_INACTIVA } from "./enclave";
 import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
@@ -68,6 +69,7 @@ test("el código de Sign in viaja con la intención signin y el de Crear cuenta 
       await montar(
         createElement(Entrar, {
           crear: async () => ({ sendOtp: async () => undefined }),
+          politica: async () => POLITICA_INACTIVA,
           confirmarCodigo: async (_auth, _correo, _codigo, intencion) => {
             intenciones.push(intencion);
             throw new Error('{"error":"invalid_code","message":"Invalid code"}');

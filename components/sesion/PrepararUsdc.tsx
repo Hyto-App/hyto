@@ -103,6 +103,13 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
           {t("pago.viewChain")}
         </a>
       ) : null}
+      {estado === "hecho" ? (
+        <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
+          <a href="/cuentas" className="underline underline-offset-4">
+            {t("cuenta.passkeyAviso")}
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }

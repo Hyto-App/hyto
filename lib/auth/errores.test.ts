@@ -88,3 +88,15 @@ test("valida el correo y marca el dominio de demo", () => {
   assert.equal(esCorreoDemo("ana@demo.hyto.evil"), false);
   assert.equal(AVISO_CORREO.includes("valid email"), true);
 });
+
+test("los errores de la recuperación de Cavos (enclave) tienen un aviso claro al entrar", async () => {
+  const { AVISO_METODO_RECUPERACION, AVISO_SIN_RESPALDO } = await import("./errores");
+  assert.equal(
+    avisoDeIngreso(new Error("kit/stellar: this wallet is protected by recovery. Sign in with Google, Apple or an email link to continue.")).texto,
+    AVISO_METODO_RECUPERACION,
+  );
+  assert.equal(
+    avisoDeIngreso(new Error("kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.")).texto,
+    AVISO_SIN_RESPALDO,
+  );
+});

@@ -1,6 +1,7 @@
 import type { AuthProvider, Identity } from "@cavos/kit";
 import { olvidarDireccionAdmin } from "@/lib/admin/memoria";
 import { borrarCavosLocal, recordarTokenCavos, userIdCavosGuardado } from "@/lib/auth/cavosSesion";
+import { leerPoliticaRecuperacion, opcionesRecuperacion } from "@/lib/auth/enclave";
 import { debeProvisionar, type IntencionIngreso } from "@/lib/auth/intencion";
 import { completarAltaTestnet } from "@/lib/integrante/alta";
 import { APP_SALT, appIdPublico } from "@/lib/integrante/identidades";
@@ -18,10 +19,29 @@ export async function crearAuth() {
   return new CavosAuth({ appId, persistSession: true });
 }
 
-export async function conectarStellar(auth: AuthProvider) {
+export type OpcionesConexion = {
+  /**
+   * Ask the Cavos vault to restore the account key from a passkey the person added, when this
+   * browser does not hold it yet. Cavos shows its own "Verify it's you" window. A browser that
+   * already holds the key, or an account with no passkey, sees no prompt and connects as before.
+   */
+  passkey?: boolean;
+};
+
+/** The name the OS passkey sheet shows. The passkey itself belongs to the Cavos vault origin. */
+export const NOMBRE_PASSKEY = "Hyto";
+
+/**
+ * Opens the Stellar wallet in the Cavos vault. When Cavos enclave recovery is on for this app
+ * (lib/auth/enclave.ts), a new wallet is sealed for recovery and a new browser restores it right
+ * after Google, Apple or an email link. Passkey mode stays as it was; the vault prefers the enclave
+ * when both are set.
+ */
+export async function conectarStellar(auth: AuthProvider, opciones: OpcionesConexion = {}) {
   const appId = appIdPublico();
   if (!appId) throw new Error("Sign-in is waiting for the Cavos app id.");
-  const { Cavos } = await import("@cavos/kit");
+  const [kit, politica] = await Promise.all([import("@cavos/kit"), leerPoliticaRecuperacion(appId)]);
+  const { Cavos, PasskeyPrf } = kit;
   return Cavos.connect({
     chains: ["stellar"],
     defaultChain: "stellar",
@@ -30,6 +50,10 @@ export async function conectarStellar(auth: AuthProvider) {
     appId,
     vault: true,
     auth,
+    ...(opciones.passkey ? { passkeyPrf: new PasskeyPrf({ rpName: NOMBRE_PASSKEY }) } : {}),
+    // With Cavos enclave recovery on, the vault seals new wallets and restores them on a new
+    // device from the fresh sign-in proof. Off (the default), this adds nothing.
+    ...opcionesRecuperacion(politica, auth, appId, kit),
   });
 }
 

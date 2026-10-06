@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { consultaPhashCercano } from "./sql";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
@@ -76,7 +76,17 @@ export function origenDeFila(valor: string): VeredictoFila["origen"] {
 
 function esColumnaAusente(error: unknown): boolean {
   const mensaje = error instanceof Error ? error.message : String(error);
-  return /sha256|42703|does not exist|no existe|undefined column/i.test(mensaje);
+  return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
+}
+
+function columnasTareaPrevias() {
+  const { requisitos: _requisitos, rechazo: _rechazo, ...resto } = getTableColumns(tareas);
+  return resto;
+}
+
+function columnasVeredictoPrevias() {
+  const { mile: _mile, ...resto } = getTableColumns(veredictos);
+  return resto;
 }
 
 function filasSql(resultado: unknown): Record<string, unknown>[] {
@@ -99,11 +109,24 @@ const columnasPrevias = {
 
 export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   let antifraude: boolean | null = null;
+  let mile: boolean | null = null;
   async function columnasListas(): Promise<boolean> {
     if (antifraude === true) return true;
     try {
       await db.execute(sql`select sha256 from evidencias limit 0`);
       antifraude = true;
+      return true;
+    } catch (error) {
+      if (esColumnaAusente(error)) return false;
+      throw error;
+    }
+  }
+  async function columnasMile(): Promise<boolean> {
+    if (mile === true) return true;
+    try {
+      await db.execute(sql`select requisitos, rechazo from tareas limit 0`);
+      await db.execute(sql`select mile from veredictos limit 0`);
+      mile = true;
       return true;
     } catch (error) {
       if (esColumnaAusente(error)) return false;
@@ -147,7 +170,13 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async crearProyecto(proyecto, filas) {
       await db.insert(proyectos).values(proyecto).onConflictDoNothing();
-      if (filas.length > 0) await db.insert(tareas).values(filas).onConflictDoNothing();
+      if (filas.length > 0) {
+        const listo = await columnasMile();
+        const valores = listo
+          ? filas.map((fila) => ({ ...fila, requisitos: fila.requisitos ?? null, rechazo: fila.rechazo ?? null }))
+          : filas.map(({ requisitos: _requisitos, rechazo: _rechazo, ...fila }) => fila);
+        await db.insert(tareas).values(valores).onConflictDoNothing();
+      }
       if (proyecto.organizadorId) {
         await db
           .insert(proyectoMiembros)
@@ -198,15 +227,27 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         });
     },
     async listarTareas() {
+      if (!(await columnasMile())) {
+        const filas = await db.select(columnasTareaPrevias()).from(tareas);
+        return filas.map((fila) => tareaDesde({ ...fila, requisitos: null, rechazo: null }));
+      }
       const filas = await db.select().from(tareas);
       return filas.map(tareaDesde);
     },
     async leerTarea(id) {
+      if (!(await columnasMile())) {
+        const filas = await db.select(columnasTareaPrevias()).from(tareas).where(eq(tareas.id, id)).limit(1);
+        return filas[0] ? tareaDesde({ ...filas[0], requisitos: null, rechazo: null }) : null;
+      }
       const filas = await db.select().from(tareas).where(eq(tareas.id, id)).limit(1);
       return filas[0] ? tareaDesde(filas[0]) : null;
     },
     async actualizarTarea(id, cambio) {
-      await db.update(tareas).set(cambio).where(eq(tareas.id, id));
+      const listo = await columnasMile();
+      const { requisitos, rechazo, ...resto } = cambio;
+      const set = listo ? cambio : resto;
+      if (Object.keys(set).length === 0) return;
+      await db.update(tareas).set(set).where(eq(tareas.id, id));
     },
     async crearEvidencia(evidencia) {
       if (!(await columnasListas())) {
@@ -299,26 +340,74 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     async listaParaAntifraude() {
       return columnasListas();
     },
+    async columnasRequisitos() {
+      return columnasMile();
+    },
+    async contarEvidencias(tareaId) {
+      const resultado = await db.execute(sql`select count(*)::int as n from evidencias where tarea_id = ${tareaId}`);
+      const fila = filasSql(resultado)[0];
+      const total = Number(fila?.n ?? 0);
+      return Number.isFinite(total) ? total : 0;
+    },
     async guardarVeredicto(veredicto) {
+      const listo = await columnasMile();
+      const base = {
+        id: veredicto.id,
+        evidenciaId: veredicto.evidenciaId,
+        tareaId: veredicto.tareaId,
+        veredicto: veredicto.veredicto,
+        frase: veredicto.frase,
+        textoScout: veredicto.textoScout,
+        choice: veredicto.choice,
+        noul: veredicto.noul,
+        score: veredicto.score,
+        origen: veredicto.origen,
+      };
+      const valores = listo ? { ...base, mile: veredicto.mile ?? null } : base;
       await db
         .insert(veredictos)
-        .values(veredicto)
+        .values(valores)
         .onConflictDoUpdate({
           target: veredictos.id,
-          set: {
-            evidenciaId: veredicto.evidenciaId,
-            tareaId: veredicto.tareaId,
-            veredicto: veredicto.veredicto,
-            frase: veredicto.frase,
-            textoScout: veredicto.textoScout,
-            choice: veredicto.choice,
-            noul: veredicto.noul,
-            score: veredicto.score,
-            origen: veredicto.origen,
-          },
+          set: listo
+            ? {
+                evidenciaId: veredicto.evidenciaId,
+                tareaId: veredicto.tareaId,
+                veredicto: veredicto.veredicto,
+                frase: veredicto.frase,
+                textoScout: veredicto.textoScout,
+                choice: veredicto.choice,
+                noul: veredicto.noul,
+                score: veredicto.score,
+                origen: veredicto.origen,
+                mile: veredicto.mile ?? null,
+              }
+            : {
+                evidenciaId: veredicto.evidenciaId,
+                tareaId: veredicto.tareaId,
+                veredicto: veredicto.veredicto,
+                frase: veredicto.frase,
+                textoScout: veredicto.textoScout,
+                choice: veredicto.choice,
+                noul: veredicto.noul,
+                score: veredicto.score,
+                origen: veredicto.origen,
+              },
         });
     },
     async veredictoDe(evidenciaId) {
+      if (!(await columnasMile())) {
+        const filas = await db.select(columnasVeredictoPrevias()).from(veredictos).where(eq(veredictos.evidenciaId, evidenciaId)).limit(1);
+        const fila = filas[0];
+        if (!fila) return null;
+        return {
+          ...fila,
+          mile: null,
+          veredicto: veredictoDe(fila.veredicto),
+          noul: fila.noul === "si" ? "si" : "no",
+          origen: origenDeFila(fila.origen),
+        };
+      }
       const filas = await db.select().from(veredictos).where(eq(veredictos.evidenciaId, evidenciaId)).limit(1);
       const fila = filas[0];
       if (!fila) return null;

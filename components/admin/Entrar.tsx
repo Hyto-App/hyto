@@ -4,7 +4,15 @@ import { useEffect, useId, useRef, useState, type ClipboardEvent, type KeyboardE
 import Link from "next/link";
 import { guardarDireccionAdmin, leerMemoriaAdmin } from "@/lib/admin/memoria";
 import { crearAuth, entrarConCodigo, entrarConGoogle, redirectLimpio, urlApple, urlGoogle, type IngresoCerrado } from "@/lib/auth/cliente";
-import { guardarIntencion, leerIntencion, olvidarIntencion, type IntencionIngreso } from "@/lib/auth/intencion";
+import { leerPoliticaRecuperacion, POLITICA_INACTIVA, type PoliticaRecuperacion, type ProveedorRecuperacion } from "@/lib/auth/enclave";
+import {
+  guardarIntencion,
+  guardarIntencionEnlace,
+  intencionGuardada,
+  olvidarIntencion,
+  tomarIntencionEnlace,
+  type IntencionIngreso,
+} from "@/lib/auth/intencion";
 import {
   destinoTrasIngreso,
   guardarRetorno,
@@ -19,8 +27,10 @@ import {
   AVISO_CORREO,
   AVISO_DEMO,
   AVISO_GENERICO,
+  AVISO_METODO_RECUPERACION,
   AVISO_SIN_CUENTA,
   AVISO_SPAM,
+  AVISO_SPAM_ENLACE,
   ESPERA_TRAS_ENVIO,
   avisoDeIngreso,
   correoValido,
@@ -37,11 +47,17 @@ import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
 import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
-type Fase = "inicio" | "correo" | "codigo" | "exito";
+/** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
+type Fase = "inicio" | "correo" | "codigo" | "enlace" | "exito";
 type Pose = "rest" | "dive" | "code" | "worry" | "win";
 type Ocupado = "envio" | "google" | "apple" | "codigo" | "demo" | "salida";
-type AuthMinimo = { sendOtp(email: string): Promise<void> };
+type AuthMinimo = { sendOtp(email: string): Promise<void>; sendMagicLink?(email: string): Promise<void> };
+type CargarPolitica = () => Promise<PoliticaRecuperacion>;
 type ConfirmarCodigo = (auth: AuthMinimo, email: string, codigo: string, intencion: IntencionIngreso) => Promise<IngresoCerrado>;
+
+function politicaDeCavos(): Promise<PoliticaRecuperacion> {
+  return leerPoliticaRecuperacion(appIdPublico());
+}
 
 /** Where Get ready to be paid finishes a Sign up whose testnet setup did not. */
 const DESTINO_ALTA_PENDIENTE = "/eventos";
@@ -50,6 +66,8 @@ const DESTINO_ALTA_PENDIENTE = "/eventos";
 type ResultadoIngreso = { aviso: string | null; direccion: string | null; guardada: boolean; pendiente: string | null };
 
 const googleEnCurso = new Map<string, Promise<ResultadoIngreso>>();
+/** Read once per one-time code: Strict Mode runs the return effect twice and the link intent is taken on read. */
+const regresos = new Map<string, IntencionIngreso>();
 
 const DIGITOS_CODIGO = 6;
 const CODIGO_VACIO: string[] = Array.from({ length: DIGITOS_CODIGO }, () => "");
@@ -75,6 +93,7 @@ export function Entrar({
   esperaMinima = ENVIO_MINIMO_MS,
   abrirLogin = false,
   atiendeUrl = true,
+  politica: cargarPolitica = politicaDeCavos,
 }: {
   demoHabilitado?: boolean;
   /** Start on the email step instead of the sign up / sign in cards. */
@@ -89,6 +108,11 @@ export function Entrar({
    * Entrar only one of them may do this, or the later one covers the first.
    */
   atiendeUrl?: boolean;
+  /**
+   * Cavos enclave recovery policy. Active, it shows only the one sign-in method Cavos accepts for
+   * recovery and email sends a link instead of a code. Inactive or unreachable: today's screen.
+   */
+  politica?: CargarPolitica;
 }) {
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
@@ -110,6 +134,7 @@ export function Entrar({
   const [mostrarEspera, setMostrarEspera] = useState(false);
   const [verCheck, setVerCheck] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
+  const [recuperacion, setRecuperacion] = useState<PoliticaRecuperacion>(POLITICA_INACTIVA);
   const authRef = useRef<AuthMinimo | null>(null);
   const dialogoRef = useRef<HTMLDivElement>(null);
   const filaRef = useRef<HTMLDivElement>(null);
@@ -135,6 +160,17 @@ export function Entrar({
       setFase("correo");
     }
     setDireccion(leerMemoriaAdmin().direccion);
+  }, []);
+
+  useEffect(() => {
+    let vivo = true;
+    void politicaSegura(cargarPolitica).then((valor) => {
+      if (vivo) setRecuperacion(valor);
+    });
+    return () => {
+      vivo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -182,7 +218,8 @@ export function Entrar({
     const params = new URLSearchParams(window.location.search);
     const codigoGoogle = params.get("cavos_auth_code");
     if (!codigoGoogle) return;
-    const intencion = leerIntencion();
+    const intencion = regresos.get(codigoGoogle) ?? intencionDelRegreso();
+    regresos.set(codigoGoogle, intencion);
     setPestana(intencion);
     setFase("correo");
     setAviso(t(intencion === "signup" ? "entrar.settingUp" : "entrar.signingIn"));
@@ -368,10 +405,20 @@ export function Entrar({
     setAviso(null);
     setOcupado("envio");
     try {
+      const politica = await politicaSegura(cargarPolitica);
+      setRecuperacion(politica);
+      if (politica.activa && politica.proveedor !== "email") {
+        setAviso(AVISO_METODO_RECUPERACION);
+        return;
+      }
       const auth = await crear();
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
         setAviso(AVISO_CONFIG);
+        return;
+      }
+      if (politica.activa) {
+        await enviarEnlace(auth, email);
         return;
       }
       await Promise.all([auth.sendOtp(email), pausa(esperaMinima)]);
@@ -386,6 +433,31 @@ export function Entrar({
       enCurso.current = false;
       setOcupado(null);
     }
+  }
+
+  /**
+   * Cavos enclave recovery never accepts an email code, only an email link. The link comes back to
+   * this exact URL (it must be in the Cavos Callback URLs, like the Google return) with the same
+   * `?cavos_auth_code=` as Google, usually in a new tab, so the intent rides in localStorage.
+   */
+  async function enviarEnlace(auth: AuthMinimo, email: string) {
+    if (typeof auth.sendMagicLink !== "function") {
+      setAviso(AVISO_CONFIG);
+      return;
+    }
+    const nextUrl = rutaRetornoSegura(new URLSearchParams(window.location.search).get("next")) ?? retorno ?? leerRetorno();
+    if (nextUrl) guardarRetorno(nextUrl);
+    guardarIntencionEnlace({ intencion: pestana, retorno: nextUrl });
+    // The exchange sends redirectLimpio() as the redirect URI, so the link must be asked from it.
+    window.history.replaceState(window.history.state, "", redirectLimpio());
+    await Promise.all([auth.sendMagicLink(email), pausa(esperaMinima)]);
+    setCorreo(email);
+    setFase("enlace");
+    iniciarEspera(ESPERA_TRAS_ENVIO, false);
+  }
+
+  function pedirOtroEnlace() {
+    void enviarCodigo();
   }
 
   async function confirmar(codigo = digitos.join("")) {
@@ -474,6 +546,12 @@ export function Entrar({
     if (nextUrl) guardarRetorno(nextUrl);
     let salio = false;
     try {
+      const politica = await politicaSegura(cargarPolitica);
+      setRecuperacion(politica);
+      if (politica.activa && politica.proveedor !== proveedor) {
+        setAviso(AVISO_METODO_RECUPERACION);
+        return;
+      }
       const auth = await crearAuth();
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
@@ -639,6 +717,10 @@ export function Entrar({
   const celdasOk = fase === "exito" && !verCheck;
   const pose: Pose =
     fase === "exito" ? "win" : enviando ? "dive" : alertaCodigo ? "worry" : fase === "codigo" ? "code" : "rest";
+  const conEnlace = recuperacion.activa;
+  const ofrece = (metodo: ProveedorRecuperacion) => !recuperacion.activa || recuperacion.proveedor === metodo;
+  const conCorreo = ofrece("email");
+  const conRedes = ofrece("google") || ofrece("apple");
   const chip =
     fase === "exito"
       ? t("entrar.chipExito")
@@ -648,12 +730,14 @@ export function Entrar({
           ? t("entrar.chipError")
           : fase === "codigo"
             ? t("entrar.chipCodigo")
-            : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
-  const paso = fase === "exito" ? 3 : fase === "codigo" ? 2 : 1;
+            : fase === "enlace"
+              ? t("entrar.chipEnlace")
+              : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
+  const paso = fase === "exito" ? 3 : fase === "codigo" || fase === "enlace" ? 2 : 1;
   const llenado: [number, number, number] =
     fase === "exito"
       ? [1, 1, verCheck ? 1 : 0]
-      : fase === "codigo"
+      : fase === "codigo" || fase === "enlace"
         ? [1, 1, 0]
         : enviando
           ? [1, 0.45, 0]
@@ -726,14 +810,14 @@ export function Entrar({
                   </button>
                 ))}
               </div>
-            ) : fase === "codigo" ? (
+            ) : fase === "codigo" || fase === "enlace" ? (
               <button type="button" className="hyto-login-volver" onClick={volverAlCorreo} disabled={ocupado !== null}>
                 <Icono nombre="atras" />
                 {t("entrar.cambiarCorreo")}
               </button>
             ) : null}
             <ol className="hyto-login-pasos" aria-label={t("entrar.paso", { n: paso })}>
-              {(["entrar.pasoCorreo", "entrar.pasoCodigo", "entrar.pasoListo"] as const).map((clave, indice) => (
+              {(["entrar.pasoCorreo", conEnlace ? "entrar.pasoEnlace" : "entrar.pasoCodigo", "entrar.pasoListo"] as const).map((clave, indice) => (
                 <li
                   key={clave}
                   className={[
@@ -755,92 +839,107 @@ export function Entrar({
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
                 <p className="hyto-login-lead">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
-                <button
-                  type="button"
-                  onClick={() => void google(pestana)}
-                  disabled={ocupado !== null}
-                  className="hyto-login-btn is-fantasma hyto-login-google"
-                >
-                  <IconoGoogle />
-                  {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.googleContinuar")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void google(pestana, "apple")}
-                  disabled={ocupado !== null}
-                  className="hyto-login-btn is-fantasma hyto-login-apple"
-                >
-                  <IconoApple />
-                  {ocupado === "apple" ? t("entrar.openingApple") : t("entrar.appleContinuar")}
-                </button>
-                <p className="hyto-login-o">
-                  <span>{t("entrar.oCorreo")}</span>
-                </p>
-                <form
-                  noValidate
-                  onSubmit={(evento) => {
-                    evento.preventDefault();
-                    void enviarCodigo();
-                  }}
-                >
-                  <label className="hyto-login-etiqueta" htmlFor={`${ids}-correo`}>
-                    {t("entrar.email")}
-                  </label>
-                  <div className={`hyto-login-campo${enviando ? " is-bloqueado" : ""}`}>
-                    <Icono nombre="correo" />
-                    <input
-                      id={`${ids}-correo`}
-                      type="email"
-                      autoComplete="email"
-                      inputMode="email"
-                      data-foco=""
-                      value={correo}
-                      onChange={(evento) => {
-                        setCorreo(evento.target.value);
-                        setAviso(null);
-                      }}
-                      placeholder={t("entrar.correoEjemplo")}
-                      disabled={ocupado !== null}
-                    />
-                    {enviando ? (
-                      <span className="hyto-login-candado" aria-hidden="true">
-                        <Icono nombre="check" />
-                      </span>
-                    ) : null}
-                  </div>
-                  {enviando ? (
-                    <p className="hyto-login-estado" aria-live="polite">
-                      <img src="/login/mile-icon.svg" alt="" width={22} height={22} />
-                      {t("entrar.mile.dive")}
-                    </p>
-                  ) : (
-                    <p className="hyto-login-ayuda">{demo ? claro(AVISO_DEMO) : t("entrar.ayudaCorreo")}</p>
-                  )}
-                  {mensaje ? (
-                    <p role="status" className="hyto-login-aviso">
-                      {claro(mensaje)}
-                    </p>
-                  ) : null}
+                {ofrece("google") ? (
                   <button
-                    type="submit"
-                    disabled={ocupado !== null || espera > 0 || demo}
-                    className={`hyto-login-btn is-primario${enviando ? " is-ocupado" : ""}`}
+                    type="button"
+                    onClick={() => void google(pestana)}
+                    disabled={ocupado !== null}
+                    className="hyto-login-btn is-fantasma hyto-login-google"
                   >
-                    <span key={enviando ? "envio" : "listo"} className="hyto-login-etiqueta-btn">
-                      {enviando ? (
-                        <>
-                          <span className="hyto-login-spinner" aria-hidden="true" />
-                          {t("entrar.enviandoCodigo")}
-                        </>
-                      ) : (
-                        <>
-                          {t("entrar.continuarCorreo")}
-                          <Icono nombre="flecha" />
-                        </>
-                      )}
-                    </span>
+                    <IconoGoogle />
+                    {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.googleContinuar")}
                   </button>
-                </form>
+                ) : null}
+                {ofrece("apple") ? (
+                  <button
+                    type="button"
+                    onClick={() => void google(pestana, "apple")}
+                    disabled={ocupado !== null}
+                    className="hyto-login-btn is-fantasma hyto-login-apple"
+                  >
+                    <IconoApple />
+                    {ocupado === "apple" ? t("entrar.openingApple") : t("entrar.appleContinuar")}
+                  </button>
+                ) : null}
+                {!conCorreo && mensaje ? (
+                  <p role="status" className="hyto-login-aviso">
+                    {claro(mensaje)}
+                  </p>
+                ) : null}
+                {conCorreo && conRedes ? (
+                  <p className="hyto-login-o">
+                    <span>{t("entrar.oCorreo")}</span>
+                  </p>
+                ) : null}
+                {conCorreo ? (
+                  <form
+                    noValidate
+                    onSubmit={(evento) => {
+                      evento.preventDefault();
+                      void enviarCodigo();
+                    }}
+                  >
+                    <label className="hyto-login-etiqueta" htmlFor={`${ids}-correo`}>
+                      {t("entrar.email")}
+                    </label>
+                    <div className={`hyto-login-campo${enviando ? " is-bloqueado" : ""}`}>
+                      <Icono nombre="correo" />
+                      <input
+                        id={`${ids}-correo`}
+                        type="email"
+                        autoComplete="email"
+                        inputMode="email"
+                        data-foco=""
+                        value={correo}
+                        onChange={(evento) => {
+                          setCorreo(evento.target.value);
+                          setAviso(null);
+                        }}
+                        placeholder={t("entrar.correoEjemplo")}
+                        disabled={ocupado !== null}
+                      />
+                      {enviando ? (
+                        <span className="hyto-login-candado" aria-hidden="true">
+                          <Icono nombre="check" />
+                        </span>
+                      ) : null}
+                    </div>
+                    {enviando ? (
+                      <p className="hyto-login-estado" aria-live="polite">
+                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} />
+                        {t("entrar.mile.dive")}
+                      </p>
+                    ) : (
+                      <p className="hyto-login-ayuda">
+                        {demo ? claro(AVISO_DEMO) : t(conEnlace ? "entrar.ayudaEnlace" : "entrar.ayudaCorreo")}
+                      </p>
+                    )}
+                    {mensaje ? (
+                      <p role="status" className="hyto-login-aviso">
+                        {claro(mensaje)}
+                      </p>
+                    ) : null}
+                    <button
+                      type="submit"
+                      disabled={ocupado !== null || espera > 0 || demo}
+                      className={`hyto-login-btn is-primario${enviando ? " is-ocupado" : ""}`}
+                    >
+                      <span key={enviando ? "envio" : "listo"} className="hyto-login-etiqueta-btn">
+                        {enviando ? (
+                          <>
+                            <span className="hyto-login-spinner" aria-hidden="true" />
+                            {t(conEnlace ? "entrar.enviandoEnlace" : "entrar.enviandoCodigo")}
+                          </>
+                        ) : (
+                          <>
+                            {t("entrar.continuarCorreo")}
+                            <Icono nombre="flecha" />
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </form>
+                ) : null}
                 <p className="hyto-login-legal">{t(alta ? "entrar.legalSignUp" : "entrar.legal")}</p>
                 {demoHabilitado ? (
                   <p className="hyto-login-demo">
@@ -853,6 +952,38 @@ export function Entrar({
                 {demoHabilitado && verDemo ? (
                   <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
+              </div>
+            ) : null}
+            {fase === "enlace" ? (
+              <div className="hyto-login-cambio">
+                <h2>{t("entrar.revisaCorreo")}</h2>
+                <p className="hyto-login-lead">
+                  {t("entrar.enviamosEnlace")} <strong>{correo}</strong>.
+                </p>
+                <p className="hyto-login-ayuda">{t("entrar.abrirEnlace")}</p>
+                {mensaje ? (
+                  <p role="status" className="hyto-login-aviso">
+                    {claro(mensaje)}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  className="hyto-login-btn is-fantasma"
+                  onClick={pedirOtroEnlace}
+                  disabled={ocupado !== null || espera > 0}
+                  data-foco=""
+                >
+                  <Icono nombre="otra" />
+                  {enviando
+                    ? t("entrar.enviandoEnlace")
+                    : espera > 0
+                      ? t("entrar.reenviarEnlaceEn", { t: reloj(espera) })
+                      : t("entrar.reenviarEnlace")}
+                </button>
+                <button type="button" className="hyto-login-btn is-enlace" onClick={volverAlCorreo} disabled={ocupado !== null}>
+                  {t("entrar.usarOtro")}
+                </button>
+                <p className="hyto-login-ayuda is-chica">{claro(AVISO_SPAM_ENLACE)}</p>
               </div>
             ) : null}
             {fase === "codigo" || celdasOk ? (
@@ -1017,6 +1148,26 @@ function guardarEnNavegador(cerrado: IngresoCerrado): ResultadoIngreso {
   const local = guardarDireccionAdmin(cerrado.direccion);
   if (local.aviso) return { aviso: local.aviso, direccion: cerrado.direccion, guardada: false, pendiente: null };
   return { aviso: null, direccion: cerrado.direccion, guardada: true, pendiente: cerrado.aviso };
+}
+
+/** The policy loader never throws: any failure keeps today's sign-in. */
+async function politicaSegura(cargar: CargarPolitica): Promise<PoliticaRecuperacion> {
+  try {
+    return (await cargar()) ?? POLITICA_INACTIVA;
+  } catch {
+    return POLITICA_INACTIVA;
+  }
+}
+
+/**
+ * Google and Apple return to the tab that left, which kept its intent in sessionStorage. An email
+ * link usually opens a new tab, so its intent and return path come from localStorage.
+ */
+function intencionDelRegreso(): IntencionIngreso {
+  const enlace = tomarIntencionEnlace();
+  const propia = intencionGuardada();
+  if (!propia && enlace?.retorno && !leerRetorno()) guardarRetorno(enlace.retorno);
+  return propia ?? enlace?.intencion ?? "signin";
 }
 
 function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionIngreso): Promise<ResultadoIngreso> {

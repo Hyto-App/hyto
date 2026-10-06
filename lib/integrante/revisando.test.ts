@@ -42,7 +42,9 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Mile is checking your photo/);
-    assert.ok(document.querySelector('img[src="/mile/mile-buscando-dark.svg"]'));
+    // Static fallback while the animated rig loads, or the rig itself once it is ready (#159).
+    const rigListo = [...document.querySelectorAll<HTMLElement>(".hyto-mile-animada [data-mile-rig]")].some((nodo) => nodo.style.display === "block");
+    assert.ok(document.querySelector('img[src="/mile/mile-buscando-dark.svg"]') || rigListo);
     assert.equal(document.querySelectorAll(".hyto-checklist li").length, 2);
     assert.equal(document.querySelectorAll(".hyto-checklist .hyto-punto-espera").length, 2);
     const cta = [...document.querySelectorAll("button")].find((item) => item.textContent === "Sent");

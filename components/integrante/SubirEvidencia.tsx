@@ -281,7 +281,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
       setEsperaAgotada(false);
-      setEnviadaEn(new Date());
+      // A lost answer that the task read confirmed is already sent, not a fresh upload:
+      // keep the server's enviadaEn instead of stamping it now.
+      setEnviadaEn(resultado.evidencia !== null ? new Date() : null);
       setFase("lista");
     } catch (err) {
       setError(err instanceof ErrorDeSesion || err instanceof ErrorDeEnvio ? err.aviso : "Could not send. Try again.");

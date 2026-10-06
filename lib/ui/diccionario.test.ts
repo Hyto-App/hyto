@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import {
+  AVISO_PASSKEY_CANCELADA,
+  AVISO_PASSKEY_FALLO,
+  AVISO_PASSKEY_SIN_CLAVE,
+  AVISO_PASSKEY_SIN_SOPORTE,
+} from "@/lib/auth/avisosPasskey";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import {
   AVISO_USDC_FIRMANTE,
@@ -40,6 +46,11 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "errores.horizonReceptor"), AVISO_HORIZON_RECEPTOR);
   assert.equal(texto("en", "errores.reingreso"), AVISO_REINGRESO);
   assert.equal(texto("en", "errores.dispositivo"), AVISO_DISPOSITIVO);
+  assert.equal(texto("en", "errores.passkey"), AVISO_PASSKEY);
+  assert.equal(texto("en", "errores.passkeySinSoporte"), AVISO_PASSKEY_SIN_SOPORTE);
+  assert.equal(texto("en", "errores.passkeySinClave"), AVISO_PASSKEY_SIN_CLAVE);
+  assert.equal(texto("en", "errores.passkeyCancelada"), AVISO_PASSKEY_CANCELADA);
+  assert.equal(texto("en", "errores.passkeyFallo"), AVISO_PASSKEY_FALLO);
   assert.equal(texto("en", "errores.cobroSinXlm"), AVISO_USDC_SIN_XLM);
   assert.equal(texto("en", "errores.cobroSecuencia"), AVISO_USDC_SECUENCIA);
   assert.equal(texto("en", "errores.cobroFirmante"), AVISO_USDC_FIRMANTE);
