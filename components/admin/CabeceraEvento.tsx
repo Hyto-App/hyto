@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useTexto } from "@/components/ui/Idioma";
 
 export function CabeceraEvento({
   id,
@@ -17,15 +18,13 @@ export function CabeceraEvento({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [secreto, setSecreto] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [copiado, setCopiado] = useState(false);
+  const [confirmacion, setConfirmacion] = useState<{ tipo: "code" | "direct"; abierto: boolean } | null>(null);
   const t = useTexto();
-  const claro = useClaro();
   const organiza = rol === "organizer";
 
   async function invitar(tipo: "code" | "direct") {
-    setAviso(null);
     setCopiado(false);
     const respuesta = await fetch(`/api/eventos/${encodeURIComponent(id)}/invitaciones`, {
       method: "POST",
@@ -33,10 +32,7 @@ export function CabeceraEvento({
       body: JSON.stringify(tipo === "code" ? { tipo: "code", rol: "volunteer" } : { tipo: "direct", email, rol: "volunteer" }),
     });
     const cuerpo = (await respuesta.json().catch(() => null)) as { secreto?: string; aviso?: string } | null;
-    if (!respuesta.ok || !cuerpo?.secreto) {
-      setAviso(cuerpo?.aviso ?? "Could not create the invite.");
-      return;
-    }
+    if (!respuesta.ok || !cuerpo?.secreto) throw new Error(cuerpo?.aviso ?? "Could not create the invite.");
     setSecreto(tipo === "code" ? cuerpo.secreto : `${window.location.origin}/join/${cuerpo.secreto}`);
     setAbierto(true);
   }
@@ -66,14 +62,20 @@ export function CabeceraEvento({
       </div>
       {organiza && abierto ? (
         <div className="hyto-card mt-4 grid gap-3 p-5" role="region" aria-label={t("eventos.inviteRegion")}>
-          <button type="button" className="hyto-btn-line" onClick={() => void invitar("code")}>
+          <p className="text-sm text-[var(--suave)]">{t("confirmar.accessNote")}</p>
+          <button type="button" className="hyto-btn-line" onClick={() => setConfirmacion({ tipo: "code", abierto: true })}>
             {t("eventos.createCode")}
           </button>
           <label className="sr-only" htmlFor="invite-email">
             {t("eventos.email")}
           </label>
           <input id="invite-email" className="hyto-input" value={email} placeholder={t("eventos.email")} onChange={(evento) => setEmail(evento.target.value)} />
-          <button type="button" className="hyto-btn-line" onClick={() => void invitar("direct")}>
+          <button
+            type="button"
+            className="hyto-btn-line"
+            disabled={!email.trim()}
+            onClick={() => setConfirmacion({ tipo: "direct", abierto: true })}
+          >
             {t("eventos.inviteEmail")}
           </button>
           {secreto ? <p className="break-all font-mono text-2xl font-semibold tracking-wide">{secreto}</p> : null}
@@ -87,12 +89,24 @@ export function CabeceraEvento({
               {t("eventos.copied")}
             </p>
           ) : null}
-          {aviso ? (
-            <p role="alert" className="text-sm text-[var(--peligro)]">
-              {claro(aviso)}
-            </p>
-          ) : null}
+          <button type="button" className="hyto-btn-line" onClick={() => setAbierto(false)}>
+            {t("eventos.closeInvite")}
+          </button>
         </div>
+      ) : null}
+      {confirmacion ? (
+        <ConfirmDialog
+          abierto={confirmacion.abierto}
+          onCerrar={() => setConfirmacion((actual) => (actual ? { ...actual, abierto: false } : actual))}
+          titulo={t(confirmacion.tipo === "code" ? "confirmar.inviteCodeTitle" : "confirmar.inviteEmailTitle")}
+          detalle={
+            confirmacion.tipo === "code"
+              ? t("confirmar.inviteCodeDetail")
+              : t("confirmar.inviteEmailDetail", { email: email.trim() })
+          }
+          confirmar={t(confirmacion.tipo === "code" ? "confirmar.inviteCodeAction" : "confirmar.inviteEmailAction")}
+          onConfirmar={() => invitar(confirmacion.tipo)}
+        />
       ) : null}
       {organiza ? (
         <div className="hyto-tabs mt-6 flex flex-wrap" role="tablist" aria-label={t("eventos.tablist")}>
