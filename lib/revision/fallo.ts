@@ -1,6 +1,6 @@
 export type CodigoFalloRevision = "sin_clave" | "sin_laya" | "pdf" | "cupo" | "tiempo" | "proveedor" | "respuesta" | "sin_foto";
 
-export type FuenteRevision = "groq" | "laya" | "revision";
+export type FuenteRevision = "groq" | "gemini" | "laya" | "revision";
 
 const MENSAJES: Record<CodigoFalloRevision, string> = {
   sin_clave: "AI review is not configured",
