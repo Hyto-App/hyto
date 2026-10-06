@@ -45,6 +45,8 @@ export type Tarea = {
   dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
+  /** True when the latest review was stored as a failure. The score stays hidden. */
+  revisionFallida?: boolean;
   /** Deadline. Optional until the backend sends it (spec §9); only shown when present. */
   venceEn?: string | null;
   /** True only while the task is still pending and the review sent it back. */

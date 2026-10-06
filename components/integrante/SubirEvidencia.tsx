@@ -20,7 +20,7 @@ import { formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "@/l
 import { notaDeTarea } from "@/lib/integrante/nota";
 import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
-import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, seguirConsultando } from "@/lib/integrante/seguimiento";
+import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, mostrarReintento, seguirConsultando, topeSeguimientoMs } from "@/lib/integrante/seguimiento";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
@@ -50,6 +50,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [intento, setIntento] = useState(0);
   const [evento, setEvento] = useState<string | null>(null);
   const [esperaAgotada, setEsperaAgotada] = useState(false);
+  const [esperaLocal, setEsperaLocal] = useState(false);
   const [enviadaEn, setEnviadaEn] = useState<Date | null>(null);
   const [archivoRechazado, setArchivoRechazado] = useState(false);
   const [reintentando, setReintentando] = useState(false);
@@ -133,12 +134,22 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     };
   }, [fase]);
 
-  // The review runs after the upload. Ask again every 3 s, up to 60 s, until the grade or a new state arrives.
-  const esperando = fase === "lista" && !!tarea && !ejemplo && !avisoEnvio && !esperaAgotada && esperaRevision(tarea);
+  // The review runs after the upload. Ask again every 3 s until a grade arrives or the follow window ends.
+  // A failure already stored, or a photo older than that window, is not "still checking".
+  const reintentoMile = tarea != null && !avisoEnvio && mostrarReintento(tarea, { esperaLocal, esperaAgotada });
+  const esperando = fase === "lista" && tarea != null && !ejemplo && !avisoEnvio && !reintentoMile && esperaRevision(tarea);
   useEffect(() => {
     if (!esperando) return;
     let activo = true;
     const inicio = Date.now();
+    const tope = topeSeguimientoMs(esperaLocal ? null : tarea?.enviadaEn, inicio, esperaLocal);
+    const cerrar = () => {
+      if (activo) setEsperaAgotada(true);
+    };
+    if (tope <= 0) {
+      cerrar();
+      return;
+    }
     const referencia = { estado: "en revisión", nota: null } as const;
     const id = setInterval(() => {
       void leerTarea(tareaId, { miembroId: "" }, { muestra: demo })
@@ -147,14 +158,17 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           if (!activo) return;
           const actual = fresco?.tarea && !fresco.ejemplo ? fresco.tarea : null;
           if (actual) setTarea(actual);
-          if (!seguirConsultando(referencia, actual ?? referencia, Date.now() - inicio)) setEsperaAgotada(true);
+          const transcurrido = Date.now() - inicio;
+          if (transcurrido >= tope || !seguirConsultando(referencia, actual ?? referencia, transcurrido)) cerrar();
         });
     }, INTERVALO_SEGUIMIENTO_MS);
+    const corte = setTimeout(cerrar, tope);
     return () => {
       activo = false;
       clearInterval(id);
+      clearTimeout(corte);
     };
-  }, [esperando, tareaId, demo]);
+  }, [esperando, tareaId, demo, esperaLocal, tarea?.enviadaEn]);
 
   function usarFoto(blob: Blob, nombre: string | null, captura: string | null) {
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
@@ -329,6 +343,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
       setEvidencia(resultado.evidencia);
       setAvisoEnvio(resultado.aviso);
+      setEsperaLocal(true);
       setEsperaAgotada(false);
       // A lost answer that the task read confirmed is already sent, not a fresh upload:
       // keep the server's enviadaEn instead of stamping it now.
@@ -354,6 +369,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setCapturadaEn(null);
     setNombreArchivo(null);
     setEsperaAgotada(false);
+    setEsperaLocal(false);
     setEnviadaEn(null);
     setArchivoRechazado(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
@@ -410,7 +426,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const revisando = fase === "enviando" || esperando;
   const montoVisible = montoDeTarea(tarea);
   const calificacion = notaDeTarea(tarea);
-  const mileSinTerminar = esperaAgotada && !calificacion && !avisoEnvio && !cerrada;
+  const insuficiente = calificacion?.veredicto === "insuficiente";
+  const mileSinTerminar = reintentoMile;
   const titulo = textoVisible(tarea.titulo, idioma);
   const esPdf = foto?.type === "application/pdf";
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
@@ -509,9 +526,13 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               ? t("evidencia.mileCouldntFinish")
               : avisoEnvio
                 ? t("evidencia.sentAction")
-                : nombre
-                  ? t("evidencia.greatJobName", { name: nombre })
-                  : t("evidencia.greatJob")}
+                : insuficiente
+                  ? nombre
+                    ? t("evidencia.notEnoughName", { name: nombre })
+                    : t("evidencia.notEnough")
+                  : nombre
+                    ? t("evidencia.greatJobName", { name: nombre })
+                    : t("evidencia.greatJob")}
           </h1>
           {mileSinTerminar ? (
             <p role="status" className="hyto-enviada-aviso">
@@ -522,6 +543,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {claro(avisoEnvio)}
               {t("evidencia.fixSuffix")}
             </p>
+          ) : insuficiente ? (
+            <p className="hyto-tarea-meta">{t("evidencia.notEnoughSub")}</p>
           ) : tarea.etapa === "enviada_organizador" ? (
             <p className="mt-2 text-sm leading-6 text-[var(--suave)]" role="status">
               {t("evidencia.reachedOrganizer")}

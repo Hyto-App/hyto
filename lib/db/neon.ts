@@ -294,7 +294,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async actualizarEvidencia(id, cambio) {
       const listo = await columnasListas();
-      const set = listo ? cambio : { monto: cambio.monto, fecha: cambio.fecha, montoConfirmado: cambio.montoConfirmado };
+      const set = listo
+        ? cambio
+        : { monto: cambio.monto, fecha: cambio.fecha, montoConfirmado: cambio.montoConfirmado, creadaEn: cambio.creadaEn };
       const limpio = Object.fromEntries(Object.entries(set).filter((entrada) => entrada[1] !== undefined));
       if (Object.keys(limpio).length === 0) return;
       await db.update(evidencias).set(limpio).where(eq(evidencias.id, id));
@@ -394,6 +396,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
                 origen: veredicto.origen,
               },
         });
+    },
+    async borrarVeredicto(evidenciaId) {
+      await db.delete(veredictos).where(eq(veredictos.evidenciaId, evidenciaId));
     },
     async veredictoDe(evidenciaId) {
       if (!(await columnasMile())) {

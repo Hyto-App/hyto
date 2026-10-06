@@ -63,6 +63,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   assert.ok(stand);
   assert.equal(stand.nota, 64);
   assert.equal(stand.veredicto, "parcial");
+  assert.equal(stand.revisionFallida, false);
   assert.equal(stand.hashPago, null);
   assert.equal("contratoEscrow" in stand, true);
   assert.equal(comida?.nota, 90);
@@ -92,6 +93,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "rechazo",
     "requisitos",
     "revision",
+    "revisionFallida",
     "tipo",
     "titulo",
     "tope",
@@ -115,6 +117,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const trasFallo = (await fallo.json()) as { tareas: Registro[] };
   assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.nota, null);
   assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.veredicto, null);
+  assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.revisionFallida, true);
   assert.equal(JSON.stringify(trasFallo).includes("SECRETO-LAYA"), false);
   assert.equal(JSON.stringify(trasFallo).includes("tiempo"), false);
 });
@@ -148,6 +151,7 @@ type Registro = {
   id: string;
   nota?: number | null;
   veredicto?: string | null;
+  revisionFallida?: boolean;
   hashPago?: string | null;
   contratoEscrow?: string | null;
   origen?: string;
