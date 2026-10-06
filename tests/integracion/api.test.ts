@@ -16,6 +16,7 @@ import { usarLectorSaldo } from "../../lib/escrow/saldo";
 import { motivoSuiteSync } from "./guardia";
 import { consulta, prepararSuite, soltar, tomar, usarAlmacen, usarFotos } from "./postgres";
 import { jpegDePrueba, tokenDePrueba } from "../../lib/evidencia/muestras";
+import { avisoArchivo, MAX_BYTES_ARCHIVO } from "../../lib/evidencia/validar";
 import { cookieSesionPrueba } from "./sesion-prueba";
 
 const CUENTA = `G${"A".repeat(55)}`;
@@ -511,10 +512,10 @@ describe("rutas de app/api contra Postgres local", { concurrency: false, skip: m
 
     const grande = new FormData();
     grande.set("tareaId", "stand");
-    grande.set("foto", new Blob([new Uint8Array(8_000_001)], { type: "image/jpeg" }), "grande.jpg");
+    grande.set("foto", new Blob([new Uint8Array(MAX_BYTES_ARCHIVO + 1)], { type: "image/jpeg" }), "grande.jpg");
     const pesada = await evidenciasPost(pedido("http://local/api/evidencias", grande, sesion));
     assert.equal(pesada.status, 413);
-    assert.equal(avisoDe(await leer(pesada)), "The file is too large.");
+    assert.equal(avisoDe(await leer(pesada)), avisoArchivo("grande"));
   });
 
   test("GET /api/evidencias/:id y la foto responden 404 si no están", async () => {

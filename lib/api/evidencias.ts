@@ -9,6 +9,7 @@ import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
 import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
+import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import type { ResultadoRevision } from "@/lib/revision/armar";
@@ -21,7 +22,6 @@ import { accesoEvidencia, type Visor } from "./alcance";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 
-const MAX_BYTES = 8_000_000;
 const PLAZO_MS = 2800;
 
 export type ActorEvidencia = {
@@ -142,7 +142,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   const tareaId = texto(form.get("tareaId"));
   const foto = form.get("foto");
   if (!tareaId || !(foto instanceof Blob)) return json({ aviso: "The task and the photo are missing." }, 400);
-  if (foto.size > MAX_BYTES) return json({ aviso: "The file is too large." }, 413);
+  if (foto.size <= 0) return json({ aviso: avisoArchivo("vacio") }, 400);
+  if (foto.size > MAX_BYTES_ARCHIVO) return json({ aviso: avisoArchivo("grande") }, 413);
 
   try {
     await asegurarSemilla(deps.almacen);
@@ -168,13 +169,13 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
-    const tipo = tipoPorBytes(bytes);
-    if (!tipo) {
-      return json(
-        { aviso: tarea.tipo === "trabajo" ? "Take the photo with the camera." : "Choose a PDF, JPEG, PNG, or WebP file." },
-        400,
-      );
+    const validado = validarBytes(bytes);
+    if (!validado.ok) {
+      const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
+      if (camara) return json({ aviso: "Take the photo with the camera." }, 400);
+      return json({ aviso: avisoArchivo(validado.motivo) }, validado.motivo === "grande" ? 413 : 400);
     }
+    const tipo = validado.tipo;
 
     const ahora = Date.now();
     let capturadaEn: string | null = null;
