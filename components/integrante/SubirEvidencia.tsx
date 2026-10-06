@@ -8,13 +8,17 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
+import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
+import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
+import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
+import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, seguirConsultando } from "@/lib/integrante/seguimiento";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
@@ -46,6 +50,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [evento, setEvento] = useState<string | null>(null);
   const [esperaAgotada, setEsperaAgotada] = useState(false);
   const [enviadaEn, setEnviadaEn] = useState<Date | null>(null);
+  const [reintentando, setReintentando] = useState(false);
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -55,6 +60,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     let activo = true;
     const memoria = leerMemoria();
     setCargaError(null);
+    setReintentando(false);
     leerTarea(tareaId, { miembroId: "" }, { estados: demo ? memoria.estados : undefined, muestra: demo }).then((resultado) => {
       if (!activo) return;
       if (resultado.error) {
@@ -285,6 +291,11 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     }
   }
 
+  function empezarReintento() {
+    setReintentando(true);
+    tomarOtra();
+  }
+
   function tomarOtra() {
     setEvidencia(null);
     setAvisoEnvio(null);
@@ -347,8 +358,39 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const calificacion = notaDeTarea(tarea);
   const titulo = textoVisible(tarea.titulo, idioma);
   const esPdf = foto?.type === "application/pdf";
-  const hora = enviadaEn ? enviadaEn.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit" }) : null;
+  const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
+  const hora = momentoEnvio ? momentoEnvio.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit" }) : null;
   const meta = [evento ? textoVisible(evento, idioma) : null].filter(Boolean).join("");
+  const rechazada = estaRechazada(tarea);
+  const fallidosMarcados = reintentando && rechazada ? puntosFallidos(tarea, puntosDeCondicion(tarea.condicion).length) : null;
+
+  if (tarea.estado === "pagado") {
+    return <PantallaPagada tarea={tarea} titulo={titulo} />;
+  }
+
+  if (rechazada && fase === "inicio" && !reintentando) {
+    return (
+      <>
+        <PantallaRechazada
+          tarea={tarea}
+          evento={evento}
+          onReintentar={empezarReintento}
+          onArchivo={reembolso ? () => archivoRef.current?.click() : undefined}
+        />
+        {reembolso ? (
+          <input
+            ref={archivoRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            onChange={elegirArchivo}
+          />
+        ) : null}
+      </>
+    );
+  }
 
   const cabecera = (
     <header className="hyto-tarea-cab">
@@ -372,7 +414,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <main className="hyto-page hyto-tarea">
         {cabecera}
         <section className="hyto-tarjeta hyto-revisando" aria-live="polite">
-          <Mile estado="buscando" tamano={140} halo />
+          <MileAnimada estado="buscando" tamano={140} />
           <div>
             <span className="hyto-badge hyto-badge-rev">{t("evidencia.checking")}</span>
             <h2>{t("evidencia.mileChecking")}</h2>
@@ -405,7 +447,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               !
             </div>
           ) : (
-            <Mile estado="cara-feliz" tamano={64} halo />
+            <MileAnimada estado="lo-tengo" tamano={64} />
           )}
           <h1 className="hyto-tarea-titulo">
             {avisoEnvio ? t("evidencia.sentAction") : nombre ? t("evidencia.greatJobName", { name: nombre }) : t("evidencia.greatJob")}
@@ -434,7 +476,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             {calificacion ? (
               <div className="hyto-resumen-nota">
                 <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
-                {tarea.estado !== "pagado" ? <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p> : null}
+                <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
               </div>
             ) : null}
           </div>
@@ -507,7 +549,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           {!reembolso && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
         </div>
         <div className="hyto-tarea-col">
-          <Checklist condicion={tarea.condicion} />
+          <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
           {mostrarRevision ? (
             <dl className="hyto-tarjeta hyto-dato-leido">
               <div>

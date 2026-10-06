@@ -38,6 +38,8 @@ import {
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
 import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { puntosDeCondicion } from "@/lib/integrante/puntos";
+import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -66,6 +68,9 @@ export function Revision({
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
+  const [hojaPedir, setHojaPedir] = useState(false);
+  const [notaPedir, setNotaPedir] = useState("");
+  const [fallidosPedir, setFallidosPedir] = useState<number[]>([]);
   const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
   const [falloCodigo, setFalloCodigo] = useState<string | null>(null);
 
@@ -194,18 +199,33 @@ export function Revision({
     },
   });
 
+  function abrirPedir() {
+    setNotaPedir("");
+    setFallidosPedir([]);
+    setHojaPedir(true);
+  }
+
   async function pedirOtra() {
+    if (!tarea) return;
+    const puntos = puntosDeCondicion(tarea.condicion);
+    const cuerpo = cuerpoPedirOtra(notaPedir, fallidosPedir, puntos);
     if (!real) {
+      setHojaPedir(false);
       decidir("pendiente");
       return;
     }
     publicarAviso(null);
-    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, { method: "POST" });
-    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(cuerpo),
+    });
+    const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
     if (!respuesta.ok) {
-      publicarAviso(cuerpo?.aviso ?? "Could not ask for another photo.");
+      publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
       return;
     }
+    setHojaPedir(false);
     setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
   }
 
@@ -610,9 +630,47 @@ export function Revision({
             ) : null}
 
             {botones.pedirOtra ? (
-              <button type="button" onClick={() => void pedirOtra()} className="hyto-btn-line">
+              <button type="button" onClick={abrirPedir} className="hyto-btn-line">
                 {t("revision.askAnother")}
               </button>
+            ) : null}
+
+            {hojaPedir && tarea && botones.pedirOtra ? (
+              <form
+                className="hyto-tarjeta hyto-pedir"
+                onSubmit={(evento) => {
+                  evento.preventDefault();
+                  void pedirOtra();
+                }}
+              >
+                <h2>{t("revision.whatsMissing")}</h2>
+                <ul>
+                  {puntosDeCondicion(tarea.condicion).map((punto, indice) => (
+                    <li key={`${indice}-${punto}`}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={fallidosPedir.includes(indice)}
+                          onChange={() =>
+                            setFallidosPedir((actual) => (actual.includes(indice) ? actual.filter((item) => item !== indice) : [...actual, indice]))
+                          }
+                        />
+                        <span>{punto}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <label className="hyto-pedir-nota">
+                  {t("revision.messageFor", { name: textoVisible(tarea.miembro, idioma) || t("comunes.unassigned") })}
+                  <textarea maxLength={280} value={notaPedir} onChange={(evento) => setNotaPedir(evento.target.value)} />
+                </label>
+                <div className="hyto-pedir-acciones">
+                  <button type="button" className="hyto-btn-line" onClick={() => setHojaPedir(false)}>
+                    {t("revision.cancelAsk")}
+                  </button>
+                  <BotonPrincipal type="submit">{t("revision.askAnother")}</BotonPrincipal>
+                </div>
+              </form>
             ) : null}
 
             {puedeDesplegar || esperaConfirmacion ? (
