@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
-import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useTexto } from "@/components/ui/Idioma";
 import { enlacePago } from "@/lib/admin/vista";
 import { clavePagoVisto, montoUsdc } from "@/lib/integrante/revision";
@@ -41,7 +41,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
     return (
       <main className="hyto-page hyto-tarea hyto-enviada">
         <header className="hyto-enviada-cab">
-          <Mile estado="la-tengo" tamano={96} halo />
+          <MileAnimada estado="lo-tengo" tamano={96} />
           <h1 className="hyto-tarea-titulo">{t("evidencia.youGotPaid")}</h1>
           <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
         </header>
@@ -65,10 +65,10 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
         ✕
       </Link>
       <div className="hyto-solo-movil">
-        <Mile estado="la-tengo" tamano={190} halo />
+        <MileAnimada estado="pagado" tamano={190} />
       </div>
       <div className="hyto-solo-escritorio">
-        <Mile estado="la-tengo" tamano={220} halo />
+        <MileAnimada estado="pagado" tamano={220} />
       </div>
       <p className="hyto-burbuja">{nombre ? t("evidencia.youDidIt", { name: nombre }) : t("evidencia.youDidItNoName")}</p>
       <p className="hyto-pagada-kicker">{t("evidencia.youGotPaid")}</p>

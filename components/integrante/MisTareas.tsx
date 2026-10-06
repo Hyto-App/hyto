@@ -9,6 +9,7 @@ import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
@@ -100,7 +101,7 @@ function Cargando() {
   return (
     <div aria-busy="true" aria-live="polite">
       <div className="hyto-tarjeta flex items-center gap-3 p-4">
-        <Mile estado="icono" tamano={56} />
+        <MileAnimada estado="buscando" tamano={56} />
         <p className="text-sm text-[var(--suave)]">{t("tareas.loadingMile")}</p>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
@@ -216,7 +217,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
 
       {lista && error ? (
         <div className="hyto-tarjeta hyto-estado-vacio" role="alert">
-          <Mile estado="rechazado" tamano={96} />
+          <MileAnimada estado="error-subida" tamano={96} />
           <h2>{claro(error)}</h2>
           <div className="hyto-estado-vacio-acciones">
             <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
@@ -228,7 +229,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
 
       {lista && !error && tareas.length === 0 ? (
         <div className="hyto-tarjeta hyto-estado-vacio">
-          <Mile estado="icono" tamano={120} />
+          <MileAnimada estado="vacio" tamano={120} />
           <h2>{t("tareas.emptyTitle")}</h2>
           <p>{t("tareas.emptyBody")}</p>
           <div className="hyto-estado-vacio-acciones">
@@ -248,7 +249,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <div className="min-w-0">
             <section className="hyto-tarjeta hyto-tarjeta-heroe hyto-heroe-movil" aria-label={saludo}>
               <div className="hyto-heroe-mile">
-                <Mile estado="descansando" tamano={124} />
+                <MileAnimada estado="saludo" tamano={124} />
                 <div className="min-w-0">
                   <h2>{saludo}</h2>
                   <p>
@@ -415,7 +416,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           </div>
 
           <aside className="hyto-tarjeta hyto-tareas-panel hyto-solo-escritorio-bloque" aria-label={saludo}>
-            <Mile estado="descansando" tamano={180} />
+            <MileAnimada estado="saludo" tamano={180} />
             <h2 className="text-lg font-semibold">{saludo}</h2>
             <p className="text-sm text-[var(--suave)]">{pendientes > 0 ? (pendientes === 1 ? t("tareas.youHaveOne") : t("tareas.youHave", { n: pendientes })) : t("tareas.allDone")}</p>
             <ComoFunciona />

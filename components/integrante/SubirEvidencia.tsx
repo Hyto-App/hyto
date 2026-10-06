@@ -12,7 +12,7 @@ import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
@@ -414,7 +414,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <main className="hyto-page hyto-tarea">
         {cabecera}
         <section className="hyto-tarjeta hyto-revisando" aria-live="polite">
-          <Mile estado="buscando" tamano={140} halo />
+          <MileAnimada estado="buscando" tamano={140} />
           <div>
             <span className="hyto-badge hyto-badge-rev">{t("evidencia.checking")}</span>
             <h2>{t("evidencia.mileChecking")}</h2>
@@ -447,7 +447,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               !
             </div>
           ) : (
-            <Mile estado="cara-feliz" tamano={64} halo />
+            <MileAnimada estado="lo-tengo" tamano={64} />
           )}
           <h1 className="hyto-tarea-titulo">
             {avisoEnvio ? t("evidencia.sentAction") : nombre ? t("evidencia.greatJobName", { name: nombre }) : t("evidencia.greatJob")}

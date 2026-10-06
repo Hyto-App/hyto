@@ -32,8 +32,10 @@ import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
+import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
 type Fase = "inicio" | "correo" | "codigo" | "exito";
 type Pose = "rest" | "dive" | "code" | "worry" | "win";
@@ -1170,32 +1172,13 @@ function Escena() {
   );
 }
 
-const POSES: Pose[] = ["rest", "dive", "code", "worry", "win"];
+const ESTADO_MILE: Record<Pose, EstadoAnimado> = { rest: "reposo", dive: "buscando", code: "buscando", worry: "rechazado", win: "lo-tengo" };
 
-/** Mile and the chest. Every pose is loaded once; a state change crossfades them. */
+/** Mile and the chest, animated by code. The status text stays in the aria-live region of the card. */
 function Mile({ pose }: { pose: Pose }) {
   return (
     <div className={`hyto-login-mile is-${pose}`} aria-hidden="true">
-      <span className="hyto-login-aura" />
-      <div className="hyto-login-cuerpo">
-        {POSES.map((nombre) => (
-          <img
-            key={nombre}
-            src={`/login/mile-${nombre}.svg`}
-            alt=""
-            decoding="async"
-            className={nombre === pose ? "is-on" : ""}
-          />
-        ))}
-      </div>
-      {pose === "win" ? (
-        <span className="hyto-login-chispas">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-      ) : null}
+      <MileAnimada estado={ESTADO_MILE[pose]} tamano={132} />
     </div>
   );
 }
