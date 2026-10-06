@@ -29,6 +29,11 @@ export interface InstanciaRig {
   tap(): void;
   destroy(): void;
   svg: SVGSVGElement;
+  /** false once the loop sleeps (idle faded) or with reduced motion */
+  readonly running: boolean;
+  wake(): void;
+  start(): void;
+  pause(): void;
 }
 
 declare const MileRig: {

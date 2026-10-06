@@ -249,7 +249,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <div className="min-w-0">
             <section className="hyto-tarjeta hyto-tarjeta-heroe hyto-heroe-movil" aria-label={saludo}>
               <div className="hyto-heroe-mile">
-                <MileAnimada estado="saludo" tamano={124} />
+                <MileAnimada estado="saludo" tamano={124} tocable />
                 <div className="min-w-0">
                   <h2>{saludo}</h2>
                   <p>
@@ -416,7 +416,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           </div>
 
           <aside className="hyto-tarjeta hyto-tareas-panel hyto-solo-escritorio-bloque" aria-label={saludo}>
-            <MileAnimada estado="saludo" tamano={180} />
+            <MileAnimada estado="saludo" tamano={180} tocable />
             <h2 className="text-lg font-semibold">{saludo}</h2>
             <p className="text-sm text-[var(--suave)]">{pendientes > 0 ? (pendientes === 1 ? t("tareas.youHaveOne") : t("tareas.youHave", { n: pendientes })) : t("tareas.allDone")}</p>
             <ComoFunciona />

@@ -1177,8 +1177,8 @@ const ESTADO_MILE: Record<Pose, EstadoAnimado> = { rest: "reposo", dive: "buscan
 /** Mile and the chest, animated by code. The status text stays in the aria-live region of the card. */
 function Mile({ pose }: { pose: Pose }) {
   return (
-    <div className={`hyto-login-mile is-${pose}`} aria-hidden="true">
-      <MileAnimada estado={ESTADO_MILE[pose]} tamano={132} />
+    <div className={`hyto-login-mile is-${pose}`}>
+      <MileAnimada estado={ESTADO_MILE[pose]} llena tocable />
     </div>
   );
 }

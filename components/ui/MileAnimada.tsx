@@ -13,12 +13,16 @@ type Props = {
   onToque?: (reaccion: ToqueRig) => void;
   /** Square side in px. */
   tamano?: number;
+  /** Fill the parent (the layout decides the size) instead of using `tamano`. The static fallback still lines up with the rig. */
+  llena?: boolean;
+  /** Mile reacts to taps (rig `interactive: true`) even if the app does nothing with them. */
+  tocable?: boolean;
   halo?: boolean;
   className?: string;
 };
 
 /** Mile animated by code. The static SVG stays until the rig is ready, and for good if it fails. */
-export function MileAnimada({ estado = "reposo", onToque, tamano = 120, halo, className }: Props) {
+export function MileAnimada({ estado = "reposo", onToque, tamano = 120, llena, tocable, halo, className }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const rig = useRef<InstanciaRig | null>(null);
   const alToque = useRef(onToque);
@@ -26,7 +30,7 @@ export function MileAnimada({ estado = "reposo", onToque, tamano = 120, halo, cl
   const [listo, setListo] = useState(false);
   alToque.current = onToque;
   estadoActual.current = estado;
-  const interactivo = onToque !== undefined;
+  const interactivo = tocable === true || onToque !== undefined;
 
   useEffect(() => {
     let vivo = true;
@@ -61,10 +65,14 @@ export function MileAnimada({ estado = "reposo", onToque, tamano = 120, halo, cl
   }, [estado]);
 
   const nivel = Math.max(24, tamano);
+  const lado = llena ? "100%" : nivel;
   return (
-    <span className={["hyto-mile-animada", className].filter(Boolean).join(" ")} style={{ position: "relative", display: "inline-block", flex: "none", width: nivel, height: nivel, lineHeight: 0 }}>
+    <span
+      className={["hyto-mile-animada", llena ? "is-llena" : "", className].filter(Boolean).join(" ")}
+      style={{ position: "relative", display: "inline-block", flex: "none", width: lado, height: lado, lineHeight: 0 }}
+    >
       {!listo ? <Mile estado={RESPALDO_ESTATICO[estado]} tamano={nivel} halo={halo} /> : null}
-      <div ref={host} data-mile-rig style={{ width: nivel, height: nivel, display: listo ? "block" : "none" }} />
+      <div ref={host} data-mile-rig style={{ width: lado, height: lado, display: listo ? "block" : "none" }} />
     </span>
   );
 }

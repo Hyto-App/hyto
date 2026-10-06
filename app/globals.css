@@ -3595,6 +3595,17 @@ a {
   --halo: rgba(183, 238, 52, 0.38);
 }
 
+/* Animated Mile: the rig draws on a 480 viewBox and the static art on 400, so the fallback is scaled to match and nothing jumps when the rig takes over. */
+.hyto-mile-animada > .hyto-mile {
+  transform: scale(0.82);
+}
+
+.hyto-mile-animada.is-llena > .hyto-mile,
+.hyto-mile-animada.is-llena > .hyto-mile img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 [data-theme="dark"] .hyto-mile-claro,
 :root:not([data-theme="dark"]) .hyto-mile-oscuro {
   display: none;
