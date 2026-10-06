@@ -7,7 +7,7 @@ export function notaCopia(motivo: string | null | undefined): string | null {
 }
 
 export function notaManual(codigo: string | null | undefined): string | null {
-  if (codigo === "pdf") return "Needs a manual review";
+  if (codigo === "pdf" || codigo === "sin_texto") return "Needs a manual review";
   return null;
 }
 

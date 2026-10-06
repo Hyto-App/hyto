@@ -15,6 +15,7 @@ import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
+import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
 import { formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
@@ -253,7 +254,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   async function aceptarArchivo(archivo: File) {
     if (!archivoPermitido(archivo)) {
-      rechazarSeleccion("Choose a PDF, JPEG, PNG, or WebP file.", true);
+      rechazarSeleccion("Choose a PDF, HTML, text, JPEG, PNG, or WebP file.", true);
       return;
     }
     prepararRevision(true);
@@ -266,11 +267,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   }
 
   function archivoPermitido(archivo: File): boolean {
-    const tipo = archivo.type.toLowerCase();
-    const nombre = archivo.name.toLowerCase();
-    if (tipo === "application/pdf" || nombre.endsWith(".pdf")) return true;
-    if (tipo === "image/jpeg" || tipo === "image/png" || tipo === "image/webp") return true;
-    return nombre.endsWith(".jpg") || nombre.endsWith(".jpeg") || nombre.endsWith(".png") || nombre.endsWith(".webp");
+    return archivoReciboPermitido(archivo.type, archivo.name);
   }
 
   function elegirArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
@@ -412,7 +409,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const calificacion = notaDeTarea(tarea);
   const mileSinTerminar = esperaAgotada && !calificacion && !avisoEnvio && !cerrada;
   const titulo = textoVisible(tarea.titulo, idioma);
-  const esPdf = foto?.type === "application/pdf";
+  const esDocumento = foto ? esDocumentoDeclarado(foto.type, nombreArchivo ?? "") : false;
+  const etiquetaDocumento =
+    nombreArchivo ?? (foto?.type === "application/pdf" ? t("evidencia.invoicePdf") : t("evidencia.textFile"));
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
   const hora = momentoEnvio ? formatearHora(momentoEnvio, idioma) : null;
   const meta = [evento ? textoVisible(evento, idioma) : null].filter(Boolean).join("");
@@ -436,7 +435,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           <input
             ref={archivoRef}
             type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+            accept={ACCEPT_RECIBO}
             tabIndex={-1}
             aria-hidden="true"
             className="sr-only"
@@ -459,7 +458,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   );
 
   const vistaFoto =
-    fotoUrl && !esPdf ? (
+    fotoUrl && !esDocumento ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={fotoUrl} alt={t("evidencia.alt")} />
     ) : null;
@@ -590,8 +589,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         <div className="hyto-tarea-col">
           <PanelMile />
           <div className="hyto-visor">
-            {fotoUrl && esPdf ? (
-              <div className="hyto-visor-vacio">{nombreArchivo ?? t("evidencia.invoicePdf")}</div>
+            {fotoUrl && esDocumento ? (
+              <div className="hyto-visor-vacio">{etiquetaDocumento}</div>
             ) : fotoUrl ? (
               vistaFoto
             ) : fase === "camara" ? (
@@ -608,7 +607,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             )}
             {fase === "foto" ? (
               <>
-                <span className="hyto-visor-pill">{esPdf ? (nombreArchivo ?? t("evidencia.invoicePdf")) : t("evidencia.onePhoto")}</span>
+                <span className="hyto-visor-pill">{esDocumento ? etiquetaDocumento : t("evidencia.onePhoto")}</span>
                 <button type="button" onClick={tomarOtra} className="hyto-visor-otra">
                   {reembolso ? t("evidencia.chooseAnother") : t("evidencia.takeAnother")}
                 </button>
@@ -672,7 +671,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         <input
           ref={archivoRef}
           type="file"
-          accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+          accept={ACCEPT_RECIBO}
           tabIndex={-1}
           aria-hidden="true"
           className="sr-only"
