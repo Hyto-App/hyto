@@ -12,6 +12,12 @@ export const AVISO_CORREO = "Enter a valid email.";
 export const AVISO_DEMO = "That demo email does not receive messages. Use a real email or sign in with Google.";
 export const AVISO_SIN_CUENTA = "No Hyto account for this sign-in. Sign up first.";
 export const AVISO_SPAM = "The code arrives by email. Check spam too.";
+export const AVISO_SPAM_ENLACE = "The link arrives by email. Check spam too.";
+/** Cavos enclave recovery accepts only the one sign-in method set for the app; an email code never works. */
+export const AVISO_METODO_RECUPERACION = "This account needs a different sign-in. Use the sign-in option shown and try again.";
+/** An account made before enclave recovery was turned on, opened in a browser that never held its key. */
+export const AVISO_SIN_RESPALDO =
+  "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here.";
 
 export type AvisoIngreso = {
   texto: string;
@@ -45,6 +51,8 @@ export function avisoDeIngreso(error: unknown): AvisoIngreso {
     return { texto: textoEspera(espera), esperaSegundos: espera };
   }
   if (esConfig(texto, codigo)) return fijo(AVISO_CONFIG);
+  if (esSinRespaldo(texto)) return fijo(AVISO_SIN_RESPALDO);
+  if (esMetodoRecuperacion(texto)) return fijo(AVISO_METODO_RECUPERACION);
   if (esPopupBloqueado(detalle)) return fijo(AVISO_GOOGLE_BLOQUEADO);
   if (esPopupCerrado(detalle)) return fijo(AVISO_GOOGLE_CERRADO);
   if (esRed(error, texto)) return fijo(AVISO_RED);
@@ -173,4 +181,14 @@ function esCodigoInvalido(pista: string): boolean {
 
 function esCorreoInvalido(pista: string): boolean {
   return pista.includes("invalid_email") || pista.includes("invalid-email") || (/invalid/.test(pista) && pista.includes("email"));
+}
+
+/** `kit/stellar: this wallet is protected by recovery. Sign in with Google, Apple or an email link to continue.` */
+export function esMetodoRecuperacion(texto: string): boolean {
+  return /protected by recovery/i.test(texto);
+}
+
+/** `kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.` */
+export function esSinRespaldo(texto: string): boolean {
+  return /no sealed recovery/i.test(texto);
 }

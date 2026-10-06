@@ -5,7 +5,8 @@ import { StrictMode, createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { leerMemoriaAdmin } from "../../lib/admin/memoria";
-import { CLAVE_INTENCION } from "../../lib/auth/intencion";
+import { CLAVE_INTENCION, guardarIntencionEnlace } from "../../lib/auth/intencion";
+import { leerRetorno } from "../../lib/sesion/retorno";
 
 const DIRECCION = `G${"A".repeat(55)}`;
 
@@ -222,6 +223,30 @@ test("si la sesión no guardó la wallet, el navegador tampoco la guarda", async
   assert.equal(leerMemoriaAdmin().direccion, null);
   assert.doesNotMatch(div.textContent ?? "", /Signed in/);
   assert.match(div.querySelector('[role="status"]')?.textContent ?? "", /Could not save this session's wallet\./);
+  await act(async () => {
+    root.unmount();
+  });
+});
+
+test("un enlace de correo abierto en otra pestaña usa la intención y el retorno guardados al pedirlo", async () => {
+  reiniciar();
+  guardarIntencionEnlace({ intencion: "signup", retorno: "/tareas/7" });
+  window.location.href = "http://localhost/?cavos_auth_code=codigo-enlace";
+  const { Entrar } = await import("../../components/admin/Entrar");
+  const { root } = montar();
+  await act(async () => {
+    root.render(createElement(StrictMode, null, createElement(Entrar)));
+  });
+  await act(async () => {
+    estado.resolverAuth({});
+    await vaciar();
+  });
+
+  assert.equal(estado.llamadas.length, 1);
+  assert.equal(estado.llamadas[0]?.intencion, "signup");
+  assert.equal(estado.llamadas[0]?.redirect, "http://localhost/");
+  assert.equal(leerRetorno(), "/tareas/7");
+  assert.equal(window.localStorage.getItem("hyto-intencion-enlace"), null, "the link intent is used once");
   await act(async () => {
     root.unmount();
   });
