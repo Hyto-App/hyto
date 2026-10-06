@@ -4422,6 +4422,7 @@ a {
   margin: 0;
   font-size: 14px;
   color: var(--peligro);
+  white-space: pre-line;
 }
 
 .hyto-dato-leido {

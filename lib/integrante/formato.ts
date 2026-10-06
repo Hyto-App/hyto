@@ -22,6 +22,19 @@ function fechaDeCalendario(anio: number, mes: number, dia: number): string | nul
   }).format(fecha);
 }
 
+/** Costa Rica does not observe daylight saving, so this stays UTC−6 all year. */
+export const ZONA_HORA = "America/Costa_Rica";
+
+export function formatearHora(iso: string | Date, idioma: "en" | "es"): string | null {
+  const fecha = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: ZONA_HORA,
+  }).format(fecha);
+}
+
 export function formatearFecha(iso: string): string {
   const limpio = iso.trim();
   const calendario = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?(?:[zZ]|[+-]00:?00))?$/.exec(limpio);
@@ -36,7 +49,7 @@ export function formatearFecha(iso: string): string {
     day: "numeric",
     month: "short",
     year: "numeric",
-    timeZone: "America/Costa_Rica",
+    timeZone: ZONA_HORA,
   }).format(fecha);
 }
 

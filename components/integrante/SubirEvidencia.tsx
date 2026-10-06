@@ -15,7 +15,8 @@ import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
-import { formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
+import { formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
 import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
@@ -50,6 +51,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [evento, setEvento] = useState<string | null>(null);
   const [esperaAgotada, setEsperaAgotada] = useState(false);
   const [enviadaEn, setEnviadaEn] = useState<Date | null>(null);
+  const [archivoRechazado, setArchivoRechazado] = useState(false);
   const [reintentando, setReintentando] = useState(false);
   const demo = useModoDemo();
   const t = useTexto();
@@ -163,6 +165,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setNombreArchivo(nombre);
     setCapturadaEn(captura);
     setError(null);
+    setArchivoRechazado(false);
     streamRef.current?.getTracks().forEach((pista) => pista.stop());
     streamRef.current = null;
     setFase("foto");
@@ -207,15 +210,59 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     contexto.drawImage(video, 0, 0);
     lienzo.toBlob(
       (blob) => {
-        if (!blob) {
-          setError("Could not take the photo.");
-          return;
-        }
-        usarFoto(blob, null, new Date().toISOString());
+        void (async () => {
+          if (!blob) {
+            setError("Could not take the photo.");
+            return;
+          }
+          const validado = await evaluarArchivo(blob, { soloJpeg: true });
+          if (!validado.ok) {
+            setError(avisoArchivo(validado.motivo));
+            return;
+          }
+          usarFoto(blob, null, new Date().toISOString());
+        })();
       },
       "image/jpeg",
       0.9,
     );
+  }
+
+  function limpiarFoto() {
+    if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
+    fotoUrlRef.current = null;
+    setFotoUrl(null);
+    setFoto(null);
+    setNombreArchivo(null);
+    setCapturadaEn(null);
+  }
+
+  function rechazarSeleccion(aviso: string, bloquearEnvio: boolean) {
+    limpiarFoto();
+    setArchivoRechazado(bloquearEnvio);
+    setError(aviso);
+    setFase("inicio");
+  }
+
+  function prepararRevision(bloquearEnvio: boolean) {
+    limpiarFoto();
+    setArchivoRechazado(bloquearEnvio);
+    setError(null);
+    setFase("inicio");
+  }
+
+  async function aceptarArchivo(archivo: File) {
+    if (!archivoPermitido(archivo)) {
+      rechazarSeleccion("Choose a PDF, JPEG, PNG, or WebP file.", true);
+      return;
+    }
+    prepararRevision(true);
+    const validado = await evaluarArchivo(archivo);
+    if (!validado.ok) {
+      rechazarSeleccion(avisoArchivo(validado.motivo), true);
+      return;
+    }
+    usarFoto(archivo, archivo.name, null);
   }
 
   function archivoPermitido(archivo: File): boolean {
@@ -230,23 +277,29 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo || tarea?.tipo !== "reembolso") return;
-    if (!archivoPermitido(archivo)) {
-      setError("Choose a PDF, JPEG, PNG, or WebP file.");
-      return;
-    }
-    usarFoto(archivo, archivo.name, null);
+    void aceptarArchivo(archivo);
   }
 
   function elegirCaptura(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
     if (!archivo || tarea?.tipo !== "trabajo") return;
+    void aceptarCaptura(archivo);
+  }
+
+  async function aceptarCaptura(archivo: File) {
     if (!esFotoDeCamara(archivo)) {
-      setError("Take the photo with the camera.");
+      rechazarSeleccion("Take the photo with the camera.", false);
       return;
     }
     if (!archivoDeCamaraReciente(archivo)) {
-      setError("Take the photo now. Photos from the gallery are not accepted.");
+      rechazarSeleccion("Take the photo now. Photos from the gallery are not accepted.", false);
+      return;
+    }
+    prepararRevision(false);
+    const validado = await evaluarArchivo(archivo, { soloJpeg: true });
+    if (!validado.ok) {
+      rechazarSeleccion(validado.motivo === "tipo" ? "Take the photo with the camera." : avisoArchivo(validado.motivo), false);
       return;
     }
     usarFoto(archivo, null, new Date(archivo.lastModified).toISOString());
@@ -257,11 +310,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     if (tarea?.tipo !== "reembolso") return;
     const archivo = evento.dataTransfer.files?.[0];
     if (!archivo) return;
-    if (!archivoPermitido(archivo)) {
-      setError("Choose a PDF, JPEG, PNG, or WebP file.");
-      return;
-    }
-    usarFoto(archivo, archivo.name, null);
+    void aceptarArchivo(archivo);
   }
 
   async function enviar() {
@@ -306,6 +355,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setNombreArchivo(null);
     setEsperaAgotada(false);
     setEnviadaEn(null);
+    setArchivoRechazado(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -341,8 +391,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   const mostrarRevision = tarea.tipo === "reembolso" && evidencia?.monto && evidencia.fecha;
   const reembolso = tarea.tipo === "reembolso";
-  const accion =
-    fase === "camara"
+  const envioBloqueado = archivoRechazado && reembolso && fase === "inicio" && !foto;
+  const accion = envioBloqueado
+    ? t("evidencia.send")
+    : fase === "camara"
       ? t("evidencia.takePhoto")
       : fase === "foto"
         ? t("evidencia.send")
@@ -351,7 +403,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           : reembolso
             ? t("evidencia.chooseFile")
             : t("evidencia.openCamera");
-  const pista = fase === "inicio" ? (reembolso ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
+  const pista = fase === "inicio" && !envioBloqueado ? (reembolso ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
 
   const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
@@ -362,7 +414,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const titulo = textoVisible(tarea.titulo, idioma);
   const esPdf = foto?.type === "application/pdf";
   const momentoEnvio = enviadaEn ?? (tarea.enviadaEn && !Number.isNaN(Date.parse(tarea.enviadaEn)) ? new Date(tarea.enviadaEn) : null);
-  const hora = momentoEnvio ? momentoEnvio.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit" }) : null;
+  const hora = momentoEnvio ? formatearHora(momentoEnvio, idioma) : null;
   const meta = [evento ? textoVisible(evento, idioma) : null].filter(Boolean).join("");
   const rechazada = estaRechazada(tarea);
   const fallidosMarcados = reintentando && rechazada ? puntosFallidos(tarea, puntosDeCondicion(tarea.condicion).length) : null;
@@ -599,7 +651,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <BotonPrincipal
               type="button"
               className="hyto-btn-grande"
+              disabled={envioBloqueado}
               onClick={() => {
+                if (envioBloqueado) return;
                 if (fase === "camara") tomarFoto();
                 else if (fase === "foto") void enviar();
                 else if (reembolso) archivoRef.current?.click();
