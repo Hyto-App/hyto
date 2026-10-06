@@ -347,7 +347,7 @@ function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {
 }
 
 /** Hard stop for the review that continues after the upload response. A row is stored either way. */
-export const TOPE_REVISION_FONDO_MS = 25_000;
+export const TOPE_REVISION_FONDO_MS = 55_000;
 
 export function cerrarRevisionEnFondo(
   almacen: Almacen,

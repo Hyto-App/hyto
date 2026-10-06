@@ -4,8 +4,8 @@ import { crearMemoria } from "../db/memoria";
 import { desdeGuion } from "../revision/armar";
 import { cerrarRevisionEnFondo, TOPE_REVISION_FONDO_MS } from "./evidencias";
 
-test("the background review waits 25 s, then always stores a verdict", () => {
-  assert.equal(TOPE_REVISION_FONDO_MS, 25_000);
+test("the background review waits 55 s, then always stores a verdict", () => {
+  assert.equal(TOPE_REVISION_FONDO_MS, 55_000);
 });
 
 test("a hanging review still stores an error verdict", async () => {
