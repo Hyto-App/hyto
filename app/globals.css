@@ -3595,6 +3595,17 @@ a {
   --halo: rgba(183, 238, 52, 0.38);
 }
 
+/* Animated Mile: the rig draws on a 480 viewBox and the static art on 400, so the fallback is scaled to match and nothing jumps when the rig takes over. */
+.hyto-mile-animada > .hyto-mile {
+  transform: scale(0.82);
+}
+
+.hyto-mile-animada.is-llena > .hyto-mile,
+.hyto-mile-animada.is-llena > .hyto-mile img {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 [data-theme="dark"] .hyto-mile-claro,
 :root:not([data-theme="dark"]) .hyto-mile-oscuro {
   display: none;
@@ -4185,5 +4196,648 @@ a {
   .hyto-dialogo-acciones {
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
+  }
+}
+
+/* Upload evidence, Reviewing, Sent (redesign part 2). No animation on Mile. */
+.hyto-tarea {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.hyto-tarea-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hyto-tarea-cab > div {
+  min-width: 0;
+}
+
+.hyto-tarea-titulo {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.hyto-tarea-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+}
+
+.hyto-chip-monto {
+  flex: none;
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  border-radius: var(--r-pill);
+  padding: 0 12px;
+  background: var(--ok-bg);
+  color: var(--acento-texto);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hyto-tarea-cols,
+.hyto-tarea-col {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.hyto-panel-mile,
+.hyto-revisando {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.hyto-panel-mile h2,
+.hyto-revisando h2 {
+  margin: 4px 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hyto-panel-mile p:not(.hyto-eyebrow),
+.hyto-revisando p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.hyto-revisando {
+  box-shadow: 0 0 0 1px rgba(140, 150, 255, 0.3), var(--sombra-tarjeta);
+}
+
+.hyto-visor {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  max-height: 520px;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--papel);
+}
+
+.hyto-visor-chico {
+  aspect-ratio: 4 / 3;
+  max-height: 220px;
+}
+
+.hyto-visor img,
+.hyto-visor video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hyto-visor-vacio {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.hyto-visor-vacio p {
+  margin: 0;
+}
+
+.hyto-visor-pill {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  border-radius: var(--r-pill);
+  padding: 4px 10px;
+  background: rgba(8, 9, 12, 0.72);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.hyto-visor-otra {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--r-pill);
+  padding: 0 16px;
+  background: rgba(8, 9, 12, 0.72);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.hyto-checklist {
+  padding: 16px;
+}
+
+.hyto-checklist h2,
+.hyto-linea h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hyto-checklist ol,
+.hyto-linea ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.hyto-punto-num,
+.hyto-punto-espera {
+  flex: none;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  background: var(--superficie-2);
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.hyto-punto-espera {
+  border: 2px solid var(--rev-bg);
+  border-top-color: var(--rev);
+  background: transparent;
+  animation: hyto-giro 0.8s linear infinite;
+}
+
+.hyto-pista {
+  margin: 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--tenue);
+}
+
+.hyto-error-linea {
+  margin: 0;
+  font-size: 14px;
+  color: var(--peligro);
+}
+
+.hyto-dato-leido {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 0;
+  padding: 16px;
+}
+
+.hyto-dato-leido dt {
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-dato-leido dd {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.hyto-enviada {
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.hyto-enviada-cab {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hyto-enviada-cab .hyto-tarea-titulo {
+  font-size: 24px;
+}
+
+.hyto-enviada-alerta {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--peligro);
+  border-radius: var(--r-pill);
+  font-size: 24px;
+  color: var(--peligro);
+}
+
+.hyto-enviada-aviso {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--peligro);
+}
+
+.hyto-resumen {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.hyto-resumen:not(:has(.hyto-resumen-mini)) {
+  grid-template-columns: 1fr auto;
+}
+
+.hyto-resumen h2 {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hyto-resumen-mini {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--papel);
+}
+
+.hyto-resumen-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hyto-resumen-nota {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.hyto-linea {
+  padding: 16px;
+}
+
+.hyto-paso {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hyto-paso-marca {
+  flex: none;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  background: var(--superficie-2);
+  color: var(--suave);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hyto-paso-hecho .hyto-paso-marca {
+  background: var(--ok-bg);
+  color: var(--acento-texto);
+}
+
+.hyto-paso-ahora .hyto-paso-marca {
+  background: var(--rev-bg);
+  color: var(--rev);
+}
+
+.hyto-paso-texto {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding-top: 3px;
+  font-size: 14.5px;
+}
+
+.hyto-paso-despues .hyto-paso-texto {
+  color: var(--suave);
+}
+
+.hyto-paso-ahora .hyto-paso-texto strong {
+  font-weight: 600;
+}
+
+.hyto-paso-texto strong {
+  font-weight: 500;
+}
+
+.hyto-paso-ahora em {
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  background: var(--rev-bg);
+  color: var(--rev);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.hyto-paso-detalle {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-enviada-acciones {
+  display: grid;
+  gap: 8px;
+}
+
+@media (min-width: 1024px) {
+  .hyto-tarea-cab {
+    align-items: center;
+  }
+
+  .hyto-tarea-titulo {
+    font-size: 32px;
+  }
+
+  .hyto-tarea-cols {
+    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-punto-espera {
+    animation: none;
+  }
+}
+
+/* Rejected, paid, and the organizer send-back sheet (redesign part 3). */
+.hyto-mile-rechazo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  box-shadow: 0 0 0 1px rgba(255, 92, 150, 0.4), var(--sombra-tarjeta);
+}
+
+.hyto-mile-rechazo h2 {
+  margin: 4px 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hyto-mile-rechazo p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.hyto-punto-ok {
+  background: var(--ok-bg);
+  color: var(--acento-texto);
+}
+
+.hyto-punto-falla {
+  background: var(--rej-bg);
+  color: var(--rej);
+  box-shadow: inset 0 0 0 1px rgba(255, 92, 150, 0.45);
+}
+
+.hyto-punto-motivo {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--rej);
+}
+
+.hyto-paso-rechazo .hyto-paso-marca {
+  background: var(--rej-bg);
+  color: var(--rej);
+}
+
+.hyto-paso-rechazo .hyto-paso-ahora {
+  background: var(--rej-bg);
+  color: var(--rej);
+}
+
+.hyto-nota-org {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.hyto-nota-org-iniciales {
+  flex: none;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hyto-nota-org small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--suave);
+}
+
+.hyto-nota-org p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hyto-pagada {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 560px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.hyto-pagada-cerrar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.hyto-burbuja {
+  margin: 8px 0 0;
+  border-radius: var(--r-pill);
+  background: var(--papel);
+  padding: 8px 14px;
+  font-size: 14px;
+  box-shadow: var(--sombra-tarjeta);
+}
+
+.hyto-pagada-kicker {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: var(--suave);
+}
+
+.hyto-pagada-monto {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--acento-texto);
+}
+
+.hyto-recibo {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.hyto-recibo div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.hyto-recibo-lima {
+  color: var(--acento-texto);
+}
+
+.hyto-recibo a {
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-pedir {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.hyto-pedir h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hyto-pedir ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-pedir label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.hyto-pedir-nota {
+  display: grid;
+  gap: 6px;
+}
+
+.hyto-pedir textarea {
+  min-height: 72px;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  background: var(--papel);
+  padding: 10px 12px;
+  color: var(--tinta);
+  font: inherit;
+}
+
+.hyto-pedir-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1023px) {
+  .hyto-rechazo-foto {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hyto-nota-org-movil {
+    display: none;
+  }
+
+  .hyto-pagada {
+    padding: 24px;
+    border: 1px solid var(--linea);
+    border-radius: var(--r-lg);
+    background: var(--papel);
   }
 }

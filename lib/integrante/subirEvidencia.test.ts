@@ -95,7 +95,7 @@ test("con cámara en vivo no abre la galería", async () => {
   try {
     await montarTarea();
     assert.match(texto(), /Open camera/);
-    assert.match(texto(), /Photos from the gallery are not accepted/);
+    assert.match(texto(), /old gallery photos are not accepted/);
     assert.doesNotMatch(texto(), /Choose photo/);
     assert.equal(document.querySelector('input[type="file"]'), null);
     await act(async () => {
@@ -173,7 +173,7 @@ test("sin getUserMedia el archivo viejo se rechaza y uno recién tomado sigue", 
 
     await elegir(new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() }));
     assert.ok(document.querySelector('img[alt="Evidence"]'));
-    assert.equal(boton("Send").textContent, "Send");
+    assert.equal(boton("Send evidence").textContent, "Send evidence");
   } finally {
     HTMLInputElement.prototype.click = clickPrevio;
     await desmontar();
@@ -217,7 +217,7 @@ async function enviarCaptura(respuestas: Respuestas): Promise<string[]> {
   await elegir(new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() }));
   assert.ok(document.querySelector('img[alt="Evidence"]'));
   await act(async () => {
-    boton("Send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    boton("Send evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
   await act(async () => {
     await new Promise((resolver) => setTimeout(resolver, 30));
@@ -229,7 +229,7 @@ function sinRevisionLocal() {
   assert.doesNotMatch(JSON.stringify({ ...window.localStorage }), /en revisión/);
 }
 
-test("una foto de cámara que el servidor rechaza no dice Evidence sent", async () => {
+test("una foto de cámara que el servidor rechaza no dice Your photo arrived", async () => {
   limpiarPantalla();
   definirCamara(undefined);
   const original = globalThis.fetch;
@@ -237,10 +237,9 @@ test("una foto de cámara que el servidor rechaza no dice Evidence sent", async 
   try {
     const pedidos = await enviarCaptura({ subida: () => json({ aviso }, 503) });
     assert.ok(pedidos.includes("POST /api/evidencias"));
-    assert.doesNotMatch(texto(), /Evidence sent/);
-    assert.doesNotMatch(texto(), /Photo sent/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
-    assert.equal(boton("Send").textContent, "Send");
+    assert.equal(boton("Send evidence").textContent, "Send evidence");
     sinRevisionLocal();
   } finally {
     globalThis.fetch = original;
@@ -259,7 +258,7 @@ test("si la red cae al subir la foto de cámara, no hay envío de ejemplo", asyn
         throw new Error("offline");
       },
     });
-    assert.doesNotMatch(texto(), /Evidence sent/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.match(texto(), /Check your connection and try again/);
     sinRevisionLocal();
   } finally {
@@ -269,7 +268,7 @@ test("si la red cae al subir la foto de cámara, no hay envío de ejemplo", asyn
   }
 });
 
-test("si la conexión se corta después de guardar la foto, la pantalla dice Evidence sent y no muestra error", async () => {
+test("si la conexión se corta después de guardar la foto, la pantalla dice Sent y no muestra error", async () => {
   limpiarPantalla();
   definirCamara(undefined);
   const original = globalThis.fetch;
@@ -283,8 +282,7 @@ test("si la conexión se corta después de guardar la foto, la pantalla dice Evi
       tareas: () => json({ tareas: [{ ...standRemoto, estado: guardada ? "en revisión" : "pendiente" }] }),
     });
     assert.ok(pedidos.includes("POST /api/evidencias"));
-    assert.match(texto(), /Evidence sent/);
-    assert.match(texto(), /Photo uploaded successfully/);
+    assert.match(texto(), /Sent/);
     assert.doesNotMatch(texto(), /Check your connection/);
     assert.equal(document.querySelector('[role="alert"]'), null);
   } finally {
@@ -302,7 +300,7 @@ test("si el token de captura falla, se ve el aviso del servidor y no se sube nad
   try {
     const pedidos = await enviarCaptura({ token: () => json({ aviso }, 503), subida: () => json({}, 500) });
     assert.ok(!pedidos.includes("POST /api/evidencias"));
-    assert.doesNotMatch(texto(), /Evidence sent/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
     sinRevisionLocal();
   } finally {
@@ -320,8 +318,7 @@ test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
   try {
     await enviarCaptura({ subida: () => json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" }, aviso }, 201) });
     assert.match(texto(), /Evidence sent, action needed/);
-    assert.match(texto(), /Photo sent/);
-    assert.doesNotMatch(texto(), /The organizer can review it now/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
     sinRevisionLocal();
   } finally {
@@ -331,7 +328,7 @@ test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
   }
 });
 
-test("una foto de cámara con 201 limpio dice Evidence sent y manda el token y la hora de captura", async () => {
+test("una foto de cámara con 201 limpio dice Your photo arrived y manda el token y la hora de captura", async () => {
   limpiarPantalla();
   definirCamara(undefined);
   const original = globalThis.fetch;
@@ -346,10 +343,10 @@ test("una foto de cámara con 201 limpio dice Evidence sent y manda el token y l
     const enviado = cuerpo as FormData | null;
     assert.equal(enviado?.get("token"), "t-1");
     assert.ok(!Number.isNaN(Date.parse(String(enviado?.get("capturadaEn")))));
-    assert.match(texto(), /Evidence sent/);
-    assert.match(texto(), /Photo uploaded successfully/);
+    assert.match(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /action needed/);
-    assert.match(texto(), /The organizer can review it now/);
+    assert.match(texto(), /as soon as the organizer approves it/);
+    assert.match(texto(), /What happens now/);
     sinRevisionLocal();
   } finally {
     globalThis.fetch = original;

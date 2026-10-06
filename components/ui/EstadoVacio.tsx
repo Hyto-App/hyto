@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 
 type Accion = { texto: string; href?: string; onClick?: () => void };
 
@@ -8,7 +8,7 @@ type Accion = { texto: string; href?: string; onClick?: () => void };
 export function EstadoVacio({ titulo, texto, accion, children }: { titulo: string; texto?: string; accion?: Accion; children?: ReactNode }) {
   return (
     <div className="hyto-tarjeta hyto-estado-vacio">
-      <Mile estado="icono" tamano={56} />
+      <MileAnimada estado="vacio" tamano={56} />
       <h2>{titulo}</h2>
       {texto ? <p>{texto}</p> : null}
       {accion ? (
