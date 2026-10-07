@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
@@ -16,6 +16,7 @@ import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } f
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
+import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, reintentoEnLista, seguirEnLista } from "@/lib/integrante/seguimiento";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
@@ -135,17 +136,19 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const [orden, setOrden] = useState<OrdenTareas>("defecto");
   const [menuOrden, setMenuOrden] = useState(false);
   const [intento, setIntento] = useState(0);
+  const [reloj, setReloj] = useState(() => Date.now());
+  const vistosRef = useRef(new Map<string, number>());
 
   useEffect(() => {
     let activo = true;
-    let reloj = 0;
+    let esperaCarga = 0;
     setLista(false);
     setError(null);
     const cargar = (vez: number) => {
       listarTareas({ miembroId: "" }, { muestra: demo }).then((resultado) => {
         if (!activo) return;
         if (resultado.error && vez < 2) {
-          reloj = window.setTimeout(() => cargar(vez + 1), 400);
+          esperaCarga = window.setTimeout(() => cargar(vez + 1), 400);
           return;
         }
         setTareas(resultado.tareas);
@@ -170,10 +173,40 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
       .catch(() => undefined);
     return () => {
       activo = false;
-      window.clearTimeout(reloj);
+      window.clearTimeout(esperaCarga);
       window.removeEventListener("pageshow", alMostrar);
     };
   }, [demo, intento]);
+
+  if (lista) {
+    for (const tarea of tareas) {
+      if (esperaRevision(tarea) && !vistosRef.current.has(tarea.id)) vistosRef.current.set(tarea.id, reloj);
+    }
+  }
+  const haySeguimiento = lista && !ejemplo && !error && seguirEnLista(tareas, reloj, vistosRef.current);
+
+  useEffect(() => {
+    if (!haySeguimiento) return;
+    let activo = true;
+    let volando = false;
+    const id = window.setInterval(() => {
+      setReloj(Date.now());
+      if (volando) return;
+      volando = true;
+      void listarTareas({ miembroId: "" }, { muestra: demo })
+        .then((resultado) => {
+          if (!activo || resultado.error || resultado.ejemplo) return;
+          setTareas(resultado.tareas);
+        })
+        .finally(() => {
+          volando = false;
+        });
+    }, INTERVALO_SEGUIMIENTO_MS);
+    return () => {
+      activo = false;
+      window.clearInterval(id);
+    };
+  }, [haySeguimiento, demo]);
 
   const visibles = filtro === "all" ? tareas : tareas.filter((tarea) => tarea.estado === filtro);
   const cuenta = (estado: EstadoTarea) => tareas.filter((tarea) => tarea.estado === estado).length;
@@ -346,6 +379,8 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       const abierta = tarea.id === idAbierta;
                       const puntos = puntosDeCondicion(tarea.condicion).length;
                       const vence = tarea.venceEn ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
+                      const reintento = reintentoEnLista(tarea, reloj, vistosRef.current.get(tarea.id));
+                      const documental = esMimeDocumental(tarea.tipoArchivo);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
                           <div className="hyto-tarea-fila">
@@ -386,15 +421,19 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                                 <EtiquetasNota etiquetas={tarea.notas} />
                               </div>
-                            ) : tarea.revisionFallida ? (
-                              <p className="hyto-nota-mile hyto-nota-mile-rev">
+                            ) : reintento ? (
+                              <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
                                 <Mile estado="cara-neutra" tamano={28} />
                                 <span>{t("evidencia.mileCouldntFinish")}</span>
                               </p>
                             ) : (
-                              <p className="hyto-nota-mile hyto-nota-mile-rev">
+                              <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
                                 <Mile estado="cara-neutra" tamano={28} />
-                                <span>{t(esMimeDocumental(tarea.tipoArchivo) ? "tareas.mileReviewingFile" : "tareas.mileReviewing")}</span>
+                                <span>
+                                  {t(documental ? "tareas.mileReviewingFile" : "tareas.mileReviewing")}
+                                  {". "}
+                                  {t("tareas.mileStill")}
+                                </span>
                               </p>
                             )
                           ) : null}
@@ -428,8 +467,8 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               )}
                             </Link>
                           ) : (
-                            <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line">
-                              {t("tareas.view")}
+                            <Link href={`/tareas/${tarea.id}`} className={reintento ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                              {reintento ? t("comunes.tryAgain") : t("tareas.view")}
                             </Link>
                           )}
                         </article>

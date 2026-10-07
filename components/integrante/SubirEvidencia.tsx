@@ -138,22 +138,21 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     };
   }, [fase]);
 
-  // The review runs after the upload. Ask again every 3 s until a grade arrives or the follow window ends.
-  // A failure already stored, or a photo older than that window, is not "still checking".
+  // The review runs after the upload. Ask again every 3 s while the grade is missing,
+  // including after the retry message, so a late verdict can still replace it.
+  // A failure already stored is not "still checking".
+  const vigilar = fase === "lista" && tarea != null && !ejemplo && !avisoEnvio && esperaRevision(tarea);
   const reintentoMile = tarea != null && !avisoEnvio && mostrarReintento(tarea, { esperaLocal, esperaAgotada });
-  const esperando = fase === "lista" && tarea != null && !ejemplo && !avisoEnvio && !reintentoMile && esperaRevision(tarea);
+  const esperando = vigilar && !reintentoMile;
   useEffect(() => {
-    if (!esperando) return;
+    if (!vigilar) return;
     let activo = true;
     const inicio = Date.now();
     const tope = topeSeguimientoMs(esperaLocal ? null : tarea?.enviadaEn, inicio, esperaLocal);
     const cerrar = () => {
       if (activo) setEsperaAgotada(true);
     };
-    if (tope <= 0) {
-      cerrar();
-      return;
-    }
+    if (tope <= 0) cerrar();
     const referencia = { estado: "en revisión", nota: null } as const;
     const id = setInterval(() => {
       void leerTarea(tareaId, { miembroId: "" }, { muestra: demo })
@@ -172,7 +171,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       clearInterval(id);
       clearTimeout(corte);
     };
-  }, [esperando, tareaId, demo, esperaLocal, tarea?.enviadaEn]);
+  }, [vigilar, tareaId, demo, esperaLocal, tarea?.enviadaEn]);
 
   function usarFoto(blob: Blob, nombre: string | null, captura: string | null) {
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
@@ -548,7 +547,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           <BotonPrincipal type="button" disabled aria-busy={fase === "enviando"} className="hyto-btn-grande">
             {fase === "enviando" ? t("evidencia.sending") : t("evidencia.sentShort")}
           </BotonPrincipal>
-          <p className="hyto-pista">{fase === "enviando" ? t("evidencia.sendingNote") : t("evidencia.willTell")}</p>
+          <p className="hyto-pista">{fase === "enviando" ? t("evidencia.sendingNote") : t("evidencia.stillHere")}</p>
         </div>
       </main>
     );
