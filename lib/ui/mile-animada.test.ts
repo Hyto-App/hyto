@@ -53,17 +53,23 @@ test("server render shows the static fallback and no rig", () => {
 
 test("mounts the rig, swaps the fallback out and changes state", async () => {
   const { contenedor, raiz } = montar();
-  await act(async () => raiz.render(createElement(MileAnimada, { estado: "reposo", tamano: 200 })));
-  assert.ok(contenedor.querySelector(".hyto-mile"), "fallback while loading");
-  await esperar();
-  assert.equal(contenedor.querySelector(".hyto-mile"), null, "fallback removed once the rig is ready");
-  const host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
-  assert.ok(host.querySelector("svg"), "rig svg is mounted");
-  assert.notEqual(host.style.display, "none");
-  await act(async () => raiz.render(createElement(MileAnimada, { estado: "buscando", tamano: 200 })));
-  await esperar(20);
-  assert.ok(host.querySelector("svg"), "same rig survives a state change");
-  await act(async () => raiz.unmount());
+  try {
+    // A sync act runs the effect but cannot wait for the rig's dynamic import, so the fallback is
+    // still there. An async act let a fast import finish first and the check failed on CI.
+    act(() => raiz.render(createElement(MileAnimada, { estado: "reposo", tamano: 200 })));
+    assert.ok(contenedor.querySelector(".hyto-mile"), "fallback while loading");
+    await esperar();
+    assert.equal(contenedor.querySelector(".hyto-mile"), null, "fallback removed once the rig is ready");
+    const host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
+    assert.ok(host.querySelector("svg"), "rig svg is mounted");
+    assert.notEqual(host.style.display, "none");
+    await act(async () => raiz.render(createElement(MileAnimada, { estado: "buscando", tamano: 200 })));
+    await esperar(20);
+    assert.ok(host.querySelector("svg"), "same rig survives a state change");
+  } finally {
+    // Unmount even on failure: a rig left running keeps calling requestAnimationFrame and breaks the frame-count tests below.
+    await act(async () => raiz.unmount());
+  }
 });
 
 test("unmounting destroys the rig", async () => {
@@ -79,13 +85,16 @@ test("unmounting destroys the rig", async () => {
 test("onToque makes Mile a button and reports the reaction", async () => {
   const toques: string[] = [];
   const { contenedor, raiz } = montar();
-  await act(async () => raiz.render(createElement(MileAnimada, { onToque: (r) => toques.push(r) })));
-  await esperar();
-  const boton = contenedor.querySelector('[role="button"]') as HTMLElement;
-  assert.ok(boton, "interactive rig exposes role=button");
-  await act(async () => boton.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
-  assert.equal(toques[0], "hey");
-  await act(async () => raiz.unmount());
+  try {
+    await act(async () => raiz.render(createElement(MileAnimada, { onToque: (r) => toques.push(r) })));
+    await esperar();
+    const boton = contenedor.querySelector('[role="button"]') as HTMLElement;
+    assert.ok(boton, "interactive rig exposes role=button");
+    await act(async () => boton.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    assert.equal(toques[0], "hey");
+  } finally {
+    await act(async () => raiz.unmount());
+  }
 });
 
 function espiarRaf() {
