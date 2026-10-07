@@ -69,6 +69,33 @@ type ResultadoIngreso = { aviso: string | null; direccion: string | null; guarda
 const googleEnCurso = new Map<string, Promise<ResultadoIngreso>>();
 /** Read once per one-time code: Strict Mode runs the return effect twice and the link intent is taken on read. */
 const regresos = new Map<string, IntencionIngreso>();
+/** Latest return effect per code. An older cleanup must not drop a result the current screen still owns. */
+const duenosGoogle = new Map<string, number>();
+const CLAVE_AVISO_REGRESO = "hyto-aviso-regreso";
+
+/**
+ * The return effect unmounted, and nothing newer is waiting on this code.
+ * Navigate when the session is ready. Otherwise keep the notice and reopen sign-in,
+ * so the person never lands back on a blank login.
+ */
+function finalizarSinPantalla(resultado: ResultadoIngreso) {
+  if (resultado.guardada && resultado.direccion && !resultado.pendiente) {
+    const destino = destinoTrasIngreso(leerRetorno(), "/");
+    olvidarRetorno();
+    window.location.assign(destino);
+    return;
+  }
+  const textoAviso = resultado.aviso ?? resultado.pendiente;
+  if (textoAviso) {
+    try {
+      window.sessionStorage.setItem(CLAVE_AVISO_REGRESO, textoAviso);
+    } catch {
+      // The reload still opens sign-in.
+    }
+  }
+  const ruta = window.location.pathname || "/";
+  window.location.replace(`${ruta}?signin=1`);
+}
 
 const DIGITOS_CODIGO = 6;
 const CODIGO_VACIO: string[] = Array.from({ length: DIGITOS_CODIGO }, () => "");
@@ -130,6 +157,8 @@ export function Entrar({
   const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [alertaRegreso, setAlertaRegreso] = useState(false);
+  const [canjeando, setCanjeando] = useState(false);
   const [altaPendiente, setAltaPendiente] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
@@ -159,6 +188,20 @@ export function Entrar({
       setPedirIngreso(true);
       setPestana("signin");
       setFase("correo");
+    }
+    if (atiendeUrl) {
+      try {
+        const guardado = window.sessionStorage.getItem(CLAVE_AVISO_REGRESO);
+        if (guardado) {
+          window.sessionStorage.removeItem(CLAVE_AVISO_REGRESO);
+          setAviso(guardado);
+          setAlertaRegreso(true);
+          setPedirIngreso(true);
+          setFase("correo");
+        }
+      } catch {
+        // Leave the form as it is.
+      }
     }
     setDireccion(leerMemoriaAdmin().direccion);
   }, []);
@@ -223,17 +266,29 @@ export function Entrar({
     regresos.set(codigoGoogle, intencion);
     setPestana(intencion);
     setFase("correo");
-    setAviso(t(intencion === "signup" ? "entrar.settingUp" : "entrar.signingIn"));
+    setAviso(null);
+    setAlertaRegreso(false);
+    setCanjeando(true);
+    const ticket = (duenosGoogle.get(codigoGoogle) ?? 0) + 1;
+    duenosGoogle.set(codigoGoogle, ticket);
     let vivo = true;
     const pendiente =
       googleEnCurso.get(codigoGoogle) ?? iniciarGoogle(window.location.search, redirectLimpio(), intencion);
     googleEnCurso.set(codigoGoogle, pendiente);
     void pendiente.then((resultado) => {
-      if (!vivo) return;
+      const ultimo = duenosGoogle.get(codigoGoogle) === ticket;
+      const sigueAqui = new URLSearchParams(window.location.search).get("cavos_auth_code") === codigoGoogle;
+      if (!vivo) {
+        if (ultimo && sigueAqui) finalizarSinPantalla(resultado);
+        return;
+      }
+      setCanjeando(false);
       if (resultado.guardada && resultado.direccion) {
+        setAlertaRegreso(false);
         entrarListo(resultado.direccion, resultado.pendiente, true);
         return;
       }
+      setAlertaRegreso(Boolean(resultado.aviso));
       setAviso(resultado.aviso);
     });
     return () => {
@@ -287,6 +342,7 @@ export function Entrar({
   function elegirPestana(intencion: IntencionIngreso) {
     if (ocupado !== null) return;
     setAviso(null);
+    setAlertaRegreso(false);
     setPestana(intencion);
   }
 
@@ -635,6 +691,8 @@ export function Entrar({
 
   const demo = esCorreoDemo(correo);
   const mensaje = mostrarEspera && espera > 0 ? textoEspera(espera) : aviso;
+  const correoInvalido = aviso === AVISO_CORREO;
+  const alertaFormulario = Boolean(mensaje) && (correoInvalido || alertaRegreso) && !(mostrarEspera && espera > 0);
 
   if (direccion && !pedirIngreso) {
     return (
@@ -717,7 +775,7 @@ export function Entrar({
   const alertaCodigo = fase === "codigo" && aviso !== null && !esperaVisible;
   const celdasOk = fase === "exito" && !verCheck;
   const pose: Pose =
-    fase === "exito" ? "win" : enviando ? "dive" : alertaCodigo ? "worry" : fase === "codigo" ? "code" : "rest";
+    fase === "exito" ? "win" : enviando || canjeando ? "dive" : alertaCodigo ? "worry" : fase === "codigo" ? "code" : "rest";
   const conEnlace = recuperacion.activa;
   const ofrece = (metodo: ProveedorRecuperacion) => !recuperacion.activa || recuperacion.proveedor === metodo;
   const conCorreo = ofrece("email");
@@ -725,7 +783,7 @@ export function Entrar({
   const chip =
     fase === "exito"
       ? t("entrar.chipExito")
-      : enviando
+      : enviando || canjeando
         ? t("entrar.chipEnviando")
         : alertaCodigo
           ? t("entrar.chipError")
@@ -778,6 +836,14 @@ export function Entrar({
               </p>
               <Eslogan como="h1" className="hyto-login-titulo" />
               <p className="hyto-login-sub">{t("entrar.sub")}</p>
+              <ol className="hyto-login-como" aria-label={t("landing.panel")}>
+                {t("landing.panelQ")
+                  .split(/(?<=\.)\s+/)
+                  .filter(Boolean)
+                  .map((linea) => (
+                    <li key={linea}>{linea}</li>
+                  ))}
+              </ol>
             </div>
             <Mile pose={pose} />
           </div>
@@ -836,7 +902,15 @@ export function Entrar({
                 </li>
               ))}
             </ol>
-            {fase === "correo" ? (
+            {canjeando ? (
+              <div className="hyto-login-cambio hyto-login-canje" role="status" aria-live="polite" aria-busy="true">
+                <h2>{t("entrar.signingIn")}</h2>
+                <p className="hyto-login-lead">{t("entrar.chipEnviando")}</p>
+                <div className="hyto-login-barra" aria-hidden="true">
+                  <i className="is-indeterminada" />
+                </div>
+              </div>
+            ) : fase === "correo" ? (
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
                 <p className="hyto-login-lead">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
@@ -863,9 +937,16 @@ export function Entrar({
                   </button>
                 ) : null}
                 {!conCorreo && mensaje ? (
-                  <p role="status" className="hyto-login-aviso">
-                    {claro(mensaje)}
-                  </p>
+                  alertaFormulario ? (
+                    <div className="hyto-login-alerta" role="alert">
+                      <Icono nombre="alerta" />
+                      <p>{claro(mensaje)}</p>
+                    </div>
+                  ) : (
+                    <p role="status" className="hyto-login-aviso">
+                      {claro(mensaje)}
+                    </p>
+                  )
                 ) : null}
                 {conCorreo && conRedes ? (
                   <p className="hyto-login-o">
@@ -895,9 +976,11 @@ export function Entrar({
                         onChange={(evento) => {
                           setCorreo(evento.target.value);
                           setAviso(null);
+                          setAlertaRegreso(false);
                         }}
                         placeholder={t("entrar.correoEjemplo")}
                         disabled={ocupado !== null}
+                        aria-invalid={correoInvalido || undefined}
                       />
                       {enviando ? (
                         <span className="hyto-login-candado" aria-hidden="true">
@@ -916,9 +999,16 @@ export function Entrar({
                       </p>
                     )}
                     {mensaje ? (
-                      <p role="status" className="hyto-login-aviso">
-                        {claro(mensaje)}
-                      </p>
+                      alertaFormulario ? (
+                        <div className="hyto-login-alerta" role="alert">
+                          <Icono nombre="alerta" />
+                          <p>{claro(mensaje)}</p>
+                        </div>
+                      ) : (
+                        <p role="status" className="hyto-login-aviso">
+                          {claro(mensaje)}
+                        </p>
+                      )
                     ) : null}
                     <button
                       type="submit"
@@ -941,21 +1031,27 @@ export function Entrar({
                     </button>
                   </form>
                 ) : null}
-                <p className="hyto-login-legal">
-                  {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
-                  <Link href="/privacy">{ENLACE_PRIVACIDAD}</Link>
-                </p>
                 {demoHabilitado ? (
-                  <p className="hyto-login-demo">
-                    {t("entrar.soloMirar")}{" "}
-                    <button type="button" onClick={() => setVerDemo((actual) => !actual)} aria-expanded={verDemo} disabled={ocupado !== null}>
+                  <div className="hyto-login-demo">
+                    <p>{t("entrar.soloMirar")}</p>
+                    <button
+                      type="button"
+                      className="hyto-login-btn is-fantasma"
+                      onClick={() => setVerDemo((actual) => !actual)}
+                      aria-expanded={verDemo}
+                      disabled={ocupado !== null}
+                    >
                       {t("entrar.probarDemo")}
                     </button>
-                  </p>
+                  </div>
                 ) : null}
                 {demoHabilitado && verDemo ? (
                   <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
+                <p className="hyto-login-legal">
+                  {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
+                  <Link href="/privacy">{ENLACE_PRIVACIDAD}</Link>
+                </p>
               </div>
             ) : null}
             {fase === "enlace" ? (

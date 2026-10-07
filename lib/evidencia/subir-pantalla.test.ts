@@ -13,7 +13,21 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async () => {
+function pestanas(): HTMLButtonElement[] {
+  return [...document.querySelectorAll('[role="tab"]')].filter((nodo) => nodo instanceof HTMLButtonElement);
+}
+
+function entradaArchivo(): HTMLInputElement | null {
+  const entrada = document.querySelector('input[type="file"]');
+  return entrada instanceof HTMLInputElement ? entrada : null;
+}
+
+function envioDeshabilitado(): boolean {
+  const envio = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Send evidence");
+  return envio instanceof HTMLButtonElement && envio.disabled;
+}
+
+test("las pestañas Recibo y Tarea muestran una sola carga", async () => {
   const original = globalThis.fetch;
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
@@ -52,9 +66,39 @@ test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async (
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
+    const lista = document.querySelector('[role="tablist"]');
+    assert.equal(lista?.getAttribute("aria-label"), "What you are sending");
+    assert.deepEqual(
+      pestanas().map((tab) => tab.textContent),
+      ["Receipt", "Task"],
+    );
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "false");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1);
+    assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), pestanas()[1]?.id);
     assert.match(texto(), /Open camera/);
-    assert.doesNotMatch(texto(), /Choose a photo/);
     assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /This task needs a camera photo/);
+    assert.equal(entradaArchivo()?.accept.includes("pdf") ?? false, false);
+
+    await pulsar("Receipt");
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "false");
+    assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), pestanas()[0]?.id);
+    assert.match(texto(), /This task needs a camera photo\. Go back to the Task tab\./);
+    assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /Open camera/);
+    assert.equal(entradaArchivo(), null);
+    const envioTrabajo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Send evidence");
+    assert.ok(envioTrabajo instanceof HTMLButtonElement);
+    assert.equal(envioTrabajo.disabled, true);
+
+    await pulsar("Go back to Task");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /This task needs a camera photo/);
+    assert.match(texto(), /Open camera/);
+    assert.equal(envioDeshabilitado(), false);
+
     await desmontar();
     limpiarPantalla();
 
@@ -62,9 +106,51 @@ test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async (
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
     assert.match(texto(), /Choose a file/);
     assert.match(texto(), /Choose a PDF, text file, or image/);
     assert.doesNotMatch(texto(), /Open camera/);
+    assert.doesNotMatch(texto(), /This task needs a receipt/);
+    const recibo = entradaArchivo();
+    assert.ok(recibo);
+    assert.match(recibo.accept, /pdf/);
+
+    const malo = new ArchivoNode(["no"], "notas.zip", { type: "application/zip" });
+    Object.defineProperty(recibo, "files", { configurable: true, value: [malo] });
+    await act(async () => {
+      recibo.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    assert.match(texto(), /Choose a PDF, HTML, text, JPEG, PNG, or WebP file/);
+    assert.doesNotMatch(texto(), /notas.zip/);
+
+    const pdf = new ArchivoNode(["%PDF-1.4"], "recibo.pdf", { type: "application/pdf" });
+    const entradaPdf = entradaArchivo();
+    assert.ok(entradaPdf);
+    Object.defineProperty(entradaPdf, "files", { configurable: true, value: [pdf] });
+    await act(async () => {
+      entradaPdf.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    assert.match(texto(), /recibo\.pdf/);
+    assert.equal(envioDeshabilitado(), false);
+
+    const tabRecibo = pestanas()[0];
+    assert.ok(tabRecibo);
+    await act(async () => {
+      tabRecibo.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /recibo\.pdf/);
+    assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /Open camera/);
+    assert.match(texto(), /This task needs a receipt as a PDF or image\. Go back to the Receipt tab\./);
+    assert.equal(entradaArchivo(), null);
+    assert.equal(envioDeshabilitado(), true);
+    assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1);
+
+    await pulsar("Go back to Receipt");
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /This task needs a receipt/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

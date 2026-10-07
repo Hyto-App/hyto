@@ -50,6 +50,33 @@ export function mostrarReintento(
   return plazoRevisionVencido(tarea, opciones.ahora ?? Date.now());
 }
 
+/** Keep asking a little after the retry appears, so a late grade can still land. */
+const TOPE_LISTA_MS = LIMITE_SEGUIMIENTO_MS * 2;
+
+/**
+ * My tasks keeps asking while a photo still has no grade and this screen has not
+ * been watching it for two follow windows. The retry message uses the one-minute mark.
+ */
+export function seguirEnLista(
+  tareas: ReadonlyArray<Pick<Tarea, "id" | "estado" | "nota" | "revisionFallida" | "enviadaEn">>,
+  ahora: number,
+  vistosEn: ReadonlyMap<string, number>,
+): boolean {
+  return tareas.some((tarea) => {
+    if (!esperaRevision(tarea)) return false;
+    const visto = vistosEn.get(tarea.id);
+    if (visto === undefined) return true;
+    return ahora - visto < TOPE_LISTA_MS;
+  });
+}
+
+/** Same retry rule as the upload screen, for a card on My tasks. */
+export function reintentoEnLista(tarea: TareaReintento, ahora: number, vistoEn: number | undefined): boolean {
+  const sinFecha = typeof tarea.enviadaEn !== "string" || !tarea.enviadaEn;
+  const esperaAgotada = sinFecha && vistoEn !== undefined && ahora - vistoEn >= LIMITE_SEGUIMIENTO_MS;
+  return mostrarReintento(tarea, { esperaLocal: false, esperaAgotada, ahora });
+}
+
 /** Keep polling only while the grade is missing, the state has not changed and the 60 s are not spent. */
 export function seguirConsultando(
   inicial: Pick<Tarea, "estado" | "nota">,

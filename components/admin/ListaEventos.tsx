@@ -42,12 +42,13 @@ function BienvenidaColapsable() {
   if (oculta) return null;
   return (
     <div className="mt-6">
-      <Bienvenida />
-      <div className="hyto-welcome-ocultar">
-        <button type="button" onClick={ocultar}>
-          {t("tareas.hideWelcome")}
-        </button>
-      </div>
+      <Bienvenida
+        accion={
+          <button type="button" onClick={ocultar}>
+            {t("tareas.hideWelcome")}
+          </button>
+        }
+      />
     </div>
   );
 }
