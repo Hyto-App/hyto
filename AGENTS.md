@@ -44,7 +44,7 @@ One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/
 
 | Route | What it is |
 |---|---|
-| `/` | Landing. Signed-in users go to `/eventos`. |
+| `/` | Landing. Signed-in users go to `/mis-tareas`. |
 | `/eventos`, `/eventos/nuevo`, `/eventos/[id]` | List, create, event home. |
 | `/eventos/[id]/tareas` | Organizer assigns tasks. |
 | `/eventos/[id]/informe` | Printable report. `/informe` redirects to the first event. |

@@ -71,18 +71,19 @@ test("Sign in de un usuario que ya existe no recorre la semilla", async () => {
   assert.ok(respuesta.headers.getSetCookie().some((cookie) => cookie.startsWith("hyto_sesion=")));
 });
 
-test("un correo desconocido sigue sembrando antes de decidir: Sign in 404 y Sign up crea la cuenta", async () => {
+test("un correo desconocido sigue sembrando antes de crear la cuenta, también desde Sign in", async () => {
   const base = crearMemoria();
   const { almacen, llamadas } = contando(base);
 
   const ingreso = await crearSesionHttp(pedido("nadie@hyto.app", "signin"), almacen);
-  assert.equal(ingreso.status, 404);
+  assert.equal(ingreso.status, 200);
+  assert.equal(((await ingreso.json()) as { nuevo: boolean }).nuevo, true);
   assert.ok(llamadas.includes("listarUsuarios"));
-  assert.equal((await base.listarUsuarios()).some((usuario) => usuario.email === "nadie@hyto.app"), false);
+  assert.equal((await base.listarUsuarios()).some((usuario) => usuario.email === "nadie@hyto.app"), true);
 
-  const alta = await crearSesionHttp(pedido("nadie@hyto.app", "signup"), almacen);
-  assert.equal(alta.status, 200);
-  assert.equal(((await alta.json()) as { nuevo: boolean }).nuevo, true);
+  const otra = await crearSesionHttp(pedido("otra@hyto.app", "signup"), almacen);
+  assert.equal(otra.status, 200);
+  assert.equal(((await otra.json()) as { nuevo: boolean }).nuevo, true);
 });
 
 test("una identidad de la semilla en una base vacía entra con Sign in", async () => {
