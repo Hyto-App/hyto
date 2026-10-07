@@ -435,6 +435,46 @@ test("asking for another photo removes the old verdict pill", async () => {
   }
 });
 
+test("the photo frame is never empty: a spinner while loading, the image once loaded, a message when it fails", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "Half of the booth is set up." }),
+      foto: "/api/evidencias/ejemplo-stand/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => document.querySelector(".hyto-photo img") !== null);
+    const imagen = document.querySelector<HTMLImageElement>(".hyto-photo img");
+    assert.ok(imagen);
+    assert.equal(imagen.getAttribute("src"), "/api/evidencias/ejemplo-stand/foto");
+    // Before the file arrives the frame shows a status, not a blank box.
+    assert.equal(document.querySelector(".hyto-photo [role=status]") !== null, true);
+    assert.equal(texto().includes("No photo yet"), false);
+
+    await act(async () => {
+      imagen.dispatchEvent(new Event("load"));
+    });
+    assert.equal(document.querySelector(".hyto-photo [role=status]"), null);
+    assert.equal(document.querySelector(".hyto-photo img") !== null, true);
+    assert.equal(texto().includes("This photo could not be shown."), false);
+
+    await act(async () => {
+      imagen.dispatchEvent(new Event("error"));
+    });
+    assert.equal(document.querySelector(".hyto-photo img"), null);
+    assert.match(texto(), /This photo could not be shown\./);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 /** "Ask for another photo" opens the sheet. The submit inside confirms the existing action. */
 async function confirmarPedir(): Promise<void> {
   await pulsar("Ask for another photo");
