@@ -144,6 +144,7 @@ function PasaporteStellar() {
 
 function Billetera({ vista }: { vista: VistaCuenta }) {
   const t = useTexto();
+  const idioma = useIdioma();
   const publica = direccionPublica(vista.wallet);
   return (
     <section className="hyto-card p-5 sm:p-6">
@@ -157,7 +158,7 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
         </div>
         <div className="min-w-[10rem]">
           <p className="text-sm text-[var(--suave)]">{t("cuenta.testnetUsdc")}</p>
-          <p className="hyto-amount mt-1 text-3xl">{vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo) : "—"}</p>
+          <p className="hyto-amount mt-1 text-3xl">{vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo, idioma) : "—"}</p>
           <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
         </div>
       </div>
@@ -225,20 +226,21 @@ function textoSaldo(vista: VistaCuenta, t: (clave: Clave) => string): string {
 
 function Ganancias({ orgullo }: { orgullo: Orgullo }) {
   const t = useTexto();
+  const idioma = useIdioma();
   return (
     <section className="grid gap-4">
       <div className="hyto-kpis">
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.thisMonth")}</p>
-          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.esteMes)}</p>
+          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.esteMes, idioma)}</p>
         </article>
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.lastMonth")}</p>
-          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.mesPasado)}</p>
+          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.mesPasado, idioma)}</p>
         </article>
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.allTime")}</p>
-          <p className="hyto-amount mt-2 text-2xl text-[var(--acento-texto)]">{formatearMonto(orgullo.total)}</p>
+          <p className="hyto-amount mt-2 text-2xl text-[var(--acento-texto)]">{formatearMonto(orgullo.total, idioma)}</p>
         </article>
       </div>
       <div className="hyto-card p-5 sm:p-6">
@@ -266,7 +268,7 @@ function Grafico({ meses }: { meses: MesOrgullo[] }) {
         const corta = mesVisible(mes.clave, "short", idioma);
         const larga = mesVisible(mes.clave, "long", idioma);
         return (
-          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearMonto(mes.total) || "US$0"}`}>
+          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearMonto(mes.total, idioma) || "US$0"}`}>
             <span className="hyto-mes-valor" aria-hidden="true">
               {cifra > 0 ? mes.total : ""}
             </span>
@@ -309,7 +311,7 @@ function OrgulloFila({ orgullo }: { orgullo: Orgullo }) {
     { etiqueta: t("cuenta.streak"), valor: racha, detalle: orgullo.racha > 0 ? t("cuenta.inARow") : t("cuenta.noPayoutMonth") },
     {
       etiqueta: t("cuenta.bestMonth"),
-      valor: orgullo.mejorMes ? formatearMonto(orgullo.mejorMes.total) : "—",
+      valor: orgullo.mejorMes ? formatearMonto(orgullo.mejorMes.total, idioma) : "—",
       detalle: orgullo.mejorMes ? mesVisible(orgullo.mejorMes.clave, "long", idioma) : t("cuenta.bestLater"),
     },
   ];
@@ -366,10 +368,10 @@ function Recientes({ orgullo, muestra }: { orgullo: Orgullo; muestra: boolean })
                   <p className="truncate font-medium">{textoVisible(tarea.titulo, idioma)}</p>
                   <p className="mt-1 text-sm text-[var(--suave)]">
                     {textoVisible(tarea.proyecto, idioma)}
-                    {tarea.pagadoEn ? ` · ${formatearFecha(tarea.pagadoEn)}` : ""}
+                    {tarea.pagadoEn ? ` · ${formatearFecha(tarea.pagadoEn, idioma)}` : ""}
                   </p>
                 </div>
-                <p className="hyto-amount shrink-0">{tarea.monto ? formatearMonto(tarea.monto) : "—"}</p>
+                <p className="hyto-amount shrink-0">{tarea.monto ? formatearMonto(tarea.monto, idioma) : "—"}</p>
               </>
             );
             if (muestra) {

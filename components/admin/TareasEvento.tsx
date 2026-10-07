@@ -166,7 +166,7 @@ export function TareasEvento({
               <div className="min-w-0">
                 <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
+                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {montoDeTarea(tarea, idioma)}
                 </p>
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">

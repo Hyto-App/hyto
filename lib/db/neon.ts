@@ -1,12 +1,13 @@
 import { neon } from "@neondatabase/serverless";
 import { desc, eq, getTableColumns, sql } from "drizzle-orm";
-import { consultaPhashCercano } from "./sql";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { cache } from "react";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
+import { consultaPhashCercano } from "./sql";
 import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
@@ -111,25 +112,31 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   let antifraude: boolean | null = null;
   let mile: boolean | null = null;
   async function columnasListas(): Promise<boolean> {
-    if (antifraude === true) return true;
+    if (antifraude !== null) return antifraude;
     try {
       await db.execute(sql`select sha256 from evidencias limit 0`);
       antifraude = true;
       return true;
     } catch (error) {
-      if (esColumnaAusente(error)) return false;
+      if (esColumnaAusente(error)) {
+        antifraude = false;
+        return false;
+      }
       throw error;
     }
   }
   async function columnasMile(): Promise<boolean> {
-    if (mile === true) return true;
+    if (mile !== null) return mile;
     try {
       await db.execute(sql`select requisitos, rechazo from tareas limit 0`);
       await db.execute(sql`select mile from veredictos limit 0`);
       mile = true;
       return true;
     } catch (error) {
-      if (esColumnaAusente(error)) return false;
+      if (esColumnaAusente(error)) {
+        mile = false;
+        return false;
+      }
       throw error;
     }
   }
@@ -577,13 +584,17 @@ export function urlBase(): string | null {
   return urlDeBase();
 }
 
+const almacenDeUrl = cache(async (): Promise<Almacen | null> => {
+  const url = urlBase();
+  if (!url) return null;
+  return crearAlmacenNeon(url);
+});
+
 export async function almacenNeon(): Promise<Almacen | null> {
   // Lo definen las pruebas de Postgres local. En el servidor no existe.
   const tabla = globalThis as typeof globalThis & {
     __HYTO_ALMACEN_PRUEBA?: () => Promise<Almacen | null>;
   };
   if (typeof tabla.__HYTO_ALMACEN_PRUEBA === "function") return tabla.__HYTO_ALMACEN_PRUEBA();
-  const url = urlBase();
-  if (!url) return null;
-  return crearAlmacenNeon(url);
+  return almacenDeUrl();
 }

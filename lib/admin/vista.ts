@@ -1,3 +1,4 @@
+import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
 export { notaCopia, notaManual } from "@/lib/evidencia/copia";
 import { texto } from "@/lib/ui/diccionario";
@@ -94,10 +95,8 @@ export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
  * organizer only while the task is in review. A pending task is not counted, even when a sample
  * verdict is still stored on it. A task sent back for another photo leaves the inbox.
  */
-export function enBandeja(tarea: { estado: string; veredicto: string | null }): boolean {
-  if (tarea.estado === "pagado") return false;
-  // A pending row can still carry a sample verdict. That is not a photo waiting for review.
-  return tarea.estado === "en revisión";
+export function enBandeja(tarea: { estado: string; veredicto?: string | null }): boolean {
+  return calcularEstadoTarea({ estado: tarea.estado }).enBandeja;
 }
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {

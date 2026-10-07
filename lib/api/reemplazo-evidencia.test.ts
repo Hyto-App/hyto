@@ -38,7 +38,7 @@ test("el voluntario reemplaza la foto mientras no está pagada y la etapa sigue 
   assert.equal((await pedirOtraFotoHttp(almacen, "organizador", "stand")).status, 200);
   assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
   envio = await envioDe(almacen);
-  assert.equal(envio?.etapa, "rechazada");
+  assert.equal(envio?.etapa, null);
   assert.equal(envio?.enviadaEn, (await almacen.ultimaEvidencia("stand"))?.creadaEn);
 
   const reemplazo = await subir(almacen, fotos, segunda);

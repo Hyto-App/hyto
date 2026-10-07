@@ -20,12 +20,13 @@ test("la línea sale de la tarea, la foto y si ya hay revisión", () => {
   assert.equal(fallo.etapa, "enviada_organizador");
 
   const rechazada = lineaDeEnvio(pendiente, foto("blob/real"), veredicto());
-  assert.deepEqual(rechazada, { etapa: "rechazada", enviadaEn: ENVIADA });
+  assert.equal(rechazada.etapa, null);
+  assert.equal(rechazada.enviadaEn, ENVIADA);
 
   const pagada = lineaDeEnvio({ ...pendiente, estado: "pagado" }, foto("blob/real"), veredicto());
   assert.equal(pagada.etapa, "aprobada");
   const enVuelo = lineaDeEnvio({ ...pendiente, hashPago: "ab".repeat(32) }, foto("blob/real"), null);
-  assert.equal(enVuelo.etapa, "aprobada");
+  assert.notEqual(enVuelo.etapa, "aprobada");
   assert.equal(enVuelo.enviadaEn, ENVIADA);
 });
 

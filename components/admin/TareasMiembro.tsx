@@ -31,7 +31,7 @@ export function TareasMiembro({
             <Link href={`/tareas/${tarea.id}`} className="hyto-card block p-5">
               <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
               <p className="mt-1 text-sm text-[var(--suave)]">
-                {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea)}
+                {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea, idioma)}
               </p>
             </Link>
           </li>

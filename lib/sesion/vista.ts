@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { connection } from "next/server";
+import { cache } from "react";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila } from "@/lib/db/tipos";
 import { COOKIE_SESION, vigente } from "./cookie";
 import { rolDemoDe, sesionEsDemo, type RolDemo } from "./demo";
 
-export async function leerSesionActual(): Promise<SesionFila | null> {
+export const leerSesionActual = cache(async (): Promise<SesionFila | null> => {
   // A deploy must not serve a cached signed-out page. The cookie is the Postgres key.
   await connection();
   const jar = await cookies();
@@ -25,17 +26,12 @@ export async function leerSesionActual(): Promise<SesionFila | null> {
   }
   console.error("[sesion] could not read the session", ultimo instanceof Error ? ultimo.message : "error");
   return null;
-}
+});
 
 export async function leerRolDemo(): Promise<RolDemo | null> {
-  const jar = await cookies();
-  const token = jar.get(COOKIE_SESION)?.value?.trim();
-  if (!token) return null;
   try {
-    const almacen = await almacenNeon();
-    if (!almacen) return null;
-    const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn) || !sesionEsDemo(sesion)) return null;
+    const sesion = await leerSesionActual();
+    if (!sesion || !sesionEsDemo(sesion)) return null;
     return rolDemoDe(sesion.rol);
   } catch {
     return null;

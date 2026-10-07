@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { crearFotosMemoria } from "../blob/fotos";
 import { crearMemoria } from "../db/memoria";
+import { asegurarSemilla } from "../db/semilla";
 import { publicarEvidenciaHttp } from "./evidencias";
 
 async function publicar(tareaId: string, foto: Blob, nombre: string): Promise<Response> {
   const cuerpo = new FormData();
   cuerpo.set("tareaId", tareaId);
   cuerpo.set("foto", foto, nombre);
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   return publicarEvidenciaHttp(new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }), {
-    almacen: crearMemoria(),
+    almacen,
     fotos: crearFotosMemoria(),
   });
 }

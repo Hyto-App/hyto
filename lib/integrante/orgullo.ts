@@ -1,4 +1,5 @@
 import { centavos, textoMonto } from "@/lib/admin/vista";
+import type { Idioma } from "@/lib/ui/idioma";
 
 /** Meses del panel. Costa Rica no cambia de hora, y es la zona que ya usa el formato de fechas. */
 export const ZONA_MESES = "America/Costa_Rica";
@@ -7,10 +8,9 @@ const VENTANA_MESES = 6;
 const RECIENTES = 5;
 
 /**
- * Dirección pública de ejemplo (Stellar Lab, testnet). No es una clave ni la billetera de nadie en Hyto.
- * https://developers.stellar.org/docs/tools/lab/api-explorer/horizon-endpoint#single-account
+ * Texto claramente ficticio. No es una cuenta de la red.
  */
-export const DIRECCION_MUESTRA = "GBPIMUEJFYS7RT23QO2ACH2JMKGXLXZI4E5ACBSQMF32RKZ5H3SVNL5F";
+export const DIRECCION_MUESTRA = "EJEMPLO-NO-ES-UNA-CUENTA";
 export const SALDO_MUESTRA = "48.20";
 
 export type TareaCuenta = {
@@ -159,7 +159,12 @@ export function desplazarMes(clave: string, delta: number): string {
   return `${siguienteAnio}-${String(siguienteMes).padStart(2, "0")}`;
 }
 
-export function armarOrgullo(tareas: TareaCuenta[], ahora: Date = new Date(), zona: string = ZONA_MESES): Orgullo {
+export function armarOrgullo(
+  tareas: TareaCuenta[],
+  ahora: Date = new Date(),
+  zona: string = ZONA_MESES,
+  idioma: Idioma = "en",
+): Orgullo {
   const pagadas = tareas.filter((tarea) => tarea.pagada);
   const porMes = new Map<string, number>();
   let totalCentavos = 0;
@@ -179,7 +184,7 @@ export function armarOrgullo(tareas: TareaCuenta[], ahora: Date = new Date(), zo
 
   const actual = claveDeFecha(ahora, zona);
   const hayMeses = [...porMes.values()].some((cifra) => cifra > 0);
-  const meses = actual && hayMeses ? ventana(actual, porMes) : [];
+  const meses = actual && hayMeses ? ventana(actual, porMes, idioma) : [];
   const conteo: ConteosOrgullo = {
     tareas: pagadas.length,
     proyectos: proyectosCompletados(tareas),
@@ -236,24 +241,24 @@ function isoEnMes(ahora: Date, delta: number): string {
   return new Date(Date.UTC(anio, mes - 1, 15, 18, 0, 0)).toISOString();
 }
 
-function ventana(actual: string, porMes: Map<string, number>): MesOrgullo[] {
+function ventana(actual: string, porMes: Map<string, number>, idioma: Idioma = "en"): MesOrgullo[] {
   const inicio = desplazarMes(actual, -(VENTANA_MESES - 1));
   const meses: MesOrgullo[] = [];
   for (let indice = 0; indice < VENTANA_MESES; indice += 1) {
     const clave = desplazarMes(inicio, indice);
     meses.push({
       clave,
-      etiqueta: etiqueta(clave, "short"),
-      etiquetaLarga: etiqueta(clave, "long"),
+      etiqueta: etiqueta(clave, "short", idioma),
+      etiquetaLarga: etiqueta(clave, "long", idioma),
       total: textoMonto(porMes.get(clave) ?? 0),
     });
   }
   return meses;
 }
 
-function etiqueta(clave: string, mes: "short" | "long"): string {
+function etiqueta(clave: string, mes: "short" | "long", idioma: Idioma = "en"): string {
   const [anio, numero] = clave.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", {
     month: mes,
     year: mes === "long" ? "numeric" : undefined,
     timeZone: "UTC",

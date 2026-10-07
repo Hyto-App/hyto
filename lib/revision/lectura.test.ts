@@ -148,9 +148,10 @@ test("el pedido a Qwen lleva la condición, las once claves y prohíbe adivinar 
   assert.match(pedido, /tipo, pais, moneda, monto_original, monto_usd, fecha, comercio, articulos, texto_completo, legible, faltantes/);
   assert.match(pedido, /Never guess USD/);
   assert.match(pedido, /DD\/MM\/YYYY/);
-  const enEspanol = pedidoVision({ condicion: "Foto del recibo de la comida", tipoTarea: "reembolso" });
-  assert.match(enEspanol, /texto_completo: a detailed description in English only, never Spanish or any other language, even when the request/);
-  assert.match(enEspanol, /faltantes: a list of short phrases in English only, never Spanish/);
+  const enEspanol = pedidoVision({ condicion: "Foto del recibo de la comida", tipoTarea: "reembolso", idioma: "es" });
+  assert.match(enEspanol, /texto_completo: a detailed description in Spanish only/);
+  assert.match(enEspanol, /faltantes: a list of short phrases in Spanish only/);
+  assert.match(pedido, /texto_completo: a detailed description in English only/);
   assert.equal(pedido.includes("one short sentence"), false);
   assert.equal(pedido.includes("in dollars (digits only"), false);
 

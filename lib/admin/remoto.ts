@@ -115,6 +115,10 @@ export async function cargarDetalleOrganizador(tareaId: string, opciones: Opcion
 
 export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Promise<VistaAdmin | null> {
   const fetchImpl = opciones.fetch ?? fetch;
+  if (opciones.proyectoId) {
+    const directa = await cargarVistaEvento(fetchImpl, opciones.proyectoId);
+    if (directa) return directa;
+  }
   let filas: FilaTarea[];
   try {
     const lista = await pedir(fetchImpl, "/api/tareas");
@@ -131,7 +135,7 @@ export async function cargarVistaOrganizador(opciones: OpcionesRemoto = {}): Pro
   }
 
   const detalles = await Promise.all(filas.map((fila) => leerUna(fetchImpl, fila.id)));
-  if (detalles.some((item) => item === "ajeno" || item === "fallo")) return null;
+  if (detalles.some((item) => item === "ajeno")) return null;
   const porId = new Map(filas.map((fila) => [fila.id, fila]));
   const tareas = detalles.flatMap((item) => {
     if (!item || item === "ajeno" || item === "omitida" || item === "fallo") return [];
@@ -186,6 +190,27 @@ function armarVista(tareas: TareaAdmin[], nombre: string): VistaAdmin {
     resumen: resumir(tareas),
     personas: porPersona(tareas),
   };
+}
+
+async function cargarVistaEvento(fetchImpl: typeof fetch, proyectoId: string): Promise<VistaAdmin | null> {
+  try {
+    const respuesta = await pedir(fetchImpl, `/api/eventos/${encodeURIComponent(proyectoId)}/vista`);
+    if (!respuesta.ok) return null;
+    return vistaDesdeJson(await respuesta.json());
+  } catch {
+    return null;
+  }
+}
+
+function vistaDesdeJson(valor: unknown): VistaAdmin | null {
+  if (!valor || typeof valor !== "object") return null;
+  const datos = valor as { nombre?: unknown; tareas?: unknown };
+  if (!Array.isArray(datos.tareas)) return null;
+  const tareas = datos.tareas.flatMap((item) => {
+    const tarea = leerTareaAdmin(item);
+    return tarea ? [tarea] : [];
+  });
+  return armarVista(tareas, typeof datos.nombre === "string" ? datos.nombre : "");
 }
 
 function detalleDe(json: unknown): DetalleRevision | null {

@@ -1,3 +1,7 @@
+"use client";
+
+import { useIdioma } from "@/components/ui/Idioma";
+import { presentarEtiqueta } from "@/lib/revision/notas-idioma";
 import { motivoPrincipal, type EtiquetaNota, type SeveridadNota } from "@/lib/revision/razones";
 
 const CLASE: Record<SeveridadNota, string> = {
@@ -13,8 +17,11 @@ export function EtiquetasNota({
   etiquetas?: readonly EtiquetaNota[] | null;
   compacto?: boolean;
 }) {
+  const idioma = useIdioma();
   if (!etiquetas || etiquetas.length === 0) return null;
-  const visibles = compacto ? etiquetas.filter((etiqueta) => etiqueta.severidad !== "good") : etiquetas;
+  const visibles = (compacto ? etiquetas.filter((etiqueta) => etiqueta.severidad !== "good") : etiquetas).map((etiqueta) =>
+    presentarEtiqueta(etiqueta, idioma),
+  );
   if (visibles.length === 0) return null;
   if (compacto) {
     return (
@@ -41,11 +48,13 @@ export function EtiquetasNota({
 
 /** The main reason, written next to the percentage. */
 export function MotivoNota({ etiquetas }: { etiquetas?: readonly EtiquetaNota[] | null }) {
+  const idioma = useIdioma();
   const motivo = motivoPrincipal(etiquetas);
   if (!motivo) return null;
+  const visible = presentarEtiqueta(motivo, idioma);
   return (
-    <span className="text-sm font-medium" title={motivo.explicacion} data-motivo={motivo.id}>
-      {motivo.texto}
+    <span className="text-sm font-medium" title={visible.explicacion} data-motivo={visible.id}>
+      {visible.texto}
     </span>
   );
 }

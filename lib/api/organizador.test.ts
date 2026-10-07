@@ -121,7 +121,7 @@ test("quien crea el proyecto es su organizador aunque su rol sea voluntario", as
   assert.equal(proyecto?.nombre, "Feria");
   const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === proyecto?.id);
   assert.equal(tareas.length, 1);
-  assert.equal((await almacen.leerProyecto("zeek"))?.organizadorId, null);
+  assert.equal(await almacen.leerProyecto("zeek"), null);
 });
 
 test("quien no organiza el proyecto recibe 403 en escrow, revisión y firma", async () => {

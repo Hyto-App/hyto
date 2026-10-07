@@ -584,7 +584,8 @@ export function Entrar({
         return;
       }
       const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
-      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/");
+      // Demo organizer opens Events. Demo volunteer opens their tasks. The shell nav is unchanged.
+      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/eventos");
     } catch {
       setAviso("Could not sign in.");
     } finally {

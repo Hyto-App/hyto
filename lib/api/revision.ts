@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
+import { esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
@@ -39,7 +39,6 @@ export async function leerRevisionHttp(
   wallet = "",
 ): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const tarea = await almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     if (forzar && (tarea.estado === "pagado" || Boolean(tarea.contratoEscrow?.trim()))) {

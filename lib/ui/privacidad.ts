@@ -1,11 +1,13 @@
 /**
- * In-app privacy page. English only. No payment-network jargon.
+ * In-app privacy page. No payment-network jargon.
  * The public landing, if it grows its own page, stays separate from this copy.
  */
 
+import type { Idioma } from "@/lib/ui/idioma";
+
 export const ENLACE_PRIVACIDAD = "Privacy";
 
-export const PRIVACIDAD = {
+const EN = {
   titulo: "Privacy",
   kicker: "Privacy",
   titular: "How Hyto handles your information",
@@ -35,3 +37,40 @@ export const PRIVACIDAD = {
     },
   ],
 } as const;
+
+const ES = {
+  titulo: "Privacidad",
+  kicker: "Privacidad",
+  titular: "Cómo Hyto trata tu información",
+  entrada:
+    "Hyto es un mercado de tareas pequeñas. Envías una foto, una persona la revisa y puedes cobrar en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
+  inicio: "Inicio",
+  secciones: [
+    {
+      titulo: "Qué guardamos",
+      cuerpo:
+        "Guardamos el correo con el que entras, una sesión para que sigas dentro y la dirección de la cuenta que se usa para tus pagos. Cuando subes una foto, guardamos ese archivo y las notas que se escriben sobre él. También guardamos los eventos a los que te unes, las invitaciones de esos eventos y el registro de un pago terminado.",
+    },
+    {
+      titulo: "Cómo lo usamos",
+      cuerpo:
+        "Lo usamos para mostrar tus tareas, revisar la foto y pagar el monto que una persona aprueba. Mile puede leer la foto y sugerir una nota. Mile no firma ni mueve dinero. Una invitación llega al correo que escribe quien organiza.",
+    },
+    {
+      titulo: "Quién puede verlo",
+      cuerpo:
+        "Tú puedes ver tus tareas y tu cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. El ingreso lo maneja Cavos. Las cuentas de pago viven en Stellar. No vendemos tu información y no publicamos tu correo ni tus fotos.",
+    },
+    {
+      titulo: "Cookies",
+      cuerpo:
+        "Una cookie de ingreso te mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo.",
+    },
+  ],
+} as const;
+
+export const PRIVACIDAD = EN;
+
+export function privacidadDe(idioma: Idioma) {
+  return idioma === "es" ? ES : EN;
+}

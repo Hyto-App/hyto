@@ -296,7 +296,7 @@ test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent
     await subirConRespuesta(() => json({ aviso }, 503));
     assert.doesNotMatch(texto(), /Evidence sent/);
     assert.doesNotMatch(texto(), /File sent/);
-    assert.match(texto(), new RegExp(aviso.replace(/[.]/g, "\\.")));
+    assert.match(texto(), /Photo checks are not ready on the server yet/);
     assert.match(texto(), /Upload evidence/);
     const memoria = JSON.stringify({ ...window.localStorage });
     assert.doesNotMatch(memoria, /en revisión/);

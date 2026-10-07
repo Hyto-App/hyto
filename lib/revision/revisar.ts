@@ -51,7 +51,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   try {
     const cruda = esEvidenciaTextual(foto)
       ? await transcribirEvidencia(foto)
-      : await describirConReserva(foto, tarea, contexto.claveGroq, claveGemini, fetchImpl, repeticion);
+      : await describirConReserva(foto, tarea, contexto.claveGroq, claveGemini, fetchImpl, repeticion, contexto.idioma ?? "en");
     const descripcion = esEvidenciaTextual(foto)
       ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
       : cruda;
@@ -152,8 +152,9 @@ async function describirConReserva(
   claveGemini: string | null,
   fetchImpl: typeof fetch,
   repeticion: Omit<OpcionesReintento, "topeIntentoMs">,
+  idioma: "en" | "es",
 ): Promise<Descripcion> {
-  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo };
+  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma };
   const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
   if (!claveGroq) {
     return conReintentos(

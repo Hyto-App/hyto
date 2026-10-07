@@ -38,8 +38,8 @@ test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(textoVisible("Montar el stand", "es"), "Montar el stand");
 });
 
-test("estadoConFoto shows In review when a photo exists on a pending task", () => {
-  assert.equal(estadoConFoto("pendiente", true), "en revisión");
+test("estadoConFoto keeps a pending task pending when a photo exists", () => {
+  assert.equal(estadoConFoto("pendiente", true), "pendiente");
   assert.equal(estadoConFoto("pendiente", false), "pendiente");
   assert.equal(estadoConFoto("en revisión", true), "en revisión");
   assert.equal(estadoConFoto("pagado", true), "pagado");

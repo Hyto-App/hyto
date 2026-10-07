@@ -18,7 +18,8 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
   if (!proyecto || !almacen) notFound();
   const miembros = await almacen.listarMiembros(id);
   const propio = miembros.find((miembro) => miembro.usuarioId === sesion.usuarioId && miembro.estado === "active");
-  const rol = propio?.rol ?? "volunteer";
+  if (!propio) notFound();
+  const rol = propio.rol;
   if (rol === "organizer") {
     const usuarios = await almacen.listarUsuarios();
     const personas = miembros

@@ -204,6 +204,17 @@ export async function asegurarVoluntarioDemo(almacen: Almacen): Promise<void> {
     estado: "active",
     creadoEn: CREADO_DEMO,
   });
+  const organizador = usuarioDemo("organizador");
+  const proyecto = await almacen.leerProyecto(ID_PROYECTO_DEMO);
+  if (proyecto?.organizadorId === organizador.id) {
+    await almacen.guardarMiembro({
+      proyectoId: ID_PROYECTO_DEMO,
+      usuarioId: organizador.id,
+      rol: "organizer",
+      estado: "active",
+      creadoEn: CREADO_DEMO,
+    });
+  }
 }
 
 const MIEMBROS_MUESTRA = new Set(["voluntario-1", "voluntario-2", "voluntario-3"]);
@@ -261,7 +272,9 @@ async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Prom
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
   for (const tarea of await almacen.listarTareas()) {
+    if (tarea.proyectoId !== ID_PROYECTO_DEMO) continue;
     if (tarea.estado !== "en revisión" || tarea.hashPago) continue;
     const evidencia = await almacen.ultimaEvidencia(tarea.id);
     if (evidencia && !esBlobEjemplo(evidencia.blobId)) continue;

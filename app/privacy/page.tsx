@@ -1,14 +1,19 @@
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Marca";
-import { PRIVACIDAD } from "@/lib/ui/privacidad";
+import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
+import { privacidadDe } from "@/lib/ui/privacidad";
 
-export const metadata: Metadata = {
-  title: PRIVACIDAD.titulo,
-  description: PRIVACIDAD.entrada,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const jar = await cookies();
+  const copia = privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
+  return { title: copia.titulo, description: copia.entrada };
+}
 
-export default function PaginaPrivacidad() {
+export default async function PaginaPrivacidad() {
+  const jar = await cookies();
+  const copia = privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
   return (
     <div className="hyto-login hyto-privacidad">
       <div className="hyto-login-escena" aria-hidden="true">
@@ -34,18 +39,18 @@ export default function PaginaPrivacidad() {
           <article className="hyto-login-tarjeta">
             <p className="hyto-login-chip">
               <span aria-hidden="true" />
-              {PRIVACIDAD.kicker}
+              {copia.kicker}
             </p>
-            <h1>{PRIVACIDAD.titular}</h1>
-            <p className="hyto-privacidad-entrada">{PRIVACIDAD.entrada}</p>
-            {PRIVACIDAD.secciones.map((seccion) => (
+            <h1>{copia.titular}</h1>
+            <p className="hyto-privacidad-entrada">{copia.entrada}</p>
+            {copia.secciones.map((seccion) => (
               <section key={seccion.titulo}>
                 <h2>{seccion.titulo}</h2>
                 <p>{seccion.cuerpo}</p>
               </section>
             ))}
             <p className="hyto-login-legal">
-              <Link href="/">{PRIVACIDAD.inicio}</Link>
+              <Link href="/">{copia.inicio}</Link>
             </p>
           </article>
         </main>

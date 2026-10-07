@@ -52,7 +52,7 @@ export function PantallaRechazada({
           <h1 className="hyto-tarea-titulo">{titulo}</h1>
           {evento ? <p className="hyto-tarea-meta">{textoVisible(evento, idioma)}</p> : null}
         </div>
-        <span className="hyto-chip-monto">{montoDeTarea(tarea)}</span>
+        <span className="hyto-chip-monto">{montoDeTarea(tarea, idioma)}</span>
       </header>
 
       <div className="hyto-tarea-cols">
@@ -76,7 +76,7 @@ export function PantallaRechazada({
             </div>
           </section>
 
-          <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
+          <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea, idioma)} />
           <ActividadTarea tarea={tarea} />
 
           <Checklist condicion={tarea.condicion} fallidos={fallidos.length > 0 ? fallidos : null} titulo={t("evidencia.howPhoto")} />

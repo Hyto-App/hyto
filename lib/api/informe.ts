@@ -1,7 +1,7 @@
 import { bandejaDe, enBandeja, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
 import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
+import { esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto, lecturaDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { fraseConNota } from "@/lib/revision/armar";
@@ -11,7 +11,6 @@ import { baseNoLista, json } from "./json";
 
 export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const vista = await armarInforme(almacen, visor);
     return json(vista);
   } catch {
@@ -19,8 +18,9 @@ export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Respo
   }
 }
 
-export async function armarInforme(almacen: Almacen, visor: Visor) {
-  const proyecto = (await proyectosVisibles(almacen, visor))[0] ?? null;
+export async function armarInforme(almacen: Almacen, visor: Visor, proyectoId?: string) {
+  const lista = await proyectosVisibles(almacen, visor);
+  const proyecto = proyectoId ? (lista.find((item) => item.id === proyectoId) ?? null) : (lista[0] ?? null);
   const usuarios = await almacen.listarUsuarios();
   const nombres = new Map(usuarios.map((usuario) => [usuario.id, usuario.nombre]));
   const visibles = await tareasVisibles(almacen, visor);
@@ -35,6 +35,18 @@ export async function armarInforme(almacen: Almacen, visor: Visor) {
     resumen: resumir(admin),
     personas: porPersona(admin),
   };
+}
+
+export async function vistaEventoHttp(almacen: Almacen, visor: Visor, proyectoId: string): Promise<Response> {
+  const id = proyectoId.trim();
+  if (!id) return json({ aviso: "The event is missing." }, 400);
+  try {
+    const lista = await proyectosVisibles(almacen, visor);
+    if (!lista.some((item) => item.id === id)) return json({ aviso: "We couldn't find that event." }, 404);
+    return json(await armarInforme(almacen, visor, id));
+  } catch {
+    return baseNoLista();
+  }
 }
 
 /**
