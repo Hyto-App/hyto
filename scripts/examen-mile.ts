@@ -88,7 +88,7 @@ type OpcionesCorrer = {
   avisar?: (linea: string) => void;
 };
 
-export function clavesFaltantes(env: NodeJS.ProcessEnv = process.env): string[] {
+export function clavesFaltantes(env: { [clave: string]: string | undefined } = process.env): string[] {
   return CLAVES_EXAMEN.filter((nombre) => !env[nombre]?.trim());
 }
 

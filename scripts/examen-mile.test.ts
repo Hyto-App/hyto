@@ -105,7 +105,7 @@ test("un caso simulado pasa por revisar y la banda esperada cuenta como acierto"
   const tabla = textoInforme(informe);
   assert.match(tabla, /ensayo-escrito-mano/);
   assert.match(tabla, /Cumplió/);
-  assert.match(tabla, /\bsí\b/);
+  assert.match(tabla, /sí\s+matches/);
   assert.match(tabla, /Aciertos: 1 de 1 \(100%\)/);
   assert.match(tabla, /Sin foto: 1/);
 });
