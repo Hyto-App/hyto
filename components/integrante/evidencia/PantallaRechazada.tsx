@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
@@ -76,6 +77,7 @@ export function PantallaRechazada({
           </section>
 
           <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
+          <ActividadTarea tarea={tarea} />
 
           <Checklist condicion={tarea.condicion} fallidos={fallidos.length > 0 ? fallidos : null} titulo={t("evidencia.howPhoto")} />
 

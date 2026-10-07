@@ -21,6 +21,7 @@ import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
 import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
 
 type Filtro = "all" | EstadoTarea;
 
@@ -97,6 +98,34 @@ function ComoFunciona() {
         <li>{t("tareas.step3")}</li>
       </ol>
     </section>
+  );
+}
+
+function Saludo({ nombre }: { nombre: string | null }) {
+  const t = useTexto();
+  const [ahora, setAhora] = useState<Date | null>(null);
+  const [quieto, setQuieto] = useState(false);
+
+  useEffect(() => {
+    setAhora(new Date());
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const aplicar = () => setQuieto(media.matches);
+    aplicar();
+    media.addEventListener("change", aplicar);
+    return () => media.removeEventListener("change", aplicar);
+  }, []);
+
+  const persona = primerNombre(nombre);
+  const frase = ahora ? t(claveSaludo(franjaDe(ahora), persona !== null), persona ? { name: persona } : undefined) : t("tareas.title");
+
+  return (
+    <div className="hyto-saludo">
+      {quieto ? <Mile estado="cara-feliz" tamano={72} /> : <MileAnimada estado="saludo" tamano={72} />}
+      <div className="min-w-0">
+        <p className="hyto-eyebrow">{t("tareas.title")}</p>
+        <h1 className="hyto-h1">{frase}</h1>
+      </div>
+    </div>
   );
 }
 
@@ -258,7 +287,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
     <main className="hyto-page">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="hyto-h1">{t("tareas.title")}</h1>
+          <Saludo nombre={nombre} />
           {lista && subtitulo ? <p className="hyto-subtitulo">{subtitulo}</p> : null}
         </div>
         {lista && tareas.length > 0 ? (
@@ -302,21 +331,9 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <div className="min-w-0">
             <section className="hyto-tarjeta hyto-tarjeta-heroe hyto-heroe-movil" aria-label={saludo}>
               <div className="hyto-heroe-mile">
-                <MileAnimada estado="saludo" tamano={124} tocable />
-                <div className="min-w-0">
-                  <h2>{saludo}</h2>
-                  <p>
-                    {pendientes > 0 ? (
-                      pendientes === 1 ? (
-                        t("tareas.youHaveOne")
-                      ) : (
-                        t("tareas.youHave", { n: pendientes })
-                      )
-                    ) : (
-                      t("tareas.allDone")
-                    )}
-                  </p>
-                </div>
+                <p>
+                  {pendientes > 0 ? (pendientes === 1 ? t("tareas.youHaveOne") : t("tareas.youHave", { n: pendientes })) : t("tareas.allDone")}
+                </p>
               </div>
               <div className="px-4 pb-4">
                 <Metricas ganado={ganado} revision={enRevision} pendientes={pendientes} />
@@ -481,8 +498,6 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           </div>
 
           <aside className="hyto-tarjeta hyto-tareas-panel hyto-solo-escritorio-bloque" aria-label={saludo}>
-            <MileAnimada estado="saludo" tamano={180} tocable />
-            <h2 className="text-lg font-semibold">{saludo}</h2>
             <p className="text-sm text-[var(--suave)]">{pendientes > 0 ? (pendientes === 1 ? t("tareas.youHaveOne") : t("tareas.youHave", { n: pendientes })) : t("tareas.allDone")}</p>
             <ComoFunciona />
           </aside>

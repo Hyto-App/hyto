@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useTexto } from "@/components/ui/Idioma";
@@ -47,8 +48,9 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
         </header>
         <Recibo monto={monto} comprobante={comprobante} />
         <LineaRevision tarea={tarea} revisionCerrada monto={`${monto} USDC`} />
+        <ActividadTarea tarea={tarea} />
         <div className="hyto-enviada-acciones">
-          <Link href="/cuentas" className="hyto-btn hyto-btn-grande">
+          <Link href="/configuracion" className="hyto-btn hyto-btn-grande">
             {t("evidencia.viewWallet")}
           </Link>
           <Link href="/mis-tareas" className="hyto-btn-line">
@@ -75,8 +77,9 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
       <p className="hyto-pagada-monto">+{monto} USDC</p>
       <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
       <Recibo monto={monto} comprobante={comprobante} />
+      <ActividadTarea tarea={tarea} />
       <div className="hyto-enviada-acciones">
-        <Link href="/cuentas" className="hyto-btn hyto-btn-grande" onClick={marcarVisto}>
+        <Link href="/configuracion" className="hyto-btn hyto-btn-grande" onClick={marcarVisto}>
           {t("evidencia.viewWallet")}
         </Link>
         <Link href="/mis-tareas" className="hyto-btn-line" onClick={marcarVisto}>

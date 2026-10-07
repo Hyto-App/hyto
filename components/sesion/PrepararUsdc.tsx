@@ -109,7 +109,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       ) : null}
       {estado === "hecho" ? (
         <p className="mt-3 text-sm leading-6 text-[var(--suave)]">
-          <a href="/cuentas" className="underline underline-offset-4">
+          <a href="/configuracion" className="underline underline-offset-4">
             {t("cuenta.passkeyAviso")}
           </a>
         </p>

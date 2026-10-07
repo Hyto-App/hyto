@@ -172,7 +172,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
     const plano = texto();
     assert.match(plano, /contenido/);
     const hrefs = [...document.querySelectorAll("a")].map((enlace) => enlace.getAttribute("href"));
-    assert.deepEqual(hrefs, ["/eventos", "/mis-tareas", "/cuentas"]);
+    assert.deepEqual(hrefs, ["/mis-tareas", "/eventos", "/join", "/mis-tareas", "/eventos", "/join", "/privacy"]);
     assert.match(document.querySelector('a[href="/eventos"]')?.className ?? "", /font-semibold/);
     assert.match(document.querySelector('a[href="/mis-tareas"]')?.className ?? "", /suave/);
   });

@@ -5373,6 +5373,343 @@ a {
   }
 }
 
+.hyto-nav-bloque {
+  display: grid;
+  gap: 2px;
+}
+
+.hyto-nav-grupo {
+  margin: 14px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tenue);
+}
+
+.hyto-saludo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hyto-saludo .hyto-h1 {
+  margin: 0;
+}
+
+.hyto-preguntar,
+.hyto-perfil-boton,
+.hyto-perfil-item,
+.hyto-ayuda-atajo,
+.hyto-ayuda-cerrar,
+.hyto-ayuda-lista button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hyto-preguntar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--linea);
+  background: var(--superficie-2);
+  color: var(--tinta);
+  font-weight: 500;
+  text-align: left;
+}
+
+.hyto-preguntar kbd {
+  margin-left: auto;
+  border-radius: 8px;
+  background: var(--papel);
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tenue);
+}
+
+.hyto-preguntar-icono {
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.hyto-perfil-boton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px;
+  border-radius: 14px;
+  text-align: left;
+}
+
+.hyto-perfil-boton:hover,
+.hyto-perfil-boton[aria-expanded="true"],
+.hyto-perfil-item:hover,
+.hyto-ayuda-atajo:hover,
+.hyto-ayuda-lista button:hover {
+  background: var(--superficie-2);
+}
+
+.hyto-perfil-boton.is-compacto {
+  width: 40px;
+  min-height: 40px;
+  justify-content: center;
+  padding: 0;
+}
+
+.hyto-capa {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.hyto-capa-ayuda {
+  display: grid;
+  align-items: start;
+  justify-content: center;
+  padding: 10vh 16px 16px;
+  background: rgba(8, 9, 12, 0.48);
+}
+
+.hyto-perfil-menu,
+.hyto-ayuda {
+  border: 1px solid var(--linea);
+  border-radius: 16px;
+  background: var(--papel);
+  box-shadow: var(--sombra-tarjeta);
+  color: var(--tinta);
+}
+
+.hyto-perfil-menu {
+  position: fixed;
+  z-index: 71;
+  top: calc(64px + env(safe-area-inset-top));
+  right: 12px;
+  display: grid;
+  gap: 2px;
+  width: min(320px, calc(100vw - 24px));
+  padding: 8px;
+}
+
+.hyto-perfil-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 12px;
+}
+
+.hyto-perfil-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-align: left;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.hyto-perfil-salir {
+  color: var(--peligro);
+}
+
+.hyto-ayuda {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  width: min(560px, 100%);
+  max-height: min(72dvh, 640px);
+  overflow: auto;
+  padding: 16px;
+}
+
+.hyto-ayuda-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hyto-ayuda-cabeza h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.hyto-ayuda-cerrar {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.hyto-ayuda-buscar input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo);
+  padding: 0 12px;
+  color: var(--tinta);
+}
+
+.hyto-ayuda-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hyto-ayuda-atajo {
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--linea);
+  padding: 6px 12px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hyto-ayuda-lista {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-ayuda-lista button {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.hyto-ayuda-respuesta h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hyto-ayuda-respuesta p,
+.hyto-ayuda-vacio,
+.hyto-actividad-vacio {
+  margin: 8px 0 0;
+  color: var(--suave);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hyto-actividad {
+  display: grid;
+  gap: 14px;
+}
+
+.hyto-actividad h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hyto-rastreo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-rastreo li {
+  display: grid;
+  gap: 6px;
+  color: var(--tenue);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.hyto-rastreo li::before {
+  content: "";
+  height: 4px;
+  border-radius: 999px;
+  background: var(--linea);
+}
+
+.hyto-rastreo li[data-estado="hecho"],
+.hyto-rastreo li[data-estado="ahora"] {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.hyto-rastreo li[data-estado="hecho"]::before,
+.hyto-rastreo li[data-estado="ahora"]::before {
+  background: var(--acento);
+}
+
+.hyto-bitacora {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hyto-bitacora li {
+  display: grid;
+  gap: 2px;
+  padding-left: 14px;
+  border-left: 2px solid var(--linea);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hyto-bitacora time {
+  color: var(--tenue);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.hyto-ancla-passkey:focus {
+  outline: none;
+}
+
+@media (max-width: 1023px) {
+  .hyto-nav.hyto-nav-movil {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hyto-nav.hyto-nav-movil.is-organiza a {
+    white-space: normal;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hyto-perfil-menu {
+    top: auto;
+    right: auto;
+    bottom: 96px;
+    left: 16px;
+    width: 224px;
+  }
+}
+
 /* Passkey guide: a browser without the account key, walked through adding a passkey. */
 .hyto-guia {
   color: var(--tinta);
