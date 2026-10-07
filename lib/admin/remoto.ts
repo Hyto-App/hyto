@@ -1,5 +1,6 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import { cifraConfirmada } from "@/lib/escrow/monto";
+import { esContratoDemo } from "@/lib/sesion/demo";
 import type { LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
@@ -86,27 +87,43 @@ export function botonesRevision(
   };
 }
 
-/** Demo sessions skip lock and pay: one button marks the task paid once a photo is in review. */
-export function pagoDemoDisponible(tarea: Pick<TareaAdmin, "estado">, demo: boolean): boolean {
-  return demo && tarea.estado === "en revisión";
+/**
+ * Demo sessions have no wallet, so lock and pay are simulated on the server: same buttons and steps
+ * as the real flow, with a demo budget reference instead of a contract.
+ */
+export function botonesDemo(
+  tarea: Pick<TareaAdmin, "estado">,
+  contrato: string | null,
+): { bloquear: boolean; pagar: boolean } {
+  const abierto = tarea.estado !== "pagado";
+  return {
+    bloquear: abierto && !contrato,
+    pagar: abierto && tarea.estado === "en revisión" && esContratoDemo(contrato),
+  };
 }
 
-const AVISO_PAGO_DEMO = "The demo payment did not go through. Try again.";
+const AVISO_ACCION_DEMO = "The demo step did not go through. Try again.";
 
-export async function pagarDemo(tareaId: string, opciones: OpcionesRemoto = {}): Promise<{ ok: true } | { ok: false; aviso: string }> {
+export async function accionDemo(
+  tareaId: string,
+  accion: "bloquear" | "pagar",
+  opciones: OpcionesRemoto = {},
+): Promise<{ ok: true; contrato: string | null } | { ok: false; aviso: string }> {
   const id = tareaId.trim();
   if (!id) return { ok: false, aviso: "The task is missing." };
   try {
-    const respuesta = await (opciones.fetch ?? fetch)(`/api/revision/${encodeURIComponent(id)}/pagar-demo`, {
+    const respuesta = await (opciones.fetch ?? fetch)(`/api/revision/${encodeURIComponent(id)}/demo`, {
       method: "POST",
       cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accion }),
       signal: AbortSignal.timeout(8000),
     });
-    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; estado?: unknown } | null;
-    if (respuesta.ok && cuerpo?.estado === "pagado") return { ok: true };
-    return { ok: false, aviso: typeof cuerpo?.aviso === "string" ? cuerpo.aviso : AVISO_PAGO_DEMO };
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; contrato?: unknown } | null;
+    if (respuesta.ok) return { ok: true, contrato: typeof cuerpo?.contrato === "string" ? cuerpo.contrato : null };
+    return { ok: false, aviso: typeof cuerpo?.aviso === "string" ? cuerpo.aviso : AVISO_ACCION_DEMO };
   } catch {
-    return { ok: false, aviso: AVISO_PAGO_DEMO };
+    return { ok: false, aviso: AVISO_ACCION_DEMO };
   }
 }
 

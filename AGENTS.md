@@ -36,7 +36,7 @@ Who can see what (`lib/api/alcance.ts`):
 - **Organizer** of that event sees every task, invites people, assigns tasks at `/eventos/[id]/tareas`, locks the budget, and pays.
 - **Team and volunteer** see only tasks assigned to them (`tareas.miembro_id`). The `team` value is stored; it does not grant a wider view.
 
-`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign.
+`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign. A demo session has no wallet, so on the demo event **Lock budget** and **Pay** are simulated by `POST /api/revision/:id/demo` (`lib/api/demo.ts`): the same steps run on screen, the task stores a `demo-lock-…` budget reference instead of a `C…` contract, and pay marks it `pagado` with no hash. Nothing reaches Stellar or Trustless Work. Each demo sign-in undoes those demo locks and payments (`reiniciarPagosDemo` in `lib/db/semilla.ts`) so the flow can run again. Real sessions get 404 on that route.
 
 ## App shell
 

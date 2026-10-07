@@ -3,7 +3,7 @@ import { snapshotEjemplo } from "@/lib/revision/razones-ejemplo";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { IDENTIDADES } from "@/lib/integrante/identidades";
-import { demoHabilitado, usuarioDemo, usuariosDemo } from "@/lib/sesion/demo";
+import { demoHabilitado, esContratoDemo, usuarioDemo, usuariosDemo } from "@/lib/sesion/demo";
 import type { Almacen } from "./almacen";
 import type { EvidenciaFila, Proyecto, TareaFila, Usuario, VeredictoFila } from "./tipos";
 
@@ -227,6 +227,23 @@ export async function asegurarCaminoDemo(almacen: Almacen): Promise<void> {
     }
   }
   await asegurarRevisionMet(almacen, voluntarioId);
+}
+
+/**
+ * Undoes what a demo lock and a demo pay changed, so the next demo walks the whole flow again.
+ * Only tasks of the demo event that carry a demo budget reference are touched. The upload task goes
+ * back to pending; any other task goes back to review when it has a photo.
+ */
+export async function reiniciarPagosDemo(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
+  const tareas = (await almacen.listarTareas()).filter(
+    (tarea) => tarea.proyectoId === ID_PROYECTO_DEMO && esContratoDemo(tarea.contratoEscrow),
+  );
+  for (const tarea of tareas) {
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    const estado = tarea.id !== TAREA_DEMO_SUBIR && evidencia ? "en revisión" : "pendiente";
+    await almacen.actualizarTarea(tarea.id, { contratoEscrow: null, estado });
+  }
 }
 
 async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Promise<void> {

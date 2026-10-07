@@ -14,13 +14,13 @@ import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import {
+  accionDemo,
+  botonesDemo,
   botonesRevision,
   cargarDetalleOrganizador,
   confirmarMonto,
   leerFondeo,
   montoDeVista,
-  pagarDemo,
-  pagoDemoDisponible,
   pagoPendiente,
   type DetalleRevision,
 } from "@/lib/admin/remoto";
@@ -46,7 +46,10 @@ import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { esContratoDemo } from "@/lib/sesion/demo";
 import type { TareaAdmin } from "@/lib/admin/tipos";
+
+const PAUSA_PASO_DEMO_MS = 900;
 
 export function Revision({
   tareaId,
@@ -94,7 +97,6 @@ export function Revision({
   const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
   const [vueltaPago, setVueltaPago] = useState(0);
   const [confirmacion, setConfirmacion] = useState<{ clave: "bloquear" | "fondear" | "pagar"; abierto: boolean } | null>(null);
-  const [pagandoDemo, setPagandoDemo] = useState(false);
 
   useEffect(() => {
     let viva = true;
@@ -128,7 +130,8 @@ export function Revision({
 
   useEffect(() => {
     if (!real || !contrato) return;
-    if (fondeoForzado.current === contrato) {
+    // A demo lock has no contract on the network: there is no balance to read.
+    if (fondeoForzado.current === contrato || esContratoDemo(contrato)) {
       setFondeado(true);
       return;
     }
@@ -308,21 +311,34 @@ export function Revision({
     }
   }
 
-  async function pagarEnDemo() {
-    if (pagandoDemo || !tarea) return;
-    setPagandoDemo(true);
+  /** Demo mode walks the same steps as the real flow, with no wallet and no signature. */
+  async function correrDemo(accion: "bloquear" | "pagar") {
+    if (paso || !tarea) return;
     publicarAviso(null);
+    const pasos: AccionCliente[] = accion === "bloquear" ? ["desplegar", "fondear"] : ["marcar", "aprobar", "liberar"];
+    let resultado: Awaited<ReturnType<typeof accionDemo>> | null = null;
     try {
-      const resultado = await pagarDemo(tareaId);
+      for (const actual of pasos) {
+        setPaso(actual);
+        await new Promise((listo) => setTimeout(listo, PAUSA_PASO_DEMO_MS));
+      }
+      resultado = await accionDemo(tareaId, accion);
       if (!resultado.ok) {
         publicarAviso(resultado.aviso);
         return;
       }
-      const fresco = await cargarDetalleOrganizador(tareaId);
-      if (fresco) aplicarDetalle(fresco);
-      else setTarea((actual) => (actual ? { ...actual, estado: "pagado" } : actual));
+      if (resultado.contrato) {
+        fondeoForzado.current = resultado.contrato;
+        setContrato(resultado.contrato);
+        setFondeado(true);
+      }
     } finally {
-      setPagandoDemo(false);
+      setPaso(null);
+      if (resultado?.ok) {
+        const fresco = await cargarDetalleOrganizador(tareaId);
+        if (fresco) aplicarDetalle(fresco);
+        else if (accion === "pagar") setTarea((actual) => (actual ? { ...actual, estado: "pagado" } : actual));
+      }
     }
   }
 
@@ -434,13 +450,16 @@ export function Revision({
 
   const demoReal = real && modoDemo;
   const botonesBase = botonesRevision(tarea, real, { contrato, fondeado });
-  const botones = demoReal ? { ...botonesBase, desplegar: false, fondear: false, pagar: false, verificarFondo: false } : botonesBase;
-  const pagoDemo = real && pagoDemoDisponible(tarea, modoDemo);
+  const demo = botonesDemo(tarea, contrato);
+  const botones = demoReal
+    ? { ...botonesBase, desplegar: demo.bloquear, fondear: false, pagar: demo.pagar, verificarFondo: false }
+    : botonesBase;
   const esperaConfirmacion =
     real && !modoDemo && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
-  const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
+  // In demo the server confirms a reimbursement amount within the cap, so lock does not wait for the form.
+  const puedeDesplegar = botones.desplegar && (demoReal || tarea.tipo !== "reembolso" || coincide);
   const origen = etiquetaOrigen(tarea.origen, idioma);
   const pago = enlacePago(tarea.hashPago);
   const pendiente = pagoPendiente(tarea);
@@ -460,14 +479,15 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: () => (pagoDemo ? pagarEnDemo() : correr(pasosDesde(reanudar))),
+        onConfirmar: () => (demoReal ? correrDemo("pagar") : correr(pasosDesde(reanudar))),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
       monto,
       detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
       confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
-      onConfirmar: () => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
+      onConfirmar: () =>
+        demoReal ? correrDemo("bloquear") : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
     };
   };
   const etiquetaPaso = (accion: AccionCliente) =>
@@ -538,7 +558,7 @@ export function Revision({
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
-                presupuestoListo: modoDemo || (Boolean(contrato) && fondeado === true),
+                presupuestoListo: Boolean(contrato) && fondeado === true,
                 pagado: tarea.estado === "pagado",
               }, idioma).map((item, indice) => (
                 <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
@@ -733,18 +753,8 @@ export function Revision({
                 </BotonPrincipal>
               </>
             ) : null}
-            {pagoDemo ? (
-              <>
-                <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoPayNote")}</p>
-                <BotonPrincipal
-                  type="button"
-                  disabled={pagandoDemo}
-                  aria-busy={pagandoDemo}
-                  onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}
-                >
-                  {pagandoDemo ? t("pago.paying") : t("pago.approvePay")}
-                </BotonPrincipal>
-              </>
+            {demoReal && (botones.desplegar || botones.pagar) ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNote")}</p>
             ) : null}
           </div>
 
@@ -799,7 +809,7 @@ export function Revision({
             </a>
           ) : null}
 
-          {real && (wallet || contrato) ? (
+          {real && !demoReal && (wallet || contrato) ? (
             <details className="mt-6 text-sm text-[var(--suave)]">
               <summary className="cursor-pointer">{t("revision.technical")}</summary>
               {wallet ? <p className="mt-2 font-mono">{t("revision.yourAccount", { direccion: acortarDireccion(wallet) })}</p> : null}
