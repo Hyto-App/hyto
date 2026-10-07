@@ -1,5 +1,6 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
+import { condicionPideLugar } from "./lugar-pedido";
 
 /**
  * Weights for Laya's second call. Tune these numbers. Each path sums to 100.
@@ -18,7 +19,10 @@ import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
  * - t5 what was done: a named action = 1, otra_o_no_claro = 0
  * - t6 state: terminado = 1, a_medias = 0.5, sin_empezar = 0, no_claro = 0
  * - t7 tools or materials: yes = 1, no = 0
- * - t8 done at the requested place: yes = 1, no = 0
+ * - t8 done at the requested place: yes = 1, no = 0.
+ *   When the condition does not ask for a place (`condicionPideLugar`), t8 is
+ *   neutral and the credit is 1, so the weights still sum to 100. New reviews
+ *   only: the stored grade is not rewritten on read.
  * - t9 unfinished, damaged, or not visible: no = 1, yes = 0
  * - t10 overall: index 2 = 1, index 1 = 0.5, index 0 = 0
  * - lugar place type: a named place = 1, no_claro = 0
@@ -139,7 +143,7 @@ export function calificar(
   return { nota: limitada, veredicto: etiquetaDesdeNota(limitada), motivos: unicos };
 }
 
-export function notaDeTrabajo(respuestas: RespuestasTrabajo): number {
+export function notaDeTrabajo(respuestas: RespuestasTrabajo, condicion = ""): number {
   const peso = PESOS_PREGUNTAS.trabajo;
   return notaEntera(
     peso.lugar * creditoLugar(respuestas.lugar) +
@@ -150,7 +154,7 @@ export function notaDeTrabajo(respuestas: RespuestasTrabajo): number {
       peso.t5 * creditoAccion(respuestas.t5) +
       peso.t6 * creditoEstado(respuestas.t6) +
       peso.t7 * creditoSi(respuestas.t7) +
-      peso.t8 * creditoSi(respuestas.t8) +
+      peso.t8 * creditoLugarPedido(respuestas.t8, condicion) +
       peso.t9 * creditoNo(respuestas.t9) +
       peso.t10 * creditoNivel(respuestas.t10),
   );
@@ -201,6 +205,12 @@ function creditoNivel(indice: 0 | 1 | 2): number {
 
 function creditoSi(valor: boolean): number {
   return valor ? 1 : 0;
+}
+
+/** Full credit when the organizer did not ask for a place. The weight stays 12. */
+function creditoLugarPedido(valor: boolean, condicion: string): number {
+  if (!condicionPideLugar(condicion)) return 1;
+  return creditoSi(valor);
 }
 
 function creditoNo(valor: boolean): number {

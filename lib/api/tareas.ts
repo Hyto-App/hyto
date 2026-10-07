@@ -71,7 +71,7 @@ export function notaPublica(fila: VeredictoFila | null): { nota: number; veredic
 export function notasPublicas(
   fila: VeredictoFila | null,
   evidencia: Pick<EvidenciaFila, "monto" | "fecha"> | null,
-  tarea: Pick<TareaFila, "tope" | "tipo">,
+  tarea: Pick<TareaFila, "tope" | "tipo" | "condicion">,
 ): EtiquetaNota[] {
   if (!fila || fila.origen === "error") return [];
   return etiquetasDesdeVeredicto({
@@ -81,6 +81,7 @@ export function notasPublicas(
     fecha: evidencia?.fecha ?? null,
     tope: tarea.tope,
     tipo: tarea.tipo,
+    condicion: tarea.condicion,
   });
 }
 

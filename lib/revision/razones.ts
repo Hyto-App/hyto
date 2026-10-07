@@ -1,6 +1,7 @@
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
+import { condicionPideLugar } from "./lugar-pedido";
 import type { DetalleRazones } from "./snapshot-razones";
 
 export type SeveridadNota = "good" | "warning" | "problem";
@@ -25,6 +26,11 @@ export type EntradaRazones = {
   /** The task type. A reimbursement gets the saved amount and date tags even when Laya did not call it a receipt. */
   tipo?: TipoTarea;
   lectura?: LecturaEvidencia | null;
+  /**
+   * The task condition. Recomputed on read, so an old review drops `wrong_place`
+   * when this text does not ask for a place. The stored grade is unchanged.
+   */
+  condicion?: string | null;
 };
 
 const ORDEN = [
@@ -187,7 +193,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     ));
   }
 
-  if (trabajo && !trabajo.t8) {
+  if (trabajo && !trabajo.t8 && condicionPideLugar(entrada.condicion)) {
     etiquetas.push(etiqueta(
       "wrong_place",
       "Not done at the requested place",

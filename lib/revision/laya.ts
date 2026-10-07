@@ -96,8 +96,8 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
 }
 
 // The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
-export function senalesDeTrabajo(respuestas: RespuestasTrabajo): Senales {
-  const nota = notaDeTrabajo(respuestas);
+export function senalesDeTrabajo(respuestas: RespuestasTrabajo, condicion = ""): Senales {
+  const nota = notaDeTrabajo(respuestas, condicion);
   const motivos = motivosTrabajo(respuestas);
   return {
     choice: "trabajo",
@@ -193,7 +193,7 @@ export async function preguntarLaya(
       };
     }
     return {
-      ...senalesDeTrabajo(respuestas),
+      ...senalesDeTrabajo(respuestas, pedido),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,
