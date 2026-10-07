@@ -16,9 +16,14 @@ export function consultaPhashCercano(exceptoId: string, phash: string, distancia
   ].join(" ");
 }
 
+/**
+ * Splits a migration file into statements. Line comments go first, so a ";" inside a comment
+ * cannot cut a statement in two. Migration files must not put ";" or "--" inside string literals.
+ */
 export function sentencias(sql: string): string[] {
   return sql
+    .replace(/--.*$/gm, "")
     .split(";")
-    .map((parte) => parte.replace(/--.*$/gm, "").trim())
+    .map((parte) => parte.trim())
     .filter((parte) => parte.length > 0);
 }
