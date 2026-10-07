@@ -284,7 +284,7 @@ export async function pedirTokenEvidencia(tareaId: string, opciones: OpcionesRut
 export async function subirEvidencia(
   tarea: Tarea,
   foto: Blob,
-  opciones: OpcionesRuta & { token?: string; capturadaEn?: string; nombre?: string } = {},
+  opciones: OpcionesRuta & { token?: string; capturadaEn?: string; nombre?: string; origen?: string } = {},
 ): Promise<FotoEnviada> {
   const fetchImpl = opciones.fetch ?? fetch;
   const base = opciones.baseUrl ?? "";
@@ -292,6 +292,7 @@ export async function subirEvidencia(
   cuerpo.set("tareaId", tarea.id);
   cuerpo.set("foto", foto, opciones.nombre ?? (foto.type === "application/pdf" ? "evidencia.pdf" : "evidencia.jpg"));
   if (opciones.token) cuerpo.set("token", opciones.token);
+  if (opciones.origen) cuerpo.set("origen", opciones.origen);
   if (opciones.capturadaEn) cuerpo.set("capturadaEn", opciones.capturadaEn);
   if (tarea.miembroId) cuerpo.set("miembroId", tarea.miembroId);
 
