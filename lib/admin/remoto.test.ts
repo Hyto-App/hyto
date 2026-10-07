@@ -9,6 +9,8 @@ import {
   escrowFondeado,
   leerFondeo,
   montoDeVista,
+  pagarDemo,
+  pagoDemoDisponible,
   pagoPendiente,
   reintentarRevision,
 } from "./remoto";

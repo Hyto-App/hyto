@@ -9,7 +9,7 @@ import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_FIRMA_DEMO } from "../sesion/demo";
 import { SESION_SIN_EXP_SEGUNDOS } from "../sesion/cookie";
-import { crearDemoHttp, estadoDemoHttp } from "./demo";
+import { AVISO_PAGO_DEMO_SIN_FOTO, crearDemoHttp, estadoDemoHttp, pagarDemoHttp } from "./demo";
 import { cerrarSesionHttp, leerSesionHttp } from "./sesion";
 
 const ENV_ON = { HYTO_DEMO_LOGIN: "1" };
@@ -248,5 +248,71 @@ describe("ingreso demo", { concurrency: false }, () => {
     assert.notEqual(preparar.status, 403);
     assert.equal(enviar.status, 400);
     assert.notEqual(((await preparar.json()) as { aviso: string }).aviso, AVISO_FIRMA_DEMO);
+  });
+
+  test("el pago demo solo existe con la bandera y para el organizador demo del evento demo", async () => {
+    const anterior = process.env.HYTO_DEMO_LOGIN;
+    process.env.HYTO_DEMO_LOGIN = "1";
+    try {
+      const almacen = crearMemoria();
+      await asegurarSemilla(almacen);
+      const organizador = sesion();
+      const voluntario = sesion({ email: "demo-voluntario@hyto.demo", usuarioId: "demo-voluntario", rol: "voluntario" });
+      const real = sesion({ email: "organizador@demo.hyto", usuarioId: "organizador", rol: "organizador" });
+      assert.equal((await almacen.leerTarea("demo-stand"))?.estado, "en revisión");
+
+      assert.equal((await pagarDemoHttp(almacen, organizador, "demo-stand", ENV_OFF)).status, 404);
+      assert.equal((await pagarDemoHttp(almacen, real, "demo-stand", ENV_ON)).status, 404);
+      assert.equal((await pagarDemoHttp(almacen, real, "stand", ENV_ON)).status, 404);
+      assert.equal((await pagarDemoHttp(almacen, voluntario, "demo-stand", ENV_ON)).status, 403);
+      assert.equal((await pagarDemoHttp(almacen, organizador, "stand", ENV_ON)).status, 403);
+      assert.equal((await pagarDemoHttp(almacen, organizador, "no-existe", ENV_ON)).status, 404);
+      assert.equal((await almacen.leerTarea("demo-stand"))?.estado, "en revisión");
+      assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+
+      const sinFoto = await pagarDemoHttp(almacen, organizador, "demo-bienvenida", ENV_ON);
+      assert.equal(sinFoto.status, 409);
+      assert.equal(((await sinFoto.json()) as { aviso: string }).aviso, AVISO_PAGO_DEMO_SIN_FOTO);
+      assert.equal((await almacen.leerTarea("demo-bienvenida"))?.estado, "pendiente");
+
+      const pagada = await pagarDemoHttp(almacen, organizador, "demo-stand", ENV_ON);
+      assert.equal(pagada.status, 200);
+      assert.deepEqual(await pagada.json(), { estado: "pagado", demo: true });
+      const fila = await almacen.leerTarea("demo-stand");
+      assert.equal(fila?.estado, "pagado");
+      assert.equal(fila?.hashPago ?? null, null);
+      assert.equal(fila?.contratoEscrow ?? null, null);
+
+      const otraVez = await pagarDemoHttp(almacen, organizador, "demo-stand", ENV_ON);
+      assert.equal(otraVez.status, 200);
+    } finally {
+      if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+      else process.env.HYTO_DEMO_LOGIN = anterior;
+    }
+  });
+
+  test("el pago demo de un reembolso deja un monto confirmado dentro del tope", async () => {
+    const anterior = process.env.HYTO_DEMO_LOGIN;
+    process.env.HYTO_DEMO_LOGIN = "1";
+    try {
+      const almacen = crearMemoria();
+      await asegurarSemilla(almacen);
+      const tarea = await almacen.leerTarea("demo-comida");
+      assert.equal(tarea?.tipo, "reembolso");
+      await almacen.actualizarTarea("demo-comida", { estado: "en revisión" });
+      const evidencia = await almacen.ultimaEvidencia("demo-comida");
+      assert.ok(evidencia);
+      await almacen.actualizarEvidencia(evidencia.id, { monto: "999", montoConfirmado: null });
+
+      const pagada = await pagarDemoHttp(almacen, sesion(), "demo-comida", ENV_ON);
+      assert.equal(pagada.status, 200);
+      assert.equal((await almacen.leerTarea("demo-comida"))?.estado, "pagado");
+      const confirmado = (await almacen.ultimaEvidencia("demo-comida"))?.montoConfirmado;
+      assert.ok(confirmado);
+      assert.ok(Number(confirmado) > 0 && Number(confirmado) <= Number(tarea?.tope ?? tarea?.monto));
+    } finally {
+      if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+      else process.env.HYTO_DEMO_LOGIN = anterior;
+    }
   });
 });

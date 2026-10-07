@@ -19,6 +19,8 @@ import {
   confirmarMonto,
   leerFondeo,
   montoDeVista,
+  pagarDemo,
+  pagoDemoDisponible,
   pagoPendiente,
   type DetalleRevision,
 } from "@/lib/admin/remoto";
@@ -92,6 +94,7 @@ export function Revision({
   const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
   const [vueltaPago, setVueltaPago] = useState(0);
   const [confirmacion, setConfirmacion] = useState<{ clave: "bloquear" | "fondear" | "pagar"; abierto: boolean } | null>(null);
+  const [pagandoDemo, setPagandoDemo] = useState(false);
 
   useEffect(() => {
     let viva = true;
@@ -305,6 +308,24 @@ export function Revision({
     }
   }
 
+  async function pagarEnDemo() {
+    if (pagandoDemo || !tarea) return;
+    setPagandoDemo(true);
+    publicarAviso(null);
+    try {
+      const resultado = await pagarDemo(tareaId);
+      if (!resultado.ok) {
+        publicarAviso(resultado.aviso);
+        return;
+      }
+      const fresco = await cargarDetalleOrganizador(tareaId);
+      if (fresco) aplicarDetalle(fresco);
+      else setTarea((actual) => (actual ? { ...actual, estado: "pagado" } : actual));
+    } finally {
+      setPagandoDemo(false);
+    }
+  }
+
   async function correr(acciones: readonly AccionCliente[]) {
     if (paso || !tarea) return;
     if (!wallet) {
@@ -411,9 +432,12 @@ export function Revision({
     );
   }
 
-  const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const demoReal = real && modoDemo;
+  const botonesBase = botonesRevision(tarea, real, { contrato, fondeado });
+  const botones = demoReal ? { ...botonesBase, desplegar: false, fondear: false, pagar: false, verificarFondo: false } : botonesBase;
+  const pagoDemo = real && pagoDemoDisponible(tarea, modoDemo);
   const esperaConfirmacion =
-    real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
+    real && !modoDemo && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
@@ -436,7 +460,7 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: () => correr(pasosDesde(reanudar)),
+        onConfirmar: () => (pagoDemo ? pagarEnDemo() : correr(pasosDesde(reanudar))),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
@@ -514,7 +538,7 @@ export function Revision({
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
-                presupuestoListo: Boolean(contrato) && fondeado === true,
+                presupuestoListo: modoDemo || (Boolean(contrato) && fondeado === true),
                 pagado: tarea.estado === "pagado",
               }, idioma).map((item, indice) => (
                 <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
@@ -709,6 +733,19 @@ export function Revision({
                 </BotonPrincipal>
               </>
             ) : null}
+            {pagoDemo ? (
+              <>
+                <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoPayNote")}</p>
+                <BotonPrincipal
+                  type="button"
+                  disabled={pagandoDemo}
+                  aria-busy={pagandoDemo}
+                  onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}
+                >
+                  {pagandoDemo ? t("pago.paying") : t("pago.approvePay")}
+                </BotonPrincipal>
+              </>
+            ) : null}
           </div>
 
           {confirmacion ? (
@@ -779,7 +816,7 @@ export function Revision({
                 </a>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {real ? t("revision.paidWait") : t("revision.samplePay")}
+                  {demoReal ? t("revision.demoPaid") : real ? t("revision.paidWait") : t("revision.samplePay")}
                 </p>
               )}
               {credencial ? (

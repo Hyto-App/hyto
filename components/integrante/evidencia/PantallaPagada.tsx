@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useTexto } from "@/components/ui/Idioma";
 import { enlacePago } from "@/lib/admin/vista";
@@ -89,6 +90,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
 
 function Recibo({ monto, comprobante }: { monto: string; comprobante: string | null }) {
   const t = useTexto();
+  const demo = useModoDemo();
   return (
     <section className="hyto-tarjeta hyto-recibo">
       <div>
@@ -103,6 +105,8 @@ function Recibo({ monto, comprobante }: { monto: string; comprobante: string | n
         <a href={comprobante} target="_blank" rel="noreferrer">
           {t("evidencia.viewReceipt")}
         </a>
+      ) : demo ? (
+        <p className="hyto-tarea-meta">{t("evidencia.demoPaid")}</p>
       ) : null}
     </section>
   );

@@ -1,9 +1,14 @@
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla, asegurarVoluntarioDemo } from "@/lib/db/semilla";
+import { asegurarSemilla, asegurarVoluntarioDemo, esProyectoDemo } from "@/lib/db/semilla";
+import type { SesionFila } from "@/lib/db/tipos";
 import { clienteDe, excedido } from "@/lib/escrow/limite";
+import { validarMontoConfirmado } from "@/lib/escrow/monto";
 import { COOKIE_SESION, SESION_SIN_EXP_SEGUNDOS, encabezadoCookie, expiracion, leerCookie, tokenSesion } from "@/lib/sesion/cookie";
 import { demoHabilitado, rolDemoDe, sesionEsDemo, usuarioDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json } from "./json";
+import { AVISO_ORGANIZADOR, estadoOrganizadorTarea } from "./organizador";
+
+export const AVISO_PAGO_DEMO_SIN_FOTO = "There is no photo to pay for yet.";
 
 export async function estadoDemoHttp(env: NodeJS.ProcessEnv | { HYTO_DEMO_LOGIN?: string } = process.env): Promise<Response> {
   return json({ habilitado: demoHabilitado(env) });
@@ -54,6 +59,41 @@ export async function crearDemoHttp(
       200,
       { "set-cookie": encabezadoCookie(sesion, SESION_SIN_EXP_SEGUNDOS) },
     );
+  } catch {
+    return baseNoLista();
+  }
+}
+
+/**
+ * Demo-only payment: marks a task of the seeded demo event as paid without a Stellar signature or
+ * a stored hash. Real sessions never reach it (404), and a demo session still cannot sign through
+ * /api/firma, so the real payment path keeps its checks.
+ */
+export async function pagarDemoHttp(
+  almacen: Almacen,
+  sesion: Pick<SesionFila, "email" | "usuarioId">,
+  tareaId: string,
+  env: NodeJS.ProcessEnv | { HYTO_DEMO_LOGIN?: string } = process.env,
+): Promise<Response> {
+  if (!demoHabilitado(env) || !sesionEsDemo(sesion)) return json({ aviso: "Not found." }, 404);
+  try {
+    const tarea = await almacen.leerTarea(tareaId);
+    if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
+    if (!esProyectoDemo(await almacen.leerProyecto(tarea.proyectoId))) return json({ aviso: AVISO_ORGANIZADOR }, 403);
+    if ((await estadoOrganizadorTarea(almacen, sesion.usuarioId, tarea.id)) !== "si") {
+      return json({ aviso: AVISO_ORGANIZADOR }, 403);
+    }
+    if (tarea.estado === "pagado") return json({ estado: "pagado", demo: true });
+    const evidencia = await almacen.ultimaEvidencia(tarea.id);
+    if (tarea.estado !== "en revisión" || !evidencia) return json({ aviso: AVISO_PAGO_DEMO_SIN_FOTO }, 409);
+    if (tarea.tipo === "reembolso" && !evidencia.montoConfirmado) {
+      const leido = validarMontoConfirmado(evidencia.monto, tarea.tope, tarea.monto);
+      const tope = validarMontoConfirmado(tarea.tope ?? tarea.monto, tarea.tope, tarea.monto);
+      const elegido = "monto" in leido ? leido : tope;
+      if ("monto" in elegido) await almacen.actualizarEvidencia(evidencia.id, { montoConfirmado: elegido.monto });
+    }
+    await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
+    return json({ estado: "pagado", demo: true });
   } catch {
     return baseNoLista();
   }

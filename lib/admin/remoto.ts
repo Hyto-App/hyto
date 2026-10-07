@@ -86,6 +86,30 @@ export function botonesRevision(
   };
 }
 
+/** Demo sessions skip lock and pay: one button marks the task paid once a photo is in review. */
+export function pagoDemoDisponible(tarea: Pick<TareaAdmin, "estado">, demo: boolean): boolean {
+  return demo && tarea.estado === "en revisión";
+}
+
+const AVISO_PAGO_DEMO = "The demo payment did not go through. Try again.";
+
+export async function pagarDemo(tareaId: string, opciones: OpcionesRemoto = {}): Promise<{ ok: true } | { ok: false; aviso: string }> {
+  const id = tareaId.trim();
+  if (!id) return { ok: false, aviso: "The task is missing." };
+  try {
+    const respuesta = await (opciones.fetch ?? fetch)(`/api/revision/${encodeURIComponent(id)}/pagar-demo`, {
+      method: "POST",
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; estado?: unknown } | null;
+    if (respuesta.ok && cuerpo?.estado === "pagado") return { ok: true };
+    return { ok: false, aviso: typeof cuerpo?.aviso === "string" ? cuerpo.aviso : AVISO_PAGO_DEMO };
+  } catch {
+    return { ok: false, aviso: AVISO_PAGO_DEMO };
+  }
+}
+
 export function pagoPendiente(tarea: Pick<TareaAdmin, "estado" | "hashPago">): boolean {
   return tarea.estado !== "pagado" && Boolean(tarea.hashPago?.trim());
 }
