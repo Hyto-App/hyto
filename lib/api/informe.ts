@@ -8,6 +8,7 @@ import { fraseConNota } from "@/lib/revision/armar";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
+import { veredictoAlLeer } from "./revision-vencida";
 
 export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
@@ -68,7 +69,7 @@ export async function leerVeredictoVigente(
   tarea: TareaFila,
 ): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null }> {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  const fila = await veredictoAlLeer(almacen, tarea, evidencia);
   return { evidencia, veredicto: veredictoVigente(tarea, evidencia, fila) };
 }
 
