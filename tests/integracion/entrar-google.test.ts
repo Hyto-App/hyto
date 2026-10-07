@@ -158,7 +158,7 @@ test("si crearAuth lanza, el canje termina con un aviso visible", async () => {
     });
     assert.equal(estado.llamadas.length, 0);
     assert.equal(leerMemoriaAdmin().direccion, null);
-    const aviso = div.querySelector('[role="status"]')?.textContent ?? "";
+    const aviso = div.querySelector('[role="alert"]')?.textContent ?? "";
     assert.ok(aviso, "falta el aviso");
     assert.doesNotMatch(aviso, /Setting up your Stellar testnet wallet/);
     await act(async () => {
@@ -222,7 +222,7 @@ test("si la sesión no guardó la wallet, el navegador tampoco la guarda", async
 
   assert.equal(leerMemoriaAdmin().direccion, null);
   assert.doesNotMatch(div.textContent ?? "", /Signed in/);
-  assert.match(div.querySelector('[role="status"]')?.textContent ?? "", /Could not save this session's wallet\./);
+  assert.match(div.querySelector('[role="alert"]')?.textContent ?? "", /Could not save this session's wallet\./);
   await act(async () => {
     root.unmount();
   });

@@ -56,6 +56,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [enviadaEn, setEnviadaEn] = useState<Date | null>(null);
   const [archivoRechazado, setArchivoRechazado] = useState(false);
   const [reintentando, setReintentando] = useState(false);
+  const [rechazoVivo, setRechazoVivo] = useState<null | "camara" | "galeria">(null);
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -264,6 +265,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   function prepararRevision(bloquearEnvio: boolean) {
     limpiarFoto();
     setArchivoRechazado(bloquearEnvio);
+    setRechazoVivo(null);
     setError(null);
     setFase("inicio");
   }
@@ -302,17 +304,21 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   async function aceptarCaptura(archivo: File) {
     if (!esFotoDeCamara(archivo)) {
-      rechazarSeleccion("Take the photo with the camera.", false);
+      setRechazoVivo("camara");
+      rechazarSeleccion(t("evidencia.useCamera"), false);
       return;
     }
     if (!archivoDeCamaraReciente(archivo)) {
-      rechazarSeleccion("Take the photo now. Photos from the gallery are not accepted.", false);
+      setRechazoVivo("galeria");
+      rechazarSeleccion(t("evidencia.gallery"), false);
       return;
     }
+    setRechazoVivo(null);
     prepararRevision(false);
     const validado = await evaluarArchivo(archivo, { soloJpeg: true });
     if (!validado.ok) {
-      rechazarSeleccion(validado.motivo === "tipo" ? "Take the photo with the camera." : avisoArchivo(validado.motivo), false);
+      if (validado.motivo === "tipo") setRechazoVivo("camara");
+      rechazarSeleccion(validado.motivo === "tipo" ? t("evidencia.useCamera") : avisoArchivo(validado.motivo), false);
       return;
     }
     usarFoto(archivo, null, new Date(archivo.lastModified).toISOString());
@@ -371,6 +377,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setEsperaLocal(false);
     setEnviadaEn(null);
     setArchivoRechazado(false);
+    setRechazoVivo(null);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -468,6 +475,39 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     );
   }
 
+  if (rechazoVivo && fase === "inicio") {
+    return (
+      <main className="hyto-page hyto-tarea hyto-vivo" role="alert">
+        <h1 className="hyto-vivo-titulo">{t("evidencia.liveTitle")}</h1>
+        <p className="hyto-vivo-cuerpo">{t(rechazoVivo === "galeria" ? "evidencia.gallery" : "evidencia.useCamera")}</p>
+        <p className="hyto-vivo-pista">{t("evidencia.galleryHint")}</p>
+        <button
+          type="button"
+          className="hyto-btn hyto-btn-grande"
+          onClick={() => {
+            setRechazoVivo(null);
+            setError(null);
+            void abrirCamara();
+          }}
+        >
+          {t("evidencia.openCamera")}
+        </button>
+        {conCaptura ? (
+          <input
+            ref={capturaRef}
+            type="file"
+            accept="image/jpeg"
+            capture="environment"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            onChange={elegirCaptura}
+          />
+        ) : null}
+      </main>
+    );
+  }
+
   const cabecera = (
     <header className="hyto-tarea-cab">
       <div>
@@ -551,14 +591,21 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {claro(avisoEnvio)}
               {t("evidencia.fixSuffix")}
             </p>
-          ) : insuficiente ? (
-            <p className="hyto-tarea-meta">{t("evidencia.notEnoughSub")}</p>
-          ) : tarea.etapa === "enviada_organizador" ? (
-            <p className="mt-2 text-sm leading-6 text-[var(--suave)]" role="status">
-              {t("evidencia.reachedOrganizer")}
-            </p>
           ) : (
-            <p className="hyto-tarea-meta">{t(parcial ? "evidencia.partialSub" : "evidencia.greatJobSub")}</p>
+            <>
+              {calificacion !== null || tarea.etapa === "enviada_organizador" ? (
+                <p className="hyto-en-revision" role="status">
+                  {t("evidencia.mileYaMiro")}
+                </p>
+              ) : null}
+              {insuficiente ? (
+                <p className="hyto-tarea-meta">{t("evidencia.notEnoughSub")}</p>
+              ) : tarea.etapa === "enviada_organizador" ? (
+                <p className="hyto-tarea-meta">{t("evidencia.reachedOrganizer")}</p>
+              ) : (
+                <p className="hyto-tarea-meta">{t(parcial ? "evidencia.partialSub" : "evidencia.greatJobSub")}</p>
+              )}
+            </>
           )}
         </header>
         <article className="hyto-tarjeta hyto-resumen">

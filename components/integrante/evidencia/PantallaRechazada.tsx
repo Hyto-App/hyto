@@ -75,15 +75,9 @@ export function PantallaRechazada({
             </div>
           </section>
 
-          <div className="hyto-solo-escritorio">
-            <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
-          </div>
+          <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
 
           <Checklist condicion={tarea.condicion} fallidos={fallidos.length > 0 ? fallidos : null} titulo={t("evidencia.howPhoto")} />
-
-          <div className="hyto-nota-org-movil">
-            {nota ? <NotaOrganizador nombre={nombre} nota={nota} /> : null}
-          </div>
 
           <div className="hyto-actions">
             {reembolso && !cerrado && onArchivo ? (
