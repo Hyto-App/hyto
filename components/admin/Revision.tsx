@@ -774,7 +774,8 @@ export function Revision({
             />
           ) : null}
 
-          {paso ? (
+          {/* The step sentences talk about the wallet window. A demo lock or pay opens none. */}
+          {paso && !demoReal ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">
               {frasePaso(paso, idioma)}
             </p>

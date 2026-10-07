@@ -242,3 +242,35 @@ test("un insert simultáneo de la evidencia de ejemplo no corta la semilla", asy
   assert.equal((await base.veredictoDe("ejemplo-stand"))?.score, "100");
   assert.equal((await base.veredictoDe("ejemplo-stand"))?.veredicto, "cumplió");
 });
+
+test("sembrar no baja la tarea demo en revisión a pendiente ni un instante", async () => {
+  const anterior = process.env.HYTO_DEMO_LOGIN;
+  process.env.HYTO_DEMO_LOGIN = "1";
+  try {
+    const base = crearMemoria();
+    await asegurarSemilla(base);
+    assert.equal((await base.leerTarea("demo-stand"))?.estado, "en revisión");
+    const bajadas: string[] = [];
+    const vigilado: Almacen = {
+      ...base,
+      async actualizarTarea(id, cambio) {
+        if (id.startsWith("demo-") && cambio.estado === "pendiente") bajadas.push(id);
+        return base.actualizarTarea(id, cambio);
+      },
+    };
+    await asegurarSemilla(vigilado);
+    await asegurarSemilla(vigilado);
+    assert.deepEqual(bajadas, []);
+    assert.equal((await base.leerTarea("demo-stand"))?.estado, "en revisión");
+  } finally {
+    if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = anterior;
+  }
+});
+
+test("una foto guardada como svg u otro image/* se sirve como bytes, no como imagen ejecutable", () => {
+  const svg = new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>");
+  assert.equal(tipoDeFoto("image/svg+xml", svg), "application/octet-stream");
+  assert.equal(tipoDeFoto("image/x-icon", Uint8Array.from([1, 2, 3])), "application/octet-stream");
+  assert.equal(tipoDeFoto("image/webp", Uint8Array.from([1, 2, 3])), "image/webp");
+});

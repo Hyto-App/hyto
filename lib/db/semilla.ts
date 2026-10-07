@@ -280,6 +280,9 @@ async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Prom
 async function reponerPendientes(almacen: Almacen): Promise<void> {
   for (const tarea of await almacen.listarTareas()) {
     if (tarea.estado !== "en revisión" || tarea.hashPago) continue;
+    // The demo event keeps its sample task in review on purpose (asegurarCaminoDemo). Resetting it here
+    // and restoring it there made concurrent requests read "pendiente" and hide Pay on the review screen.
+    if (tarea.proyectoId === ID_PROYECTO_DEMO) continue;
     const evidencia = await almacen.ultimaEvidencia(tarea.id);
     if (evidencia && !esBlobEjemplo(evidencia.blobId)) continue;
     await almacen.actualizarTarea(tarea.id, { estado: "pendiente" });

@@ -7,5 +7,5 @@ export async function POST(request: Request): Promise<Response> {
   const sesion = await exigirSesion(request);
   if (sesion instanceof Response) return sesion;
   if (sesionEsDemo(sesion)) return json({ aviso: "Demo mode cannot suggest requirements." }, 403);
-  return sugerirRequisitosHttp(request);
+  return sugerirRequisitosHttp(request, undefined, sesion.usuarioId);
 }

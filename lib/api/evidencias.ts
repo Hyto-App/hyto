@@ -437,7 +437,8 @@ export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
   if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return "image/gif";
   const limpio = declarado.trim().toLowerCase();
   if (limpio === "image/jpg" || limpio === "image/pjpeg") return "image/jpeg";
-  if (limpio.startsWith("image/")) return limpio;
+  // Only raster types the browser cannot run. A stored "image/svg+xml" (or any other image/*) is served as bytes.
+  if (limpio === "image/jpeg" || limpio === "image/png" || limpio === "image/webp" || limpio === "image/gif") return limpio;
   if (limpio === "application/pdf") return "application/pdf";
   if (limpio === "text/html" || limpio === "text/plain" || limpio === "text/markdown") return "text/plain";
   return "application/octet-stream";
