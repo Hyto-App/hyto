@@ -5,6 +5,7 @@ import { esEvidenciaTextual } from "@/lib/evidencia/tipo";
 import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
+import type { ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
 import { preguntarLaya } from "./laya";
@@ -32,6 +33,8 @@ export type ContextoRevision = {
   intento?: number;
   maxIntentos?: number;
   idioma?: Idioma;
+  /** The event's description and AI context. Read by the vision prompt only. */
+  evento?: ContextoEvento | null;
 };
 
 export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto: ContextoRevision): Promise<ResultadoRevision> {
@@ -51,7 +54,16 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   try {
     const cruda = esEvidenciaTextual(foto)
       ? await transcribirEvidencia(foto)
-      : await describirConReserva(foto, tarea, contexto.claveGroq, claveGemini, fetchImpl, repeticion, contexto.idioma ?? "en");
+      : await describirConReserva(
+          foto,
+          tarea,
+          contexto.claveGroq,
+          claveGemini,
+          fetchImpl,
+          repeticion,
+          contexto.idioma ?? "en",
+          contexto.evento,
+        );
     const descripcion = esEvidenciaTextual(foto)
       ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
       : cruda;
@@ -153,8 +165,9 @@ async function describirConReserva(
   fetchImpl: typeof fetch,
   repeticion: Omit<OpcionesReintento, "topeIntentoMs">,
   idioma: "en" | "es",
+  evento?: ContextoEvento | null,
 ): Promise<Descripcion> {
-  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma };
+  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento };
   const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
   if (!claveGroq) {
     return conReintentos(

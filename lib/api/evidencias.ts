@@ -19,7 +19,9 @@ import { leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisito
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import { idiomaDe, COOKIE_IDIOMA } from "@/lib/ui/idioma";
 import type { Idioma } from "@/lib/ui/idioma";
+import type { ContextoEvento } from "@/lib/revision/contexto-evento";
 import { accesoEvidencia, type Visor } from "./alcance";
+import { contextoParaRevision } from "./contexto-evento";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -273,7 +275,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const leida = await deps.fotos.leer(evidencia.blobId);
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
-    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
+    const evento = deps.revisarTarea ? null : await contextoParaRevision(deps.almacen, tarea.proyectoId);
+    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
     const entorno = contextoDesdeEntorno();
     const textual = esEvidenciaTextual({ tipo, bytes });
@@ -294,10 +297,11 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
 async function revisarPorDefecto(
   tarea: TareaFila,
   foto: Awaited<ReturnType<Fotos["leer"]>>,
-  extra?: { intento?: number; idioma: Idioma },
+  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null },
 ): Promise<ResultadoRevision> {
   return revisar(tarea, foto, {
     ...contextoDesdeEntorno(),
+    evento: extra?.evento,
     intento: extra?.intento,
     idioma: extra?.idioma,
   });

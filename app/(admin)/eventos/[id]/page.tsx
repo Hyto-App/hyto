@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { TareasMiembro } from "@/components/admin/TareasMiembro";
+import { ContextoEvento } from "@/components/integrante/ContextoEvento";
 import { tareasVisibles } from "@/lib/api/alcance";
+import { datosPublicosDeEvento } from "@/lib/api/contexto-evento";
 import { almacenNeon } from "@/lib/db/neon";
 import { exigirEvento, exigirPagina, visorDeSesion } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
@@ -36,9 +38,13 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
     );
   }
   const tareas = (await tareasVisibles(almacen, visorDeSesion(sesion))).filter((tarea) => tarea.proyectoId === id);
+  const publico = datosPublicosDeEvento(proyecto);
   return (
     <>
       <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol={rol} pestana="inbox" />
+      <div className="hyto-page pb-0 pt-0">
+        <ContextoEvento proyectoId={proyecto.id} nombre={proyecto.nombre} descripcion={publico.descripcion} portada={publico.portada} />
+      </div>
       <TareasMiembro
         tareas={tareas.map((tarea) => ({
           id: tarea.id,

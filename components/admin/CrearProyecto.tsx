@@ -13,6 +13,9 @@ import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 
+const TIPOS_PORTADA = ["image/jpeg", "image/png", "image/webp"];
+const MAX_BYTES_PORTADA = 5 * 1024 * 1024;
+
 type Fila = {
   clave: string;
   titulo: string;
@@ -57,6 +60,10 @@ export function CrearProyecto() {
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [descripcion, setDescripcion] = useState("");
+  const [contextoIa, setContextoIa] = useState("");
+  const [portada, setPortada] = useState<File | null>(null);
+  const [creadoId, setCreadoId] = useState<string | null>(null);
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
     setFilas((actuales) => actuales.map((fila) => (fila.clave === clave ? { ...fila, ...cambio } : fila)));
@@ -70,6 +77,14 @@ export function CrearProyecto() {
     const nombreLimpio = nombre.trim();
     if (!nombreLimpio) {
       setAviso("Enter an event name.");
+      return;
+    }
+    if (portada && !TIPOS_PORTADA.includes(portada.type)) {
+      setAviso(t("eventos.coverType"));
+      return;
+    }
+    if (portada && portada.size > MAX_BYTES_PORTADA) {
+      setAviso(t("eventos.coverSize"));
       return;
     }
 
@@ -110,7 +125,7 @@ export function CrearProyecto() {
       respuesta = await fetch("/api/proyectos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre: nombreLimpio, tareas: payload }),
+        body: JSON.stringify({ nombre: nombreLimpio, descripcion: descripcion.trim(), contextoIa: contextoIa.trim(), tareas: payload }),
       });
     } catch {
       setAviso("Could not reach the server. Check your connection and try again.");
@@ -121,7 +136,18 @@ export function CrearProyecto() {
       setAviso(cuerpo?.aviso ?? "Could not create the event. Please try again.");
       return;
     }
-    router.push(`/eventos/${cuerpo.proyecto.id}`);
+    const id = cuerpo.proyecto.id;
+    if (portada) {
+      const datos = new FormData();
+      datos.set("portada", portada);
+      const subida = await fetch(`/api/eventos/${encodeURIComponent(id)}/portada`, { method: "POST", body: datos }).catch(() => null);
+      if (!subida?.ok) {
+        setCreadoId(id);
+        setAviso(t("eventos.coverNotSaved"));
+        return;
+      }
+    }
+    router.push(`/eventos/${id}`);
   }
 
   let trabajo = 0;
@@ -159,6 +185,53 @@ export function CrearProyecto() {
             onChange={(evento) => setNombre(evento.target.value)}
             className="hyto-input mt-2"
           />
+
+          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="portada-proyecto">
+            {t("eventos.coverPhoto")}
+          </label>
+          <input
+            id="portada-proyecto"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-describedby="portada-ayuda"
+            onChange={(evento) => setPortada(evento.target.files?.[0] ?? null)}
+            className="hyto-input mt-2"
+          />
+          <p id="portada-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+            {t("eventos.coverHelp")}
+          </p>
+
+          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="descripcion-proyecto">
+            {t("eventos.description")}
+          </label>
+          <textarea
+            id="descripcion-proyecto"
+            value={descripcion}
+            maxLength={1000}
+            rows={4}
+            aria-describedby="descripcion-ayuda"
+            onChange={(evento) => setDescripcion(evento.target.value)}
+            className="hyto-input mt-2"
+          />
+          <p id="descripcion-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+            {t("eventos.descriptionHelp")} {descripcion.length}/1000
+          </p>
+
+          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="contexto-ia-proyecto">
+            {t("eventos.aiContext")}
+          </label>
+          <textarea
+            id="contexto-ia-proyecto"
+            value={contextoIa}
+            maxLength={2000}
+            rows={5}
+            aria-describedby="contexto-ia-ayuda"
+            onChange={(evento) => setContextoIa(evento.target.value)}
+            className="hyto-input mt-2"
+          />
+          <p id="contexto-ia-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+            {t("eventos.aiContextHelp")} {contextoIa.length}/2000
+          </p>
 
           <div className="mt-8 space-y-4">
             {filas.map((fila, indice) => (
@@ -309,9 +382,14 @@ export function CrearProyecto() {
             </div>
           </dl>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <BotonPrincipal type="button" onClick={() => void fondear()} disabled={modoDemo}>
+            <BotonPrincipal type="button" onClick={() => void fondear()} disabled={modoDemo || creadoId !== null}>
               {t("eventos.createEvent")}
             </BotonPrincipal>
+            {creadoId ? (
+              <Link href={`/eventos/${creadoId}`} className="hyto-btn-line is-inline px-5">
+                {t("eventos.openEvent")}
+              </Link>
+            ) : null}
             {modoDemo || aviso ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
                 {claro(modoDemo ? AVISO_PROYECTO_DEMO : (aviso ?? ""))}

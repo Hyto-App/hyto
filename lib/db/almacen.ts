@@ -39,6 +39,7 @@ export type Almacen = {
   listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;
   crearProyecto(proyecto: Proyecto, tareas: TareaFila[]): Promise<void>;
+  actualizarProyecto(id: string, cambio: Partial<Pick<Proyecto, "portada" | "descripcion" | "contextoIa">>): Promise<void>;
   asignarOrganizador(proyectoId: string, organizadorId: string): Promise<void>;
   listarTareas(): Promise<TareaFila[]>;
   leerTarea(id: string): Promise<TareaFila | null>;

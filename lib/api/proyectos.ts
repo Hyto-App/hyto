@@ -7,6 +7,7 @@ import { leerDificultadEntrada, leerPrioridadEntrada } from "@/lib/tareas/clasif
 import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { tareaEnBandeja } from "./informe";
+import { datosPublicosDeEvento, leerContextoEvento } from "./contexto-evento";
 import { baseNoLista, json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
 import { tareaPublica } from "./tareas";
@@ -145,12 +146,13 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
       miembros.find((miembro) => miembro.proyectoId === proyectoId && miembro.estado === "active")?.rol ?? null;
     const rol = rolDe(proyecto.id);
     return json({
-      proyecto: { id: proyecto.id, nombre: proyecto.nombre, rol },
+      proyecto: { id: proyecto.id, nombre: proyecto.nombre, rol, ...datosPublicosDeEvento(proyecto) },
       proyectos: await Promise.all(
         proyectos.map(async (item) => ({
           id: item.id,
           nombre: item.nombre,
           rol: rolDe(item.id),
+          ...datosPublicosDeEvento(item),
           pendientes: await contarBandeja(
             almacen,
             visibles.filter((tarea) => tarea.proyectoId === item.id),
@@ -188,7 +190,9 @@ async function personasDelEvento(almacen: Almacen, proyectoId: string): Promise<
 
 type TareaBorrador = TareaFila & { asignado: string };
 
-function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; creadoEn: string }; tareas: TareaBorrador[] } | { aviso: string } {
+function leerProyecto(
+  body: unknown,
+): { proyecto: { id: string; nombre: string; creadoEn: string; descripcion: string | null; contextoIa: string | null }; tareas: TareaBorrador[] } | { aviso: string } {
   if (!body || typeof body !== "object") return { aviso: "Enter an event name and at least one task." };
   const crudo = body as Record<string, unknown>;
   const nombre = typeof crudo.nombre === "string" ? crudo.nombre.trim() : "";
@@ -196,6 +200,8 @@ function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; 
   if (!Array.isArray(crudo.tareas) || crudo.tareas.length === 0) {
     return { aviso: "Add at least one task with a title and an amount." };
   }
+  const contexto = leerContextoEvento(crudo);
+  if ("aviso" in contexto) return contexto;
   const proyectoId = crypto.randomUUID();
   const ahora = new Date().toISOString();
   const tareas: TareaBorrador[] = [];
@@ -204,7 +210,7 @@ function leerProyecto(body: unknown): { proyecto: { id: string; nombre: string; 
     if ("aviso" in tarea) return tarea;
     tareas.push(tarea);
   }
-  return { proyecto: { id: proyectoId, nombre, creadoEn: ahora }, tareas };
+  return { proyecto: { id: proyectoId, nombre, creadoEn: ahora, ...contexto }, tareas };
 }
 
 async function asignarTareas(almacen: Almacen, organizadorId: string, tareas: TareaBorrador[]): Promise<TareaFila[] | Response> {

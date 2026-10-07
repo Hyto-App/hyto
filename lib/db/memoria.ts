@@ -91,6 +91,10 @@ export function crearMemoria(): Almacen {
         });
       }
     },
+    async actualizarProyecto(id, cambio) {
+      const actual = proyectos.get(id);
+      if (actual) proyectos.set(id, { ...actual, ...cambio });
+    },
     async asignarOrganizador(proyectoId, organizadorId) {
       const actual = proyectos.get(proyectoId);
       if (!actual) return;
