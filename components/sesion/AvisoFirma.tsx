@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type MouseEvent } from "react";
+import { GuiaPasskey } from "@/components/sesion/GuiaPasskey";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
-import { AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA } from "@/lib/integrante/avisosUsdc";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { rutaRetornoSegura, urlSignin } from "@/lib/sesion/retorno";
@@ -11,7 +12,20 @@ import { mensajeClaro } from "@/lib/ui/claro";
 
 const REINGRESO = new Set([AVISO_REINGRESO, AVISO_ENTRAR, AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA]);
 
-export function AvisoFirma({ mensaje, className }: { mensaje: string; className?: string }) {
+type Props = {
+  mensaje: string;
+  className?: string;
+  /** Lets the passkey guide offer Try again for the step that failed. */
+  alReintentar?: () => void;
+  reintentando?: boolean;
+};
+
+/** True for the notice a browser without the account key and without a passkey gets. */
+export function esAvisoDispositivo(mensaje: string): boolean {
+  return mensaje.trim() === AVISO_DISPOSITIVO || mensajeClaro(mensaje) === AVISO_DISPOSITIVO;
+}
+
+export function AvisoFirma({ mensaje, className, alReintentar, reintentando }: Props) {
   const t = useTexto();
   const claro = useClaro();
   const [saliendo, setSaliendo] = useState(false);
@@ -25,6 +39,10 @@ export function AvisoFirma({ mensaje, className }: { mensaje: string; className?
     setSaliendo(true);
     const aqui = rutaRetornoSegura(`${window.location.pathname}${window.location.search}`);
     await cerrarSesionEnCliente(urlSignin(aqui === "/" ? null : aqui));
+  }
+
+  if (esAvisoDispositivo(mensaje)) {
+    return <GuiaPasskey alReintentar={alReintentar} reintentando={reintentando} className={className} />;
   }
 
   return (

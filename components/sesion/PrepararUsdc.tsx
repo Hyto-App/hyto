@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AvisoFirma } from "@/components/sesion/AvisoFirma";
+import { AvisoFirma, esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
@@ -72,13 +72,17 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
                 ? claro(aviso)
                 : null
               : t("cuenta.newAccount");
-  const mostrarBoton = estado === "pendiente" || estado === "preparando" || estado === "error";
+  // The passkey guide brings its own Try again, so the main button would only repeat it.
+  const guia = estado === "error" && aviso !== null && esAvisoDispositivo(aviso);
+  const mostrarBoton = !guia && (estado === "pendiente" || estado === "preparando" || estado === "error");
   const terminado = estado === "listo" || estado === "hecho";
   const ocupado = estado === "comprobando" || estado === "preparando";
 
   return (
     <div className={terminado ? "hyto-payout is-done" : "hyto-payout"} data-estado={estado} aria-busy={ocupado}>
-      {estado === "error" && aviso ? (
+      {guia && aviso ? (
+        <AvisoFirma mensaje={aviso} className="mt-3" alReintentar={() => void correr()} />
+      ) : estado === "error" && aviso ? (
         <AvisoFirma mensaje={aviso} className="text-sm text-[var(--suave)]" />
       ) : mensaje ? (
         <p className={terminado ? "hyto-payout-done" : "text-sm leading-6 text-[var(--suave)]"} role="status" aria-live="polite">

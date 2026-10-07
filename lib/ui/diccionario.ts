@@ -648,12 +648,46 @@ export const en = {
     pasaporteDetalle: "It records participation and achievements in the Stellar ecosystem.",
     pasaporteAbrir: "Open Stellar Passport",
     passkeyTitulo: "Use Hyto on other devices",
+    passkeyPorQue: "Add a passkey once so your phone or another browser can use this account and get paid.",
     passkeyDetalle:
-      "Your account key is stored in this browser. Add a passkey so your phone or another computer can open it too. Save the passkey where you keep your passwords. It works like a key to your account, so keep it to yourself.",
+      "Your account key lives only in this browser. Tap Add a passkey, then Create passkey, and save it where you keep your passwords. It works like a key to your account, so keep it to yourself.",
+    passkeyTelefono:
+      "Want it on your phone? If your passkeys don't sync there, choose Use a phone or tablet when the browser asks where to save it, and scan the QR code with your phone.",
+    passkeyEmpieza: "Start here",
     passkeyAgregar: "Add a passkey",
     passkeyAgregando: "Adding…",
     passkeyListo: "Passkey added. On another device, sign in to Hyto and choose Use passkey when it asks.",
     passkeyAviso: "Add a passkey on Account to use Hyto on your other devices.",
+  },
+  guiaPasskey: {
+    titulo: "Set up this device in 4 steps",
+    intro:
+      "This phone or browser doesn't have your account key yet. Add a passkey once in the browser where you signed up, then use it here. It takes about a minute.",
+    paso1Titulo: "Open Account where you signed up",
+    paso1: "On the computer or browser where you created your Hyto account, open this link:",
+    copiar: "Copy link",
+    copiado: "Link copied. Open it on that computer.",
+    copiaFallo: "Couldn't copy. Select the link above and copy it.",
+    compartir: "Share",
+    compartirTitulo: "Hyto: add a passkey",
+    compartirTexto: "Open this in the browser where you signed up for Hyto, then tap Add a passkey.",
+    paso2Titulo: "Add a passkey",
+    paso2: "Tap Add a passkey, then Create passkey in the window that opens.",
+    paso3Titulo: "Passkeys don't reach this phone?",
+    paso3:
+      "If this phone doesn't share passwords with that computer (iCloud Keychain or Google Password Manager), choose Use a phone or tablet when it asks where to save the passkey, and scan the QR code with this phone.",
+    paso4Titulo: "Come back here",
+    paso4: "Tap Try again, then choose Use passkey.",
+    paso4SinBoton: "Run the same step again, then choose Use passkey.",
+    introCuenta:
+      "This browser doesn't have your account key, so it can't add a passkey here. Add it once in the browser where you signed up, then use it on this device.",
+    paso4Cuenta: "On this device, open Events and tap Get ready to be paid (or repeat the step you were doing). When it asks, choose Use passkey.",
+    reintentando: "Trying…",
+    ayudaTitulo: "Don't remember where you signed up?",
+    ayuda1:
+      "It's the browser you used the first time you created your Hyto account, for example Chrome on your laptop. Sign in there with the same email and tap Add a passkey on Account. If it says that browser doesn't have your account key, try the next one you may have used.",
+    ayuda2:
+      "If you no longer have that browser, or its data was cleared, Hyto can't bring the key back from here. Contact the Hyto team and tell them the email you sign in with.",
   },
   estados: {
     pendiente: "Pending",
@@ -1452,12 +1486,46 @@ export const es: Rama<typeof en> = {
     pasaporteDetalle: "Registra la participación y los logros en el ecosistema Stellar.",
     pasaporteAbrir: "Abrir Stellar Passport",
     passkeyTitulo: "Usa Hyto en otros dispositivos",
+    passkeyPorQue: "Agrega una llave de acceso una vez para que tu teléfono u otro navegador puedan usar esta cuenta y cobrar.",
     passkeyDetalle:
-      "La clave de tu cuenta está guardada en este navegador. Agrega una llave de acceso para que tu teléfono u otra computadora también puedan abrirla. Guárdala donde guardas tus contraseñas. Funciona como una llave de tu cuenta, así que no la compartas.",
+      "La clave de tu cuenta vive solo en este navegador. Toca Agregar llave de acceso, luego Create passkey, y guárdala donde guardas tus contraseñas. Funciona como una llave de tu cuenta, así que no la compartas.",
+    passkeyTelefono:
+      "¿La quieres en tu teléfono? Si tus llaves de acceso no se sincronizan ahí, elige Use a phone or tablet cuando el navegador pregunte dónde guardarla y escanea el código QR con tu teléfono.",
+    passkeyEmpieza: "Empieza aquí",
     passkeyAgregar: "Agregar llave de acceso",
     passkeyAgregando: "Agregando…",
     passkeyListo: "Llave de acceso agregada. En otro dispositivo, entra a Hyto y elige Use passkey cuando lo pida.",
     passkeyAviso: "Agrega una llave de acceso en Cuenta para usar Hyto en tus otros dispositivos.",
+  },
+  guiaPasskey: {
+    titulo: "Prepara este dispositivo en 4 pasos",
+    intro:
+      "Este teléfono o navegador todavía no tiene la clave de tu cuenta. Agrega una llave de acceso una vez en el navegador donde creaste tu cuenta y luego úsala aquí. Toma como un minuto.",
+    paso1Titulo: "Abre Cuenta donde creaste tu cuenta",
+    paso1: "En la computadora o el navegador donde creaste tu cuenta de Hyto, abre este enlace:",
+    copiar: "Copiar enlace",
+    copiado: "Enlace copiado. Ábrelo en esa computadora.",
+    copiaFallo: "No se pudo copiar. Selecciona el enlace de arriba y cópialo.",
+    compartir: "Compartir",
+    compartirTitulo: "Hyto: agrega una llave de acceso",
+    compartirTexto: "Abre esto en el navegador donde creaste tu cuenta de Hyto y toca Agregar llave de acceso.",
+    paso2Titulo: "Agrega una llave de acceso",
+    paso2: "Toca Agregar llave de acceso y luego Create passkey en la ventana que se abre.",
+    paso3Titulo: "¿La llave no llega a este teléfono?",
+    paso3:
+      "Si este teléfono no comparte contraseñas con esa computadora (Llavero de iCloud o Gestor de contraseñas de Google), elige Use a phone or tablet cuando pregunte dónde guardar la llave y escanea el código QR con este teléfono.",
+    paso4Titulo: "Vuelve aquí",
+    paso4: "Toca Intentar de nuevo y elige Use passkey.",
+    paso4SinBoton: "Repite el mismo paso y elige Use passkey.",
+    introCuenta:
+      "Este navegador no tiene la clave de tu cuenta, así que no puede agregar una llave de acceso aquí. Agrégala una vez en el navegador donde creaste tu cuenta y luego úsala en este dispositivo.",
+    paso4Cuenta: "En este dispositivo, abre Eventos y toca Preparar el cobro (o repite el paso que estabas haciendo). Cuando lo pida, elige Use passkey.",
+    reintentando: "Intentando…",
+    ayudaTitulo: "¿No recuerdas dónde creaste tu cuenta?",
+    ayuda1:
+      "Es el navegador que usaste la primera vez que creaste tu cuenta de Hyto, por ejemplo Chrome en tu laptop. Entra ahí con el mismo correo y toca Agregar llave de acceso en Cuenta. Si dice que ese navegador no tiene la clave de tu cuenta, prueba el siguiente que pudiste haber usado.",
+    ayuda2:
+      "Si ya no tienes ese navegador, o se borraron sus datos, Hyto no puede recuperar la clave desde aquí. Escribe al equipo de Hyto y dile el correo con el que entras.",
   },
   estados: {
     pendiente: "Pendiente",

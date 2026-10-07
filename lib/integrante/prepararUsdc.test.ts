@@ -389,10 +389,20 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
   }
   try {
     await fallarCon(AVISO_DISPOSITIVO);
-    assert.match(texto(), /Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey/);
+    assert.match(texto(), /Set up this device in 4 steps/);
+    assert.match(texto(), /Open Account where you signed up/);
+    assert.match(texto(), /localhost\/account/);
+    assert.match(texto(), /Tap Add a passkey, then Create passkey/);
+    assert.match(texto(), /Use a phone or tablet/);
+    assert.match(texto(), /Tap Try again, then choose Use passkey/);
+    assert.match(texto(), /Don't remember where you signed up\?/);
+    assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);
     assert.doesNotMatch(texto(), /didn't go through/);
     assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
-    assert.match(texto(), /Get ready to be paid/);
+    const botones = [...document.querySelectorAll("button")].map((boton) => boton.textContent);
+    assert.ok(botones.includes("Try again"));
+    assert.ok(botones.includes("Copy link"));
+    assert.ok(!botones.includes("Get ready to be paid"));
 
     await fallarCon(AVISO_USDC_SIN_XLM);
     assert.match(texto(), /no test XLM for the network fee/);
@@ -402,6 +412,55 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
     assert.match(texto(), /different payout account/);
     assert.equal(document.querySelector('a[href="/?signin=1"]')?.textContent, "Sign in again");
   } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("la guía de llave de acceso copia el enlace a Cuenta y Try again repite el paso", async () => {
+  limpiarPantalla();
+  let intentos = 0;
+  let copiado: string | null = null;
+  const portapapeles = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      writeText: async (valor: string) => {
+        copiado = valor;
+      },
+    },
+  });
+  try {
+    await montar(
+      createElement(PrepararUsdc, {
+        consultar: async () => false,
+        preparar: async () => {
+          intentos += 1;
+          if (intentos === 1) throw new Error(AVISO_DISPOSITIVO);
+          return { hash: null };
+        },
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await pulsar("Get ready to be paid");
+    await pulsar("Copy link");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.equal(copiado, "http://localhost/account?add=passkey#passkey");
+    assert.match(texto(), /Link copied/);
+    await pulsar("Try again");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.equal(intentos, 2);
+    assert.match(texto(), /Payout account ready/);
+    assert.doesNotMatch(texto(), /Set up this device/);
+  } finally {
+    if (portapapeles) Object.defineProperty(navigator, "clipboard", portapapeles);
+    else delete (navigator as { clipboard?: unknown }).clipboard;
     await desmontar();
     limpiarPantalla();
   }
