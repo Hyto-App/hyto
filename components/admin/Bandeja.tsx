@@ -176,7 +176,7 @@ export function Bandeja({
 
       <section className="mt-8">
         <IndicadorActualizado activo={Boolean(proyectoId && !vista.ejemplo)} visible={reciente} />
-        <div className="hyto-tabs mt-4 flex" role="tablist" aria-label={t("bandeja.filter")}>
+        <div className="hyto-tabs hyto-tabs-fila mt-4 flex" role="tablist" aria-label={t("bandeja.filter")}>
           {filtros.map((item) => (
             <button key={item.id} type="button" role="tab" aria-selected={filtro === item.id} onClick={() => setFiltro(item.id)}>
               {item.etiqueta}
@@ -187,12 +187,9 @@ export function Bandeja({
         {vista.bandeja.length === 0 ? (
           <div className="hyto-card mt-4 px-6 py-10 text-center">
             <p className="text-lg font-semibold">{t("bandeja.nothingApprove")}</p>
-            <p className="mt-2 text-[var(--suave)]">{t("bandeja.whenPhoto")}</p>
-            {proyectoId ? (
-              <button type="button" className="hyto-btn mx-auto mt-6 max-w-xs" onClick={() => document.getElementById("invitar")?.click()}>
-                {t("bandeja.invite")}
-              </button>
-            ) : (
+            {/* On an event page the header already has Invite, so the card points to it instead of repeating it. */}
+            <p className="mt-2 text-[var(--suave)]">{t(proyectoId ? "bandeja.whenPhotoInvite" : "bandeja.whenPhoto")}</p>
+            {proyectoId ? null : (
               <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
                 {t("bandeja.create")}
               </Link>
@@ -201,7 +198,15 @@ export function Bandeja({
         ) : (
           <div className="hyto-inbox">
             <div className="grid gap-2">
-              {visibles.length === 0 ? <p className="text-sm text-[var(--suave)]">{t("bandeja.nothingView")}</p> : null}
+              {visibles.length === 0 ? (
+                <div className="hyto-card p-4">
+                  <p className="text-sm font-semibold">{t("bandeja.nothingView")}</p>
+                  <p className="mt-1 text-sm text-[var(--suave)]">{t("bandeja.nothingViewHelp")}</p>
+                  <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setFiltro("all")}>
+                    {t("bandeja.showAll")}
+                  </button>
+                </div>
+              ) : null}
               {visibles.map((tarea) => {
                 const activo = seleccion?.id === tarea.id;
                 return (

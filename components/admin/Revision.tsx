@@ -710,7 +710,7 @@ export function Revision({
                             setFallidosPedir((actual) => (actual.includes(indice) ? actual.filter((item) => item !== indice) : [...actual, indice]))
                           }
                         />
-                        <span>{punto}</span>
+                        <span>{textoVisible(punto, idioma)}</span>
                       </label>
                     </li>
                   ))}

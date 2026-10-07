@@ -40,7 +40,7 @@ test("la bienvenida muestra el primer paso y cada estado del cobro", async () =>
     await act(async () => {
       soltar(true);
     });
-    assert.match(texto(), /Ready to be paid/);
+    assert.match(texto(), /ready to be paid/);
     assert.equal(document.querySelector(".hyto-payout.is-done") !== null, true);
     assert.equal(document.querySelector("button"), null);
 

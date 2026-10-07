@@ -1,7 +1,8 @@
 "use client";
 
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
+import { textoVisible } from "@/lib/ui/etiquetas";
 
 /**
  * "Your photo must show": numbered points.
@@ -19,6 +20,7 @@ export function Checklist({
   titulo?: string;
 }) {
   const t = useTexto();
+  const idioma = useIdioma();
   const puntos = puntosDeCondicion(condicion);
   if (puntos.length === 0) return null;
   const marcado = fallidos !== null && fallidos.length > 0;
@@ -39,7 +41,7 @@ export function Checklist({
                 </span>
               )}
               <span>
-                {punto}
+                {textoVisible(punto, idioma)}
                 {falla ? <small className="hyto-punto-motivo">{t("evidencia.notInPhoto")}</small> : null}
               </span>
             </li>

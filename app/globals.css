@@ -780,6 +780,22 @@ a {
   color: var(--tinta);
 }
 
+/* Filter tabs (inbox verdicts): one line each, the row scrolls sideways instead of wrapping "Partially completed". */
+.hyto-tabs.hyto-tabs-fila {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hyto-tabs.hyto-tabs-fila::-webkit-scrollbar {
+  display: none;
+}
+
+.hyto-tabs.hyto-tabs-fila button {
+  flex: none;
+  white-space: nowrap;
+}
+
 .hyto-chips {
   gap: 8px;
   overflow-x: auto;

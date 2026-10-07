@@ -193,11 +193,12 @@ export function CrearProyecto() {
                         {t("tipos.reembolso")}
                       </button>
                     </div>
-                    <label className="sr-only" htmlFor={`tipo-${fila.clave}`}>
-                      {t("eventos.type")}
-                    </label>
+                    {/* The two buttons above are the control. This select mirrors them for forms and tests, so it is hidden from
+                        assistive tech and the tab order instead of announcing "Type" a third time. */}
                     <select
                       id={`tipo-${fila.clave}`}
+                      aria-hidden="true"
+                      tabIndex={-1}
                       value={fila.tipo}
                       onChange={(evento) => cambiar(fila.clave, { tipo: evento.target.value as TipoTarea })}
                       className="sr-only"

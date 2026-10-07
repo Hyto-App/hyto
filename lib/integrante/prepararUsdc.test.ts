@@ -309,7 +309,7 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
   limpiarPantalla();
   try {
     await montar(createElement(PrepararUsdc, { consultar: async () => true, preparar: async () => ({ hash: null }) }));
-    assert.match(texto(), /Ready to be paid/);
+    assert.match(texto(), /ready to be paid/);
     assert.equal(document.querySelector("button"), null);
 
     let resolver: (valor: { hash: string | null }) => void = () => undefined;
