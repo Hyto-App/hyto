@@ -26,6 +26,25 @@ export function idiomaDeNavegador(valor: string | null | undefined): Idioma {
   return primero === "es" || primero.startsWith("es-") ? "es" : "en";
 }
 
+/** Session language from the hyto_idioma cookie. Missing or unknown is English. */
+export function idiomaDePeticion(request: { headers: { get(name: string): string | null } }): Idioma {
+  const cookie = request.headers.get("cookie") ?? "";
+  const par = cookie
+    .split(";")
+    .map((parte) => parte.trim())
+    .find((parte) => parte.startsWith(`${COOKIE_IDIOMA}=`));
+  const crudo = par ? par.slice(COOKIE_IDIOMA.length + 1) : null;
+  let valor = crudo;
+  if (crudo) {
+    try {
+      valor = decodeURIComponent(crudo);
+    } catch {
+      valor = crudo;
+    }
+  }
+  return idiomaDe(valor);
+}
+
 export function hayCookieIdioma(cookies: string): boolean {
   return cookies.split(";").some((par) => par.trim().startsWith(`${COOKIE_IDIOMA}=`));
 }

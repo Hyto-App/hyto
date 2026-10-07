@@ -7,6 +7,7 @@ import { leerRevisionHttp } from "@/lib/api/revision";
 import { esProyectoDemo } from "@/lib/db/semilla";
 import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
+import { idiomaDePeticion } from "@/lib/ui/idioma";
 
 export async function GET(request: Request, contexto: { params: Promise<{ id: string }> }): Promise<Response> {
   return atender(request, contexto, false);
@@ -38,6 +39,6 @@ async function atender(
       return json({ aviso: AVISO_REVISION }, 403);
     }
     if (estado === "no") return json({ aviso: AVISO_REVISION }, 403);
-    return leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet);
+    return leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet, idiomaDePeticion(request));
   });
 }

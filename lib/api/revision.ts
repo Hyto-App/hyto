@@ -8,6 +8,7 @@ import { guardarRevision } from "./evidencias";
 import { conciliarPagoPendiente } from "./firma";
 import { rechazoPublico, revisionPublica } from "./tareas";
 import { leerRequisitos } from "@/lib/revision/requisitos";
+import type { Idioma } from "@/lib/ui/idioma";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
@@ -38,6 +39,7 @@ export async function leerRevisionHttp(
   tareaId: string,
   forzar = false,
   wallet = "",
+  idioma: Idioma = "en",
 ): Promise<Response> {
   try {
     const tarea = await almacen.leerTarea(tareaId);
@@ -58,7 +60,7 @@ export async function leerRevisionHttp(
       try {
         const foto = await fotos.leer(evidencia.blobId);
         const evento = await contextoParaRevision(almacen, tarea.proyectoId);
-        const resultado = await revisar(tarea, foto, { ...contextoDesdeEntorno(), evento });
+        const resultado = await revisar(tarea, foto, { ...contextoDesdeEntorno(), evento, idioma });
         await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
       } finally {
         if (reservado) liberarRevision(tareaId);
