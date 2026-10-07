@@ -2,6 +2,20 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
+## 2026-10-07
+
+### Added
+
+- Demo mode reaches Paid without a wallet (#073). On the demo event, **Lock budget** and **Approve & pay** run the same confirmations and steps as the real flow through `POST /api/revision/:id/demo` (`bloquear`, `pagar`). Lock stores a `demo-lock-…` budget reference, never a `C…` contract, and pay marks the task paid with no hash. Nothing is signed and nothing reaches Stellar or Trustless Work. Every demo sign-in undoes demo locks and payments so the flow can run again. Real sessions get 404.
+- Cloud sessions: `.claude/hooks/session-start.sh` installs dependencies and builds a local, code-only Graphify map in `graphify-out/` (not committed).
+
+### Fixed
+
+- `npm run db:migrar` split statements on ";" before removing "--" comments, so a ";" inside a comment broke the next statement. Comments are removed first, and a test checks that every migration statement can run twice.
+- Google sign-in (#069 A.3). A returning user no longer runs the sample seed on `POST /api/sesion` (2 queries instead of 13 to 31), and the Cavos vault starts loading before the code exchange. Timeline and the remaining causes: `docs/auditorias/2026-10-07-google-signin-timing.md`.
+- UX walkthrough (#052): task requirements and the send-back checklist go through `textoVisible`, the inbox filter empty state explains itself and offers "Show all submissions", inbox verdict tabs stay on one line and scroll, event tabs show a loading skeleton, the account state reads "You are ready to be paid", and an empty event shows the invite button once.
+- Double lock (#046). The escrow balance read can lag after a successful fund and show zero, so a reload offered "Finish locking" again. A confirmed fund is now stored per task and contract (`fondeos_escrow`, `drizzle/0008_fondeos_escrow.sql`), also when the indexer lags or testnet RPC confirmed the submit. `GET /api/revision/:id` returns it as `hashFondeo`. With the marker, a zero or unknown balance only shows "Checking the locked budget" and **Check again**, and `POST /api/firma` and `/api/firma/enviar` answer 409 `HYTO_ESCROW_ALREADY_FUNDED` for a second fund. Until someone applies 0008 (`npm run db:migrar`), the marker is not stored and the screen behaves as before. Demo mode is unchanged.
+
 ## 2026-10-05
 
 ### Fixed
