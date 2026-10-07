@@ -14,6 +14,7 @@ import {
   type IntencionIngreso,
 } from "@/lib/auth/intencion";
 import {
+  avisoDeErrorUrl,
   destinoTrasIngreso,
   guardarRetorno,
   leerRetorno,
@@ -187,6 +188,16 @@ export function Entrar({
       setPedirIngreso(true);
       setPestana("signin");
       setFase("correo");
+    }
+    const errorUrl = atiendeUrl ? avisoDeErrorUrl(params.get("error")) : null;
+    if (errorUrl) {
+      setAviso(errorUrl);
+      setAlertaRegreso(true);
+      setPedirIngreso(true);
+      setFase("correo");
+      params.delete("error");
+      const consulta = params.toString();
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}${consulta ? `?${consulta}` : ""}`);
     }
     if (atiendeUrl) {
       try {

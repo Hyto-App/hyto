@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AVISO_BASE_SESION } from "../auth/errores";
 import {
   CLAVE_RETORNO,
   DESTINO_TRAS_INGRESO,
+  avisoDeErrorUrl,
   destinoTrasIngreso,
   guardarRetorno,
   leerRetorno,

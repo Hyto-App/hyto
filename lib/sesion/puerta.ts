@@ -6,7 +6,7 @@ import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { sesionEsDemo } from "./demo";
 import { urlSignin } from "./retorno";
-import { leerSesionActual } from "./vista";
+import { leerSesionConEstado } from "./vista";
 
 /** A prefetch often arrives without the session cookie. Redirecting it would send the person to sign-in. */
 export async function esPrefetch(): Promise<boolean> {
@@ -24,10 +24,10 @@ export async function esPrefetch(): Promise<boolean> {
 }
 
 export async function exigirPagina(retorno?: string): Promise<SesionFila> {
-  const sesion = await leerSesionActual();
+  const { sesion, error } = await leerSesionConEstado();
   if (!sesion) {
     if (await esPrefetch()) notFound();
-    redirect(urlSignin(retorno));
+    redirect(urlSignin(retorno, error));
   }
   return sesion;
 }

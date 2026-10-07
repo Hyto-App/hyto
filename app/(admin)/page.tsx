@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Entrar } from "@/components/admin/Entrar";
 import { demoHabilitado } from "@/lib/sesion/demo";
-import { leerSesionActual } from "@/lib/sesion/vista";
+import { urlSignin } from "@/lib/sesion/retorno";
+import { leerSesionConEstado } from "@/lib/sesion/vista";
 import { discurso } from "@/lib/ui/discurso";
 import { redirect } from "next/navigation";
 
@@ -19,8 +20,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PaginaInicio() {
-  const sesion = await leerSesionActual();
+export default async function PaginaInicio({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { sesion, error } = await leerSesionConEstado();
   if (sesion) redirect("/mis-tareas");
+  if (error) {
+    const params = await searchParams;
+    if (params.error !== error) redirect(urlSignin(typeof params.next === "string" ? params.next : null, error));
+  }
   return <Entrar abrirLogin demoHabilitado={demoHabilitado()} />;
 }

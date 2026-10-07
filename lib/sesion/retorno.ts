@@ -1,3 +1,5 @@
+import { AVISO_BASE_SESION } from "@/lib/auth/errores";
+
 /** Default signed-in landing when no safe return path was preserved. */
 /** Same default as Google sign-in: `/` then redirects signed-in users to Events. */
 export const DESTINO_TRAS_INGRESO = "/";
@@ -17,11 +19,24 @@ export function rutaRetornoSegura(valor: unknown): string | null {
   return ruta;
 }
 
-/** Sign-in URL that optionally carries a validated return path. */
-export function urlSignin(retorno?: string | null): string {
+/** Codes the sign-in URL may carry in `?error=`. Only a code travels, never the server error text. */
+export type ErrorSesionUrl = "base";
+
+const AVISOS_ERROR_URL: Record<ErrorSesionUrl, string> = {
+  base: AVISO_BASE_SESION,
+};
+
+export function avisoDeErrorUrl(valor: unknown): string | null {
+  if (typeof valor !== "string" || !Object.prototype.hasOwnProperty.call(AVISOS_ERROR_URL, valor)) return null;
+  return AVISOS_ERROR_URL[valor as ErrorSesionUrl];
+}
+
+/** Sign-in URL that optionally carries a validated return path and an error code. */
+export function urlSignin(retorno?: string | null, error?: ErrorSesionUrl | null): string {
   const next = rutaRetornoSegura(retorno);
-  if (!next) return "/?signin=1";
-  return `/?signin=1&next=${encodeURIComponent(next)}`;
+  const sufijo = error && avisoDeErrorUrl(error) ? `&error=${error}` : "";
+  if (!next) return `/?signin=1${sufijo}`;
+  return `/?signin=1&next=${encodeURIComponent(next)}${sufijo}`;
 }
 
 export function destinoTrasIngreso(preferido?: string | null, fallback: string = DESTINO_TRAS_INGRESO): string {

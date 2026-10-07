@@ -11,6 +11,8 @@ export const AVISO_CONFIG = "Sign-in isn't set up yet.";
 export const AVISO_CORREO = "Enter a valid email.";
 export const AVISO_DEMO = "That demo email does not receive messages. Use a real email or sign in with Google.";
 export const AVISO_SIN_CUENTA = "No Hyto account for this sign-in. Sign up first.";
+/** The session cookie is there but the database did not answer. Shown from `?error=base`. */
+export const AVISO_BASE_SESION = "We couldn't reach Hyto's database, so we couldn't open your session. Try again in a moment.";
 export const AVISO_SPAM = "The code arrives by email. Check spam too.";
 export const AVISO_SPAM_ENLACE = "The link arrives by email. Check spam too.";
 /** Cavos enclave recovery accepts only the one sign-in method set for the app; an email code never works. */
