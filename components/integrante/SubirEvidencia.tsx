@@ -172,7 +172,13 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFase("foto");
   }
 
+  function pestanaSirve(): boolean {
+    if (!tarea) return false;
+    return pestana === "recibo" ? tarea.tipo === "reembolso" : tarea.tipo === "trabajo";
+  }
+
   async function abrirCamara() {
+    if (!pestanaSirve()) return;
     setError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
       capturaRef.current?.click();
@@ -233,7 +239,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   function elegirArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
-    if (!archivo || pestana !== "recibo") return;
+    if (!archivo || pestana !== "recibo" || !pestanaSirve()) return;
     if (!archivoPermitido(archivo)) {
       setError("Choose a PDF, JPEG, PNG, or WebP file.");
       return;
@@ -244,7 +250,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   function elegirCaptura(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
     evento.target.value = "";
-    if (!archivo || pestana !== "tarea") return;
+    if (!archivo || pestana !== "tarea" || !pestanaSirve()) return;
     if (!esFotoDeCamara(archivo)) {
       setError("Take the photo with the camera.");
       return;
@@ -258,7 +264,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   function soltarArchivo(evento: React.DragEvent<HTMLButtonElement>) {
     evento.preventDefault();
-    if (pestana !== "recibo") return;
+    if (pestana !== "recibo" || !pestanaSirve()) return;
     const archivo = evento.dataTransfer.files?.[0];
     if (!archivo) return;
     if (!archivoPermitido(archivo)) {
@@ -269,7 +275,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   }
 
   async function enviar() {
-    if (!tarea || !foto || enviandoRef.current) return;
+    if (!tarea || !foto || enviandoRef.current || !pestanaSirve()) return;
     enviandoRef.current = true;
     setFase("enviando");
     setError(null);
@@ -376,6 +382,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const mostrarRevision = tarea.tipo === "reembolso" && evidencia?.monto && evidencia.fecha;
   const reembolso = tarea.tipo === "reembolso";
   const recibo = pestana === "recibo";
+  const coincide = recibo === reembolso;
   const idRecibo = `${baseId}-recibo`;
   const idTarea = `${baseId}-tarea`;
   const idPanel = `${baseId}-panel`;
@@ -389,7 +396,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           : recibo
             ? t("evidencia.chooseFile")
             : t("evidencia.openCamera");
-  const pista = fase === "inicio" ? (recibo ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
+  const pista = coincide && fase === "inicio" ? (recibo ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
 
   const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
@@ -576,7 +583,14 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         <div className="hyto-tarea-col">
           <PanelMile />
           <div className="hyto-visor">
-            {fotoUrl && esPdf ? (
+            {!coincide ? (
+              <div className="hyto-visor-vacio">
+                <p role="status">{recibo ? t("evidencia.mismatchReceipt") : t("evidencia.mismatchTask")}</p>
+                <button type="button" className="hyto-btn-line" onClick={() => elegirPestana(reembolso ? "recibo" : "tarea")}>
+                  {reembolso ? t("evidencia.backToReceipt") : t("evidencia.backToTask")}
+                </button>
+              </div>
+            ) : fotoUrl && esPdf ? (
               <div className="hyto-visor-vacio">{nombreArchivo ?? t("evidencia.invoicePdf")}</div>
             ) : fotoUrl ? (
               vistaFoto
@@ -592,7 +606,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                 ) : null}
               </div>
             )}
-            {fase === "foto" ? (
+            {coincide && fase === "foto" ? (
               <>
                 <span className="hyto-visor-pill">{esPdf ? (nombreArchivo ?? t("evidencia.invoicePdf")) : t("evidencia.onePhoto")}</span>
                 <button type="button" onClick={tomarOtra} className="hyto-visor-otra">
@@ -601,7 +615,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               </>
             ) : null}
           </div>
-          {recibo && (fase === "inicio" || fase === "foto") ? (
+          {coincide && recibo && (fase === "inicio" || fase === "foto") ? (
             <button
               type="button"
               onClick={() => archivoRef.current?.click()}
@@ -612,7 +626,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {t("evidencia.choosePdf")}
             </button>
           ) : null}
-          {!recibo && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
+          {coincide && !recibo && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
         </div>
         <div className="hyto-tarea-col">
           <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
@@ -637,14 +651,16 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <BotonPrincipal
               type="button"
               className="hyto-btn-grande"
+              disabled={!coincide}
               onClick={() => {
+                if (!coincide) return;
                 if (fase === "camara") tomarFoto();
                 else if (fase === "foto") void enviar();
                 else if (recibo) archivoRef.current?.click();
                 else void abrirCamara();
               }}
             >
-              {accion}
+              {coincide ? accion : t("evidencia.send")}
             </BotonPrincipal>
             {pista ? <p className="hyto-pista">{pista}</p> : null}
           </div>
@@ -652,7 +668,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         </div>
       </div>
 
-      {recibo ? (
+      {coincide && recibo ? (
         <input
           ref={archivoRef}
           type="file"
@@ -662,7 +678,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           className="sr-only"
           onChange={elegirArchivo}
         />
-      ) : conCaptura ? (
+      ) : coincide && conCaptura ? (
         <input
           ref={capturaRef}
           type="file"
