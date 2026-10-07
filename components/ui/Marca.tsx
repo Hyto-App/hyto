@@ -83,7 +83,7 @@ export function iniciales(nombre: string): string {
 function aplicarTema(tema: "dark" | "light") {
   document.documentElement.dataset.theme = tema;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", tema === "dark" ? "#08090C" : "#F4F5F0");
+  if (meta) meta.setAttribute("content", tema === "dark" ? "#0E1024" : "#F5F6FA");
 }
 
 export function Tema() {
@@ -137,12 +137,23 @@ const TRAZOS: Record<string, string> = {
   projects: "M4 5h12v12H4zM4 8h12",
   tasks: "M5 6h10M5 10h10M5 14h6",
   wallet: "M3 7h14v10H3zM3 10h14M13 13h2",
+  plus: "M10 4v12M4 10h12",
+  calendar: "M4 5.5h12V16H4zM4 9h12M7.5 3.5v3M12.5 3.5v3",
+  clock: "M10 4.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM10 7v3.2l2 1.3",
+  camera: "M3.5 7h2.6l1.2-1.8h5.4L13.9 7h2.6v8.5h-13zM10 8.6a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Z",
 };
 
-export function Icono({ nombre }: { nombre: keyof typeof TRAZOS }) {
+export function Icono({ nombre, tamano = 18, lleno = false }: { nombre: keyof typeof TRAZOS; tamano?: number; lleno?: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path d={TRAZOS[nombre]} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={tamano} height={tamano} viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d={TRAZOS[nombre]}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...(lleno ? { fill: "currentColor", fillOpacity: 0.22 } : {})}
+      />
     </svg>
   );
 }

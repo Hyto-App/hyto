@@ -2,9 +2,9 @@ import { esTiempo, FalloRevision, type CodigoFalloRevision } from "./fallo";
 
 export const INTENTOS_REVISION = 3;
 export const PAUSAS_REINTENTO_MS = [200, 500] as const;
-export const PRESUPUESTO_REVISION_MS = 20_000;
-export const TOPE_GROQ_MS = 12_000;
-export const TOPE_LAYA_MS = 8_000;
+export const PRESUPUESTO_REVISION_MS = 45_000;
+export const TOPE_GROQ_MS = 20_000;
+export const TOPE_LAYA_MS = 14_000;
 
 const MIN_INTENTO_MS = 700;
 

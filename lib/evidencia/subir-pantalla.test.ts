@@ -2,6 +2,7 @@ import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
 import { File as ArchivoNode } from "node:buffer";
 import test from "node:test";
+import sharp from "sharp";
 import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
@@ -12,7 +13,21 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async () => {
+function pestanas(): HTMLButtonElement[] {
+  return [...document.querySelectorAll('[role="tab"]')].filter((nodo) => nodo instanceof HTMLButtonElement);
+}
+
+function entradaArchivo(): HTMLInputElement | null {
+  const entrada = document.querySelector('input[type="file"]');
+  return entrada instanceof HTMLInputElement ? entrada : null;
+}
+
+function envioDeshabilitado(): boolean {
+  const envio = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Send evidence");
+  return envio instanceof HTMLButtonElement && envio.disabled;
+}
+
+test("las pestañas Recibo y Tarea muestran una sola carga", async () => {
   const original = globalThis.fetch;
   const fetchImpl: typeof fetch = async (input) => {
     const url = String(input);
@@ -51,9 +66,39 @@ test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async (
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
+    const lista = document.querySelector('[role="tablist"]');
+    assert.equal(lista?.getAttribute("aria-label"), "What you are sending");
+    assert.deepEqual(
+      pestanas().map((tab) => tab.textContent),
+      ["Receipt", "Task"],
+    );
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "false");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1);
+    assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), pestanas()[1]?.id);
     assert.match(texto(), /Open camera/);
-    assert.doesNotMatch(texto(), /Choose a photo/);
     assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /This task needs a camera photo/);
+    assert.equal(entradaArchivo()?.accept.includes("pdf") ?? false, false);
+
+    await pulsar("Receipt");
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "false");
+    assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), pestanas()[0]?.id);
+    assert.match(texto(), /This task needs a camera photo\. Go back to the Task tab\./);
+    assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /Open camera/);
+    assert.equal(entradaArchivo(), null);
+    const envioTrabajo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Send evidence");
+    assert.ok(envioTrabajo instanceof HTMLButtonElement);
+    assert.equal(envioTrabajo.disabled, true);
+
+    await pulsar("Go back to Task");
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /This task needs a camera photo/);
+    assert.match(texto(), /Open camera/);
+    assert.equal(envioDeshabilitado(), false);
+
     await desmontar();
     limpiarPantalla();
 
@@ -61,9 +106,51 @@ test("un trabajo solo ofrece la cámara y un reembolso solo el archivo", async (
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
     assert.match(texto(), /Choose a file/);
-    assert.match(texto(), /Choose a PDF or image/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
     assert.doesNotMatch(texto(), /Open camera/);
+    assert.doesNotMatch(texto(), /This task needs a receipt/);
+    const recibo = entradaArchivo();
+    assert.ok(recibo);
+    assert.match(recibo.accept, /pdf/);
+
+    const malo = new ArchivoNode(["no"], "notas.zip", { type: "application/zip" });
+    Object.defineProperty(recibo, "files", { configurable: true, value: [malo] });
+    await act(async () => {
+      recibo.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    assert.match(texto(), /Choose a PDF, HTML, text, JPEG, PNG, or WebP file/);
+    assert.doesNotMatch(texto(), /notas.zip/);
+
+    const pdf = new ArchivoNode(["%PDF-1.4"], "recibo.pdf", { type: "application/pdf" });
+    const entradaPdf = entradaArchivo();
+    assert.ok(entradaPdf);
+    Object.defineProperty(entradaPdf, "files", { configurable: true, value: [pdf] });
+    await act(async () => {
+      entradaPdf.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    assert.match(texto(), /recibo\.pdf/);
+    assert.equal(envioDeshabilitado(), false);
+
+    const tabRecibo = pestanas()[0];
+    assert.ok(tabRecibo);
+    await act(async () => {
+      tabRecibo.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    assert.equal(pestanas()[1]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /recibo\.pdf/);
+    assert.doesNotMatch(texto(), /Choose a PDF/);
+    assert.doesNotMatch(texto(), /Open camera/);
+    assert.match(texto(), /This task needs a receipt as a PDF or image\. Go back to the Receipt tab\./);
+    assert.equal(entradaArchivo(), null);
+    assert.equal(envioDeshabilitado(), true);
+    assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1);
+
+    await pulsar("Go back to Receipt");
+    assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(texto(), /This task needs a receipt/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
   } finally {
     globalThis.fetch = original;
     await desmontar();
@@ -95,6 +182,7 @@ async function elegirRecibo(): Promise<void> {
   Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
   await act(async () => {
     entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
   });
 }
 
@@ -112,9 +200,94 @@ async function subirConRespuesta(respuesta: () => Response): Promise<void> {
   await esperar();
   await elegirRecibo();
   assert.match(texto(), /Send/);
-  await pulsar("Send");
+  await pulsar("Send evidence");
   await esperar();
 }
+
+test("un jpg vacío, un texto renombrado y una imagen de 1×1 dejan Enviar apagado", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode([], "empty.jpg", { type: "image/jpeg" }));
+    const enviar = botonEnvio();
+    assert.equal(enviar.disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1\./);
+    assert.match(texto(), /empty \(0 bytes\)|está vacío|0 bytes/);
+
+    await soltarEnInput(new ArchivoNode(["not a photo"], "fake_image.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /Renaming a text file|no lo convierte en foto/);
+
+    const minuscula = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    })
+      .jpeg()
+      .toBuffer();
+    await soltarEnInput(new ArchivoNode([minuscula], "tiny.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1×1/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+function botonEnvio(): HTMLButtonElement {
+  const encontrado = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
+  if (!(encontrado instanceof HTMLButtonElement)) throw new Error("Sin botón Send evidence.");
+  return encontrado;
+}
+
+async function soltarEnInput(archivo: ArchivoNode): Promise<void> {
+  const entrada = document.querySelector('input[type="file"]');
+  if (!(entrada instanceof window.HTMLInputElement)) throw new Error("Sin selector de archivo.");
+  Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
+  await act(async () => {
+    entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
+  });
+}
+
+test("un txt y un html de reembolso dejan Enviar encendido", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode(["Team meal receipt"], "nota.txt", { type: "text/plain" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.txt/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+
+    await soltarEnInput(new ArchivoNode(["<p>Receipt</p>"], "nota.html", { type: "text/html" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.html/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.equal(document.querySelector('input[type="file"]')?.getAttribute("accept")?.includes("text/plain"), true);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
 
 test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent", async () => {
   const original = globalThis.fetch;
@@ -150,13 +323,14 @@ test("un 201 con aviso de cobro no se muestra como envío limpio", async () => {
   }
 });
 
-test("un 201 sin aviso sí dice Evidence sent", async () => {
+test("un 201 sin aviso sí dice que la foto llegó", async () => {
   const original = globalThis.fetch;
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" } }, 201));
-    assert.match(texto(), /Evidence sent/);
+    assert.match(texto(), /Your file arrived/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /action needed/);
-    assert.match(texto(), /The organizer can review it now/);
+    assert.match(texto(), /as soon as the organizer approves it/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

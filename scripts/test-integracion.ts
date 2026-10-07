@@ -37,6 +37,7 @@ async function main(): Promise<void> {
           DATABASE_URL: url,
           HYTO_TEST_DATABASE_URL: url,
           GROQ_API_KEY: "",
+          GEMINI_API_KEY: "",
           LAYA_URL: "",
           LAYA_API_KEY: "",
           TRUSTLESS_API_KEY: "",

@@ -1,5 +1,6 @@
 import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
+import { POLITICA_INACTIVA } from "./enclave";
 import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
@@ -46,6 +47,7 @@ async function llegarAlCodigo(
   await montar(
     createElement(Entrar, {
       crear: async () => ({ sendOtp: async () => undefined }),
+      politica: async () => POLITICA_INACTIVA,
       confirmarCodigo,
       esperaMinima: 0,
     }),
@@ -79,6 +81,7 @@ test("tras el código con next=/join/CODE vuelve al join y no a Mis tareas", asy
     await montar(
       createElement(Entrar, {
         crear: async () => ({ sendOtp: async () => undefined }),
+        politica: async () => POLITICA_INACTIVA,
         confirmarCodigo: async () => ({ aviso: null, direccion: DIRECCION, guardada: true }),
         esperaMinima: 0,
       }),

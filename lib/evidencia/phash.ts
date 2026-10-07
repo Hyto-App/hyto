@@ -1,6 +1,10 @@
 import sharp from "sharp";
 
-export const UMBRAL_COPIA = 8;
+/**
+ * Hamming distance on a 64-bit dHash. 8 treated two different receipt layouts as the same photo.
+ * 3 only matches a true re-upload of the same image (identical pixels, or a tiny recompression).
+ */
+export const UMBRAL_COPIA = 3;
 
 export async function phashDe(bytes: Uint8Array): Promise<string> {
   const { data, info } = await sharp(Buffer.from(bytes))

@@ -11,6 +11,25 @@ export type PrioridadTarea = "normal" | "high";
 
 export type DificultadTarea = "easy" | "medium" | "hard";
 
+export type OrigenRechazo = "mile" | "organizador";
+
+/** One point of the #058 contract. At most 3. `cumple` stays null until a review says so. */
+export type RequisitoRevision = {
+  id: string;
+  texto: string;
+  cumple: boolean | null;
+  motivo: string | null;
+};
+
+/** Organizer (or Mile) send-back. Stored later by the backend; the client only reads it. */
+export type Rechazo = {
+  nota: string | null;
+  /** Ids of the failed requirements (`requisitos[].id`, e.g. "r1"), not list positions. */
+  fallidos: string[];
+  en: string | null;
+  origen: OrigenRechazo | null;
+};
+
 export type Tarea = {
   id: string;
   proyectoId: string;
@@ -26,10 +45,30 @@ export type Tarea = {
   dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
+  /** True when the latest review was stored as a failure. The score stays hidden. */
+  revisionFallida?: boolean;
+  /** Event name from the task list, so the subtitle does not wait on a second request. */
+  evento?: string | null;
+  /** Reviewer notes. The raw model text is not included. */
+  notas?: { id: string; texto: string; explicacion: string; severidad: "good" | "warning" | "problem"; preguntas: string[] }[];
+  /** Deadline. Optional until the backend sends it (spec §9); only shown when present. */
+  venceEn?: string | null;
+  /** True only while the task is still pending and the review sent it back. */
+  rechazada?: boolean;
+  rechazo?: Rechazo | null;
+  /** How many photos were sent. Absent or 0 means the API has not counted them yet. */
+  intentos?: number;
+  ultimaEvidenciaId?: string | null;
+  organizador?: { nombre: string } | null;
   hashPago?: string | null;
   etapa?: EtapaTarea | null;
-  /** ISO-8601 instant the latest photo was sent (`enviada_en`). */
+  requisitos?: RequisitoRevision[];
+  /** Confirmed reimbursement amount, when the API sends one. */
+  montoPagado?: string | null;
+  /** ISO-8601 instant the latest file was sent (`enviada_en`). */
   enviadaEn?: string | null;
+  /** MIME type of the latest file, when the task list sends it. */
+  tipoArchivo?: string | null;
 };
 
 export type Evidencia = {

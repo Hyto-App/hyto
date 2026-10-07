@@ -15,6 +15,44 @@ const ROL: Record<Exclude<Rol, null>, Clave> = {
   volunteer: "eventos.volunteer",
 };
 
+const CLAVE_BIENVENIDA = "hyto-bienvenida-oculta";
+
+/** The welcome card goes after the page head and can be hidden. The choice is kept in this browser only. */
+function BienvenidaColapsable() {
+  const t = useTexto();
+  const [oculta, setOculta] = useState(false);
+
+  useEffect(() => {
+    try {
+      setOculta(window.localStorage.getItem(CLAVE_BIENVENIDA) === "1");
+    } catch {
+      // Storage can be blocked. The card then shows every time.
+    }
+  }, []);
+
+  function ocultar() {
+    setOculta(true);
+    try {
+      window.localStorage.setItem(CLAVE_BIENVENIDA, "1");
+    } catch {
+      // Not saved. It comes back next visit.
+    }
+  }
+
+  if (oculta) return null;
+  return (
+    <div className="mt-6">
+      <Bienvenida
+        accion={
+          <button type="button" onClick={ocultar}>
+            {t("tareas.hideWelcome")}
+          </button>
+        }
+      />
+    </div>
+  );
+}
+
 export function ListaEventos() {
   const t = useTexto();
   const claro = useClaro();
@@ -53,9 +91,20 @@ export function ListaEventos() {
 
   return (
     <main className="hyto-page">
-      <Bienvenida />
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="hyto-h1">{t("eventos.title")}</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+            {t("eventos.create")}
+          </Link>
+          <Link href="/join" className="hyto-btn-line is-inline px-5">
+            {t("eventos.joinCode")}
+          </Link>
+        </div>
+      </header>
+      <BienvenidaColapsable />
       {!eventos ? (
-        <div className="hyto-skel" aria-busy="true">
+        <div className="hyto-skel mt-6" aria-busy="true">
           <i />
           <span>
             <i />
@@ -64,17 +113,6 @@ export function ListaEventos() {
         </div>
       ) : (
         <>
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="hyto-title">{t("eventos.title")}</h1>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-                {t("eventos.create")}
-              </Link>
-              <Link href="/join" className="hyto-btn-line is-inline px-5">
-                {t("eventos.joinCode")}
-              </Link>
-            </div>
-          </header>
           {error ? (
             <div className="hyto-card mt-6 px-6 py-10">
               <p role="alert" className="text-lg font-semibold">

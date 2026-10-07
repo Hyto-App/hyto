@@ -1,5 +1,6 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
+import { AVISO_SIN_RESPALDO, esMetodoRecuperacion, esSinRespaldo } from "@/lib/auth/errores";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
 
 export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
@@ -269,6 +270,10 @@ export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  // Enclave recovery: this browser lost the key and the fresh sign-in proof is gone. A new sign-in
+  // brings one, and the vault restores the key with it.
+  if (esMetodoRecuperacion(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);
+  if (esSinRespaldo(textoError)) return new ErrorFirmaCliente(AVISO_SIN_RESPALDO);
   if (esPasskeyAjena(textoError)) return new ErrorFirmaCliente(AVISO_PASSKEY);
   if (esDispositivo(textoError)) return new ErrorFirmaCliente(AVISO_DISPOSITIVO);
   if (/demo/i.test(textoError) && /firma|desactiv|signature|disabled/i.test(textoError)) {

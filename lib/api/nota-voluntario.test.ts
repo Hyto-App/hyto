@@ -63,6 +63,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   assert.ok(stand);
   assert.equal(stand.nota, 64);
   assert.equal(stand.veredicto, "parcial");
+  assert.equal(stand.revisionFallida, false);
   assert.equal(stand.hashPago, null);
   assert.equal("contratoEscrow" in stand, true);
   assert.equal(comida?.nota, 90);
@@ -80,24 +81,30 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "enviadaEn",
     "estado",
     "etapa",
+    "evento",
     "hashPago",
     "id",
     "intentos",
     "miembroId",
     "monto",
     "nota",
+    "notas",
     "prioridad",
     "proyectoId",
     "rechazada",
     "rechazo",
     "requisitos",
     "revision",
+    "revisionFallida",
     "tipo",
+    "tipoArchivo",
     "titulo",
     "tope",
     "veredicto",
     "walletCobro",
   ]);
+  assert.equal(stand.evento, "ZEEK");
+  assert.deepEqual(stand.notas, []);
 
   const ajenas = await listarTareasHttp(almacen, { usuarioId: "voluntario-2", demo: false }, "mias");
   const deOtro = (await ajenas.json()) as { tareas: Registro[] };
@@ -115,6 +122,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const trasFallo = (await fallo.json()) as { tareas: Registro[] };
   assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.nota, null);
   assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.veredicto, null);
+  assert.equal(trasFallo.tareas.find((tarea) => tarea.id === "stand")?.revisionFallida, true);
   assert.equal(JSON.stringify(trasFallo).includes("SECRETO-LAYA"), false);
   assert.equal(JSON.stringify(trasFallo).includes("tiempo"), false);
 });
@@ -148,11 +156,14 @@ type Registro = {
   id: string;
   nota?: number | null;
   veredicto?: string | null;
+  revisionFallida?: boolean;
   hashPago?: string | null;
   contratoEscrow?: string | null;
   origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
+  evento?: string | null;
+  notas?: unknown[];
 };
 
 function fila(parcial: Partial<VeredictoFila> & Pick<VeredictoFila, "origen" | "score">): VeredictoFila {

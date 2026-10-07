@@ -1,10 +1,10 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { tareasEjemplo } from "./ejemplos";
-import type { EstadoTarea, EtapaTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
+import { leerCamposRevision } from "./revision";
+import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
 const ESTADOS: EstadoTarea[] = ["pendiente", "en revisión", "pagado"];
-const ETAPAS: EtapaTarea[] = ["en_revision", "enviada_organizador", "aprobada", "rechazada"];
 const TIPOS: TipoTarea[] = ["trabajo", "reembolso"];
 
 export type FiltroTareas = {
@@ -112,9 +112,11 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
-    // Computed so the schema scan does not treat this read as a database write.
-    ["hashPago"]: texto(crudo.hashPago),
-    etapa: etapaCliente(crudo.etapa),
+    revisionFallida: crudo.revisionFallida === true,
+    tipoArchivo: texto(crudo.tipoArchivo),
+    evento: texto(crudo.evento),
+    notas: notasCliente(crudo.notas),
+    ...leerCamposRevision(crudo, estado),
     enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
   };
 }
@@ -129,8 +131,21 @@ function veredictoCliente(valor: unknown): Veredicto | null {
   return null;
 }
 
-function etapaCliente(valor: unknown): EtapaTarea | null {
-  return ETAPAS.includes(valor as EtapaTarea) ? (valor as EtapaTarea) : null;
+function notasCliente(valor: unknown): Tarea["notas"] {
+  if (!Array.isArray(valor)) return [];
+  const notas: NonNullable<Tarea["notas"]> = [];
+  for (const item of valor) {
+    if (!item || typeof item !== "object") continue;
+    const crudo = item as Record<string, unknown>;
+    const id = texto(crudo.id);
+    const etiqueta = texto(crudo.texto);
+    const explicacion = texto(crudo.explicacion) ?? "";
+    const severidad = crudo.severidad === "good" || crudo.severidad === "warning" || crudo.severidad === "problem" ? crudo.severidad : null;
+    const preguntas = Array.isArray(crudo.preguntas) ? crudo.preguntas.filter((item): item is string => typeof item === "string") : [];
+    if (!id || !etiqueta || !severidad) continue;
+    notas.push({ id, texto: etiqueta, explicacion, severidad, preguntas });
+  }
+  return notas;
 }
 
 function fechaCliente(valor: unknown): string | null {
@@ -205,19 +220,26 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
   if (filtro.miembroId) params.set("miembro", filtro.miembroId);
   if (filtro.wallet) params.set("wallet", filtro.wallet);
 
-  try {
-    const respuesta = await pedir(`${base}/api/tareas?${params.toString()}`, { method: "GET" }, fetchImpl);
-    if (!respuesta.ok) throw new Error(String(respuesta.status));
-    const tareas = listaDesdeJson(await leerJson(respuesta));
-    if (!tareas) throw new Error("forma");
-    return { tareas: filtrarTareas(tareas, filtro), ejemplo: false, error: null };
-  } catch {
-    if (opciones.muestra) {
-      const tareas = filtrarTareas(tareasEjemplo(), filtro);
-      return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+  for (let intento = 0; intento < 3; intento += 1) {
+    try {
+      const respuesta = await pedir(
+        `${base}/api/tareas?${params.toString()}`,
+        { method: "GET", cache: "no-store" },
+        fetchImpl,
+      );
+      if (!respuesta.ok) throw new Error(String(respuesta.status));
+      const tareas = listaDesdeJson(await leerJson(respuesta));
+      if (!tareas) throw new Error("forma");
+      return { tareas: filtrarTareas(tareas, filtro), ejemplo: false, error: null };
+    } catch {
+      // A deploy can answer once before the new session is visible. Try again before giving up.
     }
-    return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
   }
+  if (opciones.muestra) {
+    const tareas = filtrarTareas(tareasEjemplo(), filtro);
+    return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+  }
+  return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
 }
 
 export async function leerTarea(

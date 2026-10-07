@@ -8,10 +8,12 @@ import { evaluarFrescura, fechaExif } from "@/lib/evidencia/frescura";
 import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
-import { esPdf, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
+import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
+import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
+import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
+import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
-import type { ResultadoRevision } from "@/lib/revision/armar";
 import { maxIntentosMile, mileRequisitosActivo } from "@/lib/revision/requisitos-bandera";
 import { leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisitos";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
@@ -21,7 +23,6 @@ import { accesoEvidencia, type Visor } from "./alcance";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 
-const MAX_BYTES = 8_000_000;
 const PLAZO_MS = 2800;
 
 export type ActorEvidencia = {
@@ -97,6 +98,7 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
         "content-type": tipoDeFoto(foto.tipo, foto.bytes),
         "cache-control": "private, max-age=3600",
         "content-disposition": disposicionDe(foto.tipo, foto.bytes),
+        "x-content-type-options": "nosniff",
       },
     });
   } catch {
@@ -142,7 +144,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   const tareaId = texto(form.get("tareaId"));
   const foto = form.get("foto");
   if (!tareaId || !(foto instanceof Blob)) return json({ aviso: "The task and the photo are missing." }, 400);
-  if (foto.size > MAX_BYTES) return json({ aviso: "The file is too large." }, 413);
+  if (foto.size <= 0) return json({ aviso: avisoArchivo("vacio") }, 400);
+  if (foto.size > MAX_BYTES_ARCHIVO) return json({ aviso: avisoArchivo("grande") }, 413);
 
   try {
     await asegurarSemilla(deps.almacen);
@@ -168,13 +171,23 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
-    const tipo = tipoPorBytes(bytes);
-    if (!tipo) {
-      return json(
-        { aviso: tarea.tipo === "trabajo" ? "Take the photo with the camera." : "Choose a PDF, JPEG, PNG, or WebP file." },
-        400,
-      );
+    // Same bytes are a duplicate before any image decode or AI review, so the 409 does not wait on Mile.
+    if (!(await deps.almacen.listaParaAntifraude())) {
+      return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
     }
+    const sha256 = sha256De(bytes);
+    const previa = await deps.almacen.evidenciaPorSha256(sha256);
+    const veredictoPrevio = previa && previa.tareaId === tareaId ? await deps.almacen.veredictoDe(previa.id) : null;
+    const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
+    if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
+
+    const validado = validarBytes(bytes, { tipo: foto.type, nombre: nombreDeArchivo(foto) });
+    if (!validado.ok) {
+      const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
+      if (camara) return json({ aviso: "Take the photo with the camera." }, 400);
+      return json({ aviso: avisoArchivo(validado.motivo) }, validado.motivo === "grande" ? 413 : 400);
+    }
+    const tipo = validado.tipo;
 
     const ahora = Date.now();
     let capturadaEn: string | null = null;
@@ -197,53 +210,55 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       frescura = fresco.frescura;
     }
 
-    if (!(await deps.almacen.listaParaAntifraude())) {
-      return json({ aviso: "Evidence checks need migration 0005_evidencia_antifraude.sql before new files can be saved." }, 503);
-    }
+    // The same bytes on another task, or on this task after a real grade, were rejected above.
+    // The same bytes on this task with no row, or with an error row, are a retry: run the review again.
     const mileActivo = mileRequisitosActivo() && leerRequisitos(tarea.requisitos).length > 0;
     let fotosPrevias = 0;
     if (mileActivo) {
       fotosPrevias = await deps.almacen.contarEvidencias(tareaId);
-      if (fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
+      if (!reintento && fotosPrevias >= maxIntentosMile()) return json({ aviso: AVISO_TOPE_MILE }, 409);
     }
 
-    const sha256 = sha256De(bytes);
-    if (await deps.almacen.evidenciaPorSha256(sha256)) {
-      return json({ aviso: "This file was already submitted." }, 409);
-    }
-
-    let phash: string | null = null;
-    if (tipo !== "application/pdf") {
-      try {
-        phash = await phashDe(bytes);
-      } catch {
-        return json({ aviso: "Could not read the photo." }, 400);
+    let evidencia: EvidenciaFila;
+    if (reintento && previa) {
+      if (veredictoPrevio) await deps.almacen.borrarVeredicto(previa.id);
+      const creadaEn = new Date(ahora).toISOString();
+      await deps.almacen.actualizarEvidencia(previa.id, { creadaEn });
+      evidencia = { ...previa, creadaEn };
+    } else {
+      let phash: string | null = null;
+      if (esImagen(tipo)) {
+        try {
+          phash = await phashDe(bytes);
+        } catch {
+          return json({ aviso: "Could not read the photo." }, 400);
+        }
       }
-    }
 
-    const archivo = new Blob([bytes], { type: tipo });
-    let blobId: string;
-    try {
-      blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);
-    } catch {
-      return json({ aviso: "Could not save the file." }, 502);
+      const archivo = new Blob([bytes], { type: tipo });
+      let blobId: string;
+      try {
+        blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);
+      } catch {
+        return json({ aviso: "Could not save the file." }, 502);
+      }
+      evidencia = {
+        id: crypto.randomUUID(),
+        tareaId,
+        blobId,
+        monto: null,
+        montoConfirmado: null,
+        fecha: null,
+        creadaEn: new Date(ahora).toISOString(),
+        capturadaEn,
+        frescura,
+        sha256,
+        phash,
+        tipoArchivo: tipo,
+        motivoCopia: null,
+      };
+      await deps.almacen.crearEvidencia(evidencia);
     }
-    const evidencia: EvidenciaFila = {
-      id: crypto.randomUUID(),
-      tareaId,
-      blobId,
-      monto: null,
-      montoConfirmado: null,
-      fecha: null,
-      creadaEn: new Date(ahora).toISOString(),
-      capturadaEn,
-      frescura,
-      sha256,
-      phash,
-      tipoArchivo: tipo,
-      motivoCopia: null,
-    };
-    await deps.almacen.crearEvidencia(evidencia);
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
     if (mileActivo && (await deps.almacen.columnasRequisitos())) {
       await deps.almacen.actualizarTarea(tareaId, { rechazo: null });
@@ -252,27 +267,29 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const avisoCobro = asignado && !demo && !wallet ? AVISO_SIN_CUENTA : null;
     if (avisoCobro) console.warn(`payout account missing for task ${tareaId}`);
 
-    const cerca = phash ? await esCopiaAjena(deps.almacen, phash, evidencia.id, tareaId) : false;
+    // Receipts are judged by identical bytes only. A work photo is a copy only when it matches this task.
+    const cerca =
+      evidencia.phash && tarea.tipo !== "reembolso"
+        ? await esCopiaAjena(deps.almacen, evidencia.phash, evidencia.id, tareaId)
+        : false;
     if (cerca) await deps.almacen.actualizarEvidencia(evidencia.id, { motivoCopia: MOTIVO_COPIA });
 
-    const leida = await deps.fotos.leer(blobId);
+    const leida = await deps.fotos.leer(evidencia.blobId);
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
     const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
-    const conTope = !deps.revisarTarea && Boolean(contextoDesdeEntorno().claveGroq) && !esPdf(bytes);
+    const entorno = contextoDesdeEntorno();
+    const textual = esEvidenciaTextual({ tipo, bytes });
+    const conTope = !deps.revisarTarea && (textual ? Boolean(entorno.layaUrl) : Boolean(entorno.claveGroq));
     const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
     if (listo) {
       await guardarRevision(deps.almacen, evidencia.id, tareaId, listo);
     } else if (deps.continuar) {
-      deps.continuar(
-        trabajo
-          .then((resultado) => guardarRevision(deps.almacen, evidencia.id, tareaId, resultado))
-          .catch(() => undefined),
-      );
+      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo));
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
-    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, 201);
+    return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, reintento ? 200 : 201);
   } catch {
     return baseNoLista();
   }
@@ -348,8 +365,65 @@ function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {
   });
 }
 
+/** Hard stop for the review that continues after the upload response. A row is stored either way. */
+export const TOPE_REVISION_FONDO_MS = 55_000;
+
+export function cerrarRevisionEnFondo(
+  almacen: Almacen,
+  evidenciaId: string,
+  tareaId: string,
+  trabajo: Promise<ResultadoRevision>,
+  ms = TOPE_REVISION_FONDO_MS,
+): Promise<void> {
+  return conTopeDuro(trabajo, ms)
+    .then((resultado) => guardarRevision(almacen, evidenciaId, tareaId, resultado))
+    .catch((error: unknown) => guardarFalloDeRevision(almacen, evidenciaId, tareaId, error));
+}
+
+function veredictoDeTiempo(): ResultadoRevision {
+  const fallo = new FalloRevision("tiempo", { fuente: "revision" });
+  registrarFallo(fallo);
+  return desdeFallo(fallo);
+}
+
+function conTopeDuro(trabajo: Promise<ResultadoRevision>, ms: number): Promise<ResultadoRevision> {
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
+  const limite = new Promise<ResultadoRevision>((resolve) => {
+    temporizador = setTimeout(() => resolve(veredictoDeTiempo()), ms);
+  });
+  const vigilado = trabajo.then(
+    (valor) => valor,
+    (error: unknown) => Promise.reject(error),
+  );
+  // A rejection that arrives after the timeout already won must not surface as unhandled.
+  vigilado.catch(() => undefined);
+  return Promise.race([vigilado, limite]).finally(() => {
+    if (temporizador !== undefined) clearTimeout(temporizador);
+  });
+}
+
+async function guardarFalloDeRevision(
+  almacen: Almacen,
+  evidenciaId: string,
+  tareaId: string,
+  error: unknown,
+): Promise<void> {
+  const fallo = falloDeExcepcion(error, "revision");
+  registrarFallo(fallo);
+  try {
+    await guardarRevision(almacen, evidenciaId, tareaId, desdeFallo(fallo));
+  } catch (guardado) {
+    console.error("[revision]", guardado instanceof Error ? guardado.message : "could not store the failure");
+  }
+}
+
 function texto(valor: FormDataEntryValue | null): string {
   return typeof valor === "string" ? valor.trim() : "";
+}
+
+function nombreDeArchivo(entrada: Blob): string {
+  if (typeof File !== "undefined" && entrada instanceof File) return entrada.name;
+  return "";
 }
 
 export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
@@ -360,11 +434,15 @@ export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
   if (limpio === "image/jpg" || limpio === "image/pjpeg") return "image/jpeg";
   if (limpio.startsWith("image/")) return limpio;
   if (limpio === "application/pdf") return "application/pdf";
+  if (limpio === "text/html" || limpio === "text/plain" || limpio === "text/markdown") return "text/plain";
   return "application/octet-stream";
 }
 
 function disposicionDe(declarado: string, bytes: Uint8Array): string {
-  return tipoDeFoto(declarado, bytes) === "application/pdf" ? 'inline; filename="invoice.pdf"' : "inline";
+  const tipo = tipoDeFoto(declarado, bytes);
+  if (tipo === "application/pdf") return 'inline; filename="invoice.pdf"';
+  if (tipo === "text/plain") return 'inline; filename="evidencia.txt"';
+  return "inline";
 }
 
 function avisoToken(codigo: string): string {
@@ -380,12 +458,16 @@ function textoCampo(cuerpo: unknown): string {
   return typeof tareaId === "string" ? tareaId.trim() : "";
 }
 
-/** A later photo of the same task is a retake, not a copy of someone else's file. */
+/**
+ * Near-duplicates are only this task, and only a work photo. A receipt is judged by sha256.
+ * Another task's similar layout is not a copy. A later, different photo on this task is a retake
+ * unless the hash is within UMBRAL_COPIA of a photo already on this task.
+ */
 async function esCopiaAjena(almacen: Almacen, phash: string, evidenciaId: string, tareaId: string): Promise<boolean> {
   const cercanas = await almacen.evidenciasCercanas(phash, UMBRAL_COPIA, evidenciaId);
   for (const cerca of cercanas) {
     const fila = await almacen.leerEvidencia(cerca.id);
-    if (!fila || fila.tareaId !== tareaId) return true;
+    if (fila && fila.tareaId === tareaId) return true;
   }
   return false;
 }

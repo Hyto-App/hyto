@@ -216,6 +216,7 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     await esperar(() => rotulo("Lock budget"));
     const lecturasAntes = lecturas;
     await pulsar("Lock budget");
+    await confirmarDialogo();
     await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
     assert.match(texto(), /Budget not locked/);
     assert.equal(texto().includes("Payment failed"), false);
@@ -224,6 +225,7 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
     await pulsar("Finish locking");
+    await confirmarDialogo();
     await esperar(() => firmas.filter((item) => item.url === "/api/firma/enviar" && item.body.accion === "fondear").length === 2);
     const reintento = firmas.filter((item) => item.url === "/api/firma" && item.body.accion === "fondear").at(-1);
     assert.equal(reintento?.body.contrato, contrato);
@@ -313,6 +315,7 @@ test("lock budget shows the payout error and does not claim USDC left an escrow"
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
     await esperar(() => rotulo("Lock budget"));
     await pulsar("Lock budget");
+    await confirmarDialogo();
     await esperar(() => texto().includes("Budget not locked"));
     assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.equal(texto().includes("Payment failed"), false);
@@ -343,6 +346,7 @@ test("pay still says the payment failed when release does not go through", async
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
     await esperar(() => rotulo("Approve and pay"));
     await pulsar("Approve and pay");
+    await confirmarDialogo();
     await esperar(() => texto().includes("Payment failed"));
     assert.match(texto(), /No USDC left the escrow/);
     assert.match(texto(), /The milestone isn't ready/);
@@ -370,7 +374,7 @@ test("an error outside lock or pay does not use the payment box", async () => {
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => rotulo("Ask for another photo"));
-    await pulsar("Ask for another photo");
+    await confirmarPedir();
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("Budget not locked"), false);
@@ -420,7 +424,7 @@ test("asking for another photo removes the old verdict pill", async () => {
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => texto().includes("64% · Partially completed"));
-    await pulsar("Ask for another photo");
+    await confirmarPedir();
     await esperar(() => !texto().includes("Partially completed"));
     assert.equal(texto().includes("AI recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
@@ -430,6 +434,26 @@ test("asking for another photo removes the old verdict pill", async () => {
     await desmontar();
   }
 });
+
+/** "Ask for another photo" opens the sheet. The submit inside confirms the existing action. */
+async function confirmarPedir(): Promise<void> {
+  await pulsar("Ask for another photo");
+  await esperar(() => texto().includes("What's missing?"));
+  const enviar = document.querySelector(".hyto-pedir button[type='submit']");
+  if (!enviar) throw new Error("No send-back confirm.");
+  await act(async () => {
+    enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
+
+/** The money buttons now open a ConfirmDialog first: confirm it. */
+async function confirmarDialogo(): Promise<void> {
+  const boton = document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn");
+  if (!boton) throw new Error("No confirm dialog.");
+  await act(async () => {
+    boton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+}
 
 test("the review card shows the main reason next to the percentage and what the receipt printed", async () => {
   const anterior = globalThis.fetch;

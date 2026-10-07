@@ -50,6 +50,18 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Modelo de visión de Groq. Si falta, se usa qwen/qwen3.8-27b.",
   },
   {
+    nombre: "GEMINI_API_KEY",
+    ambito: "servidor",
+    requerida: false,
+    para: "Gemini key used as a fallback when Groq cannot describe the photo. Without it, review stays on Groq.",
+  },
+  {
+    nombre: "GEMINI_VISION_MODEL",
+    ambito: "servidor",
+    requerida: false,
+    para: "Modelo de visión de Gemini. Si falta, se usa gemini-flash-lite-latest.",
+  },
+  {
     nombre: "LAYA_URL",
     ambito: "servidor",
     requerida: false,
@@ -155,6 +167,10 @@ export function tokenDeBlob(): string | null {
 
 export function claveDeGroq(): string | null {
   return presente(process.env.GROQ_API_KEY);
+}
+
+export function claveDeGemini(): string | null {
+  return presente(process.env.GEMINI_API_KEY);
 }
 
 export function urlDeLaya(): string | null {

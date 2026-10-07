@@ -1,6 +1,8 @@
 import { conAlmacen } from "@/lib/api/base";
 import { cerrarSesionHttp, crearSesionHttp, leerSesionHttp } from "@/lib/api/sesion";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request): Promise<Response> {
   return conAlmacen((almacen) => leerSesionHttp(request, almacen));
 }

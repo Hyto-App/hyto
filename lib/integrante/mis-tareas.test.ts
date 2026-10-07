@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { MisTareas } from "@/components/integrante/MisTareas";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { INTERVALO_SEGUIMIENTO_MS, LIMITE_SEGUIMIENTO_MS } from "./seguimiento";
 import type { Tarea } from "./tipos";
 
 const TAREAS: Tarea[] = [
@@ -103,6 +104,7 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Booth") && texto().includes("Blank"));
 
+    await pulsar("Sort");
     const orden = document.querySelector("[aria-label='Sort tasks']");
     assert.ok(orden);
     assert.equal(orden?.querySelectorAll("button").length, 3);
@@ -110,7 +112,9 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
       [...(orden?.querySelectorAll("button") ?? [])].map((boton) => boton.textContent),
       ["Priority", "Highest pay", "Default"],
     );
-    assert.equal(orden?.querySelector("[aria-pressed='true']")?.textContent, "Default");
+    assert.equal(orden?.querySelector("[aria-checked='true']")?.textContent, "Default");
+    await pulsar("Default");
+    assert.equal(document.querySelector("[aria-label='Sort tasks']"), null);
     assert.deepEqual(titulos(), ["Booth", "Meal", "Check-in", "Blank"]);
     assert.deepEqual(insignias().sort(), ["Booth", "Meal"]);
     for (const insignia of document.querySelectorAll("article .hyto-pill-ok")) {
@@ -123,8 +127,11 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     assert.deepEqual(titulos(), ["Check-in", "Blank", "Meal"]);
     assert.deepEqual(insignias(), ["Meal"]);
 
+    await pulsar("Sort");
     await pulsar("Highest pay");
-    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-pressed='true']")?.textContent, "Highest pay");
+    await pulsar("Sort");
+    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-checked='true']")?.textContent, "Highest pay");
+    await pulsar("Highest pay");
     assert.deepEqual(titulos(), ["Meal", "Check-in", "Blank"]);
 
     await pulsar("All");
@@ -143,9 +150,148 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     assert.equal(blank?.textContent?.includes("High priority"), false);
     assert.equal(/\b(Easy|Medium|Hard)\b/.test(blank?.textContent ?? ""), false);
 
+    await pulsar("Sort");
     await pulsar("Priority");
-    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-pressed='true']")?.textContent, "Priority");
+    await pulsar("Sort");
+    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-checked='true']")?.textContent, "Priority");
+    await pulsar("Priority");
     assert.deepEqual(titulos(), ["Check-in", "Meal", "Booth", "Blank"]);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("un veredicto de error no dice que Mile sigue revisando", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "fallo",
+            proyectoId: "uno",
+            titulo: "Receipt",
+            tipo: "reembolso",
+            monto: "8",
+            tope: "15",
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: null,
+            veredicto: null,
+            revisionFallida: true,
+            tipoArchivo: "application/pdf",
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Receipt"));
+    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.doesNotMatch(texto(), /Mile is checking your photo/);
+    assert.doesNotMatch(texto(), /Mile is checking your file/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("una foto reciente en revisión dice que Mile sigue, y al llegar la nota la muestra", async () => {
+  const anterior = globalThis.fetch;
+  let lecturas = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      lecturas += 1;
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: "20",
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: lecturas > 1 ? 84 : null,
+            veredicto: lecturas > 1 ? "cumplió" : null,
+            enviadaEn: new Date().toISOString(),
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Still reviewing"));
+    assert.match(texto(), /Mile is checking your photo/);
+    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "View task");
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 400));
+    });
+    assert.ok(lecturas >= 2);
+    assert.match(texto(), /84% · Completed/);
+    assert.doesNotMatch(texto(), /Still reviewing/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("una foto en revisión ya vieja ofrece reintentar", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: "20",
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: null,
+            veredicto: null,
+            enviadaEn: new Date(Date.now() - LIMITE_SEGUIMIENTO_MS - 5_000).toISOString(),
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Booth"));
+    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.doesNotMatch(texto(), /Still reviewing/);
+    assert.doesNotMatch(texto(), /Mile is checking your photo/);
+    assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "Try again");
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

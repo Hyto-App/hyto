@@ -37,17 +37,17 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     });
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
-    assert.match(texto(), /Add a wallet to see testnet USDC/);
+    assert.match(texto(), /Add a wallet to see your USDC/);
     assert.match(texto(), /Stellar Passport/);
     assert.match(texto(), /participation and achievements in the Stellar ecosystem/);
     const pasaporte = document.querySelector("a[href='https://demo.stellarpassport.xyz/auth/signup']");
-    assert.equal(pasaporte?.textContent, "Open on testnet");
+    assert.equal(pasaporte?.textContent, "Open Stellar Passport");
     assert.equal(pasaporte?.getAttribute("target"), "_blank");
     assert.equal(pasaporte?.getAttribute("rel"), "noreferrer");
     assert.match(texto(), /US\$0/);
     assert.equal(texto().includes("Demo sample"), false);
-    assert.equal(document.querySelectorAll(".hyto-badge.is-on").length, 0);
-    assert.equal(document.querySelectorAll(".hyto-badge").length, 6);
+    assert.equal(document.querySelectorAll(".hyto-logro.is-on").length, 0);
+    assert.equal(document.querySelectorAll(".hyto-logro").length, 6);
   } finally {
     globalThis.fetch = original;
     await desmontar();

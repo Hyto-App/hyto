@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
+import { jpegDePrueba } from "../evidencia/muestras";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 import { FRASE_PAGO } from "./nota";
 import { leerTarea } from "./rutas";
@@ -77,7 +78,7 @@ test("sin nota real no hay porcentaje ni la frase del pago", async () => {
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ nota: null, veredicto: null, frase: "SECRETO-LAYA" }));
-    assert.match(texto(), /In review/);
+    assert.match(texto(), /Mile is checking your photo/);
     assert.equal(document.querySelector(".hyto-pill-veredicto"), null);
     assert.equal(texto().includes("%"), false);
     assert.equal(texto().includes(FRASE_PAGO), false);
@@ -89,15 +90,51 @@ test("sin nota real no hay porcentaje ni la frase del pago", async () => {
   }
 });
 
-test("una tarea pagada muestra la nota y no dice que el pago sigue abierto", async () => {
+test("una tarea pagada abre con el pago y, al volver, muestra la nota", async () => {
   limpiarPantalla();
+  window.localStorage.removeItem("hyto-pago-visto:stand");
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
-    assert.match(texto(), /84% · Completed/);
-    assert.match(texto(), /Paid/);
+    assert.match(texto(), /You got paid/);
+    assert.match(texto(), /\+20 USDC/);
     assert.equal(texto().includes(FRASE_PAGO), false);
-    assert.equal(texto().includes("Take another"), false);
+    assert.equal(texto().includes("84%"), false);
+
+    window.localStorage.setItem("hyto-pago-visto:stand", "1");
+    await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
+    assert.match(texto(), /84% · Completed/);
+    assert.equal(texto().includes(FRASE_PAGO), false);
+  } finally {
+    window.localStorage.removeItem("hyto-pago-visto:stand");
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("una tarea rechazada muestra el punto que falta y esconde la frase interna", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  try {
+    await abrir(
+      tarea({
+        estado: "pendiente",
+        etapa: "rechazada",
+        condicion: "Wristband visible; Table in frame",
+        rechazo: { nota: "Cropped", fallidos: ["0"], origen: "organizador" },
+        organizador: { nombre: "Organizer" },
+        frase: "SECRETO-LAYA",
+        contratoEscrow: "NO",
+      }),
+    );
+    assert.match(texto(), /Task rejected/);
+    assert.match(texto(), /Missing: Wristband visible/);
+    assert.match(texto(), /Not in the photo/);
+    assert.match(texto(), /Take another photo/);
+    assert.match(texto(), /Organizer · organizer/);
+    assert.equal(texto().includes("SECRETO-LAYA"), false);
+    assert.equal(texto().includes("NO"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -197,12 +234,13 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     assert.equal(texto().includes("%"), false);
     const input = document.querySelector('input[type="file"]');
     assert.ok(input instanceof HTMLInputElement);
-    const archivo = new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
+    const archivo = new File([await jpegDePrueba()], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
     Object.defineProperty(input, "files", { configurable: true, value: { 0: archivo, length: 1, item: () => archivo } });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send");
+    const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
     assert.ok(enviar instanceof HTMLButtonElement);
     await act(async () => {
       enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -210,9 +248,9 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.match(texto(), /Photo uploaded successfully/);
-    assert.match(texto(), /Your photo already reached the organizer/);
-    assert.match(texto(), /Take another/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Great job/);
+    assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(texto().includes("SECRETO-LAYA"), false);

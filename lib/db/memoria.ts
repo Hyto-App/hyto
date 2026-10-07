@@ -157,6 +157,9 @@ export function crearMemoria(): Almacen {
     async guardarVeredicto(veredicto) {
       veredictos.set(veredicto.evidenciaId, veredicto);
     },
+    async borrarVeredicto(evidenciaId) {
+      veredictos.delete(evidenciaId);
+    },
     async veredictoDe(evidenciaId) {
       return veredictos.get(evidenciaId) ?? null;
     },

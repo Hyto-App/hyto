@@ -5,6 +5,8 @@ import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -12,7 +14,7 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#08090C":"#F4F5F0");}catch(e){}})();`;
+const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0E1024":"#F5F6FA");}catch(e){}})();`;
 
 const DESCRIPCION = "Prove your worth. Get paid. Hyto is a marketplace of small tasks. Send a photo. Get paid in digital dollars (USDC).";
 
@@ -41,7 +43,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   colorScheme: "dark light",
-  themeColor: "#08090C",
+  themeColor: "#0E1024",
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
