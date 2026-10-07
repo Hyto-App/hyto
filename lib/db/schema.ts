@@ -14,7 +14,7 @@ export const proyectos = pgTable("proyectos", {
   nombre: text("nombre").notNull(),
   creadoEn: text("creado_en").notNull(),
   organizadorId: text("organizador_id").references(() => usuarios.id),
-  // Event context. Null on events created before 0008.
+  // Event context. Null on events created before 0009.
   portada: text("portada"),
   descripcion: text("descripcion"),
   contextoIa: text("contexto_ia"),

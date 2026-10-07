@@ -22,13 +22,14 @@ async function nuevoEvento(cuerpo: Record<string, unknown>) {
     almacen,
     "org",
   );
-  const datos = (await respuesta.json()) as { proyecto?: { id: string }; aviso?: string };
-  return { almacen, respuesta, id: datos.proyecto?.id ?? "", datos };
+  const texto = await respuesta.text();
+  const datos = JSON.parse(texto) as { proyecto?: { id: string }; aviso?: string };
+  return { almacen, respuesta, texto, id: datos.proyecto?.id ?? "", datos };
 }
 
 function portada(bytes: Uint8Array, tipo: string): Request {
   const cuerpo = new FormData();
-  cuerpo.set("portada", new Blob([bytes], { type: tipo }), "portada");
+  cuerpo.set("portada", new Blob([Buffer.from(bytes)], { type: tipo }), "portada");
   return new Request("http://local/api/eventos/x/portada", { method: "POST", body: cuerpo });
 }
 
@@ -59,7 +60,7 @@ test("la descripción y el contexto respetan 1000 y 2000 caracteres", async () =
 });
 
 test("el contexto para la IA no sale en ninguna respuesta para un voluntario ni en la de creación", async () => {
-  const { almacen, id, respuesta } = await nuevoEvento({ descripcion: "Street fair", contextoIa: SECRETO_IA });
+  const { almacen, id, texto: creacion } = await nuevoEvento({ descripcion: "Street fair", contextoIa: SECRETO_IA });
   await almacen.guardarMiembro({ proyectoId: id, usuarioId: "vol", rol: "volunteer", estado: "active", creadoEn: "2026-10-07T00:00:00.000Z" });
   const lectura = await leerProyectoHttp(almacen, visorSesion("vol"), { id });
   const texto = await lectura.text();
@@ -67,7 +68,7 @@ test("el contexto para la IA no sale en ninguna respuesta para un voluntario ni 
   assert.ok(texto.includes("Street fair"));
   assert.ok(!texto.includes(SECRETO_IA));
   assert.ok(!/contextoIa|contexto_ia/i.test(texto));
-  assert.ok(!(await respuesta.clone().text()).includes(SECRETO_IA));
+  assert.ok(!creacion.includes(SECRETO_IA));
 });
 
 test("la portada acepta jpeg y png y rechaza svg, gif y tipos falsos", async () => {
