@@ -161,23 +161,29 @@ export function idsCerca(json: unknown, ids: readonly string[]): string[] {
   return cerca;
 }
 
+/** Runs one Laya call. Each call gets its own signal, so the second one does not inherit what the first used. */
+export type LlamadaLaya = <T>(paso: (signal: AbortSignal | undefined) => Promise<T>) => Promise<T>;
+
 export async function preguntarLaya(
   base: string,
   texto: string,
   condicion: string,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
+  llamar: LlamadaLaya = (paso) => paso(signal),
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
   const pedido = condicion.trim();
-  const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(pedido), fetchImpl, signal, clave);
+  const preguntar = (preguntas: Record<string, Pregunta>) =>
+    llamar((senal) => enviar(base, texto, pedido, preguntas, fetchImpl, senal, clave));
+  const claseJson = await preguntar(preguntasClasificacion(pedido));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
   const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
-    const json = await enviar(base, texto, pedido, preguntasTrabajo(pedido), fetchImpl, signal, clave);
+    const json = await preguntar(preguntasTrabajo(pedido));
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
     const cerca = [...cercaClase, ...idsCerca(json, IDS_TRABAJO)];
@@ -202,7 +208,7 @@ export async function preguntarLaya(
       }),
     };
   }
-  const json = await enviar(base, texto, pedido, preguntasFactura(pedido), fetchImpl, signal, clave);
+  const json = await preguntar(preguntasFactura(pedido));
   const leidas = leerFactura(json);
   if (!leidas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
   const respuestas = corregirFactura(leidas, texto, pedido);
