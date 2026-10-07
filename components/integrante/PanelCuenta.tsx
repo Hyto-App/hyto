@@ -101,11 +101,7 @@ export function PanelCuenta() {
         </p>
       ) : null}
       <Billetera vista={vista} />
-      {vista.muestra ? null : (
-        <div id="passkey" tabIndex={-1} className="hyto-ancla-passkey">
-          <PasskeyCuenta />
-        </div>
-      )}
+      {vista.muestra ? null : <PasskeyCuenta />}
       <PasaporteStellar />
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />

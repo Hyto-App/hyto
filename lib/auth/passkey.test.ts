@@ -152,7 +152,30 @@ test("la tarjeta de Cuenta agrega la llave de acceso y dice cómo usarla en otro
   }
 });
 
-test("la tarjeta de Cuenta muestra el aviso y deja intentar de nuevo", async () => {
+test("la tarjeta de Cuenta explica para qué sirve y se resalta al llegar desde el enlace de la guía", async () => {
+  limpiarPantalla();
+  window.history.replaceState(null, "", "/cuentas?add=passkey");
+  try {
+    await montar(createElement(PasskeyCuenta, { agregar: async () => undefined }));
+    const tarjeta = document.getElementById("passkey");
+    assert.ok(tarjeta);
+    assert.match(tarjeta.className, /is-resaltada/);
+    assert.match(texto(), /Start here/);
+    assert.match(texto(), /so your phone or another browser can use this account/);
+    assert.match(texto(), /Use a phone or tablet/);
+    await desmontar();
+    window.history.replaceState(null, "", "/cuentas");
+    await montar(createElement(PasskeyCuenta, { agregar: async () => undefined }));
+    assert.doesNotMatch(document.getElementById("passkey")?.className ?? "", /is-resaltada/);
+    assert.doesNotMatch(texto(), /Start here/);
+  } finally {
+    window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("sin la clave, la tarjeta de Cuenta guía paso a paso al navegador donde se creó la cuenta", async () => {
   limpiarPantalla();
   try {
     await montar(
@@ -166,7 +189,39 @@ test("la tarjeta de Cuenta muestra el aviso y deja intentar de nuevo", async () 
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /can't add a passkey\. Open Hyto in the browser where you signed up/);
+    assert.match(texto(), /This browser doesn't have your account key, so it can't add a passkey here/);
+    assert.match(texto(), /Open Account where you signed up/);
+    assert.match(texto(), /localhost\/account/);
+    assert.match(texto(), /Tap Add a passkey, then Create passkey/);
+    assert.match(texto(), /Use a phone or tablet/);
+    assert.match(texto(), /open Events and tap Get ready to be paid/);
+    assert.match(texto(), /Don't remember where you signed up\?/);
+    assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);
+    const botones = [...document.querySelectorAll("button")].map((boton) => boton.textContent);
+    assert.ok(botones.includes("Copy link"));
+    assert.ok(!botones.includes("Add a passkey"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("la tarjeta de Cuenta deja intentar de nuevo cuando el fallo no es la falta de clave", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(PasskeyCuenta, {
+        agregar: async () => {
+          throw new Error(AVISO_PASSKEY_FALLO);
+        },
+      }),
+    );
+    await pulsar("Add a passkey");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /We couldn't add the passkey\. Try again\./);
+    assert.doesNotMatch(texto(), /Set up this device/);
     assert.ok(document.querySelector("button"));
   } finally {
     await desmontar();
