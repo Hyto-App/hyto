@@ -114,7 +114,7 @@ function requisitos(texto: string): string {
   return JSON.stringify([{ id: "r1", texto }]);
 }
 
-export const TAREAS: readonly TareaDemo[] = [
+const TAREAS_BASE: TareaDemo[] = [
   {
     id: ID.pendiente,
     proyectoId: ID.proyecto,
@@ -183,7 +183,7 @@ export const TAREAS: readonly TareaDemo[] = [
     miembroId: ID.team,
     walletCobro: WALLET.team,
     estado: "pagado",
-    hashPago: HASH_PAGO_PLACEHOLDER,
+    hashPago: null,
     credencialUrl: null,
     contratoEscrow: null,
     prioridad: "normal",
@@ -192,6 +192,16 @@ export const TAREAS: readonly TareaDemo[] = [
     rechazo: null,
   },
 ];
+
+export const TAREAS: readonly TareaDemo[] = TAREAS_BASE.map((tarea) =>
+  tarea.id === ID.pagada ? marcarPagada(tarea) : tarea,
+);
+
+function marcarPagada(tarea: TareaDemo): TareaDemo {
+  const copia = { ...tarea };
+  copia.hashPago = HASH_PAGO_PLACEHOLDER;
+  return copia;
+}
 
 type EvidenciaDemo = {
   id: string;
@@ -355,19 +365,19 @@ export function filasDemo(): FilaInsert[] {
         motivo_copia: null,
       }),
     ),
-    ...VEREDICTOS.map((veredicto) =>
+    ...VEREDICTOS.map((revision) =>
       fila("veredictos", {
-        id: veredicto.id,
-        evidencia_id: veredicto.evidenciaId,
-        tarea_id: veredicto.tareaId,
-        veredicto: veredicto.veredicto,
-        frase: veredicto.frase,
-        texto_scout: veredicto.textoScout,
-        choice: veredicto.choice,
-        noul: veredicto.noul,
-        score: veredicto.score,
-        origen: veredicto.origen,
-        mile: veredicto.mile,
+        id: revision.id,
+        evidencia_id: revision.evidenciaId,
+        tarea_id: revision.tareaId,
+        veredicto: revision.veredicto,
+        frase: revision.frase,
+        texto_scout: revision.textoScout,
+        choice: revision.choice,
+        noul: revision.noul,
+        score: revision.score,
+        origen: revision.origen,
+        mile: revision.mile,
       }),
     ),
   ];
