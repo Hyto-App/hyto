@@ -9,6 +9,7 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
+import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
@@ -591,6 +592,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           </div>
         ) : null}
         <Checklist condicion={tarea.condicion} revisando />
+        <ActividadTarea tarea={tarea} />
         <div className="hyto-actions">
           <BotonPrincipal type="button" disabled aria-busy={fase === "enviando"} className="hyto-btn-grande">
             {fase === "enviando" ? t("evidencia.sending") : t("evidencia.sentShort")}
@@ -686,6 +688,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           monto={montoVisible}
           archivo={documental}
         />
+        <ActividadTarea tarea={tarea} />
         <div className="hyto-enviada-acciones">
           {mileSinTerminar ? (
             <button type="button" onClick={tomarOtra} className="hyto-btn hyto-btn-grande">
@@ -796,6 +799,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         </div>
         <div className="hyto-tarea-col">
           <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
+          <ActividadTarea tarea={tarea} />
           {mostrarRevision ? (
             <dl className="hyto-tarjeta hyto-dato-leido">
               <div>

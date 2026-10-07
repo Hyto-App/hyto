@@ -73,11 +73,25 @@ export function AnilloHitos({ className }: { className?: string }) {
   );
 }
 
-export function iniciales(nombre: string): string {
-  const partes = nombre.trim().split(/\s+/).filter(Boolean);
-  if (partes.length === 0) return "•";
-  if (partes.length === 1) return partes[0].slice(0, 1).toUpperCase();
-  return `${partes[0][0] ?? ""}${partes[partes.length - 1][0] ?? ""}`.toUpperCase();
+/** Letters only. A parenthetical word and any symbol are dropped. One remaining word keeps its first letter; two or more use the first and the last. With no letter left, the email's first letter is the fallback. */
+export function iniciales(nombre: string, email?: string | null): string {
+  const partes = palabrasConLetras(nombre);
+  if (partes.length >= 2) return `${letraDe(partes[0])}${letraDe(partes[partes.length - 1])}`.toUpperCase();
+  if (partes.length === 1) return letraDe(partes[0]).toUpperCase();
+  const delCorreo = letraDe((email ?? "").split("@")[0] ?? "");
+  return delCorreo ? delCorreo.toUpperCase() : "•";
+}
+
+function palabrasConLetras(nombre: string): string[] {
+  return nombre
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^\p{L}\s]/gu, " ")
+    .split(/\s+/)
+    .filter((parte) => /\p{L}/u.test(parte));
+}
+
+function letraDe(palabra: string): string {
+  return palabra.match(/\p{L}/u)?.[0] ?? "";
 }
 
 function aplicarTema(tema: "dark" | "light") {

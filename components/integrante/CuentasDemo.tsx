@@ -126,7 +126,7 @@ export function CuentasDemo() {
       <header className="hyto-page-head">
         <div>
           <p className="hyto-crumb">
-            <Link href="/cuentas">{t("nav.account")}</Link>
+            <Link href="/configuracion">{t("nav.settings")}</Link>
             <InsigniaDemo />
           </p>
           <h1 className="hyto-title mt-3">{t("eventos.accountsTitle")}</h1>

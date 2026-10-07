@@ -21,6 +21,14 @@ export const en = {
     accountWallet: "Account & wallet",
     myTasks: "My tasks",
     cancel: "Cancel",
+    groupWork: "Your work",
+    groupJoin: "Join an event",
+    settings: "Settings",
+    helpFaq: "Help and frequently asked questions",
+    askMile: "Ask Mile",
+    profile: "Your account",
+    groupOrganize: "Your event",
+    eventTasks: "Event tasks",
   },
   mile: {
     alt: {
@@ -323,6 +331,14 @@ export const en = {
     viewEvents: "See events",
     hello: "Hi, {name}!",
     helloNoName: "Hi!",
+    saludo: {
+      manana: "Good morning",
+      tarde: "Good afternoon",
+      noche: "Good evening",
+      mananaNombre: "Good morning, {name}",
+      tardeNombre: "Good afternoon, {name}",
+      nocheNombre: "Good evening, {name}",
+    },
     youHave: "You have {n} tasks to do.",
     youHaveOne: "You have 1 task to do.",
     allDone: "You're all caught up. Mile will tell you when something new arrives.",
@@ -585,7 +601,7 @@ export const en = {
     origenFallo: "Review failed",
   },
   cuenta: {
-    titulo: "Account",
+    titulo: "Settings",
     signOut: "Sign out",
     signingOut: "Signing out…",
     noLoad: "We couldn't load your account.",
@@ -803,6 +819,60 @@ export const en = {
     montoTope: "The amount cannot be higher than the limit.",
     montoTarde: "This payment is already set up.",
   },
+  ayuda: {
+    titulo: "Ask Mile",
+    buscar: "Search",
+    placeholder: "Search the answers",
+    atajos: "Shortcuts",
+    preguntas: "Questions",
+    cerrar: "Close",
+    vacio: "Nothing matches that. Try another word, or look through the questions.",
+    atajoTareas: "See my tasks",
+    atajoEvidencia: "Upload evidence",
+    atajoPago: "How I get paid",
+    atajoFaq: "Frequently asked questions",
+    pagoQ: "How do I get paid?",
+    pagoA:
+      "You send a photo of the task. Mile reads it and leaves a score. The organizer of the event approves it and sends the payment to the account you prepared in Settings. Mile does not sign or move money.",
+    evidenciaQ: "What do I send?",
+    evidenciaA:
+      "A photo. For a work task, photograph what you did. For a reimbursement, photograph the receipt. Hyto does not ask for another kind of evidence.",
+    mileQ: "What does Mile do with my photo?",
+    mileA:
+      "Mile describes the photo and suggests a score from 0 to 100. Under 50 is insufficient, 50 to 79 is partial, and 80 to 100 is completed. The score is a recommendation. The organizer decides whether to pay.",
+    unirseQ: "How do I join an event?",
+    unirseA:
+      "With an email invite, one use only, or a code that starts with HYTO- and has 12 characters. Both expire after 7 days. After several wrong tries in a row, Hyto asks you to wait.",
+    verQ: "Who can see my tasks and photos?",
+    verA:
+      "You see the tasks assigned to you. The organizer of an event sees that event's tasks, photos, and review. Other people in the event do not see your tasks.",
+    otraQ: "What if they ask for another photo?",
+    otraA:
+      "The task goes back to pending and the previous score stays hidden. Open it, take another photo, and send it. Mile reviews the new photo.",
+    reembolsoQ: "How does a reimbursement work?",
+    reembolsoA:
+      "You send a photo of the receipt. The organizer confirms the amount before the payment is prepared. That amount cannot be higher than the task limit. The confirmed amount is what gets paid.",
+    cobrarQ: "How do I get my account ready to be paid?",
+    cobrarA:
+      "Open Settings and get ready to be paid, so your account can receive USDC. A payment cannot arrive before that. You can run it again if the account was only half set up.",
+    sesionQ: "How do I sign out?",
+    sesionA:
+      "Tap your name at the bottom of the bar and choose Sign out. It is also in Settings. A session on this browser lasts up to a day.",
+    datosQ: "What does Hyto keep?",
+    datosA:
+      "We keep the email you use to sign in, the session, the payout address, the photos you send, and the record of a finished payment. We do not sell your information. The details are on the Privacy page.",
+  },
+  actividad: {
+    titulo: "Activity",
+    rastreo: "Payment progress",
+    aprobada: "Approved",
+    enviado: "Payment sent",
+    pagado: "Paid",
+    envio: "You sent your evidence",
+    mile: "Mile reviewed your evidence",
+    camino: "Payment on the way",
+    vacio: "After you send the photo, the trail shows up here.",
+  },
 };
 
 type Rama<T> = {
@@ -826,6 +896,14 @@ export const es: Rama<typeof en> = {
     accountWallet: "Cuenta y billetera",
     myTasks: "Mis tareas",
     cancel: "Cancelar",
+    groupWork: "Tu trabajo",
+    groupJoin: "Entrar a un evento",
+    settings: "Configuración",
+    helpFaq: "Ayuda y preguntas frecuentes",
+    askMile: "Pregúntale a Mile",
+    profile: "Tu cuenta",
+    groupOrganize: "Tu evento",
+    eventTasks: "Tareas del evento",
   },
   mile: {
     alt: {
@@ -1127,6 +1205,14 @@ export const es: Rama<typeof en> = {
     viewEvents: "Ver eventos",
     hello: "¡Hola, {name}!",
     helloNoName: "¡Hola!",
+    saludo: {
+      manana: "Buenos días",
+      tarde: "Buenas tardes",
+      noche: "Buenas noches",
+      mananaNombre: "Buenos días, {name}",
+      tardeNombre: "Buenas tardes, {name}",
+      nocheNombre: "Buenas noches, {name}",
+    },
     youHave: "Tienes {n} tareas por hacer.",
     youHaveOne: "Tienes 1 tarea por hacer.",
     allDone: "Estás al día. Mile te avisa si llega algo nuevo.",
@@ -1389,9 +1475,9 @@ export const es: Rama<typeof en> = {
     origenFallo: "La revisión falló",
   },
   cuenta: {
-    titulo: "Cuenta",
-    signOut: "Salir",
-    signingOut: "Saliendo…",
+    titulo: "Configuración",
+    signOut: "Cerrar sesión",
+    signingOut: "Cerrando sesión…",
     noLoad: "No pudimos cargar tu cuenta.",
     loading: "Cargando la cuenta",
     demoNota: "Ejemplo del demo. Estas tareas y montos no son pagos en la red.",
@@ -1606,6 +1692,60 @@ export const es: Rama<typeof en> = {
     montoInvalido: "Escribe un monto mayor que cero, con hasta dos decimales.",
     montoTope: "El monto no puede ser mayor que el límite.",
     montoTarde: "Este pago ya está preparado.",
+  },
+  ayuda: {
+    titulo: "Pregúntale a Mile",
+    buscar: "Buscar",
+    placeholder: "Busca en las respuestas",
+    atajos: "Atajos",
+    preguntas: "Preguntas",
+    cerrar: "Cerrar",
+    vacio: "No hay una respuesta para eso. Prueba con otra palabra o mira las preguntas.",
+    atajoTareas: "Ver mis tareas",
+    atajoEvidencia: "Subir evidencia",
+    atajoPago: "Cómo me pagan",
+    atajoFaq: "Preguntas frecuentes",
+    pagoQ: "¿Cómo me pagan?",
+    pagoA:
+      "Envías una foto de la tarea. Mile la lee y deja una nota. Quien organiza el evento la aprueba y envía el pago a la cuenta que preparaste en Configuración. Mile no firma ni mueve el dinero.",
+    evidenciaQ: "¿Qué tengo que enviar?",
+    evidenciaA:
+      "Una foto. Si la tarea es de trabajo, fotografía lo que hiciste. Si es un reembolso, fotografía el recibo. Hyto no pide otro tipo de evidencia.",
+    mileQ: "¿Qué hace Mile con mi foto?",
+    mileA:
+      "Mile describe la foto y propone una nota del 0 al 100. Menos de 50 es insuficiente, de 50 a 79 es parcial y de 80 a 100 es completada. La nota es una recomendación. Quien organiza decide si paga.",
+    unirseQ: "¿Cómo me uno a un evento?",
+    unirseA:
+      "Con una invitación a tu correo, de un solo uso, o con un código que empieza por HYTO- y tiene 12 caracteres. Las dos vencen a los 7 días. Si fallas varias veces seguidas, Hyto te pide esperar.",
+    verQ: "¿Quién ve mis tareas y mis fotos?",
+    verA:
+      "Tú ves las tareas que te asignaron. Quien organiza el evento ve las tareas, las fotos y la revisión de ese evento. El resto de la gente del evento no ve tus tareas.",
+    otraQ: "¿Qué hago si me piden otra foto?",
+    otraA:
+      "La tarea vuelve a pendiente y la nota anterior se oculta. Ábrela, toma otra foto y envíala. Mile revisa la foto nueva.",
+    reembolsoQ: "¿Cómo funciona un reembolso?",
+    reembolsoA:
+      "Envías la foto del recibo. Quien organiza confirma el monto antes de preparar el pago. Ese monto no puede ser mayor que el límite de la tarea. Lo que se paga es el monto confirmado.",
+    cobrarQ: "¿Cómo dejo lista mi cuenta para cobrar?",
+    cobrarA:
+      "Entra a Configuración y prepara el cobro, para que tu cuenta pueda recibir USDC. El pago no puede llegar antes de eso. Puedes prepararla otra vez si quedó a medias.",
+    sesionQ: "¿Cómo cierro sesión?",
+    sesionA:
+      "Toca tu nombre al pie de la barra y elige Cerrar sesión. También está en Configuración. La sesión dura hasta un día en este navegador.",
+    datosQ: "¿Qué datos guarda Hyto?",
+    datosA:
+      "Guardamos el correo con el que entras, la sesión, la dirección de cobro, las fotos que envías y el registro de un pago terminado. No vendemos tus datos. El detalle está en Privacidad.",
+  },
+  actividad: {
+    titulo: "Actividad",
+    rastreo: "Recorrido del pago",
+    aprobada: "Aprobada",
+    enviado: "Pago enviado",
+    pagado: "Pagado",
+    envio: "Enviaste tu evidencia",
+    mile: "Mile revisó tu evidencia",
+    camino: "Pago en camino",
+    vacio: "Cuando envíes la foto, el recorrido aparece aquí.",
   },
 };
 
