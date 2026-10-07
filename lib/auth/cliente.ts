@@ -151,7 +151,7 @@ export async function entrarConGoogle(
 
 async function cerrarConWallet(
   auth: AuthProvider,
-  sesion: { provisionar: boolean },
+  sesion: { provisionar: boolean; nuevo?: boolean },
   intencion: IntencionIngreso,
 ): Promise<IngresoCerrado> {
   const conectada = await conectarStellar(auth);
@@ -161,7 +161,7 @@ async function cerrarConWallet(
   }
   const guardada = await fijarWallet(billetera.address);
   if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address, guardada: false };
-  if (debeProvisionar(intencion, sesion.provisionar)) {
+  if (debeProvisionar(intencion, sesion.provisionar, sesion.nuevo === true)) {
     const alta = await completarAltaTestnet(billetera as BilleteraCobro);
     if (!alta.ok) return { aviso: alta.aviso, direccion: billetera.address, guardada: true };
   }

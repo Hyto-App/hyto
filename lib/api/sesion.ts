@@ -1,4 +1,3 @@
-import { AVISO_SIN_CUENTA } from "@/lib/auth/errores";
 import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla } from "@/lib/db/semilla";
@@ -49,10 +48,8 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     const email = correo.correo.trim().toLowerCase();
     let usuario = await almacen.usuarioPorEmail(email);
     let nuevo = false;
+    // Sign in and Sign up both open an account the first time an email arrives.
     if (!usuario) {
-      if (intencion === "signin") {
-        return json({ aviso: AVISO_SIN_CUENTA }, 404);
-      }
       const local = email.split("@")[0] ?? "";
       await almacen.insertarUsuario({
         id: `u-${crypto.randomUUID()}`,
@@ -74,7 +71,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       expiraEn: expiracion(segundos),
       wallet: walletDelToken(token) ?? "",
     });
-    const provisionar = intencion === "signup";
+    const provisionar = intencion === "signup" || nuevo;
     const cookies = [encabezadoCookie(sesion, segundos)];
     if (provisionar) cookies.push(encabezadoAlta(true));
     else if (intencion === "signin") cookies.push(encabezadoAlta(false));

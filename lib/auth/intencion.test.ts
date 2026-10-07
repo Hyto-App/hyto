@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { debeProvisionar, guardarIntencion, intencionDe, leerIntencion, olvidarIntencion } from "./intencion";
 
-test("solo Sign up con el permiso del servidor aprovisiona testnet", () => {
+test("aprovisiona Sign up, o un Sign in que acaba de crear la cuenta, siempre con el permiso del servidor", () => {
   assert.equal(debeProvisionar("signup", true), true);
   assert.equal(debeProvisionar("signup", false), false);
   assert.equal(debeProvisionar("signin", true), false);
   assert.equal(debeProvisionar("signin", false), false);
+  assert.equal(debeProvisionar("signin", true, true), true);
+  assert.equal(debeProvisionar("signin", false, true), false);
+  assert.equal(debeProvisionar("signup", true, false), true);
   assert.equal(intencionDe("signup"), "signup");
   assert.equal(intencionDe("signin"), "signin");
   assert.equal(intencionDe("register"), null);

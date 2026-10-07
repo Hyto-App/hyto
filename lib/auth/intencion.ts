@@ -7,9 +7,12 @@ export function intencionDe(valor: unknown): IntencionIngreso | null {
   return null;
 }
 
-/** Friendbot, trustline, and account creation run only for an explicit Sign up. */
-export function debeProvisionar(intencion: IntencionIngreso, provisionar: boolean): boolean {
-  return intencion === "signup" && provisionar === true;
+/**
+ * Friendbot, trustline, and account creation run for a Sign up, or for a Sign in that just created
+ * the Hyto account. A returning Sign in never provisions.
+ */
+export function debeProvisionar(intencion: IntencionIngreso, provisionar: boolean, nuevo = false): boolean {
+  return provisionar === true && (intencion === "signup" || nuevo === true);
 }
 
 export function guardarIntencion(valor: IntencionIngreso, almacenamiento: Pick<Storage, "setItem"> = sessionStorage): void {

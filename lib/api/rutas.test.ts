@@ -922,9 +922,9 @@ test("las rutas que escriben responden 401 sin sesión", async () => {
   }
 });
 
-test("Sign in no crea usuario y Sign up no duplica la cuenta", async () => {
+test("Sign in crea la cuenta la primera vez y la aprovisiona como Sign up", async () => {
   const almacen = crearMemoria();
-  const correo = "nuevo.voluntario@hyto.app";
+  const correo = "primera.vez@hyto.app";
   const pedido = (intencion: string) =>
     new Request("http://local/api/sesion", {
       method: "POST",
@@ -933,9 +933,45 @@ test("Sign in no crea usuario y Sign up no duplica la cuenta", async () => {
     });
 
   const ingreso = await crearSesionHttp(pedido("signin"), almacen);
-  assert.equal(ingreso.status, 404);
-  assert.equal(((await ingreso.json()) as { aviso: string }).aviso, "No Hyto account for this sign-in. Sign up first.");
-  assert.equal((await almacen.listarUsuarios()).some((usuario) => usuario.email === correo), false);
+  assert.equal(ingreso.status, 200);
+  const cuerpo = (await ingreso.json()) as { nuevo: boolean; provisionar: boolean; rol: string; usuarioId: string };
+  assert.equal(cuerpo.nuevo, true);
+  assert.equal(cuerpo.provisionar, true);
+  assert.equal(cuerpo.rol, "voluntario");
+  assert.ok(ingreso.headers.getSetCookie().some((cookie) => cookie.startsWith("hyto_sesion=")));
+  assert.ok(ingreso.headers.getSetCookie().some((cookie) => cookie.startsWith("hyto_alta=1")));
+  assert.equal((await almacen.listarUsuarios()).filter((usuario) => usuario.email === correo).length, 1);
+
+  const vuelta = await crearSesionHttp(pedido("signin"), almacen);
+  assert.equal(vuelta.status, 200);
+  const otra = (await vuelta.json()) as { nuevo: boolean; provisionar: boolean; usuarioId: string };
+  assert.equal(otra.nuevo, false);
+  assert.equal(otra.provisionar, false);
+  assert.equal(otra.usuarioId, cuerpo.usuarioId);
+  assert.ok(vuelta.headers.getSetCookie().some((cookie) => cookie.includes("hyto_alta=") && cookie.includes("Max-Age=0")));
+  assert.equal((await almacen.listarUsuarios()).filter((usuario) => usuario.email === correo).length, 1);
+
+  const sinIntencion = await crearSesionHttp(
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "sin.intencion@hyto.app", token: token("sin.intencion@hyto.app") }),
+    }),
+    almacen,
+  );
+  assert.equal(sinIntencion.status, 200);
+  assert.equal(((await sinIntencion.json()) as { nuevo: boolean }).nuevo, true);
+});
+
+test("Sign up no duplica la cuenta y un Sign in posterior no aprovisiona", async () => {
+  const almacen = crearMemoria();
+  const correo = "nuevo.voluntario@hyto.app";
+  const pedido = (intencion: string) =>
+    new Request("http://local/api/sesion", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: correo, token: token(correo), intencion }),
+    });
 
   const alta = await crearSesionHttp(pedido("signup"), almacen);
   assert.equal(alta.status, 200);
@@ -989,13 +1025,16 @@ test("Apple sin correo entra con una dirección estable del sub y nunca toca otr
     });
 
   const ingreso = await crearSesionHttp(pedido("signin"), almacen);
-  assert.equal(ingreso.status, 404);
+  assert.equal(ingreso.status, 200);
+  const cuerpo = (await ingreso.json()) as { email: string; usuarioId: string; nuevo: boolean };
+  assert.equal(cuerpo.nuevo, true);
+  assert.match(cuerpo.email, /^apple-[0-9a-f]{32}@apple\.hyto\.invalid$/);
 
   const alta = await crearSesionHttp(pedido("signup"), almacen);
   assert.equal(alta.status, 200);
-  const cuerpo = (await alta.json()) as { email: string; usuarioId: string; nuevo: boolean };
-  assert.equal(cuerpo.nuevo, true);
-  assert.match(cuerpo.email, /^apple-[0-9a-f]{32}@apple\.hyto\.invalid$/);
+  const repetida = (await alta.json()) as { usuarioId: string; nuevo: boolean };
+  assert.equal(repetida.nuevo, false);
+  assert.equal(repetida.usuarioId, cuerpo.usuarioId);
 
   const vuelta = await crearSesionHttp(pedido("signin"), almacen);
   assert.equal(vuelta.status, 200);
