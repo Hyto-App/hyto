@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { normalizarMonto } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
@@ -56,6 +56,7 @@ export function CrearProyecto() {
   const modoDemo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
+  const idioma = useIdioma();
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -301,29 +302,29 @@ export function CrearProyecto() {
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
-                    Priority
+                    {t("clasificacion.priority")}
                     <select
                       id={`prioridad-${fila.clave}`}
                       value={fila.prioridad}
                       onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
                       className="hyto-input mt-2"
                     >
-                      <option value="normal">Normal</option>
-                      <option value="high">High</option>
+                      <option value="normal">{t("clasificacion.normal")}</option>
+                      <option value="high">{t("clasificacion.high")}</option>
                     </select>
                   </label>
                   <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
-                    Difficulty
+                    {t("clasificacion.difficulty")}
                     <select
                       id={`dificultad-${fila.clave}`}
                       value={fila.dificultad}
                       onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
                       className="hyto-input mt-2"
                     >
-                      <option value="">Not set</option>
-                      <option value="easy">Easy</option>
-                      <option value="medium">Medium</option>
-                      <option value="hard">Hard</option>
+                      <option value="">{t("clasificacion.notSet")}</option>
+                      <option value="easy">{t("clasificacion.easy")}</option>
+                      <option value="medium">{t("clasificacion.medium")}</option>
+                      <option value="hard">{t("clasificacion.hard")}</option>
                     </select>
                   </label>
                 </div>
@@ -369,15 +370,15 @@ export function CrearProyecto() {
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-[var(--suave)]">{t("eventos.workTasks")}</dt>
-              <dd className="hyto-amount">{formatearMonto((trabajo / 100).toString())}</dd>
+              <dd className="hyto-amount">{formatearMonto((trabajo / 100).toString(), idioma)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-[var(--suave)]">{t("eventos.reimbursements")}</dt>
-              <dd className="hyto-amount">{formatearMonto((reembolso / 100).toString())}</dd>
+              <dd className="hyto-amount">{formatearMonto((reembolso / 100).toString(), idioma)}</dd>
             </div>
             <div className="flex justify-between gap-3 border-t border-[var(--linea)] pt-3 text-base font-semibold">
               <dt>{t("eventos.total")}</dt>
-              <dd className="hyto-amount">{formatearMonto(total)}</dd>
+              <dd className="hyto-amount">{formatearMonto(total, idioma)}</dd>
             </div>
           </dl>
           <div className="mt-5 flex flex-wrap items-center gap-3">

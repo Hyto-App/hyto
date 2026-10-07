@@ -1,7 +1,6 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import { asegurarSemilla } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
@@ -109,7 +108,6 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?:
 
 export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: "evento" | "mias" = "evento"): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const tareas = alcance === "mias" ? await tareasPropias(almacen, visor) : await tareasVisibles(almacen, visor);
     if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) }, 200, PRIVADA);
     const nombres = new Map((await almacen.listarProyectos()).map((proyecto) => [proyecto.id, proyecto.nombre]));

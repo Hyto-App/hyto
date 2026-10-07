@@ -81,6 +81,7 @@ test("el informe de ejemplo arma la bandeja de admin", async () => {
 
 test("la revisión de ejemplo trae veredicto sin un modelo", async () => {
   const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   const respuesta = await leerRevisionHttp(almacen, null, "stand");
   assert.equal(respuesta.status, 200);
   const json = (await respuesta.json()) as {
@@ -178,7 +179,7 @@ test("sembrar dos veces no duplica ni pisa un pago", async () => {
   assert.equal((await almacen.ultimaEvidencia("bienvenida")), null);
 });
 
-test("una semilla vieja en revisión vuelve a pendiente sin pago ni foto real", async () => {
+test("una semilla vieja fuera del demo no vuelve a pendiente", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
   for (const id of ["stand", "registro", "bienvenida", "comida"]) {
@@ -195,13 +196,13 @@ test("una semilla vieja en revisión vuelve a pendiente sin pago ni foto real", 
   });
   await almacen.actualizarTarea("comida", { estado: "pagado" });
   await asegurarSemilla(almacen);
-  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
-  assert.equal((await almacen.leerTarea("bienvenida"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "en revisión");
+  assert.equal((await almacen.leerTarea("bienvenida"))?.estado, "en revisión");
   assert.equal((await almacen.leerTarea("comida"))?.estado, "pagado");
   assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
   await asegurarSemilla(almacen);
   assert.equal((await almacen.leerTarea("registro"))?.estado, "en revisión");
-  assert.equal((await almacen.leerTarea("stand"))?.estado, "pendiente");
+  assert.equal((await almacen.leerTarea("stand"))?.estado, "en revisión");
   assert.equal((await almacen.leerTarea("comida"))?.estado, "pagado");
   assert.equal((await almacen.leerTarea("comida"))?.hashPago, null);
 });

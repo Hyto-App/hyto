@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Entrar } from "@/components/admin/Entrar";
 import { demoHabilitado } from "@/lib/sesion/demo";
+import { destinoInicio } from "@/lib/sesion/destino";
+import { eventosOrganizados } from "@/lib/sesion/organiza";
 import { leerSesionActual } from "@/lib/sesion/vista";
 import { discurso } from "@/lib/ui/discurso";
 import { redirect } from "next/navigation";
@@ -21,6 +23,9 @@ export const metadata: Metadata = {
 
 export default async function PaginaInicio() {
   const sesion = await leerSesionActual();
-  if (sesion) redirect("/mis-tareas");
+  if (sesion) {
+    const organiza = (await eventosOrganizados(sesion.usuarioId)).length > 0;
+    redirect(destinoInicio(sesion, organiza));
+  }
   return <Entrar abrirLogin demoHabilitado={demoHabilitado()} />;
 }

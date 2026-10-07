@@ -204,6 +204,17 @@ export async function asegurarVoluntarioDemo(almacen: Almacen): Promise<void> {
     estado: "active",
     creadoEn: CREADO_DEMO,
   });
+  const organizador = usuarioDemo("organizador");
+  const proyecto = await almacen.leerProyecto(ID_PROYECTO_DEMO);
+  if (proyecto?.organizadorId === organizador.id) {
+    await almacen.guardarMiembro({
+      proyectoId: ID_PROYECTO_DEMO,
+      usuarioId: organizador.id,
+      rol: "organizer",
+      estado: "active",
+      creadoEn: CREADO_DEMO,
+    });
+  }
 }
 
 const MIEMBROS_MUESTRA = new Set(["voluntario-1", "voluntario-2", "voluntario-3"]);
@@ -230,15 +241,6 @@ export async function asegurarCaminoDemo(almacen: Almacen): Promise<void> {
 }
 
 async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Promise<void> {
-  const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === ID_PROYECTO_DEMO);
-  for (const tarea of tareas) {
-    if (tarea.estado === "pagado" || tarea.hashPago) continue;
-    const evidencia = await almacen.ultimaEvidencia(tarea.id);
-    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
-    if (!veredicto || veredicto.origen === "error" || veredicto.veredicto !== "cumplió") continue;
-    if (tarea.estado !== "en revisión") await almacen.actualizarTarea(tarea.id, { estado: "en revisión" });
-    return;
-  }
   const stand = await almacen.leerTarea(TAREA_DEMO_MET);
   if (!stand || stand.proyectoId !== ID_PROYECTO_DEMO || stand.estado === "pagado" || stand.hashPago) return;
   const evidencia = await almacen.ultimaEvidencia(stand.id);
@@ -261,7 +263,9 @@ async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Prom
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {
+  if (!demoHabilitado()) return;
   for (const tarea of await almacen.listarTareas()) {
+    if (tarea.proyectoId !== ID_PROYECTO_DEMO) continue;
     if (tarea.estado !== "en revisión" || tarea.hashPago) continue;
     const evidencia = await almacen.ultimaEvidencia(tarea.id);
     if (evidencia && !esBlobEjemplo(evidencia.blobId)) continue;

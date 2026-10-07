@@ -21,32 +21,29 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-test("sin rutas, Mis tareas usa el ejemplo de ZEEK del miembro", async () => {
+test("si la lista falla, Mis tareas muestra el error y no el ejemplo", async () => {
   const fetchImpl: typeof fetch = async () => {
     throw new Error("red");
   };
 
   const lista = await listarTareas({ miembroId: "voluntario-1" }, { fetch: fetchImpl, muestra: true });
-  assert.equal(lista.ejemplo, true);
-  assert.deepEqual(
-    lista.tareas.map((tarea) => tarea.id),
-    ["stand", "comida"],
-  );
-  assert.equal(lista.tareas[0]?.monto, "20");
-  assert.equal(lista.tareas[0]?.estado, "pendiente");
-  assert.equal(lista.tareas[1]?.tipo, "reembolso");
-  assert.equal(lista.tareas[1]?.tope, "15");
+  assert.equal(lista.ejemplo, false);
+  assert.deepEqual(lista.tareas, []);
+  assert.equal(lista.error, "Could not load your tasks.");
 });
 
-test("el voluntario 3 solo ve su tarea y el organizador no tiene tareas de ejemplo", async () => {
+test("el voluntario 3 no recibe tareas de ejemplo cuando la lista falla", async () => {
   const fetchImpl: typeof fetch = async () => json({ tareas: [] }, 404);
-  const tres = await listarTareas({ miembroId: "voluntario-3" }, { fetch: fetchImpl, muestra: true });
   assert.deepEqual(tareasEjemplo().filter((t) => t.miembroId === "voluntario-3").map((t) => t.titulo), [
     "Welcome table",
   ]);
-  assert.equal(tres.tareas[0]?.titulo, "Welcome table");
+  const tres = await listarTareas({ miembroId: "voluntario-3" }, { fetch: fetchImpl, muestra: true });
+  assert.equal(tres.ejemplo, false);
+  assert.equal(tres.error, "Could not load your tasks.");
+  assert.deepEqual(tres.tareas, []);
 
   const organizador = await listarTareas({ miembroId: "organizador" }, { fetch: fetchImpl, muestra: true });
+  assert.equal(organizador.ejemplo, false);
   assert.deepEqual(organizador.tareas, []);
 });
 
@@ -313,21 +310,22 @@ test("si la lectura trae monto y fecha, la pantalla puede mostrarlos", async () 
   assert.equal(enviada.evidencia?.fecha, "2026-09-28");
 });
 
-test("la evidencia de ejemplo no abre la tarea de otro integrante", async () => {
+test("la evidencia de ejemplo no se inventa cuando la lista falla", async () => {
   const fetchImpl: typeof fetch = async () => {
     throw new Error("red");
   };
   const ajena = await leerTarea("stand", { miembroId: "voluntario-2" }, { fetch: fetchImpl, muestra: true });
   assert.equal(ajena.tarea, null);
+  assert.equal(ajena.error, "Could not load your tasks.");
 
   const propia = await leerTarea(
     "stand",
     { miembroId: "voluntario-1" },
     { fetch: fetchImpl, estados: { stand: "en revisión" }, muestra: true },
   );
-  assert.equal(propia.ejemplo, true);
-  assert.equal(propia.tarea?.id, "stand");
-  assert.equal(propia.tarea?.estado, "en revisión");
+  assert.equal(propia.ejemplo, false);
+  assert.equal(propia.tarea, null);
+  assert.equal(propia.error, "Could not load your tasks.");
 });
 
 test("un monto que no viene no se inventa como cero", async () => {
@@ -340,7 +338,7 @@ test("un monto que no viene no se inventa como cero", async () => {
   assert.equal(lista.tareas[0]?.monto, "");
 });
 
-test("el estado local de ejemplo pisa el pendiente", async () => {
+test("un fallo no inventa el estado de ejemplo", async () => {
   const fetchImpl: typeof fetch = async () => {
     throw new Error("red");
   };
@@ -348,6 +346,7 @@ test("el estado local de ejemplo pisa el pendiente", async () => {
     { miembroId: "voluntario-1" },
     { fetch: fetchImpl, estados: { stand: "en revisión" }, muestra: true },
   );
-  assert.equal(lista.tareas.find((tarea) => tarea.id === "stand")?.estado, "en revisión");
-  assert.equal(lista.tareas.find((tarea) => tarea.id === "comida")?.estado, "pendiente");
+  assert.equal(lista.ejemplo, false);
+  assert.equal(lista.error, "Could not load your tasks.");
+  assert.deepEqual(lista.tareas, []);
 });

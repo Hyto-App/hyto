@@ -1,6 +1,6 @@
 # Stack
 
-Current as of `main` at `2b9fad4` (2 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
+Current as of `main` at `5c6613f` (7 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
 One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Evidence, the AI review, and the report stay off-chain.
 
@@ -10,9 +10,9 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 |---|---|
 | App | Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4. App Router. |
 | UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. English and Spanish dictionaries in `lib/ui/diccionario.ts` (cookie `hyto_idioma`, English fallback). Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
-| Shell | Events, Tasks, Account. Same chrome for organizers and members. |
+| Shell | Events (`/eventos`), Tasks (`/mis-tareas`), Account (`/configuracion`). `/` sends an organizer, including the demo organizer, to `/eventos`, and everyone else to `/mis-tareas`. `/cuentas` redirects to `/configuracion`. |
 | Host | Vercel. Push to `main` deploys https://hyto.vercel.app. Each PR gets a preview. |
-| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0004_miembros_invitaciones.sql`. `0004` was applied on 2026-10-01. |
+| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0009_contexto_evento.sql`. `0004` was applied on 2026-10-01. `0009` adds the cover, the public description, and the AI-only context. |
 | Files | Private Vercel Blob. The photo is not written on-chain. |
 | Wallet | `@cavos/kit` 0.2.5. `chains: ["stellar"]`, `network: "testnet"`, `appSalt` `hyto`. Changing the salt later creates a different wallet. |
 | Escrow | `https://beta.api.trustlesswork.com`. Unsigned XDR from the server, `wallet.signXdr` in the browser, `POST /stellar/send-transaction`. Not the Cavos `TrustlessWorkEscrow` wrapper. |

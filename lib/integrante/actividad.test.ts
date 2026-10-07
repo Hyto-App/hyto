@@ -40,7 +40,7 @@ test("la foto guarda su hora y Mile no tiene una", () => {
   assert.equal(vista.pasos[2]?.estado, "despues");
 });
 
-test("un hash sin pago marca aprobada y pago en camino, sin hora", () => {
+test("un hash sin pago no marca aprobada y deja el pago en camino, sin hora", () => {
   const vista = seguimientoDe({
     ...base,
     estado: "en revisión",
@@ -52,11 +52,11 @@ test("un hash sin pago marca aprobada y pago en camino, sin hora", () => {
   });
   assert.deepEqual(
     vista.pasos.map((paso) => paso.estado),
-    ["hecho", "hecho", "ahora"],
+    ["ahora", "hecho", "ahora"],
   );
   assert.deepEqual(
     vista.eventos.map((evento) => evento.id),
-    ["envio", "mile", "aprobada", "camino"],
+    ["envio", "mile", "camino"],
   );
   assert.equal(vista.eventos.every((evento) => evento.id === "envio" || evento.en === null), true);
 });

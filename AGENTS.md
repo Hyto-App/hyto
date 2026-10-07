@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `5c6613f` (7 October 2026): roleless events, invites, one app shell, and an event cover, public description, and AI-only context. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -40,18 +40,20 @@ Who can see what (`lib/api/alcance.ts`):
 
 ## App shell
 
-One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/mis-tareas`), **Account** (`/cuentas`). Light and dark tokens are in `app/globals.css`. Accent `#B7EE34`, button text `#08090C`. Poppins 400, 500, 600. UI source of truth is Abdiel's Figma, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". Flag conflicts with that file instead of overwriting it.
+One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/mis-tareas`), **Account** (`/configuracion`). Light and dark tokens are in `app/globals.css`. Accent `#B7EE34`, button text `#08090C`. Poppins 400, 500, 600. UI source of truth is Abdiel's Figma, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". Flag conflicts with that file instead of overwriting it.
 
 | Route | What it is |
 |---|---|
-| `/` | Landing. Signed-in users go to `/eventos`. |
+| `/` | Landing. A signed-in organizer, including the demo organizer, goes to `/eventos`. Everyone else goes to `/mis-tareas`. |
 | `/eventos`, `/eventos/nuevo`, `/eventos/[id]` | List, create, event home. |
 | `/eventos/[id]/tareas` | Organizer assigns tasks. |
 | `/eventos/[id]/informe` | Printable report. `/informe` redirects to the first event. |
 | `/revision/[id]` | Photo review and payment. |
 | `/join`, `/join/[secreto]` | Redeem an invite. |
 | `/mis-tareas`, `/tareas/[id]` | Assigned tasks and evidence upload. |
-| `/cuentas`, `/cuentas/preparar` | Wallet and USDC setup. |
+| `/configuracion` | Account, wallet, and USDC setup. |
+| `/cuentas` | Redirects to `/configuracion`, keeping the query and the hash. |
+| `/cuentas/preparar` | Get ready to be paid. |
 | `/proyectos/nuevo` | Redirects to `/eventos/nuevo`. |
 
 User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` (`en` or `es`) and the dictionaries in `lib/ui/diccionario.ts`. Screens that are not wired yet stay in English.
@@ -62,7 +64,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 |---|---|
 | App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
 | API | Route handlers in `app/api`. |
-| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
+| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0009_contexto_evento.sql`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). `0009` adds the cover, the public description, and the AI-only context. Do not apply it from an agent. |
 | Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
@@ -95,7 +97,7 @@ If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wal
 
 Upload and review call `revisar()` (`lib/revision/revisar.ts`).
 
-1. Groq (`qwen/qwen3.8-27b`) gets the task condition and type in the prompt (`pedidoVision` in `lib/revision/scout.ts`) and returns JSON with `tipo`, `pais`, `moneda`, `monto_original`, `monto_usd`, `fecha`, `comercio`, `articulos`, `texto_completo` (4 to 8 sentences), `legible`, and `faltantes`. `texto_completo` and `faltantes` must be English only, even when the condition or the receipt is in Spanish. `lib/revision/lectura.ts` checks that reply: the printed symbol wins over the model's currency code (₡, ¢, or colones is CRC), a currency that is not shown is never assumed to be USD, a total such as `₡7.950,00` is read with the decimal comma, and a printed date is read day first unless the country is `US`. Hyto converts to dollars with `CRC_POR_USD` in `lib/revision/divisas.ts` (a constant updated by hand, no live rate). The older reply with `texto`, `monto`, and `fecha` is still read the old way. The request uses `max_completion_tokens: 2048`. `reasoning_effort: "none"` and `reasoning_format: "hidden"` go only to a `qwen/qwen3…` model (`parametrosRazonamiento`), so `GROQ_VISION_MODEL` can name a model without reasoning. Before it is sent, the photo is turned upright from its EXIF orientation and kept under 4 MB of base64 (`lib/evidencia/vision.ts`). The reading is stored in `texto_scout` after the answer snapshot (marker `@@hyto-lectura@@`, `lib/revision/snapshot-razones.ts`), so older rows read unchanged and there is no migration. The file name `scout.ts` and the column `texto_scout` are old names.
+1. Groq (`qwen/qwen3.8-27b`) gets the task condition, the type, the session language, and, when the event has them, the public description and the AI-only context (`pedidoVision` in `lib/revision/scout.ts`, `bloqueContextoEvento`). An empty context leaves the prompt unchanged. The AI-only text is not returned to members. The model returns JSON with `tipo`, `pais`, `moneda`, `monto_original`, `monto_usd`, `fecha`, `comercio`, `articulos`, `texto_completo` (4 to 8 sentences), `legible`, and `faltantes`. `texto_completo` and `faltantes` follow the session language (`es` is Spanish only, otherwise English only), even when the condition or the receipt is in the other language. `lib/revision/lectura.ts` checks that reply: the printed symbol wins over the model's currency code (₡, ¢, or colones is CRC), a currency that is not shown is never assumed to be USD, a total such as `₡7.950,00` is read with the decimal comma, and a printed date is read day first unless the country is `US`. Hyto converts to dollars with `CRC_POR_USD` in `lib/revision/divisas.ts` (a constant updated by hand, no live rate). The older reply with `texto`, `monto`, and `fecha` is still read the old way. The request uses `max_completion_tokens: 2048`. `reasoning_effort: "none"` and `reasoning_format: "hidden"` go only to a `qwen/qwen3…` model (`parametrosRazonamiento`), so `GROQ_VISION_MODEL` can name a model without reasoning. Before it is sent, the photo is turned upright from its EXIF orientation and kept under 4 MB of base64 (`lib/evidencia/vision.ts`). The reading is stored in `texto_scout` after the answer snapshot (marker `@@hyto-lectura@@`, `lib/revision/snapshot-razones.ts`), so older rows read unchanged and there is no migration. The file name `scout.ts` and the column `texto_scout` are old names.
 2. If `LAYA_URL` is set, `POST {LAYA_URL}/v1/systemone` (model `multilingual`) asks one classification question, then the work questions or the invoice questions (`lib/revision/laya-preguntas.ts`). The `state` Laya scores is the whole reading written out (`contextoParaLaya`: evidence type, readability, merchant, items, total as printed, currency, dollar total and rate, date, what is missing, and the description), then the condition. `LAYA_API_KEY` is sent as Bearer when set. Classification `otra` still gets the work questions. It scores 0 only when the match question also says the photo is something else.
 3. The result is an integer grade from 0 to 100 (`lib/revision/pesos.ts`). It is the sum of each question's weight times its credit. Weights are `PESOS_PREGUNTAS` and each path sums to 100. Ordered answers get half credit on the middle step. A yes/no question scores its weight only when the answer supports a valid task; for "is something missing", that answer is no. The grade is stored in `veredictos.score`. A display band is derived from it: under 50 `insuficiente`, 50–79 `parcial`, 80–100 `cumplió`. The screen shows those bands as Insufficient, Partially completed, and Completed, next to the percentage (`64% · Partially completed`). After **Ask for another photo**, the old verdict is hidden until a new file arrives (`veredictoVigente` in `lib/api/informe.ts`). `calificar` applies the caps and does not change the weights: 49 for classification `otra`, work that does not match, work that has not started, or a different kind of expense; 79 when the expense is not reasonable, and for a reimbursement with no date, with a printed total whose currency Hyto cannot convert, or with a dollar amount over the task cap (the confirmed amount, which cannot pass the cap, is what gets paid); 40 when a reimbursement has no total at all. The lowest cap wins. Reason tags are recomputed from the stored answers and the stored reading and do not approve or sign a payment. Tags are sorted problems first, then warnings, then good signs, and the first one (`motivoPrincipal` in `lib/revision/razones.ts`) is written next to the percentage on the review screen and in the inbox. A reimbursement also shows the total as printed and the rate used.
 
@@ -183,7 +185,7 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `5c6613f`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code. That history also has the sidebar, the profile menu, initials, organizer navigation, the greeting, Mile's help (`Ctrl+K`), and the task tracking bar. An event can store a cover photo, a description members read, and context that only the vision prompt sees. Account is `/configuracion`; `/cuentas` redirects there. A signed-in organizer, including the demo organizer, opens `/eventos`. Everyone else opens `/mis-tareas`.
 
 There is still no real testnet USDC payment hash in the repo.
 

@@ -1,6 +1,6 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
+import { esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { contextoParaRevision } from "./contexto-evento";
@@ -8,6 +8,7 @@ import { guardarRevision } from "./evidencias";
 import { conciliarPagoPendiente } from "./firma";
 import { rechazoPublico, revisionPublica } from "./tareas";
 import { leerRequisitos } from "@/lib/revision/requisitos";
+import type { Idioma } from "@/lib/ui/idioma";
 import { tareaAdmin } from "./informe";
 import { baseNoLista, json } from "./json";
 
@@ -38,9 +39,9 @@ export async function leerRevisionHttp(
   tareaId: string,
   forzar = false,
   wallet = "",
+  idioma: Idioma = "en",
 ): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const tarea = await almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     if (forzar && (tarea.estado === "pagado" || Boolean(tarea.contratoEscrow?.trim()))) {
@@ -59,7 +60,7 @@ export async function leerRevisionHttp(
       try {
         const foto = await fotos.leer(evidencia.blobId);
         const evento = await contextoParaRevision(almacen, tarea.proyectoId);
-        const resultado = await revisar(tarea, foto, { ...contextoDesdeEntorno(), evento });
+        const resultado = await revisar(tarea, foto, { ...contextoDesdeEntorno(), evento, idioma });
         await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
       } finally {
         if (reservado) liberarRevision(tareaId);

@@ -5,7 +5,6 @@ import { crearMemoria } from "@/lib/db/memoria";
 import type { EvidenciaFila, Proyecto, SesionFila, TareaFila } from "@/lib/db/tipos";
 import type { LectorSaldo } from "@/lib/escrow/saldo";
 import { usuarioDemo } from "@/lib/sesion/demo";
-import { DIRECCION_MUESTRA, SALDO_MUESTRA } from "./orgullo";
 import { armarVistaCuenta } from "./panel-cuenta";
 
 const AHORA = new Date("2026-10-15T18:00:00.000Z");
@@ -145,7 +144,7 @@ test("el reembolso usa el monto confirmado y no el tope", async () => {
   assert.equal(vista.orgullo.mesPasado, "12.40");
 });
 
-test("el demo sin pagos usa la muestra y no llama a Horizon", async () => {
+test("el demo sin pagos usa las tareas reales y no llama a Horizon sin billetera", async () => {
   const almacen = crearMemoria();
   const voluntario = usuarioDemo("voluntario");
   let lecturas = 0;
@@ -163,12 +162,14 @@ test("el demo sin pagos usa la muestra y no llama a Horizon", async () => {
   });
 
   assert.equal(vista.demo, true);
-  assert.equal(vista.muestra, true);
-  assert.equal(vista.walletMuestra, true);
-  assert.equal(vista.wallet, DIRECCION_MUESTRA);
-  assert.equal(vista.saldo, SALDO_MUESTRA);
-  assert.equal(vista.orgullo.tareasCompletadas, 6);
-  assert.equal(vista.orgullo.vacio, false);
+  assert.equal(vista.muestra, false);
+  assert.equal(vista.walletMuestra, false);
+  assert.equal(vista.wallet, null);
+  assert.equal(vista.saldo, null);
+  assert.equal(vista.saldoEstado, "sin-wallet");
+  assert.equal(vista.orgullo.tareasCompletadas, 0);
+  assert.equal(vista.orgullo.total, "0");
+  assert.equal(vista.orgullo.vacio, true);
   assert.equal(lecturas, 0);
 });
 

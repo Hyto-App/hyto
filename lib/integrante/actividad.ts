@@ -1,3 +1,4 @@
+import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
 import type { Tarea } from "./tipos";
 
 export type IdPaso = "aprobada" | "enviado" | "pagado";
@@ -17,20 +18,17 @@ export function instanteGuardado(valor: string | null | undefined): string | nul
   return new Date(ms).toISOString();
 }
 
-function conHash(tarea: TareaActividad): boolean {
-  return Boolean(tarea.hashPago?.trim());
-}
-
 /**
- * Payment trail from fields the task already carries.
- * Aprobada: the task is closed (paid, or the payment was already sent).
+ * Payment trail from the same status the server uses.
+ * Aprobada: the task is paid. A hash, or a stored etapa, does not approve it.
  * Pago enviado: a payment hash is stored, or the task is already paid.
  * Pagado: estado pagado.
  */
 export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado: boolean; pagado: boolean } {
-  const pagado = tarea.estado === "pagado";
-  const enviado = pagado || conHash(tarea);
-  const aprobada = enviado || tarea.etapa === "aprobada";
+  const calculo = calcularEstadoTarea({ estado: tarea.estado, hashPago: tarea.hashPago });
+  const pagado = calculo.estado === "pagado";
+  const enviado = pagado || calculo.pagoPendiente;
+  const aprobada = calculo.etapa === "aprobada";
   return { aprobada, enviado, pagado };
 }
 

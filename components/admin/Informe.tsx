@@ -86,8 +86,8 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
           </div>
           <p className="mt-2 text-sm text-[var(--suave)]">
             {t(vista.personas.length === 1 ? "eventos.paidLine" : "eventos.paidLineMany", {
-              paid: formatearMonto(vista.resumen.pagado),
-              pending: formatearMonto(vista.resumen.pendiente),
+              paid: formatearMonto(vista.resumen.pagado, idioma),
+              pending: formatearMonto(vista.resumen.pendiente, idioma),
               n: vista.personas.length,
             })}
           </p>
@@ -108,7 +108,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                 const pago = enlacePago(tarea.hashPago);
                 const credencial = enlaceCredencial(tarea.credencialUrl);
                 const detalle = detalleMonto(tarea);
-                const cifra = detalle.hasta ? t("eventos.upTo", { amount: formatearMonto(detalle.cifra) }) : formatearMonto(detalle.cifra);
+                const cifra = detalle.hasta ? t("eventos.upTo", { amount: formatearMonto(detalle.cifra, idioma) }) : formatearMonto(detalle.cifra, idioma);
                 const origen = etiquetaOrigen(tarea.origen, idioma);
                 const lleno = tarea.estado === "pagado" ? 100 : 0;
                 return (
@@ -128,7 +128,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       <span style={{ width: `${lleno}%` }} />
                     </div>
                     {detalle.tope && detalle.tope !== detalle.cifra ? (
-                      <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: formatearMonto(detalle.tope) })}</p>
+                      <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: formatearMonto(detalle.tope, idioma) })}</p>
                     ) : null}
                     {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
                     <EtiquetasNota etiquetas={tarea.etiquetas} />

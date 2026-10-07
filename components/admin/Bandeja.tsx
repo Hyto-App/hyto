@@ -216,7 +216,7 @@ export function Bandeja({
                       <span className="min-w-0 flex-1">
                         <span className="flex items-start justify-between gap-3">
                           <span className="block font-semibold">{textoVisible(tarea.miembro, idioma)}</span>
-                          <span className="hyto-amount text-sm">{montoDeTarea(tarea)}</span>
+                          <span className="hyto-amount text-sm">{montoDeTarea(tarea, idioma)}</span>
                         </span>
                         <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo, idioma)}</span>
                         <span className="mt-2 flex items-center justify-between gap-2">
@@ -236,7 +236,7 @@ export function Bandeja({
                 <div className="p-5">
                   <p className="text-sm text-[var(--suave)]">{etiquetaTipo(seleccion.tipo, idioma)} · {textoVisible(seleccion.miembro, idioma)}</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo, idioma)}</h3>
-                  <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion)}</p>
+                  <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion, idioma)}</p>
                   {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase, idioma)}</p> : null}
                   {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
                     <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />

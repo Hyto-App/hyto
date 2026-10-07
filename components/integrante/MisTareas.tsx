@@ -52,13 +52,17 @@ function suma(tareas: Tarea[], estado: EstadoTarea): number {
   return tareas.filter((tarea) => tarea.estado === estado).reduce((total, tarea) => total + (Number(tarea.tope ?? tarea.monto) || 0), 0);
 }
 
-function cifra(valor: number): string {
-  return valor.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(valor) ? 0 : 2, maximumFractionDigits: 2 });
+function cifra(valor: number, idioma: "en" | "es"): string {
+  return valor.toLocaleString(idioma === "es" ? "es-CR" : "en-US", {
+    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function Monto({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
-  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0);
+  const idioma = useIdioma();
+  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
   return (
     <span className="hyto-monto">
       {tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}
@@ -69,10 +73,11 @@ function Monto({ tarea }: { tarea: Tarea }) {
 
 function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: number; revision: number; pendientes: number; className?: string }) {
   const t = useTexto();
+  const idioma = useIdioma();
   return (
     <div className={`hyto-metricas ${className}`.trim()}>
       <div className="hyto-metrica-ganado">
-        <b>{cifra(ganado)}</b>
+        <b>{cifra(ganado, idioma)}</b>
         <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
       </div>
       <div>
@@ -457,7 +462,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {tarea.estado === "pagado" ? (
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: `${cifra(Number(tarea.tope ?? tarea.monto) || 0)} USDC` })}</span>
+                              <span>{t("tareas.paidNote", { amount: `${cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma)} USDC` })}</span>
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (

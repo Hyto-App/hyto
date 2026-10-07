@@ -1,6 +1,5 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import { tareasEjemplo } from "./ejemplos";
 import { leerCamposRevision } from "./revision";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
 
@@ -61,11 +60,6 @@ export const AVISO_ENVIO_INCIERTO =
 const TOPE_LECTURA_MS = 4000;
 /** A photo on a phone network takes far longer than a read, and the server keeps saving after the browser gives up. */
 export const TOPE_SUBIDA_MS = 60_000;
-
-function conEstados(tareas: Tarea[], estados: Record<string, EstadoTarea> | undefined): Tarea[] {
-  if (!estados) return tareas;
-  return tareas.map((tarea) => (estados[tarea.id] ? { ...tarea, estado: estados[tarea.id] } : tarea));
-}
 
 function filtrarTareas(tareas: Tarea[], filtro: FiltroTareas): Tarea[] {
   if (!filtro.miembroId && !filtro.wallet) return tareas;
@@ -236,8 +230,7 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
     }
   }
   if (opciones.muestra) {
-    const tareas = filtrarTareas(tareasEjemplo(), filtro);
-    return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+    return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
   }
   return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
 }

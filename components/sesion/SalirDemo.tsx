@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { useTexto } from "@/components/ui/Idioma";
 
 export function SalirDemo() {
   const activo = useModoDemo();
+  const t = useTexto();
   const [saliendo, setSaliendo] = useState(false);
   if (!activo) return null;
 
@@ -25,7 +27,7 @@ export function SalirDemo() {
       disabled={saliendo}
       className="hyto-btn-danger"
     >
-      {saliendo ? "Leaving…" : "Leave demo"}
+      {saliendo ? t("entrar.leaving") : t("entrar.leaveDemo")}
     </button>
   );
 }

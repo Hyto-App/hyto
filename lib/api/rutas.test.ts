@@ -90,6 +90,7 @@ test("las tareas de ZEEK salen de la base", async () => {
 
 test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha", async () => {
   const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   const fotos = crearFotosMemoria();
   const jpeg = await jpegDePrueba();
   const cuerpo = new FormData();
@@ -125,6 +126,7 @@ test("la foto queda guardada y sin clave el reembolso no inventa monto ni fecha"
 
 test("la subida guarda la cuenta de la sesión del asignado, no la del formulario", async () => {
   const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   const fotos = crearFotosMemoria();
   const propia = "G" + "A".repeat(55);
   const ajena = "G" + "B".repeat(55);
@@ -313,12 +315,14 @@ test("la sesión demo no fija la cuenta de cobro", async () => {
 });
 
 test("un archivo que no es imagen no pasa", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
   cuerpo.set("foto", new Blob(["hola"], { type: "text/plain" }), "nota.txt");
   const respuesta = await publicarEvidenciaHttp(
     new Request("http://local/api/evidencias", { method: "POST", body: cuerpo }),
-    { almacen: crearMemoria(), fotos: crearFotosMemoria() },
+    { almacen, fotos: crearFotosMemoria() },
   );
   assert.equal(respuesta.status, 400);
 });
@@ -349,6 +353,7 @@ test("el informe abre sin hash y Ver pago usa el hash cuando existe", async () =
 test("la revisión de un trabajo sin clave guarda el error y no el guion", async () => {
   reiniciarTokensEvidencia();
   const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
   const fotos = crearFotosMemoria();
   const cuerpo = new FormData();
   cuerpo.set("tareaId", "stand");
@@ -485,12 +490,12 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
   assert.equal(propia.status, 200);
   assert.match(propia.headers.get("set-cookie") ?? "", /hyto_sesion=/);
   const cuerpo = (await propia.json()) as { rol: string; usuarioId: string; nuevo: boolean };
-  assert.equal(cuerpo.rol, "organizador");
-  assert.equal(cuerpo.nuevo, false);
-  assert.equal(cuerpo.usuarioId, "organizador");
+  assert.equal(cuerpo.rol, "voluntario");
+  assert.equal(cuerpo.nuevo, true);
+  assert.match(cuerpo.usuarioId, /^u-/);
   const organizadores = (await almacen.listarUsuarios()).filter((usuario) => usuario.email === "organizador@demo.hyto");
   assert.equal(organizadores.length, 1);
-  assert.equal(organizadores[0]?.rol, "organizador");
+  assert.equal(organizadores[0]?.rol, "voluntario");
 
   const sinSesion = await prepararFirma(new Request("http://local/api/firma", { method: "POST", body: "{}" }));
   assert.equal(sinSesion.status, 401);
@@ -1015,7 +1020,13 @@ test("Apple sin correo entra con una dirección estable del sub y nunca toca otr
   assert.equal(((await conRelay.json()) as { email: string }).email, relay);
 
   // An Apple sign-in that shares an existing user's email opens that user, not a new one.
-  await asegurarSemilla(almacen);
+  // Sign-in no longer seeds the database, so the existing account is inserted here.
+  await almacen.insertarUsuario({
+    id: "organizador",
+    email: "organizador@demo.hyto",
+    nombre: "Organizer",
+    rol: "organizador",
+  });
   const antes = (await almacen.listarUsuarios()).length;
   const existente = await crearSesionHttp(pedido("signin", { ...apple, email: "organizador@demo.hyto" }), almacen);
   assert.equal(existente.status, 200);

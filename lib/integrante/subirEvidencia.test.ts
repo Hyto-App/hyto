@@ -6,6 +6,7 @@ import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { jpegDePrueba } from "../evidencia/muestras";
+import { tareasEjemplo } from "../integrante/ejemplos";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 
 if (typeof URL.createObjectURL !== "function") {
@@ -24,7 +25,15 @@ function definirCamara(getUserMedia: ((restricciones?: unknown) => Promise<Media
 
 async function montarTarea() {
   const fetchPrevio = globalThis.fetch;
-  globalThis.fetch = async () => {
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) {
+      const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+      return new Response(JSON.stringify({ tareas: stand ? [stand] : [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
     throw new Error("offline");
   };
   try {
@@ -244,7 +253,7 @@ test("una foto de cámara que el servidor rechaza no dice Your photo arrived", a
     const pedidos = await enviarCaptura({ subida: () => json({ aviso }, 503) });
     assert.ok(pedidos.includes("POST /api/evidencias"));
     assert.doesNotMatch(texto(), /Your photo arrived/);
-    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("Photo checks are not ready on the server yet."));
     assert.equal(boton("Send evidence").textContent, "Send evidence");
     sinRevisionLocal();
   } finally {

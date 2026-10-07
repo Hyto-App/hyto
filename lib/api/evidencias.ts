@@ -1,7 +1,7 @@
 import type { Fotos } from "@/lib/blob/fotos";
 import { marcadorPng } from "@/lib/blob/marcador";
 import type { Almacen, CambioTarea } from "@/lib/db/almacen";
-import { asegurarSemilla, esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
+import { esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { aplicarCopia, MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { evaluarFrescura, fechaExif } from "@/lib/evidencia/frescura";
@@ -62,7 +62,6 @@ export function evidenciaPublica(evidencia: EvidenciaFila) {
 
 export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Visor): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
     if (!evidencia || acceso === "ausente") return json({ aviso: "We couldn't find that evidence." }, 404);
@@ -76,7 +75,6 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
 
 export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string, visor: Visor): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
     if (!evidencia || acceso === "ausente") return json({ aviso: "We couldn't find that evidence." }, 404);
@@ -119,7 +117,6 @@ export async function emitirTokenEvidenciaHttp(request: Request, deps: DepsEvide
   if (!tareaId) return json({ aviso: "The task is missing." }, 400);
   if (!deps.actor) return json({ aviso: "Sign in to continue." }, 401);
   try {
-    await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     if (tarea.tipo !== "trabajo") return json({ aviso: "Receipts do not use a camera check." }, 400);
@@ -150,7 +147,6 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
   if (foto.size > MAX_BYTES_ARCHIVO) return json({ aviso: avisoArchivo("grande") }, 413);
 
   try {
-    await asegurarSemilla(deps.almacen);
     const tarea = await deps.almacen.leerTarea(tareaId);
     if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
     const asignado = puedeFijarWallet(tarea, deps.actor);

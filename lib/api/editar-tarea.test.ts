@@ -160,8 +160,8 @@ test("el cuerpo no puede cambiar el estado ni el contrato", async () => {
   assert.equal(fila?.walletCobro, "");
 });
 
-test("estadoConFoto shows In review when a photo exists on a pending task", () => {
-  assert.equal(estadoConFoto("pendiente", true), "en revisión");
+test("estadoConFoto keeps a pending task pending when a photo exists", () => {
+  assert.equal(estadoConFoto("pendiente", true), "pendiente");
   assert.equal(estadoConFoto("pendiente", false), "pendiente");
   assert.equal(estadoConFoto("en revisión", true), "en revisión");
   assert.equal(estadoConFoto("pagado", true), "pagado");

@@ -1,7 +1,6 @@
 import { AVISO_SIN_CUENTA } from "@/lib/auth/errores";
 import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
@@ -45,7 +44,6 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     return json({ aviso: "Could not confirm sign-in." }, 400);
   }
   try {
-    await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
     let usuario = await almacen.usuarioPorEmail(email);
     let nuevo = false;

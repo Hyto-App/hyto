@@ -3,9 +3,10 @@ import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import test from "node:test";
 
-test("la raíz no tiene landing: abre el login o va a mis tareas", () => {
+test("la raíz manda a eventos a quien organiza y a mis tareas al resto", () => {
   const pagina = readFileSync(new URL("../../app/(admin)/page.tsx", import.meta.url), "utf8");
-  assert.match(pagina, /if \(sesion\) redirect\("\/mis-tareas"\)/);
+  assert.match(pagina, /destinoInicio\(sesion, organiza\)/);
+  assert.match(pagina, /eventosOrganizados\(sesion\.usuarioId\)/);
   assert.match(pagina, /<Entrar abrirLogin/);
   assert.equal(existsSync(new URL("../../components/admin/Landing.tsx", import.meta.url)), false);
 });

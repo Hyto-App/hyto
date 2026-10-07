@@ -1,6 +1,5 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen } from "@/lib/db/almacen";
-import { asegurarSemilla } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
 import type { TipoTarea } from "@/lib/integrante/tipos";
@@ -35,7 +34,6 @@ export async function crearProyectoHttp(
   const proyecto = leerProyecto(body);
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
   try {
-    await asegurarSemilla(almacen);
     const asignadas = await asignarTareas(almacen, organizadorId, proyecto.tareas);
     if (asignadas instanceof Response) return asignadas;
     if (fondos) {
@@ -137,7 +135,6 @@ function redactar(texto: string): string {
 
 export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: { id?: string | null }): Promise<Response> {
   try {
-    await asegurarSemilla(almacen);
     const proyectos = await proyectosVisibles(almacen, visor);
     const pedidoId = pedido?.id?.trim() || null;
     const proyecto = pedidoId ? (proyectos.find((item) => item.id === pedidoId) ?? null) : (proyectos[0] ?? null);

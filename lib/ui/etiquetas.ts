@@ -1,6 +1,7 @@
-import type { EstadoTarea } from "@/lib/integrante/tipos";
+import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import type { EstadoTarea } from "@/lib/integrante/tipos";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -70,13 +71,11 @@ export function etiquetaEstado(estado: string, idioma: Idioma = "en"): string {
 }
 
 /**
- * Upload moves the task to "en revisión". If a photo still sits on "pendiente"
- * (for example after "ask for another photo"), the Tasks tab should not look
- * empty: show In review whenever a photo is present.
+ * The stored status. A photo on a pending task stays pending, so Tasks matches
+ * the report and the inbox. Rejection is a stored note, not the presence of a file.
  */
-export function estadoConFoto(estado: string, tieneFoto: boolean): string {
-  if (tieneFoto && estado === "pendiente") return "en revisión";
-  return estado;
+export function estadoConFoto(estado: string, _tieneFoto: boolean): string {
+  return calcularEstadoTarea({ estado }).estado;
 }
 
 export function etiquetaVeredicto(veredicto: string, idioma: Idioma = "en"): string {

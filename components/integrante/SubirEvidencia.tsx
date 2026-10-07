@@ -484,7 +484,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
   const revisando = fase === "enviando" || esperando;
-  const montoVisible = montoDeTarea(tarea);
+  const montoVisible = montoDeTarea(tarea, idioma);
   const calificacion = notaDeTarea(tarea);
   const insuficiente = calificacion?.veredicto === "insuficiente";
   const parcial = calificacion?.veredicto === "parcial";
@@ -816,11 +816,11 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <dl className="hyto-tarjeta hyto-dato-leido">
               <div>
                 <dt>{t("comunes.amount")}</dt>
-                <dd className="hyto-amount">{formatearMonto(evidencia.monto!)}</dd>
+                <dd className="hyto-amount">{formatearMonto(evidencia.monto!, idioma)}</dd>
               </div>
               <div>
                 <dt>{t("comunes.date")}</dt>
-                <dd className="hyto-amount">{formatearFecha(evidencia.fecha!)}</dd>
+                <dd className="hyto-amount">{formatearFecha(evidencia.fecha!, idioma)}</dd>
               </div>
             </dl>
           ) : null}

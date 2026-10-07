@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { COOKIE_IDIOMA, encabezadoIdioma, hayCookieIdioma, idiomaDe, idiomaDeNavegador, MAX_EDAD_IDIOMA } from "./idioma";
+import { COOKIE_IDIOMA, encabezadoIdioma, hayCookieIdioma, idiomaDe, idiomaDeNavegador, idiomaDePeticion, MAX_EDAD_IDIOMA } from "./idioma";
 
 test("only es selects Spanish; anything else stays English", () => {
   assert.equal(idiomaDe("es"), "es");
@@ -28,6 +28,14 @@ test("browser language: es* is Spanish, anything else English", () => {
   assert.equal(idiomaDeNavegador("fr-FR"), "en");
   assert.equal(idiomaDeNavegador(null), "en");
   assert.equal(idiomaDeNavegador("esperanto"), "en");
+});
+
+test("a review request reads the session language from the cookie", () => {
+  const pedido = (cookie: string | null) => idiomaDePeticion({ headers: { get: () => cookie } });
+  assert.equal(pedido("otra=1; hyto_idioma=es"), "es");
+  assert.equal(pedido("hyto_idioma=en"), "en");
+  assert.equal(pedido(null), "en");
+  assert.equal(pedido("hyto_idioma=%"), "en");
 });
 
 test("detects whether the language cookie exists", () => {
