@@ -36,7 +36,7 @@ Who can see what (`lib/api/alcance.ts`):
 - **Organizer** of that event sees every task, invites people, assigns tasks at `/eventos/[id]/tareas`, locks the budget, and pays.
 - **Team and volunteer** see only tasks assigned to them (`tareas.miembro_id`). The `team` value is stored; it does not grant a wider view.
 
-`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign. A demo session has no wallet, so on the demo event **Lock budget** and **Pay** are simulated by `POST /api/revision/:id/demo` (`lib/api/demo.ts`): the same steps run on screen, the task stores a `demo-lock-…` budget reference instead of a `C…` contract, and pay marks it `pagado` with no hash. Nothing reaches Stellar or Trustless Work. Each demo sign-in undoes those demo locks and payments (`reiniciarPagosDemo` in `lib/db/semilla.ts`) so the flow can run again. Real sessions get 404 on that route.
+`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign.
 
 ## App shell
 
@@ -44,7 +44,7 @@ One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/
 
 | Route | What it is |
 |---|---|
-| `/` | Landing. Signed-in users go to `/mis-tareas`. |
+| `/` | Landing. Signed-in users go to `/eventos`. |
 | `/eventos`, `/eventos/nuevo`, `/eventos/[id]` | List, create, event home. |
 | `/eventos/[id]/tareas` | Organizer assigns tasks. |
 | `/eventos/[id]/informe` | Printable report. `/informe` redirects to the first event. |
@@ -120,8 +120,6 @@ On the review screen (`lib/admin/remoto.ts`):
 The organizer's USDC balance is checked again before deploy, fund, and submit (amount plus 1 USDC). The indexer can lag: `STELLAR_TX_SUBMITTED_INDEXER_LAGGING` is treated as submitted. The predicted contract id from the deploy prepare is carried inside the HMAC token (`contrato`), and submit saves it to `tareas.contrato_escrow` even when the indexer lags, so no instance offers a second deploy. On release, the server polls the escrow read (`lib/escrow/indexador.ts`) until milestone 0 is released. If it times out, it keeps `hash_pago` with the task unpaid, hides fund and pay, and `GET /api/revision/:id` marks it `pagado` once the read shows the release. The review screen re-reads that route with backoff while the payment is pending (`lib/admin/consulta-escrow.ts`). When the indexed balance is unknown, fund and pay stay hidden, the screen re-reads `/api/escrow/[contrato]` with the same backoff, and then offers a read-only **Check again** (`verificarFondo` in `lib/admin/remoto.ts`).
 
 If the submit call to Trustless throws (timeout, dropped connection, a resubmit), `POST /api/firma/enviar` asks testnet RPC `getTransaction` (`lib/escrow/confirmacion.ts`, `https://soroban-testnet.stellar.org`) for the signed transaction's hash. `SUCCESS` is handled like a lagging submit: deploy saves the predicted contract from the token, release saves `hash_pago`. `FAILED` returns the original error. `NOT_FOUND` after about 7 seconds returns `HYTO_TX_NOT_CONFIRMED` with the hash and saves nothing. `GET /api/revision/:id` also reads the escrow once for an unpaid task with a contract and marks it `pagado` when milestone 0 is released, even with no stored hash.
-
-A confirmed fund is stored per task and contract in `fondeos_escrow` (`drizzle/0008_fondeos_escrow.sql`; the submit path in `lib/api/firma.ts`, also when the indexer lags or RPC confirmed it). `GET /api/revision/:id` returns it as `hashFondeo`. With it, a zero or unknown indexed balance never offers fund: the screen shows the read-only **Check again** state (`fondeoEnviado` in `botonesRevision`), and prepare and submit for `fondear` answer 409 `HYTO_ESCROW_ALREADY_FUNDED`. `lib/db/neon.ts` probes the table and degrades to the old behaviour (no marker) until 0008 is applied by a person.
 
 `npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. There is no receiver-trustline check before deploy.
 

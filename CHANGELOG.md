@@ -2,12 +2,6 @@
 
 Newest first. Entries from 2026-10-02 on are in English and describe `main`. Older entries were written in Spanish against the tree of that day; do not treat them as the current product.
 
-## 2026-10-07
-
-### Fixed
-
-- Double lock (#046). The escrow balance read can lag after a successful fund and show zero, so a reload offered "Finish locking" again. A confirmed fund is now stored per task and contract (`fondeos_escrow`, `drizzle/0008_fondeos_escrow.sql`), also when the indexer lags or testnet RPC confirmed the submit. `GET /api/revision/:id` returns it as `hashFondeo`. With the marker, a zero or unknown balance only shows "Checking the locked budget" and **Check again**, and `POST /api/firma` and `/api/firma/enviar` answer 409 `HYTO_ESCROW_ALREADY_FUNDED` for a second fund. Until someone applies 0008 (`npm run db:migrar`), the marker is not stored and the screen behaves as before. Demo mode is unchanged.
-
 ## 2026-10-05
 
 ### Fixed
