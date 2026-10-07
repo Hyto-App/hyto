@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Entrar } from "@/components/admin/Entrar";
 import { PanelCuenta } from "@/components/integrante/PanelCuenta";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
@@ -6,6 +7,7 @@ import { Salir } from "@/components/sesion/Salir";
 import { Texto } from "@/components/ui/Idioma";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { PARAM_PASSKEY, ANCLA_PASSKEY, RUTA_PASSKEY_CUENTAS } from "@/lib/integrante/enlacePasskey";
+import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { leerModoDemo } from "@/lib/sesion/vista";
 
@@ -33,6 +35,11 @@ export default async function PaginaCuentas({ searchParams }: Props) {
         <Salir />
       </div>
       <PanelCuenta />
+      <p className="mt-8 text-sm">
+        <Link href="/privacy" className="text-[var(--suave)] underline underline-offset-4">
+          {ENLACE_PRIVACIDAD}
+        </Link>
+      </p>
       {demo ? (
         <div className="mt-8 max-w-sm">
           <Entrar demoHabilitado={demoHabilitado()} />
