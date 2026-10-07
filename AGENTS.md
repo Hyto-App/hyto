@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes the code as of 7 October 2026: `main` at `31ebd33` plus the open PRs #179 (demo to Paid, gallery photo in demo, Sign in creates the account) and #180 (demo lock and pay without a wallet, double-lock marker, faster sign-in, audit fixes, CI). Where a line depends on one of those PRs, it says so. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -13,15 +13,17 @@ Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deplo
 
 Every new task must consult Stellar Raven (and Trustless Work docs where the escrow is involved) before the work starts.
 
-Facts that bound this app, checked on 2026-10-02:
+Facts that bound this app, checked on 2026-10-02 and still true on 2026-10-07:
 
 - A classic Stellar asset such as USDC needs a trustline before an account can hold it ([Stellar docs, anatomy of an asset](https://developers.stellar.org/docs/tokens/anatomy-of-an-asset)). Friendbot funds testnet XLM ([networks](https://developers.stellar.org/docs/networks#friendbot)).
-- Trustless Work v2 multi-release deploys at `https://beta.api.trustlesswork.com`. Deploy is rejected with `ESCROW_RECEIVER_TRUSTLINE_MISSING` when a milestone receiver cannot hold the escrow token. Hyto does not run that preflight yet.
+- Trustless Work v2 multi-release deploys at `https://beta.api.trustlesswork.com`. Deploy is rejected with `ESCROW_RECEIVER_TRUSTLINE_MISSING` when a milestone receiver cannot hold the escrow token. Hyto checks the receiver's USDC trustline on Horizon before it prepares a deploy (`lib/escrow/receptor.ts`).
 - Testnet USDC issuer in code: `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. The SAC id is derived in `lib/escrow/desplegar.ts` (`USDC_SAC_TESTNET`).
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
+Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo or a receipt, Mile (the review: Groq, or Gemini when Groq fails, describes it; Laya scores that reading when configured) recommends a grade, and the organizer pays the full milestone, or for a reimbursement the confirmed amount up to the cap. The AI does not sign or move money.
+
+The same flow fits a team event (the ZEEK demo), freelance work by deliverable, grants and bounties paid by milestone, and stipends or scholarships reimbursed after the spend: a capped reimbursement task takes the receipt, reads the total and the currency, and pays what was really spent up to the cap.
 
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 
@@ -29,14 +31,14 @@ The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to 
 
 Login does not ask for a role. Creating an event requires a session wallet whose USDC balance covers the sum of the task amounts plus a 1 USDC reserve (`lib/escrow/saldo.ts`, `RESERVA_USDC`). The creator is stored as `organizer` on `proyecto_miembros` and on `proyectos.organizador_id`.
 
-People join by direct invite (email-bound, one use) or a code `HYTO-` plus 12 characters from a no-lookalike alphabet (`lib/api/invitaciones.ts`). Both expire in 7 days. After five failed attempts in 15 minutes, the next try returns 429. That counter is an in-memory map, so it does not hold across Vercel instances. Invite roles are `team` or `volunteer`.
+People join by direct invite (email-bound, one use) or a code `HYTO-` plus 12 characters from a no-lookalike alphabet (`lib/api/invitaciones.ts`; a code allows 50 uses by default, 500 at most). Both expire in 7 days. After five failed attempts in 15 minutes, the next try returns 429. That counter is an in-memory map, so it does not hold across Vercel instances. Invite roles are `team` or `volunteer`.
 
 Who can see what (`lib/api/alcance.ts`):
 
 - **Organizer** of that event sees every task, invites people, assigns tasks at `/eventos/[id]/tareas`, locks the budget, and pays.
 - **Team and volunteer** see only tasks assigned to them (`tareas.miembro_id`). The `team` value is stored; it does not grant a wider view.
 
-`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` still offers organizer or volunteer, and those sessions cannot create events or sign. A demo session has no wallet, so on the demo event **Lock budget** and **Pay** are simulated by `POST /api/revision/:id/demo` (`lib/api/demo.ts`): the same steps run on screen, the task stores a `demo-lock-…` budget reference instead of a `C…` contract, and pay marks it `pagado` with no hash. Nothing reaches Stellar or Trustless Work. Each demo sign-in undoes those demo locks and payments (`reiniciarPagosDemo` in `lib/db/semilla.ts`) so the flow can run again. Real sessions get 404 on that route.
+`usuarios.rol` still exists. A new Cavos email is inserted as `voluntario` (`lib/api/sesion.ts`). Event authorization does not read that column. Demo mode is the exception: `HYTO_DEMO_LOGIN=1` (on in production and preview) still offers organizer or volunteer, and those sessions cannot create events or sign. A demo volunteer can also pick a gallery photo for a work task (#179); real events keep the live-camera rule. A demo session has no wallet, so on the demo event **Lock budget** and **Pay** are simulated (#180) by `POST /api/revision/:id/demo` (`lib/api/demo.ts`): the same steps run on screen, the task stores a `demo-lock-…` budget reference instead of a `C…` contract, and pay marks it `pagado` with no hash. Nothing reaches Stellar or Trustless Work. Each demo sign-in undoes those demo locks and payments (`reiniciarPagosDemo` in `lib/db/semilla.ts`) so the flow can run again. Real sessions get 404 on that route.
 
 ## App shell
 
@@ -62,24 +64,26 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 |---|---|
 | App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
 | API | Route handlers in `app/api`. |
-| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
+| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0008` (0008 comes with #180). `npm run db:migrar` applies them in name order. Applied to Neon: up to `0006` (`0004` on 2026-10-01 with backup branch `pre-0004-backup`, `0006` on 2026-10-03). `0007` and `0008` wait for a person with database access. |
 | Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
-| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). |
+| AI | Groq `qwen/qwen3.8-27b` describes the image (`lib/revision/scout.ts`). When the Groq call fails and `GEMINI_API_KEY` is set, Gemini (`gemini-flash-lite-latest` or `GEMINI_VISION_MODEL`, `lib/revision/gemini.ts`) describes it instead. PDF, HTML and text receipts are transcribed without a vision call. Laya scores the description (`lib/revision/laya.ts`). The code builds the verdict (`lib/revision/armar.ts`). In the UI the review is called Mile. |
+| Security headers | `next.config.ts` sends `nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, and a `Permissions-Policy` that keeps the camera on this origin (#180). There is no full CSP yet: the Cavos vault would need an allow-list. |
+| CI | `.github/workflows/ci.yml` runs `npm ci`, `tsc --noEmit`, `npm test`, and `npm run build` on every pull request and on `main` (#180). `.github/workflows/claude.yml` answers `@claude` in issues and PRs. |
 
 `Almacen` (`lib/db/almacen.ts`) is the data interface. Production uses `almacenNeon()` (`lib/db/neon.ts`): Neon HTTP when the host is Neon, `pg` otherwise. Routes enter through `conAlmacen` (`lib/api/base.ts`). Without `DATABASE_URL` they say the database is not configured. Tests use `crearMemoria()`. Browser `localStorage` helpers still exist for the sample view.
 
 ## API
 
-- `GET`, `POST`, `DELETE /api/sesion` — read, open, and close a session. `POST /api/sesion/wallet` stores a `G…`.
+- `GET`, `POST`, `DELETE /api/sesion` — read, open, and close a session. With #179 a first sign-in creates the account from Sign in too, and a database failure reaches the sign-in screen as `?error=base`. `POST /api/sesion/wallet` stores a `G…`. `POST /api/sesion/alta` runs the testnet setup of a new account (Friendbot and the USDC trustline) only for a sign-up.
 - `GET`, `POST /api/sesion/demo` — demo mode. Anything other than `HYTO_DEMO_LOGIN=1` makes `POST` return 404.
 - `GET`, `POST /api/proyectos` — list visible events; create one (demo sessions get 403).
-- `GET`, `POST /api/tareas`. `POST /api/tareas/[id]/asignar` — organizer assigns a member.
-- `POST /api/eventos/[id]/invitaciones` — organizer creates an invite. `POST /api/join` redeems one.
-- `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
-- `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
-- `GET /api/informe`.
+- `GET /api/tareas` (`?alcance=mias` for the member's own). `POST /api/tareas/[id]` edits a task, `POST /api/tareas/[id]/asignar` assigns a member, `POST /api/tareas/[id]/clasificar` sets priority and difficulty; all three are organizer only. `POST /api/tareas/sugerir-requisitos` asks Groq for up to three photo requirements (10 per user per minute, not in demo).
+- `POST /api/eventos/[id]/invitaciones` — organizer creates an invite. `POST /api/join` redeems one. `GET /api/eventos/[id]/novedades` — organizer polls the event for changes.
+- `POST /api/evidencias/token` issues the live-camera token, `POST /api/evidencias` uploads, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`. The file route serves only jpeg, png, webp, and gif as images, a PDF inline, text as `text/plain`, and anything else as bytes, always with `nosniff`.
+- `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`. `POST /api/revision/:id/demo` simulates lock and pay for a demo session (#180).
+- `GET /api/informe`. `GET /api/cuenta` — the Account screen: wallet, earnings, and badges.
 - `POST /api/firma`, `POST /api/firma/enviar`, `GET /api/escrow/[contrato]`.
 - `GET`, `POST /api/usdc` — read or prepare a classic `changeTrust` for the session wallet. `preparar` answers `listo` when the USDC trustline is already open, and 409 `usdc_sin_xlm` when the account's own XLM cannot pay the new reserve and the fee.
 
@@ -87,7 +91,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 
 Cavos (email code or Google) in `components/admin/Entrar.tsx`. The browser sends the email and the JWT to `POST /api/sesion`. The server checks RS256 and expiry (`lib/sesion/jwt.ts`) and sets the `hyto_sesion` cookie (HttpOnly, SameSite=Lax, Secure in production, capped at 24 hours).
 
-`CAVOS_JWT_JWK` wins over `CAVOS_JWKS_URL`. `HYTO_PERMITIR_JWT_SIN_FIRMA=1` skips the signature only outside production. `CAVOS_JWT_ISSUER` is a comma-separated issuer list. `CAVOS_JWT_AUDIENCE`, when set, must match `aud`. **When either is empty, that check is skipped.** That is still open. See the audit note below.
+`CAVOS_JWT_JWK` wins over `CAVOS_JWKS_URL`. `HYTO_PERMITIR_JWT_SIN_FIRMA=1` skips the signature only outside production. `CAVOS_JWT_ISSUER` is a comma-separated issuer list. `CAVOS_JWT_AUDIENCE`, when set, must match `aud`. **When either is empty, that check is skipped.** On 2026-10-07 Vercel had `CAVOS_JWKS_URL` and `CAVOS_JWT_ISSUER` but no `CAVOS_JWT_AUDIENCE`, so production accepts a token from those issuers that was issued for another app. Setting the audience is the open fix (see Status).
 
 If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wallet` accepts the address the client sends. The code says that does not prove the client holds the key. On submit, the signer is read from the XDR and must match `sesiones.wallet`.
 
@@ -123,13 +127,13 @@ If the submit call to Trustless throws (timeout, dropped connection, a resubmit)
 
 A confirmed fund is stored per task and contract in `fondeos_escrow` (`drizzle/0008_fondeos_escrow.sql`; the submit path in `lib/api/firma.ts`, also when the indexer lags or RPC confirmed it). `GET /api/revision/:id` returns it as `hashFondeo`. With it, a zero or unknown indexed balance never offers fund: the screen shows the read-only **Check again** state (`fondeoEnviado` in `botonesRevision`), and prepare and submit for `fondear` answer 409 `HYTO_ESCROW_ALREADY_FUNDED`. `lib/db/neon.ts` probes the table and degrades to the old behaviour (no marker) until 0008 is applied by a person.
 
-`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline. There is no receiver-trustline check before deploy.
+`npm run hito` does not replace the browser flow. The organizer needs testnet XLM (fees) and testnet USDC. The receiver needs a USDC trustline; deploy prepare checks it first and answers with its own notice when it is missing. After a deploy, the upload refuses to change `wallet_cobro` (`AVISO_COBRO_FIJO`).
 
 **Get ready to be paid** (`prepararUsdcDeSesion` in `lib/integrante/prepararUsdc.ts`, server in `lib/api/usdc.ts`) can run again on an account that is half set up. `preparar` opens a missing testnet account with Friendbot, answers `listo` when the USDC trustline is already there, and otherwise returns a self-paid `changeTrust` when the account's own XLM covers one more 0.5 XLM reserve and the fee (`xlmCubreTrustline` in `lib/integrante/usdc.ts`). The browser refuses to sign when Cavos opens a different address from `sesiones.wallet`. An account with no XLM of its own (the Cavos relayer sponsors the reserves of the accounts it creates) gets 409 `usdc_sin_xlm`, and the browser then asks Cavos for a sponsored `addTrustline`, which the relayer pays. Horizon `tx_insufficient_balance` or `op_low_reserve` on submit takes the same path. When a submit fails, the server reads the account again and answers `listo` if the trustline is on the ledger anyway. Other Horizon codes map to the notices in `lib/integrante/avisosUsdc.ts`. The server logs `[api/usdc]` with the step, the Horizon codes, and the first and last four characters of the account, never the session token, the email, or the XDR. The browser gives each Cavos call 60 seconds (`TOPE_CAVOS_MS`) and writes the raw Cavos error to the console as `[usdc]`, with emails and tokens removed. `npm run cuentas:usdc -- G…` reads accounts on testnet and prints what each one still needs. It changes nothing.
 
 ## Environment
 
-Names only. No values in the repo. `.env.example` lists the same reads.
+Names only. No values in the repo. `.env.example` lists the same reads. In Vercel, every secret should be stored as **Sensitive**; on 2026-10-07 `HYTO_TOKEN_SECRET` and `BLOB_READ_WRITE_TOKEN` were still readable and should be recreated.
 
 | Name | Use |
 |---|---|
@@ -146,6 +150,10 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `HYTO_CONFIRMAR_BASE_PRODUCCION` | Only `si` allows migrate or seed against those hosts. |
 | `BLOB_READ_WRITE_TOKEN` | Private Blob token. |
 | `GROQ_API_KEY` | Groq. Without it, review is stored as an error. |
+| `GEMINI_API_KEY` | Optional. When set, Gemini describes the photo after a failed Groq call. |
+| `GEMINI_VISION_MODEL` | Optional Gemini model. Unset uses `gemini-flash-lite-latest`. |
+| `HYTO_MILE_REQUISITOS` | Exact `on` turns on scoring each photo requirement and Mile's send-back. Needs `drizzle/0007` applied first. Unset in Vercel on 2026-10-07. |
+| `HYTO_MILE_INTENTOS` | How many photos Mile may review before the organizer decides. Unset is 3. Read only with `HYTO_MILE_REQUISITOS=on`. |
 | `GROQ_VISION_MODEL` | Optional Groq vision model. Unset uses `qwen/qwen3.8-27b`, the only vision model Groq listed on 2026-10-05. Reasoning parameters are sent only to `qwen/qwen3…` ids. |
 | `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
@@ -193,20 +201,21 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+As of 2026-10-07: `main` is `31ebd33`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the redesigned shell with Mile, English UI with Spanish, reimbursement confirmation, fund retry, receiver-trustline preflight, structured photo requirements (behind a flag), and the PDF/HTML/text receipt path are in the code. #179 and #180 are open and carry the demo to Paid and the fixes listed above.
 
-There is still no real testnet USDC payment hash in the repo.
+There is still no real testnet USDC payment hash in the repo. That is the most visible gap.
 
-Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
+Open items, from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) and the 2026-10-07 audit (the full report with security detail is in the private repo, `vault/auditorias/2026-10-07-auditoria-completa.md`):
 
-1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
-2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
-3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. Seeded sample evidence is served as a generated PNG (`lib/blob/marcador.ts`) with `nosniff`.
-4. **No CI.** There is no `.github/` workflow.
+1. **JWT audience.** `CAVOS_JWT_AUDIENCE` is not set in Vercel, so `aud` is not checked. Set it to the Cavos, Google, and Apple client ids Hyto uses, then make production fail closed when it is empty.
+2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. Deploy and submit still require the XDR signer to be the session wallet, and `wallet_cobro` is fixed after deploy.
+3. **Rate limits are per instance.** Sign, invite redeem, demo sign-in, and requirement suggestions count in memory, so they do not add up across Vercel instances.
+4. **The seed runs on every request.** `asegurarSemilla` is called by most read routes: 11 to 29 sequential queries each time. Only the sign-in of a known user skips it (#180).
+5. **Neon migrations** `0007` and `0008` are not applied.
+6. **Lost Cavos key.** Enclave recovery (#161) is in the code but off until Cavos enables it, and the passkey guide (#160) is open. Until then the account key lives only in the browser storage where the account was created. Another browser, cleared storage, or another site cannot sign. Each `*.vercel.app` preview is its own site, because `vercel.app` is a public suffix.
+7. **Laya runs on a team member's PC.** If it is down, the review is stored as failed and can be retried; the organizer can still pay.
 
-Also still open: receiver-trustline preflight before deploy, and recovery for a lost Cavos key. Hyto connects Cavos without a passkey or social recovery, so the account key lives only in the browser storage where the account was created. Another browser, cleared storage, or another site cannot sign, and signing in again there does not bring the key back. Each `*.vercel.app` preview is its own site, because `vercel.app` is a public suffix.
-
-Addressed since the audit, in code: English server messages (#68), fund resumes when deploy succeeded and fund failed (#67), pay stays hidden until the escrow balance is positive, reimbursement amount must be confirmed before deploy (#69), Laya score follows the probability index (#59), prepare and submit are bound by an HMAC token (`lib/api/preparado.ts`), and review failures are stored instead of the silent script. Get ready to be paid can run again and uses a sponsored trustline for an account without XLM of its own. `needs-device-approval` is refused before `signXdr` with its own notice (`firmanteDe` in `lib/escrow/firmarCliente.ts`). `undeployed` still signs, because its control key exists before the account is on the ledger. **Sign in again** signs out first, then returns to the same page through `next`.
+Closed since the 2026-09-30 audit: SVG and unknown image types are refused at upload and never served as images; security headers; CI; receiver-trustline preflight; `wallet_cobro` fixed after deploy; the double-lock marker (#180); English server messages (#68); fund resumes when deploy succeeded and fund failed (#67); pay stays hidden until the escrow balance is positive; reimbursement amount confirmed before deploy (#69); Laya score follows the probability index (#59); prepare and submit bound by an HMAC token (`lib/api/preparado.ts`); review failures stored instead of the silent script. Get ready to be paid can run again and uses a sponsored trustline for an account without XLM of its own. `needs-device-approval` is refused before `signXdr` with its own notice (`firmanteDe` in `lib/escrow/firmarCliente.ts`). `undeployed` still signs, because its control key exists before the account is on the ledger. **Sign in again** signs out first, then returns to the same page through `next`.
 
 ## Design
 

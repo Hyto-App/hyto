@@ -7,10 +7,15 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 ### Added
 
 - Demo mode reaches Paid without a wallet (#073). On the demo event, **Lock budget** and **Approve & pay** run the same confirmations and steps as the real flow through `POST /api/revision/:id/demo` (`bloquear`, `pagar`). Lock stores a `demo-lock-…` budget reference, never a `C…` contract, and pay marks the task paid with no hash. Nothing is signed and nothing reaches Stellar or Trustless Work. Every demo sign-in undoes demo locks and payments so the flow can run again. Real sessions get 404.
+- CI: `.github/workflows/ci.yml` runs `npm ci`, `tsc --noEmit`, `npm test`, and `npm run build` on every pull request and on `main`.
 - Cloud sessions: `.claude/hooks/session-start.sh` installs dependencies and builds a local, code-only Graphify map in `graphify-out/` (not committed).
 
 ### Fixed
 
+- Demo: the sample task in review flickered back to pending on concurrent requests, because every request re-seeds and one step reset it while the next restored it. The review screen then hid **Approve and pay** and **Ask for another photo**. Demo tasks are no longer reset by `reponerPendientes`. The demo lock and pay also stop showing the wallet-window sentence.
+- The evidence file route served any stored `image/*` type as is. It now serves only JPEG, PNG, WebP, and GIF as images; anything else is bytes.
+- `POST /api/tareas/sugerir-requisitos` calls a model and had no limit: 10 calls per user per minute.
+- Every response now carries `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, and a `Permissions-Policy` that keeps the camera on this origin.
 - `npm run db:migrar` split statements on ";" before removing "--" comments, so a ";" inside a comment broke the next statement. Comments are removed first, and a test checks that every migration statement can run twice.
 - Google sign-in (#069 A.3). A returning user no longer runs the sample seed on `POST /api/sesion` (2 queries instead of 13 to 31), and the Cavos vault starts loading before the code exchange. Timeline and the remaining causes: `docs/auditorias/2026-10-07-google-signin-timing.md`.
 - UX walkthrough (#052): task requirements and the send-back checklist go through `textoVisible`, the inbox filter empty state explains itself and offers "Show all submissions", inbox verdict tabs stay on one line and scroll, event tabs show a loading skeleton, the account state reads "You are ready to be paid", and an empty event shows the invite button once.

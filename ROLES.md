@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of 7 October 2026. The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 
@@ -16,7 +16,7 @@ Invites last 7 days. A direct invite is bound to one email and one use. A code l
 
 `usuarios.rol` is still written (`voluntario` for a new Cavos user, `organizador` only if that row already says so, including the seed). Screens and escrow checks do not use it to decide who organizes an event.
 
-Demo mode (`HYTO_DEMO_LOGIN=1`) is the leftover switch: **Enter as demo** chooses organizer or volunteer. Those sessions do not sign and cannot create events.
+Demo mode (`HYTO_DEMO_LOGIN=1`) is the leftover switch: **Enter as demo** chooses organizer or volunteer. Those sessions do not sign and cannot create events. On the demo event the organizer still walks Lock budget and Pay, simulated without a wallet, and the volunteer may pick a gallery photo (#179, #180). Each demo sign-in resets the demo payments.
 
 ## On the team
 
@@ -26,11 +26,13 @@ That note, and the rest of the coordination between people and agents, goes in t
 
 | Person | Suggested focus |
 |---|---|
-| Abdiel Cole | UX, the Figma file, Laya |
-| Esteban | API, Neon, Blob, review pipeline |
-| Sebas | Escrow, Cavos, a real testnet payment |
-| Josué | App shell, admin flows, docs |
-| Raúl | Member tasks, evidence upload, accounts |
+| Josué Valles | PM, admin flows and backend, merges and deploys, docs |
+| Abdiel Cole | UX, UI, the Figma file, brand, Laya's server |
+| Sebas | Escrow, Cavos, the landing tryhyto.com, a real testnet payment |
+| Raúl | Member tasks, evidence upload, demo accounts |
+| Esteban | API, Neon, review pipeline |
+
+Each person works with AI agents. Their names and roles are in the private repo. Merges wait for Josué's go-ahead.
 
 Work lands as a pull request from an updated `main`. Nobody pushes to `main`.
 

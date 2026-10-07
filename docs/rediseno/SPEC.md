@@ -1,5 +1,7 @@
 # Hyto · Rediseño de la app (voluntario) — spec para construir en 3 partes
 
+> **Estado al 2026-10-07:** construido y fusionado a `main` en #146 (parte 1), #151 (parte 2), #155 (parte 3) y #159 (parte 4, Mile animado). La regla 3 de abajo («sin animaciones») quedó superada por la decisión de Abdiel del 5-oct de animar a Mile por código (ver `docs/mile-animada/LEEME.md`). El resto sigue valiendo como referencia de diseño.
+
 > Aprobado por Abdiel el 2026-10-04. Este documento es **autocontenido**: quien construye solo necesita este repo.
 > Base de código: rama `abdiel/sin-landing` (PR #143: `/` abre el login; con sesión redirige a `/mis-tareas`).
 > Rama de trabajo del rediseño: `abdiel/rediseno-app` (cada PARTE sale en su propia rama/PR desde ahí).
