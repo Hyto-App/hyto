@@ -21,9 +21,11 @@ Facts that bound this app, checked on 2026-10-02 and still true on 2026-10-07:
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo or a receipt, Mile (the review: Groq, or Gemini when Groq fails, describes it; Laya scores that reading when configured) recommends a grade, and the organizer pays the full milestone, or for a reimbursement the confirmed amount up to the cap. The AI does not sign or move money.
+Hyto removes the distrust from paying for work you cannot check yourself, such as volunteer work, travel expenses (viáticos), or an event a community runs for a sponsor. The payer's money is locked in a contract on Stellar before the work. The person doing it uploads photos, a PDF, or receipts as proof. Mile, the AI, reviews them, and the payment is released when the proof checks out and the organizer approves. Nobody pays blindly up front, and nobody works without knowing they will be paid.
 
-The same flow fits a team event (the ZEEK demo), freelance work by deliverable, grants and bounties paid by milestone, and stipends or scholarships reimbursed after the spend: a capped reimbursement task takes the receipt, reads the total and the currency, and pays what was really spent up to the cap.
+In code terms: Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo or a receipt, Mile (the review: Groq, or Gemini when Groq fails, describes it; Laya scores that reading when configured) recommends a grade, and the organizer pays the full milestone, or for a reimbursement the confirmed amount up to the cap. The AI does not sign or move money.
+
+The strongest case is work the payer cannot be present for: a company or a blockchain ecosystem that funds a community to run events, travel expenses and stipends reimbursed after the spend (a capped reimbursement task reads the receipt and pays what was really spent, up to the cap), and volunteer tasks. It also works for a job at home, like cleaning, painting, or a repair. The ZEEK event is the demo.
 
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
 

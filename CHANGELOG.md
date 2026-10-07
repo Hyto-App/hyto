@@ -4,6 +4,10 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 
 ## 2026-10-07
 
+### Changed
+
+- Positioning (Josué, 4 October): Hyto removes the distrust from paying for work the payer cannot check: volunteer work, travel expenses, and events a community runs for a sponsor. The money is locked before the work, the proof comes in as photos, a PDF, or receipts, Mile reviews it, and the payment is released when it checks out and the organizer approves. The sign-in text, the welcome card, the page description, the share image, `lib/ui/discurso.ts`, README, AGENTS.md, Hyto-informe.md, and brand/marca.md now say so. The slogan stays "Prove your worth. Get paid."
+
 ### Added
 
 - Demo mode reaches Paid without a wallet (#073). On the demo event, **Lock budget** and **Approve & pay** run the same confirmations and steps as the real flow through `POST /api/revision/:id/demo` (`bloquear`, `pagar`). Lock stores a `demo-lock-…` budget reference, never a `C…` contract, and pay marks the task paid with no hash. Nothing is signed and nothing reaches Stellar or Trustless Work. Every demo sign-in undoes demo locks and payments so the flow can run again. Real sessions get 404.
@@ -16,6 +20,7 @@ Newest first. Entries from 2026-10-02 on are in English and describe `main`. Old
 - The evidence file route served any stored `image/*` type as is. It now serves only JPEG, PNG, WebP, and GIF as images; anything else is bytes.
 - `POST /api/tareas/sugerir-requisitos` calls a model and had no limit: 10 calls per user per minute.
 - Every response now carries `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, and a `Permissions-Policy` that keeps the camera on this origin.
+- The sign-in screen logged a hydration error on a first visit: the line drawing read `sessionStorage` during render. It now reads it after mount.
 - `npm run db:migrar` split statements on ";" before removing "--" comments, so a ";" inside a comment broke the next statement. Comments are removed first, and a test checks that every migration statement can run twice.
 - Google sign-in (#069 A.3). A returning user no longer runs the sample seed on `POST /api/sesion` (2 queries instead of 13 to 31), and the Cavos vault starts loading before the code exchange. Timeline and the remaining causes: `docs/auditorias/2026-10-07-google-signin-timing.md`.
 - UX walkthrough (#052): task requirements and the send-back checklist go through `textoVisible`, the inbox filter empty state explains itself and offers "Show all submissions", inbox verdict tabs stay on one line and scroll, event tabs show a loading skeleton, the account state reads "You are ready to be paid", and an empty event shows the invite button once.

@@ -4,20 +4,22 @@ Product behavior as of 7 October 2026 is in [README.md](README.md) and [AGENTS.m
 
 ## Pitch
 
-Hyto is expense control and milestone payments for a team, on Stellar and Trustless Work. The person who creates the event locks the budget. Each task is a photo. An AI recommends whether the evidence is enough. The organizer pays the full amount in testnet USDC. The report compares budget with spend and, once a hash exists, links the payment on Stellar.
+**Hyto removes the distrust from paying for work.** The payer's money is locked in a contract on Stellar before the work starts. The person doing it uploads photos, a PDF, or receipts as proof. Mile, the AI, reviews them, and the payment is released when the proof checks out and the organizer approves. Nobody pays blindly up front, and nobody works without knowing they will be paid.
 
-Positioning is teams and organizations first. Volunteer events such as ZEEK are the demo the team knows.
+Es: *Hyto resuelve la desconfianza al pagar por trabajos de voluntarios y al pedir viáticos. La plata de quien paga queda bloqueada en un contrato en blockchain, la persona sube fotos, PDF o facturas como prueba, una IA las revisa y el pago se libera cuando la prueba cumple. Así nadie paga por adelantado a ciegas y nadie trabaja sin saber si le van a pagar.*
+
+**The strongest case is when the payer cannot be there.** In the blockchain world, a company or an ecosystem sends money to a community to run events, and it is never clear whether they happened, or checking takes a long time. With Hyto the money is locked, the community uploads photos and receipts, Mile reviews them, and the payment goes out only when the proof checks out. The same works for a job at home (cleaning, painting, a repair): the worker knows the money is already there, and the person paying does not pay before seeing the work.
 
 **Who it fits best**
 
-1. **Stipends, scholarships, and travel grants paid after the spend.** The organization sets a cap, the recipient spends and uploads the receipt, and Hyto pays what was really spent, up to the cap. This is the capped reimbursement task that already exists: Mile reads the total, the currency, and the date, the organizer confirms the amount, and the report shows every payment for the donor. It fits NGOs, universities, foundations, accelerators, and hackathon travel grants.
-2. **Events and volunteering**: short tasks proved by a photo (ZEEK).
-3. **Freelance work by deliverable**: proof of work, then payment per milestone.
-4. **Grants and bounties** in the Stellar ecosystem: each milestone with its evidence.
+1. **Funding for communities and events**: companies, foundations, and blockchain ecosystems that pay a community to organize something they will not attend.
+2. **Travel expenses (viáticos), stipends, and scholarships paid after the spend**: the organization sets a cap, the person spends and uploads the receipt, and Hyto pays what was really spent, up to the cap. This is the capped reimbursement task that already exists: Mile reads the total, the currency, and the date, the organizer confirms the amount, and the report shows every payment.
+3. **Volunteer work**: short tasks proved by a photo (the ZEEK demo).
+4. **Jobs at home or on site**: cleaning, painting, repairs, hired from someone who is not present.
 
-**Line.** Ramp gave companies control of spend. Hyto takes the next step for any team: money committed before the work, every task checked, every payment recorded.
+The slogan stays **"Prove your worth. Get paid."**
 
-"Ramp" in this line is [Ramp](https://ramp.com), the corporate card and spend-control company. It is not [Ramp Network](https://rampnetwork.com), the crypto on/off-ramp. Ramp Network is researched in [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md) (added by [#109](https://github.com/Hyto-App/hyto/pull/109)). It sells Circle mainnet USDC, not the testnet USDC Hyto locks, so it stays out of the Find Your Way / ZEEK demo and there is no mainnet cutover.
+Hyto is not [Ramp Network](https://rampnetwork.com), the crypto on/off-ramp researched in [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md). Ramp Network sells mainnet USDC, not the testnet USDC Hyto locks, so it stays out of the demo.
 
 ## Hackathon context (September 2026)
 
@@ -45,4 +47,5 @@ In a lot of teams the money moves informally: a transfer, a chat message, a verb
 - The organizer cannot see what was spent or whether the task was done.
 - The person who did the work has no committed payment.
 - Sponsors and donors cannot check how the funds were used.
-- A scholarship or stipend is often paid up front with no receipts, or reimbursed weeks later by hand.
+- A scholarship, stipend, or travel allowance is often paid up front with no receipts, or reimbursed weeks later by hand.
+- A sponsor that funds a community event far away has no quick way to know it happened.

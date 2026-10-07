@@ -41,7 +41,7 @@ export default async function OpenGraph() {
           <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5 }}>Prove your worth.</div>
           <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5, color: LIMA }}>Get paid.</div>
           <div style={{ display: "flex", marginTop: 28, fontSize: 30, color: "#A3A6B8" }}>
-            Do small tasks for real events. Send a photo. Get paid in digital dollars (USDC).
+            Money locked before the work. Proof in photos or receipts. Paid when it checks out.
           </div>
         </div>
       </div>

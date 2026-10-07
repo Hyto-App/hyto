@@ -14,17 +14,17 @@ const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)
 const FRASES = [
   "Prove your worth,",
   "get paid.",
-  "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
+  "Pay for work you can't check in person.",
   "Practice network.",
   "This app runs on a practice network for now",
-  "Pick a task",
-  "Send a photo",
+  "Lock the money",
+  "Send the proof",
   "Get paid",
-  "Volunteers and workers",
+  "Volunteers, communities, and workers",
   "Organizers",
   "The organizer approves every payment",
   "The AI only suggests",
-  "The money is set aside before the work",
+  "The money is locked before the work",
   "Try the demo",
   "Sign in",
 ];
@@ -40,7 +40,7 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
   for (const frase of FRASES) assert.ok(unido.includes(frase), frase);
   assert.deepEqual(
     pasosDiscurso().map((paso) => paso.titulo),
-    ["Pick a task", "Send a photo", "Get paid"],
+    ["Lock the money", "Send the proof", "Get paid"],
   );
   assert.equal(audienciasDiscurso().length, 2);
   assert.equal(confianzaDiscurso().length, 3);
@@ -56,7 +56,7 @@ test("el discurso en español usa las mismas claves", () => {
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Demuestra tu valor,", "Red de práctica.", "Elige una tarea", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
+  for (const frase of ["Demuestra tu valor,", "Red de práctica.", "Bloquea el dinero", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
     assert.ok(unido.includes(frase), frase);
   }
 });

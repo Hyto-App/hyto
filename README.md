@@ -1,6 +1,6 @@
 # Hyto
 
-Milestone payments on Stellar. Someone with funds creates an event, locks each task's budget in a Trustless Work escrow, and pays USDC on testnet after the proof is reviewed. Production: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+Hyto removes the distrust from paying for work you cannot check yourself. The payer's money is locked in a contract on Stellar before the work, the person doing it uploads photos, a PDF, or receipts as proof, Mile (the AI) reviews them, and the payment is released when the proof checks out and the organizer approves. Nobody pays blindly up front, and nobody works without knowing they will be paid. Today it runs on Stellar testnet with USDC, through a Trustless Work escrow per task. Production: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
 
 This file is the short map. Agents and contributors read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md).
 
@@ -10,7 +10,12 @@ Login does not pick a global role. A signed-in user whose wallet covers the budg
 
 The shell is My tasks, Events, and Account (light and dark, English with Spanish). Evidence is a live camera photo for work, or a receipt (photo, PDF, HTML, or text) for a reimbursement with a cap. Mile, the review, has Groq (or Gemini when Groq fails) read it and Laya score it, then shows a grade from 0 to 100 with reasons. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
 
-Who it is for: teams and events (the ZEEK demo), freelance work paid by deliverable, grants and bounties paid by milestone, and stipends or scholarships reimbursed after the spend, up to a cap.
+Who it is for: anyone paying for work they cannot see in person. That includes:
+
+- companies and blockchain ecosystems that fund communities to run events;
+- organizations that pay travel expenses (viáticos), stipends, or scholarships after the spend;
+- volunteer programs (the ZEEK demo);
+- someone hiring a job at home, such as cleaning, painting, or a repair.
 
 Demo mode (`HYTO_DEMO_LOGIN=1`) walks the whole flow without a wallet: lock and pay are simulated and nothing reaches Stellar (#179, #180).
 

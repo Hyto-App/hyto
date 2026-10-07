@@ -1375,9 +1375,11 @@ function lineasVistas(): boolean {
 function Escena() {
   const raizRef = useRef<HTMLDivElement>(null);
   const [capas, setCapas] = useState<string[]>([]);
-  const [dibujar] = useState(() => !lineasVistas());
+  // Read after mount: the server has no sessionStorage, so reading it during render made the class differ on hydration.
+  const [dibujar, setDibujar] = useState(false);
 
   useEffect(() => {
+    setDibujar(!lineasVistas());
     try {
       window.sessionStorage.setItem(CLAVE_LINEAS, "1");
     } catch {
