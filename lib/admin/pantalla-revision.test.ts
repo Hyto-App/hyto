@@ -595,3 +595,45 @@ function json(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
+
+async function pantallaConContrato(hashFondeo: string | null): Promise<{ texto: string; botones: string[] }> {
+  let lecturasEscrow = 0;
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/usdc") return json({ listo: true });
+    // The escrow read lags and still shows a zero balance.
+    if (url.startsWith("/api/escrow/")) {
+      lecturasEscrow += 1;
+      return json({ escrow: { balance: 0 } });
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: "CSTAND" }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: "CSTAND", hashFondeo, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
+    // Wait for the zero balance read to land, so the answer is the screen after that read.
+    await esperar(() => lecturasEscrow >= 1);
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 60));
+    });
+    return { texto: texto(), botones: [...document.querySelectorAll("button")].map((boton) => boton.textContent ?? "") };
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+}
+
+test("on reload with a stored fund and a zero balance read, the screen never offers Finish locking", async () => {
+  const sinMarca = await pantallaConContrato(null);
+  assert.equal(sinMarca.botones.includes("Finish locking"), true);
+
+  const conMarca = await pantallaConContrato("cd".repeat(32));
+  assert.equal(conMarca.botones.includes("Finish locking"), false);
+  assert.equal(conMarca.botones.includes("Lock budget"), false);
+  assert.equal(conMarca.botones.includes("Approve and pay"), false);
+  assert.match(conMarca.texto, /Checking the locked budget/);
+});

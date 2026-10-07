@@ -10,6 +10,8 @@ export type DetalleRevision = {
   tarea: TareaAdmin;
   foto: string | null;
   contratoEscrow: string | null;
+  // Hash of the confirmed fund the server stored for this escrow. Null when none, or when the server cannot store it.
+  hashFondeo: string | null;
   walletCobro: string | null;
   wallet: string | null;
 };
@@ -50,7 +52,7 @@ export type OpcionesRemoto = {
 export function botonesRevision(
   tarea: TareaAdmin,
   real: boolean,
-  escrow: { contrato: string | null; fondeado: boolean | null } = { contrato: null, fondeado: null },
+  escrow: { contrato: string | null; fondeado: boolean | null; fondeoEnviado?: boolean } = { contrato: null, fondeado: null },
 ): {
   desplegar: boolean;
   fondear: boolean;
@@ -75,13 +77,16 @@ export function botonesRevision(
   const abierto = tarea.estado !== "pagado" && !pagoPendiente(tarea);
   const conContrato = Boolean(escrow.contrato);
   const bloqueado = tarea.tipo === "reembolso" && montoDeVista(tarea) === null;
+  // The server stored a confirmed fund for this escrow. A zero balance then means the read is behind, not unfunded,
+  // so only a positive balance counts and anything else is unknown.
+  const fondeado = conContrato && escrow.fondeoEnviado && escrow.fondeado !== true ? null : escrow.fondeado;
   return {
     desplegar: !bloqueado && abierto && !conContrato,
-    fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
+    fondear: !bloqueado && abierto && conContrato && fondeado === false,
     // A percentage never approves the payment. Pay follows the escrow balance.
-    pagar: !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
+    pagar: !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && fondeado === true,
     // Unknown balance: funding again could lock the budget twice and paying could release from an empty escrow. Only re-read.
-    verificarFondo: abierto && conContrato && escrow.fondeado === null,
+    verificarFondo: abierto && conContrato && fondeado === null,
     aprobarLocal: false,
     pedirOtra: tarea.estado === "en revisión",
   };
@@ -239,6 +244,7 @@ function detalleDe(json: unknown): DetalleRevision | null {
     tarea,
     foto,
     contratoEscrow: texto(datos.contratoEscrow),
+    hashFondeo: texto(datos.hashFondeo),
     walletCobro: texto(datos.walletCobro),
     wallet: texto(datos.wallet),
   };

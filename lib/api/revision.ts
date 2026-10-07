@@ -4,7 +4,7 @@ import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { guardarRevision } from "./evidencias";
-import { conciliarPagoPendiente } from "./firma";
+import { conciliarPagoPendiente, fondeoDeTarea } from "./firma";
 import { rechazoPublico, revisionPublica } from "./tareas";
 import { leerRequisitos } from "@/lib/revision/requisitos";
 import { tareaAdmin } from "./informe";
@@ -69,6 +69,8 @@ export async function leerRevisionHttp(
     }
     const vista = await tareaAdmin(almacen, actual);
     const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+    // Set once a fund was confirmed for this escrow. The balance read can lag behind it.
+    const hashFondeo = await fondeoDeTarea(almacen, actual).catch(() => null);
     return json({
       tarea: vista,
       requisitos: leerRequisitos(actual.requisitos),
@@ -77,6 +79,7 @@ export async function leerRevisionHttp(
       foto: evidencia ? `/api/evidencias/${evidencia.id}/foto` : null,
       enlacePago: enlacePago(vista.hashPago),
       contratoEscrow: actual.contratoEscrow,
+      hashFondeo,
       walletCobro: actual.walletCobro,
       wallet,
     });

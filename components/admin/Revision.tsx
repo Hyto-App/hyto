@@ -71,6 +71,8 @@ export function Revision({
   const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [contrato, setContrato] = useState<string | null>(null);
   const [fondeado, setFondeado] = useState<boolean | null>(null);
+  // The server stored a confirmed fund for this escrow, so a zero balance read is a lagging read, not an unfunded escrow.
+  const [fondeoEnviado, setFondeoEnviado] = useState(false);
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
@@ -105,6 +107,7 @@ export function Revision({
     setReal(false);
     setHashPaso(null);
     setContrato(null);
+    setFondeoEnviado(false);
     setFondeado(null);
     setReanudar(null);
     fondeoForzado.current = null;
@@ -121,6 +124,7 @@ export function Revision({
       setTarea(detalle.tarea);
       setFoto(detalle.foto);
       setContrato(detalle.contratoEscrow);
+      setFondeoEnviado(Boolean(detalle.hashFondeo));
       setWallet(detalle.wallet);
     });
     return () => {
@@ -139,7 +143,8 @@ export function Revision({
     setConsultaFondo("leyendo");
     void consultarHasta({
       leer: () => leerFondeo(contrato),
-      listo: (valor) => valor !== null,
+      // With a stored fund, only a positive balance ends the wait: zero means the read is behind.
+      listo: (valor) => (fondeoEnviado ? valor === true : valor !== null),
       vivo: () => viva && fondeoForzado.current !== contrato,
     }).then((resultado) => {
       if (!viva || fondeoForzado.current === contrato) return;
@@ -153,7 +158,7 @@ export function Revision({
     return () => {
       viva = false;
     };
-  }, [real, contrato, vueltaFondo]);
+  }, [real, contrato, fondeoEnviado, vueltaFondo]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
   const tareaMontoRef = useRef(tarea);
@@ -253,6 +258,7 @@ export function Revision({
     setTarea(detalle.tarea);
     setFoto(detalle.foto);
     setContrato(detalle.contratoEscrow);
+    if (detalle.hashFondeo) setFondeoEnviado(true);
     setWallet(detalle.wallet);
   }, []);
 
@@ -374,6 +380,7 @@ export function Revision({
       if (pago.contrato) setContrato(pago.contrato);
       if (acciones.includes("fondear") && pago.contrato) {
         fondeoForzado.current = pago.contrato;
+        setFondeoEnviado(true);
         setFondeado(true);
       }
       setReanudar(null);
@@ -396,6 +403,7 @@ export function Revision({
       if (contratoConocido) setContrato(contratoConocido);
       if (!pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
       if (fresco) {
+        if (fresco.hashFondeo) setFondeoEnviado(true);
         setTarea(fresco.tarea);
         setFoto(fresco.foto);
         setWallet(fresco.wallet ?? wallet);
@@ -449,7 +457,7 @@ export function Revision({
   }
 
   const demoReal = real && modoDemo;
-  const botonesBase = botonesRevision(tarea, real, { contrato, fondeado });
+  const botonesBase = botonesRevision(tarea, real, { contrato, fondeado, fondeoEnviado });
   const demo = botonesDemo(tarea, contrato);
   const botones = demoReal
     ? { ...botonesBase, desplegar: demo.bloquear, fondear: false, pagar: demo.pagar, verificarFondo: false }

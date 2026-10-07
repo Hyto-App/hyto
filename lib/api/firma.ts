@@ -21,9 +21,11 @@ import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@
 
 const FUNCION_DESPLIEGUE = "deploy";
 const FUNCION_LIBERACION = "release_funds";
+const FUNCION_FONDEO = "fund_escrow";
 const CODIGO_INDEXADOR_ATRASADO = "STELLAR_TX_SUBMITTED_INDEXER_LAGGING";
 export const CODIGO_CONFIRMADO_EN_RED = "HYTO_TX_CONFIRMED_ON_TESTNET";
 export const CODIGO_SIN_CONFIRMAR = "HYTO_TX_NOT_CONFIRMED";
+export const CODIGO_YA_FONDEADO = "HYTO_ESCROW_ALREADY_FUNDED";
 
 export type OpcionesEnvio = { sondeo?: OpcionesSondeo; red?: OpcionesConfirmacion };
 
@@ -98,6 +100,8 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato });
     if (rechazo) return rechazo;
     if (entrada.accion === "fondear") {
+      const yaFondeado = await respuestaSiYaFondeado(base, entrada.contrato);
+      if (yaFondeado) return yaFondeado;
       const ajustada = await montoFondeoDeReembolso(base, entrada, idTarea(body));
       if (ajustada instanceof Response) return ajustada;
       preparada = ajustada;
@@ -184,6 +188,10 @@ export async function enviarFirmaHttp(
     }
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
     if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
+  }
+  if (invocacion.funcion === FUNCION_FONDEO) {
+    const yaFondeado = await respuestaSiYaFondeado(base, invocacion.contrato);
+    if (yaFondeado) return yaFondeado;
   }
   if (!envio.token) return Response.json({ aviso: AVISO_SIN_PREPARAR }, { status: 409 });
   const preparado = verificarTokenPreparado(envio.token, {
@@ -352,6 +360,7 @@ async function guardarResultado(
   contratoPreparado: string | null,
   sondeo: OpcionesSondeo | undefined,
 ): Promise<ResultadoGuardado> {
+  if (invocacion.funcion === FUNCION_FONDEO) return guardarFondeo(pago, invocacion, almacen);
   if (!envio.tareaId) return { aviso: null, estadoHttp: 200 };
   if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
   if (!almacen) return { aviso: "The database is not configured and the payment was not saved.", estadoHttp: 200 };
@@ -434,6 +443,54 @@ async function recuperarEnvio(
     return { respuesta: Response.json({ aviso: AVISO_SIN_CONFIRMAR, codigo: CODIGO_SIN_CONFIRMAR, hash }, { status: 502 }) };
   }
   return { respuesta: original };
+}
+
+const AVISO_YA_FONDEADO =
+  "This budget is already locked. Trustless Work may still be catching up. Wait a minute and check again. Do not lock it again.";
+
+async function tareaDeContrato(almacen: Almacen, contrato: string): Promise<TareaFila | null> {
+  if (!esContrato(contrato)) return null;
+  return (await almacen.listarTareas()).find((item) => item.contratoEscrow === contrato) ?? null;
+}
+
+// The hash of the confirmed fund stored for this task's current escrow, or null. A marker left by an older
+// contract never counts. Null as well when drizzle/0008 is not applied yet.
+export async function fondeoDeTarea(almacen: Almacen, tarea: TareaFila): Promise<string | null> {
+  if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow)) return null;
+  const fondeo = await almacen.leerFondeo(tarea.id);
+  if (!fondeo || fondeo.contrato !== tarea.contratoEscrow || !esHashPago(fondeo.hash)) return null;
+  return fondeo.hash;
+}
+
+// Fund is refused once a fund was confirmed for the contract, whatever the escrow read says.
+async function respuestaSiYaFondeado(almacen: Almacen | null, contrato: string): Promise<Response | null> {
+  if (!almacen) return null;
+  try {
+    const tarea = await tareaDeContrato(almacen, contrato);
+    if (!tarea || !(await fondeoDeTarea(almacen, tarea))) return null;
+  } catch {
+    return Response.json({ aviso: "The database is not ready." }, { status: 503 });
+  }
+  return Response.json({ aviso: AVISO_YA_FONDEADO, codigo: CODIGO_YA_FONDEADO }, { status: 409 });
+}
+
+// The submit was accepted, or testnet RPC confirmed it after the call failed, or the indexer is behind.
+// In every case the fund is on the ledger even if the Trustless read still shows a zero balance.
+async function guardarFondeo(pago: PagoEnviado, invocacion: Invocacion, almacen: Almacen | null): Promise<ResultadoGuardado> {
+  const listo: ResultadoGuardado = { aviso: null, estadoHttp: 200 };
+  if (!almacen) return listo;
+  if (pago.codigo !== CODIGO_CONFIRMADO_EN_RED && !envioConfirmado(pago, "v2")) return listo;
+  if (!esHashPago(pago.hash)) return listo;
+  const tarea = await tareaDeContrato(almacen, invocacion.contrato);
+  if (!tarea) return listo;
+  const guardado = await almacen.guardarFondeo({
+    tareaId: tarea.id,
+    contrato: invocacion.contrato,
+    hash: pago.hash,
+    creadoEn: new Date().toISOString(),
+  });
+  if (!guardado) console.error("The fund marker was not stored. Apply drizzle/0008_fondeos_escrow.sql.");
+  return listo;
 }
 
 // A stored release hash on an unpaid task means the release was submitted and the read model was behind.

@@ -7,13 +7,13 @@ import { Pool } from "pg";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
-import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { evidencias, fondeosEscrow, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import type { ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
-const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
+const schema = { usuarios, proyectos, tareas, fondeosEscrow, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
 
@@ -79,6 +79,20 @@ function esColumnaAusente(error: unknown): boolean {
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
 }
 
+// Drizzle wraps driver errors ("Failed query: ..."), so the Postgres code or text is on the cause chain.
+// Only a missing fondeos_escrow relation counts: a dropped connection must still surface.
+export function esTablaAusente(error: unknown): boolean {
+  let actual: unknown = error;
+  for (let nivel = 0; nivel < 5 && actual; nivel += 1) {
+    const codigo = typeof actual === "object" ? (actual as { code?: unknown }).code : null;
+    if (codigo === "42P01") return true;
+    const mensaje = actual instanceof Error ? actual.message : String(actual);
+    if (/relation "?(public\.)?fondeos_escrow"? does not exist|42P01/i.test(mensaje)) return true;
+    actual = typeof actual === "object" ? (actual as { cause?: unknown }).cause : null;
+  }
+  return false;
+}
+
 function columnasTareaPrevias() {
   const { requisitos: _requisitos, rechazo: _rechazo, ...resto } = getTableColumns(tareas);
   return resto;
@@ -110,6 +124,7 @@ const columnasPrevias = {
 export function crearAlmacenDesde(db: DbAlmacen): Almacen {
   let antifraude: boolean | null = null;
   let mile: boolean | null = null;
+  let fondeos: boolean | null = null;
   async function columnasListas(): Promise<boolean> {
     if (antifraude === true) return true;
     try {
@@ -130,6 +145,20 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       return true;
     } catch (error) {
       if (esColumnaAusente(error)) return false;
+      throw error;
+    }
+  }
+
+  // drizzle/0008 may not be applied yet. Without the table there is no marker and today's behaviour holds.
+  // A missing table is not cached, so the marker starts working as soon as the file is applied.
+  async function tablaFondeos(): Promise<boolean> {
+    if (fondeos === true) return true;
+    try {
+      await db.execute(sql`select tarea_id from fondeos_escrow limit 0`);
+      fondeos = true;
+      return true;
+    } catch (error) {
+      if (esTablaAusente(error)) return false;
       throw error;
     }
   }
@@ -248,6 +277,16 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       const set = listo ? cambio : resto;
       if (Object.keys(set).length === 0) return;
       await db.update(tareas).set(set).where(eq(tareas.id, id));
+    },
+    async leerFondeo(tareaId) {
+      if (!(await tablaFondeos())) return null;
+      const filas = await db.select().from(fondeosEscrow).where(eq(fondeosEscrow.tareaId, tareaId)).limit(1);
+      return filas[0] ?? null;
+    },
+    async guardarFondeo(fondeo) {
+      if (!(await tablaFondeos())) return false;
+      await db.insert(fondeosEscrow).values(fondeo).onConflictDoNothing();
+      return true;
     },
     async crearEvidencia(evidencia) {
       if (!(await columnasListas())) {

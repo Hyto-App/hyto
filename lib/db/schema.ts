@@ -41,6 +41,16 @@ export const tareas = pgTable("tareas", {
   rechazo: text("rechazo"),
 });
 
+// One row per task once a fund_escrow submit is confirmed. A lagging escrow read must not offer fund again.
+export const fondeosEscrow = pgTable("fondeos_escrow", {
+  tareaId: text("tarea_id")
+    .primaryKey()
+    .references(() => tareas.id),
+  contrato: text("contrato").notNull(),
+  hash: text("hash").notNull(),
+  creadoEn: text("creado_en").notNull(),
+});
+
 export const evidencias = pgTable("evidencias", {
   id: text("id").primaryKey(),
   tareaId: text("tarea_id")

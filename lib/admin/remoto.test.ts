@@ -158,6 +158,42 @@ test("en demo se aprueba en el navegador y con sesión real aparecen las dos acc
   assert.equal(sobreTope.desplegar, false);
 });
 
+test("a stored fund never offers fund again: a zero or unknown balance only re-reads", () => {
+  const enRevision = tarea();
+  const sinFondeo = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: false });
+  assert.equal(sinFondeo.fondear, true);
+  for (const lectura of [false, null]) {
+    const botones = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: lectura, fondeoEnviado: true });
+    assert.equal(botones.fondear, false);
+    assert.equal(botones.desplegar, false);
+    assert.equal(botones.pagar, false);
+    assert.equal(botones.verificarFondo, true);
+  }
+  // A positive balance is the only read that ends the wait: pay opens and nothing else is offered.
+  const leido = botonesRevision(enRevision, true, { contrato: "CSTAND", fondeado: true, fondeoEnviado: true });
+  assert.equal(leido.fondear, false);
+  assert.equal(leido.pagar, true);
+  assert.equal(leido.verificarFondo, false);
+  // The marker changes nothing for a paid task, a pending release, or a task with no contract.
+  assert.equal(botonesRevision(tarea({ estado: "pagado", hashPago: HASH }), true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+  assert.equal(botonesRevision(tarea({ hashPago: HASH }), true, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+  assert.equal(botonesRevision(enRevision, true, { contrato: null, fondeado: null, fondeoEnviado: true }).desplegar, true);
+  // The sample never shows these actions.
+  assert.equal(botonesRevision(enRevision, false, { contrato: "CSTAND", fondeado: false, fondeoEnviado: true }).verificarFondo, false);
+});
+
+test("the review detail carries the fund marker hash and reads a missing one as null", async () => {
+  const respuesta = (extra: Record<string, unknown>): typeof fetch =>
+    (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: "CSTAND" }] });
+      return json({ tarea: tarea(), foto: null, contratoEscrow: "CSTAND", wallet: "GORGANIZADOR", ...extra });
+    }) as typeof fetch;
+  assert.equal((await cargarDetalleOrganizador("stand", { fetch: respuesta({ hashFondeo: HASH }) }))?.hashFondeo, HASH);
+  assert.equal((await cargarDetalleOrganizador("stand", { fetch: respuesta({ hashFondeo: null }) }))?.hashFondeo, null);
+  assert.equal((await cargarDetalleOrganizador("stand", { fetch: respuesta({}) }))?.hashFondeo, null);
+});
+
 test("la revisión real usa la tarea del organizador y también pide /api/tareas", async () => {
   const llamadas: string[] = [];
   const fetchImpl: typeof fetch = async (input) => {

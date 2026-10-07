@@ -3,6 +3,7 @@ import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import type {
   EvidenciaFila,
+  FondeoFila,
   Proyecto,
   ProyectoInvitacion,
   ProyectoMiembro,
@@ -18,6 +19,7 @@ export function crearMemoria(): Almacen {
   const proyectos = new Map<string, Proyecto>();
   const tareas = new Map<string, TareaFila>();
   const evidencias = new Map<string, EvidenciaFila>();
+  const fondeos = new Map<string, FondeoFila>();
   const veredictos = new Map<string, VeredictoFila>();
   const sesiones = new Map<string, SesionFila>();
   const miembros = new Map<string, ProyectoMiembro>();
@@ -113,6 +115,14 @@ export function crearMemoria(): Almacen {
       const actual = tareas.get(id);
       if (!actual) return;
       tareas.set(id, { ...actual, ...cambio });
+    },
+    async leerFondeo(tareaId) {
+      return fondeos.get(tareaId) ?? null;
+    },
+    async guardarFondeo(fondeo) {
+      if (!tareas.has(fondeo.tareaId)) return false;
+      if (!fondeos.has(fondeo.tareaId)) fondeos.set(fondeo.tareaId, fondeo);
+      return true;
     },
     async crearEvidencia(evidencia) {
       if (evidencias.has(evidencia.id)) return;
