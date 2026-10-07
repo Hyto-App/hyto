@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `2b9fad4` (2 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `70cf4d3` (7 October 2026): roleless events, invites, and one app shell. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -40,7 +40,7 @@ Who can see what (`lib/api/alcance.ts`):
 
 ## App shell
 
-One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/mis-tareas`), **Account** (`/cuentas`). Light and dark tokens are in `app/globals.css`. Accent `#B7EE34`, button text `#08090C`. Poppins 400, 500, 600. UI source of truth is Abdiel's Figma, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". Flag conflicts with that file instead of overwriting it.
+One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/mis-tareas`), **Account** (`/configuracion`). Light and dark tokens are in `app/globals.css`. Accent `#B7EE34`, button text `#08090C`. Poppins 400, 500, 600. UI source of truth is Abdiel's Figma, [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". Flag conflicts with that file instead of overwriting it.
 
 | Route | What it is |
 |---|---|
@@ -51,7 +51,9 @@ One shell (`components/admin/Marco.tsx`): **Events** (`/eventos`), **Tasks** (`/
 | `/revision/[id]` | Photo review and payment. |
 | `/join`, `/join/[secreto]` | Redeem an invite. |
 | `/mis-tareas`, `/tareas/[id]` | Assigned tasks and evidence upload. |
-| `/cuentas`, `/cuentas/preparar` | Wallet and USDC setup. |
+| `/configuracion` | Account, wallet, and USDC setup. |
+| `/cuentas` | Redirects to `/configuracion`, keeping the query and the hash. |
+| `/cuentas/preparar` | Get ready to be paid. |
 | `/proyectos/nuevo` | Redirects to `/eventos/nuevo`. |
 
 User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` (`en` or `es`) and the dictionaries in `lib/ui/diccionario.ts`. Screens that are not wired yet stay in English.
@@ -62,7 +64,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 |---|---|
 | App | Next.js 16.3.6 (App Router), React 19.1.1, TypeScript, Tailwind 4. |
 | API | Route handlers in `app/api`. |
-| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0004`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
+| Data | Neon Postgres via Drizzle. Schema: `lib/db/schema.ts`. SQL: `drizzle/0000` through `drizzle/0007_requisitos_rechazo.sql`. `npm run db:migrar` applies them in name order. `0004_miembros_invitaciones.sql` was applied to Neon on 2026-10-01 (backup branch `pre-0004-backup`). |
 | Photos | Private Vercel Blob (`lib/blob/fotos.ts`). The DB stores the id. The screen loads `GET /api/evidencias/:id/foto`. |
 | Wallet | `@cavos/kit` 0.2.5, Stellar testnet, `appSalt` `hyto` (`lib/integrante/identidades.ts`). |
 | Escrow | Trustless Work v2, base `https://beta.api.trustlesswork.com` (`lib/escrow/cuerpos.ts`). The server calls it with `TRUSTLESS_API_KEY`. The browser only signs the XDR. |
@@ -183,7 +185,7 @@ Team communication, including that note, lives in the private repo [Hyto-App/hyt
 
 ## Status
 
-`main` is `2b9fad4`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code.
+`main` is `70cf4d3`. Cavos login, Neon, private Blob, the review and sign flow, per-event membership, invites, the Figma shell, English UI, reimbursement confirmation, and fund retry are in the code. That commit also has the sidebar, the profile menu, initials, organizer navigation, the greeting, Mile's help (`Ctrl+K`), and the task tracking bar. Account is `/configuracion`; `/cuentas` redirects there. A signed-in organizer, including the demo organizer, opens `/eventos`. Everyone else opens `/mis-tareas`.
 
 There is still no real testnet USDC payment hash in the repo.
 

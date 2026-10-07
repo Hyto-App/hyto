@@ -241,15 +241,6 @@ export async function asegurarCaminoDemo(almacen: Almacen): Promise<void> {
 }
 
 async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Promise<void> {
-  const tareas = (await almacen.listarTareas()).filter((tarea) => tarea.proyectoId === ID_PROYECTO_DEMO);
-  for (const tarea of tareas) {
-    if (tarea.estado === "pagado" || tarea.hashPago) continue;
-    const evidencia = await almacen.ultimaEvidencia(tarea.id);
-    const veredicto = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
-    if (!veredicto || veredicto.origen === "error" || veredicto.veredicto !== "cumplió") continue;
-    if (tarea.estado !== "en revisión") await almacen.actualizarTarea(tarea.id, { estado: "en revisión" });
-    return;
-  }
   const stand = await almacen.leerTarea(TAREA_DEMO_MET);
   if (!stand || stand.proyectoId !== ID_PROYECTO_DEMO || stand.estado === "pagado" || stand.hashPago) return;
   const evidencia = await almacen.ultimaEvidencia(stand.id);

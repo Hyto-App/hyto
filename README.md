@@ -1,6 +1,6 @@
 # Hyto
 
-Milestone payments on Stellar. Someone with funds creates an event, locks the budget in a Trustless Work escrow, and pays USDC on testnet after a photo is reviewed. Production: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+Milestone payments on Stellar. Someone with funds creates an event, locks the budget in a Trustless Work escrow, and pays USDC on testnet after a photo is reviewed. Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
 
 This file is the short map. Agents and contributors should read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md).
 
@@ -10,7 +10,17 @@ Login does not pick a global role. A signed-in user who can cover the budget plu
 
 The shell is Events, Tasks, and Account (light and dark). Evidence is a photo. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
 
-There is no successful real USDC payment on testnet in this repo yet (`tareas.hash_pago` is empty).
+There is no successful on-chain USDC payment recorded in this repo. No transaction hash is stored here, and `tareas.hash_pago` in the sample data is empty. The pay button prepares a testnet transaction; it does not invent a payment.
+
+## Screens
+
+Demo organizer on Events, the review screen (money controls stay off in the demo), and the account with nothing paid yet.
+
+![Organizer events](docs/capturas/eventos-organizador.png)
+
+![Demo review](docs/capturas/revision-demo.png)
+
+![Demo account](docs/capturas/cuenta-demo.png)
 
 ## Run it
 
