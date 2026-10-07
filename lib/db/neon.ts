@@ -210,6 +210,10 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
           .onConflictDoNothing();
       }
     },
+    async actualizarProyecto(id, cambio) {
+      if (Object.keys(cambio).length === 0) return;
+      await db.update(proyectos).set(cambio).where(eq(proyectos.id, id));
+    },
     async asignarOrganizador(proyectoId, organizadorId) {
       await db.update(proyectos).set({ organizadorId }).where(eq(proyectos.id, proyectoId));
       await db

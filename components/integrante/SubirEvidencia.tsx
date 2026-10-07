@@ -25,6 +25,9 @@ import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, mostrarReintento, seguirConsultando, topeSeguimientoMs } from "@/lib/integrante/seguimiento";
 import { textoVisible } from "@/lib/ui/etiquetas";
+import { ContextoEvento } from "./ContextoEvento";
+
+type ProyectoLista = { id: string; nombre: string; descripcion?: string | null; portada?: boolean };
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
 import type { Evidencia, Tarea } from "@/lib/integrante/tipos";
 
@@ -53,6 +56,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [cargaError, setCargaError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [evento, setEvento] = useState<string | null>(null);
+  const [contextoEvento, setContextoEvento] = useState<{ descripcion: string | null; portada: boolean }>({ descripcion: null, portada: false });
   const [esperaAgotada, setEsperaAgotada] = useState(false);
   const [esperaLocal, setEsperaLocal] = useState(false);
   const [enviadaEn, setEnviadaEn] = useState<Date | null>(null);
@@ -108,10 +112,12 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     let activo = true;
     fetch("/api/proyectos")
       .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
-      .then((cuerpo: { proyectos?: { id: string; nombre: string }[]; proyecto?: { id: string; nombre: string } } | null) => {
+      .then((cuerpo: { proyectos?: ProyectoLista[]; proyecto?: ProyectoLista } | null) => {
         if (!activo || !cuerpo) return;
         const lista = cuerpo.proyectos ?? (cuerpo.proyecto ? [cuerpo.proyecto] : []);
-        setEvento(lista.find((item) => item.id === proyectoId)?.nombre ?? null);
+        const encontrado = lista.find((item) => item.id === proyectoId);
+        setEvento(encontrado?.nombre ?? null);
+        setContextoEvento({ descripcion: encontrado?.descripcion ?? null, portada: Boolean(encontrado?.portada) });
       })
       .catch(() => undefined);
     return () => {
@@ -722,6 +728,12 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   return (
     <main className="hyto-page hyto-tarea">
       {cabecera}
+      <ContextoEvento
+        proyectoId={tarea.proyectoId}
+        nombre={nombreEvento}
+        descripcion={contextoEvento.descripcion}
+        portada={contextoEvento.portada}
+      />
       <div className="hyto-tabs flex" role="tablist" aria-label={t("evidencia.tabs")}>
         <button
           type="button"

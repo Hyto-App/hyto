@@ -14,6 +14,12 @@ export type Proyecto = {
   nombre: string;
   creadoEn: string;
   organizadorId: string | null;
+  /** Private Blob path of the cover photo. */
+  portada?: string | null;
+  /** Shown to members. */
+  descripcion?: string | null;
+  /** Only the AI reviewers read this. Never put it in a route response. */
+  contextoIa?: string | null;
 };
 
 export type TareaFila = {

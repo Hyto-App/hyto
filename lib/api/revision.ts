@@ -3,6 +3,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { asegurarSemilla, esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
+import { contextoParaRevision } from "./contexto-evento";
 import { guardarRevision } from "./evidencias";
 import { conciliarPagoPendiente } from "./firma";
 import { rechazoPublico, revisionPublica } from "./tareas";
@@ -57,7 +58,8 @@ export async function leerRevisionHttp(
       }
       try {
         const foto = await fotos.leer(evidencia.blobId);
-        const resultado = await revisar(tarea, foto, contextoDesdeEntorno());
+        const evento = await contextoParaRevision(almacen, tarea.proyectoId);
+        const resultado = await revisar(tarea, foto, { ...contextoDesdeEntorno(), evento });
         await guardarRevision(almacen, evidencia.id, tarea.id, resultado);
       } finally {
         if (reservado) liberarRevision(tareaId);
