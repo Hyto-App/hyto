@@ -13,18 +13,25 @@ export type CuerpoSalud = {
   db: "up" | "down";
 };
 
-type EntornoVersion = {
+type LecturaVersion = {
   VERCEL_GIT_COMMIT_SHA?: string;
   npm_package_version?: string;
 };
 
 /** Git sha when the host provides one, otherwise the package version. Nothing else from the environment. */
-export function versionDeApp(env: EntornoVersion): string | null {
+export function versionDeApp(env: LecturaVersion): string | null {
   const sha = env.VERCEL_GIT_COMMIT_SHA?.trim() ?? "";
   if (/^[0-9a-f]{7,40}$/i.test(sha)) return sha.toLowerCase();
   const version = env.npm_package_version?.trim() ?? "";
   if (version && version.length <= 40 && !/[\s/]/.test(version)) return version;
   return null;
+}
+
+export function versionActual(): string | null {
+  return versionDeApp({
+    VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA,
+    npm_package_version: process.env.npm_package_version,
+  });
 }
 
 export function armarSalud(dbOk: boolean, version: string | null): { status: number; cuerpo: CuerpoSalud } {
@@ -92,7 +99,7 @@ export async function baseAlcanzable(url: string | null = urlDeBase()): Promise<
 
 export async function responderSalud(
   probar: () => Promise<boolean> = () => baseAlcanzable(),
-  version: string | null = versionDeApp(process.env),
+  version: string | null = versionActual(),
 ): Promise<Response> {
   let dbOk = false;
   try {
