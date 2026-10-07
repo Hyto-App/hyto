@@ -7,6 +7,7 @@ import { Icono, Logo, Tema, iniciales } from "@/components/ui/Marca";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Volver } from "@/components/ui/Volver";
 import type { Clave } from "@/lib/ui/diccionario";
+import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import { destinoVolver } from "@/lib/ui/volver";
 
 type Seccion = "tareas" | "eventos" | "unirme" | "cuenta";
@@ -89,6 +90,9 @@ export function Marco({ children, usuario }: { children: ReactNode; demoHabilita
           <Link href="/join" className="hyto-btn-line">
             <Icono nombre="plus" tamano={16} />
             {t("nav.joinCode")}
+          </Link>
+          <Link href="/privacy" className="hyto-foot-privacidad">
+            {ENLACE_PRIVACIDAD}
           </Link>
           <div className="hyto-brand-acciones hyto-foot-acciones">
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
