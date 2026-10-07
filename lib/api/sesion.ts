@@ -44,11 +44,18 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     return json({ aviso: "Could not confirm sign-in." }, 400);
   }
   try {
-    await asegurarSemilla(almacen);
     const email = correo.correo.trim().toLowerCase();
+    // A returning user does not need the sample data to sign in. Seeding costs 11 to 29
+    // sequential queries, which was most of the ~1.3 s this route took. It still runs when
+    // the email is unknown, so a seeded identity on an empty database resolves as before,
+    // and every route that reads sample data seeds on its own.
     let usuario = await almacen.usuarioPorEmail(email);
     let nuevo = false;
     // Sign in and Sign up both open an account the first time an email arrives.
+    if (!usuario) {
+      await asegurarSemilla(almacen);
+      usuario = await almacen.usuarioPorEmail(email);
+    }
     if (!usuario) {
       const local = email.split("@")[0] ?? "";
       await almacen.insertarUsuario({

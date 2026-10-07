@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fijarWallet, publicarSesion } from "./cliente";
+import { fijarWallet, precalentarVault, publicarSesion } from "./cliente";
 
 const WALLET = "G" + "C".repeat(55);
 
@@ -43,4 +43,31 @@ test("publicarSesion marca nuevo solo cuando el servidor lo dice", async () => {
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test("precalentarVault adjunta el iframe del vault para esa app y nunca lanza", async () => {
+  const adjuntados: unknown[] = [];
+  await precalentarVault("app-1", async () => ({
+    VaultClient: {
+      attach(opciones) {
+        adjuntados.push(opciones);
+        return {};
+      },
+    },
+  }));
+  assert.deepEqual(adjuntados, [{ appId: "app-1" }]);
+
+  await precalentarVault(null, async () => {
+    throw new Error("no debe cargar sin app id");
+  });
+  await precalentarVault("app-1", async () => {
+    throw new Error("el kit no cargó");
+  });
+  await precalentarVault("app-1", async () => ({
+    VaultClient: {
+      attach() {
+        throw new Error("sin navegador");
+      },
+    },
+  }));
 });

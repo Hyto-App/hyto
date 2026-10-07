@@ -57,6 +57,24 @@ export async function conectarStellar(auth: AuthProvider, opciones: OpcionesCone
   });
 }
 
+/**
+ * Starts loading the Cavos vault iframe now, so it overlaps the code exchange and
+ * `POST /api/sesion` instead of starting after them. `VaultClient.attach` keeps one iframe
+ * per app, and `Cavos.connect({ vault: true })` reuses it. This opens no wallet and creates
+ * no key: it only loads the page. It never rejects and nobody waits on it.
+ */
+export function precalentarVault(
+  appId: string | null = appIdPublico(),
+  cargar: () => Promise<{ VaultClient: { attach(opciones: { appId: string }): unknown } }> = () => import("@cavos/kit"),
+): Promise<void> {
+  if (!appId) return Promise.resolve();
+  return cargar()
+    .then(({ VaultClient }) => {
+      VaultClient.attach({ appId });
+    })
+    .catch(() => undefined);
+}
+
 export async function fijarWallet(direccion: string): Promise<{ ok: true } | { ok: false; aviso: string }> {
   const respuesta = await fetch("/api/sesion/wallet", {
     method: "POST",
@@ -142,6 +160,7 @@ export async function entrarConGoogle(
   redirectUri: string,
   intencion: IntencionIngreso = "signin",
 ): Promise<IngresoCerrado> {
+  void precalentarVault();
   const identity = await authComo(auth).handleCallback(busqueda, redirectUri);
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
   const sesion = await publicarSesion(identity.email ?? "", auth.getAuthToken?.() ?? null, intencion);
