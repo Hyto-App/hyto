@@ -112,6 +112,10 @@ function normalizarTarea(valor: unknown): Tarea | null {
     dificultad: dificultadGuardada(crudo.dificultad),
     nota: notaCliente(crudo.nota),
     veredicto: veredictoCliente(crudo.veredicto),
+    revisionFallida: crudo.revisionFallida === true,
+    tipoArchivo: texto(crudo.tipoArchivo),
+    evento: texto(crudo.evento),
+    notas: notasCliente(crudo.notas),
     ...leerCamposRevision(crudo, estado),
     enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
   };
@@ -125,6 +129,23 @@ function notaCliente(valor: unknown): number | null {
 function veredictoCliente(valor: unknown): Veredicto | null {
   if (valor === "cumplió" || valor === "parcial" || valor === "insuficiente") return valor;
   return null;
+}
+
+function notasCliente(valor: unknown): Tarea["notas"] {
+  if (!Array.isArray(valor)) return [];
+  const notas: NonNullable<Tarea["notas"]> = [];
+  for (const item of valor) {
+    if (!item || typeof item !== "object") continue;
+    const crudo = item as Record<string, unknown>;
+    const id = texto(crudo.id);
+    const etiqueta = texto(crudo.texto);
+    const explicacion = texto(crudo.explicacion) ?? "";
+    const severidad = crudo.severidad === "good" || crudo.severidad === "warning" || crudo.severidad === "problem" ? crudo.severidad : null;
+    const preguntas = Array.isArray(crudo.preguntas) ? crudo.preguntas.filter((item): item is string => typeof item === "string") : [];
+    if (!id || !etiqueta || !severidad) continue;
+    notas.push({ id, texto: etiqueta, explicacion, severidad, preguntas });
+  }
+  return notas;
 }
 
 function fechaCliente(valor: unknown): string | null {
@@ -199,19 +220,26 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
   if (filtro.miembroId) params.set("miembro", filtro.miembroId);
   if (filtro.wallet) params.set("wallet", filtro.wallet);
 
-  try {
-    const respuesta = await pedir(`${base}/api/tareas?${params.toString()}`, { method: "GET" }, fetchImpl);
-    if (!respuesta.ok) throw new Error(String(respuesta.status));
-    const tareas = listaDesdeJson(await leerJson(respuesta));
-    if (!tareas) throw new Error("forma");
-    return { tareas: filtrarTareas(tareas, filtro), ejemplo: false, error: null };
-  } catch {
-    if (opciones.muestra) {
-      const tareas = filtrarTareas(tareasEjemplo(), filtro);
-      return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+  for (let intento = 0; intento < 3; intento += 1) {
+    try {
+      const respuesta = await pedir(
+        `${base}/api/tareas?${params.toString()}`,
+        { method: "GET", cache: "no-store" },
+        fetchImpl,
+      );
+      if (!respuesta.ok) throw new Error(String(respuesta.status));
+      const tareas = listaDesdeJson(await leerJson(respuesta));
+      if (!tareas) throw new Error("forma");
+      return { tareas: filtrarTareas(tareas, filtro), ejemplo: false, error: null };
+    } catch {
+      // A deploy can answer once before the new session is visible. Try again before giving up.
     }
-    return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
   }
+  if (opciones.muestra) {
+    const tareas = filtrarTareas(tareasEjemplo(), filtro);
+    return { tareas: conEstados(tareas, opciones.estados), ejemplo: true, error: null };
+  }
+  return { tareas: [], ejemplo: false, error: "Could not load your tasks." };
 }
 
 export async function leerTarea(

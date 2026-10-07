@@ -57,9 +57,81 @@ export async function crearProyectoHttp(
       });
     }
     return json({ proyecto: { id: fila.id, nombre: fila.nombre }, tareas: asignadas.map(tareaPublica) }, 201);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    console.error("[api/proyectos] crear", detalleErrorCrear(error));
+    const fallo = clasificarErrorCrear(error);
+    return json({ aviso: fallo.aviso }, fallo.status);
   }
+}
+
+const AVISO_CREAR = "Could not create the event.";
+
+const CODIGOS_BASE_NO_LISTA = new Set([
+  "42P01",
+  "42703",
+  "3D000",
+  "28P01",
+  "08000",
+  "08001",
+  "08003",
+  "08004",
+  "08006",
+  "08007",
+  "53300",
+  "57P01",
+  "57P02",
+  "57P03",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EPIPE",
+]);
+
+/** Logs stay useful. Connection strings, passwords, and emails do not. */
+export function detalleErrorCrear(error: unknown): string {
+  const nombre = error instanceof Error ? error.name : typeof error;
+  const codigo = codigoDe(error);
+  const mensaje = redactar(mensajeDe(error)).slice(0, 400);
+  return `${nombre}${codigo ? ` ${codigo}` : ""}: ${mensaje}`;
+}
+
+export function clasificarErrorCrear(error: unknown): { aviso: string; status: number } {
+  if (esBaseNoLista(error)) return { aviso: "The database is not ready.", status: 503 };
+  return { aviso: AVISO_CREAR, status: 500 };
+}
+
+function esBaseNoLista(error: unknown): boolean {
+  if (CODIGOS_BASE_NO_LISTA.has(codigoDe(error))) return true;
+  return /does not exist|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|connection (terminated|refused|timeout)|password authentication failed|database is not configured|remaining connection slots|Client has encountered a connection error/i.test(
+    mensajeDe(error),
+  );
+}
+
+function codigoDe(error: unknown): string {
+  const visto = new Set<unknown>();
+  let actual: unknown = error;
+  while (actual && typeof actual === "object" && !visto.has(actual)) {
+    visto.add(actual);
+    const codigo = (actual as { code?: unknown }).code;
+    if (typeof codigo === "string" && codigo) return codigo;
+    actual = (actual as { cause?: unknown }).cause;
+  }
+  return "";
+}
+
+function mensajeDe(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "";
+}
+
+function redactar(texto: string): string {
+  return texto
+    .replace(/postgres(?:ql)?:\/\/\S+/gi, "postgres://redacted")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
+    .replace(/(password|secret|token|api[_-]?key|authorization)\s*[:=]\s*\S+/gi, "$1=[redacted]");
 }
 
 export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: { id?: string | null }): Promise<Response> {

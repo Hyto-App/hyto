@@ -18,7 +18,7 @@ export function parametrosRazonamiento(modelo: string): { reasoning_effort?: "no
 }
 const BASE = "https://api.groq.com/openai/v1";
 /** The structured reply carries a long description, so 1024 tokens could cut the JSON. */
-const MAX_TOKENS = 2048;
+export const MAX_TOKENS = 2048;
 const MAX_CONDICION = 600;
 
 export type ContextoPedido = {

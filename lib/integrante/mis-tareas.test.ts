@@ -161,6 +161,49 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
   }
 });
 
+test("un veredicto de error no dice que Mile sigue revisando", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "fallo",
+            proyectoId: "uno",
+            titulo: "Receipt",
+            tipo: "reembolso",
+            monto: "8",
+            tope: "15",
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: null,
+            veredicto: null,
+            revisionFallida: true,
+            tipoArchivo: "application/pdf",
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Receipt"));
+    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.doesNotMatch(texto(), /Mile is checking your photo/);
+    assert.doesNotMatch(texto(), /Mile is checking your file/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 async function esperar(listo: () => boolean): Promise<void> {
   for (let i = 0; i < 25; i += 1) {
     if (listo()) return;

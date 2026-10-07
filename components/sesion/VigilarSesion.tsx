@@ -12,11 +12,32 @@ export function esRetornoOAuth(params: URLSearchParams): boolean {
   return CLAVES_RETORNO_OAUTH.some((clave) => Boolean(params.get(clave)));
 }
 
-export function VigilarSesion() {
+const ESPERA_ENTRE_401_MS = 400;
+
+/**
+ * A single 401 during a deploy is not enough to sign the person out.
+ * Three in a row, with a pause between them, are. Two instant 401s on a cold start are not.
+ */
+export async function sesionCerrada(fetchImpl: typeof fetch = fetch, esperar: (ms: number) => Promise<void> = espera): Promise<boolean> {
+  const leer = () => fetchImpl("/api/sesion", { method: "GET", cache: "no-store" });
+  for (let intento = 0; intento < 3; intento += 1) {
+    const respuesta = await leer();
+    if (respuesta.ok || respuesta.status !== 401) return false;
+    if (intento < 2) await esperar(ESPERA_ENTRE_401_MS);
+  }
+  return true;
+}
+
+function espera(ms: number): Promise<void> {
+  return new Promise((resolver) => setTimeout(resolver, ms));
+}
+
+export function VigilarSesion({ confirmada = false }: { confirmada?: boolean }) {
   const demo = useModoDemo();
 
   useEffect(() => {
-    if (demo) return;
+    // The server already read this cookie from Postgres. A 401 on the follow-up fetch must not sign them out.
+    if (demo || confirmada) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("signin") === "1") return;
     // A Google/Apple return carries a one-time Cavos code that Entrar is still
@@ -25,9 +46,9 @@ export function VigilarSesion() {
     if (esRetornoOAuth(params)) return;
     if (!leerMemoriaAdmin().direccion) return;
     let viva = true;
-    fetch("/api/sesion", { method: "GET", cache: "no-store" })
-      .then((respuesta) => {
-        if (!viva || respuesta.ok || respuesta.status !== 401) return;
+    void sesionCerrada()
+      .then((cerrada) => {
+        if (!viva || !cerrada) return;
         const aqui = rutaRetornoSegura(`${window.location.pathname}${window.location.search}`);
         window.location.replace(new URL(urlSignin(aqui === "/" ? null : aqui), window.location.origin).toString());
       })
@@ -35,7 +56,7 @@ export function VigilarSesion() {
     return () => {
       viva = false;
     };
-  }, [demo]);
+  }, [confirmada, demo]);
 
   return null;
 }

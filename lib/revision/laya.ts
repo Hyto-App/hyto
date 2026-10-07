@@ -11,6 +11,7 @@ import {
 import { noulCerca, probabilidadesCerca } from "./margen";
 import { motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
+import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -106,6 +107,38 @@ export function senalesDeTrabajo(respuestas: RespuestasTrabajo): Senales {
   };
 }
 
+/** Mile already wrote that this is a receipt. Laya must not score it as work. */
+export function esReciboEscrito(texto: string): boolean {
+  return /Evidence type:\s*a receipt or an invoice\b/i.test(texto);
+}
+
+/**
+ * The notes already name an amount, a date, or an item when Laya said they were missing.
+ * A date that matches the request, with an amount, is not "not reasonable".
+ */
+export function corregirFactura(respuestas: RespuestasFactura, texto: string, condicion = ""): RespuestasFactura {
+  let siguiente = respuestas;
+  if (!siguiente.f2 && montoEscrito(texto)) siguiente = { ...siguiente, f2: true };
+  if (!siguiente.f3 && fechaEscrita(texto)) siguiente = { ...siguiente, f3: true };
+  if (!siguiente.g3 && itemsNombrados(texto)) siguiente = { ...siguiente, g3: true };
+  if (
+    !siguiente.g2 &&
+    siguiente.f1 === "coincide_con_lo_pedido" &&
+    montoEscrito(texto) &&
+    fechaCoincideConPedido(texto, condicion)
+  ) {
+    siguiente = { ...siguiente, g2: true };
+  }
+  return siguiente;
+}
+
+function itemsNombrados(texto: string): boolean {
+  const linea = texto.match(/^Items:\s*(.+)$/m);
+  if (!linea) return false;
+  const valor = (linea[1] ?? "").trim().toLowerCase().replace(/\.+$/, "");
+  return valor.length > 0 && valor !== "none named" && valor !== "none" && valor !== "not shown";
+}
+
 export function senalesDeFactura(respuestas: RespuestasFactura): Senales {
   const nota = notaDeFactura(respuestas);
   const motivos = motivosFactura(respuestas);
@@ -139,8 +172,9 @@ export async function preguntarLaya(
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
   const pedido = condicion.trim();
   const claseJson = await enviar(base, texto, pedido, preguntasClasificacion(pedido), fetchImpl, signal, clave);
-  const clase = leerClase(claseJson);
-  if (!clase) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
+  const leida = leerClase(claseJson);
+  if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
+  const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
     const json = await enviar(base, texto, pedido, preguntasTrabajo(pedido), fetchImpl, signal, clave);
@@ -169,8 +203,9 @@ export async function preguntarLaya(
     };
   }
   const json = await enviar(base, texto, pedido, preguntasFactura(pedido), fetchImpl, signal, clave);
-  const respuestas = leerFactura(json);
-  if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
+  const leidas = leerFactura(json);
+  if (!leidas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
+  const respuestas = corregirFactura(leidas, texto, pedido);
   return {
     ...senalesDeFactura(respuestas),
     detalle: escribirSnapshot({

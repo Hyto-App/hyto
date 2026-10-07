@@ -2,6 +2,7 @@ import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
 import { File as ArchivoNode } from "node:buffer";
 import test from "node:test";
+import sharp from "sharp";
 import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
@@ -107,20 +108,20 @@ test("las pestañas Recibo y Tarea muestran una sola carga", async () => {
     });
     assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
     assert.match(texto(), /Choose a file/);
-    assert.match(texto(), /Choose a PDF or image/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
     assert.doesNotMatch(texto(), /Open camera/);
     assert.doesNotMatch(texto(), /This task needs a receipt/);
     const recibo = entradaArchivo();
     assert.ok(recibo);
     assert.match(recibo.accept, /pdf/);
 
-    const malo = new ArchivoNode(["no"], "notas.txt", { type: "text/plain" });
+    const malo = new ArchivoNode(["no"], "notas.zip", { type: "application/zip" });
     Object.defineProperty(recibo, "files", { configurable: true, value: [malo] });
     await act(async () => {
       recibo.dispatchEvent(new window.Event("change", { bubbles: true }));
     });
-    assert.match(texto(), /Choose a PDF, JPEG, PNG, or WebP file/);
-    assert.doesNotMatch(texto(), /notas.txt/);
+    assert.match(texto(), /Choose a PDF, HTML, text, JPEG, PNG, or WebP file/);
+    assert.doesNotMatch(texto(), /notas.zip/);
 
     const pdf = new ArchivoNode(["%PDF-1.4"], "recibo.pdf", { type: "application/pdf" });
     const entradaPdf = entradaArchivo();
@@ -149,7 +150,7 @@ test("las pestañas Recibo y Tarea muestran una sola carga", async () => {
     await pulsar("Go back to Receipt");
     assert.equal(pestanas()[0]?.getAttribute("aria-selected"), "true");
     assert.doesNotMatch(texto(), /This task needs a receipt/);
-    assert.match(texto(), /Choose a PDF or image/);
+    assert.match(texto(), /Choose a PDF, text file, or image/);
   } finally {
     globalThis.fetch = original;
     await desmontar();
@@ -181,6 +182,7 @@ async function elegirRecibo(): Promise<void> {
   Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
   await act(async () => {
     entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
   });
 }
 
@@ -201,6 +203,91 @@ async function subirConRespuesta(respuesta: () => Response): Promise<void> {
   await pulsar("Send evidence");
   await esperar();
 }
+
+test("un jpg vacío, un texto renombrado y una imagen de 1×1 dejan Enviar apagado", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode([], "empty.jpg", { type: "image/jpeg" }));
+    const enviar = botonEnvio();
+    assert.equal(enviar.disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1\./);
+    assert.match(texto(), /empty \(0 bytes\)|está vacío|0 bytes/);
+
+    await soltarEnInput(new ArchivoNode(["not a photo"], "fake_image.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /Renaming a text file|no lo convierte en foto/);
+
+    const minuscula = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: { r: 1, g: 2, b: 3 } },
+    })
+      .jpeg()
+      .toBuffer();
+    await soltarEnInput(new ArchivoNode([minuscula], "tiny.jpg", { type: "image/jpeg" }));
+    assert.equal(botonEnvio().disabled, true);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.match(texto(), /1×1/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+function botonEnvio(): HTMLButtonElement {
+  const encontrado = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
+  if (!(encontrado instanceof HTMLButtonElement)) throw new Error("Sin botón Send evidence.");
+  return encontrado;
+}
+
+async function soltarEnInput(archivo: ArchivoNode): Promise<void> {
+  const entrada = document.querySelector('input[type="file"]');
+  if (!(entrada instanceof window.HTMLInputElement)) throw new Error("Sin selector de archivo.");
+  Object.defineProperty(entrada, "files", { configurable: true, value: [archivo] });
+  await act(async () => {
+    entrada.dispatchEvent(new window.Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
+  });
+}
+
+test("un txt y un html de reembolso dejan Enviar encendido", async () => {
+  const original = globalThis.fetch;
+  const fetchImpl: typeof fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) return json({ tareas: [comidaRemota] });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+    return json({}, 404);
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    await montar(createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "comida" }) }));
+    await esperar();
+    await soltarEnInput(new ArchivoNode(["Team meal receipt"], "nota.txt", { type: "text/plain" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.txt/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+
+    await soltarEnInput(new ArchivoNode(["<p>Receipt</p>"], "nota.html", { type: "text/html" }));
+    assert.equal(botonEnvio().disabled, false);
+    assert.match(texto(), /nota.html/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+    assert.equal(document.querySelector('input[type="file"]')?.getAttribute("accept")?.includes("text/plain"), true);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
 
 test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent", async () => {
   const original = globalThis.fetch;
@@ -240,7 +327,8 @@ test("un 201 sin aviso sí dice que la foto llegó", async () => {
   const original = globalThis.fetch;
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" } }, 201));
-    assert.match(texto(), /Your photo arrived/);
+    assert.match(texto(), /Your file arrived/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /action needed/);
     assert.match(texto(), /as soon as the organizer approves it/);
   } finally {

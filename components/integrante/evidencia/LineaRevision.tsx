@@ -13,15 +13,28 @@ type Paso = "hecho" | "ahora" | "despues";
 type TareaLinea = Pick<Tarea, "estado" | "nota" | "veredicto" | "rechazada" | "rechazo" | "intentos" | "organizador">;
 
 /**
- * "What happens now" (spec §6.6, §7.4). Only the volunteer's own data decides each step.
- * `revisionCerrada`: the 30 s of waiting are over (also covers a failed AI review: the organizer decides).
+ * "What happens now". Only the volunteer's own data decides each step.
+ * `revisionCerrada`: waiting is over (also covers a failed AI review: the organizer decides).
+ * `mileSinTerminar`: the wait ended and the latest photo still has no grade, so Mile is not checked off.
  */
-export function LineaRevision({ tarea, revisionCerrada, monto }: { tarea: TareaLinea; revisionCerrada: boolean; monto: string }) {
+export function LineaRevision({
+  tarea,
+  revisionCerrada,
+  monto,
+  mileSinTerminar = false,
+  archivo = false,
+}: {
+  tarea: TareaLinea;
+  revisionCerrada: boolean;
+  monto: string;
+  mileSinTerminar?: boolean;
+  archivo?: boolean;
+}) {
   const t = useTexto();
   const calificacion = notaDeTarea(tarea);
   const pagado = tarea.estado === "pagado";
   const rechazada = estaRechazada(tarea);
-  const revisada = calificacion !== null || revisionCerrada || pagado || rechazada;
+  const revisada = !mileSinTerminar && (calificacion !== null || revisionCerrada || pagado || rechazada);
   const nombre = tarea.organizador?.nombre?.trim() || "";
   const intento = (tarea.intentos ?? 0) > 1 ? t("evidencia.attempt", { n: tarea.intentos ?? 0 }) : null;
   const notaCorta = tarea.rechazo?.nota ? abreviarNota(tarea.rechazo.nota) : null;
@@ -33,8 +46,9 @@ export function LineaRevision({ tarea, revisionCerrada, monto }: { tarea: TareaL
   const pasos: { clave: string; estado: Paso; titulo: string; rosa?: boolean; detalle?: ReactNode }[] = [
     {
       clave: "mile",
-      estado: revisada ? "hecho" : "ahora",
-      titulo: t("evidencia.stepMile"),
+      estado: mileSinTerminar ? "ahora" : revisada ? "hecho" : "ahora",
+      rosa: mileSinTerminar,
+      titulo: mileSinTerminar ? t("evidencia.mileCouldntFinish") : t(archivo ? "evidencia.stepMileFile" : "evidencia.stepMile"),
       detalle: detalleMile.length > 0 ? <>{detalleMile}</> : undefined,
     },
     rechazada

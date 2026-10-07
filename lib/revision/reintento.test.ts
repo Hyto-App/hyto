@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { tareasSemilla } from "../db/semilla";
 import { FalloRevision } from "./fallo";
-import { conReintentos, esReintentable, INTENTOS_REVISION, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS } from "./reintento";
+import { conReintentos, esReintentable, INTENTOS_REVISION, PAUSAS_REINTENTO_MS, TOPE_GROQ_MS } from "./reintento";
 import { revisar } from "./revisar";
 
 const FOTO = { tipo: "image/jpeg", bytes: new Uint8Array([1, 2, 3]) };
@@ -84,7 +84,7 @@ test("el presupuesto corta el intento que ya no cabe", async () => {
           throw new FalloRevision("proveedor", { fuente: "groq", status: 502 });
         },
         {
-          deadline: PRESUPUESTO_REVISION_MS,
+          deadline: TOPE_GROQ_MS * 2,
           topeIntentoMs: TOPE_GROQ_MS,
           ahora: () => reloj,
           esperar: async (ms) => {

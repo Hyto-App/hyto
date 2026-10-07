@@ -45,6 +45,12 @@ export type Tarea = {
   dificultad: DificultadTarea | null;
   nota?: number | null;
   veredicto?: Veredicto | null;
+  /** True when the latest review was stored as a failure. The score stays hidden. */
+  revisionFallida?: boolean;
+  /** Event name from the task list, so the subtitle does not wait on a second request. */
+  evento?: string | null;
+  /** Reviewer notes. The raw model text is not included. */
+  notas?: { id: string; texto: string; explicacion: string; severidad: "good" | "warning" | "problem"; preguntas: string[] }[];
   /** Deadline. Optional until the backend sends it (spec §9); only shown when present. */
   venceEn?: string | null;
   /** True only while the task is still pending and the review sent it back. */
@@ -59,8 +65,10 @@ export type Tarea = {
   requisitos?: RequisitoRevision[];
   /** Confirmed reimbursement amount, when the API sends one. */
   montoPagado?: string | null;
-  /** ISO-8601 instant the latest photo was sent (`enviada_en`). */
+  /** ISO-8601 instant the latest file was sent (`enviada_en`). */
   enviadaEn?: string | null;
+  /** MIME type of the latest file, when the task list sends it. */
+  tipoArchivo?: string | null;
 };
 
 export type Evidencia = {

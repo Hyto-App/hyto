@@ -65,13 +65,9 @@ test("el informe de ejemplo arma la bandeja de admin", async () => {
   assert.equal(informe.nombre, "ZEEK");
   assert.equal(informe.ejemplo, false);
   assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
-  assert.equal(informe.bandeja.find((tarea) => tarea.id === "stand")?.estado, "pendiente");
-  assert.deepEqual(
-    informe.bandeja.map((tarea) => tarea.id),
-    ["stand", "registro", "comida"],
-  );
-  assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.nota, 65);
-  assert.equal(informe.bandeja.find((tarea) => tarea.id === "registro")?.veredicto, "parcial");
+  assert.deepEqual(informe.bandeja.map((tarea) => tarea.id), []);
+  assert.equal(informe.tareas.find((tarea) => tarea.id === "registro")?.nota, 65);
+  assert.equal(informe.tareas.find((tarea) => tarea.id === "registro")?.veredicto, "parcial");
   assert.equal(informe.tareas.find((tarea) => tarea.id === "stand")?.nota, 100);
   assert.equal(informe.tareas.find((tarea) => tarea.id === "comida")?.montoRevisado, "12.40");
   assert.equal(informe.tareas.find((tarea) => tarea.id === "comida")?.fecha, "2026-09-27");

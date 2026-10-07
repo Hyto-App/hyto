@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import sharp from "sharp";
 import { publicarEvidenciaHttp } from "@/lib/api/evidencias";
 import { leerRevisionHttp } from "@/lib/api/revision";
 import { crearFotosMemoria } from "@/lib/blob/fotos";
@@ -7,6 +8,7 @@ import { crearMemoria } from "@/lib/db/memoria";
 import { asegurarSemilla } from "@/lib/db/semilla";
 import { desdeGuion } from "@/lib/revision/armar";
 import { MOTIVO_COPIA } from "./copia";
+import { sha256De } from "./huella";
 import { reiniciarTokensEvidencia } from "./token";
 import { PDF_MINIMO, jpegDePrueba, jpegDistinto, tokenDePrueba } from "./muestras";
 import { phashDe } from "./phash";
@@ -74,23 +76,140 @@ test("un trabajo exige cámara, JPEG y frescura; un reembolso acepta PDF y recha
       tarea: { origen: string; codigo: string | null; veredicto: string | null; frase: string; tipoArchivo: string | null };
     };
     assert.equal(revision.tarea.origen, "error");
-    assert.equal(revision.tarea.codigo, "pdf");
+    assert.equal(revision.tarea.codigo, "sin_texto");
     assert.equal(revision.tarea.veredicto, null);
-    assert.match(revision.tarea.frase, /PDF needs a person/);
+    assert.match(revision.tarea.frase, /no readable text/);
     assert.equal(revision.tarea.tipoArchivo, "application/pdf");
     assert.match(revision.foto, /\/foto$/);
 
+    const idFactura = factura?.id ?? "";
     const otra = new FormData();
     otra.set("tareaId", "comida");
     otra.set("foto", new Blob([PDF_MINIMO], { type: "application/pdf" }), "factura.pdf");
     const duplicada = await publicarEvidenciaHttp(pedido(otra), { almacen, fotos, actor });
-    assert.equal(duplicada.status, 409);
+    assert.equal(duplicada.status, 200);
+    assert.equal((await almacen.ultimaEvidencia("comida"))?.id, idFactura);
+    assert.equal((await almacen.veredictoDe(idFactura))?.origen, "error");
+    assert.equal((await almacen.veredictoDe(idFactura))?.choice, "sin_texto");
   } finally {
     console.error = previo;
   }
 });
 
-test("una foto cercana deja el veredicto en insuficiente", async () => {
+test("un reembolso acepta un txt y un html y no les calcula phash", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  const listo = async () => ({ ...desdeGuion("reembolso", "15"), origen: "scout" as const });
+
+  const txt = new FormData();
+  txt.set("tareaId", "comida");
+  txt.set("foto", new Blob(["Team meal receipt"], { type: "text/plain" }), "nota.txt");
+  assert.equal((await publicarEvidenciaHttp(pedido(txt), { almacen, fotos, actor, revisarTarea: listo })).status, 201);
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.tipoArchivo, "text/plain");
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.phash ?? null, null);
+
+  const html = new FormData();
+  html.set("tareaId", "comida");
+  html.set("foto", new Blob(["<p>Another receipt</p>"], { type: "text/html" }), "nota.html");
+  assert.equal((await publicarEvidenciaHttp(pedido(html), { almacen, fotos, actor, revisarTarea: listo })).status, 201);
+  const guardada = await almacen.ultimaEvidencia("comida");
+  assert.equal(guardada?.tipoArchivo, "text/html");
+  assert.equal(guardada?.phash ?? null, null);
+  assert.equal(guardada?.sha256?.length, 64);
+});
+
+test("el mismo archivo se vuelve a revisar si no hay nota o la nota es un error, y sigue bloqueado en otro caso", async () => {
+  reiniciarTokensEvidencia();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const jpeg = await jpegDePrueba();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  const form = () => {
+    const cuerpo = new FormData();
+    cuerpo.set("tareaId", "stand");
+    cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+    cuerpo.set("capturadaEn", new Date().toISOString());
+    cuerpo.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+    return pedido(cuerpo);
+  };
+
+  const sinNota = await fotos.guardar("evidencia.jpg", new Blob([jpeg], { type: "image/jpeg" }));
+  await almacen.crearEvidencia({
+    id: "ev-vacia",
+    tareaId: "stand",
+    blobId: sinNota,
+    monto: null,
+    montoConfirmado: null,
+    fecha: null,
+    creadaEn: "2026-10-01T00:00:00.000Z",
+    sha256: sha256De(jpeg),
+    tipoArchivo: "image/jpeg",
+    capturadaEn: null,
+    frescura: "captura",
+    phash: null,
+    motivoCopia: null,
+  });
+  await almacen.actualizarTarea("stand", { estado: "en revisión" });
+  const antes = await almacen.contarEvidencias("stand");
+  const reintentoVacio = await publicarEvidenciaHttp(form(), {
+    almacen,
+    fotos,
+    actor,
+    revisarTarea: async () => ({ ...desdeGuion("trabajo", null), origen: "error", score: "error", veredicto: "insuficiente", nota: null, codigo: "tiempo" }),
+  });
+  assert.equal(reintentoVacio.status, 200);
+  assert.equal(await almacen.contarEvidencias("stand"), antes);
+  assert.equal((await almacen.ultimaEvidencia("stand"))?.id, "ev-vacia");
+  assert.notEqual((await almacen.ultimaEvidencia("stand"))?.creadaEn, "2026-10-01T00:00:00.000Z");
+  assert.equal((await almacen.veredictoDe("ev-vacia"))?.origen, "error");
+
+  const reintentoError = await publicarEvidenciaHttp(form(), {
+    almacen,
+    fotos,
+    actor,
+    revisarTarea: async () => ({ ...desdeGuion("trabajo", null), origen: "scout", score: "80", veredicto: "cumplió", nota: 80, codigo: null }),
+  });
+  assert.equal(reintentoError.status, 200);
+  assert.equal(await almacen.contarEvidencias("stand"), antes);
+  assert.equal((await almacen.veredictoDe("ev-vacia"))?.origen, "scout");
+  assert.equal((await almacen.veredictoDe("ev-vacia"))?.score, "80");
+
+  let revisionesDuplicado = 0;
+  const repetida = await publicarEvidenciaHttp(form(), {
+    almacen,
+    fotos,
+    actor,
+    revisarTarea: async () => {
+      revisionesDuplicado += 1;
+      return desdeGuion("trabajo", null);
+    },
+  });
+  assert.equal(repetida.status, 409);
+  assert.equal(revisionesDuplicado, 0);
+  assert.match(((await repetida.json()) as { aviso: string }).aviso, /already submitted/);
+  assert.equal((await almacen.veredictoDe("ev-vacia"))?.score, "80");
+
+  const ajena = new FormData();
+  ajena.set("tareaId", "registro");
+  ajena.set("token", tokenDePrueba("voluntario-2", "registro"));
+  ajena.set("capturadaEn", new Date().toISOString());
+  ajena.set("foto", new Blob([jpeg], { type: "image/jpeg" }), "evidencia.jpg");
+  const cuentasRegistro = await almacen.contarEvidencias("registro");
+  const cruce = await publicarEvidenciaHttp(pedido(ajena), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+    revisarTarea: async () => desdeGuion("trabajo", null),
+  });
+  assert.equal(cruce.status, 409);
+  assert.match(((await cruce.json()) as { aviso: string }).aviso, /already submitted/);
+  assert.equal(await almacen.contarEvidencias("registro"), cuentasRegistro);
+});
+
+test("un recibo con el mismo layout en otra tarea no es copia; el mismo archivo sí", async () => {
   reiniciarTokensEvidencia();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -121,9 +240,65 @@ test("una foto cercana deja el veredicto en insuficiente", async () => {
   });
   assert.equal(creada.status, 201);
   const evidencia = await almacen.ultimaEvidencia("registro");
+  assert.equal(evidencia?.motivoCopia ?? null, null);
+  assert.equal((await almacen.veredictoDe(evidencia?.id ?? ""))?.veredicto, "cumplió");
+
+  const mismo = new FormData();
+  mismo.set("tareaId", "registro");
+  mismo.set("token", tokenDePrueba("voluntario-2", "registro"));
+  mismo.set("capturadaEn", new Date().toISOString());
+  mismo.set("foto", new Blob([primero], { type: "image/jpeg" }), "evidencia.jpg");
+  const repetida = await publicarEvidenciaHttp(pedido(mismo), {
+    almacen,
+    fotos,
+    actor: { usuarioId: "voluntario-2", rol: "voluntario" },
+    revisarTarea: async () => cumplio(),
+  });
+  assert.equal(repetida.status, 409);
+});
+
+test("una foto casi igual en la misma tarea es copia; un layout parecido en otra no", async () => {
+  reiniciarTokensEvidencia();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  const fotos = crearFotosMemoria();
+  const primero = await jpegDePrueba();
+  const segundo = await jpegDistinto();
+  const actor = { usuarioId: "voluntario-1", rol: "voluntario" as const };
+  const cuerpo = new FormData();
+  cuerpo.set("tareaId", "stand");
+  cuerpo.set("token", tokenDePrueba("voluntario-1", "stand"));
+  cuerpo.set("capturadaEn", new Date().toISOString());
+  cuerpo.set("foto", new Blob([primero], { type: "image/jpeg" }), "evidencia.jpg");
+  assert.equal((await publicarEvidenciaHttp(pedido(cuerpo), { almacen, fotos, actor, revisarTarea: async () => cumplio() })).status, 201);
+  const previa = await almacen.ultimaEvidencia("stand");
+  assert.ok(previa);
+  const hashSegundo = await phashDe(segundo);
+  previa.phash = hashSegundo;
+
+  const retoma = new FormData();
+  retoma.set("tareaId", "stand");
+  retoma.set("token", tokenDePrueba("voluntario-1", "stand"));
+  retoma.set("capturadaEn", new Date().toISOString());
+  retoma.set("foto", new Blob([segundo], { type: "image/jpeg" }), "evidencia.jpg");
+  const creada = await publicarEvidenciaHttp(pedido(retoma), { almacen, fotos, actor, revisarTarea: async () => cumplio() });
+  assert.equal(creada.status, 201);
+  const evidencia = await almacen.ultimaEvidencia("stand");
   assert.equal(evidencia?.motivoCopia, MOTIVO_COPIA);
   assert.equal((await almacen.veredictoDe(evidencia?.id ?? ""))?.veredicto, "insuficiente");
-  assert.match((await almacen.veredictoDe(evidencia?.id ?? ""))?.frase ?? "", /earlier submission/);
+
+  const rojo = new Uint8Array(await sharp({
+    create: { width: 16, height: 16, channels: 3, background: { r: 200, g: 20, b: 20 } },
+  }).jpeg().toBuffer());
+  const fila = await almacen.ultimaEvidencia("stand");
+  assert.ok(fila);
+  fila.phash = await phashDe(rojo);
+  const recibo = new FormData();
+  recibo.set("tareaId", "comida");
+  recibo.set("foto", new Blob([rojo], { type: "image/jpeg" }), "recibo.jpg");
+  const factura = await publicarEvidenciaHttp(pedido(recibo), { almacen, fotos, actor, revisarTarea: async () => cumplio() });
+  assert.equal(factura.status, 201);
+  assert.equal((await almacen.ultimaEvidencia("comida"))?.motivoCopia ?? null, null);
 });
 
 test("sin la migración 0005 no se guarda el archivo y la lectura sigue", async () => {

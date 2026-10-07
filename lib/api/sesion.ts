@@ -9,13 +9,15 @@ import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { baseNoLista, json, jsonCookies } from "./json";
 
+const PRIVADA = { "cache-control": "private, no-store" };
+
 export async function leerSesionHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
-  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
   try {
     const sesion = await almacen.leerSesion(token);
-    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
-    return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) });
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
+    return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) }, 200, PRIVADA);
   } catch {
     return baseNoLista();
   }

@@ -8,7 +8,7 @@ import { Icono } from "@/components/ui/Marca";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cuandoVence } from "@/lib/integrante/vence";
-import { montoDeTarea } from "@/lib/integrante/formato";
+import { formatearHora, montoDeTarea } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { iniciales, plazoVencido, puntosFallidos } from "@/lib/integrante/revision";
 import { textoVisible } from "@/lib/ui/etiquetas";
@@ -75,15 +75,9 @@ export function PantallaRechazada({
             </div>
           </section>
 
-          <div className="hyto-solo-escritorio">
-            <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
-          </div>
+          <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea)} />
 
           <Checklist condicion={tarea.condicion} fallidos={fallidos.length > 0 ? fallidos : null} titulo={t("evidencia.howPhoto")} />
-
-          <div className="hyto-nota-org-movil">
-            {nota ? <NotaOrganizador nombre={nombre} nota={nota} /> : null}
-          </div>
 
           <div className="hyto-actions">
             {reembolso && !cerrado && onArchivo ? (
@@ -153,7 +147,5 @@ function FotoEnviada({ id, hora }: { id: string | null; hora: string | null }) {
 
 function horaDe(iso: string | null | undefined, idioma: "en" | "es"): string | null {
   if (!iso) return null;
-  const fecha = new Date(iso);
-  if (Number.isNaN(fecha.getTime())) return null;
-  return fecha.toLocaleTimeString(idioma === "es" ? "es-CR" : "en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Costa_Rica" });
+  return formatearHora(iso, idioma);
 }

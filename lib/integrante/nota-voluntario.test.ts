@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
+import { jpegDePrueba } from "../evidencia/muestras";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 import { FRASE_PAGO } from "./nota";
 import { leerTarea } from "./rutas";
@@ -233,10 +234,11 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     assert.equal(texto().includes("%"), false);
     const input = document.querySelector('input[type="file"]');
     assert.ok(input instanceof HTMLInputElement);
-    const archivo = new File([Uint8Array.from([1, 2, 3])], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
+    const archivo = new File([await jpegDePrueba()], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
     Object.defineProperty(input, "files", { configurable: true, value: { 0: archivo, length: 1, item: () => archivo } });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolver) => setTimeout(resolver, 40));
     });
     const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
     assert.ok(enviar instanceof HTMLButtonElement);
@@ -246,7 +248,9 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.match(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Great job/);
+    assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(texto().includes("SECRETO-LAYA"), false);

@@ -12,6 +12,7 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(etiquetaOrigen("error"), "Review failed");
   assert.equal(etiquetaOrigen(null), null);
   assert.equal(notaManual("pdf"), "Needs a manual review");
+  assert.equal(notaManual("sin_texto"), "Needs a manual review");
   assert.equal(notaManual("sin_clave"), null);
   assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
   assert.equal(notaCopia("   "), null);
@@ -21,7 +22,7 @@ test("la bandeja y el contador usan la misma regla", () => {
   const vista = vistaAdmin(VACIA);
   assert.equal(vista.bandeja.length, vista.tareas.filter((tarea) => enBandeja(tarea)).length);
   assert.equal(enBandeja({ estado: "pendiente", veredicto: null }), false);
-  assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), true);
+  assert.equal(enBandeja({ estado: "pendiente", veredicto: "cumplió" }), false);
   assert.equal(enBandeja({ estado: "en revisión", veredicto: null }), true);
   assert.equal(enBandeja({ estado: "pagado", veredicto: "cumplió" }), false);
   assert.equal(enBandeja({ estado: "pagado", veredicto: null }), false);
