@@ -19,12 +19,10 @@ export function ContextoEvento({
   return (
     <section className="hyto-card mb-4 overflow-hidden" aria-label={nombre}>
       {portada ? (
-        // eslint-disable-next-line @next/next/no-img-element -- private route, not a static asset
-        <img
-          src={`/api/eventos/${encodeURIComponent(proyectoId)}/portada`}
-          alt={t("eventos.coverAlt", { name: nombre })}
-          className="aspect-[16/7] w-full object-cover"
-        />
+        <div className="hyto-marco-16-9 rounded-b-none">
+          {/* eslint-disable-next-line @next/next/no-img-element -- private route, not a static asset */}
+          <img src={`/api/eventos/${encodeURIComponent(proyectoId)}/portada`} alt={t("eventos.coverAlt", { name: nombre })} />
+        </div>
       ) : null}
       {descripcion ? <p className="whitespace-pre-line px-5 py-4 text-sm leading-6 text-[var(--suave)]">{descripcion}</p> : null}
     </section>

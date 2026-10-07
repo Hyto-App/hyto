@@ -32,6 +32,7 @@
   --linea: #e2e4ee;
   --borde: #c4c8d8;
   --peligro: #d4044f;
+  --contador-alto: #d4044f;
   --peligro-punto: #fa0560;
   --sombra-boton: 0 8px 18px -10px rgba(124, 170, 10, 0.6);
   --logo-iso: #08090c;
@@ -102,6 +103,7 @@
   --linea: #262a45;
   --borde: #40446a;
   --peligro: #ff5c96;
+  --contador-alto: #ff4d8d;
   --peligro-punto: #fa0560;
   --logo-iso: #b7ee34;
   --foco: #b7ee34;
@@ -5882,4 +5884,124 @@ a {
   .hyto-passkey.is-resaltada {
     animation: none;
   }
+}
+
+/* Create event: details card, cover dropzone, textareas, counters. */
+.hyto-seccion {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.hyto-seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hyto-seccion-nota {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-seccion-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.hyto-zona {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 20px;
+  border: 1px dashed var(--borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fondo) 55%, var(--papel));
+  color: var(--suave);
+  font-size: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.hyto-zona:hover,
+.hyto-zona.is-arrastre {
+  border-color: var(--foco);
+}
+
+.hyto-zona:focus-within {
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 40%, transparent);
+}
+
+.hyto-zona-ayuda {
+  font-size: 12px;
+  color: var(--tenue);
+}
+
+.hyto-marco-16-9 {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--superficie-2);
+}
+
+.hyto-marco-16-9 img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.hyto-zona-archivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--suave);
+}
+
+.hyto-zona-nombre {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hyto-area {
+  height: auto;
+  min-height: 0;
+  max-height: calc(12 * 1.5em + 24px);
+  padding: 12px var(--e-2);
+  line-height: 1.5;
+  overflow-y: auto;
+  resize: none;
+  font-family: inherit;
+}
+
+.hyto-contador {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--tenue);
+}
+
+.hyto-contador.is-alto {
+  color: var(--contador-alto);
 }
