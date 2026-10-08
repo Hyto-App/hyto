@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
@@ -14,7 +14,7 @@ import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
-import { explicarPago } from "@/lib/integrante/formato";
+import { explicarPago, vistaMonto } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
@@ -62,26 +62,23 @@ function totalRecibido(tareas: readonly Tarea[]): string {
   return presentarUsdc(total);
 }
 
-function cifra(valor: number, idioma: "en" | "es"): string {
-  return valor.toLocaleString(idioma === "es" ? "es-CR" : "en-US", {
-    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function Monto({ tarea }: { tarea: Tarea }) {
-  const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
     const pago = explicarPago(tarea, idioma);
     if (!pago) return null;
     return <span className="hyto-monto">{pago.corto}</span>;
   }
-  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
+  const { partes } = vistaMonto(tarea, idioma);
+  if (partes.length < 2) return <span className="hyto-monto">{partes[0]}</span>;
   return (
-    <span className="hyto-monto">
-      {tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}
-      <small>USDC</small>
+    <span className="hyto-monto hyto-monto-doble">
+      {partes.map((parte, indice) => (
+        <Fragment key={parte}>
+          {indice > 0 ? " · " : null}
+          <span>{parte}</span>
+        </Fragment>
+      ))}
     </span>
   );
 }

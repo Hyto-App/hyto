@@ -113,6 +113,15 @@ test("montos y fechas del integrante", () => {
   assert.equal(montosDeCobro({ tipo: "trabajo", monto: "20", tope: null, montoRevisado: null }), null);
 });
 
+test("la línea de un reembolso confirmado se parte solo entre el monto a pagar y el límite", () => {
+  const confirmado = { tipo: "reembolso" as const, monto: "50", tope: "50", montoConfirmado: "39.60" };
+  assert.deepEqual(vistaMonto(confirmado, "es").partes, ["Monto a pagar US$39,60", "Límite US$50"]);
+  assert.equal(vistaMonto(confirmado, "es").linea, "Monto a pagar US$39,60 · Límite US$50");
+  assert.deepEqual(vistaMonto(confirmado).partes, ["Amount to pay US$39.60", "Limit US$50"]);
+  assert.deepEqual(vistaMonto({ tipo: "reembolso", monto: "50", tope: "50" }, "es").partes, ["Hasta US$50"]);
+  assert.deepEqual(vistaMonto({ tipo: "trabajo", monto: "20", tope: null }).partes, ["US$20"]);
+});
+
 test("el neto pagado dice el bruto y la comisión redondeada", () => {
   assert.equal(explicarNeto("12.44256"), "US$12.44 (US$12.48 minus a US$0.04 fee)");
   assert.equal(explicarNeto("1.994", "es"), "US$1,99 (US$2 menos comisión de US$0,01)");

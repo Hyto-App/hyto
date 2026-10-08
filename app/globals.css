@@ -4258,11 +4258,14 @@ html.hyto-firmando body {
   white-space: nowrap;
 }
 
-.hyto-monto small {
-  margin-left: 4px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--suave);
+.hyto-monto-doble {
+  min-width: 0;
+  text-align: right;
+  white-space: normal;
+}
+
+.hyto-monto-doble > span {
+  white-space: nowrap;
 }
 
 /* Mis tareas */

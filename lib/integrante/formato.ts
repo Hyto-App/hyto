@@ -235,6 +235,8 @@ export type VistaMonto = {
   tope: string | null;
   /** One line for a list or a chip. */
   linea: string;
+  /** `linea` split at " · ", for a layout that may only wrap there. */
+  partes: string[];
 };
 
 /**
@@ -247,19 +249,18 @@ export function vistaMonto(
   etiquetaLimite?: (monto: string) => string,
 ): VistaMonto {
   if (tarea.tipo !== "reembolso") {
-    return { pago: null, tope: null, linea: formatearMonto(tarea.monto, idioma) };
+    const linea = formatearMonto(tarea.monto, idioma);
+    return { pago: null, tope: null, linea, partes: [linea] };
   }
   const tope = formatearMonto(tarea.tope ?? tarea.monto, idioma);
   const pago = pagoDistintoDelTope(tarea, idioma, tope);
   if (pago && tope) {
     const limite = etiquetaLimite ? etiquetaLimite(tope) : texto(idioma, "eventos.limit", { amount: tope });
-    return {
-      pago,
-      tope,
-      linea: `${texto(idioma, "revision.amountToPay")} ${pago} · ${limite}`,
-    };
+    const partes = [`${texto(idioma, "revision.amountToPay")} ${pago}`, limite];
+    return { pago, tope, linea: partes.join(" · "), partes };
   }
-  return { pago: null, tope: tope || null, linea: montoDeTarea(tarea, idioma) };
+  const linea = montoDeTarea(tarea, idioma);
+  return { pago: null, tope: tope || null, linea, partes: [linea] };
 }
 
 function pagoDistintoDelTope(tarea: MontoLista, idioma: Idioma, tope: string): string | null {

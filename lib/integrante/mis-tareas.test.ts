@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { MisTareas } from "@/components/integrante/MisTareas";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { INTERVALO_SEGUIMIENTO_MS, LIMITE_SEGUIMIENTO_MS } from "./seguimiento";
 import type { Tarea } from "./tipos";
@@ -366,6 +367,71 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
     assert.equal(texto().includes("The organizer asked"), false);
     assert.equal(texto().includes("Rejected"), false);
     assert.match(texto(), /The banner is cropped/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("la tarjeta con monto confirmado dice el monto a pagar y el límite", async () => {
+  const pagada = (id: string, extra: Partial<Tarea>): Tarea => ({
+    id,
+    proyectoId: "uno",
+    titulo: id,
+    tipo: "trabajo",
+    monto: "2",
+    tope: null,
+    condicion: "",
+    miembroId: "v",
+    walletCobro: "",
+    estado: "pagado",
+    prioridad: "normal",
+    dificultad: null,
+    montoPagado: "1.994",
+    ...extra,
+  });
+  const tareas: Tarea[] = [
+    {
+      id: "comida",
+      proyectoId: "uno",
+      titulo: "Meal",
+      tipo: "reembolso",
+      monto: "50",
+      tope: "50",
+      condicion: "",
+      miembroId: "v",
+      walletCobro: "",
+      estado: "en revisión",
+      prioridad: "normal",
+      dificultad: null,
+      nota: 84,
+      veredicto: "cumplió",
+      montoRevisado: "39.60",
+      montoConfirmado: "39.60",
+    },
+    pagada("Banner", { tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48", montoPagado: "12.44256" }),
+    pagada("Chairs", {}),
+    pagada("Tables", {}),
+  ];
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) return json({ tareas });
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  const tarjeta = () => [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Meal");
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Meal"));
+    assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Amount to pay US$39.60 · Limit US$50");
+    assert.match(tarjeta()?.textContent ?? "", /Mile read US\$39\.60/);
+    assert.doesNotMatch(tarjeta()?.textContent ?? "", /USDC|Up to/);
+
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Meal"));
+    assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Monto a pagar US$39,60 · Límite US$50");
+    assert.doesNotMatch(tarjeta()?.textContent ?? "", /USDC|Hasta/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
