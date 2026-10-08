@@ -1,3 +1,4 @@
+import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { neon } from "@neondatabase/serverless";
 import { comunidadesActivas } from "@/lib/comunidades/bandera";
 import { desc, and, eq, getTableColumns, sql } from "drizzle-orm";
@@ -12,7 +13,7 @@ import { consultaPhashCercano } from "./sql";
 import { comunidadAvisos, comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import type { AvisoComunidad, Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoAviso, TipoInvitacion, VeredictoFila } from "./tipos";
+import type { AvisoComunidad, Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoAviso, TipoCuentaGuardado, TipoInvitacion, Usuario, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
 const schema = {
@@ -66,6 +67,25 @@ export async function cerrarPools(): Promise<void> {
   await Promise.all(abiertos.map((pool) => pool.end()));
 }
 
+function usuarioDesde(fila: typeof usuarios.$inferSelect): Usuario {
+  return {
+    id: fila.id,
+    email: fila.email,
+    nombre: fila.nombre,
+    rol: rolDe(fila.rol),
+    tipoCuenta: tipoCuentaDe(fila.tipoCuenta),
+    empresaNombre: fila.empresaNombre,
+    empresaActividad: fila.empresaActividad,
+    empresaDescripcion: fila.empresaDescripcion,
+    empresaFoto: fila.empresaFoto,
+  };
+}
+
+function tipoCuentaDe(valor: string | null): TipoCuentaGuardado | null {
+  if (valor === "empresa" || valor === "voluntario") return valor;
+  return null;
+}
+
 function rolDe(valor: string): Rol {
   return valor === "organizador" ? "organizador" : "voluntario";
 }
@@ -92,6 +112,23 @@ export function origenDeFila(valor: string): VeredictoFila["origen"] {
 function esColumnaAusente(error: unknown): boolean {
   const mensaje = error instanceof Error ? error.message : String(error);
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
+}
+
+function columnasUsuarioSinTipo() {
+  const {
+    tipoCuenta: _tipoCuenta,
+    empresaNombre: _empresaNombre,
+    empresaActividad: _empresaActividad,
+    empresaDescripcion: _empresaDescripcion,
+    empresaFoto: _empresaFoto,
+    ...resto
+  } = getTableColumns(usuarios);
+  return resto;
+}
+
+function usuarioSinTipo(usuario: Usuario): Usuario {
+  const { tipoCuenta: _tipo, empresaNombre: _nombre, empresaActividad: _actividad, empresaDescripcion: _descripcion, empresaFoto: _foto, ...resto } = usuario;
+  return resto;
 }
 
 function columnasTareaPrevias() {
@@ -162,26 +199,49 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
 
   return {
     async listarUsuarios() {
+      if (!tipoCuentaActivo()) {
+        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios);
+        return filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol) }));
+      }
       const filas = await db.select().from(usuarios);
-      return filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol) }));
+      return filas.map(usuarioDesde);
     },
     async usuarioPorEmail(email) {
+      if (!tipoCuentaActivo()) {
+        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
+        const fila = filas[0];
+        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      }
       const filas = await db.select().from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
-      const fila = filas[0];
-      return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      return filas[0] ? usuarioDesde(filas[0]) : null;
+    },
+    async leerUsuario(id) {
+      if (!tipoCuentaActivo()) {
+        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios).where(eq(usuarios.id, id)).limit(1);
+        const fila = filas[0];
+        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      }
+      const filas = await db.select().from(usuarios).where(eq(usuarios.id, id)).limit(1);
+      return filas[0] ? usuarioDesde(filas[0]) : null;
     },
     async insertarUsuario(usuario) {
-      await db.insert(usuarios).values(usuario).onConflictDoNothing();
+      const valores = tipoCuentaActivo() ? usuario : usuarioSinTipo(usuario);
+      await db.insert(usuarios).values(valores).onConflictDoNothing();
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
+      const valores = tipoCuentaActivo() ? { ...usuario, email } : { ...usuarioSinTipo(usuario), email };
       await db
         .insert(usuarios)
-        .values({ ...usuario, email })
+        .values(valores)
         .onConflictDoUpdate({
           target: usuarios.email,
           set: { nombre: usuario.nombre, rol: usuario.rol },
         });
+    },
+    async guardarTipoCuenta(id, cambio) {
+      if (!tipoCuentaActivo()) return;
+      await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
     },
     async leerProyecto(id) {
       if (!comunidadesActivas()) {

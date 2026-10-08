@@ -2,11 +2,19 @@ import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/
 
 export type Rol = "organizador" | "voluntario";
 
+export type TipoCuentaGuardado = "empresa" | "voluntario";
+
 export type Usuario = {
   id: string;
   email: string;
   nombre: string;
   rol: Rol;
+  /** Set only when HYTO_TIPO_CUENTA is on. It does not replace the per-event role. */
+  tipoCuenta?: TipoCuentaGuardado | null;
+  empresaNombre?: string | null;
+  empresaActividad?: string | null;
+  empresaDescripcion?: string | null;
+  empresaFoto?: string | null;
 };
 
 export type Proyecto = {

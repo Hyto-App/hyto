@@ -45,6 +45,8 @@ export type ContextoRevision = {
   idioma?: Idioma;
   /** The event's description and AI context. Read by the vision prompt only. */
   evento?: ContextoEvento | null;
+  /** Company description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
+  organizacion?: string | null;
 };
 
 export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto: ContextoRevision): Promise<ResultadoRevision> {
@@ -77,6 +79,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
           paraDescribir,
           contexto.idioma ?? "en",
           contexto.evento,
+          contexto.organizacion,
         );
     const descripcion = esEvidenciaTextual(foto)
       ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
@@ -181,8 +184,9 @@ async function describirConReserva(
   repeticion: Omit<OpcionesReintento, "topeIntentoMs">,
   idioma: "en" | "es",
   evento?: ContextoEvento | null,
+  organizacion?: string | null,
 ): Promise<Descripcion> {
-  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento };
+  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento, organizacion };
   const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
   const foto = await ajustarParaVision(original.bytes, original.tipo || "image/jpeg");
   if (!claveGroq) {

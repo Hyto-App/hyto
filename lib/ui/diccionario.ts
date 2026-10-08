@@ -1071,6 +1071,20 @@ export const en = {
     noToma: "Could not take the task.",
     noCarga: "Could not load the bulletin.",
   },
+  tipoCuenta: {
+    titulo: "Account type",
+    subtitulo: "This is your profile. It does not change your role in an event.",
+    elegir: "Choose one",
+    empresa: "Company or organization",
+    voluntario: "Volunteer",
+    nombre: "Organization name",
+    actividad: "What you do",
+    descripcion: "Description",
+    foto: "Photo URL (optional)",
+    guardar: "Save",
+    guardado: "Saved.",
+    noGuarda: "Could not save that. Try again.",
+  },
 };
 
 type Rama<T> = {
@@ -2142,6 +2156,20 @@ export const es: Rama<typeof en> = {
     tomada: "Esta tarea ya tiene dueño.",
     noToma: "No se pudo tomar la tarea.",
     noCarga: "No se pudo cargar el tablón.",
+  },
+  tipoCuenta: {
+    titulo: "Tipo de cuenta",
+    subtitulo: "Esto es tu perfil. No cambia tu rol en un evento.",
+    elegir: "Elige uno",
+    empresa: "Empresa u organización",
+    voluntario: "Voluntario",
+    nombre: "Nombre de la organización",
+    actividad: "A qué se dedica",
+    descripcion: "Descripción",
+    foto: "URL de la foto (opcional)",
+    guardar: "Guardar",
+    guardado: "Guardado.",
+    noGuarda: "No se pudo guardar. Inténtalo de nuevo.",
   },
 };
 

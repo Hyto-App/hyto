@@ -144,6 +144,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     silenciosa: true,
     para: "Exact value on turns on the community bulletin. Also needs HYTO_COMUNIDADES=on. Unset or anything else keeps the app as it is. Do not turn this on until migrations 0010 and 0013 are applied.",
   },
+  {
+    nombre: "HYTO_TIPO_CUENTA",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on asks for an account type after sign-in. Unset or anything else keeps the app as it is. Do not turn this on until migration 0011 is applied.",
+  },
 ];
 
 export const VARIABLES: DefinicionVariable[] = [...VARIABLES_PUBLICAS, ...VARIABLES_SERVIDOR];

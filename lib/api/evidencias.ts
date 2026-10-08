@@ -22,6 +22,7 @@ import type { Idioma } from "@/lib/ui/idioma";
 import type { ContextoEvento } from "@/lib/revision/contexto-evento";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { contextoParaRevision } from "./contexto-evento";
+import { organizacionDeEvento } from "./tipo-cuenta";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 import { esperarCorte, planRevision, PLAZO_RESPUESTA_MS, usaCorte } from "./plazo-revision";
@@ -278,11 +279,12 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
     const evento = deps.revisarTarea ? null : await contextoParaRevision(deps.almacen, tarea.proyectoId);
+    const organizacion = deps.revisarTarea ? null : await organizacionDeEvento(deps.almacen, tarea.proyectoId);
     const plan = planRevision(inicio);
     const revisarAhora =
       deps.revisarTarea ??
       ((tareaActual, fotoActual) =>
-        revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento, presupuestoMs: plan.presupuestoMs }));
+        revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento, organizacion, presupuestoMs: plan.presupuestoMs }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
     const conTope = !deps.revisarTarea && usaCorte(contextoDesdeEntorno(), esEvidenciaTextual({ tipo, bytes }));
     const espera = await esperarCorte(trabajo, conTope ? PLAZO_RESPUESTA_MS : null);
@@ -303,11 +305,12 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
 async function revisarPorDefecto(
   tarea: TareaFila,
   foto: Awaited<ReturnType<Fotos["leer"]>>,
-  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null; presupuestoMs?: number },
+  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null; organizacion?: string | null; presupuestoMs?: number },
 ): Promise<ResultadoRevision> {
   return revisar(tarea, foto, {
     ...contextoDesdeEntorno(),
     evento: extra?.evento,
+    organizacion: extra?.organizacion,
     intento: extra?.intento,
     idioma: extra?.idioma,
     presupuestoMs: extra?.presupuestoMs,
