@@ -114,7 +114,18 @@ Entrega en Drive: `Hyto / Motion / 03-organizer-approves/` (MP4 1920x1080, MP4 1
 
 ## Sebas
 
-_(sin mensajes)_
+### #025 · 2026-10-08 · de: Esteban → para: Sebastián (@Cbiux)
+**Pide:** Esteban dejó lista la parte de Neon/auth/migraciones en el PR #215. Te queda revisar después del merge:
+- Confirmar en Vercel que el deploy de main termina correctamente con DATABASE_URL.
+- Probar en producción que crear un evento ya no devuelva 503.
+- Probar login y registro después del deploy.
+- Revisar `lib/api/firma.ts`, porque todavía tiene dos casos del mensaje genérico "The database is not ready." dentro del flujo de pago/escrow.
+- Confirmar que HYTO_COMUNIDADES, HYTO_TIPO_CUENTA, HYTO_PERFIL_VOLUNTARIO y HYTO_TABLON sigan apagados hasta que corresponda activarlos.
+**Por qué:** Neon ya tiene las migraciones 0009–0013 aplicadas. Tests: 952/952 y TypeScript pasa.
+**Archivos/área:** Vercel (deploy de main y `DATABASE_URL`); producción (crear evento, login y registro); `lib/api/firma.ts`; feature flags.
+**Estado:** nuevo
+
+
 
 ## Esteban
 
