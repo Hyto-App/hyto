@@ -155,6 +155,31 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
   assert.match(sqlUsuarios, /on conflict \("email"\) do update set "nombre" = excluded\."nombre", "rol" = excluded\."rol"/i);
 });
 
+test("el alta y el ingreso no dependen de comunidades si el valor no es on", async () => {
+  const valores = [undefined, "", "off", "OFF", "true", "yes", "1", "enabled", "onn"] as const;
+  const previo = process.env.HYTO_COMUNIDADES;
+  try {
+    for (const [indice, valor] of valores.entries()) {
+      if (valor === undefined) delete process.env.HYTO_COMUNIDADES;
+      else process.env.HYTO_COMUNIDADES = valor;
+      const { almacen, consultas, usuarios, sesiones } = ledgerSinMigrar();
+      usuarios.push({ id: `u-${indice}`, email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
+      const ingreso = await crearSesionHttp(pedido("ana@hyto.app", "signin"), almacen);
+      assert.equal(ingreso.status, 200, String(valor));
+      const alta = await crearSesionHttp(pedido(`nuevo${indice}@hyto.app`, "signup"), almacen);
+      assert.equal(alta.status, 200, consultas.join("\n"));
+      assert.equal(((await alta.json()) as { rol: string }).rol, "voluntario");
+      assert.equal(sesiones.length, 2);
+      const sql = consultas.join("\n");
+      assert.doesNotMatch(sql, /\b(comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id)\b/);
+      assert.match(sql, /insert into "usuarios" \("id", "email", "nombre", "rol"\) values/i);
+    }
+  } finally {
+    if (previo === undefined) delete process.env.HYTO_COMUNIDADES;
+    else process.env.HYTO_COMUNIDADES = previo;
+  }
+});
+
 test("el ingreso no nombra columnas de features aunque el interruptor esté encendido", async () => {
   process.env.HYTO_TIPO_CUENTA = "on";
   process.env.HYTO_PERFIL_VOLUNTARIO = "on";

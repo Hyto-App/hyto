@@ -190,6 +190,57 @@ test("crear un evento y leerlo no nombra columnas ni tablas de 0010–0013", asy
   assert.deepEqual(columnas.sort(), ["contexto_ia", "creado_en", "descripcion", "id", "nombre", "organizador_id"]);
 });
 
+test("un valor que no es on ignora comunidadId y no nombra las tablas nuevas", async () => {
+  const valores = [undefined, "", "off", "OFF", "true", "yes", "1", "enabled", "onn", " onn "] as const;
+  const previo = process.env.HYTO_COMUNIDADES;
+  try {
+    for (const valor of valores) {
+      if (valor === undefined) delete process.env.HYTO_COMUNIDADES;
+      else process.env.HYTO_COMUNIDADES = valor;
+      const { almacen, consultas } = ledgerSinMigrar();
+      const antes = consultas.length;
+      assert.deepEqual(await almacen.listarComunidades(), []);
+      assert.equal(await almacen.leerComunidad("c-ajena"), null);
+      await almacen.fijarComunidadProyecto("p-no", "c-ajena");
+      await almacen.crearAvisoComunidad({
+        id: "a1",
+        comunidadId: "c-ajena",
+        tipo: "disponible",
+        titulo: "Cajas",
+        nombre: null,
+        tareaId: null,
+        creadoEn: new Date().toISOString(),
+      });
+      assert.equal(consultas.length, antes, String(valor));
+      const creado = await crearProyectoHttp(
+        new Request("http://local/api/proyectos", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            nombre: "Feria",
+            comunidadId: "c-ajena",
+            descripcion: "Puestos",
+            tareas: [{ titulo: "Cajas", tipo: "trabajo", monto: "8" }],
+          }),
+        }),
+        almacen,
+        "org-1",
+        { wallet: WALLET, leerSaldo: async () => ({ saldo: "100" }) },
+      );
+      assert.equal(creado.status, 201, `${valor}\n${consultas.join("\n")}`);
+      const id = ((await creado.json()) as { proyecto: { id: string } }).proyecto.id;
+      assert.equal((await almacen.leerProyecto(id))?.comunidadId ?? null, null);
+      assert.doesNotMatch(
+        consultas.join("\n"),
+        /\b(comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id)\b/,
+      );
+    }
+  } finally {
+    if (previo === undefined) delete process.env.HYTO_COMUNIDADES;
+    else process.env.HYTO_COMUNIDADES = previo;
+  }
+});
+
 test("el contexto para la IA se escribe y se lee en contexto_ia", async () => {
   const regla = "Only supermarket receipts count.";
   const { almacen, consultas } = ledgerSinMigrar();

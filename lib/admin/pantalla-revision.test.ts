@@ -791,6 +791,82 @@ test("a pending task with no photo still offers lock budget", async () => {
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, false);
     assert.equal(texto().includes("Waiting for a new photo"), false);
+    assert.equal(document.querySelector("#bloqueo-cobro"), null);
+    assert.equal(texto().includes("You can't set the money aside yet"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+function revisionSinCobro(faltaCobro: "cuenta" | "asignar", llamadas: string[], parcial: Record<string, unknown> = {}): typeof fetch {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    llamadas.push(`${init?.method ?? "GET"} ${url}`);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({
+        tarea: tarea({ estado: "pendiente", veredicto: null, nota: null, frase: null, origen: null, miembro: "Ana", faltaCobro, ...parcial }),
+        foto: null,
+        contratoEscrow: null,
+        wallet: "GORGANIZADOR",
+      });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+}
+
+test("without a payout account for the volunteer, Lock budget is off and says so before any confirmation", async () => {
+  const anterior = globalThis.fetch;
+  const llamadas: string[] = [];
+  globalThis.fetch = revisionSinCobro("cuenta", llamadas);
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
+    await esperar(() => rotulo("Set money aside"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Set money aside");
+    assert.ok(bloqueo instanceof HTMLButtonElement);
+    assert.equal(bloqueo.disabled, true);
+    assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-cobro");
+    assert.equal(
+      document.querySelector("#bloqueo-cobro")?.textContent,
+      "You can't set the money aside yet: Ana has to sign in to Hyto and open the task once.",
+    );
+    await pulsar("Set money aside");
+    assert.equal(document.querySelector("dialog"), null);
+    assert.equal(llamadas.some((llamada) => llamada.startsWith("POST /api/firma")), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en español el aviso usa usted y el nombre de quien tiene que abrir la tarea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = revisionSinCobro("cuenta", []);
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => rotulo("Apartar el dinero"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Apartar el dinero");
+    assert.ok(bloqueo instanceof HTMLButtonElement);
+    assert.equal(bloqueo.disabled, true);
+    assert.equal(
+      document.querySelector("#bloqueo-cobro")?.textContent,
+      "Todavía no puede apartar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+    );
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("an unassigned task asks to assign it instead of naming someone", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = revisionSinCobro("asignar", [], { miembroId: "", miembro: "Unassigned" });
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Set money aside"));
+    assert.equal(document.querySelector("#bloqueo-cobro")?.textContent, "You can't set the money aside yet: assign the task to someone first.");
+    assert.equal(texto().includes("Unassigned has to sign in"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
