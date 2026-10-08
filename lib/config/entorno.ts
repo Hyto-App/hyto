@@ -131,6 +131,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_TIPO_POR_TAREA",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on picks Mile's work or receipt questions from the task type and Groq's evidence type. A close Laya c1 does not. Unset or anything else keeps today's path.",
+  },
+  {
     nombre: "HYTO_COMUNIDADES",
     ambito: "servidor",
     requerida: false,

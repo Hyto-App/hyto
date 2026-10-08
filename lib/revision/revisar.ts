@@ -40,6 +40,8 @@ export type ContextoRevision = {
   produccion?: boolean;
   /** Overrides HYTO_MILE_REQUISITOS. Unset reads the environment, which defaults to off. */
   mileActivo?: boolean;
+  /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment, which defaults to off. */
+  tipoPorTarea?: boolean;
   /** Photos already saved for this task, including the one under review. */
   intento?: number;
   maxIntentos?: number;
@@ -120,6 +122,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       undefined,
       llamarLaya,
       reglaDeEvento(contexto.evento),
+      { tipoTarea: tarea.tipo, tipoPorTarea: contexto.tipoPorTarea },
     );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));

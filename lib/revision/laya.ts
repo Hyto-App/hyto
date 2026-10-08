@@ -1,4 +1,5 @@
 import { claveDeLaya } from "@/lib/config/entorno";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Senales } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { condicionParaLaya } from "./contexto-evento";
@@ -14,6 +15,7 @@ import { noulCerca, probabilidadesCerca } from "./margen";
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
+import { claseConTipoDeTarea, tipoPorTareaActivo } from "./tipo-por-tarea";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -166,6 +168,12 @@ export function idsCerca(json: unknown, ids: readonly string[]): string[] {
 /** Runs one Laya call. Each call gets its own signal, so the second one does not inherit what the first used. */
 export type LlamadaLaya = <T>(paso: (signal: AbortSignal | undefined) => Promise<T>) => Promise<T>;
 
+/** tipoTarea is ignored unless HYTO_MILE_TIPO_POR_TAREA is on. tipoPorTarea overrides that switch. */
+export type OpcionesPreguntarLaya = {
+  tipoTarea?: TipoTarea | null;
+  tipoPorTarea?: boolean;
+};
+
 export async function preguntarLaya(
   base: string,
   texto: string,
@@ -174,6 +182,7 @@ export async function preguntarLaya(
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
   regla?: string | null,
+  opciones?: OpcionesPreguntarLaya,
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
@@ -185,7 +194,16 @@ export async function preguntarLaya(
   const claseJson = await preguntar(preguntasClasificacion(pedidoConRegla));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
+  const seguirTarea = opciones?.tipoPorTarea ?? tipoPorTareaActivo();
+  const clase = seguirTarea
+    ? claseConTipoDeTarea(leida, {
+        tipoTarea: opciones?.tipoTarea ?? null,
+        texto,
+        c1Cerca: idsCerca(claseJson, ["c1"]).includes("c1"),
+      })
+    : leida === "trabajo" && esReciboEscrito(texto)
+      ? "factura"
+      : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
     const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla), reglaLimpia));
