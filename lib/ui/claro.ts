@@ -89,8 +89,13 @@ const EXACTO: Record<string, Clave> = {
   "Demo mode: signatures are off": "errores.demoPagos",
   "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If it is short, fund it with Friendbot.":
     "errores.saldoRed",
+  "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If the account already exists, send a little test balance from another account, then try again.":
+    "errores.saldoRed",
   "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM.": "errores.saldoRed",
   "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.": "errores.saldoRed",
+  xlm_sin_comision: "errores.saldoRed",
+  "This account needs a little test balance for the network fee. If the account already exists, send that balance from another account, then try again.":
+    "errores.saldoRed",
   "Trustless Work rejected the request.": "errores.servicioRechazo",
   [CODIGO_RECEPTOR_NO_LISTO]: "errores.receptorNoListo",
   [AVISO_RECEPTOR_NO_LISTO]: "errores.receptorNoListo",
@@ -336,7 +341,9 @@ export function tituloFallo(caja: CajaFallo, idioma: Idioma = "en"): string {
 }
 
 export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  return caja === "bloqueo" ? aviso : texto(idioma, "pago.noUsdcLeft");
+  // A pay step with no escrow balance uses the generic line. A missing network fee is a different problem.
+  if (caja === "pago" && aviso !== texto(idioma, "errores.saldoRed")) return texto(idioma, "pago.noUsdcLeft");
+  return aviso;
 }
 
 export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar", idioma: Idioma = "en"): string {
