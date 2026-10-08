@@ -4260,7 +4260,6 @@ html.hyto-firmando body {
 
 .hyto-monto-doble {
   min-width: 0;
-  text-align: right;
   white-space: normal;
 }
 
@@ -4436,9 +4435,10 @@ html.hyto-firmando body {
 
 .hyto-tarea-fila {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
 }
 
 .hyto-tarea h3 {
