@@ -10,6 +10,7 @@ import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/mont
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/lib/escrow/indexador";
 import { confirmarEnRed, hashTestnetDeXdr, type OpcionesConfirmacion } from "@/lib/escrow/confirmacion";
+import { rechazoSiComision } from "@/lib/escrow/comision";
 import { ErrorFirma, enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
@@ -111,8 +112,12 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
   if (!secretoPreparado()) return sinSecreto();
+  const sinComision = await rechazoSiComision(sesion.wallet);
+  if (sinComision) return sinComision;
   try {
     const listo = await preparar(preparada);
+    const corta = await rechazoSiComision(sesion.wallet, listo.xdr);
+    if (corta) return corta;
     const monto = preparada.accion === "fondear" ? String(preparada.monto) : null;
     const token = tokenDePreparado(listo.xdr, sesion, preparada.accion, idTarea(body), monto);
     if (!token) return sinSecreto();
@@ -143,7 +148,7 @@ export async function enviarFirmaHttp(
     return Response.json(
       {
         aviso:
-          "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If it is short, fund it with Friendbot.",
+          "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If the account already exists, send a little test balance from another account, then try again.",
       },
       { status: 400 },
     );
@@ -325,8 +330,12 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   if (!secretoPreparado()) return sinSecreto();
   const receptor = await estadoReceptorUsdc(tarea.walletCobro);
   if (!receptor.listo) return respuestaReceptor(receptor);
+  const sinComision = await rechazoSiComision(wallet);
+  if (sinComision) return sinComision;
   try {
     const listo = await prepararDespliegue(cuentas);
+    const corta = await rechazoSiComision(wallet, listo.xdr);
+    if (corta) return corta;
     const predicho = listo.contrato && esContrato(listo.contrato) ? listo.contrato : null;
     const token = tokenDePreparado(listo.xdr, sesion, "desplegar", tarea.id, String(monto), predicho);
     if (!token) return sinSecreto();

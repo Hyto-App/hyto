@@ -859,7 +859,8 @@ export const en = {
     montoCero: "The amount has to be greater than zero.",
     soloOrganizador: "Only the organizer can lock the budget and pay.",
     soloResolver: "Only the person who resolves disputes can do this.",
-    saldoRed: "This account needs a little test balance for the network fee. Add some and try again.",
+    saldoRed:
+      "This account needs a little test balance for the network fee. If the account already exists, send that balance from another account, then try again.",
     cancelaste: "You cancelled the confirmation. Nothing was sent.",
     reingreso: "Your sign-in expired. Sign in again to continue.",
     sinConfig: "Sign-in isn't set up yet.",
@@ -1981,7 +1982,8 @@ export const es: Rama<typeof en> = {
     montoCero: "El monto tiene que ser mayor que cero.",
     soloOrganizador: "Solo quien organiza puede bloquear el presupuesto y pagar.",
     soloResolver: "Solo quien resuelve disputas puede hacer esto.",
-    saldoRed: "Esta cuenta necesita un poco de saldo de prueba para la comisión de la red. Agrega un poco e intenta de nuevo.",
+    saldoRed:
+      "Esta cuenta necesita un poco de saldo de prueba para la comisión de la red. Si la cuenta ya existe, envíale ese saldo desde otra cuenta e intenta de nuevo.",
     cancelaste: "Cancelaste la confirmación. No se envió nada.",
     reingreso: "Tu ingreso venció. Vuelve a entrar para continuar.",
     sinConfig: "El ingreso todavía no está configurado.",

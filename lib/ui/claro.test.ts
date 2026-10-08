@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "@/lib/escrow/comision";
 import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import {
@@ -77,6 +78,10 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(detalleFallo("bloqueo", AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(tituloFallo("pago"), "Payment failed");
   assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC left the escrow.");
+  assert.equal(detalleFallo("pago", mensajeClaro(AVISO_XLM_COMISION)), mensajeClaro(AVISO_XLM_COMISION));
+  assert.match(mensajeClaro(AVISO_XLM_COMISION), /another account/);
+  assert.match(mensajeClaro(CODIGO_XLM_COMISION), /another account/);
+  assert.match(mensajeClaro(AVISO_XLM_COMISION, "es"), /otra cuenta/);
 });
 
 test("the payment steps move from the photo to the locked budget to paid", () => {

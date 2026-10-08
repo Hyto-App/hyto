@@ -6,6 +6,7 @@ import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { USDC_SAC_TESTNET } from "../escrow/desplegar";
+import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "../escrow/comision";
 import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
@@ -931,6 +932,76 @@ test("desplegar no llama a Trustless si el receptor no está en testnet o Horizo
     assert.equal(despliegues.length, 0);
     assert.ok(receptores.every((url) => url.startsWith("https://horizon-testnet.stellar.org/accounts/")));
     assert.equal(receptores.length, 3);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
+test("desplegar no arma el XDR si la cuenta ya existe y no tiene saldo para la comisión", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("stand", { walletCobro: RECEPTOR });
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const xdr = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  let despliegues = 0;
+  const urls: string[] = [];
+  function red(nativo: string): typeof fetch {
+    return async (input) => {
+      const url = String(input);
+      urls.push(url);
+      if (url.includes("horizon")) {
+        return new Response(
+          JSON.stringify({
+            balances: [
+              { balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" },
+              { asset_type: "native", balance: nativo },
+            ],
+            subentry_count: 0,
+            num_sponsoring: 0,
+            num_sponsored: 0,
+          }),
+          { status: 200 },
+        );
+      }
+      despliegues += 1;
+      return new Response(JSON.stringify({ unsignedXdr: xdr, txHash: "abc", contractId: CONTRATO }), { status: 200 });
+    };
+  }
+  try {
+    globalThis.fetch = red("0.0000000");
+    const corto = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(corto.status, 409);
+    const cuerpo = (await corto.json()) as { aviso: string; codigo: string };
+    assert.equal(cuerpo.codigo, CODIGO_XLM_COMISION);
+    assert.equal(cuerpo.aviso, AVISO_XLM_COMISION);
+    assert.equal(despliegues, 0);
+    assert.ok(urls.some((url) => url.startsWith("https://horizon-testnet.stellar.org/accounts/")));
+    assert.equal(urls.some((url) => url.includes("://horizon.stellar.org/")), false);
+
+    urls.length = 0;
+    globalThis.fetch = red("10.0000000");
+    const listo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(listo.status, 200);
+    assert.equal(despliegues, 1);
+    const preparado = (await listo.json()) as { xdr: string };
+    assert.equal(preparado.xdr, xdr);
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior.clave);
