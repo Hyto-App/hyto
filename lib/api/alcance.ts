@@ -7,6 +7,8 @@ import { exigirSesion } from "@/lib/sesion/exigir";
 export type Visor = {
   usuarioId: string | null;
   demo: boolean;
+  /** This sign-in's account. Never set for a demo session. */
+  wallet?: string;
 };
 
 export async function visorDe(request: Request): Promise<Visor | Response> {
@@ -16,7 +18,8 @@ export async function visorDe(request: Request): Promise<Visor | Response> {
     return sesion;
   }
   if (demoHabilitado() && sesionEsDemo(sesion)) return { usuarioId: sesion.usuarioId, demo: true };
-  return { usuarioId: sesion.usuarioId, demo: false };
+  if (sesionEsDemo(sesion)) return { usuarioId: sesion.usuarioId, demo: false };
+  return { usuarioId: sesion.usuarioId, demo: false, wallet: sesion.wallet };
 }
 
 export function visorSesion(usuarioId: string): Visor {
