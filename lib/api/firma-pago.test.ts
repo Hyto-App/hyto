@@ -912,6 +912,13 @@ async function conEscrowDePrueba(cuerpo: (visto: { receptores: string[] }) => Pr
   }
 }
 
+async function faltaCobroEnRevision(almacen: ReturnType<typeof crearMemoria>, tareaId: string): Promise<string | null> {
+  const respuesta = await leerRevisionHttp(almacen, null, tareaId);
+  assert.equal(respuesta.status, 200);
+  const cuerpo = (await respuesta.json()) as { tarea: { faltaCobro?: string } };
+  return cuerpo.tarea.faltaCobro ?? null;
+}
+
 test("quien ya cobró y cerró sesión: bloquear sin foto usa la cuenta de sus tareas pagadas", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -927,6 +934,7 @@ test("quien ya cobró y cerró sesión: bloquear sin foto usa la cuenta de sus t
   assert.equal(await almacen.ultimaEvidencia("bienvenida"), null);
 
   await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
     const listo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
     assert.equal(listo.status, 200);
     assert.deepEqual(visto.receptores, [RECEPTOR]);
@@ -941,6 +949,7 @@ test("abrir la tarea una vez guarda la cuenta y el bloqueo sigue aunque la perso
   const cuenta = "G" + "F".repeat(55);
 
   await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), "cuenta");
     const antes = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
     assert.equal(antes.status, 400);
     assert.deepEqual(visto.receptores, []);
@@ -953,12 +962,14 @@ test("abrir la tarea una vez guarda la cuenta y el bloqueo sigue aunque la perso
       expiraEn: new Date(Date.now() + 60_000).toISOString(),
       wallet: cuenta,
     });
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
     const abiertas = await listarTareasHttp(almacen, { usuarioId: "voluntario-3", demo: false, wallet: cuenta }, "mias");
     assert.equal(abiertas.status, 200);
     assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, cuenta);
     await almacen.borrarSesion("voluntaria");
     assert.equal(await almacen.walletDeUsuario("voluntario-3"), null);
 
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
     const despues = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
     assert.equal(despues.status, 200);
     assert.deepEqual(visto.receptores, [cuenta]);
@@ -972,6 +983,7 @@ test("una tarea sin persona asignada no se bloquea y pide asignarla primero", as
   await almacen.actualizarTarea("bienvenida", { miembroId: "" });
 
   await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), "asignar");
     const respuesta = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
     assert.equal(respuesta.status, 400);
     assert.equal(

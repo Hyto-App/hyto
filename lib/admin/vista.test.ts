@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
+import { avisoFaltaCobro, centavos, centavosGasto, detalleMonto, enBandeja, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -16,6 +16,29 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(notaManual("sin_clave"), null);
   assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
   assert.equal(notaCopia("   "), null);
+});
+
+test("el aviso de Lock budget sin cuenta nombra a quien tiene que abrir la tarea, y solo cuando falta", () => {
+  const base = { miembroId: "u-1", miembro: "Ana" };
+  assert.equal(avisoFaltaCobro(base), null);
+  assert.equal(
+    avisoFaltaCobro({ ...base, faltaCobro: "cuenta" }),
+    "You can't set the money aside yet: Ana has to sign in to Hyto and open the task once.",
+  );
+  assert.equal(
+    avisoFaltaCobro({ ...base, faltaCobro: "cuenta" }, "es"),
+    "Todavía no puedes apartar la plata: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+  );
+  for (const miembro of ["u-1", "ana@hyto.test", ""]) {
+    assert.equal(
+      avisoFaltaCobro({ ...base, miembro, faltaCobro: "cuenta" }, "es"),
+      "Todavía no puedes apartar la plata: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
+    );
+  }
+  assert.equal(
+    avisoFaltaCobro({ miembroId: "", miembro: "Unassigned", faltaCobro: "asignar" }),
+    "You can't set the money aside yet: assign the task to someone first.",
+  );
 });
 
 test("solo una tarea pendiente sin entrega se puede apartar desde la lista", () => {
