@@ -51,41 +51,59 @@ test("server render shows the static fallback and no rig", () => {
   assert.ok(html.includes("display:none"), "rig host is hidden until it is ready");
 });
 
+async function esperarRig(contenedor: HTMLElement) {
+  for (let i = 0; i < 30 && !contenedor.querySelector("[data-mile-rig] svg"); i++) await esperar(40);
+}
+
 test("mounts the rig, swaps the fallback out and changes state", async () => {
   const { contenedor, raiz } = montar();
-  await act(async () => raiz.render(createElement(MileAnimada, { estado: "reposo", tamano: 200 })));
-  assert.ok(contenedor.querySelector(".hyto-mile"), "fallback while loading");
-  await esperar();
-  assert.equal(contenedor.querySelector(".hyto-mile"), null, "fallback removed once the rig is ready");
-  const host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
-  assert.ok(host.querySelector("svg"), "rig svg is mounted");
-  assert.notEqual(host.style.display, "none");
-  await act(async () => raiz.render(createElement(MileAnimada, { estado: "buscando", tamano: 200 })));
-  await esperar(20);
-  assert.ok(host.querySelector("svg"), "same rig survives a state change");
-  await act(async () => raiz.unmount());
+  try {
+    await act(async () => raiz.render(createElement(MileAnimada, { estado: "reposo", tamano: 200 })));
+    // act() may already have flushed the dynamic import. The fallback is only
+    // required while the rig svg is still absent.
+    if (!contenedor.querySelector("[data-mile-rig] svg")) {
+      assert.ok(contenedor.querySelector(".hyto-mile"), "fallback while loading");
+    }
+    await esperarRig(contenedor);
+    assert.equal(contenedor.querySelector(".hyto-mile"), null, "fallback removed once the rig is ready");
+    const host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
+    assert.ok(host.querySelector("svg"), "rig svg is mounted");
+    assert.notEqual(host.style.display, "none");
+    await act(async () => raiz.render(createElement(MileAnimada, { estado: "buscando", tamano: 200 })));
+    await esperar(20);
+    assert.ok(host.querySelector("svg"), "same rig survives a state change");
+  } finally {
+    await act(async () => raiz.unmount());
+  }
 });
 
 test("unmounting destroys the rig", async () => {
   const { contenedor, raiz } = montar();
-  await act(async () => raiz.render(createElement(MileAnimada, { estado: "pagado" })));
-  await esperar();
-  const host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
-  assert.ok(host.querySelector("svg"));
-  await act(async () => raiz.unmount());
-  assert.equal(host.querySelector("svg"), null, "destroy() removed the svg");
+  let host: HTMLElement | null = null;
+  try {
+    await act(async () => raiz.render(createElement(MileAnimada, { estado: "pagado" })));
+    await esperarRig(contenedor);
+    host = contenedor.querySelector("[data-mile-rig]") as HTMLElement;
+    assert.ok(host.querySelector("svg"));
+  } finally {
+    await act(async () => raiz.unmount());
+  }
+  assert.equal(host?.querySelector("svg") ?? null, null, "destroy() removed the svg");
 });
 
 test("onToque makes Mile a button and reports the reaction", async () => {
   const toques: string[] = [];
   const { contenedor, raiz } = montar();
-  await act(async () => raiz.render(createElement(MileAnimada, { onToque: (r) => toques.push(r) })));
-  await esperar();
-  const boton = contenedor.querySelector('[role="button"]') as HTMLElement;
-  assert.ok(boton, "interactive rig exposes role=button");
-  await act(async () => boton.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
-  assert.equal(toques[0], "hey");
-  await act(async () => raiz.unmount());
+  try {
+    await act(async () => raiz.render(createElement(MileAnimada, { onToque: (r) => toques.push(r) })));
+    await esperarRig(contenedor);
+    const boton = contenedor.querySelector('[role="button"]') as HTMLElement;
+    assert.ok(boton, "interactive rig exposes role=button");
+    await act(async () => boton.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    assert.equal(toques[0], "hey");
+  } finally {
+    await act(async () => raiz.unmount());
+  }
 });
 
 function espiarRaf() {
@@ -104,21 +122,24 @@ test("the loop stops once the idle motion fades and wakes on interaction", async
   const host = document.createElement("div");
   document.body.appendChild(host);
   const rig = MileRig.create(host, { chest: "peek", idleSeconds: 0.1, reduced: false });
-  assert.equal(rig.running, true);
-  await new Promise((r) => setTimeout(r, 2200));
-  assert.equal(rig.running, false, "loop sleeps after the idle time");
-  const llamadas = espia.contador.llamadas;
-  await new Promise((r) => setTimeout(r, 150));
-  assert.equal(espia.contador.llamadas, llamadas, "no more animation frames while asleep");
-  document.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
-  assert.equal(rig.running, true, "document interaction wakes it");
-  await new Promise((r) => setTimeout(r, 2200));
-  assert.equal(rig.running, false, "and it sleeps again");
-  rig.mood("happy");
-  assert.equal(rig.running, true, "a state change wakes it too");
-  rig.destroy();
+  try {
+    assert.equal(rig.running, true);
+    await new Promise((r) => setTimeout(r, 2200));
+    assert.equal(rig.running, false, "loop sleeps after the idle time");
+    const llamadas = espia.contador.llamadas;
+    await new Promise((r) => setTimeout(r, 150));
+    assert.equal(espia.contador.llamadas, llamadas, "no more animation frames while asleep");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+    assert.equal(rig.running, true, "document interaction wakes it");
+    await new Promise((r) => setTimeout(r, 2200));
+    assert.equal(rig.running, false, "and it sleeps again");
+    rig.mood("happy");
+    assert.equal(rig.running, true, "a state change wakes it too");
+  } finally {
+    rig.destroy();
+    espia.restaurar();
+  }
   assert.equal(rig.running, false);
-  espia.restaurar();
 });
 
 test("with reduced motion there is no loop at all, states change at once", async () => {
@@ -126,14 +147,17 @@ test("with reduced motion there is no loop at all, states change at once", async
   const host = document.createElement("div");
   document.body.appendChild(host);
   const rig = MileRig.create(host, { chest: "peek", reduced: true });
-  assert.equal(rig.running, false);
-  rig.mood("sad");
-  rig.search();
-  rig.reveal("happy");
-  document.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
-  await new Promise((r) => setTimeout(r, 200));
-  assert.equal(rig.running, false);
-  assert.equal(espia.contador.llamadas, 0, "requestAnimationFrame is never called");
-  rig.destroy();
-  espia.restaurar();
+  try {
+    assert.equal(rig.running, false);
+    rig.mood("sad");
+    rig.search();
+    rig.reveal("happy");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+    await new Promise((r) => setTimeout(r, 200));
+    assert.equal(rig.running, false);
+    assert.equal(espia.contador.llamadas, 0, "requestAnimationFrame is never called");
+  } finally {
+    rig.destroy();
+    espia.restaurar();
+  }
 });
