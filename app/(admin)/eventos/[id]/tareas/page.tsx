@@ -39,6 +39,8 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
           dificultad: tarea.dificultad,
           bloqueo: avisoBloqueo(tarea, tieneFoto),
           tieneFoto,
+          montoConfirmado: evidencia?.montoConfirmado ?? null,
+          montoRevisado: evidencia?.monto ?? null,
         };
       }),
   );

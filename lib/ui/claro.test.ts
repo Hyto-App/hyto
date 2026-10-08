@@ -43,6 +43,13 @@ test("technical payment errors tell the person what to do", () => {
     "Ese paso no se completó. Intenta de nuevo.",
   );
   assert.equal(mensajeClaro("Wait 8 s before requesting another code", "es"), "Espera 8 s antes de pedir otro código");
+  const saldo = mensajeClaro("Your balance does not cover US$31 (this amount plus a US$1 reserve).");
+  assert.equal(saldo, "Your balance does not cover US$31 (this amount plus a US$1 reserve).");
+  assert.equal(saldo.includes("USDC"), false);
+  assert.equal(
+    mensajeClaro("Your balance does not cover US$31 (this amount plus a US$1 reserve).", "es"),
+    "Tu saldo no cubre US$31 (este monto más una reserva de US$1).",
+  );
 });
 
 test("payout setup notices for old accounts keep their own words instead of the generic step error", () => {

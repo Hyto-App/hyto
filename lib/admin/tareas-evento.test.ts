@@ -17,6 +17,55 @@ async function elegir(selector: string, valor: string): Promise<void> {
   });
 }
 
+test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera el pago", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(TareasEvento, {
+        miembros: [],
+        tareas: [
+          {
+            id: "comida",
+            titulo: "Team meal",
+            tipo: "reembolso",
+            monto: "15",
+            tope: "15",
+            estado: "pagado",
+            miembroId: "",
+            condicion: "Receipt",
+            prioridad: "normal",
+            dificultad: null,
+            bloqueo: null,
+            tieneFoto: true,
+            montoConfirmado: "12.48",
+            montoRevisado: "12.48",
+          },
+          {
+            id: "stand",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            estado: "pendiente",
+            miembroId: "",
+            condicion: "",
+            prioridad: "normal",
+            dificultad: null,
+            bloqueo: null,
+            tieneFoto: false,
+          },
+        ],
+      }),
+    );
+    assert.match(texto(), /Paid · US\$12\.48 · Limit US\$15/);
+    assert.equal(texto().includes("Up to US$15"), false);
+    assert.match(texto(), /Pending · US\$20/);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("asignar una tarea también deja elegir prioridad y dificultad", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;

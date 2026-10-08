@@ -102,6 +102,62 @@ test("create event rejects a negative amount with a clear amount error", async (
   }
 });
 
+test("crear evento sin saldo suficiente deja el botón apagado y no llama a la API", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  let llamados = 0;
+  globalThis.fetch = (async () => {
+    llamados += 1;
+    return new Response(JSON.stringify({ aviso: "no" }), { status: 400 });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(CrearProyecto, { saldo: "0" }), { push: () => undefined });
+    await escribir("#nombre-proyecto", "Feria");
+    await escribir("#titulo-1", "Comida");
+    await escribir("#monto-1", "30");
+    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create event"));
+    assert.ok(boton instanceof HTMLButtonElement);
+    assert.equal(boton.disabled, true);
+    const aviso = document.querySelector("#aviso-saldo-crear");
+    assert.match(aviso?.textContent ?? "", /Your balance does not cover US\$31/);
+    assert.match(aviso?.textContent ?? "", /US\$1 reserve/);
+    assert.equal((aviso?.textContent ?? "").includes("USDC"), false);
+    await pulsar("Create event");
+    assert.equal(llamados, 0);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("crear evento con saldo suficiente sigue enviando el pedido", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  let llamados = 0;
+  globalThis.fetch = (async () => {
+    llamados += 1;
+    return new Response(JSON.stringify({ proyecto: { id: "evt" } }), {
+      status: 201,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(CrearProyecto, { saldo: "40" }), { push: () => undefined });
+    await escribir("#nombre-proyecto", "Feria");
+    await escribir("#titulo-1", "Comida");
+    await escribir("#monto-1", "30");
+    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create event"));
+    assert.ok(boton instanceof HTMLButtonElement && boton.disabled === false);
+    await pulsar("Create event");
+    assert.equal(llamados, 1);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("create event asks for a name when the name is empty", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;

@@ -97,6 +97,32 @@ describe("pantalla en vivo", { concurrency: false }, () => {
     }
   });
 
+  test("con la sesión vencida, recuperar el foco no vuelve a sondear", async () => {
+    let sondeos = 0;
+    const anterior = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      sondeos += 1;
+      return json({ aviso: "Sign in to continue." }, 401);
+    }) as typeof fetch;
+    try {
+      await montar(createElement(Sonda, { oculto: () => false }));
+      await esperar(() => sondeos === 1);
+      await act(async () => {
+        await new Promise((resolver) => setTimeout(resolver, 80));
+      });
+      assert.equal(sondeos, 1);
+      await act(async () => {
+        document.dispatchEvent(new Event("visibilitychange"));
+        window.dispatchEvent(new Event("focus"));
+        await new Promise((resolver) => setTimeout(resolver, 50));
+      });
+      assert.equal(sondeos, 1);
+    } finally {
+      globalThis.fetch = anterior;
+      await desmontar();
+    }
+  });
+
   test("una pestaña oculta no sondea y al volver pide los cambios", async () => {
     let sondeos = 0;
     let oculto = true;

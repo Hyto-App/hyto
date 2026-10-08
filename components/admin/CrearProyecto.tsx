@@ -6,8 +6,9 @@ import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { normalizarMonto } from "@/lib/admin/vista";
+import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
+import { faltaParaCrear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -37,6 +38,19 @@ const FILA_INICIAL: Fila = {
   dificultad: "",
 };
 
+function sumarCentavos(filas: readonly Fila[]): { trabajo: number; reembolso: number } {
+  let trabajo = 0;
+  let reembolso = 0;
+  for (const fila of filas) {
+    const monto = normalizarMonto(fila.monto);
+    if (!monto) continue;
+    const centavos = Math.round(Number(monto) * 100);
+    if (fila.tipo === "reembolso") reembolso += centavos;
+    else trabajo += centavos;
+  }
+  return { trabajo, reembolso };
+}
+
 function filaNueva(): Fila {
   return {
     clave: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -50,7 +64,7 @@ function filaNueva(): Fila {
   };
 }
 
-export function CrearProyecto() {
+export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
   const router = useRouter();
   const modoDemo = useModoDemo();
   const t = useTexto();
@@ -74,6 +88,8 @@ export function CrearProyecto() {
       setAviso(AVISO_PROYECTO_DEMO);
       return;
     }
+    const previo = sumarCentavos(filas);
+    if (faltaParaCrear(saldo, textoMonto(previo.trabajo + previo.reembolso))) return;
     const nombreLimpio = nombre.trim();
     if (!nombreLimpio) {
       setAviso("Enter an event name.");
@@ -148,16 +164,9 @@ export function CrearProyecto() {
     router.push(`/eventos/${id}`);
   }
 
-  let trabajo = 0;
-  let reembolso = 0;
-  for (const fila of filas) {
-    const monto = normalizarMonto(fila.monto);
-    if (!monto) continue;
-    const centavos = Math.round(Number(monto) * 100);
-    if (fila.tipo === "reembolso") reembolso += centavos;
-    else trabajo += centavos;
-  }
+  const { trabajo, reembolso } = sumarCentavos(filas);
   const total = ((trabajo + reembolso) / 100).toString();
+  const falta = faltaParaCrear(saldo, textoMonto(trabajo + reembolso));
 
   return (
     <main className="hyto-page">
@@ -378,7 +387,12 @@ export function CrearProyecto() {
             </div>
           </dl>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <BotonPrincipal type="button" onClick={() => void fondear()} disabled={modoDemo || creadoId !== null}>
+            <BotonPrincipal
+              type="button"
+              onClick={() => void fondear()}
+              disabled={modoDemo || creadoId !== null || falta !== null}
+              aria-describedby={falta ? "aviso-saldo-crear" : undefined}
+            >
               {t("eventos.createEvent")}
             </BotonPrincipal>
             {creadoId ? (
@@ -386,9 +400,17 @@ export function CrearProyecto() {
                 {t("eventos.openEvent")}
               </Link>
             ) : null}
-            {modoDemo || aviso ? (
+            {modoDemo ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                {claro(modoDemo ? AVISO_PROYECTO_DEMO : (aviso ?? ""))}
+                {claro(AVISO_PROYECTO_DEMO)}
+              </p>
+            ) : falta ? (
+              <p id="aviso-saldo-crear" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                {t("errores.saldoNoCubre", { n: falta.necesario, reserva: falta.reserva })}
+              </p>
+            ) : aviso ? (
+              <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                {claro(aviso)}
               </p>
             ) : null}
           </div>

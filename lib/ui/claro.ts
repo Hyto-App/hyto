@@ -279,7 +279,7 @@ for (const clave of CLAVES_CONOCIDAS) {
 }
 
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
-const SALDO_NO_CUBRE = /^Your USDC balance does not cover ([\d.]+) USDC \(this amount plus a ([\d.]+) USDC reserve\)\.$/;
+const SALDO_NO_CUBRE = /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\.$/;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
