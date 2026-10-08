@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
-import { contadorCerca } from "@/lib/ui/campos-evento";
+import { contadorCerca, errorPortada } from "@/lib/ui/campos-evento";
 
 export function IconoImagen() {
   return (
@@ -43,6 +43,7 @@ export function ZonaPortada({
   const entrada = useRef<HTMLInputElement>(null);
   const [vista, setVista] = useState<string | null>(null);
   const [arrastre, setArrastre] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!archivo) {
@@ -55,7 +56,15 @@ export function ZonaPortada({
   }, [archivo]);
 
   function elegir(lista: FileList | null) {
-    onArchivo(lista?.[0] ?? null);
+    const elegido = lista?.[0] ?? null;
+    const falla = elegido ? errorPortada(elegido) : null;
+    if (elegido && falla) {
+      if (entrada.current) entrada.current.value = "";
+      setError(falla === "type" ? t("eventos.coverType") : t("eventos.coverSize"));
+      return;
+    }
+    setError(null);
+    onArchivo(elegido);
   }
 
   function abrir() {
@@ -64,6 +73,7 @@ export function ZonaPortada({
 
   function quitar() {
     if (entrada.current) entrada.current.value = "";
+    setError(null);
     onArchivo(null);
   }
 
@@ -108,7 +118,6 @@ export function ZonaPortada({
           >
             <IconoImagen />
             <span>{t("eventos.coverDrop")}</span>
-            <span className="hyto-zona-ayuda">{t("eventos.coverDropHelp")}</span>
           </div>
         )}
         <input
@@ -121,6 +130,11 @@ export function ZonaPortada({
           onChange={(evento) => elegir(evento.target.files)}
           className="sr-only"
         />
+        {error ? (
+          <p role="alert" className="mt-2 text-sm text-[var(--peligro)]">
+            {error}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -149,6 +163,12 @@ export function AreaTexto({
     area.style.height = "auto";
     area.style.height = `${area.scrollHeight}px`;
   }, [valor]);
+  // Back navigation can restore the field text before React knows it; read the real value once on mount.
+  useEffect(() => {
+    const real = ref.current?.value ?? "";
+    if (real && real !== valor) onCambio(real);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
   return (
     <textarea
       ref={ref}

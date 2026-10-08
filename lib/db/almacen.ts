@@ -1,4 +1,9 @@
 import type {
+  AvisoComunidad,
+  Comunidad,
+  ComunidadMiembro,
+  ComunidadSolicitud,
+  EstadoSolicitudComunidad,
   EvidenciaFila,
   PedidoCanje,
   Proyecto,
@@ -7,6 +12,7 @@ import type {
   ResultadoCanje,
   SesionFila,
   TareaFila,
+  TipoCuentaGuardado,
   Usuario,
   VeredictoFila,
 } from "./tipos";
@@ -33,8 +39,20 @@ export type CambioTarea = Partial<
 export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
+  leerUsuario(id: string): Promise<Usuario | null>;
   insertarUsuario(usuario: Usuario): Promise<void>;
   guardarUsuario(usuario: Usuario): Promise<void>;
+  guardarTipoCuenta(
+    id: string,
+    cambio: {
+      tipoCuenta: TipoCuentaGuardado;
+      empresaNombre: string | null;
+      empresaActividad: string | null;
+      empresaDescripcion: string | null;
+      empresaFoto: string | null;
+    },
+  ): Promise<void>;
+  guardarPerfilVoluntario(id: string, cambio: { experiencia: string | null; etiquetas: string }): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
   listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;
@@ -51,6 +69,8 @@ export type Almacen = {
     cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado" | "motivoCopia" | "creadaEn">>,
   ): Promise<void>;
   ultimaEvidencia(tareaId: string): Promise<EvidenciaFila | null>;
+  /** Every photo sent for the task, oldest first. */
+  listarEvidencias(tareaId: string): Promise<EvidenciaFila[]>;
   evidenciaPorSha256(sha256: string): Promise<EvidenciaFila | null>;
   evidenciasCercanas(
     phash: string,
@@ -76,4 +96,20 @@ export type Almacen = {
   crearInvitacion(invitacion: ProyectoInvitacion): Promise<void>;
   leerInvitacionPorHash(hash: string): Promise<ProyectoInvitacion | null>;
   canjearInvitacion(pedido: PedidoCanje): Promise<ResultadoCanje>;
+  listarComunidades(): Promise<Comunidad[]>;
+  leerComunidad(id: string): Promise<Comunidad | null>;
+  leerComunidadPorCodigo(codigo: string): Promise<Comunidad | null>;
+  crearComunidad(comunidad: Comunidad): Promise<void>;
+  listarMiembrosComunidad(comunidadId: string): Promise<ComunidadMiembro[]>;
+  comunidadesDeUsuario(usuarioId: string): Promise<ComunidadMiembro[]>;
+  miembroComunidad(comunidadId: string, usuarioId: string): Promise<ComunidadMiembro | null>;
+  guardarMiembroComunidad(miembro: ComunidadMiembro): Promise<void>;
+  listarSolicitudesComunidad(comunidadId: string): Promise<ComunidadSolicitud[]>;
+  crearSolicitudComunidad(solicitud: ComunidadSolicitud): Promise<void>;
+  actualizarSolicitudComunidad(id: string, estado: EstadoSolicitudComunidad): Promise<void>;
+  fijarComunidadProyecto(proyectoId: string, comunidadId: string | null): Promise<void>;
+  listarAvisosComunidad(comunidadId: string): Promise<AvisoComunidad[]>;
+  crearAvisoComunidad(aviso: AvisoComunidad): Promise<void>;
+  /** Assigns the task only while miembro_id is still empty. */
+  tomarTarea(tareaId: string, usuarioId: string): Promise<boolean>;
 };

@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { Unirse } from "@/components/admin/Unirse";
 import { exigirPagina } from "@/lib/sesion/puerta";
 
-export const metadata: Metadata = { title: "Join an event" };
+export const generateMetadata = tituloDe("titulos.joinEvent");
 
 export default async function PaginaJoinSecreto({ params }: { params: Promise<{ secreto: string }> }) {
   const { secreto } = await params;

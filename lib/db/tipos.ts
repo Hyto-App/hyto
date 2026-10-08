@@ -2,11 +2,23 @@ import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/
 
 export type Rol = "organizador" | "voluntario";
 
+export type TipoCuentaGuardado = "empresa" | "voluntario";
+
 export type Usuario = {
   id: string;
   email: string;
   nombre: string;
   rol: Rol;
+  /** Set only when HYTO_TIPO_CUENTA is on. It does not replace the per-event role. */
+  tipoCuenta?: TipoCuentaGuardado | null;
+  empresaNombre?: string | null;
+  empresaActividad?: string | null;
+  empresaDescripcion?: string | null;
+  empresaFoto?: string | null;
+  /** Own words. Only read when HYTO_PERFIL_VOLUNTARIO is on. */
+  experiencia?: string | null;
+  /** Chosen tags, at most 5. Stored as JSON text. */
+  etiquetas?: string[] | null;
 };
 
 export type Proyecto = {
@@ -20,6 +32,50 @@ export type Proyecto = {
   descripcion?: string | null;
   /** Only the AI reviewers read this. Never put it in a route response. */
   contextoIa?: string | null;
+  /** Set only when HYTO_COMUNIDADES is on. Null keeps the event on its own. */
+  comunidadId?: string | null;
+};
+
+export type VisibilidadComunidad = "publica" | "privada";
+export type RolComunidad = "admin" | "miembro";
+export type EstadoSolicitudComunidad = "pendiente" | "aprobada" | "rechazada";
+
+export type Comunidad = {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  fotoUrl: string | null;
+  visibilidad: VisibilidadComunidad;
+  codigo: string;
+  creadoEn: string;
+  creadorId: string;
+};
+
+export type ComunidadMiembro = {
+  comunidadId: string;
+  usuarioId: string;
+  rol: RolComunidad;
+  creadoEn: string;
+};
+
+export type ComunidadSolicitud = {
+  id: string;
+  comunidadId: string;
+  usuarioId: string;
+  estado: EstadoSolicitudComunidad;
+  creadoEn: string;
+};
+
+export type TipoAviso = "disponible" | "asignada" | "completada";
+
+export type AvisoComunidad = {
+  id: string;
+  comunidadId: string;
+  tipo: TipoAviso;
+  titulo: string;
+  nombre: string | null;
+  tareaId: string | null;
+  creadoEn: string;
 };
 
 export type TareaFila = {

@@ -130,6 +130,34 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     silenciosa: true,
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
+  {
+    nombre: "HYTO_COMUNIDADES",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on turns on communities. Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
+  },
+  {
+    nombre: "HYTO_TABLON",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on turns on the community bulletin. Also needs HYTO_COMUNIDADES=on. Unset or anything else keeps the app as it is. Do not turn this on until migrations 0010 and 0013 are applied.",
+  },
+  {
+    nombre: "HYTO_TIPO_CUENTA",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on asks for an account type after sign-in. Unset or anything else keeps the app as it is. Do not turn this on until migration 0011 is applied.",
+  },
+  {
+    nombre: "HYTO_PERFIL_VOLUNTARIO",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on lets a person write a short profile and choose up to 5 tags. Unset or anything else keeps the app as it is. Do not turn this on until migration 0012 is applied.",
+  },
 ];
 
 export const VARIABLES: DefinicionVariable[] = [...VARIABLES_PUBLICAS, ...VARIABLES_SERVIDOR];

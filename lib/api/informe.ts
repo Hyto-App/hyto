@@ -1,13 +1,16 @@
 import { bandejaDe, enBandeja, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
-import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
+import type { IntentoAnterior, TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto, lecturaDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { fraseConNota } from "@/lib/revision/armar";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
+import { fichaDeTarea } from "./perfil";
+import type { FichaVoluntario } from "@/lib/perfil/reglas";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
+import { veredictoAlLeer } from "./revision-vencida";
 
 export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Response> {
   try {
@@ -68,7 +71,7 @@ export async function leerVeredictoVigente(
   tarea: TareaFila,
 ): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null }> {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  const fila = await veredictoAlLeer(almacen, tarea, evidencia);
   return { evidencia, veredicto: veredictoVigente(tarea, evidencia, fila) };
 }
 
@@ -77,9 +80,38 @@ export async function tareaEnBandeja(almacen: Almacen, tarea: TareaFila): Promis
   return enBandeja({ estado: tarea.estado, veredicto: bandaDe(veredicto) });
 }
 
+/**
+ * Mile's explanation for each photo that is not the one on screen, oldest first. When the latest
+ * verdict is hidden (another photo was asked for), that photo counts as an earlier attempt too.
+ * Failed reviews have no explanation and are skipped.
+ */
+export async function intentosAnteriores(
+  almacen: Almacen,
+  tarea: TareaFila,
+  actual: EvidenciaFila | null,
+  hayVeredictoVigente: boolean,
+): Promise<IntentoAnterior[]> {
+  const todas = await almacen.listarEvidencias(tarea.id);
+  const salida: IntentoAnterior[] = [];
+  for (const [indice, evidencia] of todas.entries()) {
+    if (hayVeredictoVigente && evidencia.id === actual?.id) continue;
+    const fila = await almacen.veredictoDe(evidencia.id);
+    if (!fila || fila.origen === "error") continue;
+    const nota = notaDe(fila);
+    salida.push({
+      numero: indice + 1,
+      veredicto: bandaDe(fila),
+      nota,
+      frase: fraseConNota(fila.frase ?? null, nota),
+    });
+  }
+  return salida;
+}
+
 export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>): Promise<TareaAdmin> {
   const mapa = nombres ?? new Map((await almacen.listarUsuarios()).map((usuario) => [usuario.id, usuario.nombre]));
   const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
+  const anteriores = await intentosAnteriores(almacen, tarea, evidencia, veredicto !== null);
   return {
     id: tarea.id,
     titulo: tarea.titulo,
@@ -109,9 +141,17 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       fecha: evidencia?.fecha ?? null,
       tope: tarea.tope,
       tipo: tarea.tipo,
+      condicion: tarea.condicion,
     }),
     lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
+    ...(await fichaVoluntario(almacen, tarea.miembroId)),
+    ...(anteriores.length > 0 ? { intentosAnteriores: anteriores } : {}),
   };
+}
+
+async function fichaVoluntario(almacen: Almacen, usuarioId: string): Promise<{ perfilVoluntario?: FichaVoluntario }> {
+  const ficha = await fichaDeTarea(almacen, usuarioId);
+  return ficha ? { perfilVoluntario: ficha } : {};
 }
 
 export function pagoDe(hash: string | null): string | null {

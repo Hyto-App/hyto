@@ -12,11 +12,8 @@ import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
-import { contextoAbierto } from "@/lib/ui/campos-evento";
+import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
 import { AreaTexto, Contador, IconoCandado, ZonaPortada } from "./CamposEvento";
-
-const TIPOS_PORTADA = ["image/jpeg", "image/png", "image/webp"];
-const MAX_BYTES_PORTADA = 5 * 1024 * 1024;
 
 type Fila = {
   clave: string;
@@ -82,12 +79,9 @@ export function CrearProyecto() {
       setAviso("Enter an event name.");
       return;
     }
-    if (portada && !TIPOS_PORTADA.includes(portada.type)) {
-      setAviso(t("eventos.coverType"));
-      return;
-    }
-    if (portada && portada.size > MAX_BYTES_PORTADA) {
-      setAviso(t("eventos.coverSize"));
+    const falla = portada ? errorPortada(portada) : null;
+    if (falla) {
+      setAviso(t(falla === "type" ? "eventos.coverType" : "eventos.coverSize"));
       return;
     }
 
@@ -145,8 +139,9 @@ export function CrearProyecto() {
       datos.set("portada", portada);
       const subida = await fetch(`/api/eventos/${encodeURIComponent(id)}/portada`, { method: "POST", body: datos }).catch(() => null);
       if (!subida?.ok) {
+        const motivo = subida ? ((await subida.json().catch(() => null)) as { aviso?: string } | null)?.aviso : null;
         setCreadoId(id);
-        setAviso(t("eventos.coverNotSaved"));
+        setAviso(motivo ? `${t("eventos.coverNotSaved")} ${motivo}` : t("eventos.coverNotSaved"));
         return;
       }
     }
@@ -178,7 +173,7 @@ export function CrearProyecto() {
       </header>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div>
+        <div className="min-w-0">
           <section className="hyto-card hyto-seccion" aria-labelledby="detalles-titulo">
             <h2 id="detalles-titulo" className="hyto-seccion-titulo">
               {t("eventos.detailsTitle")}
@@ -280,18 +275,6 @@ export function CrearProyecto() {
                         {t("tipos.reembolso")}
                       </button>
                     </div>
-                    <label className="sr-only" htmlFor={`tipo-${fila.clave}`}>
-                      {t("eventos.type")}
-                    </label>
-                    <select
-                      id={`tipo-${fila.clave}`}
-                      value={fila.tipo}
-                      onChange={(evento) => cambiar(fila.clave, { tipo: evento.target.value as TipoTarea })}
-                      className="sr-only"
-                    >
-                      <option value="trabajo">{t("tipos.trabajo")}</option>
-                      <option value="reembolso">{t("tipos.reembolso")}</option>
-                    </select>
                   </div>
                   <div>
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${fila.clave}`}>

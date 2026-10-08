@@ -424,6 +424,7 @@ export async function correrCaso(caso: CasoBanco, opciones: OpcionesBanco): Prom
     fecha: resultado.fecha,
     tope: tarea.tope,
     tipo: tarea.tipo,
+    condicion: tarea.condicion,
   });
   const motivo = motivoPrincipal(etiquetas)?.id ?? null;
   return {

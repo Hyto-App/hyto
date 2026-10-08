@@ -155,7 +155,24 @@ test("el crédito parcial de un trabajo es la mitad del peso", () => {
   assert.equal(senalesDeTrabajo({ ...trabajoBase(), t6: "a_medias" }).score, "91");
   assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 0 }).score, "83");
   assert.equal(senalesDeTrabajo({ ...trabajoBase(), v2: 1 }).score, "91");
-  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }).score, "87");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }, "Set the table at the entrance").score, "87");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t8: false }, "Hacer un ensayo").score, "99");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t8: false }, "Hacer un ensayo").score, "100");
+  assert.equal(senalesDeTrabajo({ ...trabajoBase(), t7: true, t8: false }, "Pintar el mural en el parque").score, "88");
+});
+
+test("preguntarLaya pasa el pedido: t8 no resta si no hay lugar", async () => {
+  const respuestas = { ...respuestasTrabajo(), t7: { noul: true }, t8: { noul: false } };
+  const pedir = async (pedido: string) =>
+    preguntarLaya("https://laya.example", "An essay on the desk.", pedido, async (_input, init) => {
+      const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
+      if ("c1" in cuerpo.questions && !("t8" in cuerpo.questions)) {
+        return Response.json({ answers: { c1: { choice: "trabajo" } } });
+      }
+      return Response.json({ answers: respuestas });
+    });
+  assert.equal((await pedir("Hacer un ensayo")).score, "100");
+  assert.equal((await pedir("Pintar el mural en el parque")).score, "88");
 });
 
 test("nombrar herramientas suma un punto", () => {

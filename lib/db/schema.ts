@@ -5,6 +5,42 @@ export const usuarios = pgTable("usuarios", {
   email: text("email").notNull().unique(),
   nombre: text("nombre").notNull(),
   rol: text("rol").notNull(),
+  // Account type. Null until the person chooses. Only read when HYTO_TIPO_CUENTA is on.
+  tipoCuenta: text("tipo_cuenta"),
+  empresaNombre: text("empresa_nombre"),
+  empresaActividad: text("empresa_actividad"),
+  empresaDescripcion: text("empresa_descripcion"),
+  empresaFoto: text("empresa_foto"),
+  // Volunteer profile. Only read when HYTO_PERFIL_VOLUNTARIO is on.
+  experiencia: text("experiencia"),
+  etiquetas: text("etiquetas"),
+});
+
+// A community is an organization. It does not replace the per-event role.
+export const comunidades = pgTable("comunidades", {
+  id: text("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion").notNull().default(""),
+  fotoUrl: text("foto_url"),
+  visibilidad: text("visibilidad").notNull().default("publica"),
+  codigo: text("codigo").notNull().unique(),
+  creadoEn: text("creado_en").notNull(),
+  creadorId: text("creador_id").notNull().references(() => usuarios.id),
+});
+
+export const comunidadMiembros = pgTable("comunidad_miembros", {
+  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
+  usuarioId: text("usuario_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+  rol: text("rol").notNull(),
+  creadoEn: text("creado_en").notNull(),
+}, (tabla) => [primaryKey({ columns: [tabla.comunidadId, tabla.usuarioId] })]);
+
+export const comunidadSolicitudes = pgTable("comunidad_solicitudes", {
+  id: text("id").primaryKey(),
+  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
+  usuarioId: text("usuario_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+  estado: text("estado").notNull().default("pendiente"),
+  creadoEn: text("creado_en").notNull(),
 });
 
 // Quien crea el proyecto queda en organizador_id. El rol global de usuarios
@@ -18,6 +54,8 @@ export const proyectos = pgTable("proyectos", {
   portada: text("portada"),
   descripcion: text("descripcion"),
   contextoIa: text("contexto_ia"),
+  // Null keeps the event on its own. Only read when HYTO_COMUNIDADES is on.
+  comunidadId: text("comunidad_id").references(() => comunidades.id, { onDelete: "set null" }),
 });
 
 export const tareas = pgTable("tareas", {
@@ -43,6 +81,17 @@ export const tareas = pgTable("tareas", {
   requisitos: text("requisitos"),
   // JSON { nota, fallidos, en, origen, intento, puntaje, nota_mile, resultados }.
   rechazo: text("rechazo"),
+});
+
+// Read-only system notices. Only read when HYTO_TABLON is on.
+export const comunidadAvisos = pgTable("comunidad_avisos", {
+  id: text("id").primaryKey(),
+  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(),
+  titulo: text("titulo").notNull(),
+  nombre: text("nombre"),
+  tareaId: text("tarea_id").references(() => tareas.id, { onDelete: "set null" }),
+  creadoEn: text("creado_en").notNull(),
 });
 
 export const evidencias = pgTable("evidencias", {

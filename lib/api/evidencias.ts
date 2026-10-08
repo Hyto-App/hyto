@@ -22,10 +22,10 @@ import type { Idioma } from "@/lib/ui/idioma";
 import type { ContextoEvento } from "@/lib/revision/contexto-evento";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { contextoParaRevision } from "./contexto-evento";
+import { organizacionDeEvento } from "./tipo-cuenta";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
-
-const PLAZO_MS = 2800;
+import { esperarCorte, planRevision, PLAZO_RESPUESTA_MS, usaCorte } from "./plazo-revision";
 
 export type ActorEvidencia = {
   usuarioId: string;
@@ -48,6 +48,8 @@ export type DepsEvidencia = {
   actor?: ActorEvidencia;
   revisarTarea?: (tarea: TareaFila, foto: Awaited<ReturnType<Fotos["leer"]>>) => Promise<ResultadoRevision>;
   continuar?: (trabajo: Promise<void>) => void;
+  /** When the request arrived (epoch ms). The review budget and the hard stop count from here. */
+  inicio?: number;
 };
 
 export function evidenciaPublica(evidencia: EvidenciaFila) {
@@ -133,6 +135,7 @@ export async function emitirTokenEvidenciaHttp(request: Request, deps: DepsEvide
 }
 
 export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidencia): Promise<Response> {
+  const inicio = deps.inicio ?? Date.now();
   if (!deps.fotos) return sinFotos();
   let form: FormData;
   try {
@@ -276,16 +279,21 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
     const evento = deps.revisarTarea ? null : await contextoParaRevision(deps.almacen, tarea.proyectoId);
-    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento }));
+    const organizacion = deps.revisarTarea ? null : await organizacionDeEvento(deps.almacen, tarea.proyectoId);
+    const plan = planRevision(inicio);
+    const revisarAhora =
+      deps.revisarTarea ??
+      ((tareaActual, fotoActual) =>
+        revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento, organizacion, presupuestoMs: plan.presupuestoMs }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
-    const entorno = contextoDesdeEntorno();
-    const textual = esEvidenciaTextual({ tipo, bytes });
-    const conTope = !deps.revisarTarea && (textual ? Boolean(entorno.layaUrl) : Boolean(entorno.claveGroq));
-    const listo = conTope ? await conPlazo(trabajo, PLAZO_MS) : await trabajo;
-    if (listo) {
-      await guardarRevision(deps.almacen, evidencia.id, tareaId, listo);
+    const conTope = !deps.revisarTarea && usaCorte(contextoDesdeEntorno(), esEvidenciaTextual({ tipo, bytes }));
+    const espera = await esperarCorte(trabajo, conTope ? PLAZO_RESPUESTA_MS : null);
+    if (espera.estado === "listo") {
+      await guardarRevision(deps.almacen, evidencia.id, tareaId, espera.valor);
+    } else if (espera.estado === "fallo") {
+      await guardarFalloDeRevision(deps.almacen, evidencia.id, tareaId, espera.error);
     } else if (deps.continuar) {
-      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo));
+      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo, planRevision(inicio).topeFondoMs));
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
     return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, reintento ? 200 : 201);
@@ -297,13 +305,15 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
 async function revisarPorDefecto(
   tarea: TareaFila,
   foto: Awaited<ReturnType<Fotos["leer"]>>,
-  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null },
+  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null; organizacion?: string | null; presupuestoMs?: number },
 ): Promise<ResultadoRevision> {
   return revisar(tarea, foto, {
     ...contextoDesdeEntorno(),
     evento: extra?.evento,
+    organizacion: extra?.organizacion,
     intento: extra?.intento,
     idioma: extra?.idioma,
+    presupuestoMs: extra?.presupuestoMs,
   });
 }
 
@@ -349,23 +359,7 @@ export async function guardarRevision(
   await almacen.actualizarEvidencia(evidenciaId, cambio);
 }
 
-function conPlazo<T>(trabajo: Promise<T>, ms: number): Promise<T | null> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), ms);
-    trabajo.then(
-      (valor) => {
-        clearTimeout(timer);
-        resolve(valor);
-      },
-      () => {
-        clearTimeout(timer);
-        resolve(null);
-      },
-    );
-  });
-}
-
-/** Hard stop for the review that continues after the upload response. A row is stored either way. */
+/** Default hard stop for a background review. The upload passes what is left of its `maxDuration`. */
 export const TOPE_REVISION_FONDO_MS = 55_000;
 
 export function cerrarRevisionEnFondo(
@@ -402,7 +396,7 @@ function conTopeDuro(trabajo: Promise<ResultadoRevision>, ms: number): Promise<R
   });
 }
 
-async function guardarFalloDeRevision(
+export async function guardarFalloDeRevision(
   almacen: Almacen,
   evidenciaId: string,
   tareaId: string,

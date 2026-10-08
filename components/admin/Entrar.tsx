@@ -45,7 +45,6 @@ import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/Insig
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
-import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
 /** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
@@ -96,6 +95,12 @@ function finalizarSinPantalla(resultado: ResultadoIngreso) {
   const ruta = window.location.pathname || "/";
   window.location.replace(`${ruta}?signin=1`);
 }
+
+/**
+ * Login asks for no role: an organizer is whoever creates an event. A new account therefore
+ * opens Events, where Create event lives, instead of an empty task list.
+ */
+const DESTINO_ALTA = "/eventos";
 
 const DIGITOS_CODIGO = 6;
 const CODIGO_VACIO: string[] = Array.from({ length: DIGITOS_CODIGO }, () => "");
@@ -285,7 +290,7 @@ export function Entrar({
       setCanjeando(false);
       if (resultado.guardada && resultado.direccion) {
         setAlertaRegreso(false);
-        entrarListo(resultado.direccion, resultado.pendiente, true);
+        entrarListo(resultado.direccion, resultado.pendiente, true, intencion);
         return;
       }
       setAlertaRegreso(Boolean(resultado.aviso));
@@ -302,14 +307,14 @@ export function Entrar({
    * (safe `next` / return path, else `/` → Events), matching Google. A pending
    * testnet setup never navigates, so the notice stays visible.
    */
-  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean) {
+  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean, intencion: IntencionIngreso = pestana) {
     setDireccion(direccionGuardada);
     setPedirIngreso(false);
     setAviso(null);
     setFase("inicio");
     setAltaPendiente(pendiente);
     if (recargar && !pendiente) {
-      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), "/");
+      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), intencion === "signup" ? DESTINO_ALTA : "/");
       olvidarRetorno();
       window.location.assign(destino);
     }
@@ -358,7 +363,7 @@ export function Entrar({
   }
 
   function irATareas() {
-    const destino = destinoTrasIngreso(retorno ?? leerRetorno());
+    const destino = destinoTrasIngreso(retorno ?? leerRetorno(), pestana === "signup" ? DESTINO_ALTA : undefined);
     olvidarRetorno();
     window.location.assign(destino);
   }
@@ -462,6 +467,12 @@ export function Entrar({
     setAviso(null);
     setOcupado("envio");
     try {
+      // A new email on Sign in fails here instead of after the code is sent. If the check cannot run, the old path still catches it.
+      if (pestana === "signin" && (await cuentaNoExiste(email))) {
+        setAlertaRegreso(true);
+        setAviso(AVISO_SIN_CUENTA);
+        return;
+      }
       const politica = await politicaSegura(cargarPolitica);
       setRecuperacion(politica);
       if (politica.activa && politica.proveedor !== "email") {
@@ -789,7 +800,7 @@ export function Entrar({
         : alertaCodigo
           ? t("entrar.chipError")
           : fase === "codigo"
-            ? t("entrar.chipCodigo")
+            ? t("entrar.chipCodigoLlego")
             : fase === "enlace"
               ? t("entrar.chipEnlace")
               : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
@@ -1011,6 +1022,11 @@ export function Entrar({
                         </p>
                       )
                     ) : null}
+                    {aviso === AVISO_SIN_CUENTA ? (
+                      <button type="button" className="hyto-login-btn is-enlace" onClick={() => elegirPestana("signup")} disabled={ocupado !== null}>
+                        {t("entrar.irCrearCuenta")}
+                      </button>
+                    ) : null}
                     <button
                       type="submit"
                       disabled={ocupado !== null || espera > 0 || demo}
@@ -1051,7 +1067,7 @@ export function Entrar({
                 ) : null}
                 <p className="hyto-login-legal">
                   {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
-                  <Link href="/privacy">{ENLACE_PRIVACIDAD}</Link>
+                  <Link href="/privacy">{t("nav.privacy")}</Link>
                 </p>
               </div>
             ) : null}
@@ -1196,6 +1212,14 @@ export function Entrar({
                           : t(alta ? "entrar.createAccount" : "entrar.signIn")}
                       </span>
                     </button>
+                    {confirmando || fase === "exito" ? (
+                      <div role="status" aria-live="polite" aria-busy="true">
+                        <p className="hyto-login-ayuda">{t(alta ? "entrar.settingUp" : "entrar.signingIn")}</p>
+                        <div className="hyto-login-barra" aria-hidden="true">
+                          <i className="is-indeterminada" />
+                        </div>
+                      </div>
+                    ) : null}
                     <p className="hyto-login-reenvio">
                       {t("entrar.noLlego")}{" "}
                       {espera > 0 ? (
@@ -1264,6 +1288,22 @@ async function politicaSegura(cargar: CargarPolitica): Promise<PoliticaRecuperac
  * Google and Apple return to the tab that left, which kept its intent in sessionStorage. An email
  * link usually opens a new tab, so its intent and return path come from localStorage.
  */
+/** True only when the server says there is no account. Any failure of the check answers false. */
+async function cuentaNoExiste(email: string): Promise<boolean> {
+  try {
+    const respuesta = await fetch("/api/sesion/existe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!respuesta.ok) return false;
+    const cuerpo = (await respuesta.json().catch(() => null)) as { existe?: unknown } | null;
+    return cuerpo?.existe === false;
+  } catch {
+    return false;
+  }
+}
+
 function intencionDelRegreso(): IntencionIngreso {
   const enlace = tomarIntencionEnlace();
   const propia = intencionGuardada();

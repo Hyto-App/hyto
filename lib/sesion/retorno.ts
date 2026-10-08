@@ -28,6 +28,27 @@ export function destinoTrasIngreso(preferido?: string | null, fallback: string =
   return rutaRetornoSegura(preferido) ?? fallback;
 }
 
+function esPasoTipo(ruta: string): boolean {
+  return ruta === "/configuracion/tipo" || ruta.startsWith("/configuracion/tipo?");
+}
+
+/**
+ * After the one-time account-type step. A safe `next` wins. Otherwise Events, where a new
+ * account creates an event.
+ */
+export function destinoTrasTipo(next: unknown): string {
+  const seguro = rutaRetornoSegura(next);
+  if (!seguro || esPasoTipo(seguro)) return "/eventos";
+  return seguro;
+}
+
+/** Sends a signed-in person to choose an account type, keeping a safe page to return to. */
+export function rutaElegirTipo(retorno?: string | null): string {
+  const seguro = rutaRetornoSegura(retorno);
+  if (!seguro || esPasoTipo(seguro)) return "/configuracion/tipo";
+  return `/configuracion/tipo?next=${encodeURIComponent(seguro)}`;
+}
+
 export function guardarRetorno(valor: string, almacenamiento: Pick<Storage, "setItem"> = sessionStorage): void {
   const seguro = rutaRetornoSegura(valor);
   if (!seguro) return;

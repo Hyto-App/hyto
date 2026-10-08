@@ -10,17 +10,17 @@ import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
 import { useRolDemo } from "@/components/sesion/InsigniaDemo";
-import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import type { Clave } from "@/lib/ui/diccionario";
 import { idNavOrganizador, muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 import { destinoVolver } from "@/lib/ui/volver";
 
-type Seccion = "tareas" | "eventos" | "bandeja" | "informe" | "tareasEvento" | "unirme" | "cuenta";
+type Seccion = "tareas" | "eventos" | "bandeja" | "informe" | "tareasEvento" | "unirme" | "cuenta" | "comunidades";
 type IconoNav = "tasks" | "projects" | "plus" | "inbox" | "report";
 
 /** Which section the route belongs to (`/join*` is Join, not Account). */
 export function seccionDe(ruta: string): Seccion | null {
   if (ruta.startsWith("/join")) return "unirme";
+  if (ruta.startsWith("/comunidades")) return "comunidades";
   if (ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas")) return "tareas";
   if (ruta.startsWith("/cuentas") || ruta.startsWith("/configuracion")) return "cuenta";
   if (ruta === "/informe" || /\/informe\/?$/.test(ruta)) return "informe";
@@ -59,11 +59,13 @@ export function Marco({
   children,
   usuario,
   eventosOrganizados = [],
+  mostrarComunidades = false,
 }: {
   children: ReactNode;
   demoHabilitado?: boolean;
   usuario?: UsuarioMarco | null;
   eventosOrganizados?: readonly string[];
+  mostrarComunidades?: boolean;
 }) {
   const t = useTexto();
   const ruta = usePathname();
@@ -72,8 +74,13 @@ export function Marco({
   const organiza = muestraNavOrganizador(eventosOrganizados, demoOrganizador);
   const eventoId = idNavOrganizador(ruta, eventosOrganizados, demoOrganizador);
   const propios = organiza && eventoId ? enlacesOrganizador(eventoId) : [];
-  const trabajo = organiza ? TRABAJO.filter((enlace) => enlace.seccion !== "eventos") : TRABAJO;
-  const movil = propios.length > 0 ? [...propios, ...MOVIL.filter((enlace) => enlace.seccion !== "eventos")] : MOVIL;
+  const enlaceComunidades: EnlaceNavDato | null = mostrarComunidades
+    ? { seccion: "comunidades", href: "/comunidades", clave: "nav.communities", icono: "projects" }
+    : null;
+  const trabajoBase = organiza ? TRABAJO.filter((enlace) => enlace.seccion !== "eventos") : TRABAJO;
+  const movilBase = propios.length > 0 ? [...propios, ...MOVIL.filter((enlace) => enlace.seccion !== "eventos")] : MOVIL;
+  const trabajo = enlaceComunidades ? [...trabajoBase, enlaceComunidades] : trabajoBase;
+  const movil = enlaceComunidades ? [...movilBase, enlaceComunidades] : movilBase;
   const actual = seccionDe(ruta);
   const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento";
   const foco = ruta.startsWith("/revision") || ruta.startsWith("/tareas");
@@ -194,7 +201,7 @@ export function Marco({
             <kbd>Ctrl+K</kbd>
           </button>
           <Link href="/privacy" className="hyto-foot-privacidad">
-            {ENLACE_PRIVACIDAD}
+            {t("nav.privacy")}
           </Link>
           <div className="hyto-brand-acciones hyto-foot-acciones">
             <SelectorIdiomaMenu className="hyto-idioma-marco" />

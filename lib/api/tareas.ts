@@ -9,6 +9,7 @@ import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, ty
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
+import { veredictoAlLeer } from "./revision-vencida";
 
 const PRIVADA = { "cache-control": "private, no-store" };
 
@@ -70,7 +71,7 @@ export function notaPublica(fila: VeredictoFila | null): { nota: number; veredic
 export function notasPublicas(
   fila: VeredictoFila | null,
   evidencia: Pick<EvidenciaFila, "monto" | "fecha"> | null,
-  tarea: Pick<TareaFila, "tope" | "tipo">,
+  tarea: Pick<TareaFila, "tope" | "tipo" | "condicion">,
 ): EtiquetaNota[] {
   if (!fila || fila.origen === "error") return [];
   return etiquetasDesdeVeredicto({
@@ -80,12 +81,13 @@ export function notasPublicas(
     fecha: evidencia?.fecha ?? null,
     tope: tarea.tope,
     tipo: tarea.tipo,
+    condicion: tarea.condicion,
   });
 }
 
 export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>) {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
+  const fila = await veredictoAlLeer(almacen, tarea, evidencia);
   const visible = notaPublica(fila);
   const rechazo = rechazoPublico(tarea);
   const linea = lineaDeEnvio(tarea, evidencia, fila);

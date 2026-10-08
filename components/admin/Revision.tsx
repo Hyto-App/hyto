@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
+import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
@@ -470,6 +471,7 @@ export function Revision({
           <p className="hyto-sub">
             {etiquetaTipo(tarea.tipo, idioma)} · {textoVisible(tarea.miembro, idioma)}
           </p>
+          {tarea.perfilVoluntario ? <FichaVoluntario ficha={tarea.perfilVoluntario} /> : null}
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">

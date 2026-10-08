@@ -57,7 +57,8 @@ test("GET de la revisión no dispara una revisión nueva", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
   const fotos = crearFotosMemoria();
-  await evidenciaReal(almacen, fotos, "stand");
+  const id = await evidenciaReal(almacen, fotos, "stand");
+  await almacen.actualizarEvidencia(id, { creadaEn: new Date().toISOString() });
   const previa = process.env.GROQ_API_KEY;
   process.env.GROQ_API_KEY = "clave-de-prueba";
   let llamadas = 0;
@@ -66,6 +67,8 @@ test("GET de la revisión no dispara una revisión nueva", async () => {
     llamadas += 1;
     return new Response("no", { status: 500 });
   };
+  const previoError = console.error;
+  console.error = () => undefined;
   try {
     const lectura = await leerRevisionHttp(almacen, fotos, "stand", false);
     assert.equal(lectura.status, 200);
@@ -73,7 +76,16 @@ test("GET de la revisión no dispara una revisión nueva", async () => {
     assert.equal(vista.tarea.origen, null);
     assert.equal(vista.tarea.veredicto, null);
     assert.equal(llamadas, 0);
+
+    await almacen.actualizarEvidencia(id, { creadaEn: new Date(Date.now() - 61_000).toISOString() });
+    const vencida = (await (await leerRevisionHttp(almacen, fotos, "stand", false)).json()) as {
+      tarea: { origen: string | null; codigo: string | null };
+    };
+    assert.equal(vencida.tarea.origen, "error");
+    assert.equal(vencida.tarea.codigo, "tiempo");
+    assert.equal(llamadas, 0);
   } finally {
+    console.error = previoError;
     globalThis.fetch = original;
     if (previa === undefined) delete process.env.GROQ_API_KEY;
     else process.env.GROQ_API_KEY = previa;

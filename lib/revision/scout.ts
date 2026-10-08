@@ -3,6 +3,7 @@ import { ajustarParaVision } from "@/lib/evidencia/vision";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, type ContextoEvento } from "./contexto-evento";
+import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
 
@@ -29,6 +30,8 @@ export type ContextoPedido = {
   idioma?: "en" | "es";
   /** Background about the event. Empty leaves the prompt as it was. */
   evento?: ContextoEvento | null;
+  /** The organizer's company description. Empty, or the switch off, leaves the prompt as it was. */
+  organizacion?: string | null;
 };
 
 /** The prompt sent with the photo. The task condition is part of it, so the description answers the request. */
@@ -46,6 +49,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     condicion ? `The organizer asked for: "${condicion}".` : "",
     tarea,
     bloqueContextoEvento(contexto.evento),
+    bloqueOrganizacion(contexto.organizacion),
     "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
     `Reply with JSON only, using exactly these keys: ${CLAVES_LECTURA.join(", ")}.`,
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',

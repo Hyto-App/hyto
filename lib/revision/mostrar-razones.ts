@@ -10,6 +10,7 @@ export function etiquetasDesdeVeredicto(entrada: {
   fecha: string | null;
   tope: string | null;
   tipo?: TipoTarea;
+  condicion?: string | null;
 }): EtiquetaNota[] {
   if (!entrada.textoScout || entrada.origen === "error") return [];
   const separado = separarDescripcion(entrada.textoScout);
@@ -25,6 +26,7 @@ export function etiquetasDesdeVeredicto(entrada: {
     tope: entrada.tope,
     tipo: entrada.tipo,
     lectura: separado.lectura,
+    condicion: entrada.condicion,
   });
 }
 
