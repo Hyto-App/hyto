@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { ESLOGAN } from "@/components/ui/marca/trazos";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
-import { discurso } from "@/lib/ui/discurso";
+import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const poppins = Poppins({
 
 const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0E1024":"#F5F6FA");}catch(e){}})();`;
 
-const DESCRIPCION = discurso.subheadline;
+const DESCRIPCION = DESCRIPCION_PAGINA;
 const TITULO = `Hyto · ${ESLOGAN}`;
 
 export const metadata: Metadata = {

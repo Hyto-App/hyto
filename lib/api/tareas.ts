@@ -123,6 +123,7 @@ export async function tareaConNota(
     etapa: linea.etapa,
     enviadaEn: linea.enviadaEn,
     tipoArchivo: evidencia?.tipoArchivo ?? null,
+    ultimaEvidenciaId: evidencia?.id ?? null,
   };
 }
 

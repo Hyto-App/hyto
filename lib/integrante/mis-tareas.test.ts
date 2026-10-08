@@ -361,7 +361,10 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
     assert.match(texto(), /79%/);
     assert.match(texto(), /Amount over the cap/);
     assert.match(texto(), /Mile read US\$0\.30\. You'll be paid US\$0\.25\./);
-    assert.match(texto(), /The organizer asked for another photo/);
+    assert.match(texto(), /Ana asked for another photo/);
+    assert.match(texto(), /New photo requested/);
+    assert.equal(texto().includes("The organizer asked"), false);
+    assert.equal(texto().includes("Rejected"), false);
     assert.match(texto(), /The banner is cropped/);
   } finally {
     globalThis.fetch = anterior;

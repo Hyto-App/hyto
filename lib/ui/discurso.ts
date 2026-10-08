@@ -51,6 +51,10 @@ export const CLAVES_DISCURSO = [
 
 export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
 
+/** Meta, Open Graph, and Twitter description. The landing speech still names the asset; this line does not. */
+export const DESCRIPCION_PAGINA =
+  "Communities in Latin America funded from afar account for every spend. Lock digital dollars, send a photo of the work or the receipt, and a person releases the payment.";
+
 export const discurso: Record<ClaveDiscurso, string> = {
   sloganLead: "Show the spend,",
   sloganPay: "on the record.",

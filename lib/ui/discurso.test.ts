@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LINEA_OG } from "@/components/ui/marca/trazos";
 import {
   CLAVES_DISCURSO,
+  DESCRIPCION_PAGINA,
   audienciasDiscurso,
   confianzaDiscurso,
   discurso,
@@ -61,4 +63,11 @@ test("el discurso en español usa las mismas claves", () => {
   for (const frase of ["Muestra el gasto,", "Red de práctica.", "Aparta el financiamiento", "Conoce a Mile", "¿Necesito saber de cripto?", "SINPE"]) {
     assert.ok(unido.includes(frase), frase);
   }
+});
+
+test("la descripción de la página no nombra el activo", () => {
+  assert.equal(DESCRIPCION_PAGINA.includes("USDC"), false);
+  assert.match(DESCRIPCION_PAGINA, /digital dollars/);
+  assert.equal(LINEA_OG.includes("USDC"), false);
+  assert.match(discurso.subheadline, /\(USDC\)/);
 });

@@ -48,7 +48,7 @@ export function PantallaRechazada({
     <main className="hyto-page hyto-tarea hyto-rechazada">
       <header className="hyto-tarea-cab">
         <div>
-          <p className="hyto-eyebrow">{t("evidencia.taskRejected")}</p>
+          <p className="hyto-eyebrow">{t("tareas.badgeNewPhoto")}</p>
           <h1 className="hyto-tarea-titulo">{titulo}</h1>
           {evento ? <p className="hyto-tarea-meta">{textoVisible(evento, idioma)}</p> : null}
         </div>
@@ -70,8 +70,16 @@ export function PantallaRechazada({
               <MileAnimada estado="rechazado" tamano={180} />
             </div>
             <div>
-              <span className="hyto-badge hyto-badge-rej">{t("tareas.badgeRejected")}</span>
-              <h2>{cerrado ? t("evidencia.deadlineClosed") : primero ? t("evidencia.missingPoint", { point: primero }) : t("evidencia.organizerAsked")}</h2>
+              <span className="hyto-badge hyto-badge-pend">{t("tareas.badgeNewPhoto")}</span>
+              <h2>
+                {cerrado
+                  ? t("evidencia.deadlineClosed")
+                  : primero
+                    ? t("evidencia.missingPoint", { point: primero })
+                    : nombre
+                      ? t("evidencia.organizerAskedName", { name: nombre })
+                      : t("evidencia.organizerAsked")}
+              </h2>
               <p>{cerrado ? t("evidencia.deadlineTalk") : hayPuntosBien ? `${t("evidencia.retakeFrame")} ${t("evidencia.restFine")}` : t("evidencia.retakeFrame")}</p>
             </div>
           </section>
