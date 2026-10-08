@@ -72,13 +72,72 @@ test("encendido, t5 documenta el evento y t6 puede no aplicar", () => {
     "documentar_evento",
     "otra_o_no_claro",
   ]);
-  assert.match(encendido.t5.criteria.documentar_evento ?? "", /Documenting an event/);
-  assert.match(encendido.t5.criteria.pintar ?? "", /not painting/);
-  assert.match(encendido.t5.instructions, /not painting/);
+  assert.match(encendido.t5.instructions, /elija documentar_evento/i);
+  assert.match(encendido.t5.instructions, /Ejemplo: un letrero/);
+  assert.match(encendido.t5.criteria.documentar_evento ?? "", /Documentar un evento/);
+  assert.match(encendido.t5.criteria.documentar_evento ?? "", /Ejemplo: el letrero de la entrada/);
+  assert.match(encendido.t5.criteria.pintar ?? "", /no es pintar/);
   assert.deepEqual(Object.keys(encendido.t6.criteria), ["terminado", "a_medias", "sin_empezar", "no_aplica", "no_claro"]);
-  assert.match(encendido.t6.criteria.no_aplica ?? "", /Does not apply: it is a scene or an event/);
-  assert.match(encendido.t6.instructions, /pick no_aplica/);
-  assert.equal(encendido.t6.criteria.sin_empezar, apagado.t6.criteria.sin_empezar);
+  assert.match(encendido.t6.instructions, /elija no_aplica/i);
+  assert.match(encendido.t6.instructions, /No elija sin_empezar/);
+  assert.match(encendido.t6.criteria.no_aplica ?? "", /No aplica: es una escena o un evento/);
+  assert.match(encendido.t6.criteria.no_aplica ?? "", /Ejemplo: la foto de grupo con los banners/);
+  assert.match(encendido.t6.criteria.sin_empezar ?? "", /pared vacía/);
+  assert.notEqual(encendido.t6.criteria.sin_empezar, apagado.t6.criteria.sin_empezar);
+});
+
+test("los casos 21 y 07 del examen suben si t6 es no_aplica, y sin empezar sigue en 49", () => {
+  // Saved Laya answers from the 2026-10-08 exam (resumen-casos). s1 is score index 1.
+  // A noul of 0.5 or more is yes. Groq on case 21: faltantes empty, "All requested
+  // elements, including the group and the banners, are present."
+  const caso21 = examen({
+    lugar: "pared_o_superficie",
+    v2: 1,
+    v3: true,
+    v4: true,
+    t5: "otra_o_no_claro",
+    t6: "sin_empezar",
+    t7: false,
+    t8: true,
+    t9: false,
+    t10: 1,
+  });
+  const caso07 = examen({
+    lugar: "no_claro",
+    v2: 1,
+    v3: true,
+    v4: true,
+    t5: "otra_o_no_claro",
+    t6: "sin_empezar",
+    t7: false,
+    t8: false,
+    t9: false,
+    t10: 1,
+  });
+  const condicion21 = "Foto del grupo con los banners";
+  const condicion07 = "Foto del expositor en el auditorio";
+
+  const guardado21 = cerrado(caso21, condicion21);
+  const guardado07 = cerrado(caso07, condicion07);
+  assert.equal(guardado21?.nota, 49);
+  assert.equal(guardado21?.veredicto, "insuficiente");
+  assert.deepEqual(guardado21?.motivos, ["sin_empezar"]);
+  assert.equal(guardado07?.nota, 46);
+  assert.equal(guardado07?.veredicto, "insuficiente");
+  assert.deepEqual(guardado07?.motivos, ["sin_empezar"]);
+
+  const evento21 = cerrado({ ...caso21, t5: "documentar_evento", t6: "no_aplica" }, condicion21);
+  const evento07 = cerrado({ ...caso07, t5: "documentar_evento", t6: "no_aplica" }, condicion07);
+  assert.equal(evento21?.nota, 77);
+  assert.equal(evento21?.veredicto, "parcial");
+  assert.equal(evento21?.motivos, undefined);
+  assert.equal(evento07?.nota, 64);
+  assert.equal(evento07?.veredicto, "parcial");
+  assert.equal((evento07?.motivos ?? []).includes("sin_empezar"), false);
+
+  const sinEmpezar = cerrado({ ...caso21, t5: "pintar", t6: "sin_empezar" }, "Pintar el mural en la pared");
+  assert.equal(sinEmpezar?.nota, 49);
+  assert.deepEqual(sinEmpezar?.motivos, ["sin_empezar"]);
 });
 
 test("no aplica no usa el tope de sin empezar, y una tarea sin empezar sí", () => {
@@ -149,14 +208,18 @@ test("Laya recibe las opciones solo cuando el interruptor está on", async () =>
   assert.equal("no_aplica" in (otro.t6?.criteria ?? {}), false);
 });
 
-function cerrado(respuestas: RespuestasTrabajo) {
+function cerrado(respuestas: RespuestasTrabajo, condicion = PEDIDO) {
   return cerrar(
     "trabajo",
     null,
     { texto: "A group photo with the banners. Everything requested is present.", monto: null, fecha: null },
-    senalesDeTrabajo(respuestas, PEDIDO),
+    senalesDeTrabajo(respuestas, condicion),
     "scout",
   );
+}
+
+function examen(parcial: Pick<RespuestasTrabajo, "lugar" | "v2" | "v3" | "v4" | "t5" | "t6" | "t7" | "t8" | "t9" | "t10">): RespuestasTrabajo {
+  return { v1: "es_lo_pedido", ...parcial };
 }
 
 function entrada(respuestas: RespuestasTrabajo) {

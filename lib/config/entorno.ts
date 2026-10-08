@@ -117,13 +117,6 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
-    nombre: "HYTO_MILE_REQUISITOS",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
-  },
-  {
     nombre: "HYTO_MILE_INTENTOS",
     ambito: "servidor",
     requerida: false,
@@ -135,7 +128,14 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on adds event options to Mile's work questions: documenting an event, and a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+    para: "Exact value on adds Spanish event options to Mile's work questions: documentar_evento, and no_aplica for a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+  },
+  {
+    nombre: "HYTO_MILE_REQUISITOS",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
   },
   {
     nombre: "HYTO_COMUNIDADES",
