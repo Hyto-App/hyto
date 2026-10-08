@@ -72,7 +72,6 @@ export function PanelCuenta() {
     return (
       <div className="grid gap-4">
         <Esqueleto />
-        <PasaporteStellar />
       </div>
     );
   }
@@ -87,7 +86,7 @@ export function PanelCuenta() {
             {t("comunes.tryAgain")}
           </button>
         </section>
-        <PasaporteStellar />
+        <ComoCobrar />
       </div>
     );
   }
@@ -101,8 +100,8 @@ export function PanelCuenta() {
         </p>
       ) : null}
       <Billetera vista={vista} />
+      <ComoCobrar />
       {vista.muestra ? null : <PasskeyCuenta />}
-      <PasaporteStellar />
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />
       <Insignias insignias={vista.orgullo.insignias} />
@@ -129,16 +128,27 @@ function Esqueleto() {
   );
 }
 
-function PasaporteStellar() {
+function ComoCobrar() {
   const t = useTexto();
   return (
     <section className="hyto-card p-5 sm:p-6">
-      <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.pasaporteTitulo")}</h2>
+      <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.cobroTitulo")}</h2>
+      <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.cobroCuerpo")}</p>
+      <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.cobroDespues")}</p>
+    </section>
+  );
+}
+
+function PasaporteStellar() {
+  const t = useTexto();
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.pasaporteTitulo")}</h3>
       <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.pasaporteDetalle")}</p>
       <a className="hyto-btn is-inline mt-5 px-5" href={PASAPORTE_TESTNET} target="_blank" rel="noreferrer">
         {t("cuenta.pasaporteAbrir")}
       </a>
-    </section>
+    </div>
   );
 }
 
@@ -146,22 +156,30 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
   const t = useTexto();
   const idioma = useIdioma();
   const publica = direccionPublica(vista.wallet);
+  const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo, idioma) : "—";
   return (
     <section className="hyto-card p-5 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.wallet")}</h2>
-            {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
-          </div>
-          {publica ? <Direccion direccion={publica} /> : <p className="mt-2 max-w-sm text-sm leading-6">{t("cuenta.signInWallet")}</p>}
-        </div>
-        <div className="min-w-[10rem]">
-          <p className="text-sm text-[var(--suave)]">{t("cuenta.testnetUsdc")}</p>
-          <p className="hyto-amount mt-1 text-3xl">{vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo, idioma) : "—"}</p>
-          <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-medium text-[var(--suave)]">
+          {t("cuenta.saldoHyto")}: <span className="hyto-amount text-3xl text-[var(--tinta)]">{monto}</span>
+        </p>
+        {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
+      <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
+      <details className="mt-6 text-sm">
+        <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
+        <div className="mt-4 grid gap-5">
+          {publica ? (
+            <div>
+              <h3 className="text-sm font-medium">{t("cuenta.idSoporte")}</h3>
+              <Direccion direccion={publica} />
+            </div>
+          ) : (
+            <p className="max-w-prose text-sm leading-6">{t("cuenta.signInWallet")}</p>
+          )}
+          <PasaporteStellar />
+        </div>
+      </details>
     </section>
   );
 }

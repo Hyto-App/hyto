@@ -5,12 +5,15 @@ import { es, leerTexto } from "./diccionario";
 
 const JERGA = /escrow|testnet|trustline|xdr|soroban|friendbot|mainnet/i;
 
-test("la ayuda tiene atajos fijos y de 8 a 10 respuestas", () => {
+test("la ayuda tiene atajos fijos y las respuestas de quien organiza", () => {
   assert.deepEqual(
     ATAJOS.map((atajo) => atajo.id),
     ["tareas", "evidencia", "pago", "faq"],
   );
-  assert.ok(PREGUNTAS.length >= 8 && PREGUNTAS.length <= 10);
+  assert.ok(PREGUNTAS.length >= 8 && PREGUNTAS.length <= 20);
+  for (const id of ["pago", "fondear", "costos", "sinPagar", "orgReembolso"] as const) {
+    assert.equal(PREGUNTAS.includes(id), true);
+  }
   assert.equal(ATAJOS.find((atajo) => atajo.id === "tareas" && "href" in atajo && atajo.href === "/mis-tareas") !== undefined, true);
   assert.equal(ATAJOS.find((atajo) => atajo.id === "pago" && "faq" in atajo && atajo.faq === "pago") !== undefined, true);
 });
@@ -44,4 +47,14 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
     assert.equal(claves.includes(`${id}Q`), true);
     assert.equal(claves.includes(`${id}A`), true);
   }
+  const pago = leerTexto("en", "ayuda.pagoA");
+  assert.match(pago, /cannot send that balance to a bank/);
+  assert.match(pago, /colones/);
+  assert.doesNotMatch(pago, /Mile does not sign/);
+  assert.match(leerTexto("es", "ayuda.pagoA"), /no puede enviar ese saldo a un banco/);
+  assert.match(leerTexto("en", "ayuda.fondearA"), /Lock budget/);
+  assert.match(leerTexto("es", "ayuda.fondearA"), /Bloquear presupuesto/);
+  assert.match(leerTexto("en", "ayuda.costosA"), /does not add a fee/);
+  assert.match(leerTexto("en", "ayuda.sinPagarA"), /no button that returns/);
+  assert.match(leerTexto("en", "ayuda.orgReembolsoA"), /confirm the amount/);
 });
