@@ -1,5 +1,6 @@
 import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { convertirAUsd } from "./divisas";
+import type { CoincideGroq } from "./otra-groq";
 import { leerMontoRecibo } from "./recibo-parser";
 import { leerFechaTrabajo } from "./trabajo-fechas";
 
@@ -36,6 +37,12 @@ export type LecturaEvidencia = {
    * does not show enough. Absent on readings stored before this field existed.
    */
   cumpleReglas?: boolean | null;
+  /**
+   * Whether the photo matches the request, as Groq stated it.
+   * Null when the model did not send si, parcial, or no. Absent on readings stored
+   * before HYTO_MILE_OTRA_CON_GROQ. The prompt asks for it only while that switch is on.
+   */
+  coincide?: CoincideGroq | null;
 };
 
 /** Keys the vision model must return. */
@@ -122,6 +129,7 @@ export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?:
     legible: siNo(crudo.legible),
     faltantes: lista(crudo.faltantes),
     cumpleReglas: siNo(crudo.cumple_reglas),
+    coincide: coincideDe(crudo.coincide),
   };
 }
 
@@ -168,6 +176,7 @@ export function escribirLectura(lectura: LecturaEvidencia): string {
     legible: lectura.legible,
     faltantes: lectura.faltantes,
     cumple_reglas: lectura.cumpleReglas ?? null,
+    ...(lectura.coincide ? { coincide: lectura.coincide } : {}),
   });
 }
 
@@ -197,6 +206,7 @@ export function leerLecturaGuardada(crudo: string, textoCompleto: string): Lectu
     legible: siNo(valor.legible),
     faltantes: lista(valor.faltantes),
     cumpleReglas: siNo(valor.cumple_reglas),
+    coincide: coincideDe(valor.coincide),
   };
 }
 
@@ -272,6 +282,16 @@ function fechaDe(impresa: string, pedido: string | null, pais: string | null): s
     return `${dia}${separador}${mes}${separador}20${anio}`;
   });
   return leerFechaTrabajo(conAnio, { pedido, locale: pais === "US" ? "en-US" : "es-CR" }).elegida;
+}
+
+/** si / parcial / no. Anything else, including an old reading with no key, is null. */
+function coincideDe(valor: unknown): CoincideGroq | null {
+  if (typeof valor !== "string") return null;
+  const limpio = valor.trim().toLowerCase().replace("í", "i");
+  if (limpio === "si" || limpio === "yes") return "si";
+  if (limpio === "parcial" || limpio === "partial") return "parcial";
+  if (limpio === "no") return "no";
+  return null;
 }
 
 function tipoDe(valor: unknown): TipoLectura | null {

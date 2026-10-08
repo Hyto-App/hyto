@@ -6,6 +6,7 @@ import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./cont
 import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
+import { mileOtraConGroqActivo, type EntornoOtraGroq } from "./otra-groq";
 
 export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
 
@@ -35,7 +36,7 @@ export type ContextoPedido = {
 };
 
 /** The prompt sent with the photo. The task condition is part of it, so the description answers the request. */
-export function pedidoVision(contexto: ContextoPedido = {}): string {
+export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq = process.env): string {
   const condicion = contexto.condicion?.replace(/\s+/g, " ").trim().slice(0, MAX_CONDICION) ?? "";
   const tarea =
     contexto.tipoTarea === "reembolso"
@@ -45,7 +46,9 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
         : "";
   const espanol = contexto.idioma === "es";
   const regla = reglaDeEvento(contexto.evento);
+  const pedirCoincide = mileOtraConGroqActivo(env);
   const claves = regla ? [...CLAVES_LECTURA, "cumple_reglas"] : [...CLAVES_LECTURA];
+  if (pedirCoincide) claves.push("coincide");
   return [
     "You read a photo that a volunteer sent as evidence for a task.",
     condicion ? `The organizer asked for: "${condicion}".` : "",
@@ -58,6 +61,9 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
       ? "cumple_reglas: true only when the photo meets every rule inside <event_context>. false when it breaks at least one, for example a receipt from a different kind of store than the rule allows. null only when the photo does not show enough to decide."
       : "",
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
+    pedirCoincide
+      ? 'coincide: "si" when the photo shows what the organizer asked for. "parcial" when it shows part of it and something asked for is missing or unfinished. "no" when the photo is something else, such as a selfie, a blur, or an unrelated scene.'
+      : "",
     (espanol
       ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. If you address the reader, use formal usted, never tú or vos. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
       : "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."),

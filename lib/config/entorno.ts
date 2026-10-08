@@ -131,6 +131,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_OTRA_CON_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on asks Groq for coincide (si, parcial, or no). Laya's something-else cap applies only when Groq does not say the photo matches. Unset or anything else keeps the current prompt and the current cap.",
+  },
+  {
     nombre: "HYTO_COMUNIDADES",
     ambito: "servidor",
     requerida: false,

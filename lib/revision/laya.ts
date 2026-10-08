@@ -11,6 +11,7 @@ import {
   type Pregunta,
 } from "./laya-preguntas";
 import { noulCerca, probabilidadesCerca } from "./margen";
+import { layaPuedeTaparPorOtra, type CoincideGroq, type EntornoOtraGroq } from "./otra-groq";
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
@@ -98,9 +99,17 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
 }
 
 // The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
-export function senalesDeTrabajo(respuestas: RespuestasTrabajo, condicion = ""): Senales {
+export function senalesDeTrabajo(
+  respuestas: RespuestasTrabajo,
+  condicion = "",
+  lectura?: { coincide?: CoincideGroq | null } | null,
+  env?: EntornoOtraGroq,
+): Senales {
   const nota = notaDeTrabajo(respuestas, condicion);
-  const motivos = motivosTrabajo(respuestas);
+  // v1 es_otra_cosa still costs its weight. The 49 cap is separate, and Groq can withhold it.
+  const motivos = motivosTrabajo(respuestas).filter(
+    (motivo) => motivo !== "no_coincide" || layaPuedeTaparPorOtra(lectura, env),
+  );
   return {
     choice: "trabajo",
     noul: nota === 100,
@@ -174,6 +183,8 @@ export async function preguntarLaya(
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
   regla?: string | null,
+  lectura?: { coincide?: CoincideGroq | null } | null,
+  env?: EntornoOtraGroq,
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
@@ -195,7 +206,8 @@ export async function preguntarLaya(
     const cumple = leerRegla(json, reglaLimpia);
     // "otra" used to force 0% before asking whether the photo matches the request.
     // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
-    if (clase === "otra" && respuestas.v1 === "es_otra_cosa") {
+    // With HYTO_MILE_OTRA_CON_GROQ=on, Groq's coincide si/parcial withholds that 0.
+    if (clase === "otra" && respuestas.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(lectura, env)) {
       return {
         choice: "otra",
         noul: false,
@@ -205,7 +217,7 @@ export async function preguntarLaya(
       };
     }
     return {
-      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido), cumple),
+      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido, lectura, env), cumple),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,
