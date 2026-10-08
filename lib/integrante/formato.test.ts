@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea } from "./formato";
+import { acortarDireccion, explicarNeto, explicarPago, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -45,7 +45,7 @@ test("montos y fechas del integrante", () => {
       "en",
       limite,
     ),
-    "US$12.48 · Limit US$15",
+    "US$12.44 (US$12.48 minus a US$0.04 fee) · Limit US$15",
   );
   assert.equal(
     lineaMontoTarea({ estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }, "en", limite).includes("Up to"),
@@ -55,10 +55,17 @@ test("montos y fechas del integrante", () => {
     lineaMontoTarea({ estado: "en revisión", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }, "en", limite),
     "Up to US$15",
   );
-  assert.equal(lineaMontoTarea({ estado: "pagado", tipo: "trabajo", monto: "20", tope: null }, "en", limite), "US$20");
+  assert.equal(
+    lineaMontoTarea({ estado: "pagado", tipo: "trabajo", monto: "20", tope: null }, "en", limite),
+    "US$19.94 (US$20 minus a US$0.06 fee) · Limit US$20",
+  );
+  assert.equal(
+    lineaMontoTarea({ estado: "pagado", tipo: "trabajo", monto: "2", tope: null }, "en", limite),
+    "US$1.99 (US$2 minus a US$0.01 fee) · Limit US$2",
+  );
   assert.equal(
     lineaMontoTarea({ estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "15" }, "en", limite),
-    "US$15",
+    "US$14.96 (US$15 minus a US$0.04 fee) · Limit US$15",
   );
   assert.equal(
     lineaMontoTarea(
@@ -66,9 +73,18 @@ test("montos y fechas del integrante", () => {
       "es",
       (monto) => `Límite ${monto}`,
     ),
-    "US$12,48 · Límite US$15",
+    "US$12,44 (US$12,48 menos comisión de US$0,04) · Límite US$15",
   );
   assert.equal(acortarDireccion("GABCDE1234567890WXYZ"), "GABCDE…WXYZ");
+});
+
+test("el neto pagado dice el bruto y la comisión redondeada", () => {
+  assert.equal(explicarNeto("12.44256"), "US$12.44 (US$12.48 minus a US$0.04 fee)");
+  assert.equal(explicarNeto("1.994", "es"), "US$1,99 (US$2 menos comisión de US$0,01)");
+  assert.equal(
+    explicarPago({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" })?.frase,
+    "US$12.44 (US$12.48 minus a US$0.04 fee)",
+  );
 });
 
 test("una hora se muestra en Costa Rica (UTC-6), no en UTC-7", () => {

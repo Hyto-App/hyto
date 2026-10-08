@@ -36,10 +36,11 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
   try {
     await montar(createElement(PantallaPagada, { tarea, titulo: "Team meal" }));
     await esperar(() => texto().includes("You received"));
-    assert.match(texto(), /\+12\.44256 USDC/);
+    assert.match(texto(), /\+US\$12\.44/);
     assert.match(texto(), /You received/);
-    assert.match(texto(), /12\.44256 USDC/);
-    assert.equal(texto().includes("15 USDC"), false);
+    assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
+    assert.equal(texto().includes("US$15"), false);
+    assert.equal(texto().includes("12.44256"), false);
   } finally {
     await desmontar();
   }

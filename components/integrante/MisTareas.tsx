@@ -13,8 +13,8 @@ import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
+import { explicarPago } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
-import { montoUsdc } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
@@ -72,14 +72,9 @@ function Monto({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
-    const recibido = montoUsdc(tarea);
-    if (!recibido) return null;
-    return (
-      <span className="hyto-monto">
-        {recibido}
-        <small>USDC</small>
-      </span>
-    );
+    const pago = explicarPago(tarea, idioma);
+    if (!pago) return null;
+    return <span className="hyto-monto">{pago.corto}</span>;
   }
   const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
   return (
@@ -420,7 +415,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       const puntos = puntosDeCondicion(tarea.condicion).length;
                       const vence = tarea.venceEn ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
                       const reintento = reintentoEnLista(tarea, reloj, vistosRef.current.get(tarea.id));
-                      const recibido = tarea.estado === "pagado" ? montoUsdc(tarea) : "";
+                      const recibido = tarea.estado === "pagado" ? (explicarPago(tarea, idioma)?.frase ?? "") : "";
                       const documental = esMimeDocumental(tarea.tipoArchivo);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
@@ -481,7 +476,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {recibido ? (
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: `${recibido} USDC` })}</span>
+                              <span>{t("tareas.paidNote", { amount: recibido })}</span>
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (

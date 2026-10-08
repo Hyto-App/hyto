@@ -42,7 +42,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -50,6 +50,20 @@ import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
+
+function frasePagada(tarea: TareaAdmin, idioma: "en" | "es"): string {
+  const detalle = detalleMonto(tarea);
+  const frase = explicarPago(
+    {
+      tipo: tarea.tipo,
+      monto: tarea.monto,
+      tope: tarea.tope,
+      montoConfirmado: tarea.tipo === "reembolso" ? detalle.cifra : null,
+    },
+    idioma,
+  )?.frase;
+  return frase || formatearMonto(detalle.cifra, idioma);
+}
 
 export function Revision({
   tareaId,
@@ -500,7 +514,11 @@ export function Revision({
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
-          <p className="hyto-amount text-2xl">{montoDeTarea(tarea, idioma)}</p>
+          <p className="hyto-amount text-2xl">
+            {tarea.tipo === "reembolso"
+              ? t("eventos.limit", { amount: formatearMonto(tarea.tope ?? tarea.monto, idioma) })
+              : formatearMonto(tarea.monto, idioma)}
+          </p>
         </div>
       </header>
       {sesionVencida ? <AvisoSesion /> : null}
@@ -730,7 +748,9 @@ export function Revision({
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
+                  {t("revision.setsAside", {
+                    monto: formatearMonto(tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto, idioma),
+                  })}
                 </p>
                 {esperaOtraFoto ? (
                   <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">
@@ -845,7 +865,7 @@ export function Revision({
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: formatearMonto(detalleMonto(tarea).cifra, idioma) })}</p>
+              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: frasePagada(tarea, idioma) })}</p>
               {pago ? (
                 <a href={pago} className="hyto-btn-line is-inline px-5">
                   {t("pago.viewChain")}

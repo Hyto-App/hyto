@@ -42,7 +42,7 @@ test("la bandeja deja ver una tarea pagada y abrir su revisión", async () => {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
     await esperar(() => texto().includes("Team meal") && texto().includes("Nothing to approve"));
     assert.match(texto(), /Paid tasks/);
-    assert.match(texto(), /Paid · US\$12\.48 · Limit US\$15/);
+    assert.match(texto(), /Paid · US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\) · Limit US\$15/);
     assert.equal(texto().includes("Up to US$15"), false);
     const enlace = document.querySelector('a[href="/revision/comida"]');
     assert.equal(enlace?.textContent?.includes("Open review"), true);
