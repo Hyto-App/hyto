@@ -5,6 +5,12 @@ export const usuarios = pgTable("usuarios", {
   email: text("email").notNull().unique(),
   nombre: text("nombre").notNull(),
   rol: text("rol").notNull(),
+  // Account type. Null until the person chooses. Only read when HYTO_TIPO_CUENTA is on.
+  tipoCuenta: text("tipo_cuenta"),
+  empresaNombre: text("empresa_nombre"),
+  empresaActividad: text("empresa_actividad"),
+  empresaDescripcion: text("empresa_descripcion"),
+  empresaFoto: text("empresa_foto"),
 });
 
 // Quien crea el proyecto queda en organizador_id. El rol global de usuarios

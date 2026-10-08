@@ -4,6 +4,8 @@ import { proyectosVisibles, puedeVerTarea, visorSesion, type Visor } from "@/lib
 import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
+import { faltaTipoCuenta } from "@/lib/api/tipo-cuenta";
+import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { sesionEsDemo } from "./demo";
 import { urlSignin } from "./retorno";
 import { leerSesionActual } from "./vista";
@@ -23,11 +25,15 @@ export async function esPrefetch(): Promise<boolean> {
   return marcas.split(/\s+/).some((marca) => marca === "1" || marca.includes("prefetch"));
 }
 
-export async function exigirPagina(retorno?: string): Promise<SesionFila> {
+export async function exigirPagina(retorno?: string, opciones?: { omitirTipo?: boolean }): Promise<SesionFila> {
   const sesion = await leerSesionActual();
   if (!sesion) {
     if (await esPrefetch()) notFound();
     redirect(urlSignin(retorno));
+  }
+  if (!opciones?.omitirTipo && tipoCuentaActivo() && !sesionEsDemo(sesion)) {
+    const almacen = await almacenNeon();
+    if (almacen && (await faltaTipoCuenta(almacen, sesion.usuarioId))) redirect("/configuracion/tipo");
   }
   return sesion;
 }

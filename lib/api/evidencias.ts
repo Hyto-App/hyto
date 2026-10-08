@@ -22,6 +22,7 @@ import type { Idioma } from "@/lib/ui/idioma";
 import type { ContextoEvento } from "@/lib/revision/contexto-evento";
 import { accesoEvidencia, type Visor } from "./alcance";
 import { contextoParaRevision } from "./contexto-evento";
+import { organizacionDeEvento } from "./tipo-cuenta";
 import { tareaCerrada } from "./etapa";
 import { baseNoLista, json, sinFotos } from "./json";
 
@@ -276,7 +277,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const intento = mileActivo ? fotosPrevias + 1 : undefined;
     const idioma = idiomaDePedido(request);
     const evento = deps.revisarTarea ? null : await contextoParaRevision(deps.almacen, tarea.proyectoId);
-    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento }));
+    const organizacion = deps.revisarTarea ? null : await organizacionDeEvento(deps.almacen, tarea.proyectoId);
+    const revisarAhora = deps.revisarTarea ?? ((tareaActual, fotoActual) => revisarPorDefecto(tareaActual, fotoActual, { intento, idioma, evento, organizacion }));
     const trabajo = revisarAhora(tarea, leida).then((resultado) => aplicarCopia(resultado, cerca));
     const entorno = contextoDesdeEntorno();
     const textual = esEvidenciaTextual({ tipo, bytes });
@@ -297,11 +299,12 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
 async function revisarPorDefecto(
   tarea: TareaFila,
   foto: Awaited<ReturnType<Fotos["leer"]>>,
-  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null },
+  extra?: { intento?: number; idioma: Idioma; evento?: ContextoEvento | null; organizacion?: string | null },
 ): Promise<ResultadoRevision> {
   return revisar(tarea, foto, {
     ...contextoDesdeEntorno(),
     evento: extra?.evento,
+    organizacion: extra?.organizacion,
     intento: extra?.intento,
     idioma: extra?.idioma,
   });

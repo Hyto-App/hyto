@@ -7,6 +7,7 @@ import type {
   ResultadoCanje,
   SesionFila,
   TareaFila,
+  TipoCuentaGuardado,
   Usuario,
   VeredictoFila,
 } from "./tipos";
@@ -33,8 +34,19 @@ export type CambioTarea = Partial<
 export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
+  leerUsuario(id: string): Promise<Usuario | null>;
   insertarUsuario(usuario: Usuario): Promise<void>;
   guardarUsuario(usuario: Usuario): Promise<void>;
+  guardarTipoCuenta(
+    id: string,
+    cambio: {
+      tipoCuenta: TipoCuentaGuardado;
+      empresaNombre: string | null;
+      empresaActividad: string | null;
+      empresaDescripcion: string | null;
+      empresaFoto: string | null;
+    },
+  ): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
   listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;
