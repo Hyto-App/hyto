@@ -8,6 +8,7 @@ import {
   AVISO_GENERICO,
   AVISO_GOOGLE_BLOQUEADO,
   AVISO_GOOGLE_CERRADO,
+  AVISO_ORIGEN_CAVOS,
   AVISO_RED,
   avisoDeIngreso,
   correoValido,
@@ -63,6 +64,17 @@ test("red, ventana de Google y configuración", () => {
   assert.equal(avisoDeIngreso(new Error("auth/popup-blocked")).texto, AVISO_GOOGLE_BLOQUEADO);
   assert.equal(avisoDeIngreso(new Error("Falta NEXT_PUBLIC_CAVOS_APP_ID")).texto, AVISO_CONFIG);
   assert.equal(avisoDeIngreso(new Error("Sign-in is waiting for the Cavos app id.")).texto, AVISO_CONFIG);
+});
+
+test("un origen que Cavos no permite no se dice como ingreso vencido ni filtra el host", () => {
+  const crudo = "kit/vault: add https://preview.example to this app's allowed web origins in the Cavos dashboard";
+  const aviso = avisoDeIngreso(new Error(crudo));
+  assert.equal(aviso.texto, AVISO_ORIGEN_CAVOS);
+  assert.equal(aviso.esperaSegundos, null);
+  assert.equal(aviso.texto.includes("preview.example"), false);
+  assert.equal(aviso.texto.includes("kit/vault"), false);
+  assert.equal(aviso.texto.includes("expired"), false);
+  assert.equal(avisoDeIngreso(new Error("kit/vault: https://vault.example did not load")).texto, AVISO_GENERICO);
 });
 
 test("un fallo desconocido no filtra el SDK", () => {

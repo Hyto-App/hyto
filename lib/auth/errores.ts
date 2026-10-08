@@ -2,6 +2,13 @@ export const ESPERA_TRAS_ENVIO = 20;
 const ESPERA_SI_FALTA = 20;
 
 export const AVISO_GENERICO = "Could not sign in. Try again.";
+/**
+ * `@cavos/kit` 0.2.5 posts this when the vault iframe rejects the parent origin.
+ * The check is an exact list (`origins.includes(origin)`), so a preview host is
+ * refused even when production is allowed. The raw text includes that host.
+ */
+export const AVISO_ORIGEN_CAVOS =
+  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.";
 export const AVISO_CODIGO_INVALIDO = "That code does not match. Check your email and try again.";
 export const AVISO_CODIGO_VENCIDO = "That code expired. Request another one.";
 export const AVISO_RED = "No connection. Check the network and try again.";
@@ -59,6 +66,7 @@ export function avisoDeIngreso(error: unknown): AvisoIngreso {
   if (esVencido(detalle)) return fijo(AVISO_CODIGO_VENCIDO);
   if (esCodigoInvalido(detalle)) return fijo(AVISO_CODIGO_INVALIDO);
   if (esCorreoInvalido(detalle)) return fijo(AVISO_CORREO);
+  if (esOrigenCavos(texto)) return fijo(AVISO_ORIGEN_CAVOS);
   return fijo(AVISO_GENERICO);
 }
 
@@ -191,4 +199,9 @@ export function esMetodoRecuperacion(texto: string): boolean {
 /** `kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.` */
 export function esSinRespaldo(texto: string): boolean {
   return /no sealed recovery/i.test(texto);
+}
+
+/** `kit/vault: add https://… to this app's allowed web origins in the Cavos dashboard` */
+export function esOrigenCavos(texto: string): boolean {
+  return /kit\/vault:\s*add\s+\S+\s+to this app's allowed web origins in the Cavos dashboard/i.test(texto);
 }

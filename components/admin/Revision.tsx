@@ -34,6 +34,7 @@ import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
   AVISO_REINGRESO,
+  AVISO_SIN_CUENTA_FIRMA,
   ErrorFirmaCliente,
   firmarPasos,
   mensajeFirmaVisible,
@@ -318,7 +319,7 @@ export function Revision({
   async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal) {
     if (paso || !tarea) return;
     if (!wallet) {
-      publicarAviso(AVISO_REINGRESO);
+      publicarAviso(AVISO_SIN_CUENTA_FIRMA);
       return;
     }
     if (acciones[0] !== "desplegar" && !contrato) {

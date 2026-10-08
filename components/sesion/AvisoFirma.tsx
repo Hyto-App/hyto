@@ -3,14 +3,14 @@
 import { useState, type MouseEvent } from "react";
 import { GuiaPasskey } from "@/components/sesion/GuiaPasskey";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
-import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/lib/escrow/firmarCliente";
 import { AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA } from "@/lib/integrante/avisosUsdc";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { rutaRetornoSegura, urlSignin } from "@/lib/sesion/retorno";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { mensajeClaro } from "@/lib/ui/claro";
 
-const REINGRESO = new Set([AVISO_REINGRESO, AVISO_ENTRAR, AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA]);
+const REINGRESO = new Set([AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA, AVISO_ENTRAR, AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA]);
 
 type Props = {
   mensaje: string;

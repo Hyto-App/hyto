@@ -303,6 +303,36 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
   }
 });
 
+test("sin cuenta para firmar, Lock budget no dice que el ingreso venció y no llama a la firma", async () => {
+  const anterior = globalThis.fetch;
+  const llamadas: string[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    llamadas.push(`${method} ${url}`);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: null, wallet: null });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Lock budget"));
+    await pulsar("Lock budget");
+    await confirmarDialogo();
+    await esperar(() => texto().includes("no account to sign with"));
+    assert.match(texto(), /Sign in again on this site/);
+    assert.equal(texto().includes("Your sign-in expired"), false);
+    assert.equal(llamadas.some((llamada) => llamada.startsWith("POST /api/firma")), false);
+    const enlace = document.querySelector("[role='alert'] a");
+    assert.equal(enlace?.textContent, "Sign in again");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("lock budget shows the payout error and does not claim USDC left an escrow", async () => {
   const aviso = "The volunteer's payout account isn't ready yet. Ask them to open the task in Hyto and tap Get ready to be paid.";
   const anterior = globalThis.fetch;

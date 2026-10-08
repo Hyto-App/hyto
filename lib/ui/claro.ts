@@ -4,7 +4,7 @@ import {
   AVISO_PASSKEY_SIN_CLAVE,
   AVISO_PASSKEY_SIN_SOPORTE,
 } from "@/lib/auth/avisosPasskey";
-import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/lib/escrow/firmarCliente";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -21,7 +21,7 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
-import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
+import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_ORIGEN_CAVOS, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED, esOrigenCavos } from "@/lib/auth/errores";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
@@ -81,6 +81,8 @@ const EXACTO: Record<string, Clave> = {
   "Your Cavos session expired.": "errores.reingreso",
   "Your Cavos session closed. Sign in again to sign.": "errores.reingreso",
   [AVISO_REINGRESO]: "errores.reingreso",
+  [AVISO_SIN_CUENTA_FIRMA]: "errores.sinCuentaFirma",
+  [AVISO_ORIGEN_CAVOS]: "errores.origenCavos",
   "Cavos is not configured for sign-in.": "errores.sinConfig",
   "Cavos is not configured.": "errores.sinConfig",
   "Accounts are waiting for the Cavos app id.": "errores.cuentasNo",
@@ -284,6 +286,7 @@ const SALDO_NO_CUBRE = /^Your balance does not cover US\$([\d.]+) \(this amount 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
   if (!limpio) return limpio;
+  if (esOrigenCavos(limpio)) return texto(idioma, "errores.origenCavos");
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
   const saldo = SALDO_NO_CUBRE.exec(limpio);

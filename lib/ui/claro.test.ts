@@ -36,6 +36,12 @@ test("technical payment errors tell the person what to do", () => {
   );
   assert.equal(mensajeClaro("Sign in to continue."), "Sign in to continue.");
   assert.equal(mensajeClaro("Your Cavos session expired."), AVISO_REINGRESO);
+  const origen = mensajeClaro(
+    "kit/vault: add https://preview.example to this app's allowed web origins in the Cavos dashboard",
+  );
+  assert.match(origen, /signing window/);
+  assert.equal(origen.includes("preview.example"), false);
+  assert.equal(origen.includes("expired"), false);
   assert.equal(mensajeClaro("  "), "");
   assert.equal(mensajeClaro("Could not submit the payment.", "es"), "Ese paso no se completó. Intenta de nuevo.");
   assert.equal(
