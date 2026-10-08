@@ -1,8 +1,5 @@
 -- Communities. Additive only. Do not apply this file from an agent.
--- Do not run it against Neon from CI. The operator applies it on a Neon
--- test branch first, then on production just before HYTO_COMUNIDADES=on.
--- Numbered 0010. Account type is 0011, the volunteer profile is 0012,
--- and the bulletin (0013) references comunidades, so this file comes first.
+-- Do not run it against Neon from CI. Josué runs `npm run db:migrar` before HYTO_COMUNIDADES=on.
 -- With the switch off, the app does not read these tables or proyectos.comunidad_id.
 
 CREATE TABLE IF NOT EXISTS comunidades (

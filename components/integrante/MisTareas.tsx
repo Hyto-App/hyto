@@ -25,33 +25,10 @@ import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { nombreParaMostrar } from "@/lib/sesion/nombre";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
-import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
 
 type Filtro = "all" | EstadoTarea;
-
-function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
-  const idioma = useIdioma();
-  const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
-  const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
-  if (!prioridad && !dificultad) return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      {prioridad ? (
-        <span className="hyto-pill hyto-pill-ok">
-          <i className="hyto-dot" aria-hidden="true" />
-          {prioridad}
-        </span>
-      ) : null}
-      {dificultad ? (
-        <span className="hyto-pill hyto-pill-muted">
-          <i className="hyto-dot" aria-hidden="true" />
-          {dificultad}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 function Monto({ tarea }: { tarea: Tarea }) {
   const idioma = useIdioma();
@@ -263,7 +240,6 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
     { id: "pagado", etiqueta: t("tareas.filterDone"), total: cuenta("pagado") },
   ];
   const ordenes: { id: OrdenTareas; etiqueta: string }[] = [
-    { id: "prioridad", etiqueta: t("tareas.sortPriority") },
     { id: "mayor", etiqueta: t("tareas.sortHighest") },
     { id: "defecto", etiqueta: t("tareas.sortDefault") },
   ];
@@ -422,7 +398,6 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               </span>
                             ) : null}
                           </div>
-                          <InsigniasClasificacion tarea={tarea} />
                           {mejores.has(tarea.id) ? (
                             <p className="mt-2">
                               <span className="hyto-pill hyto-pill-ok">
