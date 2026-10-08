@@ -16,6 +16,13 @@ import {
   CODIGO_USDC_SIN_XLM,
 } from "@/lib/integrante/avisosUsdc";
 import {
+  AVISO_FEE_AUSENTE,
+  AVISO_FEE_DISTINTA,
+  AVISO_FEE_HORIZON,
+  AVISO_FEE_ILEGIBLE,
+  AVISO_FEE_SIN_TRUSTLINE,
+} from "@/lib/escrow/fee";
+import {
   AVISO_HORIZON_RECEPTOR,
   AVISO_RECEPTOR_NO_LISTO,
   CODIGO_HORIZON_RECEPTOR,
@@ -258,10 +265,15 @@ const EXACTO: Record<string, Clave> = {
   "The submit does not match this task's escrow, so it was not marked paid.": "avisos.noContratoPago",
   "The submit was not confirmed, so it was not marked paid.": "avisos.noConfirmado",
   "The submit succeeded and there is no hash to save the payment.": "avisos.sinHash",
+  [AVISO_FEE_AUSENTE]: "errores.feeSinConfig",
+  [AVISO_FEE_DISTINTA]: "errores.feeDistinta",
+  [AVISO_FEE_SIN_TRUSTLINE]: "errores.feeSinTrustline",
+  [AVISO_FEE_HORIZON]: "errores.feeHorizon",
+  [AVISO_FEE_ILEGIBLE]: "errores.feeIlegible",
 };
 
 const PATRONES: readonly (readonly [RegExp, Clave])[] = [
-  [/HYTO_ESCROW_|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
+  [/HYTO_ESCROW_|HYTO_TRUSTLESS_FEE|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
   [/Trustless Work did not authorize/i, "errores.pagosNoDisponibles"],
   [/already released|already paid/i, "errores.yaPagada"],
   [/trustline|receiver/i, "errores.listoCobro"],
@@ -343,9 +355,21 @@ export function tituloFallo(caja: CajaFallo, idioma: Idioma = "en"): string {
   return texto(idioma, caja === "bloqueo" ? "pago.budgetNotLocked" : "pago.paymentFailed");
 }
 
+const DETALLE_PROPIO: Clave[] = [
+  "errores.saldoRed",
+  "errores.feeSinConfig",
+  "errores.feeDistinta",
+  "errores.feeSinTrustline",
+  "errores.feeHorizon",
+  "errores.feeIlegible",
+];
+
 export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  // A pay step with no escrow balance uses the generic line. A missing network fee is a different problem.
-  if (caja === "pago" && aviso !== texto(idioma, "errores.saldoRed")) return texto(idioma, "pago.noUsdcLeft");
+  // A pay step with no escrow balance uses the generic line. A missing network fee, or the
+  // protocol-fee account, is a different problem and keeps its own words.
+  if (caja === "pago" && !DETALLE_PROPIO.some((clave) => aviso === texto(idioma, clave))) {
+    return texto(idioma, "pago.noUsdcLeft");
+  }
   return aviso;
 }
 

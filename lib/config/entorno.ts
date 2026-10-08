@@ -104,6 +104,12 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Cuenta G admin del escrow v2. El contrato rechaza que coincida con cualquier otro rol, incluida la plataforma.",
   },
   {
+    nombre: "HYTO_TRUSTLESS_FEE",
+    ambito: "servidor",
+    requerida: false,
+    para: "Cuenta G que debe recibir el 0,3 % de Trustless Work al liberar. El servidor la fija; una liberación con otra dirección se rechaza. Sin ella, o sin trustline de USDC en testnet, liberar responde un error claro y el resto de los pagos sigue.",
+  },
+  {
     nombre: HOST_BASE_PRODUCCION,
     ambito: "servidor",
     requerida: false,
