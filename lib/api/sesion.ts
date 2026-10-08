@@ -4,8 +4,10 @@ import type { Almacen } from "@/lib/db/almacen";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
-import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
+import { correoDelToken, walletDeClaims, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
+import { verificarJwt } from "@/lib/sesion/jwt";
+import { emitirRetoWallet, firmaDesdeBase64, verificarPruebaWallet } from "@/lib/sesion/prueba-wallet";
 import { baseNoLista, json, jsonCookies } from "./json";
 
 const PRIVADA = { "cache-control": "private, no-store" };
@@ -96,6 +98,39 @@ export async function cerrarSesionHttp(request: Request, almacen: Almacen): Prom
   return jsonCookies({ ok: true }, 200, [encabezadoCookieCerrada(), encabezadoAlta(false)]);
 }
 
+const AVISO_CUENTA = "That doesn't look like a payout account. Sign in again.";
+const AVISO_DISTINTA = "That account doesn't match this sign-in. Sign in again.";
+const AVISO_FIRMAR = "Sign this account to prove you control it.";
+const AVISO_FIRMA = "That signature does not match this account. Sign in again.";
+const AVISO_RETO = "This wallet check expired. Sign in again.";
+const AVISO_SECRETO = "Wallet checks are not configured.";
+
+export async function retoWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
+  const token = leerCookie(request, COOKIE_SESION);
+  if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ aviso: "The body is not JSON." }, 400);
+  }
+  const crudo = body && typeof body === "object" ? (body as { wallet?: unknown }).wallet : undefined;
+  if (typeof crudo !== "string" || !esCuenta(crudo.trim())) return json({ aviso: AVISO_CUENTA }, 400);
+  const wallet = crudo.trim();
+  try {
+    const sesion = await almacen.leerSesion(token);
+    if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
+    const guardada = (sesion.wallet ?? "").trim();
+    if (guardada && esCuenta(guardada) && guardada !== wallet) return json({ aviso: AVISO_DISTINTA }, 400);
+    if (guardada === wallet) return json({ listo: true, wallet }, 200);
+    const reto = emitirRetoWallet(token, wallet);
+    if (!reto) return json({ aviso: AVISO_SECRETO }, 503);
+    return json({ mensaje: reto.mensaje, token: reto.token }, 200);
+  } catch {
+    return baseNoLista();
+  }
+}
+
 export async function fijarWalletHttp(request: Request, almacen: Almacen): Promise<Response> {
   const token = leerCookie(request, COOKIE_SESION);
   if (!token) return json({ aviso: AVISO_ENTRAR }, 401);
@@ -105,32 +140,44 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
   } catch {
     return json({ aviso: "The body is not JSON." }, 400);
   }
-  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; token?: unknown }) : {};
+  const datos = body && typeof body === "object" ? (body as { wallet?: unknown; reto?: unknown; firma?: unknown; ingreso?: unknown; token?: unknown }) : {};
   const crudo = datos.wallet;
-  if (typeof crudo !== "string" || !esCuenta(crudo.trim())) {
-    return json({ aviso: "That doesn't look like a payout account. Sign in again." }, 400);
-  }
+  if (typeof crudo !== "string" || !esCuenta(crudo.trim())) return json({ aviso: AVISO_CUENTA }, 400);
+  const wallet = crudo.trim();
   try {
     const sesion = await almacen.leerSesion(token);
     if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401);
-    const wallet = crudo.trim();
-    // Límite: Cavos firma en el dispositivo y el JWT de login no trae la G….
-    // Si ese token (o el que acompaña este pedido) sí trae una cuenta, tiene que ser esta.
-    // Si no trae ninguna, se guarda la dirección que manda el cliente. Eso no prueba
-    // que controle la clave. El envío no usa este texto como autorización:
-    // la cuenta que firma tiene que salir del XDR.
-    const tokenIngreso = typeof datos.token === "string" ? datos.token.trim() : "";
-    const delIngreso = tokenIngreso ? walletDelToken(tokenIngreso) : null;
-    if (delIngreso && delIngreso !== wallet) {
-      return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
-    }
     const guardada = (sesion.wallet ?? "").trim();
-    if (guardada && esCuenta(guardada) && guardada !== wallet) {
-      return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
+    if (guardada && esCuenta(guardada) && guardada !== wallet) return json({ aviso: AVISO_DISTINTA }, 400);
+    if (guardada === wallet) return json({ wallet }, 200);
+    const ingreso = texto(datos.ingreso) || texto(datos.token);
+    if (ingreso) {
+      const claims = await verificarJwt(ingreso);
+      const nombrada = claims ? walletDeClaims(claims) : null;
+      if (nombrada && nombrada !== wallet) return json({ aviso: AVISO_DISTINTA }, 400);
+      if (nombrada === wallet) {
+        await almacen.guardarWallet(token, wallet);
+        return json({ wallet }, 200);
+      }
+    }
+    const reto = texto(datos.reto);
+    const firma = texto(datos.firma);
+    if (!reto || !firma) return json({ aviso: AVISO_FIRMAR }, 400);
+    const bytes = firmaDesdeBase64(firma);
+    if (!bytes) return json({ aviso: AVISO_FIRMA }, 400);
+    const prueba = verificarPruebaWallet(token, wallet, reto, bytes);
+    if (!prueba.ok) {
+      if (prueba.motivo === "secreto") return json({ aviso: AVISO_SECRETO }, 503);
+      if (prueba.motivo === "vencido") return json({ aviso: AVISO_RETO }, 400);
+      return json({ aviso: AVISO_FIRMA }, 400);
     }
     await almacen.guardarWallet(token, wallet);
     return json({ wallet }, 200);
   } catch {
     return baseNoLista();
   }
+}
+
+function texto(valor: unknown): string {
+  return typeof valor === "string" ? valor.trim() : "";
 }

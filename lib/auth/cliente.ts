@@ -57,16 +57,51 @@ export async function conectarStellar(auth: AuthProvider, opciones: OpcionesCone
   });
 }
 
-export async function fijarWallet(direccion: string): Promise<{ ok: true } | { ok: false; aviso: string }> {
+type FirmaMensaje = Uint8Array | { signature: Uint8Array };
+
+export async function fijarWallet(
+  direccion: string,
+  firmar?: (mensaje: string) => Promise<FirmaMensaje>,
+): Promise<{ ok: true } | { ok: false; aviso: string }> {
+  const reto = await fetch("/api/sesion/wallet/reto", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ wallet: direccion }),
+  });
+  const pedido = (await reto.json().catch(() => null)) as { aviso?: unknown; listo?: unknown; mensaje?: unknown; token?: unknown } | null;
+  if (!reto.ok) return { ok: false, aviso: avisoDe(pedido) };
+  if (pedido?.listo === true) return { ok: true };
+  const mensaje = typeof pedido?.mensaje === "string" ? pedido.mensaje : "";
+  const token = typeof pedido?.token === "string" ? pedido.token : "";
+  if (!mensaje || !token) return { ok: false, aviso: "Could not save this session's wallet." };
+  if (!firmar) return { ok: false, aviso: "Sign this account to prove you control it." };
+  let firma: Uint8Array;
+  try {
+    const firmado = await firmar(mensaje);
+    firma = firmado instanceof Uint8Array ? firmado : firmado.signature;
+  } catch {
+    return { ok: false, aviso: "Could not sign the wallet check. Sign in again." };
+  }
   const respuesta = await fetch("/api/sesion/wallet", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ wallet: direccion }),
+    cache: "no-store",
+    body: JSON.stringify({ wallet: direccion, reto: token, firma: firmaEnBase64(firma) }),
   });
   if (respuesta.ok) return { ok: true };
   const json = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
-  const aviso = json && typeof json.aviso === "string" ? json.aviso : "Could not save this session's wallet.";
-  return { ok: false, aviso };
+  return { ok: false, aviso: avisoDe(json) };
+}
+
+function avisoDe(json: { aviso?: unknown } | null): string {
+  return json && typeof json.aviso === "string" ? json.aviso : "Could not save this session's wallet.";
+}
+
+function firmaEnBase64(bytes: Uint8Array): string {
+  let texto = "";
+  for (const byte of bytes) texto += String.fromCharCode(byte);
+  return btoa(texto);
 }
 
 export async function publicarSesion(
@@ -159,7 +194,7 @@ async function cerrarConWallet(
   if (billetera.chain !== "stellar" || !billetera.address) {
     return { aviso: "Could not sign in.", direccion: null, guardada: false };
   }
-  const guardada = await fijarWallet(billetera.address);
+  const guardada = await fijarWallet(billetera.address, (mensaje) => billetera.signMessage(mensaje));
   if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address, guardada: false };
   if (debeProvisionar(intencion, sesion.provisionar)) {
     const alta = await completarAltaTestnet(billetera as BilleteraCobro);

@@ -567,10 +567,16 @@ export function Revision({
                 {tarea.lectura?.montoOriginal && tarea.lectura.moneda !== "USD" ? (
                   <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">
                     {tarea.montoRevisado && tarea.lectura.moneda && tarea.lectura.tasa
-                      ? t("revision.printedConverted", {
+                      ? t(tarea.lectura.fuente ? "revision.printedConvertedSource" : "revision.printedConverted", {
                           monto: tarea.lectura.montoOriginal,
                           tasa: String(tarea.lectura.tasa),
                           moneda: tarea.lectura.moneda,
+                          fuente:
+                            tarea.lectura.fuente === "hacienda"
+                              ? tarea.lectura.fechaTasa
+                                ? t("revision.rateHacienda", { fecha: tarea.lectura.fechaTasa })
+                                : t("revision.rateHaciendaSinFecha")
+                              : t("revision.rateFallback"),
                         })
                       : t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
                   </dd>

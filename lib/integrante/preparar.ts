@@ -1,5 +1,5 @@
 import type { AuthProvider } from "@cavos/kit";
-import { conectarStellar } from "@/lib/auth/cliente";
+import { conectarStellar, fijarWallet } from "@/lib/auth/cliente";
 import { guardarCuenta } from "./almacen";
 import { appIdPublico } from "./identidades";
 import type { IdentidadDemo } from "./tipos";
@@ -33,11 +33,13 @@ export async function prepararIdentidad(identidad: IdentidadDemo, auth: AuthProv
 
   const lista = await asegurarCobroUsdc(billetera);
   guardarCuenta(identidad.id, { direccion: lista.direccion, usdcListo: lista.usdcListo });
+  const guardada = await fijarWallet(lista.direccion, (mensaje) => billetera.signMessage(mensaje));
+  const detalle = [lista.detalle, guardada.ok ? null : guardada.aviso].filter((item): item is string => Boolean(item)).join(" ");
   return {
     id: identidad.id,
     nombre: identidad.nombre,
     direccion: lista.direccion,
     usdcListo: lista.usdcListo,
-    detalle: lista.detalle,
+    detalle: detalle || null,
   };
 }

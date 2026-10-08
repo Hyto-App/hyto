@@ -1,14 +1,32 @@
 import { createPublicKey, createVerify, type JsonWebKey } from "node:crypto";
 
 /**
- * La doc de Cavos (https://docs.cavos.xyz) no publica JWKS, emisor ni audience.
+ * La doc de Cavos (https://docs.cavos.xyz) no publica JWKS ni un audience único.
  * La firma RS256, el `iss`, el `aud` y el vencimiento se comprueban con
  * `CAVOS_JWT_JWK` o `CAVOS_JWKS_URL`. Sin esas claves no hay sesión.
  * `HYTO_PERMITIR_JWT_SIN_FIRMA=1` lee el payload sin firma solo fuera de
- * producción (`NODE_ENV` y `VERCEL_ENV` distintos de `production`).
- * `CAVOS_JWT_ISSUER` acepta varios emisores separados por coma.
+ * producción (`NODE_ENV` y `VERCEL_ENV` distintos de `production`), y aun así
+ * exige emisor y audiencia.
+ * `CAVOS_JWT_ISSUER` y `CAVOS_JWT_AUDIENCE` aceptan varios valores separados por coma.
+ * Si el emisor está vacío se usa `EMISORES_JWT_DEFECTO`. Un audience vacío no se salta
+ * en producción: un ID token de Firebase se compara con el project id de su `iss`,
+ * y cualquier otro token se rechaza.
  */
 export const HOLGURA_JWT_SEGUNDOS = 60;
+
+/**
+ * Emisores que el login alojado de Cavos devuelve hoy (Google, Apple, el JWT
+ * propio de Cavos y los ID tokens de Firebase). Una entrada que termina en `/`
+ * vale como prefijo, así `https://securetoken.google.com/<proyecto>` entra.
+ */
+export const EMISORES_JWT_DEFECTO = [
+  "https://accounts.google.com",
+  "https://appleid.apple.com",
+  "https://cavos.app/firebase",
+  "https://securetoken.google.com/",
+].join(",");
+
+export const PREFIJO_EMISOR_FIREBASE = "https://securetoken.google.com/";
 
 const TTL_MS = 10 * 60 * 1000;
 const cache = new Map<string, { hasta: number; claves: ClavePublica[] }>();
@@ -20,9 +38,9 @@ type ClavePublica = {
 
 export type AjustesJwt = {
   ahora?: number;
-  /** `null` no comprueba `iss`. Ausente: se lee `CAVOS_JWT_ISSUER` (lista separada por coma). */
+  /** `null` no comprueba `iss` fuera de producción. En producción un `null` rechaza el token. Ausente: `CAVOS_JWT_ISSUER`, o `EMISORES_JWT_DEFECTO` si está vacío. */
   emisor?: string | null;
-  /** `null` no comprueba `aud`. Ausente: se lee `CAVOS_JWT_AUDIENCE` (lista separada por coma: Google y Apple tienen client id distinto). */
+  /** `null` no comprueba `aud` fuera de producción, salvo un ID token de Firebase, que tiene que coincidir con el project id de su `iss`. En producción un `null` rechaza cualquier otro token. Ausente: `CAVOS_JWT_AUDIENCE`. */
   audiencia?: string | null;
   /** Ausente: se lee el entorno. Arreglo vacío: hay verificación y ninguna clave sirve. */
   claves?: JsonWebKey[];
@@ -53,22 +71,26 @@ async function comprobar(token: string, ajustes: Ajustes): Promise<Record<string
   const claims = leerParte(partes[1]);
   if (!claims) return null;
   const claves = await clavesEfectivas(ajustes);
-  if (claves === null) return bypassSinFirma() ? claims : null;
+  if (claves === null) return bypassSinFirma() && reclamosDeIdentidad(claims, ajustes) ? claims : null;
   const encabezado = leerParte(partes[0]);
   if (!encabezado || encabezado.alg !== "RS256" || "crit" in encabezado) return null;
   const kid = typeof encabezado.kid === "string" ? encabezado.kid : null;
   const elegidas = elegir(claves, kid, claims.iss);
   if (!elegidas.length || !firmaValida(partes[0], partes[1], partes[2], elegidas)) return null;
-  if (!tiempos(claims, ajustes.ahora)) return null;
-  if (!emisorPermitido(claims.iss, ajustes.emisor)) return null;
-  if (ajustes.audiencia && !audCoincide(claims.aud, ajustes.audiencia)) return null;
+  if (!reclamosDeIdentidad(claims, ajustes)) return null;
   return claims;
+}
+
+function reclamosDeIdentidad(claims: Record<string, unknown>, ajustes: Ajustes): boolean {
+  if (!tiempos(claims, ajustes.ahora)) return false;
+  if (!emisorPermitido(claims.iss, ajustes.emisor)) return false;
+  return audienciaPermitida(claims, ajustes.audiencia);
 }
 
 function resolver(parcial?: AjustesJwt): Ajustes {
   return {
     ahora: parcial?.ahora ?? Date.now(),
-    emisor: parcial && parcial.emisor !== undefined ? parcial.emisor : textoEnv(process.env.CAVOS_JWT_ISSUER),
+    emisor: parcial && parcial.emisor !== undefined ? parcial.emisor : (textoEnv(process.env.CAVOS_JWT_ISSUER) ?? EMISORES_JWT_DEFECTO),
     audiencia: parcial && parcial.audiencia !== undefined ? parcial.audiencia : textoEnv(process.env.CAVOS_JWT_AUDIENCE),
     claves: parcial?.claves,
     jwksUrl: parcial && parcial.jwksUrl !== undefined ? parcial.jwksUrl : textoEnv(process.env.CAVOS_JWKS_URL),
@@ -94,8 +116,27 @@ function bypassSinFirma(): boolean {
 
 function emisorPermitido(iss: unknown, esperado: string | null): boolean {
   const permitidos = listaEmisores(esperado);
-  if (!permitidos) return true;
-  return typeof iss === "string" && permitidos.includes(iss);
+  if (!permitidos) return !entornoEsProduccion();
+  return typeof iss === "string" && permitidos.some((item) => issCoincide(iss, item));
+}
+
+function issCoincide(iss: string, permitido: string): boolean {
+  if (permitido.endsWith("/")) return iss.startsWith(permitido) && iss.length > permitido.length && !iss.slice(permitido.length).includes("/");
+  return iss === permitido;
+}
+
+function audienciaPermitida(claims: Record<string, unknown>, esperado: string | null): boolean {
+  if (esperado) return audCoincide(claims.aud, esperado);
+  const proyecto = proyectoFirebase(claims.iss);
+  if (proyecto) return audCoincide(claims.aud, proyecto);
+  return !entornoEsProduccion();
+}
+
+function proyectoFirebase(iss: unknown): string | null {
+  if (typeof iss !== "string" || !iss.startsWith(PREFIJO_EMISOR_FIREBASE)) return null;
+  const proyecto = iss.slice(PREFIJO_EMISOR_FIREBASE.length);
+  if (!proyecto || proyecto.includes("/")) return null;
+  return proyecto;
 }
 
 function listaEmisores(valor: string | null): string[] | null {

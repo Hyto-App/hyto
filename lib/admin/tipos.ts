@@ -13,6 +13,9 @@ export type LecturaVisible = {
   tasa: number | null;
   fechaImpresa: string | null;
   comercio: string | null;
+  /** Present when this review recorded where the colones rate came from. */
+  fuente?: "hacienda" | "respaldo" | null;
+  fechaTasa?: string | null;
 };
 
 /** Mile's explanation for a photo that is no longer the current one. */

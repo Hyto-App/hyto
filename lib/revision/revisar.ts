@@ -25,6 +25,7 @@ import {
   TOPE_LAYA_MS,
   type OpcionesReintento,
 } from "./reintento";
+import { tasaCrcVigente, type TasaCrc } from "./divisas";
 import { describirFoto } from "./scout";
 
 export type ContextoRevision = {
@@ -68,6 +69,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
   }
   try {
+    const tasaCrc = await tasaCrcVigente();
     const cruda = esEvidenciaTextual(foto)
       ? await transcribirEvidencia(foto)
       : await describirConReserva(
@@ -80,9 +82,10 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
           contexto.idioma ?? "en",
           contexto.evento,
           contexto.organizacion,
+          tasaCrc,
         );
     const descripcion = esEvidenciaTextual(foto)
-      ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
+      ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo, tasaCrc })
       : cruda;
     const paraLaya = textoParaLaya(descripcion);
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
@@ -192,8 +195,9 @@ async function describirConReserva(
   idioma: "en" | "es",
   evento?: ContextoEvento | null,
   organizacion?: string | null,
+  tasaCrc?: TasaCrc | null,
 ): Promise<Descripcion> {
-  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento, organizacion };
+  const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento, organizacion, tasaCrc };
   const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
   const foto = await ajustarParaVision(original.bytes, original.tipo || "image/jpeg");
   if (!claveGroq) {

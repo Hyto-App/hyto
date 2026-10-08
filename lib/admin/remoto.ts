@@ -325,12 +325,15 @@ function leerLectura(valor: unknown): LecturaVisible | null {
   if (!valor || typeof valor !== "object" || Array.isArray(valor)) return null;
   const datos = valor as Record<string, unknown>;
   const tasa = typeof datos.tasa === "number" && Number.isFinite(datos.tasa) && datos.tasa > 0 ? datos.tasa : null;
+  const fuente = datos.fuente === "hacienda" || datos.fuente === "respaldo" ? datos.fuente : null;
+  const fechaTasa = typeof datos.fechaTasa === "string" && /^\d{4}-\d{2}-\d{2}$/.test(datos.fechaTasa) ? datos.fechaTasa : null;
   return {
     moneda: texto(datos.moneda),
     montoOriginal: texto(datos.montoOriginal),
     tasa,
     fechaImpresa: texto(datos.fechaImpresa),
     comercio: texto(datos.comercio),
+    ...(fuente ? { fuente, fechaTasa } : {}),
   };
 }
 

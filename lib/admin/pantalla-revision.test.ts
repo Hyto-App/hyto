@@ -484,7 +484,7 @@ test("the review card shows the main reason next to the percentage and what the 
           },
           { id: "matches", texto: "Matches the request", explicacion: "The answers say this expense is what was requested.", severidad: "good", preguntas: ["f1"] },
         ],
-        lectura: { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" },
+        lectura: { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina", fuente: "respaldo", fechaTasa: null },
       }),
       foto: null,
       contratoEscrow: null,
@@ -502,7 +502,7 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar \(fallback rate, last set by hand on 2026-10-04\)\./);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;

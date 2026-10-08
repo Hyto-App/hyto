@@ -1,5 +1,5 @@
 import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
-import { convertirAUsd } from "./divisas";
+import { convertirAUsd, fraseFuenteTasa, type FuenteTasa, type TasaCrc } from "./divisas";
 import { leerMontoRecibo } from "./recibo-parser";
 import { leerFechaTrabajo } from "./trabajo-fechas";
 
@@ -21,6 +21,10 @@ export type LecturaEvidencia = {
   montoUsd: string | null;
   /** Units of `moneda` per 1 USD used for montoUsd. */
   tasa: number | null;
+  /** Where `tasa` came from, when this reading converted colones. Older rows omit it. */
+  fuenteTasa?: FuenteTasa | null;
+  /** Day the reference rate was published. Null for the labeled fallback. */
+  fechaTasa?: string | null;
   /** YYYY-MM-DD. */
   fecha: string | null;
   /** The date as printed, such as "02/10/2026". */
@@ -94,13 +98,17 @@ const NOMBRE_MONEDA: Record<string, string> = {
 };
 
 /** Null when the reply is not the structured shape (no texto_completo). */
-export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?: string | null } = {}): LecturaEvidencia | null {
+export function leerLectura(
+  crudo: Record<string, unknown>,
+  contexto: { pedido?: string | null; tasaCrc?: TasaCrc | null } = {},
+): LecturaEvidencia | null {
   const textoCompleto = recortar(cadena(crudo.texto_completo), MAX_TEXTO);
   if (!textoCompleto) return null;
   const pais = paisDe(crudo.pais);
   const montoOriginal = recortar(textoDe(crudo.monto_original), MAX_CAMPO);
   const moneda = monedaDe(crudo.moneda, montoOriginal, textoCompleto, pais);
-  const usd = usdDe(montoOriginal, moneda, crudo.monto_usd);
+  const usd = usdDe(montoOriginal, moneda, crudo.monto_usd, contexto.tasaCrc ?? null);
+  const convirtioCrc = moneda === "CRC" && Boolean(usd);
   const fechaImpresa = recortar(textoDe(crudo.fecha), MAX_CAMPO);
   return {
     tipo: tipoDe(crudo.tipo),
@@ -109,6 +117,8 @@ export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?:
     montoOriginal,
     montoUsd: usd?.usd ?? null,
     tasa: usd?.tasa ?? null,
+    fuenteTasa: convirtioCrc ? (contexto.tasaCrc?.fuente ?? "respaldo") : null,
+    fechaTasa: convirtioCrc ? (contexto.tasaCrc?.fecha ?? null) : null,
     fecha: fechaImpresa ? fechaDe(fechaImpresa, contexto.pedido ?? null, pais) : null,
     fechaImpresa,
     comercio: recortar(cadena(crudo.comercio), MAX_CAMPO),
@@ -153,6 +163,7 @@ export function escribirLectura(lectura: LecturaEvidencia): string {
     monto_original: lectura.montoOriginal,
     monto_usd: lectura.montoUsd,
     tasa: lectura.tasa,
+    ...(lectura.fuenteTasa ? { fuente_tasa: lectura.fuenteTasa, fecha_tasa: lectura.fechaTasa ?? null } : {}),
     fecha: lectura.fecha,
     fecha_impresa: lectura.fechaImpresa,
     comercio: lectura.comercio,
@@ -180,6 +191,8 @@ export function leerLecturaGuardada(crudo: string, textoCompleto: string): Lectu
     montoOriginal: recortar(textoDe(valor.monto_original), MAX_CAMPO),
     montoUsd: typeof valor.monto_usd === "string" ? normalizarMonto(valor.monto_usd) : null,
     tasa,
+    fuenteTasa: valor.fuente_tasa === "hacienda" || valor.fuente_tasa === "respaldo" ? valor.fuente_tasa : null,
+    fechaTasa: typeof valor.fecha_tasa === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valor.fecha_tasa) ? valor.fecha_tasa : null,
     fecha: typeof valor.fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valor.fecha) ? valor.fecha : null,
     fechaImpresa: recortar(textoDe(valor.fecha_impresa), MAX_CAMPO),
     comercio: recortar(cadena(valor.comercio), MAX_CAMPO),
@@ -201,7 +214,7 @@ function montoImpreso(impreso: string | null): { centavos: number } | null {
   return null;
 }
 
-function usdDe(impreso: string | null, moneda: string | null, usdModelo: unknown): { usd: string; tasa: number } | null {
+function usdDe(impreso: string | null, moneda: string | null, usdModelo: unknown, tasaCrc: TasaCrc | null): { usd: string; tasa: number } | null {
   const leido = montoImpreso(impreso);
   if (moneda === "USD") {
     if (leido) return { usd: textoMonto(leido.centavos), tasa: 1 };
@@ -209,7 +222,7 @@ function usdDe(impreso: string | null, moneda: string | null, usdModelo: unknown
     return modelo ? { usd: modelo, tasa: 1 } : null;
   }
   if (!leido || !moneda) return null;
-  return convertirAUsd(leido.centavos, moneda);
+  return convertirAUsd(leido.centavos, moneda, tasaCrc?.colonesPorUsd);
 }
 
 type Marca = "CRC" | "USD" | "dolar" | "conflicto" | null;
@@ -334,7 +347,9 @@ function textoMoneda(lectura: LecturaEvidencia): string {
 
 function textoTasa(lectura: LecturaEvidencia): string {
   if (!lectura.moneda || lectura.moneda === "USD" || !lectura.tasa) return "";
-  return `, converted by Hyto at ${lectura.tasa} ${lectura.moneda} per US dollar`;
+  const base = `, converted by Hyto at ${lectura.tasa} ${lectura.moneda} per US dollar`;
+  const fuente = fraseFuenteTasa(lectura.fuenteTasa, lectura.fechaTasa);
+  return fuente ? `${base} (${fuente})` : base;
 }
 
 function textoFecha(lectura: LecturaEvidencia): string {

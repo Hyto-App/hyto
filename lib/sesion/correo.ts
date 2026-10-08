@@ -38,6 +38,7 @@ export async function correoDelToken(token: string, correoPedido: string, ajuste
 
 // Si el JWT del ingreso trae una G…, es la wallet de ese login.
 // El token de Cavos que usa Hyto hoy no la trae: la G… la deriva el dispositivo.
+// walletDelToken no comprueba la firma. Solo vale después de verificarJwt, o para leer un token que esa función ya aceptó.
 export function walletDelToken(token: string): string | null {
   const partes = token.split(".");
   if (partes.length < 2 || !partes[1]) return null;
@@ -47,7 +48,11 @@ export function walletDelToken(token: string): string | null {
   } catch {
     return null;
   }
-  return walletEn(json, 0);
+  return walletDeClaims(json);
+}
+
+export function walletDeClaims(claims: unknown): string | null {
+  return walletEn(claims, 0);
 }
 
 function walletEn(valor: unknown, profundidad: number): string | null {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey, type KeyObject } from "node:crypto";
 import test from "node:test";
 import { correoAppleSinCorreo, correoDelToken, walletDelToken } from "./correo";
-import { HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
+import { EMISORES_JWT_DEFECTO, HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
 
 delete process.env.CAVOS_JWT_JWK;
 delete process.env.CAVOS_JWKS_URL;
@@ -267,6 +267,32 @@ test("la audiencia solo se comprueba si está configurada", async () => {
   assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "hyto" }))?.correo, "organizador@demo.hyto");
   assert.equal(await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: "otra" }), null);
   assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: null }))?.correo, "organizador@demo.hyto");
+});
+
+test("los emisores por defecto rechazan un iss ajeno y producción no salta la audiencia", async () => {
+  const previo = { node: process.env.NODE_ENV, vercel: process.env.VERCEL_ENV };
+  const base: AjustesJwt = { ahora: AHORA, emisor: EMISORES_JWT_DEFECTO, claves: [google.jwk], jwksUrl: null, audiencia: null };
+  const firebase = "https://securetoken.google.com/hyto-demo";
+  try {
+    const googleTok = firmar(claims({ iss: "https://accounts.google.com", aud: "cliente-google" }), google.privateKey, "google");
+    assert.equal((await verificarJwt(googleTok, base))?.iss, "https://accounts.google.com");
+    const ajeno = firmar(claims({ iss: "https://evil.example", aud: "cliente-google" }), google.privateKey, "google");
+    assert.equal(await verificarJwt(ajeno, base), null);
+
+    const bueno = firmar(claims({ iss: firebase, aud: "hyto-demo" }), google.privateKey, "google");
+    assert.equal((await verificarJwt(bueno, base))?.iss, firebase);
+    const mal = firmar(claims({ iss: firebase, aud: "otro" }), google.privateKey, "google");
+    assert.equal(await verificarJwt(mal, base), null);
+
+    restaurar("NODE_ENV", "production");
+    delete process.env.VERCEL_ENV;
+    assert.equal(await verificarJwt(googleTok, base), null);
+    assert.equal((await verificarJwt(bueno, base))?.aud, "hyto-demo");
+    assert.equal((await verificarJwt(googleTok, { ...base, audiencia: "cliente-google" }))?.iss, "https://accounts.google.com");
+  } finally {
+    restaurar("NODE_ENV", previo.node);
+    restaurar("VERCEL_ENV", previo.vercel);
+  }
 });
 
 test("rechaza un token sin sujeto", async () => {
