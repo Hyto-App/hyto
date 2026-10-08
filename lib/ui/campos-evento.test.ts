@@ -80,7 +80,7 @@ test("the guided For Mile strings exist in English and Spanish with the same key
 
 test("the new strings exist in English and Spanish", () => {
   for (const clave of ["detailsTitle", "coverDrop","coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
-    assert.ok((en.eventos as Record<string, string>)[clave], `en ${clave}`);
-    assert.ok((es.eventos as Record<string, string>)[clave], `es ${clave}`);
+    assert.ok((en.eventos as unknown as Record<string, unknown>)[clave], `en ${clave}`);
+    assert.ok((es.eventos as unknown as Record<string, unknown>)[clave], `es ${clave}`);
   }
 });
