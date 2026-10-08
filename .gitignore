@@ -7,3 +7,8 @@ out
 .env*.local
 .sebas-cuentas.json
 pruebas-mile/resultados/
+
+# Volcados de scripts/db/backup.sh. El script escribe fuera del repo.
+# Esto cubre una copia que caiga dentro del árbol.
+hyto-*.dump
+hyto-*.sql
