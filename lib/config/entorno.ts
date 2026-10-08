@@ -117,6 +117,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
+    nombre: "HYTO_MILE_FALTANTES_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on takes \"is something missing?\" from Groq's faltantes list and tightens that list in the vision prompt: only what the task asks for, nothing already described as present, bokeh does not make the photo unreadable, and printed names are copied exactly. Unset or anything else keeps Laya's v4 and the current prompt.",
+  },
+  {
     nombre: "HYTO_MILE_REQUISITOS",
     ambito: "servidor",
     requerida: false,
@@ -129,13 +136,6 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     requerida: false,
     silenciosa: true,
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
-  },
-  {
-    nombre: "HYTO_MILE_FALTANTES_GROQ",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on takes the work question \"is something missing?\" from Groq's faltantes list. An empty list is not a penalty. Unset or anything else keeps Laya's v4 answer.",
   },
   {
     nombre: "HYTO_COMUNIDADES",

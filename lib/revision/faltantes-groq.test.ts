@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { TareaFila } from "@/lib/db/tipos";
 import { cerrar, type Senales } from "./armar";
-import { aplicarV4DeFaltantes, faltaAlgo, mileFaltantesGroqActivo, type EntornoFaltantesGroq } from "./faltantes-groq";
+import { aplicarV4DeFaltantes, bloqueFaltantesGroq, faltaAlgo, mileFaltantesGroqActivo, type EntornoFaltantesGroq } from "./faltantes-groq";
 import { senalesDeFactura, senalesDeTrabajo, type RespuestasFactura, type RespuestasTrabajo } from "./laya";
 import { leerLectura, type LecturaEvidencia } from "./lectura";
 import { etiquetasDe } from "./razones";
 import { revisar } from "./revisar";
+import { pedidoVision } from "./scout";
 import { leerSnapshot, escribirSnapshot } from "./snapshot-razones";
 
 const APAGADO: EntornoFaltantesGroq = { HYTO_MILE_FALTANTES_GROQ: "off" };
@@ -28,6 +29,47 @@ test("el interruptor solo se enciende con on", () => {
   assert.equal(faltaAlgo(["  "]), false);
   assert.equal(faltaAlgo(null), false);
   assert.equal(faltaAlgo(["the entrance"]), true);
+});
+
+const PEDIDO_VISION = { condicion: "Photo of the Cafe Cursor sign", tipoTarea: "trabajo" as const };
+
+test("apagado, el pedido de visión no cambia", () => {
+  const base = pedidoVision(PEDIDO_VISION, {});
+  const off = pedidoVision(PEDIDO_VISION, APAGADO);
+  const otro = pedidoVision(PEDIDO_VISION, { HYTO_MILE_FALTANTES_GROQ: "true" });
+  assert.equal(off, base);
+  assert.equal(otro, base);
+  assert.equal(bloqueFaltantesGroq("en", APAGADO), "");
+  assert.equal(base.includes("Reading rules for HYTO_MILE_FALTANTES_GROQ"), false);
+  assert.equal(base.includes("bokeh"), false);
+  assert.equal(base.includes("exactly as they appear"), false);
+  assert.match(base, /legible: true if the photo is sharp and clear enough to judge\. false if it is blurry, too dark, or cut off\./);
+  assert.match(base, /faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show\. An empty list if nothing is missing\./);
+  const enEspanol = pedidoVision({ ...PEDIDO_VISION, idioma: "es" }, APAGADO);
+  assert.equal(enEspanol.includes("Reading rules for HYTO_MILE_FALTANTES_GROQ"), false);
+  assert.match(enEspanol, /faltantes: a list of short phrases in Spanish only/);
+});
+
+test("encendido, el pedido pide faltantes de la condición, ignora el bokeh y copia la marca", () => {
+  const apagado = pedidoVision(PEDIDO_VISION, APAGADO);
+  const encendido = pedidoVision(PEDIDO_VISION, ENCENDIDO);
+  assert.equal(bloqueFaltantesGroq("en", ENCENDIDO).startsWith("Reading rules for HYTO_MILE_FALTANTES_GROQ:"), true);
+  for (const linea of apagado.split("\n")) assert.equal(encendido.includes(linea), true, linea);
+  assert.match(encendido, /list only what the organizer's request asks for/);
+  assert.match(encendido, /Do not list as missing anything the description already says is visible/);
+  assert.match(encendido, /intentionally blurred background \(bokeh\)/);
+  assert.match(encendido, /Copy brand names, logos, and other printed words exactly as they appear/);
+  assert.match(encendido, /Keep each faltantes phrase in English only/);
+  const legible = encendido.indexOf("legible: true if the photo is sharp");
+  const bloque = encendido.indexOf("Reading rules for HYTO_MILE_FALTANTES_GROQ:");
+  const faltantes = encendido.indexOf("faltantes: a list of short phrases");
+  assert.equal(legible >= 0 && bloque > legible && faltantes > bloque, true);
+  const enEspanol = pedidoVision({ ...PEDIDO_VISION, idioma: "es" }, ENCENDIDO);
+  const apagadoEs = pedidoVision({ ...PEDIDO_VISION, idioma: "es" }, APAGADO);
+  for (const linea of apagadoEs.split("\n")) assert.equal(enEspanol.includes(linea), true, linea);
+  assert.match(enEspanol, /Keep each faltantes phrase in Spanish only, and in formal usted/);
+  assert.match(enEspanol, /bokeh/);
+  assert.equal(enEspanol.includes("Keep each faltantes phrase in English only"), false);
 });
 
 test("apagado, la respuesta v4 de Laya no cambia aunque Groq no vea faltantes", () => {

@@ -4,6 +4,7 @@ import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { bloqueOrganizacion } from "./organizacion";
+import { bloqueFaltantesGroq, type EntornoFaltantesGroq } from "./faltantes-groq";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
 
@@ -34,8 +35,12 @@ export type ContextoPedido = {
   organizacion?: string | null;
 };
 
-/** The prompt sent with the photo. The task condition is part of it, so the description answers the request. */
-export function pedidoVision(contexto: ContextoPedido = {}): string {
+/**
+ * The prompt sent with the photo. The task condition is part of it, so the description answers the request.
+ * The env argument is shared with HYTO_MILE_OTRA_CON_GROQ, which adds coincide on its own.
+ * This switch only adds bloqueFaltantesGroq, and only when it is exactly "on".
+ */
+export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoFaltantesGroq = process.env): string {
   const condicion = contexto.condicion?.replace(/\s+/g, " ").trim().slice(0, MAX_CONDICION) ?? "";
   const tarea =
     contexto.tipoTarea === "reembolso"
@@ -62,6 +67,8 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
       ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. If you address the reader, use formal usted, never tú or vos. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
       : "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."),
     "legible: true if the photo is sharp and clear enough to judge. false if it is blurry, too dark, or cut off.",
+    // Separate from the coincide block (HYTO_MILE_OTRA_CON_GROQ). Empty when this switch is off.
+    bloqueFaltantesGroq(espanol ? "es" : "en", env),
     "pais: the country as a two-letter ISO code, such as CR for Costa Rica, only if the photo shows it (an address, a phone code, a tax id, or the currency). Otherwise null.",
     "moneda: the ISO 4217 code of the total. ₡, ¢, colones, or CRC is CRC, Costa Rican colones. Use USD only when the receipt shows US$, USD, or dollars, or a $ total on a receipt from Costa Rica or the United States. If the currency is not shown, use null. Never guess USD.",
     "monto_original: the total exactly as printed, keeping its symbol and separators, such as ₡7.950,00 or 15.179,99. Costa Rican receipts often use a dot for thousands and a comma for decimals. Null if there is no total.",

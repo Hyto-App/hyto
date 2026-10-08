@@ -20,6 +20,27 @@ export function mileFaltantesGroqActivo(env: EntornoFaltantesGroq = process.env)
   return valor === "on";
 }
 
+/**
+ * Extra vision instructions for faltantes, legible, and printed names.
+ * Empty unless HYTO_MILE_FALTANTES_GROQ is exactly "on", so the prompt stays as it is.
+ * This is its own block. HYTO_MILE_OTRA_CON_GROQ adds the coincide field beside it, not inside it.
+ */
+export function bloqueFaltantesGroq(idioma: "en" | "es" = "en", env: EntornoFaltantesGroq = process.env): string {
+  if (!mileFaltantesGroqActivo(env)) return "";
+  const lista = idioma === "es"
+    ? "Keep each faltantes phrase in Spanish only, and in formal usted if it addresses the reader."
+    : "Keep each faltantes phrase in English only.";
+  return [
+    "Reading rules for HYTO_MILE_FALTANTES_GROQ:",
+    "In faltantes, list only what the organizer's request asks for and the photo does not show. Do not list anything the request did not ask for.",
+    "Do not list as missing anything the description already says is visible.",
+    "If nothing they asked for is missing, faltantes is an empty list.",
+    "legible is false only when the subject the organizer asked for is too blurry, too dark, or cut off to judge. An intentionally blurred background (bokeh) does not make the photo unreadable when that subject is clear.",
+    "Copy brand names, logos, and other printed words exactly as they appear. Do not correct, translate, or guess a spelling.",
+    lista,
+  ].join("\n");
+}
+
 /** Groq named at least one thing the photo does not show. Blank entries do not count. */
 export function faltaAlgo(faltantes: readonly string[] | null | undefined): boolean {
   if (!faltantes) return false;
