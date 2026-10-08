@@ -112,6 +112,13 @@ function normalizarTarea(valor: unknown): Tarea | null {
     notas: notasCliente(crudo.notas),
     ...leerCamposRevision(crudo, estado),
     enviadaEn: fechaCliente(crudo.enviadaEn) ?? fechaCliente(crudo.enviada_en),
+    ...(crudo.escrowV2 === true
+      ? {
+          escrowV2: true as const,
+          presupuestoBloqueado: crudo.presupuestoBloqueado === true ? true : crudo.presupuestoBloqueado === false ? false : null,
+          contratoEscrow: texto(crudo.contratoEscrow),
+        }
+      : {}),
   };
 }
 

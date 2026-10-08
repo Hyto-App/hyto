@@ -350,3 +350,15 @@ test("reintentar revisión hace POST a la tarea", async () => {
   assert.equal(detalle?.tarea.frase, "Banner de ZEEK.");
   assert.equal(await reintentarRevision("  ", { fetch: fetchImpl }), null);
 });
+
+test("con protección, pagar espera la marca del trabajador y un pago directo", () => {
+  const enRevision = tarea();
+  const escrow = { contrato: "CSTAND", fondeado: true as const };
+  assert.equal(botonesRevision(enRevision, true, escrow, { proteger: true, hitoMarcado: false }).pagar, false);
+  assert.equal(botonesRevision(enRevision, true, escrow, { proteger: true, hitoMarcado: true, pagoDirecto: false }).pagar, false);
+  assert.equal(botonesRevision(enRevision, true, escrow, { proteger: true, hitoMarcado: true, pagoDirecto: true }).pagar, true);
+  assert.equal(botonesRevision(enRevision, true, escrow).pagar, true);
+  const reembolso = tarea({ tipo: "reembolso", montoRevisado: null, montoConfirmado: null });
+  assert.equal(botonesRevision(reembolso, true, { contrato: null, fondeado: null }, { proteger: true }).desplegar, true);
+  assert.equal(botonesRevision(reembolso, true, { contrato: null, fondeado: null }).desplegar, false);
+});

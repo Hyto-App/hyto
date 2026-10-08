@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { AVISO_DEMO_FIRMA, ErrorFirmaCliente, firmarPasos, mensajeFirmaVisible } from "@/lib/escrow/firmarCliente";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
@@ -22,6 +24,8 @@ export type FilaTareaEvento = {
   dificultad: DificultadTarea | null;
   bloqueo: string | null;
   tieneFoto: boolean;
+  walletCobro?: string;
+  contratoEscrow?: string | null;
 };
 
 type Borrador = {
@@ -47,18 +51,24 @@ function FichaAsignada({
 export function TareasEvento({
   tareas,
   miembros,
+  proteger = false,
 }: {
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string; ficha?: Ficha }[];
+  proteger?: boolean;
 }) {
   const t = useTexto();
   const claro = useClaro();
   const idioma = useIdioma();
+  const demo = useModoDemo();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [bloqueoId, setBloqueoId] = useState<string | null>(null);
+  const [bloqueadas, setBloqueadas] = useState<ReadonlySet<string>>(new Set());
+  const [porFondear, setPorFondear] = useState<ReadonlyMap<string, string>>(new Map());
 
   async function asignar(tareaId: string, usuarioId: string) {
     setAviso(null);
@@ -67,12 +77,58 @@ export function TareasEvento({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ usuarioId }),
     });
+    const cuerpo = (await respuesta.json().catch(() => null)) as {
+      aviso?: string;
+      escrowV2?: boolean;
+      walletCobro?: string;
+    } | null;
     if (!respuesta.ok) {
-      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
       setAviso(cuerpo?.aviso ?? "Could not assign that task.");
       return;
     }
-    setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
+    setFilas((actuales) =>
+      actuales.map((fila) =>
+        fila.id === tareaId
+          ? { ...fila, miembroId: usuarioId, ...(cuerpo?.walletCobro ? { walletCobro: cuerpo.walletCobro } : {}) }
+          : fila,
+      ),
+    );
+  }
+
+  async function bloquear(tareaId: string) {
+    if (bloqueoId) return;
+    if (demo) {
+      setAviso(AVISO_DEMO_FIRMA);
+      return;
+    }
+    setAviso(null);
+    setBloqueoId(tareaId);
+    const contrato = porFondear.get(tareaId) ?? null;
+    try {
+      const pago = await firmarPasos(contrato ? ["fondear"] : ["desplegar", "fondear"], tareaId, {
+        ...(contrato ? { extra: { contrato } } : {}),
+      });
+      setBloqueadas((actual) => new Set(actual).add(tareaId));
+      setPorFondear((actual) => {
+        if (!actual.has(tareaId)) return actual;
+        const siguiente = new Map(actual);
+        siguiente.delete(tareaId);
+        return siguiente;
+      });
+      if (pago.contrato) {
+        setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, contratoEscrow: pago.contrato } : fila)));
+      }
+    } catch (error) {
+      if (error instanceof ErrorFirmaCliente && error.contrato) {
+        const guardado = error.contrato;
+        setPorFondear((actual) => new Map(actual).set(tareaId, guardado));
+        setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, contratoEscrow: guardado } : fila)));
+      }
+      const mensaje = error instanceof ErrorFirmaCliente ? mensajeFirmaVisible(error.message) : "Could not lock the budget.";
+      setAviso(mensaje);
+    } finally {
+      setBloqueoId(null);
+    }
   }
 
   async function clasificar(tareaId: string, cambio: { prioridad?: PrioridadTarea; dificultad?: DificultadTarea | null }) {
@@ -308,6 +364,30 @@ export function TareasEvento({
                     </select>
                   </label>
                   <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
+                  {proteger && tarea.miembroId && tarea.estado !== "pagado" && !bloqueadas.has(tarea.id) && (!tarea.contratoEscrow || porFondear.has(tarea.id)) ? (
+                    <div className="mt-3">
+                      {/^G[A-Z2-7]{55}$/.test(tarea.walletCobro ?? "") ? (
+                        <>
+                          <p className="text-sm leading-6 text-[var(--suave)]">{t("pago.lockedFor", { monto: montoDeTarea(tarea, idioma) })}</p>
+                          <button
+                            type="button"
+                            className="hyto-btn is-inline mt-2 px-5"
+                            disabled={bloqueoId !== null}
+                            aria-busy={bloqueoId === tarea.id}
+                            onClick={() => void bloquear(tarea.id)}
+                          >
+                            {bloqueoId === tarea.id
+                              ? t("pago.locking")
+                              : porFondear.has(tarea.id)
+                                ? t("pago.finishLocking")
+                                : t("pago.lockNow")}
+                          </button>
+                        </>
+                      ) : (
+                        <p className="text-sm leading-6 text-[var(--suave)]">{t("pago.lockWaitingWallet")}</p>
+                      )}
+                    </div>
+                  ) : null}
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
                       {claro(tarea.bloqueo)}

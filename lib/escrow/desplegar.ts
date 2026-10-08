@@ -57,6 +57,7 @@ export function cuentasDeTarea(opciones: {
   descripcion: string;
   engagementId: string;
   roles: RolesServidor;
+  proteger?: boolean;
 }): CuentasDespliegue | { aviso: string } {
   if (opciones.roles.plataforma === opciones.firmante || opciones.roles.plataforma === opciones.receptor) {
     return { aviso: "The platform account cannot be the organizer or the payee." };
@@ -78,7 +79,7 @@ export function cuentasDeTarea(opciones: {
     firmante: opciones.firmante,
     organizador: opciones.firmante,
     receptor: opciones.receptor,
-    proveedor: opciones.firmante,
+    proveedor: opciones.proteger ? opciones.receptor : opciones.firmante,
     admin: opciones.roles.admin,
     plataforma: opciones.roles.plataforma,
     resolutor: opciones.roles.resolutor,

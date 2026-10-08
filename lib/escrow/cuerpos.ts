@@ -1,3 +1,4 @@
+import { escrowV2Activo } from "./bandera";
 import type { AccionFirma, CuentasDespliegue, Distribucion, EntradaDespliegue, Pedido, RedEscrow } from "./tipos";
 
 export const BASE_V2 = "https://beta.api.trustlesswork.com";
@@ -184,6 +185,16 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
       },
     };
   }
+  if (accion.accion === "aprobarLiberar") {
+    return {
+      ruta: "/escrow/multi-release/v2/approve-and-release-milestones",
+      cuerpo: {
+        contractId: accion.contrato,
+        signer: accion.firmante,
+        milestoneIndexes: [accion.indice],
+      },
+    };
+  }
   if (accion.accion === "liberar") {
     return {
       ruta: "/escrow/multi-release/v2/release-funds",
@@ -217,8 +228,8 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
 }
 
 function pedidoV1(accion: AccionFirma): Pedido | string {
-  if (accion.accion === "disputar" || accion.accion === "resolver") {
-    return "Disputing and resolving a milestone uses the v2 API.";
+  if (accion.accion === "disputar" || accion.accion === "resolver" || accion.accion === "aprobarLiberar") {
+    return "Disputing, resolving, and approving with release use the v2 API.";
   }
   if (accion.accion === "fondear") {
     return {
@@ -309,7 +320,7 @@ export function leerEntrada(body: unknown): EntradaLeida {
   const datos = body as Record<string, unknown>;
   const accion = datos.accion;
   const contrato = texto(datos.contrato);
-  const firmante = texto(datos.firmante);
+  let firmante = texto(datos.firmante);
   if (accion === "desplegar") {
     const tareaId = texto(datos.tareaId);
     if (!tareaId || !/^[A-Za-z0-9_-]{1,80}$/.test(tareaId)) return { aviso: "The task to deploy is missing." };
@@ -320,12 +331,18 @@ export function leerEntrada(body: unknown): EntradaLeida {
     accion !== "marcar" &&
     accion !== "aprobar" &&
     accion !== "liberar" &&
+    accion !== "aprobarLiberar" &&
     accion !== "disputar" &&
     accion !== "resolver"
   ) {
     return { aviso: "That action does not prepare a payment." };
   }
-  if (!contrato || !firmante) return { aviso: "The contract and the signing account are missing." };
+  if (!contrato) return { aviso: "The contract and the signing account are missing." };
+  // Protection on: the server sets the signer from the session. The browser does not choose it.
+  if (!firmante) {
+    if (!escrowV2Activo()) return { aviso: "The contract and the signing account are missing." };
+    firmante = "";
+  }
   if (accion === "fondear") {
     const monto = typeof datos.monto === "number" ? datos.monto : Number(datos.monto);
     return { accion, contrato, firmante, monto };

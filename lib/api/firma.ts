@@ -4,7 +4,10 @@ import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { rechazoSiFondos } from "@/lib/escrow/saldo";
+import { escrowV2Activo } from "@/lib/escrow/bandera";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
+import { idEngagement, montoAReservar } from "@/lib/escrow/reserva";
+import { avisoMarcaPendiente, avisoPagoParcial, walletTrabajador } from "@/lib/api/escrow-actor";
 import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
@@ -22,6 +25,11 @@ import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@
 
 const FUNCION_DESPLIEGUE = "deploy";
 const FUNCION_LIBERACION = "release_funds";
+
+function esFuncionDeLiberacion(funcion: string, accion: string | null): boolean {
+  if (accion === "liberar") return funcion === FUNCION_LIBERACION;
+  return funcion === FUNCION_LIBERACION || funcion.includes("release");
+}
 const CODIGO_INDEXADOR_ATRASADO = "STELLAR_TX_SUBMITTED_INDEXER_LAGGING";
 export const CODIGO_CONFIRMADO_EN_RED = "HYTO_TX_CONFIRMED_ON_TESTNET";
 export const CODIGO_SIN_CONFIRMAR = "HYTO_TX_NOT_CONFIRMED";
@@ -90,24 +98,9 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
     if (rechazo) return rechazo;
     return prepararDespliegueHttp(sesion, entrada.tareaId, base);
   }
-  let preparada: AccionFirma = entrada;
-  if (entrada.accion === "resolver") {
-    const aviso = avisoSesionResolutor(sesion, entrada.firmante);
-    if (aviso) return Response.json({ aviso }, { status: 400 });
-  } else {
-    const base = almacen === undefined ? await almacenNeon() : almacen;
-    const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato });
-    if (rechazo) return rechazo;
-    if (entrada.accion === "fondear") {
-      const ajustada = await montoFondeoDeReembolso(base, entrada, idTarea(body));
-      if (ajustada instanceof Response) return ajustada;
-      preparada = ajustada;
-      if (ajustada.accion === "fondear") {
-        const fondos = await rechazoSiFondos(sesion.wallet, String(ajustada.monto));
-        if (fondos) return fondos;
-      }
-    }
-  }
+  const base = almacen === undefined ? await almacenNeon() : almacen;
+  const preparada = await prepararAccion(sesion, entrada, base, idTarea(body));
+  if (preparada instanceof Response) return preparada;
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
   if (!secretoPreparado()) return sinSecreto();
@@ -120,6 +113,64 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   } catch (error) {
     return respuestaDeErrorFirma(error, "Could not prepare the payment.");
   }
+}
+
+async function prepararAccion(
+  sesion: SesionFila,
+  entrada: AccionFirma,
+  base: Almacen | null,
+  tareaId: string | null,
+): Promise<AccionFirma | Response> {
+  if (entrada.accion === "resolver") {
+    const aviso = avisoSesionResolutor(sesion, entrada.firmante);
+    if (aviso) return Response.json({ aviso }, { status: 400 });
+    return entrada;
+  }
+  const proteger = escrowV2Activo();
+  if (entrada.accion === "aprobarLiberar" && !proteger) {
+    return Response.json({ aviso: "Approving and releasing together is turned off." }, { status: 409 });
+  }
+  if (proteger && (entrada.accion === "marcar" || entrada.accion === "disputar")) {
+    const trabajador = await walletTrabajador(base, sesion, { tareaId, contrato: entrada.contrato });
+    if (typeof trabajador === "string") return { ...entrada, firmante: trabajador };
+    if (entrada.accion === "marcar") return trabajador;
+    const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato, tareaId });
+    if (rechazo) return rechazo;
+    const firma = firmaDeSesion(sesion);
+    if (firma instanceof Response) return firma;
+    return { ...entrada, firmante: firma };
+  }
+  const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: entrada.contrato, tareaId });
+  if (rechazo) return rechazo;
+  let accion = entrada;
+  if (proteger) {
+    const firma = firmaDeSesion(sesion);
+    if (firma instanceof Response) return firma;
+    accion = { ...entrada, firmante: firma };
+  }
+  if (accion.accion === "fondear") {
+    const ajustada = await montoFondeoDeReembolso(base, accion, tareaId);
+    if (ajustada instanceof Response) return ajustada;
+    const fondos = await rechazoSiFondos(sesion.wallet, String(ajustada.monto));
+    if (fondos) return fondos;
+    return ajustada;
+  }
+  if (proteger && accion.accion === "aprobarLiberar") {
+    if (!base) return Response.json({ aviso: "The database is not configured." }, { status: 503 });
+    const marca = await avisoMarcaPendiente(accion.contrato);
+    if (marca) return marca;
+    const parcial = await avisoPagoParcial(base, { tareaId, contrato: accion.contrato });
+    if (parcial) return parcial;
+  }
+  return accion;
+}
+
+function firmaDeSesion(sesion: SesionFila): string | Response {
+  const firma = sesion.wallet.trim();
+  if (!esCuenta(firma)) {
+    return Response.json({ aviso: "This session has no Stellar wallet. Sign in again to sign." }, { status: 400 });
+  }
+  return firma;
 }
 
 export async function enviarFirmaHttp(
@@ -169,6 +220,15 @@ export async function enviarFirmaHttp(
       }
     } catch (error) {
       return respuestaDeErrorFirma(error, "Could not read the escrow.");
+    }
+  } else if (escrowV2Activo() && envio.accion === "marcar") {
+    const trabajador = await walletTrabajador(base, sesion, { tareaId: envio.tareaId, contrato: invocacion.contrato });
+    if (trabajador instanceof Response) return trabajador;
+  } else if (escrowV2Activo() && envio.accion === "disputar") {
+    const trabajador = await walletTrabajador(base, sesion, { tareaId: envio.tareaId, contrato: invocacion.contrato });
+    if (trabajador instanceof Response) {
+      const rechazo = await respuestaSiNoOrganiza(base, sesion.usuarioId, { contrato: invocacion.contrato, tareaId: envio.tareaId });
+      if (rechazo) return rechazo;
     }
   } else {
     const despliegue = envio.accion === "desplegar" || invocacion.funcion === FUNCION_DESPLIEGUE;
@@ -252,7 +312,7 @@ async function montoFondeoDeReembolso(
   almacen: Almacen | null,
   entrada: Extract<AccionFirma, { accion: "fondear" }>,
   tareaId: string | null,
-): Promise<AccionFirma | Response> {
+): Promise<Extract<AccionFirma, { accion: "fondear" }> | Response> {
   if (!almacen) return entrada;
   const porId = tareaId ? await almacen.leerTarea(tareaId) : null;
   const porContrato = (await almacen.listarTareas()).find((item) => item.contratoEscrow === entrada.contrato) ?? null;
@@ -261,6 +321,11 @@ async function montoFondeoDeReembolso(
   }
   const tarea = porId ?? porContrato;
   if (!tarea || tarea.tipo !== "reembolso") return entrada;
+  if (escrowV2Activo()) {
+    const reservado = montoAReservar(tarea);
+    if (reservado === null) return Response.json({ aviso: "The milestone amount has to be greater than zero." }, { status: 400 });
+    return { ...entrada, monto: reservado };
+  }
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
   const monto = montoDeTarea(tarea, evidencia);
   if (monto === null) return Response.json({ aviso: AVISO_CONFIRMAR_FONDEO }, { status: 409 });
@@ -300,7 +365,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   if (!esCuenta(tarea.walletCobro)) {
     return Response.json({ aviso: AVISO_SIN_COBRO }, { status: 400 });
   }
-  if (tarea.tipo === "reembolso") {
+  const proteger = escrowV2Activo();
+  if (!proteger && tarea.tipo === "reembolso") {
     if (!evidencia?.monto?.trim() && !evidencia?.montoConfirmado?.trim()) {
       return Response.json({ aviso: "Review pending" }, { status: 409 });
     }
@@ -308,7 +374,7 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
       return Response.json({ aviso: AVISO_CONFIRMAR_MONTO }, { status: 409 });
     }
   }
-  const monto = montoDeTarea(tarea, evidencia);
+  const monto = proteger ? montoAReservar(tarea) : montoDeTarea(tarea, evidencia);
   if (monto === null) return Response.json({ aviso: "The milestone amount has to be greater than zero." }, { status: 400 });
   const cuentas = cuentasDeTarea({
     firmante: wallet,
@@ -316,8 +382,9 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     monto,
     titulo: tarea.titulo,
     descripcion: tarea.condicion,
-    engagementId: `hyto-${tarea.id}`,
+    engagementId: idEngagement(tarea.id, proteger),
     roles,
+    proteger,
   });
   if ("aviso" in cuentas) return Response.json({ aviso: cuentas.aviso }, { status: 400 });
   const fondos = await rechazoSiFondos(wallet, String(monto));
@@ -354,7 +421,8 @@ async function guardarResultado(
   sondeo: OpcionesSondeo | undefined,
 ): Promise<ResultadoGuardado> {
   if (!envio.tareaId) return { aviso: null, estadoHttp: 200 };
-  if (envio.accion !== "desplegar" && envio.accion !== "liberar") return { aviso: null, estadoHttp: 200 };
+  const libera = envio.accion === "liberar" || envio.accion === "aprobarLiberar";
+  if (envio.accion !== "desplegar" && !libera) return { aviso: null, estadoHttp: 200 };
   if (!almacen) return { aviso: "The database is not configured and the payment was not saved.", estadoHttp: 200 };
   const tarea = await almacen.leerTarea(envio.tareaId);
   if (!tarea) return { aviso: "We couldn't find that task to save the payment.", estadoHttp: 200 };
@@ -376,7 +444,7 @@ async function guardarResultado(
     if (indexado) return { aviso: null, estadoHttp: 200, contrato };
     return { aviso: AVISO_DESPLIEGUE_ATRASADO, estadoHttp: 200, contrato };
   }
-  if (invocacion.funcion !== FUNCION_LIBERACION) {
+  if (!esFuncionDeLiberacion(invocacion.funcion, envio.accion)) {
     return {
       aviso: "The submit succeeded, but the transaction does not release the milestone, so it was not marked paid.",
       estadoHttp: 200,
