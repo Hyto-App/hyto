@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/auth/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/evidencia/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts lib/config/*.test.ts lib/ui/*.test.ts lib/tareas/*.test.ts scripts/backend-traspaso/*.test.ts scripts/db/*.test.ts scripts/vercel-ignore-build.test.ts scripts/examen-mile.test.ts tests/integracion/guardia.test.ts tests/integracion/sesion-prueba.test.ts",
+    "test": "tsx --test lib/integrante/*.test.ts lib/admin/*.test.ts lib/auth/*.test.ts lib/escrow/*.test.ts lib/revision/*.test.ts lib/evidencia/*.test.ts lib/db/*.test.ts lib/sesion/*.test.ts lib/api/*.test.ts lib/config/*.test.ts lib/ui/*.test.ts lib/tareas/*.test.ts scripts/backend-traspaso/*.test.ts scripts/db/*.test.ts scripts/vercel-ignore-build.test.ts scripts/migrar-deploy.test.ts scripts/examen-mile.test.ts tests/integracion/guardia.test.ts tests/integracion/sesion-prueba.test.ts",
     "test:integracion": "tsx scripts/test-integracion.ts",
     "test:entrar": "node --experimental-test-module-mocks --import tsx --test --test-concurrency=1 tests/integracion/entrar-google.test.ts",
     "hito": "tsx scripts/hito-prueba.ts",
@@ -46,5 +46,15 @@
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "source-map-js": "1.2.2",
+    "esbuild@<=0.24.2": "0.25.12",
+    "jayson": {
+      "uuid": "11.1.1"
+    },
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   }
 }

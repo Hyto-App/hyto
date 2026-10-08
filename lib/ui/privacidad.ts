@@ -12,7 +12,7 @@ const EN = {
   kicker: "Privacy",
   titular: "How Hyto handles your information",
   entrada:
-    "Hyto is a marketplace of small tasks. You send a photo, a person reviews it, and you can get paid in digital dollars (USDC). This page says what the app keeps and who can see it.",
+    "Hyto helps communities funded from afar account for the spend. You send a photo, a person reviews it, and a payment can be released in digital dollars (USDC). This page says what the app keeps and who can see it.",
   inicio: "Home",
   secciones: [
     {
@@ -43,7 +43,7 @@ const ES = {
   kicker: "Privacidad",
   titular: "Cómo Hyto trata tu información",
   entrada:
-    "Hyto es un mercado de tareas pequeñas. Envías una foto, una persona la revisa y puedes cobrar en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
+    "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Envías una foto, una persona la revisa y se puede liberar un pago en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
   inicio: "Inicio",
   secciones: [
     {

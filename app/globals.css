@@ -38,6 +38,9 @@
   --logo-iso: #08090c;
   --foco: #4a7300;
   --anillo-foco: 0 0 0 3px rgba(74, 115, 0, 0.35);
+  /* Photo focus: dark outer ring on the light page, light inner ring against it. */
+  --foco-foto: #14162b;
+  --foco-foto-contra: #ffffff;
   --pend: #9a6400;
   --pend-bg: rgba(255, 194, 75, 0.16);
   --rev: #4148c0;
@@ -108,6 +111,9 @@
   --logo-iso: #b7ee34;
   --foco: #b7ee34;
   --anillo-foco: 0 0 0 3px rgba(183, 238, 52, 0.35);
+  /* Photo focus: light outer ring on the dark page, dark inner ring against it. */
+  --foco-foto: #f4f6fb;
+  --foco-foto-contra: #08090c;
   --pend: #ffc24b;
   --pend-bg: rgba(255, 194, 75, 0.12);
   --rev: #a3aaff;
@@ -1044,7 +1050,45 @@ a.hyto-identidad:focus-visible {
   object-fit: cover;
 }
 
+.hyto-photo img {
+  object-fit: contain;
+}
+
+.hyto-photo-abrir {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: zoom-in;
+}
+
+.hyto-photo-abrir[aria-disabled="true"] {
+  cursor: default;
+}
+
+.hyto-photo-abrir:focus-visible {
+  outline: none;
+}
+
+/* Outside the frame: outline and shadow do not change the photo box. */
+.hyto-photo:has(.hyto-photo-abrir:focus-visible) {
+  outline: 3px solid var(--foco-foto);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 3px var(--foco-foto-contra),
+    0 0 0 6px var(--foco-foto);
+}
+
 .hyto-photo-nota {
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1053,6 +1097,50 @@ a.hyto-identidad:focus-visible {
   text-align: center;
   font-size: 14px;
   color: var(--suave);
+}
+
+.hyto-photo-amplia {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, #08090c 86%, transparent);
+}
+
+.hyto-photo-amplia-columna {
+  display: flex;
+  width: min(960px, 100%);
+  max-height: 100%;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.hyto-photo-amplia-marco {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: min(78vh, 860px);
+  align-items: center;
+  justify-content: center;
+}
+
+.hyto-photo-amplia-marco img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--papel);
+}
+
+.hyto-photo-amplia-marco .hyto-photo-nota {
+  position: absolute;
+  inset: 0;
 }
 
 .hyto-spinner {
@@ -2044,14 +2132,21 @@ a.hyto-identidad:focus-visible {
   pointer-events: none;
 }
 
-.hyto-cancelar-firma {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  right: 12px;
-  z-index: 2147483647;
-  width: auto;
-  padding-inline: 16px;
-  background: var(--card-bg, #fff);
+/*
+ * The vault iframe is a child of body. IntersectionObserver v2 reports its card as not
+ * visible when html or body has opacity, a transform, a filter, or will-change.
+ * This class is on html only while Cavos is signing.
+ */
+html.hyto-firmando,
+html.hyto-firmando body {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: auto !important;
+  animation: none !important;
 }
 
 .hyto-login {
@@ -3131,6 +3226,31 @@ a.hyto-identidad:focus-visible {
   text-decoration: underline;
   text-underline-offset: 3px;
   animation: hyto-login-aparece 200ms ease both;
+}
+
+/* Same node for the whole countdown, so a tap as it hits 0 is not lost on a swap. */
+.hyto-login-reenvio button.is-espera {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--l-tenue);
+  text-decoration: none;
+  animation: none;
+  cursor: default;
+}
+
+.hyto-login-reenvio button.is-espera .hyto-login-icono {
+  width: 15px;
+  height: 15px;
+}
+
+.hyto-login-btn.is-espera {
+  opacity: 0.4;
+}
+
+.hyto-login-btn.is-espera:hover,
+.hyto-login-btn.is-espera:active {
+  transform: none;
 }
 
 .hyto-login-tenue {
@@ -4753,13 +4873,6 @@ a.hyto-identidad:focus-visible {
   letter-spacing: -0.03em;
 }
 
-.hyto-dialogo-monto small {
-  margin-left: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--suave);
-}
-
 .hyto-dialogo-destino {
   font-size: 13.5px;
   color: var(--suave);
@@ -5397,6 +5510,47 @@ a.hyto-identidad:focus-visible {
   color: var(--suave);
 }
 
+.hyto-recibo a.hyto-recibo-abrir {
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.hyto-recibo-pagina {
+  display: grid;
+  gap: 12px;
+  max-width: 32rem;
+}
+
+.hyto-recibo-pagina h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.hyto-recibo-neto {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--acento-texto);
+}
+
+.hyto-recibo-red {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.hyto-recibo-red a {
+  color: var(--suave);
+  text-underline-offset: 3px;
+}
+
 .hyto-pedir {
   display: grid;
   gap: 12px;
@@ -5445,6 +5599,16 @@ a.hyto-identidad:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.hyto-pedir-listo {
+  margin: 0;
+  border-radius: 16px;
+  background: var(--ok-bg);
+  padding: 14px 16px;
+  color: var(--tinta);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 @media (max-width: 1023px) {
@@ -5829,9 +5993,12 @@ a.hyto-identidad:focus-visible {
   font-weight: 600;
 }
 
-.hyto-rastreo li[data-estado="hecho"]::before,
-.hyto-rastreo li[data-estado="ahora"]::before {
+.hyto-rastreo li[data-estado="hecho"]::before {
   background: var(--acento);
+}
+
+.hyto-rastreo li[data-estado="ahora"]::before {
+  background: linear-gradient(90deg, var(--acento) 55%, var(--linea) 55%);
 }
 
 .hyto-bitacora {

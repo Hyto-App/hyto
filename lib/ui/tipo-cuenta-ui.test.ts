@@ -16,7 +16,7 @@ test("el formulario deja elegir empresa o voluntario y pide el perfil de empresa
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 20));
     });
-    assert.match(texto(), /Company or organization/);
+    assert.match(texto(), /Community or chapter/);
     assert.match(texto(), /Volunteer/);
     assert.match(texto(), /does not change your role/);
     const empresa = document.querySelector<HTMLInputElement>("input[value=empresa]");

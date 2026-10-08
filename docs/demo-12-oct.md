@@ -1,5 +1,7 @@
 # Demo del 12 de octubre
 
+Este demo es un evento de ejemplo para rendir cuentas de un gasto. No es un piloto y no mueve dinero real. El hash de la tarea marcada como pagada es un marcador, no una transacción de testnet.
+
 Este documento es para Raúl, antes del wipe que van a decidir Jayden y Josué. Aquí no se borra nada. El backup solo lee. La semilla solo inserta filas que todavía no existen. Nadie corrió estos comandos contra Neon al dejarlos en el repo.
 
 El wipe del enclave de Cavos y de las cuentas nuevas lo hacen Jayden y Josué. Estos scripts no lo hacen.

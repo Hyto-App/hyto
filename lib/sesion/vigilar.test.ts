@@ -81,6 +81,32 @@ test("si el servidor ya leyó la sesión, un 401 no manda al ingreso", async () 
   }
 });
 
+test("en la pantalla de ingreso un 401 no recarga la página", async () => {
+  limpiarPantalla();
+  guardarWallet();
+  window.history.replaceState(null, "", "/");
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = async () => {
+    llamadas += 1;
+    return new Response(JSON.stringify({ aviso: "Sign in to continue." }), { status: 401 });
+  };
+  try {
+    await montar(createElement(VigilarSesion));
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.equal(llamadas, 0);
+    assert.equal(window.location.pathname, "/");
+    assert.equal(window.location.search, "");
+  } finally {
+    globalThis.fetch = original;
+    window.history.replaceState(null, "", "/");
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("sin wallet guardada un 401 no cambia de pantalla", async () => {
   limpiarPantalla();
   window.history.replaceState(null, "", "/mis-tareas");

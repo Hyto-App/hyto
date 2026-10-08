@@ -79,6 +79,7 @@ function ledgerSinMigrar() {
       });
       const email = String(fila.email ?? "");
       if (!usuarios.some((existente) => existente.email === email)) usuarios.push(fila);
+      if (texto.includes("returning")) return { rows: [fila] };
       return { rows: [] };
     }
     if (texto.startsWith("insert") && texto.includes('into "sesiones"')) {
@@ -122,8 +123,12 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
   assert.equal(usuarios.length, 1);
   assert.equal(sesiones.length, 1);
 
+  const antesAlta = consultas.length;
   const alta = await crearSesionHttp(pedido("nuevo@hyto.app", "signup"), almacen);
   assert.equal(alta.status, 200, consultas.join("\n"));
+  const duranteAlta = consultas.slice(antesAlta);
+  const lecturasUsuario = duranteAlta.filter((consulta) => /select .+ from "usuarios"/i.test(consulta));
+  assert.equal(lecturasUsuario.length, 1, duranteAlta.join("\n"));
   const cuerpoAlta = (await alta.json()) as { email: string; nuevo: boolean; rol: string };
   assert.equal(cuerpoAlta.email, "nuevo@hyto.app");
   assert.equal(cuerpoAlta.nuevo, true);
@@ -146,5 +151,26 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
   const sqlUsuarios = consultas.filter((consulta) => consulta.includes('"usuarios"')).join("\n");
   assert.doesNotMatch(sqlUsuarios, COLUMNAS_NUEVAS);
   assert.match(sqlUsuarios, /insert into "usuarios" \("id", "email", "nombre", "rol"\) values/i);
+  assert.match(sqlUsuarios, /returning "id", "email", "nombre", "rol"/i);
   assert.match(sqlUsuarios, /on conflict \("email"\) do update set "nombre" = excluded\."nombre", "rol" = excluded\."rol"/i);
+});
+
+test("el ingreso no nombra columnas de features aunque el interruptor esté encendido", async () => {
+  process.env.HYTO_TIPO_CUENTA = "on";
+  process.env.HYTO_PERFIL_VOLUNTARIO = "on";
+  process.env.HYTO_COMUNIDADES = "on";
+  process.env.HYTO_TABLON = "on";
+  try {
+    const { almacen, consultas, usuarios } = ledgerSinMigrar();
+    usuarios.push({ id: "u-viejo", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
+    const ingreso = await crearSesionHttp(pedido("ana@hyto.app", "signin"), almacen);
+    assert.equal(ingreso.status, 200, consultas.join("\n"));
+    const sqlUsuarios = consultas.filter((consulta) => consulta.includes('"usuarios"')).join("\n");
+    assert.doesNotMatch(sqlUsuarios, COLUMNAS_NUEVAS);
+  } finally {
+    delete process.env.HYTO_TIPO_CUENTA;
+    delete process.env.HYTO_PERFIL_VOLUNTARIO;
+    delete process.env.HYTO_COMUNIDADES;
+    delete process.env.HYTO_TABLON;
+  }
 });

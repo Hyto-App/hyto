@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LINEA_OG } from "@/components/ui/marca/trazos";
 import {
   CLAVES_DISCURSO,
+  DESCRIPCION_PAGINA,
   audienciasDiscurso,
   confianzaDiscurso,
   discurso,
@@ -12,19 +14,21 @@ import {
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
 const FRASES = [
-  "Prove your worth,",
-  "get paid.",
-  "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
+  "Show the spend,",
+  "on the record.",
+  "Communities in Latin America funded from afar account for every spend.",
   "Practice network.",
-  "This app runs on a practice network for now",
-  "Pick a task",
+  "no live payment is recorded yet",
+  "Lock the funding",
   "Send a photo",
-  "Get paid",
-  "Volunteers and workers",
-  "Organizers",
-  "The organizer approves every payment",
-  "The AI only suggests",
-  "The money is set aside before the work",
+  "Release the payment",
+  "Community members",
+  "Organizers and funders",
+  "A person releases every payment",
+  "Mile only recommends",
+  "The money is set aside first",
+  "Why digital dollars, and not a local transfer?",
+  "SINPE",
   "Try the demo",
   "Sign in",
 ];
@@ -40,7 +44,7 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
   for (const frase of FRASES) assert.ok(unido.includes(frase), frase);
   assert.deepEqual(
     pasosDiscurso().map((paso) => paso.titulo),
-    ["Pick a task", "Send a photo", "Get paid"],
+    ["Lock the funding", "Send a photo", "Release the payment"],
   );
   assert.equal(audienciasDiscurso().length, 2);
   assert.equal(confianzaDiscurso().length, 3);
@@ -56,7 +60,14 @@ test("el discurso en español usa las mismas claves", () => {
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Demuestra tu valor,", "Red de práctica.", "Elige una tarea", "Conoce a Mile", "¿Necesito saber de cripto?"]) {
+  for (const frase of ["Muestra el gasto,", "Red de práctica.", "Aparta el financiamiento", "Conoce a Mile", "¿Necesito saber de cripto?", "SINPE"]) {
     assert.ok(unido.includes(frase), frase);
   }
+});
+
+test("la descripción de la página no nombra el activo", () => {
+  assert.equal(DESCRIPCION_PAGINA.includes("USDC"), false);
+  assert.match(DESCRIPCION_PAGINA, /digital dollars/);
+  assert.equal(LINEA_OG.includes("USDC"), false);
+  assert.match(discurso.subheadline, /\(USDC\)/);
 });

@@ -16,8 +16,8 @@ export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Respo
   try {
     const vista = await armarInforme(almacen, visor);
     return json(vista);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -47,8 +47,8 @@ export async function vistaEventoHttp(almacen: Almacen, visor: Visor, proyectoId
     const lista = await proyectosVisibles(almacen, visor);
     if (!lista.some((item) => item.id === id)) return json({ aviso: "We couldn't find that event." }, 404);
     return json(await armarInforme(almacen, visor, id));
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -69,10 +69,10 @@ export function veredictoVigente(
 export async function leerVeredictoVigente(
   almacen: Almacen,
   tarea: TareaFila,
-): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null }> {
+): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null; guardado: VeredictoFila | null }> {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const fila = await veredictoAlLeer(almacen, tarea, evidencia);
-  return { evidencia, veredicto: veredictoVigente(tarea, evidencia, fila) };
+  const guardado = await veredictoAlLeer(almacen, tarea, evidencia);
+  return { evidencia, veredicto: veredictoVigente(tarea, evidencia, guardado), guardado };
 }
 
 export async function tareaEnBandeja(almacen: Almacen, tarea: TareaFila): Promise<boolean> {
@@ -110,7 +110,7 @@ export async function intentosAnteriores(
 
 export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>): Promise<TareaAdmin> {
   const mapa = nombres ?? new Map((await almacen.listarUsuarios()).map((usuario) => [usuario.id, usuario.nombre]));
-  const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
+  const { evidencia, veredicto, guardado } = await leerVeredictoVigente(almacen, tarea);
   const anteriores = await intentosAnteriores(almacen, tarea, evidencia, veredicto !== null);
   return {
     id: tarea.id,
@@ -131,6 +131,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     montoConfirmado: evidencia?.montoConfirmado ?? null,
     fecha: evidencia?.fecha ?? null,
     tipoArchivo: evidencia?.tipoArchivo ?? null,
+    apartado: Boolean(tarea.contratoEscrow?.trim()),
     motivoCopia: evidencia?.motivoCopia ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,
@@ -143,7 +144,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       tipo: tarea.tipo,
       condicion: tarea.condicion,
     }),
-    lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
+    lectura: lecturaDesdeVeredicto({ textoScout: guardado?.textoScout ?? null, origen: guardado?.origen ?? null }),
     ...(await fichaVoluntario(almacen, tarea.miembroId)),
     ...(anteriores.length > 0 ? { intentosAnteriores: anteriores } : {}),
   };

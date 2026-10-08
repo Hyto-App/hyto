@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { drizzle as drizzleProxy, type RemoteCallback } from "drizzle-orm/pg-proxy";
+import { contextoParaRevision } from "@/lib/api/contexto-evento";
 import { crearProyectoHttp, leerProyectoHttp } from "@/lib/api/proyectos";
 import { crearAlmacenDesde, type DbAlmacen } from "./neon";
 
@@ -187,6 +188,37 @@ test("crear un evento y leerlo no nombra columnas ni tablas de 0010–0013", asy
   const alta = /insert into "proyectos" \(([^)]+)\)/i.exec(sqlEmitido)?.[1] ?? "";
   const columnas = alta.split(",").map((parte) => parte.trim().replace(/"/g, ""));
   assert.deepEqual(columnas.sort(), ["contexto_ia", "creado_en", "descripcion", "id", "nombre", "organizador_id"]);
+});
+
+test("el contexto para la IA se escribe y se lee en contexto_ia", async () => {
+  const regla = "Only supermarket receipts count.";
+  const { almacen, consultas } = ledgerSinMigrar();
+  const creado = await crearProyectoHttp(
+    new Request("http://local/api/proyectos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        nombre: "Feria",
+        contextoIa: `  ${regla}  `,
+        tareas: [{ titulo: "Compras", tipo: "reembolso", monto: "15" }],
+      }),
+    }),
+    almacen,
+    "org-1",
+  );
+  assert.equal(creado.status, 201, consultas.join("\n"));
+  const id = ((await creado.json()) as { proyecto: { id: string } }).proyecto.id;
+  const guardado = await almacen.leerProyecto(id);
+  assert.equal(guardado?.contextoIa, regla);
+  assert.equal((await contextoParaRevision(almacen, id))?.contextoIa, regla);
+  const sqlEmitido = consultas.join("\n");
+  assert.match(sqlEmitido, /insert into "proyectos" \([\s\S]*?"contexto_ia"/);
+  const lecturas = consultas.filter((consulta) => /\bselect\b/i.test(consulta) && /from "proyectos"/i.test(consulta));
+  assert.ok(lecturas.some((consulta) => consulta.includes('"contexto_ia"')), lecturas.join("\n"));
+
+  await almacen.actualizarProyecto(id, { contextoIa: "Only hardware receipts count." });
+  assert.equal((await almacen.leerProyecto(id))?.contextoIa, "Only hardware receipts count.");
+  assert.match(consultas.join("\n"), /update "proyectos" set "contexto_ia"/);
 });
 
 test("con comunidades encendidas el alta nombra comunidad_id", async () => {

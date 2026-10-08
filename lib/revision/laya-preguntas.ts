@@ -169,6 +169,13 @@ export function preguntasFactura(condicion: string): PreguntasFactura {
   };
 }
 
+/** One yes/no question. Yes only when the written description shows the organizer's rule is met. */
+export function preguntaRegla(regla: string): PreguntaNoul {
+  return siNo(
+    `The organizer wrote this rule and the evidence must follow it: ${regla.trim()}. Does the written description show that the evidence follows the rule? Answer yes only when the description shows every part of the rule is met. Answer no when the description shows the evidence breaks the rule, including a different store, place, or kind of purchase than the rule allows.`,
+  );
+}
+
 export function cuerpoLaya(texto: string, condicion: string, preguntas: Record<string, Pregunta>): unknown {
   return {
     model: "multilingual",

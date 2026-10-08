@@ -39,8 +39,8 @@ export async function novedadesHttp(
       return new Response(null, { status: 304, headers: encabezados(cursor) });
     }
     return json({ cursor, hasta: hastaDe(cambios), cambios }, 200, encabezados(cursor));
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 

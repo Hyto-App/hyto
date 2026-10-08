@@ -86,3 +86,30 @@ test("producción no usa la clave de pruebas y un secreto corto no firma", () =>
   assert.ok(emitirTokenPreparado(carga, Date.now(), enPruebas));
   assert.ok(emitirTokenPreparado(carga, Date.now(), { NODE_ENV: "development", HYTO_TEST_SESSION_KEY: "clave-de-prueba" }));
 });
+
+test("un ancla igual acepta otra huella y uno distinto no", () => {
+  const ancla = "ab".repeat(32);
+  const token = emitirTokenPreparado({ ...carga, ancla }, Date.now(), env);
+  assert.ok(token);
+  const otraHuella = verificarTokenPreparado(
+    token,
+    { usuarioId: carga.usuarioId, sesionId: carga.sesionId, huella: "cd".repeat(32), ancla },
+    Date.now(),
+    env,
+  );
+  assert.equal(otraHuella.ok, true);
+  const otroAncla = verificarTokenPreparado(
+    token,
+    { usuarioId: carga.usuarioId, sesionId: carga.sesionId, huella: "cd".repeat(32), ancla: "ef".repeat(32) },
+    Date.now(),
+    env,
+  );
+  assert.deepEqual(otroAncla, { ok: false, codigo: "huella" });
+  const [cuerpo, mac] = token.split(".");
+  const datos = JSON.parse(Buffer.from(cuerpo, "base64url").toString("utf8")) as Record<string, unknown>;
+  const cambiado = Buffer.from(JSON.stringify({ ...datos, ancla: "11".repeat(32) })).toString("base64url");
+  assert.deepEqual(
+    verificarTokenPreparado(`${cambiado}.${mac}`, { usuarioId: carga.usuarioId, sesionId: carga.sesionId, huella: carga.huella, ancla }, Date.now(), env),
+    { ok: false, codigo: "invalido" },
+  );
+});

@@ -2,6 +2,13 @@ export const ESPERA_TRAS_ENVIO = 20;
 const ESPERA_SI_FALTA = 20;
 
 export const AVISO_GENERICO = "Could not sign in. Try again.";
+/**
+ * `@cavos/kit` 0.2.5 posts this when the vault iframe rejects the parent origin.
+ * The check is an exact list (`origins.includes(origin)`), so a preview host is
+ * refused even when production is allowed. The raw text includes that host.
+ */
+export const AVISO_ORIGEN_CAVOS =
+  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.";
 export const AVISO_CODIGO_INVALIDO = "That code does not match. Check your email and try again.";
 export const AVISO_CODIGO_VENCIDO = "That code expired. Request another one.";
 export const AVISO_RED = "No connection. Check the network and try again.";
@@ -39,6 +46,11 @@ export function esCorreoDemo(correo: string): boolean {
 }
 
 export function avisoDeIngreso(error: unknown): AvisoIngreso {
+  const adjunto = esperaAdjunta(error);
+  if (adjunto !== null) {
+    const espera = Math.max(1, Math.ceil(adjunto));
+    return { texto: textoEspera(espera), esperaSegundos: espera };
+  }
   const texto = textoDe(error);
   const datos = jsonEmpotrado(texto);
   const codigo = codigoDe(datos);
@@ -55,10 +67,12 @@ export function avisoDeIngreso(error: unknown): AvisoIngreso {
   if (esMetodoRecuperacion(texto)) return fijo(AVISO_METODO_RECUPERACION);
   if (esPopupBloqueado(detalle)) return fijo(AVISO_GOOGLE_BLOQUEADO);
   if (esPopupCerrado(detalle)) return fijo(AVISO_GOOGLE_CERRADO);
+  if (codigo === "upstream_unreachable") return fijo(AVISO_RED);
   if (esRed(error, texto)) return fijo(AVISO_RED);
   if (esVencido(detalle)) return fijo(AVISO_CODIGO_VENCIDO);
   if (esCodigoInvalido(detalle)) return fijo(AVISO_CODIGO_INVALIDO);
   if (esCorreoInvalido(detalle)) return fijo(AVISO_CORREO);
+  if (esOrigenCavos(texto)) return fijo(AVISO_ORIGEN_CAVOS);
   return fijo(AVISO_GENERICO);
 }
 
@@ -107,6 +121,43 @@ function esLimite(texto: string, codigo: string, mensaje: string): boolean {
   if (/->\s*429\b/.test(texto)) return true;
   const junto = `${texto} ${mensaje}`.toLowerCase();
   return junto.includes("rate_limited") || junto.includes("too many requests") || /wait\s+\d+(?:\.\d+)?\s+seconds?/.test(junto);
+}
+
+/**
+ * Seconds from a `Retry-After` header. A bare number is a delay. An HTTP date is
+ * the moment the limit lifts. Anything else is ignored so the body can still say.
+ */
+export function segundosDeRetryAfter(valor: string | null | undefined, ahora = Date.now()): number | null {
+  if (!valor) return null;
+  const limpio = valor.trim();
+  if (!limpio) return null;
+  if (/^\d+(?:\.\d+)?$/.test(limpio)) return Number(limpio);
+  const fecha = Date.parse(limpio);
+  if (Number.isNaN(fecha)) return null;
+  return Math.max(0, (fecha - ahora) / 1000);
+}
+
+/**
+ * Wait time for an OTP 429. `Retry-After` wins when it is present. Otherwise the
+ * body (`wait_seconds` or "wait N seconds") is the same fact. A 429 with neither
+ * still waits a short while, and it is never a dropped connection.
+ */
+export async function esperaDeRespuesta429(respuesta: Response, ahora = Date.now()): Promise<number | null> {
+  if (respuesta.status !== 429) return null;
+  const header = segundosDeRetryAfter(respuesta.headers.get("retry-after"), ahora);
+  if (header !== null) return Math.max(1, Math.ceil(header));
+  let cuerpo = "";
+  try {
+    cuerpo = await respuesta.clone().text();
+  } catch {
+    cuerpo = "";
+  }
+  return avisoDeIngreso(`-> 429 ${cuerpo}`).esperaSegundos;
+}
+
+function esperaAdjunta(error: unknown): number | null {
+  if (!error || typeof error !== "object") return null;
+  return comoNumero((error as { esperaSegundos?: unknown }).esperaSegundos);
 }
 
 function segundosDeEspera(datos: Record<string, unknown> | null, texto: string): number | null {
@@ -191,4 +242,9 @@ export function esMetodoRecuperacion(texto: string): boolean {
 /** `kit/secret: this wallet has no sealed recovery. Open it once on the device that created it.` */
 export function esSinRespaldo(texto: string): boolean {
   return /no sealed recovery/i.test(texto);
+}
+
+/** `kit/vault: add https://… to this app's allowed web origins in the Cavos dashboard` */
+export function esOrigenCavos(texto: string): boolean {
+  return /kit\/vault:\s*add\s+\S+\s+to this app's allowed web origins in the Cavos dashboard/i.test(texto);
 }

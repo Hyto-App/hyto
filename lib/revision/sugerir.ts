@@ -5,7 +5,7 @@ import { MAX_REQUISITOS } from "./requisitos";
 const BASE = "https://api.groq.com/openai/v1";
 const TEXTO_MAX = 180;
 
-const PEDIDO = `You help an organizer write photo requirements for a small task.
+const PEDIDO = `You help an organizer write photo requirements for a community task or a receipt.
 Reply with JSON only: {"requisitos":["..."]}.
 Write at most 3 short requirements a photo can show.
 Each item is one sentence, plain text, no HTML, no numbering.

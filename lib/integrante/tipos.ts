@@ -63,7 +63,11 @@ export type Tarea = {
   hashPago?: string | null;
   etapa?: EtapaTarea | null;
   requisitos?: RequisitoRevision[];
-  /** Confirmed reimbursement amount, when the API sends one. */
+  /** Dollar figure Mile read on the receipt. Not the cap and not the net. */
+  montoRevisado?: string | null;
+  /** Confirmed reimbursement amount that was funded. Not the cap. */
+  montoConfirmado?: string | null;
+  /** Net USDC released to the wallet. The API sends it once the task is paid. */
   montoPagado?: string | null;
   /** ISO-8601 instant the latest file was sent (`enviada_en`). */
   enviadaEn?: string | null;

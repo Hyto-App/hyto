@@ -159,6 +159,40 @@ test("el empate del mejor mes se queda con el más reciente, y un pago sin fecha
   assert.equal(orgullo.tareasCompletadas, 4);
 });
 
+test("el total es la suma de cada pago redondeado al centavo, y lo reciente guarda el neto", () => {
+  const orgullo = armarOrgullo(
+    [
+      tarea({ id: "chico", monto: "1.994", pagadoEn: "2026-10-02T18:00:00.000Z" }),
+      tarea({ id: "comida", titulo: "Meal", monto: "12.44256", pagadoEn: "2026-10-03T18:00:00.000Z" }),
+    ],
+    AHORA,
+  );
+  // 1.994 → 1.99 and 12.44256 → 12.44. Rounding the raw sum 14.43656 would show 14.44.
+  assert.equal(orgullo.total, "14.43");
+  assert.equal(orgullo.esteMes, "14.43");
+  assert.notEqual(orgullo.total, "14.43656");
+  assert.notEqual(orgullo.total, "14.44");
+  assert.notEqual(orgullo.total, "14.48");
+  assert.deepEqual(
+    orgullo.recientes.map((item) => item.monto).sort(),
+    ["1.994", "12.44256"],
+  );
+});
+
+test("tres netos que suman 16.43056 se muestran como 16.42, que es lo que suman sus centavos", () => {
+  const orgullo = armarOrgullo(
+    [
+      tarea({ id: "a", monto: "1.994", pagadoEn: "2026-10-02T18:00:00.000Z" }),
+      tarea({ id: "b", monto: "12.44256", pagadoEn: "2026-10-03T18:00:00.000Z" }),
+      tarea({ id: "c", monto: "1.994", pagadoEn: "2026-10-04T18:00:00.000Z" }),
+    ],
+    AHORA,
+  );
+  assert.equal(orgullo.total, "16.42");
+  assert.notEqual(orgullo.total, "16.43");
+  assert.notEqual(orgullo.total, "16.43056");
+});
+
 test("la muestra del demo tiene pagos reales de ejemplo en este mes y el anterior", () => {
   const orgullo = armarOrgullo(tareasMuestra(AHORA), AHORA);
   assert.equal(orgullo.vacio, false);

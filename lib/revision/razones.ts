@@ -26,6 +26,8 @@ export type EntradaRazones = {
   /** The task type. A reimbursement gets the saved amount and date tags even when Laya did not call it a receipt. */
   tipo?: TipoTarea;
   lectura?: LecturaEvidencia | null;
+  /** False when Laya said the photo breaks the organizer's rule. Null when no rule was asked. */
+  cumpleRegla?: boolean | null;
   /**
    * The task condition. Recomputed on read, so an old review drops `wrong_place`
    * when this text does not ask for a place. The stored grade is unchanged.
@@ -38,6 +40,7 @@ const ORDEN = [
   "cap_no_coincide",
   "cap_sin_empezar",
   "cap_otro_gasto",
+  "cap_regla_evento",
   "cap_no_razonable",
   "photo_unclear",
   "selfie_or_empty",
@@ -108,6 +111,15 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       "The expense is a different kind from the one requested, so the grade stays Insufficient.",
       "problem",
       ["f1"],
+    ));
+  }
+  if (entrada.lectura?.cumpleReglas === false || entrada.cumpleRegla === false) {
+    etiquetas.push(etiqueta(
+      "cap_regla_evento",
+      "Serious issue: it breaks the organizer's rule",
+      "The photo does not follow a rule the organizer wrote for this event, so the grade stays Insufficient.",
+      "problem",
+      ["r1"],
     ));
   }
   if (factura && !factura.g2) {

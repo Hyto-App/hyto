@@ -20,7 +20,7 @@ export function useNovedadesEvento(opciones: {
   alCambiar: (ids: string[]) => Promise<ResultadoSondeo>;
   intervaloMs?: number;
   oculto?: () => boolean;
-}): { reciente: boolean } {
+}): { reciente: boolean; sesionVencida: boolean } {
   const tareasRef = useRef(opciones.tareas);
   tareasRef.current = opciones.tareas;
   const fotoDeRef = useRef(opciones.fotoDe);
@@ -32,6 +32,8 @@ export function useNovedadesEvento(opciones: {
   const exigirFotoRef = useRef(opciones.exigirFoto);
   exigirFotoRef.current = opciones.exigirFoto;
   const [reciente, setReciente] = useState(false);
+  const [sesionVencida, setSesionVencida] = useState(false);
+  const vencidaRef = useRef(false);
 
   useEffect(() => {
     const pedido = opciones.proyectoId;
@@ -48,6 +50,8 @@ export function useNovedadesEvento(opciones: {
     const intervalo = intervaloDe(opciones.intervaloMs);
     const control = new AbortController();
     setReciente(false);
+    vencidaRef.current = false;
+    setSesionVencida(false);
 
     const programar = (ms: number) => {
       globalThis.clearTimeout(timer);
@@ -65,7 +69,7 @@ export function useNovedadesEvento(opciones: {
     };
 
     const alVista = () => {
-      if (!viva) return;
+      if (!viva || vencidaRef.current) return;
       if (ocultoRef.current()) {
         globalThis.clearTimeout(timer);
         return;
@@ -74,16 +78,29 @@ export function useNovedadesEvento(opciones: {
     };
 
     async function tick() {
-      if (!viva || ocultoRef.current() || ocupado) return;
+      if (!viva || ocultoRef.current() || ocupado || vencidaRef.current) return;
       ocupado = true;
       let falloRed = false;
       let abortado = false;
+      let sesionCerrada = false;
       try {
         const leido = await leerNovedades(fetch, proyectoId, cursor, control.signal);
         if (!viva) return;
         if (leido.tipo === "fallo") {
-          falloRed = true;
+          if (leido.estado === 401) {
+            sesionCerrada = true;
+            if (!vencidaRef.current) {
+              vencidaRef.current = true;
+              setSesionVencida(true);
+            }
+          } else {
+            falloRed = true;
+          }
         } else if (leido.tipo === "igual") {
+          if (vencidaRef.current) {
+            vencidaRef.current = false;
+            setSesionVencida(false);
+          }
           fallos = 0;
           if (leido.cursor) cursor = leido.cursor;
         } else {
@@ -91,6 +108,10 @@ export function useNovedadesEvento(opciones: {
             exigirFoto: exigirFotoRef.current,
             fotoDe: (id) => fotoDeRef.current?.(id) ?? null,
           });
+          if (vencidaRef.current) {
+            vencidaRef.current = false;
+            setSesionVencida(false);
+          }
           if (plan.ids.length === 0) {
             sellos = plan.siguientes;
             cursor = leido.cursor || cursor;
@@ -112,7 +133,10 @@ export function useNovedadesEvento(opciones: {
       } finally {
         ocupado = false;
       }
-      if (!viva || abortado || ocultoRef.current()) return;
+      if (!viva || abortado || ocultoRef.current() || sesionCerrada) {
+        if (sesionCerrada) globalThis.clearTimeout(timer);
+        return;
+      }
       if (falloRed) fallos += 1;
       const espera = esperaSondeo(fallos, false, intervalo);
       if (espera !== null) programar(espera);
@@ -132,7 +156,7 @@ export function useNovedadesEvento(opciones: {
     };
   }, [opciones.intervaloMs, opciones.proyectoId]);
 
-  return { reciente };
+  return { reciente, sesionVencida };
 }
 
 function ocultoPorDefecto(): boolean {

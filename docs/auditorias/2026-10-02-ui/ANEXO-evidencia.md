@@ -1,5 +1,7 @@
 # Auditoría UI/UX y bugs visibles — hyto.vercel.app
 
+**Pitch, 8 de octubre de 2026.** El eslogan de la app pasó a «Show the spend. On the record.» ([README.md](../../../README.md)). El eslogan de los mockups que cita este anexo, «Prove your worth. Get paid.», es lo que decían el 30 de septiembre. No es el pitch actual.
+
 Fecha: 2 de octubre de 2026. Sitio público: https://hyto.vercel.app (entrada en `/eventos`). Código usado solo para explicar lo que se vio, en `main` `2b9fad4`.
 
 Método: Playwright + Chromium, viewports 390×844 y 1440×900, temas oscuro y claro (`localStorage` `hyto-tema`), sesión demo de organizador y de voluntario. Por pantalla: captura de página completa, consola, red, axe-core, overflow, título y meta. No se envió código por correo, no se usó Google, no se invitó a nadie, no se asignó una tarea, no se reintentó la revisión y no se firmó ni se pagó.

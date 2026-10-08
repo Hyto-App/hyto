@@ -1,6 +1,7 @@
+import { VaultClient } from "@cavos/kit";
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
-import { AVISO_SIN_RESPALDO, esMetodoRecuperacion, esSinRespaldo } from "@/lib/auth/errores";
+import { AVISO_ORIGEN_CAVOS, AVISO_SIN_RESPALDO, esMetodoRecuperacion, esOrigenCavos, esSinRespaldo } from "@/lib/auth/errores";
 import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
 import { bajarCapasParaCavos, soltarDialogosModales } from "./capaCavos";
@@ -12,6 +13,8 @@ export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
 export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
+export const AVISO_SIN_CUENTA_FIRMA =
+  "This sign-in has no account to sign with. Sign in again on this site to continue.";
 export const AVISO_DISPOSITIVO =
   "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
 export const AVISO_PASSKEY =
@@ -50,7 +53,12 @@ export type PagoFirmado = {
   monto: number | null;
 };
 
-/** Same deadline as Get ready to be paid. Cavos sets none of its own on signXdr. */
+/**
+ * Deadline for a Cavos call that should answer on its own (a trustline, an execute).
+ * A payment signature does not use it: the person has to approve, and Cavos can take
+ * longer than this to show the prompt. Giving up first leaves an overlay that still
+ * approves and then does nothing.
+ */
 export const TOPE_FIRMA_MS = 60_000;
 
 export type OpcionesFirma = {
@@ -58,8 +66,12 @@ export type OpcionesFirma = {
   firmar?: (unsignedXdr: string) => Promise<string>;
   extra?: ExtraFirma;
   alEmpezar?: (accion: AccionCliente) => void;
-  /** Cancel, Escape, or the corner button abort the prepare and the Cavos prompt. */
+  /** Cancel or Escape abort the prepare. Reject in the Cavos prompt aborts the signature. */
   senal?: AbortSignal;
+  /**
+   * Ignored for a payment signature. That wait ends when the person approves, rejects,
+   * or cancels. `esperarCavos` still uses a deadline for trustline setup.
+   */
   topeMs?: number;
 };
 
@@ -123,9 +135,8 @@ export async function firmarYEnviar(
   let firmado: string;
   const restaurar = bajarCapasParaCavos();
   try {
-    firmado = (
-      await esperarCavos((opciones.firmar ?? firmarConCavos)(listo.xdr), opciones.topeMs ?? TOPE_FIRMA_MS, opciones.senal)
-    ).trim();
+    const pedirFirma = opciones.firmar ?? ((xdr: string) => firmarConCavos(xdr, opciones.senal));
+    firmado = (await esperarFirmaPersona(pedirFirma(listo.xdr), opciones.senal)).trim();
   } catch (error) {
     throw traducirFirma(error);
   } finally {
@@ -241,11 +252,76 @@ export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
   throw new ErrorFirmaCliente(aviso, null, null, billetera.status);
 }
 
-async function firmarConCavos(unsignedXdr: string): Promise<string> {
+async function firmarConCavos(unsignedXdr: string, senal?: AbortSignal): Promise<string> {
+  if (senal?.aborted) throw new ErrorFirmaCliente(AVISO_RECHAZO);
   const billetera = firmanteDe(await conectarBilleteraDeSesion());
+  if (senal?.aborted) throw new ErrorFirmaCliente(AVISO_RECHAZO);
   // Connect can take a moment. Drop any modal that came back before the vault paints.
   soltarDialogosModales();
-  return billetera.signXdr(unsignedXdr);
+  const firmado = billetera.signXdr(unsignedXdr);
+  if (senal?.aborted) {
+    soltarVaultCavos();
+    throw new ErrorFirmaCliente(AVISO_RECHAZO);
+  }
+  return firmado;
+}
+
+/**
+ * Waits until the person approves, rejects, or cancels. There is no clock on this wait:
+ * the vault can appear after the old 60s cap, and approving it has to be the signature
+ * we submit. Cancel closes the overlay so a late Approve cannot send.
+ */
+export function esperarFirmaPersona<T>(promesa: Promise<T>, senal?: AbortSignal): Promise<T> {
+  if (senal?.aborted) {
+    soltarVaultCavos();
+    return Promise.reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+  }
+  return new Promise((resolve, reject) => {
+    let cerrado = false;
+    const terminar = (seguir: () => void) => {
+      if (cerrado) return;
+      cerrado = true;
+      senal?.removeEventListener("abort", alAbortar);
+      seguir();
+    };
+    const alAbortar = () => {
+      terminar(() => {
+        soltarVaultCavos();
+        reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+      });
+    };
+    senal?.addEventListener("abort", alAbortar, { once: true });
+    promesa.then(
+      (valor) => {
+        terminar(() => {
+          if (senal?.aborted) {
+            soltarVaultCavos();
+            reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+            return;
+          }
+          resolve(valor);
+        });
+      },
+      (error) => {
+        terminar(() => {
+          if (senal?.aborted) {
+            soltarVaultCavos();
+            reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+            return;
+          }
+          reject(error);
+        });
+      },
+    );
+  });
+}
+
+/** Drops the shared Cavos iframe so an abandoned Approve cannot be used, and the next signature can open a new one. */
+export function soltarVaultCavos(): void {
+  const mapa = (VaultClient as unknown as { attached?: { clear?: () => void } }).attached;
+  mapa?.clear?.();
+  if (typeof document === "undefined") return;
+  for (const marco of document.querySelectorAll('iframe[aria-label="Cavos"]')) marco.remove();
 }
 
 async function postJson(
@@ -308,6 +384,7 @@ function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
 export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (error instanceof ErrorFirmaCliente) return error;
   const textoError = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  if (esOrigenCavos(textoError)) return new ErrorFirmaCliente(AVISO_ORIGEN_CAVOS);
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);

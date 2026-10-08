@@ -3,7 +3,7 @@ import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
-import { calificar, notaDeTexto, type MotivoTope } from "./pesos";
+import { calificar, motivosDeRegla, notaDeTexto, type MotivoTope } from "./pesos";
 
 export type Senales = {
   choice: string;
@@ -85,6 +85,8 @@ type EntradaReembolso = {
   fecha: string | null;
   /** A total was printed, but its currency is unknown or has no rate, so there is no dollar amount. */
   montoSinUsd?: boolean;
+  /** False when the photo breaks a rule the organizer wrote for the event. */
+  cumpleReglas?: boolean | null;
 };
 
 // The percentage is the result. It never approves a payment.
@@ -96,7 +98,7 @@ export function armarVeredicto(
 ): { nota: number; veredicto: Veredicto } | null {
   const nota = notaDeTexto(entrada.score);
   if (nota === null) return null;
-  const motivos = [...(entrada.motivos ?? []), ...motivosReembolso(entrada)];
+  const motivos = [...(entrada.motivos ?? []), ...motivosDeRegla(entrada.cumpleReglas), ...motivosReembolso(entrada)];
   const calificado = calificar(nota, motivos);
   return { nota: calificado.nota, veredicto: calificado.veredicto };
 }
@@ -145,6 +147,7 @@ export function cerrar(
     monto,
     fecha,
     montoSinUsd: montoSinUsd(descripcion.lectura),
+    cumpleReglas: descripcion.lectura?.cumpleReglas,
     score: senales.score,
     motivos: senales.motivos,
   });

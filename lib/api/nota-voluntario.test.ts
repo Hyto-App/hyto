@@ -87,8 +87,12 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "intentos",
     "miembroId",
     "monto",
+    "montoConfirmado",
+    "montoPagado",
+    "montoRevisado",
     "nota",
     "notas",
+    "organizador",
     "prioridad",
     "proyectoId",
     "rechazada",
@@ -100,9 +104,11 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "tipoArchivo",
     "titulo",
     "tope",
+    "ultimaEvidenciaId",
     "veredicto",
     "walletCobro",
   ]);
+  assert.equal(stand.ultimaEvidenciaId, "ejemplo-stand");
   assert.equal(stand.evento, "ZEEK");
   assert.deepEqual(stand.notas, []);
 
@@ -116,6 +122,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const sinNota = (await evento.json()) as { tareas: Registro[] };
   assert.equal(sinNota.tareas.some((tarea) => tarea.id === "stand"), true);
   assert.equal(sinNota.tareas.some((tarea) => "nota" in tarea || "veredicto" in tarea || "etapa" in tarea), false);
+  assert.equal(sinNota.tareas.some((tarea) => "montoRevisado" in tarea || "organizador" in tarea), false);
 
   await almacen.guardarVeredicto({ ...guardado, origen: "error", score: "40", frase: "SECRETO-LAYA", choice: "tiempo" });
   const fallo = await listarTareasHttp(almacen, { usuarioId: "voluntario-1", demo: false }, "mias");
@@ -162,6 +169,7 @@ type Registro = {
   origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
+  ultimaEvidenciaId?: string | null;
   evento?: string | null;
   notas?: unknown[];
 };
