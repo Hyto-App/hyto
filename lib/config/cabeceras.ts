@@ -20,16 +20,21 @@ const CONECTAR = [
   "https://friendbot.stellar.org",
 ];
 
-export function politicaCsp(desarrollo: boolean): string {
+const SCRIPT_PREVIEW_VERCEL = "https://vercel.live/_next-live/feedback/feedback.js";
+
+export function politicaCsp(desarrollo: boolean, preview = false): string {
   const conectar = [...CONECTAR];
   if (desarrollo) conectar.push("ws:", "wss:", "http://localhost:*", "http://127.0.0.1:*");
+  const scripts = ["'self'", "'unsafe-inline'"];
+  // The Vercel preview toolbar. Production builds never get this host.
+  if (preview) scripts.push(SCRIPT_PREVIEW_VERCEL);
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self' https://accounts.google.com https://appleid.apple.com https://cavos.xyz",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src ${scripts.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -40,9 +45,12 @@ export function politicaCsp(desarrollo: boolean): string {
   ].join("; ");
 }
 
-export function cabecerasSeguridad(desarrollo = process.env.NODE_ENV !== "production"): Cabecera[] {
+export function cabecerasSeguridad(
+  desarrollo = process.env.NODE_ENV !== "production",
+  preview = process.env.VERCEL_ENV === "preview",
+): Cabecera[] {
   return [
-    { key: "Content-Security-Policy", value: politicaCsp(desarrollo) },
+    { key: "Content-Security-Policy", value: politicaCsp(desarrollo, preview) },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     { key: "X-Frame-Options", value: "DENY" },

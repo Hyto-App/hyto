@@ -93,7 +93,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 
 Cavos (email code or Google) in `components/admin/Entrar.tsx`. The browser sends the email and the JWT to `POST /api/sesion`. The server checks RS256 and expiry (`lib/sesion/jwt.ts`) and sets the `hyto_sesion` cookie (HttpOnly, SameSite=Lax, Secure in production, capped at 24 hours).
 
-`CAVOS_JWT_JWK` wins over `CAVOS_JWKS_URL`. `HYTO_PERMITIR_JWT_SIN_FIRMA=1` skips the signature only outside production. `CAVOS_JWT_ISSUER` is a comma-separated issuer list. `CAVOS_JWT_AUDIENCE`, when set, must match `aud`. **When either is empty, that check is skipped.** That is still open. See the audit note below.
+`CAVOS_JWT_JWK` wins over `CAVOS_JWKS_URL`. `HYTO_PERMITIR_JWT_SIN_FIRMA=1` skips the signature only outside production. `CAVOS_JWT_ISSUER` is a comma-separated issuer list. Empty uses the built-in issuers (Google, Apple, `https://cavos.app/firebase`, and `https://securetoken.google.com/<project>`). Production never skips the issuer check. `CAVOS_JWT_AUDIENCE` is a comma-separated list of OAuth client ids: the Google client id, the Apple Services ID, and optionally the Firebase project id. It is not the Cavos app id. Email OTP is a Cavos-signed JWT with `iss` `https://cavos.app/firebase` and `aud` `cavos-starknet`; that audience is accepted without the variable. A different `aud` on that issuer is rejected.
 
 If the JWT carries a `G…`, it is stored. If it does not, `POST /api/sesion/wallet` accepts the address the client sends. The code says that does not prove the client holds the key. On submit, the signer is read from the XDR and must match `sesiones.wallet`.
 
@@ -154,8 +154,8 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
-| `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
-| `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |
+| `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty uses the built-in Cavos issuers. Production never skips the check. |
+| `CAVOS_JWT_AUDIENCE` | Comma-separated Google OAuth client id, Apple Services ID, and optionally the Firebase project id. Not the Cavos app id. Email OTP uses the fixed audience `cavos-starknet` and does not need this variable. |
 | `CAVOS_JWT_JWK` | Public JWK. Wins over `CAVOS_JWKS_URL`. |
 | `HYTO_PERMITIR_JWT_SIN_FIRMA` | Exact `1`, and never in production. |
 | `HYTO_DEMO_LOGIN` | Exact `1` turns demo login on. |
@@ -195,7 +195,7 @@ There is still no real testnet USDC payment hash in the repo.
 
 Open items from [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md), still open in this commit unless noted there:
 
-1. **JWT audience and issuer.** Empty `CAVOS_JWT_AUDIENCE` or `CAVOS_JWT_ISSUER` skips that check. Production does not fail closed.
+1. **JWT audience and issuer.** Production fails closed. Email OTP expects `aud` `cavos-starknet`. `CAVOS_JWT_AUDIENCE` must be the Google client id, the Apple Services ID, and optionally the Firebase project id — not the Cavos app id. A Cavos email token from another app still shares that fixed audience; the signature is Cavos's, and the audience does not name the app.
 2. **Wallet ownership.** `POST /api/sesion/wallet` can store a client-supplied `G…` when the JWT has none. `wallet_cobro` still comes from the upload and can change after deploy.
 3. **SVG upload.** `esImagen` accepts any `image/*`, including SVG, and the photo route serves the stored type. `next.config.ts` sets no `nosniff` or CSP headers. Seeded sample evidence is served as a generated PNG (`lib/blob/marcador.ts`) with `nosniff`.
 4. **No CI.** There is no `.github/` workflow.

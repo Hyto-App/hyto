@@ -203,6 +203,12 @@ async function cerrarConWallet(
   return { aviso: null, direccion: billetera.address, guardada: true };
 }
 
+/**
+ * Cavos sends this string as `redirect_uri` to `/api/oauth/v2/google` and
+ * `/api/oauth/v2/apple`. It has to match a URI registered for the app, with
+ * no query and no hash. `/` and `/configuracion` are the screens that start
+ * Google or Apple sign-in, so each origin needs both paths.
+ */
 export function redirectLimpio(): string {
   return `${window.location.origin}${window.location.pathname}`;
 }

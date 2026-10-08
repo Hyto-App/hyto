@@ -4,7 +4,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
-import { correoDelToken, walletDeClaims, walletDelToken } from "@/lib/sesion/correo";
+import { ingresoDelToken, walletDeClaims, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { verificarJwt } from "@/lib/sesion/jwt";
 import { emitirRetoWallet, firmaDesdeBase64, verificarPruebaWallet } from "@/lib/sesion/prueba-wallet";
@@ -37,14 +37,13 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
   const token = typeof crudo.token === "string" ? crudo.token.trim() : "";
   const intencion = intencionDe(crudo.intencion);
   if (crudo.intencion !== undefined && !intencion) return json({ aviso: "Choose Sign up or Sign in." }, 400);
-  const correo = await correoDelToken(token, pedido);
-  if (!correo) {
-    // Reason only: never log the token or the email.
-    // An empty email is valid (Apple can omit it); the token decides.
-    const motivo = !token ? "missing token" : "token rejected (signature, expiry, issuer, audience, or email missing/mismatch)";
-    console.warn(`[api/sesion] Could not confirm sign-in: ${motivo}`);
+  const ingreso = await ingresoDelToken(token, pedido);
+  if (!ingreso.ok) {
+    // aud, iss, and the reason only. Never the token, the email, or sub.
+    console.warn(`[api/sesion] sign-in rejected: ${ingreso.motivo}; iss=${ingreso.iss}; aud=${ingreso.aud}`);
     return json({ aviso: "Could not confirm sign-in." }, 400);
   }
+  const correo = ingreso.correo;
   try {
     const email = correo.correo.trim().toLowerCase();
     let usuario = await almacen.usuarioPorEmail(email);

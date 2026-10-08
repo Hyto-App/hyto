@@ -27,10 +27,27 @@ test("en desarrollo la CSP también abre el websocket del servidor local", () =>
 });
 
 test("las cabeceras incluyen nosniff, el marco y la cámara de las evidencias", () => {
-  const claves = new Map(cabecerasSeguridad(false).map((cabecera) => [cabecera.key, cabecera.value]));
+  const claves = new Map(cabecerasSeguridad(false, false).map((cabecera) => [cabecera.key, cabecera.value]));
   assert.equal(claves.get("X-Content-Type-Options"), "nosniff");
   assert.equal(claves.get("X-Frame-Options"), "DENY");
   assert.match(claves.get("Referrer-Policy") ?? "", /strict-origin-when-cross-origin/);
   assert.match(claves.get("Permissions-Policy") ?? "", /camera=\(self\)/);
   assert.equal(claves.get("Content-Security-Policy"), politicaCsp(false));
+  assert.equal(politicaCsp(false).includes("vercel.live"), false);
+});
+
+test("la barra de preview de Vercel entra en script-src solo cuando el entorno es preview", () => {
+  const previo = process.env.VERCEL_ENV;
+  try {
+    process.env.VERCEL_ENV = "preview";
+    const preview = politicaCsp(false, true);
+    assert.match(preview, /script-src[^;]*https:\/\/vercel\.live\/_next-live\/feedback\/feedback\.js/);
+    assert.equal(cabecerasSeguridad(false).find((cabecera) => cabecera.key === "Content-Security-Policy")?.value, preview);
+    process.env.VERCEL_ENV = "production";
+    const produccion = cabecerasSeguridad(false).find((cabecera) => cabecera.key === "Content-Security-Policy")?.value ?? "";
+    assert.equal(produccion.includes("vercel.live"), false);
+  } finally {
+    if (previo === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = previo;
+  }
 });

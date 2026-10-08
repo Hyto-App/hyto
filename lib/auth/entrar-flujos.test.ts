@@ -148,6 +148,59 @@ test("Continue with Apple guarda signin en Sign in y signup en Crear cuenta", as
   }
 });
 
+test("Try the demo abre la sesión y no se queda en un panel oculto", async () => {
+  const original = globalThis.fetch;
+  const pedidos: { url: string; rol: unknown }[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const cuerpo = JSON.parse(String(init?.body)) as { rol?: unknown };
+    pedidos.push({ url: String(input), rol: cuerpo.rol });
+    return new Response(JSON.stringify({ rol: cuerpo.rol }), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as typeof window.location.assign;
+  try {
+    await montar(createElement(Entrar, { abrirLogin: true, demoHabilitado: true, atiendeUrl: false }));
+    await pulsar("Try the demo");
+    assert.deepEqual(pedidos, [{ url: "/api/sesion/demo", rol: "organizador" }]);
+    assert.deepEqual(destinos, ["/eventos"]);
+  } finally {
+    globalThis.fetch = original;
+    window.location.assign = asignar;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en un preview de Vercel, Google no pide el redirect y explica que OAuth se prueba en producción", async () => {
+  const dom = window as unknown as { happyDOM: { setURL: (url: string) => void } };
+  const anterior = window.location.href;
+  dom.happyDOM.setURL("https://hyto-git-cursor-security-gaps-d37a-vallesjo781-3057s-projects.vercel.app/");
+  const original = globalThis.fetch;
+  let llamadas = 0;
+  globalThis.fetch = (async () => {
+    llamadas += 1;
+    return new Response("{}", { status: 500 });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Entrar, { abrirLogin: true, atiendeUrl: false, politica: async () => POLITICA_INACTIVA }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /preview address is not registered with Cavos/);
+    await pulsar("Continue with Google");
+    assert.equal(llamadas, 0);
+    assert.match(document.body.textContent ?? "", /preview address is not registered with Cavos/);
+  } finally {
+    globalThis.fetch = original;
+    dom.happyDOM.setURL(anterior);
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("dos Entrar en la misma página (Hero y Cierre) no repiten ids", async () => {
   limpiarPantalla();
   try {

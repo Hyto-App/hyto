@@ -339,6 +339,9 @@ export const en = {
     irTareas: "Continue",
     soloMirar: "Just want to look?",
     probarDemo: "Try the demo",
+    demoVoluntario: "As a volunteer",
+    oauthPreview:
+      "Google and Apple sign-in are tried on the production site. This preview address is not registered with Cavos.",
     ayudaEnlace: "We'll email you a sign-in link. Check spam too.",
     enviandoEnlace: "Sending link…",
     chipEnlace: "Your link is on its way",
@@ -1467,6 +1470,9 @@ export const es: Rama<typeof en> = {
     irTareas: "Continuar",
     soloMirar: "¿Solo quieres mirar?",
     probarDemo: "Probar el demo",
+    demoVoluntario: "Como voluntario",
+    oauthPreview:
+      "Google y Apple se prueban en el sitio de producción. Esta dirección de vista previa no está registrada en Cavos.",
     ayudaEnlace: "Te enviamos un enlace para entrar. Revisa también el spam.",
     enviandoEnlace: "Enviando enlace…",
     chipEnlace: "Tu enlace va en camino",

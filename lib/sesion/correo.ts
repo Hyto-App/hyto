@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { esCuenta } from "@/lib/escrow/cuerpos";
-import { verificarJwt, type AjustesJwt } from "./jwt";
+import { audIssVisibles, evaluarJwt, type AjustesJwt } from "./jwt";
 
 export type CorreoToken = {
   correo: string;
@@ -19,21 +19,35 @@ export const EMISOR_APPLE = "https://appleid.apple.com";
  */
 export const DOMINIO_APPLE_SIN_CORREO = "apple.hyto.invalid";
 
-export async function correoDelToken(token: string, correoPedido: string, ajustes?: AjustesJwt): Promise<CorreoToken | null> {
-  const claims = await verificarJwt(token, ajustes);
-  if (!claims) return null;
+export type RechazoIngreso = { motivo: string; iss: string; aud: string };
+
+export async function ingresoDelToken(
+  token: string,
+  correoPedido: string,
+  ajustes?: AjustesJwt,
+): Promise<{ ok: true; correo: CorreoToken } | ({ ok: false } & RechazoIngreso)> {
+  const visible = token ? audIssVisibles(token) : { iss: "(none)", aud: "(none)" };
+  if (!token) return { ok: false, motivo: "missing-token", ...visible };
+  const evaluado = await evaluarJwt(token, ajustes);
+  if (!evaluado.ok) return { ok: false, motivo: evaluado.motivo, ...visible };
+  const claims = evaluado.claims;
   const sub = texto(claims.sub) || texto(claims.user_id) || texto(claims.uid);
-  if (!sub) return null;
+  if (!sub) return { ok: false, motivo: "missing-subject", ...visible };
   let claim = texto(claims.email).toLowerCase();
-  if (claim.endsWith(`@${DOMINIO_APPLE_SIN_CORREO}`)) return null;
+  if (claim.endsWith(`@${DOMINIO_APPLE_SIN_CORREO}`)) return { ok: false, motivo: "email-mismatch", ...visible };
   if (!claim.includes("@")) {
-    if (!esApple(claims)) return null;
+    if (!esApple(claims)) return { ok: false, motivo: "missing-email", ...visible };
     claim = correoAppleSinCorreo(sub);
   }
   const pedido = correoPedido.trim().toLowerCase();
-  if (pedido && pedido !== claim) return null;
+  if (pedido && pedido !== claim) return { ok: false, motivo: "email-mismatch", ...visible };
   const exp = typeof claims.exp === "number" && Number.isFinite(claims.exp) ? claims.exp : null;
-  return { correo: claim, sub, exp };
+  return { ok: true, correo: { correo: claim, sub, exp } };
+}
+
+export async function correoDelToken(token: string, correoPedido: string, ajustes?: AjustesJwt): Promise<CorreoToken | null> {
+  const ingreso = await ingresoDelToken(token, correoPedido, ajustes);
+  return ingreso.ok ? ingreso.correo : null;
 }
 
 // Si el JWT del ingreso trae una G…, es la wallet de ese login.
