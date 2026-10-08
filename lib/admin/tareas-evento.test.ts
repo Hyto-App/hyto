@@ -61,7 +61,7 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
     assert.equal(texto().includes("Up to US$15"), false);
     assert.match(texto(), /Pending · US\$20/);
     const bloqueo = document.querySelector('a[href="/revision/stand"]');
-    assert.equal(bloqueo?.textContent, "Set money aside");
+    assert.equal(bloqueo?.textContent, "Reserve");
     const comida = document.querySelector('a[href="/revision/comida"]');
     assert.equal(comida?.textContent, "Open review");
   } finally {

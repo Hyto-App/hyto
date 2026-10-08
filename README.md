@@ -16,7 +16,7 @@ The images below show demo mode at a mobile width. The sample event comes from l
 
 ![Assigned tasks. Mile reviews the photo before the submission continues.](docs/screenshots/tareas.png)
 
-![Evidence review for a work photo. Lock budget remains unavailable in demo mode.](docs/screenshots/revision.png)
+![Evidence review for a work photo. Reserve remains unavailable in demo mode.](docs/screenshots/revision.png)
 
 ## How it works
 

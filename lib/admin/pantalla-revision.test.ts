@@ -45,7 +45,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /Review failed/);
     assert.match(texto(), /Mile is unavailable/);
     assert.equal(
-      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Set money aside"),
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Reserve"),
       true,
     );
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
@@ -214,18 +214,18 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
 
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Set money aside"));
+    await esperar(() => rotulo("Reserve"));
     const lecturasAntes = lecturas;
-    await pulsar("Set money aside");
+    await pulsar("Reserve");
     await confirmarDialogo();
-    await esperar(() => rotulo("Finish setting aside") && !rotulo("Set money aside") && texto().includes("That step did not finish."));
-    assert.match(texto(), /Money not set aside/);
+    await esperar(() => rotulo("Finish reserving") && !rotulo("Reserve") && texto().includes("That step did not finish."));
+    assert.match(texto(), /Money not reserved/);
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No money moved. It is still set aside for this task."), false);
+    assert.equal(texto().includes("No money moved. It is still reserved for this task."), false);
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
-    await pulsar("Finish setting aside");
+    await pulsar("Finish reserving");
     await confirmarDialogo();
     await esperar(() => firmas.filter((item) => item.url === "/api/firma/enviar" && item.body.accion === "fondear").length === 2);
     const reintento = firmas.filter((item) => item.url === "/api/firma" && item.body.accion === "fondear").at(-1);
@@ -278,12 +278,12 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
-    assert.match(texto(), /Limit US\$15\. Confirm this amount before setting the money aside\./);
+    assert.match(texto(), /Limit US\$15\. Confirm this amount before you reserve the money\./);
     assert.equal(texto().includes("deploy"), false);
-    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Set money aside"));
+    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Reserve"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
-    assert.match(texto(), /Confirm the amount before you can set the money aside/);
+    assert.match(texto(), /Confirm the amount before you can reserve the money/);
     assert.equal(bloqueado.getAttribute("aria-describedby"), "bloqueo-monto");
     await escribir("#monto-confirmado", "12.40");
     await pulsar("Confirm amount");
@@ -292,11 +292,11 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     const post = llamadas.find((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/comida/monto");
     assert.equal(post?.body, JSON.stringify({ monto: "12.40" }));
-    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Set money aside"));
+    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Reserve"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
     assert.equal(listo.getAttribute("aria-describedby"), null);
-    assert.equal(/Confirm the amount before you can set the money aside/.test(texto()), false);
+    assert.equal(/Confirm the amount before you can reserve the money/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
     assert.match(texto(), /US\$12\.40/);
@@ -307,7 +307,7 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
   }
 });
 
-test("sin cuenta para firmar, Set money aside no dice que el ingreso venció y no llama a la firma", async () => {
+test("sin cuenta para firmar, Reserve no dice que el ingreso venció y no llama a la firma", async () => {
   const anterior = globalThis.fetch;
   const llamadas: string[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -322,8 +322,8 @@ test("sin cuenta para firmar, Set money aside no dice que el ingreso venció y n
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Set money aside"));
-    await pulsar("Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    await pulsar("Reserve");
     await confirmarDialogo();
     await esperar(() => texto().includes("no account to sign with"));
     assert.match(texto(), /Sign in again on this site/);
@@ -352,13 +352,13 @@ test("lock budget shows the payout error and does not claim USDC left an escrow"
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Set money aside"));
-    await pulsar("Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    await pulsar("Reserve");
     await confirmarDialogo();
-    await esperar(() => texto().includes("Money not set aside"));
+    await esperar(() => texto().includes("Money not reserved"));
     assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No money moved. It is still set aside for this task."), false);
+    assert.equal(texto().includes("No money moved. It is still reserved for this task."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -389,7 +389,7 @@ test("pay still says the payment failed when release does not go through", async
     await esperar(() => texto().includes("Payment failed"));
     assert.match(texto(), /No money moved/);
     assert.match(texto(), /The milestone isn't ready/);
-    assert.equal(texto().includes("Money not set aside"), false);
+    assert.equal(texto().includes("Money not reserved"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -417,15 +417,15 @@ test("an error outside lock or pay does not use the payment box", async () => {
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
     assert.equal(texto().includes("The request was sent"), false);
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("Money not set aside"), false);
-    assert.equal(texto().includes("No money moved. It is still set aside for this task."), false);
+    assert.equal(texto().includes("Money not reserved"), false);
+    assert.equal(texto().includes("No money moved. It is still reserved for this task."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
   }
 });
 
-test("antes de apartar el dinero, Avanzado dice que la referencia todavía no está", async () => {
+test("antes de reservar el dinero, Avanzado dice que la referencia todavía no está", async () => {
   const anterior = globalThis.fetch;
   const cargar = (contrato: string | null) => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -442,7 +442,7 @@ test("antes de apartar el dinero, Avanzado dice que la referencia todavía no es
     const cerrado = document.querySelector("details");
     assert.equal(cerrado?.hasAttribute("open"), false);
     assert.match(cerrado?.textContent ?? "", /Payment account ID/);
-    assert.match(cerrado?.textContent ?? "", /The payment reference appears when you set the money aside/);
+    assert.match(cerrado?.textContent ?? "", /The payment reference appears when you reserve the money/);
     assert.equal((cerrado?.textContent ?? "").includes("Task payment reference"), false);
 
     await desmontar();
@@ -451,7 +451,7 @@ test("antes de apartar el dinero, Avanzado dice que la referencia todavía no es
     await esperar(() => texto().includes("Task payment reference"));
     const abierto = document.querySelector("details");
     assert.match(abierto?.textContent ?? "", /Task payment reference/);
-    assert.equal((abierto?.textContent ?? "").includes("appears when you set the money aside"), false);
+    assert.equal((abierto?.textContent ?? "").includes("appears when you reserve the money"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -664,7 +664,7 @@ test("pedir otra foto sin red muestra el error y no cambia la tarea", async () =
     assert.match(texto(), /Half of the booth is set up/);
     assert.equal(texto().includes("Asked for another photo. The request was sent"), false);
     assert.equal(texto().includes("What's missing?"), true);
-    assert.equal(rotulo("Set money aside") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Set money aside" && !(boton as HTMLButtonElement).disabled), true);
+    assert.equal(rotulo("Reserve") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Reserve" && !(boton as HTMLButtonElement).disabled), true);
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
@@ -732,14 +732,14 @@ test("lock budget stays off while a pending task waits for another photo", async
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Set money aside"));
-    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Reserve");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-foto");
     assert.match(texto(), /Waiting for a new photo\. This stays off until it arrives\./);
     assert.match(texto(), /Pending/);
-    await pulsar("Set money aside");
+    await pulsar("Reserve");
     assert.equal(document.querySelector("dialog"), null);
   } finally {
     globalThis.fetch = anterior;
@@ -747,7 +747,7 @@ test("lock budget stays off while a pending task waits for another photo", async
   }
 });
 
-test("bloquear presupuesto queda apagado en español mientras espera la foto nueva", async () => {
+test("Reservar queda apagado en español mientras espera la foto nueva", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -761,8 +761,8 @@ test("bloquear presupuesto queda apagado en español mientras espera la foto nue
   }) as typeof fetch;
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
-    await esperar(() => rotulo("Apartar el dinero"));
-    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Apartar el dinero");
+    await esperar(() => rotulo("Reservar"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Reservar");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.match(texto(), /Esperando una foto nueva\. Esto queda apagado hasta que llegue\./);
@@ -786,13 +786,13 @@ test("a pending task with no photo still offers lock budget", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Set money aside"));
-    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Reserve");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, false);
     assert.equal(texto().includes("Waiting for a new photo"), false);
     assert.equal(document.querySelector("#bloqueo-cobro"), null);
-    assert.equal(texto().includes("You can't set the money aside yet"), false);
+    assert.equal(texto().includes("You can't reserve the money yet"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -816,22 +816,22 @@ function revisionSinCobro(faltaCobro: "cuenta" | "asignar", llamadas: string[], 
   }) as typeof fetch;
 }
 
-test("without a payout account for the volunteer, Lock budget is off and says so before any confirmation", async () => {
+test("without a payout account for the volunteer, Reserve is off and says so before any confirmation", async () => {
   const anterior = globalThis.fetch;
   const llamadas: string[] = [];
   globalThis.fetch = revisionSinCobro("cuenta", llamadas);
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Set money aside"));
-    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Reserve");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-cobro");
     assert.equal(
       document.querySelector("#bloqueo-cobro")?.textContent,
-      "You can't set the money aside yet: Ana has to sign in to Hyto and open the task once.",
+      "You can't reserve the money yet: Ana has to sign in to Hyto and open the task once.",
     );
-    await pulsar("Set money aside");
+    await pulsar("Reserve");
     assert.equal(document.querySelector("dialog"), null);
     assert.equal(llamadas.some((llamada) => llamada.startsWith("POST /api/firma")), false);
   } finally {
@@ -845,13 +845,13 @@ test("en español el aviso usa usted y el nombre de quien tiene que abrir la tar
   globalThis.fetch = revisionSinCobro("cuenta", []);
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
-    await esperar(() => rotulo("Apartar el dinero"));
-    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Apartar el dinero");
+    await esperar(() => rotulo("Reservar"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Reservar");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(
       document.querySelector("#bloqueo-cobro")?.textContent,
-      "Todavía no puede apartar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+      "Todavía no puede reservar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
     );
   } finally {
     globalThis.fetch = anterior;
@@ -864,8 +864,8 @@ test("an unassigned task asks to assign it instead of naming someone", async () 
   globalThis.fetch = revisionSinCobro("asignar", [], { miembroId: "", miembro: "Unassigned" });
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Set money aside"));
-    assert.equal(document.querySelector("#bloqueo-cobro")?.textContent, "You can't set the money aside yet: assign the task to someone first.");
+    await esperar(() => rotulo("Reserve"));
+    assert.equal(document.querySelector("#bloqueo-cobro")?.textContent, "You can't reserve the money yet: assign the task to someone first.");
     assert.equal(texto().includes("Unassigned has to sign in"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -896,10 +896,10 @@ test("the lock sentence and the dialog use the confirmed amount, not the cap", a
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => rotulo("Set money aside"));
-    assert.match(texto(), /This sets aside US\$0\.22/);
-    assert.equal(/This sets aside Up to/.test(texto()), false);
-    await pulsar("Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    assert.match(texto(), /This reserves US\$0\.22/);
+    assert.equal(/This reserves Up to/.test(texto()), false);
+    await pulsar("Reserve");
     assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0.22");
   } finally {
     globalThis.fetch = anterior;
@@ -907,7 +907,7 @@ test("the lock sentence and the dialog use the confirmed amount, not the cap", a
   }
 });
 
-test("en español la frase de apartar no lleva Hasta a media oración y Receipt se traduce", async () => {
+test("en español la frase de reservar no lleva Hasta a media oración y Receipt se traduce", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -941,12 +941,12 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   }) as typeof fetch;
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
-    await esperar(() => rotulo("Apartar el dinero"));
-    assert.match(texto(), /Esto aparta US\$0,22/);
-    assert.equal(/Esto aparta Hasta/.test(texto()), false);
+    await esperar(() => rotulo("Reservar"));
+    assert.match(texto(), /Esto reserva US\$0,22/);
+    assert.equal(/Esto reserva Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
     assert.match(texto(), /Falta la fecha del recibo/);
-    await pulsar("Apartar el dinero");
+    await pulsar("Reservar");
     assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
   } finally {
     globalThis.fetch = anterior;
@@ -1124,8 +1124,8 @@ test("un escrow con fondos en la red no ofrece terminar de bloquear", async () =
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => texto().includes("Budget secured"));
-    assert.equal(rotulo("Finish setting aside"), false);
-    assert.equal(rotulo("Set money aside"), false);
+    assert.equal(rotulo("Finish reserving"), false);
+    assert.equal(rotulo("Reserve"), false);
     assert.equal(rotulo("Approve and pay"), true);
   } finally {
     globalThis.fetch = anterior;
@@ -1165,12 +1165,12 @@ test("si el fondeo ya está en la red, terminar de bloquear no pide otra firma",
         },
       }),
     );
-    await esperar(() => rotulo("Finish setting aside"));
-    await pulsar("Finish setting aside");
+    await esperar(() => rotulo("Finish reserving"));
+    await pulsar("Finish reserving");
     await confirmarDialogo();
     await esperar(() => texto().includes("Budget secured") && rotulo("Approve and pay"));
-    assert.equal(rotulo("Finish setting aside"), false);
-    assert.equal(texto().includes("Money not set aside"), false);
+    assert.equal(rotulo("Finish reserving"), false);
+    assert.equal(texto().includes("Money not reserved"), false);
     assert.equal(firmas, 0);
   } finally {
     globalThis.fetch = anterior;
@@ -1211,8 +1211,8 @@ test("bloquear queda apagado cuando el saldo no alcanza y el aviso usa dos decim
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand", saldo: "1.30" }));
-    await esperar(() => rotulo("Set money aside"));
-    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Set money aside");
+    await esperar(() => rotulo("Reserve"));
+    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Reserve");
     assert.equal(boton instanceof HTMLButtonElement && boton.disabled, true);
     const aviso = document.querySelector("#bloqueo-saldo");
     assert.match(aviso?.textContent ?? "", /US\$40\.60/);
@@ -1272,7 +1272,7 @@ test("al recargar, el presupuesto se revisa solo y no pide recargar la página",
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => texto().includes("Checking the money set aside"));
+    await esperar(() => texto().includes("Checking the reserved money"));
     assert.equal(/refresh|reload|recarga|actualiza/i.test(texto()), false);
     const enlace = [...document.querySelectorAll("a")].find((nodo) => nodo.textContent?.trim() === "See public record");
     assert.equal(enlace?.getAttribute("target"), "_blank");

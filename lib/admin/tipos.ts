@@ -52,7 +52,7 @@ export type TareaAdmin = {
   perfilVoluntario?: { experiencia: string | null; etiquetas: string[] };
   /** Earlier photos with a verdict, oldest first. Empty or missing when there is only one attempt. */
   intentosAnteriores?: IntentoAnterior[];
-  /** True when the task already has an escrow contract, so the budget is set aside. */
+  /** True when the task already has an escrow contract, so the money is reserved. */
   apartado?: boolean;
   /** Set only when Lock budget has nobody to pay: no one assigned, or no account known for that person. */
   faltaCobro?: "asignar" | "cuenta";

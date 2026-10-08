@@ -46,7 +46,7 @@ function montoLocal(monto: string, idioma: Idioma, centavosFijos: number | null)
 
 /**
  * Net received, without rounding away the extra decimals.
- * US$2 set aside arrives as US$1.994. A whole number stays whole.
+ * US$2 reserved arrives as US$1.994. A whole number stays whole.
  */
 export function formatearRecibido(monto: string, idioma: Idioma = "en"): string {
   const limpio = monto.trim().replace(/,/g, "");

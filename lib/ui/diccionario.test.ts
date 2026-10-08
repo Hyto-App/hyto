@@ -78,8 +78,8 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir su dinero");
   assert.equal(texto("en", "revision.technical"), "Advanced");
   assert.equal(texto("es", "revision.technical"), "Avanzado");
-  assert.equal(texto("en", "revision.refPendiente"), "The payment reference appears when you set the money aside.");
-  assert.equal(texto("es", "revision.refPendiente"), "La referencia del pago aparece cuando aparte el dinero.");
+  assert.equal(texto("en", "revision.refPendiente"), "The payment reference appears when you reserve the money.");
+  assert.equal(texto("es", "revision.refPendiente"), "La referencia del pago aparece cuando reserve el dinero.");
   assert.equal(texto("en", "cuenta.ausente"), "This account cannot receive a payment yet.");
   assert.equal(texto("es", "cuenta.ausente"), "Esta cuenta todavía no puede recibir un pago.");
   assert.equal(texto("en", "revision.yourAccount", { direccion: "G…AAAA" }), "Payment account ID (for support): G…AAAA");

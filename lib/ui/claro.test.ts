@@ -23,20 +23,20 @@ test("technical payment errors tell the person what to do", () => {
   assert.match(mensajeClaro("The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM."), /practice money/);
   assert.match(mensajeClaro("HYTO_ESCROW_PLATFORM is missing"), /isn't complete/);
   assert.match(mensajeClaro("ESCROW_RECEIVER_TRUSTLINE_MISSING"), /Get ready to be paid/);
-  assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Set the money aside before you pay.");
+  assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Reserve the money before you pay.");
   assert.equal(
     mensajeClaro(AVISO_SIN_COBRO),
-    "You can't set the money aside yet: the volunteer has to sign in to Hyto and open the task once.",
+    "You can't reserve the money yet: the volunteer has to sign in to Hyto and open the task once.",
   );
   assert.equal(
     mensajeClaro(AVISO_SIN_COBRO, "es"),
-    "Todavía no puede apartar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
+    "Todavía no puede reservar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
   );
   assert.equal(
     mensajeClaro(AVISO_SIN_ASIGNAR),
-    "You can't set the money aside yet: assign the task to someone first.",
+    "You can't reserve the money yet: assign the task to someone first.",
   );
-  assert.equal(mensajeClaro(AVISO_SIN_ASIGNAR, "es"), "Todavía no puede apartar el dinero: primero asigne la tarea a alguien.");
+  assert.equal(mensajeClaro(AVISO_SIN_ASIGNAR, "es"), "Todavía no puede reservar el dinero: primero asigne la tarea a alguien.");
   assert.equal(
     mensajeClaro(CODIGO_RECEPTOR_NO_LISTO),
     "The volunteer's account for receiving payments isn't ready yet. Ask them to open Events in Hyto and tap Get ready to be paid.",
@@ -115,15 +115,15 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(cajaDeFallo({ paso: "desplegar", codigo: CODIGO_RECEPTOR_NO_LISTO }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "fondear", codigo: null }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "fondear", codigo: CODIGO_YA_FONDEADO }), null);
-  assert.equal(mensajeClaro(AVISO_YA_FONDEADO), "This money is already set aside. Refresh this page. Do not set it aside again.");
-  assert.match(mensajeClaro(AVISO_YA_FONDEADO, "es"), /ya está apartado/);
+  assert.equal(mensajeClaro(AVISO_YA_FONDEADO), "This money is already reserved. Refresh this page. Do not reserve it again.");
+  assert.match(mensajeClaro(AVISO_YA_FONDEADO, "es"), /ya está reservado/);
   assert.equal(cajaDeFallo({ paso: null, codigo: CODIGO_HORIZON_RECEPTOR }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "liberar", codigo: null }), "pago");
   assert.equal(cajaDeFallo({ paso: null, codigo: null }), null);
-  assert.equal(tituloFallo("bloqueo"), "Money not set aside");
+  assert.equal(tituloFallo("bloqueo"), "Money not reserved");
   assert.equal(detalleFallo("bloqueo", AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(tituloFallo("pago"), "Payment failed");
-  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No money moved. It is still set aside for this task.");
+  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No money moved. It is still reserved for this task.");
   assert.equal(detalleFallo("pago", mensajeClaro(AVISO_XLM_COMISION)), mensajeClaro(AVISO_XLM_COMISION));
   assert.match(mensajeClaro(AVISO_XLM_COMISION), /another account/);
   assert.match(mensajeClaro(CODIGO_XLM_COMISION), /another account/);
@@ -174,8 +174,8 @@ test("server notices that used to stay in English come out in plain language", (
       "en",
       /payment system/,
     ],
-    ["Confirm an amount within the limit before deploying.", "es", /apartar el dinero/],
-    ["Confirm an amount within the limit before funding.", "en", /setting the money aside/],
+    ["Confirm an amount within the limit before deploying.", "es", /reservar el dinero/],
+    ["Confirm an amount within the limit before funding.", "en", /finish reserving the money/],
     ["Could not reach Trustless Work.", "es", /sistema de pagos/],
     ["The payment contract is not valid.", "en", /payment reference/],
     [

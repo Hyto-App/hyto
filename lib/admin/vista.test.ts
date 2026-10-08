@@ -18,30 +18,30 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(notaCopia("   "), null);
 });
 
-test("el aviso de Lock budget sin cuenta nombra a quien tiene que abrir la tarea, y solo cuando falta", () => {
+test("el aviso de Reservar sin cuenta nombra a quien tiene que abrir la tarea, y solo cuando falta", () => {
   const base = { miembroId: "u-1", miembro: "Ana" };
   assert.equal(avisoFaltaCobro(base), null);
   assert.equal(
     avisoFaltaCobro({ ...base, faltaCobro: "cuenta" }),
-    "You can't set the money aside yet: Ana has to sign in to Hyto and open the task once.",
+    "You can't reserve the money yet: Ana has to sign in to Hyto and open the task once.",
   );
   assert.equal(
     avisoFaltaCobro({ ...base, faltaCobro: "cuenta" }, "es"),
-    "Todavía no puede apartar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+    "Todavía no puede reservar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
   );
   for (const miembro of ["u-1", "ana@hyto.test", ""]) {
     assert.equal(
       avisoFaltaCobro({ ...base, miembro, faltaCobro: "cuenta" }, "es"),
-      "Todavía no puede apartar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
+      "Todavía no puede reservar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
     );
   }
   assert.equal(
     avisoFaltaCobro({ miembroId: "", miembro: "Unassigned", faltaCobro: "asignar" }),
-    "You can't set the money aside yet: assign the task to someone first.",
+    "You can't reserve the money yet: assign the task to someone first.",
   );
 });
 
-test("solo una tarea pendiente sin entrega se puede apartar desde la lista", () => {
+test("solo una tarea pendiente sin entrega se puede reservar desde la lista", () => {
   const base = { estado: "pendiente", hashPago: null, tipoArchivo: null, montoRevisado: null, fecha: null };
   assert.equal(puedeApartarSinEntrega(base), true);
   assert.equal(puedeApartarSinEntrega({ ...base, estado: "en revisión" }), false);

@@ -20,7 +20,7 @@ Estas imágenes son del modo de demostración, en el ancho de un teléfono. El e
 
 ## Cómo funciona
 
-1. **Reservar.** Quien organiza aparta el dinero de una tarea, en dólares digitales (USDC). Hyto lo guarda aparte, en un contrato por tarea, por medio de [Trustless Work](https://www.trustlesswork.com). Hyto no cobra comisión. Para crear un evento, la cuenta de quien organiza debe cubrir la suma de las tareas y un dólar más de reserva.
+1. **Reservar.** Quien organiza reserva el dinero de una tarea, en dólares digitales (USDC). Hyto lo guarda aparte, en un contrato por tarea, por medio de [Trustless Work](https://www.trustlesswork.com). Hyto no cobra comisión. Para crear un evento, la cuenta de quien organiza debe cubrir la suma de las tareas y un dólar más de reserva.
 2. **Probar.** En una tarea de trabajo, la foto se toma en el lugar y en el momento, con la cámara de la aplicación. Una foto anterior, de la galería, no se acepta en esa tarea. En un reembolso también se envía el recibo, y quien organiza confirma el monto antes de reservar esa tarea.
 3. **Recomendar.** Mile compara la foto y los recibos con lo que pedía la tarea, y recomienda. Mile no aprueba el pago y no mueve el dinero.
 4. **Liberar.** Una persona aprueba. Solo entonces Hyto libera el pago en la red Stellar. Cuando el pago queda registrado, puede abrir el comprobante público en stellar.expert.

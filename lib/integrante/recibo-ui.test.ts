@@ -40,7 +40,7 @@ test("el comprobante en español deja la red como enlace secundario", async () =
     );
     assert.match(texto(), /Comprobante/);
     assert.match(texto(), /Recibió/);
-    assert.match(texto(), /Apartado/);
+    assert.match(texto(), /Reservado/);
     assert.match(texto(), /Comisión/);
     assert.match(texto(), /Fecha/);
     assert.match(texto(), /Tarea/);

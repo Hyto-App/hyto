@@ -800,7 +800,7 @@ test("desplegar toma la cuenta de la persona asignada, con foto o todavía sin f
     assert.equal(sinCuenta.status, 400);
     assert.equal(
       ((await sinCuenta.json()) as { aviso: string }).aviso,
-      "You can't set the money aside yet: the volunteer has to sign in to Hyto and open the task once.",
+      "You can't reserve the money yet: the volunteer has to sign in to Hyto and open the task once.",
     );
     assert.equal((await almacen.leerTarea("registro"))?.walletCobro, "");
     assert.equal(visto.receptor, null);
@@ -988,7 +988,7 @@ test("una tarea sin persona asignada no se bloquea y pide asignarla primero", as
     assert.equal(respuesta.status, 400);
     assert.equal(
       ((await respuesta.json()) as { aviso: string }).aviso,
-      "You can't set the money aside yet: assign the task to someone first.",
+      "You can't reserve the money yet: assign the task to someone first.",
     );
     assert.deepEqual(visto.receptores, []);
   });
