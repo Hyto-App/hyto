@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { proyectosVisibles, puedeVerTarea, visorSesion, type Visor } from "@/lib/api/alcance";
+import { organizaTareaAjena, proyectosVisibles, puedeVerTarea, visorSesion, type Visor } from "@/lib/api/alcance";
 import type { Almacen } from "@/lib/db/almacen";
 import { almacenNeon } from "@/lib/db/neon";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
@@ -51,6 +51,7 @@ export async function exigirEvento(id: string): Promise<void> {
   if (!visibles.some((proyecto) => proyecto.id === id)) notFound();
 }
 
+/** Gate for the payee pages under `/tareas/[id]`. An organizer who is not the assignee goes to the review. */
 export async function exigirTarea(id: string): Promise<TareaFila> {
   const sesion = await exigirPagina();
   const almacen = await almacenNeon();
@@ -58,6 +59,7 @@ export async function exigirTarea(id: string): Promise<TareaFila> {
   const tarea = await almacen.leerTarea(id);
   if (!tarea) notFound();
   if (!(await puedeVerTarea(almacen, visorDeSesion(sesion), tarea))) notFound();
+  if (await organizaTareaAjena(almacen, sesion.usuarioId, tarea)) redirect(`/revision/${encodeURIComponent(tarea.id)}`);
   return tarea;
 }
 
