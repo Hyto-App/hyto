@@ -13,7 +13,8 @@ import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto, textosSaldo } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
-import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
+import { CAMPOS_MILE, LIMITES_MILE, type ClaveMile } from "@/lib/revision/contexto-mile";
+import { contadorCerca, contextoAbierto, errorPortada, hayTextoMile, mostrarRecibos } from "@/lib/ui/campos-evento";
 import { AreaTexto, Contador, IconoCandado, ZonaPortada } from "./CamposEvento";
 
 type Fila = {
@@ -37,6 +38,8 @@ const FILA_INICIAL: Fila = {
   prioridad: "normal",
   dificultad: "",
 };
+
+const MILE_VACIO = Object.fromEntries(CAMPOS_MILE.map((clave) => [clave, ""])) as Record<ClaveMile, string>;
 
 function sumarCentavos(filas: readonly Fila[]): { trabajo: number; reembolso: number } {
   let trabajo = 0;
@@ -74,7 +77,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState("");
-  const [contextoIa, setContextoIa] = useState("");
+  const [contextoMile, setContextoMile] = useState<Record<ClaveMile, string>>(MILE_VACIO);
   const [portada, setPortada] = useState<File | null>(null);
   const [contextoAbiertoPorUsuario, setContextoAbiertoPorUsuario] = useState(false);
   const [creadoId, setCreadoId] = useState<string | null>(null);
@@ -138,7 +141,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
       respuesta = await fetch("/api/proyectos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre: nombreLimpio, descripcion: descripcion.trim(), contextoIa: contextoIa.trim(), tareas: payload }),
+        body: JSON.stringify({ nombre: nombreLimpio, descripcion: descripcion.trim(), contextoMile, tareas: payload }),
       });
     } catch {
       setAviso("Could not reach the server. Check your connection and try again.");
@@ -162,6 +165,36 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
       }
     }
     router.push(`/eventos/${id}`);
+  }
+
+  function cambiarMile(clave: ClaveMile, valor: string) {
+    setContextoMile((actual) => ({ ...actual, [clave]: valor }));
+  }
+
+  function campoMile(clave: Exclude<ClaveMile, "notas">, ayudaId: string, unaLinea = false) {
+    const max = LIMITES_MILE[clave];
+    const id = `mile-${clave}`;
+    return (
+      <div className="mt-4">
+        <label className="block text-sm text-[var(--suave)]" htmlFor={id}>
+          {t(`eventos.mileCampos.${clave}`)}
+        </label>
+        {unaLinea ? (
+          <input
+            id={id}
+            value={contextoMile[clave]}
+            maxLength={max}
+            placeholder={t(`eventos.mileCampos.${clave}Ph`)}
+            aria-describedby={ayudaId}
+            onChange={(evento) => cambiarMile(clave, evento.target.value)}
+            className="hyto-input mt-2"
+          />
+        ) : (
+          <AreaTexto id={id} valor={contextoMile[clave]} max={max} filas={2} ayudaId={ayudaId} placeholder={t(`eventos.mileCampos.${clave}Ph`)} onCambio={(valor) => cambiarMile(clave, valor)} />
+        )}
+        {contadorCerca(contextoMile[clave].length, max) ? <Contador largo={contextoMile[clave].length} max={max} /> : null}
+      </div>
+    );
   }
 
   const { trabajo, reembolso } = sumarCentavos(filas);
@@ -227,17 +260,36 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               {t("eventos.mileTitle")}
             </h2>
             <p className="hyto-seccion-nota">{t("eventos.mileLock")}</p>
-            {contextoAbierto(contextoIa, contextoAbiertoPorUsuario) ? (
+            {contextoAbierto(hayTextoMile(contextoMile) ? "x" : "", contextoAbiertoPorUsuario) ? (
               <div className="mt-4">
-                <label className="block text-sm text-[var(--suave)]" htmlFor="contexto-ia-proyecto">
-                  {t("eventos.aiContext")}
-                </label>
-                <AreaTexto id="contexto-ia-proyecto" valor={contextoIa} max={2000} filas={6} ayudaId="contexto-ia-ayuda" onCambio={setContextoIa} />
-                <p id="contexto-ia-ayuda" className="mt-2 text-xs text-[var(--suave)]">
-                  {t("eventos.aiContextHelp")}
+                <h3 className="text-sm font-semibold">{t("eventos.mileAbout")}</h3>
+                <p id="mile-fondo-ayuda" className="mt-1 text-xs text-[var(--suave)]">
+                  {t("eventos.mileAboutHelp")}
                 </p>
-                <Contador largo={contextoIa.length} max={2000} />
-                {contextoIa.length === 0 ? (
+                {campoMile("lugar", "mile-fondo-ayuda", true)}
+                {campoMile("trata", "mile-fondo-ayuda")}
+                {campoMile("cuando", "mile-fondo-ayuda", true)}
+                {campoMile("senales", "mile-fondo-ayuda")}
+
+                <h3 className="mt-6 text-sm font-semibold">{t("eventos.mileRules")}</h3>
+                <p id="mile-reglas-ayuda" className="mt-1 text-xs text-[var(--suave)]">
+                  {t("eventos.mileRulesHelp")}
+                </p>
+                {campoMile("debeVerse", "mile-reglas-ayuda")}
+                {campoMile("noCuenta", "mile-reglas-ayuda")}
+                {mostrarRecibos(filas.map((fila) => fila.tipo)) ? campoMile("recibos", "mile-reglas-ayuda") : null}
+
+                <div className="mt-6">
+                  <label className="block text-sm text-[var(--suave)]" htmlFor="mile-notas">
+                    {t("eventos.mileCampos.notas")}
+                  </label>
+                  <AreaTexto id="mile-notas" valor={contextoMile.notas} max={LIMITES_MILE.notas} filas={3} ayudaId="mile-notas-ayuda" onCambio={(valor) => cambiarMile("notas", valor)} />
+                  <p id="mile-notas-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+                    {t("eventos.mileCampos.notasHelp")}
+                  </p>
+                  {contadorCerca(contextoMile.notas.length, LIMITES_MILE.notas) ? <Contador largo={contextoMile.notas.length} max={LIMITES_MILE.notas} /> : null}
+                </div>
+                {!hayTextoMile(contextoMile) ? (
                   <button type="button" onClick={() => setContextoAbiertoPorUsuario(false)} className="hyto-btn-line is-inline mt-3 px-4">
                     {t("eventos.mileHide")}
                   </button>
