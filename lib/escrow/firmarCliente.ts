@@ -58,7 +58,7 @@ export type OpcionesFirma = {
   firmar?: (unsignedXdr: string) => Promise<string>;
   extra?: ExtraFirma;
   alEmpezar?: (accion: AccionCliente) => void;
-  /** Cancel, Escape, or the corner button abort the prepare and the Cavos prompt. */
+  /** Cancel or Escape abort the prepare. Reject in the Cavos prompt aborts the signature. */
   senal?: AbortSignal;
   topeMs?: number;
 };
