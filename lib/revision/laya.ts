@@ -11,6 +11,7 @@ import {
   type Pregunta,
 } from "./laya-preguntas";
 import { noulCerca, probabilidadesCerca } from "./margen";
+import { preguntasEventoActivas } from "./preguntas-evento-bandera";
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
@@ -26,8 +27,10 @@ export function urlLaya(base: string): string {
 const CLASE = ["trabajo", "factura", "otra"] as const;
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
 const V1 = ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"] as const;
-const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "otra_o_no_claro"] as const;
-const T6 = ["terminado", "a_medias", "sin_empezar", "no_claro"] as const;
+// documentar_evento and no_aplica are read even when the flag is off, so a stored answer still parses.
+// Laya is offered them only when HYTO_MILE_PREGUNTAS_EVENTO is on.
+const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "documentar_evento", "otra_o_no_claro"] as const;
+const T6 = ["terminado", "a_medias", "sin_empezar", "no_aplica", "no_claro"] as const;
 const F1 = ["coincide_con_lo_pedido", "otro_gasto", "no_se_ve"] as const;
 const G1 = ["transporte", "comida_o_bebida", "materiales", "impresion_o_papeleria", "otro_o_no_claro"] as const;
 
@@ -188,7 +191,7 @@ export async function preguntarLaya(
   const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
-    const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla), reglaLimpia));
+    const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla, preguntasEventoActivas()), reglaLimpia));
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
     const cerca = [...cercaClase, ...idsCerca(json, IDS_TRABAJO)];
