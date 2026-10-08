@@ -6,6 +6,7 @@ import { esContrato, esCuenta, leerEntrada } from "@/lib/escrow/cuerpos";
 import { rechazoSiFondos } from "@/lib/escrow/saldo";
 import { cuentasDeTarea, montoDeTarea, rolesDeEntorno } from "@/lib/escrow/desplegar";
 import { estadoReceptorUsdc, respuestaReceptor } from "@/lib/escrow/receptor";
+import { AVISO_SIN_ASIGNAR, AVISO_SIN_COBRO } from "@/lib/escrow/cobroAvisos";
 import { AVISO_CONFIRMAR_FONDEO, AVISO_CONFIRMAR_MONTO } from "@/lib/escrow/monto";
 import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from "@/lib/escrow/limite";
 import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/lib/escrow/indexador";
@@ -18,6 +19,7 @@ import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { anclaDeXdr, esAltaDeFabrica, leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
+import { cuentaDeCobro } from "@/lib/api/cobro";
 import { avisarCompletada } from "@/lib/tablon/publicar";
 import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
@@ -44,7 +46,6 @@ export function huellaDeXdr(xdr: string): string {
 }
 
 const AVISO_SIN_SECRETO = "The server cannot sign this payment.";
-const AVISO_SIN_COBRO = "The task has no payout wallet. Ask the volunteer to sign in and open the task.";
 const AVISO_SIN_PREPARAR = "This signature was not prepared by the server.";
 const AVISO_VENCIDO = "This payment request has expired. Prepare it again.";
 const AVISO_NO_COINCIDE = "This signature does not match the prepared payment.";
@@ -303,18 +304,20 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   let evidencia;
   try {
     evidencia = await almacen.ultimaEvidencia(tarea.id);
-    if (!esCuenta(tarea.walletCobro) && evidencia) {
-      const recuperado = await almacen.walletDeUsuario(tarea.miembroId);
-      if (recuperado && esCuenta(recuperado)) {
-        await almacen.actualizarTarea(tarea.id, { walletCobro: recuperado });
-        tarea = { ...tarea, walletCobro: recuperado };
+    // Lock budget is offered before the first photo, so the payout account cannot depend on an upload.
+    if (!esCuenta(tarea.walletCobro)) {
+      const cuenta = await cuentaDeCobro(almacen, tarea);
+      if (cuenta) {
+        await almacen.actualizarTarea(tarea.id, { walletCobro: cuenta });
+        tarea = { ...tarea, walletCobro: cuenta };
       }
     }
   } catch {
     return Response.json({ aviso: "The database is not ready." }, { status: 503 });
   }
   if (!esCuenta(tarea.walletCobro)) {
-    return Response.json({ aviso: AVISO_SIN_COBRO }, { status: 400 });
+    const aviso = tarea.miembroId.trim() ? AVISO_SIN_COBRO : AVISO_SIN_ASIGNAR;
+    return Response.json({ aviso }, { status: 400 });
   }
   if (tarea.tipo === "reembolso") {
     if (!evidencia?.monto?.trim() && !evidencia?.montoConfirmado?.trim()) {

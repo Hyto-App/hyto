@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { claseBoton } from "@/components/ui/Boton";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { TextoRico } from "@/components/ui/TextoClaro";
 import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
@@ -143,12 +144,12 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
           </p>
         ) : null}
         <div className="hyto-dialogo-acciones">
-          <button ref={cancelar} type="button" className="hyto-btn-line" onClick={cerrar}>
+          <button ref={cancelar} type="button" className={claseBoton("secundario")} onClick={cerrar}>
             {t("confirmar.cancel")}
           </button>
           <button
             type="button"
-            className={`hyto-btn hyto-btn-grande${peligro ? " hyto-btn-rosa" : ""}`}
+            className={claseBoton(peligro ? "peligro" : "primario", true)}
             disabled={ocupado}
             aria-busy={ocupado}
             onClick={() => {

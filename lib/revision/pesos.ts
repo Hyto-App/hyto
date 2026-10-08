@@ -16,8 +16,11 @@ import { condicionPideLugar } from "./lugar-pedido";
  * - v2 parts named: index 2 = 1, index 1 = 0.5, index 0 = 0
  * - v3 names a proof: yes = 1, no = 0
  * - v4 something requested is missing: no = 1, yes = 0
- * - t5 what was done: a named action = 1, otra_o_no_claro = 0
- * - t6 state: terminado = 1, a_medias = 0.5, sin_empezar = 0, no_claro = 0
+ * - t5 what was done: a named action = 1, including documentar_evento, otra_o_no_claro = 0
+ * - t6 state: terminado = 1, no_aplica = 1, a_medias = 0.5, sin_empezar = 0, no_claro = 0.
+ *   no_aplica means the photo is a scene or an event, so the finished / not-started
+ *   question does not apply. It is neutral (full credit) and does not add sin_empezar.
+ *   Laya is offered that option only when HYTO_MILE_PREGUNTAS_EVENTO is on.
  * - t7 tools or materials: yes = 1, no = 0
  * - t8 done at the requested place: yes = 1, no = 0.
  *   When the condition does not ask for a place (`condicionPideLugar`), t8 is
@@ -50,7 +53,8 @@ import { condicionPideLugar } from "./lugar-pedido";
  * The screen shows those bands as Insufficient, Partially completed, and Completed.
  *
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
- * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar,
+ * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar
+ *   (t6 no_aplica does not use this cap),
  *   f1 otro_gasto (a different kind of expense), or a photo that breaks a rule the organizer
  *   wrote for the event. The band stays insuficiente. A receipt that follows the rule is not
  *   capped by it, so it does not land on the same grade as one that breaks it.
@@ -239,7 +243,7 @@ function creditoF1(valor: RespuestasFactura["f1"]): number {
 }
 
 function creditoEstado(valor: RespuestasTrabajo["t6"]): number {
-  if (valor === "terminado") return 1;
+  if (valor === "terminado" || valor === "no_aplica") return 1;
   if (valor === "a_medias") return 0.5;
   return 0;
 }

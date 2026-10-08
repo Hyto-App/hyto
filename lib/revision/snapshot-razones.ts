@@ -18,8 +18,8 @@ export type DetalleRazones = {
 
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
 const V1 = ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"] as const;
-const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "otra_o_no_claro"] as const;
-const T6 = ["terminado", "a_medias", "sin_empezar", "no_claro"] as const;
+const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "documentar_evento", "otra_o_no_claro"] as const;
+const T6 = ["terminado", "a_medias", "sin_empezar", "no_aplica", "no_claro"] as const;
 const F1 = ["coincide_con_lo_pedido", "otro_gasto", "no_se_ve"] as const;
 const G1 = ["transporte", "comida_o_bebida", "materiales", "impresion_o_papeleria", "otro_o_no_claro"] as const;
 const IDS_CERCA = new Set([

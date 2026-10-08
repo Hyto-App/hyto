@@ -3,6 +3,7 @@ import test from "node:test";
 import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "@/lib/escrow/comision";
 import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
+import { AVISO_SIN_ASIGNAR, AVISO_SIN_COBRO } from "@/lib/escrow/cobroAvisos";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -27,9 +28,14 @@ test("technical payment errors tell the person what to do", () => {
   assert.match(mensajeClaro("ESCROW_RECEIVER_TRUSTLINE_MISSING"), /Get ready to be paid/);
   assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Lock the budget before you pay.");
   assert.equal(
-    mensajeClaro("The task has no payout wallet. Ask the volunteer to sign in and open the task."),
-    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
+    mensajeClaro(AVISO_SIN_COBRO),
+    "You can't set the money aside yet: the volunteer has to sign in to Hyto and open the task once.",
   );
+  assert.equal(
+    mensajeClaro(AVISO_SIN_COBRO, "es"),
+    "Todavía no puede apartar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
+  );
+  assert.equal(mensajeClaro(AVISO_SIN_ASIGNAR, "es"), "Todavía no puede apartar el dinero: primero asigne la tarea a alguien.");
   assert.equal(mensajeClaro(CODIGO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(mensajeClaro(AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(mensajeClaro(CODIGO_HORIZON_RECEPTOR), AVISO_HORIZON_RECEPTOR);
