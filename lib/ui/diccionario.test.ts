@@ -74,7 +74,7 @@ test("verdict labels and the payout notices keep their English wording", () => {
   );
   assert.equal(
     texto("es", "cuenta.passkeyDetalle"),
-    "Tu acceso está guardado solo en este dispositivo. Agregá una passkey para no perder tu cuenta.",
+    "Tu acceso está guardado solo en este dispositivo. Agrega una llave de acceso para no perder tu cuenta.",
   );
   assert.equal(texto("en", "cuenta.saldoHyto"), "Your Hyto balance");
   assert.equal(texto("es", "cuenta.saldoHyto"), "Tu saldo en Hyto");
@@ -98,4 +98,101 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envía la foto otra vez.");
   assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo didn't pass Mile's check");
   assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta foto no pasó la revisión de Mile");
+});
+
+const VOSEO = [
+  "agregá",
+  "tenés",
+  "podés",
+  "querés",
+  "sabés",
+  "sos",
+  "debés",
+  "hacés",
+  "ganás",
+  "confirmá",
+  "revisá",
+  "mirá",
+  "andá",
+  "tocá",
+  "usá",
+  "guardá",
+  "elegí",
+  "probá",
+  "entrá",
+  "abrí",
+  "poné",
+  "decí",
+  "pasá",
+  "seguí",
+  "volvé",
+  "cambiá",
+  "creá",
+  "firmá",
+  "pagá",
+  "cobrá",
+  "subí",
+  "bajá",
+  "mandá",
+  "sacá",
+  "dejá",
+  "llevá",
+  "traé",
+  "mostrá",
+  "esperá",
+  "cancelá",
+  "compartí",
+  "escaneá",
+  "iniciá",
+  "fijate",
+  "decime",
+  "hacé",
+];
+
+function textosDe(nodo: unknown): string[] {
+  if (typeof nodo === "string") return [nodo];
+  if (!nodo || typeof nodo !== "object") return [];
+  return Object.values(nodo).flatMap((hijo) => textosDe(hijo));
+}
+
+test("configuración en español usa tuteo y no deja la llave de acceso en inglés", () => {
+  const textos = [
+    ...textosDe(es.cuenta),
+    ...textosDe(es.guiaPasskey),
+    es.errores.passkey,
+    es.errores.passkeySinSoporte,
+    es.errores.passkeySinClave,
+    es.errores.passkeyCancelada,
+    es.errores.passkeyFallo,
+    es.errores.dispositivo,
+    es.pago.preparePayout,
+    es.pago.preparingPayout,
+    es.pago.payoutReady,
+    es.pago.payoutDone,
+    es.pago.checkingPayout,
+    es.pago.viewChain,
+    es.comunes.tryAgain,
+    es.comunes.sample,
+    es.nav.privacy,
+    es.ayuda.costosQ,
+    es.ayuda.costosA,
+  ];
+  const ingles = /Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b|\blaptop\b/i;
+  for (const valor of textos) {
+    assert.doesNotMatch(valor, ingles, valor);
+    for (const verbo of VOSEO) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
+  assert.equal(texto("es", "ayuda.costosQ"), "¿Cuánto cuesta pagar una tarea?");
+  assert.match(texto("es", "ayuda.costosA"), /comisión del 0,3 %/);
+  assert.match(texto("es", "cuenta.passkeyTelefono"), /Usar un teléfono o una tablet/);
+  assert.match(texto("es", "cuenta.passkeyListo"), /Usar llave de acceso/);
+  assert.match(texto("es", "guiaPasskey.paso2"), /Crear llave de acceso/);
+  assert.match(texto("es", "guiaPasskey.paso3"), /Usar un teléfono o una tablet/);
+  assert.match(texto("es", "guiaPasskey.ayuda1"), /computadora portátil/);
+  assert.match(texto("es", "errores.passkey"), /Usar llave de acceso/);
+  assert.doesNotMatch(texto("es", "guiaPasskey.introCuenta"), /\bagregá\b/i);
+  assert.match(texto("es", "guiaPasskey.introCuenta"), /Agrégala/);
 });

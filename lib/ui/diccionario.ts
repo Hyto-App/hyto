@@ -1899,13 +1899,13 @@ export const es: Rama<typeof en> = {
     pasaporteAbrir: "Abrir Stellar Passport",
     passkeyTitulo: "Usa Hyto en otros dispositivos",
     passkeyPorQue: "Agrega una llave de acceso una vez para que tu teléfono u otro navegador puedan usar esta cuenta y cobrar.",
-    passkeyDetalle: "Tu acceso está guardado solo en este dispositivo. Agregá una passkey para no perder tu cuenta.",
+    passkeyDetalle: "Tu acceso está guardado solo en este dispositivo. Agrega una llave de acceso para no perder tu cuenta.",
     passkeyTelefono:
-      "¿La quieres en tu teléfono? Si tus llaves de acceso no se sincronizan ahí, elige Use a phone or tablet cuando el navegador pregunte dónde guardarla y escanea el código QR con tu teléfono.",
+      "¿La quieres en tu teléfono? Si tus llaves de acceso no se sincronizan ahí, elige Usar un teléfono o una tablet cuando el navegador pregunte dónde guardarla y escanea el código QR con tu teléfono.",
     passkeyEmpieza: "Empieza aquí",
     passkeyAgregar: "Agregar llave de acceso",
     passkeyAgregando: "Agregando…",
-    passkeyListo: "Llave de acceso agregada. En otro dispositivo, entra a Hyto y elige Use passkey cuando lo pida.",
+    passkeyListo: "Llave de acceso agregada. En otro dispositivo, entra a Hyto y elige Usar llave de acceso cuando lo pida.",
     passkeyAviso: "Agrega una llave de acceso en Cuenta para usar Hyto en tus otros dispositivos.",
   },
   guiaPasskey: {
@@ -1921,20 +1921,20 @@ export const es: Rama<typeof en> = {
     compartirTitulo: "Hyto: agrega una llave de acceso",
     compartirTexto: "Abre esto en el navegador donde creaste tu cuenta de Hyto y toca Agregar llave de acceso.",
     paso2Titulo: "Agrega una llave de acceso",
-    paso2: "Toca Agregar llave de acceso y luego Create passkey en la ventana que se abre.",
+    paso2: "Toca Agregar llave de acceso y luego Crear llave de acceso en la ventana que se abre.",
     paso3Titulo: "¿La llave no llega a este teléfono?",
     paso3:
-      "Si este teléfono no comparte contraseñas con esa computadora (Llavero de iCloud o Gestor de contraseñas de Google), elige Use a phone or tablet cuando pregunte dónde guardar la llave y escanea el código QR con este teléfono.",
+      "Si este teléfono no comparte contraseñas con esa computadora (Llavero de iCloud o Gestor de contraseñas de Google), elige Usar un teléfono o una tablet cuando pregunte dónde guardar la llave y escanea el código QR con este teléfono.",
     paso4Titulo: "Vuelve aquí",
-    paso4: "Toca Intentar de nuevo y elige Use passkey.",
-    paso4SinBoton: "Repite el mismo paso y elige Use passkey.",
+    paso4: "Toca Intentar de nuevo y elige Usar llave de acceso.",
+    paso4SinBoton: "Repite el mismo paso y elige Usar llave de acceso.",
     introCuenta:
       "Este navegador no tiene la clave de tu cuenta, así que no puede agregar una llave de acceso aquí. Agrégala una vez en el navegador donde creaste tu cuenta y luego úsala en este dispositivo.",
-    paso4Cuenta: "En este dispositivo, abre Eventos y toca Preparar el cobro (o repite el paso que estabas haciendo). Cuando lo pida, elige Use passkey.",
+    paso4Cuenta: "En este dispositivo, abre Eventos y toca Preparar el cobro (o repite el paso que estabas haciendo). Cuando lo pida, elige Usar llave de acceso.",
     reintentando: "Intentando…",
     ayudaTitulo: "¿No recuerdas dónde creaste tu cuenta?",
     ayuda1:
-      "Es el navegador que usaste la primera vez que creaste tu cuenta de Hyto, por ejemplo Chrome en tu laptop. Entra ahí con el mismo correo y toca Agregar llave de acceso en Cuenta. Si dice que ese navegador no tiene la clave de tu cuenta, prueba el siguiente que pudiste haber usado.",
+      "Es el navegador que usaste la primera vez que creaste tu cuenta de Hyto, por ejemplo Chrome en tu computadora portátil. Entra ahí con el mismo correo y toca Agregar llave de acceso en Cuenta. Si dice que ese navegador no tiene la clave de tu cuenta, prueba el siguiente que pudiste haber usado.",
     ayuda2:
       "Si ya no tienes ese navegador, o se borraron sus datos, Hyto no puede recuperar la clave desde aquí. Escribe al equipo de Hyto y dile el correo con el que entras.",
   },
@@ -2018,7 +2018,7 @@ export const es: Rama<typeof en> = {
     noCuentaPago: "No pudimos revisar la cuenta de cobro. Intenta de nuevo.",
     dispositivo:
       "Este navegador todavía no tiene la clave de tu cuenta. Abre Hyto una vez en el navegador donde creaste tu cuenta, ve a Cuenta y toca Agregar llave de acceso. Luego vuelve a intentarlo aquí y usa esa llave.",
-    passkey: "Confirma con tu llave de acceso para usar tu cuenta en este navegador. Intenta de nuevo y elige Use passkey cuando lo pida.",
+    passkey: "Confirma con tu llave de acceso para usar tu cuenta en este navegador. Intenta de nuevo y elige Usar llave de acceso cuando lo pida.",
     passkeySinSoporte: "Este navegador no puede crear llaves de acceso. Prueba con una versión reciente de Chrome, Safari o Edge.",
     passkeySinClave:
       "Este navegador no tiene la clave de tu cuenta, así que no puede agregar una llave de acceso. Abre Hyto en el navegador donde creaste tu cuenta y agrégala ahí.",
