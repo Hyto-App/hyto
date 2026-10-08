@@ -159,6 +159,23 @@ test("el empate del mejor mes se queda con el más reciente, y un pago sin fecha
   assert.equal(orgullo.tareasCompletadas, 4);
 });
 
+test("un neto con más de dos decimales se conserva en el total y en lo reciente", () => {
+  const orgullo = armarOrgullo(
+    [
+      tarea({ id: "chico", monto: "1.994", pagadoEn: "2026-10-02T18:00:00.000Z" }),
+      tarea({ id: "comida", titulo: "Meal", monto: "12.44256", pagadoEn: "2026-10-03T18:00:00.000Z" }),
+    ],
+    AHORA,
+  );
+  assert.equal(orgullo.total, "14.43656");
+  assert.equal(orgullo.esteMes, "14.43656");
+  assert.notEqual(orgullo.total, "14.48");
+  assert.deepEqual(
+    orgullo.recientes.map((item) => item.monto).sort(),
+    ["1.994", "12.44256"],
+  );
+});
+
 test("la muestra del demo tiene pagos reales de ejemplo en este mes y el anterior", () => {
   const orgullo = armarOrgullo(tareasMuestra(AHORA), AHORA);
   assert.equal(orgullo.vacio, false);

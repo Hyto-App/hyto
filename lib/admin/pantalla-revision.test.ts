@@ -389,6 +389,39 @@ test("an error outside lock or pay does not use the payment box", async () => {
   }
 });
 
+test("antes de apartar el dinero, Avanzado dice que la referencia todavía no está", async () => {
+  const anterior = globalThis.fetch;
+  const cargar = (contrato: string | null) => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+      if (url.includes("/api/escrow/")) return json({ escrow: { balance: 0 } });
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }) as typeof fetch;
+  };
+  try {
+    cargar(null);
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Advanced"));
+    const cerrado = document.querySelector("details");
+    assert.equal(cerrado?.hasAttribute("open"), false);
+    assert.match(cerrado?.textContent ?? "", /Payment account ID/);
+    assert.match(cerrado?.textContent ?? "", /The payment reference appears when you set the money aside/);
+    assert.equal((cerrado?.textContent ?? "").includes("Task payment reference"), false);
+
+    await desmontar();
+    cargar("CSTAND");
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Task payment reference"));
+    const abierto = document.querySelector("details");
+    assert.match(abierto?.textContent ?? "", /Task payment reference/);
+    assert.equal((abierto?.textContent ?? "").includes("appears when you set the money aside"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("a live review without a photo URL says No photo yet, not Sample evidence", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {

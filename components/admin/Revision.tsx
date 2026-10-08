@@ -795,7 +795,11 @@ export function Revision({
             <details className="mt-6 text-sm text-[var(--suave)]">
               <summary className="cursor-pointer">{t("revision.technical")}</summary>
               {wallet ? <p className="mt-2 font-mono">{t("revision.yourAccount", { direccion: acortarDireccion(wallet) })}</p> : null}
-              {contrato ? <p className="mt-2 font-mono">{t("revision.budgetRef", { direccion: acortarDireccion(contrato) })}</p> : null}
+              {contrato ? (
+                <p className="mt-2 font-mono">{t("revision.budgetRef", { direccion: acortarDireccion(contrato) })}</p>
+              ) : (
+                <p className="mt-2 max-w-prose leading-6">{t("revision.refPendiente")}</p>
+              )}
             </details>
           ) : null}
 

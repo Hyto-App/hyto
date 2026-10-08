@@ -622,6 +622,7 @@ export const en = {
     technical: "Advanced",
     yourAccount: "Payment account ID (for support): {direccion}",
     budgetRef: "Task payment reference (for support): {direccion}",
+    refPendiente: "The payment reference appears when you set the money aside.",
     paidAmount: "Paid {monto}",
     paidWait: "Paid. The blockchain link shows up once the network confirms it.",
     samplePay: "This is a sample. A live payment adds a link to the blockchain.",
@@ -667,7 +668,7 @@ export const en = {
     testnetUsdc: "USDC",
     sampleBalance: "Sample balance",
     onWallet: "Available now",
-    ausente: "This account cannot receive a payment yet. Open Events and tap Get ready to be paid.",
+    ausente: "This account cannot receive a payment yet.",
     noBalance: "We couldn't read the balance.",
     addWallet: "Sign in to see your Hyto balance.",
     copy: "Copy address",
@@ -1014,7 +1015,7 @@ export const en = {
       "Open the review for that task and tap Lock budget. That sets the task amount aside from your Hyto balance. It does not pay the person yet. You pay from that same review after you approve the photo. Your balance has to cover the amount plus one extra US dollar. Hyto does not keep that extra dollar.",
     costosQ: "What does it cost to pay a task?",
     costosA:
-      "Hyto does not add a fee. The amount you set aside is the amount that gets paid. Hyto does not show another price for sending the payment.",
+      "The payment processor charges a 0.3% fee, and that fee comes out of what the person who gets paid receives. If you set aside US$2, they receive US$1.994. If you set aside US$12.48, they receive US$12.44256.",
     sinPagarQ: "What if I set money aside and I don't pay?",
     sinPagarA:
       "There is no button that returns that money to your Hyto balance. After you set an amount aside, it stays with the task until you pay it. This screen does not send it anywhere else.",
@@ -1041,7 +1042,7 @@ export const en = {
       "You send a photo of the receipt. The organizer confirms the amount before the payment is prepared. That amount cannot be higher than the task limit. The confirmed amount is what gets paid.",
     cobrarQ: "How do I get my account ready to be paid?",
     cobrarA:
-      "Open Settings and get ready to be paid, so your account can receive USDC. A payment cannot arrive before that. You can run it again if the account was only half set up.",
+      "Open Settings and tap Get ready to be paid, so this account can receive a payment. A payment cannot arrive before that. You can run it again if the account was only half set up.",
     sesionQ: "How do I sign out?",
     sesionA:
       "Tap your name at the bottom of the bar and choose Sign out. It is also in Settings. A session on this browser lasts up to a day.",
@@ -1770,6 +1771,7 @@ export const es: Rama<typeof en> = {
     technical: "Avanzado",
     yourAccount: "ID de tu cuenta de pagos (para soporte): {direccion}",
     budgetRef: "Referencia del pago de la tarea (para soporte): {direccion}",
+    refPendiente: "La referencia del pago aparece cuando apartes el dinero.",
     paidAmount: "Pagado {monto}",
     paidWait: "Pagado. El enlace de la cadena aparece cuando la red lo confirma.",
     samplePay: "Esto es un ejemplo. Un pago real agrega un enlace a la cadena.",
@@ -1815,7 +1817,7 @@ export const es: Rama<typeof en> = {
     testnetUsdc: "USDC",
     sampleBalance: "Saldo de ejemplo",
     onWallet: "Disponible ahora",
-    ausente: "Esta cuenta todavía no puede recibir un pago. Abre Eventos y toca Preparar el cobro.",
+    ausente: "Esta cuenta todavía no puede recibir un pago.",
     noBalance: "No pudimos leer el saldo.",
     addWallet: "Entra para ver tu saldo en Hyto.",
     copy: "Copiar dirección",
@@ -2162,7 +2164,7 @@ export const es: Rama<typeof en> = {
       "Abre la revisión de esa tarea y toca Bloquear presupuesto. Eso aparta el monto de la tarea de tu saldo en Hyto. Todavía no le paga a la persona. Pagas desde esa misma revisión después de aprobar la foto. Tu saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
     costosQ: "¿Cuánto cuesta pagar una tarea?",
     costosA:
-      "Hyto no agrega una tarifa. El monto que apartas es el monto que se paga. Hyto no muestra otro precio por enviar el pago.",
+      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si apartas US$2, esa persona recibe US$1,994. Si apartas US$12,48, recibe US$12,44256.",
     sinPagarQ: "¿Qué pasa si aparto el dinero y no pago?",
     sinPagarA:
       "No hay un botón que devuelva ese dinero a tu saldo en Hyto. Después de apartar un monto, se queda en la tarea hasta que lo pagues. Esta pantalla no lo envía a ningún otro lado.",
@@ -2189,7 +2191,7 @@ export const es: Rama<typeof en> = {
       "Envías la foto del recibo. Quien organiza confirma el monto antes de preparar el pago. Ese monto no puede ser mayor que el límite de la tarea. Lo que se paga es el monto confirmado.",
     cobrarQ: "¿Cómo dejo lista mi cuenta para cobrar?",
     cobrarA:
-      "Entra a Configuración y prepara el cobro, para que tu cuenta pueda recibir USDC. El pago no puede llegar antes de eso. Puedes prepararla otra vez si quedó a medias.",
+      "Entra a Configuración y toca Preparar el cobro, para que esta cuenta pueda recibir un pago. El pago no puede llegar antes de eso. Puedes prepararla otra vez si quedó a medias.",
     sesionQ: "¿Cómo cierro sesión?",
     sesionA:
       "Toca tu nombre al pie de la barra y elige Cerrar sesión. También está en Configuración. La sesión dura hasta un día en este navegador.",

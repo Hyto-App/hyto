@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, montoAsegurado, montoDeTarea } from "./formato";
+import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, formatearRecibido, montoAsegurado, montoDeTarea } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -8,6 +8,13 @@ test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto(""), "");
   assert.equal(formatearMonto("   "), "");
   assert.equal(formatearMonto("0"), "US$0");
+  assert.equal(formatearRecibido("0"), "US$0");
+  assert.equal(formatearRecibido("18.5"), "US$18.50");
+  assert.equal(formatearRecibido("1.994"), "US$1.994");
+  assert.equal(formatearRecibido("12.44256"), "US$12.44256");
+  assert.equal(formatearRecibido("14.43656"), "US$14.43656");
+  assert.equal(formatearRecibido("1.994", "es"), "US$1,994");
+  assert.equal(formatearRecibido("12.48", "es"), "US$12,48");
   assert.equal(formatearFecha("2026-09-27"), "Sep 27, 2026");
   assert.equal(formatearFecha("2026-09-27T00:00:00.000Z"), "Sep 27, 2026");
   assert.equal(formatearFecha("2026-09-27T00:00:00.000z"), "Sep 27, 2026");

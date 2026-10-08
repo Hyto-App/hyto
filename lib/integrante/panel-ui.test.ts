@@ -9,6 +9,14 @@ import { armarOrgullo } from "./orgullo";
 
 const WALLET = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
 
+async function asentar(): Promise<void> {
+  for (let paso = 0; paso < 4; paso += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
 function responder(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -32,13 +40,15 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     })) as typeof fetch;
   try {
     await montar(createElement(PanelCuenta));
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await asentar();
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
     assert.match(texto(), /Your Hyto balance: —/);
-    assert.match(texto(), /Sign in to see your Hyto balance/);
+    assert.match(texto(), /cannot receive a payment yet/);
+    const preparar = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Get ready to be paid"));
+    assert.ok(preparar instanceof HTMLButtonElement);
+    assert.equal(preparar.disabled, false);
+    assert.equal(texto().includes("Open Events and tap Get ready to be paid"), false);
     assert.match(texto(), /How you get your money/);
     assert.match(texto(), /practice money/);
     assert.match(texto(), /Your sign-in is saved only on this device/);
@@ -80,11 +90,11 @@ test("una wallet ausente pide Get ready to be paid", async () => {
     })) as typeof fetch;
   try {
     await montar(createElement(PanelCuenta));
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await asentar();
     assert.match(texto(), /cannot receive a payment yet/);
-    assert.match(texto(), /Get ready to be paid/);
+    const preparar = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Get ready to be paid"));
+    assert.ok(preparar instanceof HTMLButtonElement);
+    assert.equal(preparar.disabled, false);
     const avanzado = document.querySelector("details");
     assert.equal(avanzado?.hasAttribute("open"), false);
     assert.match(avanzado?.textContent ?? "", /Payment account ID \(for support\)/);
@@ -128,6 +138,10 @@ test("copiar la dirección pública confirma en el botón", async () => {
     });
     assert.match(texto(), /Your Hyto balance: US\$18\.50/);
     assert.match(texto(), /Available now/);
+    assert.equal(
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")),
+      false,
+    );
     const avanzado = document.querySelector("details");
     assert.equal(avanzado?.hasAttribute("open"), false);
     const enlace = avanzado?.querySelector("a[href*='stellar.expert/explorer/testnet/account/']");
@@ -136,6 +150,62 @@ test("copiar la dirección pública confirma en el botón", async () => {
     assert.equal(copiado, WALLET);
     assert.match(texto(), /Copied/);
     assert.equal(texto().toLowerCase().includes("secret"), false);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("el panel muestra el neto recibido al lado del saldo, no el monto apartado", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  const orgullo = armarOrgullo(
+    [
+      {
+        id: "pago",
+        titulo: "Booth",
+        proyectoId: "zeek",
+        proyecto: "ZEEK",
+        pagada: true,
+        monto: "1.994",
+        pagadoEn: "2026-10-02T18:00:00.000Z",
+      },
+      {
+        id: "comida",
+        titulo: "Meal",
+        proyectoId: "zeek",
+        proyecto: "ZEEK",
+        pagada: true,
+        monto: "12.44256",
+        pagadoEn: "2026-10-03T18:00:00.000Z",
+      },
+    ],
+    new Date("2026-10-15T18:00:00.000Z"),
+  );
+  globalThis.fetch = (async () =>
+    responder({
+      demo: false,
+      muestra: false,
+      email: "ana@hyto.test",
+      wallet: WALLET,
+      walletMuestra: false,
+      saldo: "14.43656",
+      saldoEstado: "ok",
+      orgullo,
+    })) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta));
+    await asentar();
+    assert.match(texto(), /Your Hyto balance: US\$14\.43656/);
+    assert.match(texto(), /All time/);
+    assert.match(texto(), /US\$1\.994/);
+    assert.match(texto(), /US\$12\.44256/);
+    assert.equal(texto().includes("US$14.48"), false);
+    assert.equal(texto().includes("US$2"), false);
+    assert.equal(
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")),
+      false,
+    );
   } finally {
     globalThis.fetch = original;
     await desmontar();

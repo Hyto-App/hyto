@@ -9,6 +9,12 @@ export const RESERVA_USDC = "1";
 
 export type LecturaSaldo = {
   saldo: string | null;
+  /**
+   * False when the account is missing or cannot hold the payment yet.
+   * Omitted when the caller did not check. A zero balance with this true
+   * means the account can receive and simply has nothing yet.
+   */
+  puedeRecibir?: boolean;
 };
 
 export type LectorSaldo = (direccion: string) => Promise<LecturaSaldo>;
@@ -73,8 +79,17 @@ export function alcanza(saldo: string, necesario: string): boolean {
 }
 
 export function saldoUsdcDe(cuenta: { balances?: { balance?: string; asset_code?: string; asset_issuer?: string }[] } | null): string {
-  const linea = (cuenta?.balances ?? []).find((saldo) => saldo.asset_code === USDC.code && saldo.asset_issuer === USDC.issuer);
+  const linea = lineaUsdc(cuenta);
   return linea?.balance && aUnidades(linea.balance) !== null ? linea.balance : "0";
+}
+
+/** True only when the account can already hold the payment. A missing account cannot. */
+export function puedeRecibirUsdc(cuenta: { balances?: { asset_code?: string; asset_issuer?: string }[] } | null): boolean {
+  return lineaUsdc(cuenta) !== undefined;
+}
+
+function lineaUsdc(cuenta: { balances?: { balance?: string; asset_code?: string; asset_issuer?: string }[] } | null) {
+  return (cuenta?.balances ?? []).find((saldo) => saldo.asset_code === USDC.code && saldo.asset_issuer === USDC.issuer);
 }
 
 export async function leerSaldoUsdc(direccion: string, fetchImpl: typeof fetch = fetch): Promise<LecturaSaldo> {
@@ -84,10 +99,11 @@ export async function leerSaldoUsdc(direccion: string, fetchImpl: typeof fetch =
   } catch {
     throw new Error("Could not read the USDC balance.");
   }
-  if (respuesta.status === 404) return { saldo: null };
+  if (respuesta.status === 404) return { saldo: null, puedeRecibir: false };
   if (!respuesta.ok) throw new Error("Could not read the USDC balance.");
   const json = (await respuesta.json()) as { balances?: { balance?: string; asset_code?: string; asset_issuer?: string }[] };
-  return { saldo: saldoUsdcDe(json) };
+  const puedeRecibir = puedeRecibirUsdc(json);
+  return { saldo: saldoUsdcDe(json), puedeRecibir };
 }
 
 export async function rechazoSiFondos(wallet: string, monto: string, leer: LectorSaldo = lectorSaldoVigente()): Promise<Response | null> {
