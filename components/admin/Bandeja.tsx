@@ -53,6 +53,24 @@ function PendientesSinFoto({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: I
   );
 }
 
+function ListaRevision({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: Idioma }) {
+  const t = useTexto();
+  if (tareas.length === 0) return null;
+  return (
+    <ul className="mt-6 grid gap-2">
+      {tareas.map((tarea) => (
+        <li key={tarea.id}>
+          <Link href={`/revision/${tarea.id}`} className="hyto-card block p-4">
+            <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
+            <span className="mt-1 block text-sm text-[var(--suave)]">{montoDeTarea(tarea, idioma)}</span>
+            <span className="mt-2 inline-block text-sm font-medium">{t("bandeja.openReview")}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ListaPagadas({
   tareas,
   idioma,
@@ -204,7 +222,10 @@ export function Bandeja({
   }
 
   const pagadas = vista.tareas.filter((tarea) => tarea.estado === "pagado");
-  const sinEntrega = vista.ejemplo || filtro !== "all" ? [] : vista.tareas.filter(puedeApartarSinEntrega);
+  const sinFoto = vista.ejemplo ? [] : vista.tareas.filter(puedeApartarSinEntrega);
+  const sinEntrega = filtro === "all" ? sinFoto : [];
+  const cubiertas = new Set([...vista.bandeja.map((tarea) => tarea.id), ...pagadas.map((tarea) => tarea.id), ...sinFoto.map((tarea) => tarea.id)]);
+  const sueltas = vista.ejemplo ? [] : vista.tareas.filter((tarea) => !cubiertas.has(tarea.id));
   const visibles = filtro === "all" || filtro === "pagado" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
   const fallidas = vista.ejemplo ? [] : vista.bandeja.filter((item) => item.origen === "error" && item.estado !== "pagado");
@@ -287,8 +308,8 @@ export function Bandeja({
               {visibles.map((tarea) => {
                 const activo = seleccion?.id === tarea.id;
                 return (
+                  <div key={tarea.id} className="grid gap-1">
                   <button
-                    key={tarea.id}
                     type="button"
                     onClick={() => setSelId(tarea.id)}
                     className={`hyto-row ${activo ? "is-on bg-[var(--papel)]" : "hover:bg-[var(--papel)]"}`}
@@ -309,6 +330,10 @@ export function Bandeja({
                       </span>
                     </div>
                   </button>
+                  <Link href={`/revision/${tarea.id}`} className="justify-self-end text-sm font-medium">
+                    {t("bandeja.openReview")}
+                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -415,6 +440,7 @@ export function Bandeja({
       </section>
 
       <PendientesSinFoto tareas={sinEntrega} idioma={idioma} />
+      <ListaRevision tareas={sueltas} idioma={idioma} />
 
       {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{claro(aviso)}</p> : null}
 

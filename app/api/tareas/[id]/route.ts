@@ -6,5 +6,5 @@ export async function POST(request: Request, contexto: { params: Promise<{ id: s
   const sesion = await exigirSesion(request);
   if (sesion instanceof Response) return sesion;
   const { id } = await contexto.params;
-  return conAlmacen((almacen) => editarTareaHttp(request, almacen, id, sesion.usuarioId));
+  return conAlmacen((almacen) => editarTareaHttp(request, almacen, id, sesion.usuarioId, { wallet: sesion.wallet }));
 }

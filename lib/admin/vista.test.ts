@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -156,6 +156,11 @@ test("ver pago y la credencial solo aparecen con un enlace válido", () => {
   assert.equal(enlacePago(hash), `https://stellar.expert/explorer/testnet/tx/${hash}`);
   assert.equal(enlacePago("abc"), null);
   assert.equal(enlacePago("  "), null);
+  const contrato = `C${"A".repeat(55)}`;
+  assert.equal(enlaceContrato(contrato), `https://stellar.expert/explorer/testnet/contract/${contrato}`);
+  assert.equal(enlaceContrato("CSTAND"), null);
+  assert.equal(enlaceContrato(contrato)?.includes("/public/"), false);
+  assert.equal(enlaceContrato(contrato)?.includes("stellar.expert/explorer/testnet/"), true);
   assert.equal(enlaceCredencial(null), null);
   assert.equal(enlaceCredencial("javascript:alert(1)"), null);
   assert.equal(enlaceCredencial("https://dapp.acta.build/c/1"), "https://dapp.acta.build/c/1");
