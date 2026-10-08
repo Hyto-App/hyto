@@ -277,9 +277,9 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
       }),
     );
     assert.match(texto(), /Your photo already reached the organizer/);
-    assert.match(texto(), /Take another/);
+    assert.match(texto(), /Take another photo \(replaces the previous one\)/);
     await act(async () => {
-      [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Take another"))?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Open camera/);
     assert.equal(texto().includes("Your photo already reached the organizer"), false);

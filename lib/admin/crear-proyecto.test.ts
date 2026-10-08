@@ -115,7 +115,15 @@ test("create event asks for a name when the name is empty", async () => {
     await escribir("#titulo-1", "Test");
     await escribir("#monto-1", "5");
     await pulsar("Create event");
-    assert.match(texto(), /Enter an event name/);
+    const nombre = document.querySelector("#nombre-proyecto");
+    assert.ok(nombre instanceof HTMLInputElement);
+    assert.equal(nombre.getAttribute("aria-invalid"), "true");
+    const descrito = nombre.getAttribute("aria-describedby");
+    assert.equal(descrito, "nombre-proyecto-error");
+    const error = document.getElementById(descrito ?? "");
+    assert.match(error?.textContent ?? "", /Enter an event name/);
+    assert.equal(document.activeElement, nombre);
+    assert.doesNotMatch(document.querySelector("aside")?.textContent ?? "", /Enter an event name/);
     assert.equal(llamados, 0);
   } finally {
     globalThis.fetch = anterior;

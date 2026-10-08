@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AvisoCampo, propsError, useEnfocarError, type ErrorCampo } from "@/lib/ui/error-campo";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
@@ -59,6 +60,8 @@ export function CrearProyecto() {
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [falla, setFalla] = useState<ErrorCampo | null>(null);
+  useEnfocarError(falla);
   const [descripcion, setDescripcion] = useState("");
   const [contextoIa, setContextoIa] = useState("");
   const [portada, setPortada] = useState<File | null>(null);
@@ -67,55 +70,67 @@ export function CrearProyecto() {
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
     setFilas((actuales) => actuales.map((fila) => (fila.clave === clave ? { ...fila, ...cambio } : fila)));
+    const id = cambio.titulo !== undefined ? `titulo-${clave}` : cambio.monto !== undefined ? `monto-${clave}` : null;
+    if (id && falla?.id === id) setFalla(null);
+  }
+
+  function marcar(id: string, mensaje: string) {
+    setAviso(null);
+    setFalla({ id, mensaje });
   }
 
   async function fondear() {
     if (modoDemo) {
+      setFalla(null);
       setAviso(AVISO_PROYECTO_DEMO);
       return;
     }
     const nombreLimpio = nombre.trim();
     if (!nombreLimpio) {
-      setAviso("Enter an event name.");
+      marcar("nombre-proyecto", t("avisos.nombreEvento"));
       return;
     }
-    const falla = portada ? errorPortada(portada) : null;
-    if (falla) {
-      setAviso(t(falla === "type" ? "eventos.coverType" : "eventos.coverSize"));
+    const fallaPortada = portada ? errorPortada(portada) : null;
+    if (fallaPortada) {
+      marcar("portada-proyecto", t(fallaPortada === "type" ? "eventos.coverType" : "eventos.coverSize"));
       return;
     }
 
-    const tareas = filas
-      .map((fila) => ({
-        titulo: fila.titulo.trim(),
-        tipo: fila.tipo,
-        monto: normalizarMonto(fila.monto),
-        montoCrudo: fila.monto.trim(),
-        condicion: fila.condicion.trim(),
-        asignado: fila.asignado.trim(),
-        prioridad: fila.prioridad,
-        dificultad: fila.dificultad || null,
-      }))
-      .filter((fila) => fila.titulo || fila.montoCrudo);
+    const preparadas = filas.map((fila) => ({
+      clave: fila.clave,
+      titulo: fila.titulo.trim(),
+      tipo: fila.tipo,
+      monto: normalizarMonto(fila.monto),
+      montoCrudo: fila.monto.trim(),
+      condicion: fila.condicion.trim(),
+      asignado: fila.asignado.trim(),
+      prioridad: fila.prioridad,
+      dificultad: fila.dificultad || null,
+    }));
+    const tareas = preparadas.filter((fila) => fila.titulo || fila.montoCrudo);
 
     if (tareas.length === 0) {
-      setAviso("Add at least one task with a title and an amount.");
+      marcar(`titulo-${filas[0]?.clave ?? "1"}`, t("avisos.alMenosUna"));
       return;
     }
-    if (tareas.some((fila) => !fila.titulo)) {
-      setAviso("Every task needs a title.");
+    const sinTitulo = tareas.find((fila) => !fila.titulo);
+    if (sinTitulo) {
+      marcar(`titulo-${sinTitulo.clave}`, t("avisos.tituloTarea"));
       return;
     }
-    if (tareas.some((fila) => fila.montoCrudo && !fila.monto)) {
-      setAviso(AVISO_MONTO_INVALIDO);
+    const montoMal = tareas.find((fila) => fila.montoCrudo && !fila.monto);
+    if (montoMal) {
+      marcar(`monto-${montoMal.clave}`, t("errores.montoInvalido"));
       return;
     }
-    if (tareas.some((fila) => !fila.monto)) {
-      setAviso("Every task needs an amount greater than zero.");
+    const sinMonto = tareas.find((fila) => !fila.monto);
+    if (sinMonto) {
+      marcar(`monto-${sinMonto.clave}`, t("avisos.montoTarea"));
       return;
     }
 
-    const payload = tareas.map(({ montoCrudo: _omit, ...fila }) => fila);
+    const payload = tareas.map(({ clave: _clave, montoCrudo: _omit, ...fila }) => fila);
+    setFalla(null);
 
     let respuesta: Response;
     try {
@@ -125,12 +140,23 @@ export function CrearProyecto() {
         body: JSON.stringify({ nombre: nombreLimpio, descripcion: descripcion.trim(), contextoIa: contextoIa.trim(), tareas: payload }),
       });
     } catch {
+      setFalla(null);
       setAviso("Could not reach the server. Check your connection and try again.");
       return;
     }
     const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string; proyecto?: { id?: string } } | null;
     if (!respuesta.ok || !cuerpo?.proyecto?.id) {
-      setAviso(cuerpo?.aviso ?? "Could not create the event. Please try again.");
+      const mensaje = cuerpo?.aviso ?? "Could not create the event. Please try again.";
+      if (mensaje === "Enter an event name.") marcar("nombre-proyecto", claro(mensaje));
+      else if (mensaje === "Every task needs a title.") marcar(`titulo-${filas[0]?.clave ?? "1"}`, claro(mensaje));
+      else if (mensaje === "Every task needs an amount greater than zero." || mensaje === AVISO_MONTO_INVALIDO) {
+        marcar(`monto-${filas[0]?.clave ?? "1"}`, claro(mensaje));
+      } else if (mensaje === "Add at least one task with a title and an amount.") {
+        marcar(`titulo-${filas[0]?.clave ?? "1"}`, claro(mensaje));
+      } else {
+        setFalla(null);
+        setAviso(mensaje);
+      }
       return;
     }
     const id = cuerpo.proyecto.id;
@@ -184,9 +210,14 @@ export function CrearProyecto() {
             <input
               id="nombre-proyecto"
               value={nombre}
-              onChange={(evento) => setNombre(evento.target.value)}
+              onChange={(evento) => {
+                setNombre(evento.target.value);
+                if (falla?.id === "nombre-proyecto") setFalla(null);
+              }}
+              {...propsError(falla, "nombre-proyecto")}
               className="hyto-input mt-2"
             />
+            <AvisoCampo id="nombre-proyecto-error" mensaje={falla?.id === "nombre-proyecto" ? falla.mensaje : null} />
 
             <div className="mt-6">
               <ZonaPortada
@@ -195,7 +226,11 @@ export function CrearProyecto() {
                 nombreEvento={nombre}
                 etiqueta={t("eventos.coverPhoto")}
                 ayudaId="portada-ayuda"
-                onArchivo={setPortada}
+                errorExterno={falla?.id === "portada-proyecto" ? falla.mensaje : null}
+                onArchivo={(archivo) => {
+                  setPortada(archivo);
+                  if (falla?.id === "portada-proyecto") setFalla(null);
+                }}
               />
               <p id="portada-ayuda" className="mt-2 text-xs text-[var(--suave)]">
                 {t("eventos.coverHelp")}
@@ -252,8 +287,10 @@ export function CrearProyecto() {
                   id={`titulo-${fila.clave}`}
                   value={fila.titulo}
                   onChange={(evento) => cambiar(fila.clave, { titulo: evento.target.value })}
+                  {...propsError(falla, `titulo-${fila.clave}`)}
                   className="hyto-input mt-2"
                 />
+                <AvisoCampo id={`titulo-${fila.clave}-error`} mensaje={falla?.id === `titulo-${fila.clave}` ? falla.mensaje : null} />
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-sm text-[var(--suave)]">{t("eventos.type")}</p>
@@ -284,16 +321,27 @@ export function CrearProyecto() {
                       id={`monto-${fila.clave}`}
                       inputMode="decimal"
                       value={fila.monto}
-                      aria-invalid={avisoMontoEntrada(fila.monto) ? true : undefined}
-                      aria-describedby={avisoMontoEntrada(fila.monto) ? `monto-error-${fila.clave}` : undefined}
+                      {...propsError(
+                        avisoMontoEntrada(fila.monto)
+                          ? { id: `monto-${fila.clave}`, mensaje: claro(avisoMontoEntrada(fila.monto) ?? "") }
+                          : falla?.id === `monto-${fila.clave}`
+                            ? falla
+                            : null,
+                        `monto-${fila.clave}`,
+                      )}
                       onChange={(evento) => cambiar(fila.clave, { monto: escribirMonto(evento.target.value) })}
                       className="hyto-input mt-2"
                     />
-                    {avisoMontoEntrada(fila.monto) ? (
-                      <p id={`monto-error-${fila.clave}`} role="alert" className="mt-2 text-sm text-[var(--peligro)]">
-                        {avisoMontoEntrada(fila.monto)}
-                      </p>
-                    ) : null}
+                    <AvisoCampo
+                      id={`monto-${fila.clave}-error`}
+                      mensaje={
+                        avisoMontoEntrada(fila.monto)
+                          ? claro(avisoMontoEntrada(fila.monto) ?? "")
+                          : falla?.id === `monto-${fila.clave}`
+                            ? falla.mensaje
+                            : null
+                      }
+                    />
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTexto } from "@/components/ui/Idioma";
+import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { AvisoCampo, propsError, useEnfocarError, type ErrorCampo } from "@/lib/ui/error-campo";
 
 type Resumen = {
   id: string;
@@ -119,20 +120,68 @@ function Tarjeta({ comunidad }: { comunidad: Resumen }) {
   );
 }
 
+function idDeComunidad(avisoTexto: string): string | null {
+  if (avisoTexto === "Enter a community name." || avisoTexto === "The name can have up to 80 characters.") return "nombre-comunidad";
+  if (avisoTexto === "The description can have up to 1000 characters.") return "descripcion-comunidad";
+  if (avisoTexto === "The photo has to be an https URL." || avisoTexto === "The photo URL is too long.") return "foto-comunidad";
+  if (avisoTexto === "Choose public or private.") return "visibilidad-publica";
+  return null;
+}
+
 export function FormularioComunidad() {
   const t = useTexto();
+  const claro = useClaro();
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [visibilidad, setVisibilidad] = useState<"publica" | "privada">("publica");
   const [aviso, setAviso] = useState<string | null>(null);
+  const [falla, setFalla] = useState<ErrorCampo | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  useEnfocarError(falla);
+
+  function marcarServidor(avisoTexto: string): boolean {
+    const id = idDeComunidad(avisoTexto);
+    if (!id) return false;
+    setFalla({ id, mensaje: claro(avisoTexto) });
+    return true;
+  }
 
   async function enviar(evento: React.FormEvent) {
     evento.preventDefault();
+    const nombreLimpio = nombre.trim();
+    if (!nombreLimpio) {
+      setFalla({ id: "nombre-comunidad", mensaje: t("comunidades.faltaNombre") });
+      return;
+    }
+    if (nombreLimpio.length > 80) {
+      setFalla({ id: "nombre-comunidad", mensaje: t("comunidades.nombreLargo") });
+      return;
+    }
+    if (descripcion.trim().length > 1000) {
+      setFalla({ id: "descripcion-comunidad", mensaje: t("comunidades.descripcionLarga") });
+      return;
+    }
+    const foto = fotoUrl.trim();
+    if (foto.length > 400) {
+      setFalla({ id: "foto-comunidad", mensaje: t("comunidades.fotoLarga") });
+      return;
+    }
+    if (foto) {
+      try {
+        if (new URL(foto).protocol !== "https:") {
+          setFalla({ id: "foto-comunidad", mensaje: t("comunidades.fotoHttps") });
+          return;
+        }
+      } catch {
+        setFalla({ id: "foto-comunidad", mensaje: t("comunidades.fotoHttps") });
+        return;
+      }
+    }
     setOcupado(true);
     setAviso(null);
+    setFalla(null);
     const respuesta = await fetch("/api/comunidades", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -141,7 +190,9 @@ export function FormularioComunidad() {
     setOcupado(false);
     const cuerpo = (await respuesta?.json().catch(() => null)) as { aviso?: string; comunidad?: { id?: string } } | null;
     if (!respuesta?.ok || !cuerpo?.comunidad?.id) {
-      setAviso(cuerpo?.aviso ?? t("comunidades.noGuarda"));
+      const mensaje = cuerpo?.aviso ?? "";
+      if (mensaje && marcarServidor(mensaje)) return;
+      setAviso(mensaje ? claro(mensaje) : t("comunidades.noGuarda"));
       return;
     }
     router.push(`/comunidades/${cuerpo.comunidad.id}`);
@@ -153,21 +204,62 @@ export function FormularioComunidad() {
       <form className="mt-6 grid max-w-lg gap-4" onSubmit={(evento) => void enviar(evento)}>
         <label className="block text-sm" htmlFor="nombre-comunidad">
           {t("comunidades.nombre")}
-          <input id="nombre-comunidad" className="hyto-input mt-2 w-full" value={nombre} onChange={(evento) => setNombre(evento.target.value)} required />
+          <input
+            id="nombre-comunidad"
+            className="hyto-input mt-2 w-full"
+            value={nombre}
+            onChange={(evento) => {
+              setNombre(evento.target.value);
+              if (falla?.id === "nombre-comunidad") setFalla(null);
+            }}
+            {...propsError(falla, "nombre-comunidad")}
+          />
+          <AvisoCampo id="nombre-comunidad-error" mensaje={falla?.id === "nombre-comunidad" ? falla.mensaje : null} />
         </label>
         <label className="block text-sm" htmlFor="descripcion-comunidad">
           {t("comunidades.descripcion")}
-          <textarea id="descripcion-comunidad" className="hyto-input mt-2 w-full" rows={4} value={descripcion} onChange={(evento) => setDescripcion(evento.target.value)} />
+          <textarea
+            id="descripcion-comunidad"
+            className="hyto-input mt-2 w-full"
+            rows={4}
+            value={descripcion}
+            onChange={(evento) => {
+              setDescripcion(evento.target.value);
+              if (falla?.id === "descripcion-comunidad") setFalla(null);
+            }}
+            {...propsError(falla, "descripcion-comunidad")}
+          />
+          <AvisoCampo id="descripcion-comunidad-error" mensaje={falla?.id === "descripcion-comunidad" ? falla.mensaje : null} />
         </label>
         <label className="block text-sm" htmlFor="foto-comunidad">
           {t("comunidades.foto")}
-          <input id="foto-comunidad" className="hyto-input mt-2 w-full" value={fotoUrl} onChange={(evento) => setFotoUrl(evento.target.value)} placeholder="https://" />
+          <input
+            id="foto-comunidad"
+            className="hyto-input mt-2 w-full"
+            value={fotoUrl}
+            onChange={(evento) => {
+              setFotoUrl(evento.target.value);
+              if (falla?.id === "foto-comunidad") setFalla(null);
+            }}
+            placeholder="https://"
+            {...propsError(falla, "foto-comunidad")}
+          />
+          <AvisoCampo id="foto-comunidad-error" mensaje={falla?.id === "foto-comunidad" ? falla.mensaje : null} />
         </label>
         <fieldset className="grid gap-2 text-sm">
           <legend>{t("comunidades.visibilidad")}</legend>
           <label>
-            <input type="radio" name="visibilidad" checked={visibilidad === "publica"} onChange={() => setVisibilidad("publica")} /> {t("comunidades.publica")}
+            <input
+              id="visibilidad-publica"
+              type="radio"
+              name="visibilidad"
+              checked={visibilidad === "publica"}
+              onChange={() => setVisibilidad("publica")}
+              {...propsError(falla, "visibilidad-publica")}
+            />{" "}
+            {t("comunidades.publica")}
           </label>
+          <AvisoCampo id="visibilidad-publica-error" mensaje={falla?.id === "visibilidad-publica" ? falla.mensaje : null} />
           <p className="text-[var(--suave)]">{t("comunidades.publicaNota")}</p>
           <label>
             <input type="radio" name="visibilidad" checked={visibilidad === "privada"} onChange={() => setVisibilidad("privada")} /> {t("comunidades.privada")}
@@ -447,12 +539,19 @@ function Tablon({ comunidadId }: { comunidadId: string }) {
 
 export function UnirseCodigo() {
   const t = useTexto();
+  const claro = useClaro();
   const router = useRouter();
   const [codigo, setCodigo] = useState("");
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [falla, setFalla] = useState<ErrorCampo | null>(null);
+  useEnfocarError(falla);
 
   async function enviar(evento: React.FormEvent) {
     evento.preventDefault();
+    if (!codigo.trim()) {
+      setFalla({ id: "codigo-comunidad", mensaje: t("comunidades.codigoInvalido") });
+      return;
+    }
+    setFalla(null);
     const respuesta = await fetch("/api/comunidades/codigo", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -460,7 +559,7 @@ export function UnirseCodigo() {
     });
     const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string; comunidadId?: string } | null;
     if (!respuesta.ok || !cuerpo?.comunidadId) {
-      setAviso(cuerpo?.aviso ?? t("comunidades.codigoInvalido"));
+      setFalla({ id: "codigo-comunidad", mensaje: claro(cuerpo?.aviso ?? t("comunidades.codigoInvalido")) });
       return;
     }
     router.push(`/comunidades/${cuerpo.comunidadId}`);
@@ -472,9 +571,19 @@ export function UnirseCodigo() {
       <form className="mt-6 grid max-w-sm gap-4" onSubmit={(evento) => void enviar(evento)}>
         <label className="block text-sm" htmlFor="codigo-comunidad">
           {t("comunidades.codigo")}
-          <input id="codigo-comunidad" className="hyto-input mt-2 w-full" value={codigo} onChange={(evento) => setCodigo(evento.target.value)} autoComplete="off" />
+          <input
+            id="codigo-comunidad"
+            className="hyto-input mt-2 w-full"
+            value={codigo}
+            onChange={(evento) => {
+              setCodigo(evento.target.value);
+              if (falla) setFalla(null);
+            }}
+            autoComplete="off"
+            {...propsError(falla, "codigo-comunidad")}
+          />
+          <AvisoCampo id="codigo-comunidad-error" mensaje={falla?.mensaje ?? null} />
         </label>
-        {aviso ? <p className="text-sm">{aviso}</p> : null}
         <button type="submit" className="hyto-btn">
           {t("comunidades.unirse")}
         </button>

@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
 import { contadorCerca, errorPortada } from "@/lib/ui/campos-evento";
+import { AvisoCampo } from "@/lib/ui/error-campo";
 
 export function IconoImagen() {
   return (
@@ -30,6 +31,7 @@ export function ZonaPortada({
   nombreEvento,
   etiqueta,
   ayudaId,
+  errorExterno = null,
   onArchivo,
 }: {
   id: string;
@@ -37,6 +39,7 @@ export function ZonaPortada({
   nombreEvento: string;
   etiqueta: string;
   ayudaId: string;
+  errorExterno?: string | null;
   onArchivo: (archivo: File | null) => void;
 }) {
   const t = useTexto();
@@ -61,6 +64,7 @@ export function ZonaPortada({
     if (elegido && falla) {
       if (entrada.current) entrada.current.value = "";
       setError(falla === "type" ? t("eventos.coverType") : t("eventos.coverSize"));
+      queueMicrotask(() => entrada.current?.focus());
       return;
     }
     setError(null);
@@ -76,6 +80,9 @@ export function ZonaPortada({
     setError(null);
     onArchivo(null);
   }
+
+  const visible = error ?? errorExterno;
+  const descrito = visible ? `${ayudaId} ${id}-error` : ayudaId;
 
   return (
     <div>
@@ -103,7 +110,7 @@ export function ZonaPortada({
           </div>
         ) : (
           <div
-            className={`hyto-zona${arrastre ? " is-arrastre" : ""}`}
+            className={`hyto-zona${arrastre ? " is-arrastre" : ""}${visible ? " is-invalida" : ""}`}
             onClick={abrir}
             onDragOver={(evento) => {
               evento.preventDefault();
@@ -125,16 +132,13 @@ export function ZonaPortada({
           id={id}
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          aria-describedby={ayudaId}
+          aria-invalid={visible ? true : undefined}
+          aria-describedby={descrito}
           tabIndex={archivo ? -1 : 0}
           onChange={(evento) => elegir(evento.target.files)}
           className="sr-only"
         />
-        {error ? (
-          <p role="alert" className="mt-2 text-sm text-[var(--peligro)]">
-            {error}
-          </p>
-        ) : null}
+        <AvisoCampo id={`${id}-error`} mensaje={visible} />
       </div>
     </div>
   );

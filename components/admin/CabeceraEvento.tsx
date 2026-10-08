@@ -64,6 +64,7 @@ export function CabeceraEvento({
       {organiza && abierto ? (
         <div className="hyto-card mt-4 grid gap-3 p-5" role="region" aria-label={t("eventos.inviteRegion")}>
           <p className="text-sm text-[var(--suave)]">{t("confirmar.accessNote")}</p>
+          <p className="text-sm text-[var(--suave)]">{t("eventos.createCodeHelp")}</p>
           <button type="button" className="hyto-btn-line" onClick={() => setConfirmacion({ tipo: "code", abierto: true })}>
             {t("eventos.createCode")}
           </button>

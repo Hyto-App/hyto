@@ -744,6 +744,12 @@ a {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 40%, transparent);
 }
 
+.hyto-input[aria-invalid="true"],
+.hyto-input[aria-invalid="true"]:focus {
+  border-color: var(--peligro);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--peligro) 35%, transparent);
+}
+
 .hyto-input:disabled {
   opacity: 0.7;
 }
@@ -5971,6 +5977,12 @@ html.hyto-firmando body {
 .hyto-zona:focus-within {
   border-color: var(--acento);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 40%, transparent);
+}
+
+.hyto-zona.is-invalida,
+.hyto-zona.is-invalida:focus-within {
+  border-color: var(--peligro);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--peligro) 35%, transparent);
 }
 
 .hyto-zona-ayuda {

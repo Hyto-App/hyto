@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { crearMemoria } from "@/lib/db/memoria";
 import { reiniciarLimite } from "@/lib/escrow/limite";
-import { canjearInvitacionHttp, codigoHumano, hashSecreto } from "./invitaciones";
+import { canjearInvitacionHttp, codigoHumano, crearInvitacionHttp, hashSecreto } from "./invitaciones";
 import { pedirOtraFotoHttp } from "./pedir";
 
 const AHORA = "2026-10-01T00:00:00.000Z";
@@ -98,6 +98,35 @@ test("el canje respeta vencimiento, usos, correo y no baja a un organizador", as
     ahora: AHORA,
   });
   assert.deepEqual(sinVencimiento, { ok: false, motivo: "expired" });
+});
+
+test("un código de invitación vence a los 7 días y empieza por HYTO-", async () => {
+  const almacen = crearMemoria();
+  await almacen.guardarUsuario({ id: "ana", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
+  await almacen.crearProyecto({ id: "feria", nombre: "Feria", creadoEn: AHORA, organizadorId: "ana" }, []);
+  await almacen.guardarMiembro({
+    proyectoId: "feria",
+    usuarioId: "ana",
+    rol: "organizer",
+    estado: "active",
+    creadoEn: AHORA,
+  });
+  const antes = Date.now();
+  const respuesta = await crearInvitacionHttp(
+    new Request("http://local/api/eventos/feria/invitaciones", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tipo: "code", rol: "volunteer" }),
+    }),
+    almacen,
+    "feria",
+    "ana",
+  );
+  assert.equal(respuesta.status, 201);
+  const cuerpo = (await respuesta.json()) as { secreto: string; expiraEn: string };
+  assert.match(cuerpo.secreto, /^HYTO-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{12}$/);
+  const dias = (Date.parse(cuerpo.expiraEn) - antes) / (24 * 60 * 60 * 1000);
+  assert.ok(dias > 6.9 && dias < 7.1, `vencía en ${dias} días`);
 });
 
 test("el código es largo y cinco fallos bloquean el canje", async () => {
