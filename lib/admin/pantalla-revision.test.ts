@@ -387,7 +387,7 @@ test("pay still says the payment failed when release does not go through", async
     await pulsar("Approve and pay");
     await confirmarDialogo();
     await esperar(() => texto().includes("Payment failed"));
-    assert.match(texto(), /No USDC left the escrow/);
+    assert.match(texto(), /The money is still set aside/);
     assert.match(texto(), /The milestone isn't ready/);
     assert.equal(texto().includes("Budget not locked"), false);
   } finally {
@@ -1102,6 +1102,35 @@ test("si el fondeo ya está en la red, terminar de bloquear no pide otra firma",
   }
 });
 
+test("al recargar, un dinero ya apartado no ofrece terminar de bloquear ni pagar hasta que la lectura lo confirme", async () => {
+  const anterior = globalThis.fetch;
+  const marca = globalThis as { __HYTO_PAUSAS_CONSULTA__?: number[] };
+  marca.__HYTO_PAUSAS_CONSULTA__ = [1, 1, 1];
+  const contrato = `C${"A".repeat(55)}`;
+  window.sessionStorage.setItem("hyto-ya-apartado", JSON.stringify([contrato]));
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: 0 } });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "20" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Nothing else is needed"));
+    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(rotulo("Approve and pay"), false);
+    assert.equal(rotulo("Check again"), true);
+  } finally {
+    delete marca.__HYTO_PAUSAS_CONSULTA__;
+    window.sessionStorage.removeItem("hyto-ya-apartado");
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("en demo, demo-comida muestra la revisión de ejemplo aunque la red no responda", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (() => new Promise(() => undefined)) as typeof fetch;
@@ -1140,7 +1169,7 @@ test("bloquear queda apagado cuando el saldo no alcanza y el aviso usa dos decim
     assert.equal(boton instanceof HTMLButtonElement && boton.disabled, true);
     const aviso = document.querySelector("#bloqueo-saldo");
     assert.match(aviso?.textContent ?? "", /US\$40\.60/);
-    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /US\$1\.00 that stays/);
     assert.match(aviso?.textContent ?? "", /You are short US\$39\.30/);
     assert.equal(/US\$40\.6(?!0)/.test(aviso?.textContent ?? ""), false);
     assert.equal(document.querySelector("[role=dialog]"), null);
@@ -1201,8 +1230,9 @@ test("al recargar, el presupuesto se revisa solo y no pide recargar la página",
     const enlace = [...document.querySelectorAll("a")].find((nodo) => nodo.textContent?.trim() === "View on blockchain");
     assert.equal(enlace?.getAttribute("target"), "_blank");
     assert.equal(enlace?.getAttribute("rel"), "noopener noreferrer");
-    await esperar(() => texto().includes("still isn't confirmed"));
-    assert.match(texto(), /You can try again when you want/);
+    await esperar(() => texto().includes("still cannot see the money set aside"));
+    assert.match(texto(), /Check again in 1 minute/);
+    assert.match(texto(), /Do not set it aside again/);
     assert.equal(/refresh|reload/i.test(texto()), false);
     const antes = lecturas;
     await pulsar("Try again");
@@ -1236,8 +1266,8 @@ test("en español el presupuesto sin confirmar ofrece intentarlo de nuevo", asyn
         children: createElement(Revision, { tareaId: "stand" }),
       }),
     );
-    await esperar(() => texto().includes("todavía no se confirma"));
-    assert.match(texto(), /Esto sigue solo|todavía no se confirma/);
+    await esperar(() => texto().includes("no vemos el dinero apartado"));
+    assert.match(texto(), /Esto sigue solo|1 minuto/);
     assert.equal(/actualiza|recarga/i.test(texto()), false);
     assert.equal(
       [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Intentar de nuevo"),

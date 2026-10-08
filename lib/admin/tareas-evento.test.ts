@@ -108,7 +108,7 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
     await escribir("#tope-comida", "50");
     const aviso = document.querySelector("#saldo-comida");
     assert.match(aviso?.textContent ?? "", /US\$51\.00/);
-    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /US\$1\.00 that stays/);
     assert.match(aviso?.textContent ?? "", /You are short US\$49\.70/);
     assert.equal(/US\$51(?!\.00)/.test(aviso?.textContent ?? ""), false);
     assert.equal(/US\$49\.7(?!0)/.test(aviso?.textContent ?? ""), false);

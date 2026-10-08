@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { acortarDireccion, explicarNeto, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -38,7 +39,6 @@ function mesVisible(clave: string, modo: "short" | "long", idioma: Idioma): stri
 
 export function PanelCuenta() {
   const t = useTexto();
-  const claro = useClaro();
   const [estado, setEstado] = useState<Estado>("cargando");
   const [vista, setVista] = useState<VistaCuenta | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -82,11 +82,14 @@ export function PanelCuenta() {
       <div className="grid gap-4">
         <section className="hyto-card p-5 sm:p-6">
           <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
-            {claro(aviso ?? "We couldn't load your account.")}
+            <TextoClaro mensaje={aviso ?? "We couldn't load your account."} />
           </p>
           <button type="button" className="hyto-btn is-inline mt-4 px-5" onClick={() => setIntento((valor) => valor + 1)}>
             {t("comunes.tryAgain")}
           </button>
+          <div id="preparar-cobro" className="mt-4">
+            <PrepararUsdc silencioPendiente onListo={() => setIntento((valor) => valor + 1)} />
+          </div>
         </section>
         <ComoCobrar />
         <CostoDePagar />
@@ -170,9 +173,24 @@ function PasaporteStellar() {
 function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void }) {
   const t = useTexto();
   const idioma = useIdioma();
+  const [pedidoCobro, setPedidoCobro] = useState(false);
   const publica = direccionPublica(vista.wallet);
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
+  const mostrarPreparar = !vista.demo && !vista.muestra && (sinCobro || vista.saldoEstado === "error" || pedidoCobro);
+
+  useEffect(() => {
+    const sincronizar = () => setPedidoCobro(window.location.hash === "#preparar-cobro");
+    sincronizar();
+    window.addEventListener("hashchange", sincronizar);
+    return () => window.removeEventListener("hashchange", sincronizar);
+  }, []);
+
+  useEffect(() => {
+    if (!pedidoCobro) return;
+    document.getElementById("preparar-cobro")?.scrollIntoView({ block: "nearest" });
+  }, [pedidoCobro, vista.saldoEstado]);
+
   return (
     <section className="hyto-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -182,7 +200,11 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
         {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
       <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
-      {sinCobro && !vista.demo && !vista.muestra ? <PrepararUsdc silencioPendiente onListo={alListo} /> : null}
+      {mostrarPreparar ? (
+        <div id="preparar-cobro">
+          <PrepararUsdc silencioPendiente onListo={alListo} />
+        </div>
+      ) : null}
       <details className="mt-6 text-sm">
         <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
         <div className="mt-4 grid gap-5">

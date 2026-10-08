@@ -8,7 +8,8 @@ import { BadgeTarea } from "@/components/integrante/EstadoTarea";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -174,7 +175,6 @@ function Cargando() {
 export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const demo = useModoDemo();
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
@@ -320,7 +320,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
       {lista && error ? (
         <div className="hyto-tarjeta hyto-estado-vacio" role="alert">
           <MileAnimada estado="error-subida" tamano={96} />
-          <h2>{claro(error)}</h2>
+          <h2><TextoClaro mensaje={error} /></h2>
           <div className="hyto-estado-vacio-acciones">
             <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
               {t("comunes.tryAgain")}

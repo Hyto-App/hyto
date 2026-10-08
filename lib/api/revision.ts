@@ -55,7 +55,7 @@ export async function leerRevisionHttp(
     if (forzar && evidencia && blobReal && fotos && puedeForzar) {
       let reservado = false;
       if (forzar) {
-        if (!reservarRevision(tareaId)) return json({ aviso: "Wait a moment before reviewing again." }, 429);
+        if (!reservarRevision(tareaId)) return json({ aviso: "Wait 30 seconds before reviewing again." }, 429);
         reservado = true;
       }
       try {

@@ -42,7 +42,8 @@ import { pedirOtp } from "@/lib/auth/pedidoOtp";
 import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
+import { RUTA_PREPARAR_COBRO, TextoClaro, TextoRico } from "@/components/ui/TextoClaro";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -63,7 +64,7 @@ function politicaDeCavos(): Promise<PoliticaRecuperacion> {
 }
 
 /** Where Get ready to be paid finishes a Sign up whose testnet setup did not. */
-const DESTINO_ALTA_PENDIENTE = "/eventos";
+const DESTINO_ALTA_PENDIENTE = RUTA_PREPARAR_COBRO;
 
 /** `pendiente` is set when the person is signed in but Sign up testnet setup did not finish. */
 type ResultadoIngreso = { aviso: string | null; direccion: string | null; guardada: boolean; pendiente: string | null };
@@ -156,7 +157,6 @@ export function Entrar({
   const modoDemo = useModoDemo();
   const rolActual = useRolDemo();
   const t = useTexto();
-  const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
   const [retorno, setRetorno] = useState<string | null>(null);
@@ -750,7 +750,7 @@ export function Entrar({
         </button>
         {aviso ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
-            {claro(aviso)}
+            <TextoClaro mensaje={aviso} />
           </p>
         ) : null}
       </div>
@@ -778,16 +778,16 @@ export function Entrar({
         {altaPendiente ? (
           <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
             <p>
-              {claro(altaPendiente)} {t("entrar.altaPendiente")}
+              <TextoClaro mensaje={altaPendiente} /> <TextoRico mensaje={t("entrar.altaPendiente")} />
             </p>
             <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
-              {t("entrar.openEvents")}
+              {t("entrar.openSettings")}
             </a>
           </div>
         ) : null}
         <div className="hyto-welcome-step">
           <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
-          <Link href={destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
+          <Link href={altaPendiente ? DESTINO_ALTA_PENDIENTE : destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
             {t("pago.preparePayout")}
           </Link>
         </div>
@@ -829,7 +829,7 @@ export function Entrar({
         {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
         {mensaje ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
-            {claro(mensaje)}
+            <TextoClaro mensaje={mensaje} />
           </p>
         ) : null}
       </div>
@@ -1017,11 +1017,11 @@ export function Entrar({
                   alertaFormulario ? (
                     <div className="hyto-login-alerta" role="alert">
                       <Icono nombre="alerta" />
-                      <p>{claro(mensaje)}</p>
+                      <p><TextoClaro mensaje={mensaje} /></p>
                     </div>
                   ) : (
                     <p role="status" className="hyto-login-aviso">
-                      {claro(mensaje)}
+                      <TextoClaro mensaje={mensaje} />
                     </p>
                   )
                 ) : null}
@@ -1072,18 +1072,18 @@ export function Entrar({
                       </p>
                     ) : (
                       <p className="hyto-login-ayuda">
-                        {demo ? claro(AVISO_DEMO) : t(conEnlace ? "entrar.ayudaEnlace" : "entrar.ayudaCorreo")}
+                        {demo ? <TextoClaro mensaje={AVISO_DEMO} /> : t(conEnlace ? "entrar.ayudaEnlace" : "entrar.ayudaCorreo")}
                       </p>
                     )}
                     {mensaje ? (
                       alertaFormulario ? (
                         <div className="hyto-login-alerta" role="alert">
                           <Icono nombre="alerta" />
-                          <p>{claro(mensaje)}</p>
+                          <p><TextoClaro mensaje={mensaje} /></p>
                         </div>
                       ) : (
                         <p role="status" className="hyto-login-aviso">
-                          {claro(mensaje)}
+                          <TextoClaro mensaje={mensaje} />
                         </p>
                       )
                     ) : null}
@@ -1145,7 +1145,7 @@ export function Entrar({
                 <p className="hyto-login-ayuda">{t("entrar.abrirEnlace")}</p>
                 {mensaje ? (
                   <p role="status" className="hyto-login-aviso">
-                    {claro(mensaje)}
+                    <TextoClaro mensaje={mensaje} />
                   </p>
                 ) : null}
                 <button
@@ -1166,7 +1166,7 @@ export function Entrar({
                 <button type="button" className="hyto-login-btn is-enlace" onClick={volverAlCorreo} disabled={ocupado !== null}>
                   {t("entrar.usarOtro")}
                 </button>
-                <p className="hyto-login-ayuda is-chica">{claro(AVISO_SPAM_ENLACE)}</p>
+                <p className="hyto-login-ayuda is-chica"><TextoClaro mensaje={AVISO_SPAM_ENLACE} /></p>
               </div>
             ) : null}
             {fase === "codigo" || celdasOk ? (
@@ -1218,7 +1218,7 @@ export function Entrar({
                           <strong>{t("entrar.codigoVencidoTitulo")}</strong> {t("entrar.codigoVencidoCuerpo")}
                         </>
                       ) : (
-                        claro(aviso ?? "")
+                        <TextoClaro mensaje={aviso ?? ""} />
                       )}
                     </p>
                   </div>
@@ -1232,7 +1232,7 @@ export function Entrar({
                 ) : null}
                 {esperaVisible ? (
                   <p role="status" className="hyto-login-aviso">
-                    {claro(textoEspera(espera))}
+                    <TextoClaro mensaje={textoEspera(espera)} />
                   </p>
                 ) : null}
                 {codigoVencido ? (
@@ -1308,7 +1308,7 @@ export function Entrar({
                         )}
                       </button>
                     </p>
-                    <p className="hyto-login-ayuda is-chica">{claro(AVISO_SPAM)}</p>
+                    <p className="hyto-login-ayuda is-chica"><TextoClaro mensaje={AVISO_SPAM} /></p>
                   </>
                 )}
               </div>

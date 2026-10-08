@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
@@ -68,7 +69,6 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
   const router = useRouter();
   const modoDemo = useModoDemo();
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const [nombre, setNombre] = useState("");
   const [filas, setFilas] = useState<Fila[]>([FILA_INICIAL]);
@@ -402,7 +402,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
             ) : null}
             {modoDemo ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                {claro(AVISO_PROYECTO_DEMO)}
+                <TextoClaro mensaje={AVISO_PROYECTO_DEMO} />
               </p>
             ) : falta ? (
               <p id="aviso-saldo-crear" role="alert" className="text-sm leading-6 text-[var(--suave)]">
@@ -410,7 +410,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               </p>
             ) : aviso ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                {claro(aviso)}
+                <TextoClaro mensaje={aviso} />
               </p>
             ) : null}
           </div>

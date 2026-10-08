@@ -8,7 +8,7 @@ import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@
 export const HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
 export const CODIGO_XLM_COMISION = "xlm_sin_comision";
 export const AVISO_XLM_COMISION =
-  "This account needs a little test balance for the network fee. If the account already exists, send that balance from another account, then try again.";
+  "We could not cover the cost of sending this. Try again in 5 minutes. If it keeps happening, [[ayuda]].";
 const AVISO_SIN_CUENTA = "This wallet is not on the network yet.";
 
 const RESERVA_BASE = 5_000_000n;

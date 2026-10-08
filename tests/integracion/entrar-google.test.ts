@@ -191,10 +191,9 @@ test("si Friendbot falla después de guardar la wallet, la persona queda adentro
   assert.equal(leerMemoriaAdmin().direccion, DIRECCION);
   assert.match(div.textContent ?? "", /Signed in/);
   const aviso = div.querySelector('[role="status"]')?.textContent ?? "";
-  assert.match(aviso, /We couldn't fund the testnet account\./);
   assert.match(aviso, /Get ready to be paid/);
-  assert.equal(div.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
-  assert.equal(div.querySelector("a.hyto-post-login-cta")?.getAttribute("href"), "/");
+  assert.equal(div.querySelector('[role="status"] a[href="/configuracion#preparar-cobro"]')?.textContent, "Settings");
+  assert.equal(div.querySelector("a.hyto-post-login-cta")?.getAttribute("href"), "/configuracion#preparar-cobro");
   assert.match(window.location.href, /cavos_auth_code=codigo-alta-blanda/, "a soft failure must not navigate away from the notice");
   assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
   await act(async () => {

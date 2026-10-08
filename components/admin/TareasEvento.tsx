@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
@@ -68,7 +69,6 @@ export function TareasEvento({
   saldo?: string | null;
 }) {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -338,7 +338,7 @@ export function TareasEvento({
                   <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
-                      {claro(tarea.bloqueo)}
+                      <TextoClaro mensaje={tarea.bloqueo} />
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -395,7 +395,7 @@ export function TareasEvento({
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {claro(aviso)}
+          <TextoClaro mensaje={aviso} />
         </p>
       ) : null}
     </main>

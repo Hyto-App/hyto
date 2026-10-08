@@ -269,13 +269,58 @@ const PATRONES: readonly (readonly [RegExp, Clave])[] = [
   [/HYTO_ESCROW_|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
   [/Trustless Work did not authorize/i, "errores.pagosNoDisponibles"],
   [/already released|already paid/i, "errores.yaPagada"],
-  [/trustline|receiver/i, "errores.listoCobro"],
+  [/ESCROW_RECEIVER_TRUSTLINE_MISSING/i, "errores.listoCobro"],
   [/insufficient balance|not enough usdc|balance must be equal/i, "errores.saldoInsuficiente"],
   [/fee-bump|friendbot|not enough xlm|\bxlm\b/i, "errores.saldoRed"],
   [/xdr|escrow|signer|contract id|soroban|stellar/i, "errores.paso"],
 ];
 
-const CLAVES_CONOCIDAS = [...new Set([...Object.values(EXACTO), ...PATRONES.map((fila) => fila[1])])];
+/**
+ * Strings that used to fall into a generic pattern. Kept apart from EXACTO so a
+ * parallel copy pass can add raw English there without mixing these routes.
+ */
+const CASOS: Record<string, Clave> = {
+  "Add a Stellar wallet before locking this payment.": "errores.prepararCobro",
+  "Too many escrow reads. Wait a moment.": "errores.muchosIntentos",
+  "Too many signature requests. Wait a moment.": "errores.muchosIntentos",
+  "Too many attempts. Wait a moment.": "errores.muchosIntentos",
+  "We couldn't finish Stellar testnet setup.": "errores.altaIncompleta",
+  "We couldn't fund the testnet account.": "errores.altaIncompleta",
+  "We couldn't add the USDC trustline on Stellar testnet.": "errores.cuentaAMedias",
+  "Stellar setup stays on testnet.": "errores.soloTestnet",
+  "The organizer and the receiver have to be different accounts.": "errores.cuentasDistintas",
+  "This budget is already locked on the network. Refresh this page. Do not lock it again.": "errores.yaEnRed",
+  "The budget was sent, but we couldn't confirm it yet. Refresh and try again.": "errores.enviadoSinContrato",
+  "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.": "errores.enviadoSinContrato",
+  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.":
+    "errores.esperaApartar",
+  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.":
+    "errores.esperaPagar",
+  "This account needs a little test balance for the network fee. Add some and try again.": "errores.saldoRed",
+  "We couldn't check the testnet account. Try again.": "errores.noCuentaPago",
+  "We couldn't open this payout account on the test network. Try again.": "errores.faucetTestnet",
+  "Friendbot couldn't fund this testnet account. Try again.": "errores.faucetTestnet",
+  "Friendbot replied, but the testnet account is not visible yet. Try again.": "errores.faucetTestnet",
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.":
+    "errores.dispositivo",
+  "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here.":
+    "errores.sinRespaldo",
+  "This browser doesn't have your account key, so it can't add a passkey. Open Hyto in the browser where you signed up and add it there.":
+    "errores.passkeySinClave",
+  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.":
+    "errores.origenCavos",
+  "No connection. Check the network and try again.": "errores.sinRed",
+  "This payout account has no test XLM for the network fee. Try again in a few minutes, or ask whoever runs Hyto.": "errores.cobroSinXlm",
+  "The network hasn't confirmed the payout setup yet. Wait a moment and try again.": "errores.cobroPendiente",
+  "The volunteer's payout account isn't ready yet. Ask them to open Events in Hyto and tap Get ready to be paid.":
+    "errores.receptorNoListo",
+  "Payment setup isn't complete on the server. Ask whoever runs Hyto.": "errores.servidorIncompleto",
+  "Payments aren't available right now. Ask whoever runs Hyto.": "errores.pagosNoDisponibles",
+};
+
+const CLAVES_CONOCIDAS = [
+  ...new Set([...Object.values(EXACTO), ...Object.values(CASOS), ...PATRONES.map((fila) => fila[1])]),
+];
 const SALIDA_EN = new Map<string, Clave>();
 const SALIDA_ES = new Set<string>();
 for (const clave of CLAVES_CONOCIDAS) {
@@ -286,6 +331,7 @@ for (const clave of CLAVES_CONOCIDAS) {
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
 const SALDO_NO_CUBRE =
   /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\. You are short US\$([\d.]+)\.$/;
+const MUCHOS = /\b429\b|too many (attempts|requests|escrow reads|signature requests)|rate[_\s-]?limit/i;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
@@ -302,8 +348,9 @@ export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
     });
   }
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
-  const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
+  const clave = EXACTO[limpio] ?? CASOS[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);
+  if (MUCHOS.test(limpio)) return texto(idioma, "errores.muchosIntentos");
   for (const [patron, destino] of PATRONES) {
     if (patron.test(limpio)) return texto(idioma, destino);
   }
@@ -358,8 +405,11 @@ export function tituloFallo(caja: CajaFallo, idioma: Idioma = "en"): string {
 }
 
 export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  // A pay step with no escrow balance uses the generic line. A missing network fee is a different problem.
-  if (caja === "pago" && aviso !== texto(idioma, "errores.saldoRed")) return texto(idioma, "pago.noUsdcLeft");
+  // A pay step with no escrow balance uses the generic line. A missing send cost, or a notice that already says how long to wait, stays as it is.
+  if (caja === "pago" && aviso !== texto(idioma, "errores.saldoRed")) {
+    if (/wait|espere|minute|minuto|second|segundo/i.test(aviso)) return aviso;
+    return texto(idioma, "pago.noUsdcLeft");
+  }
   return aviso;
 }
 

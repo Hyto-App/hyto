@@ -16,7 +16,7 @@ export async function crearDemoHttp(
 ): Promise<Response> {
   if (!demoHabilitado(env)) return json({ aviso: "Not found." }, 404);
   if (excedido(`demo:${clienteDe(request)}`)) {
-    return json({ aviso: "Too many demo sign-ins. Wait a moment." }, 429);
+    return json({ aviso: "Too many demo sign-ins. Wait 1 minute and try again." }, 429);
   }
 
   let body: unknown;

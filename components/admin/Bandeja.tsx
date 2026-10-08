@@ -17,7 +17,8 @@ import { lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { iniciales } from "@/components/ui/Marca";
 import type { TareaAdmin, Veredicto, VistaAdmin } from "@/lib/admin/tipos";
@@ -114,7 +115,6 @@ export function Bandeja({
   miembros?: { usuarioId: string; email: string; ficha?: Ficha }[];
 }) {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
@@ -194,7 +194,7 @@ export function Bandeja({
   if (estado.error) {
     return (
       <main className="hyto-page">
-        <p role="alert">{claro(estado.error)}</p>
+        <p role="alert"><TextoClaro mensaje={estado.error} /></p>
         <button type="button" className="hyto-btn mt-4 max-w-xs" onClick={estado.reintentar}>
           {t("comunes.tryAgain")}
         </button>
@@ -442,7 +442,7 @@ export function Bandeja({
       <PendientesSinFoto tareas={sinEntrega} idioma={idioma} />
       <ListaRevision tareas={sueltas} idioma={idioma} />
 
-      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{claro(aviso)}</p> : null}
+      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]"><TextoClaro mensaje={aviso} /></p> : null}
 
       {vista.ejemplo ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{t("bandeja.sample")}</p> : null}
     </main>

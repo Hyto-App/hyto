@@ -8,10 +8,10 @@ export const AVISO_GENERICO = "Could not sign in. Try again.";
  * refused even when production is allowed. The raw text includes that host.
  */
 export const AVISO_ORIGEN_CAVOS =
-  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.";
+  "This site cannot open the signing window yet. Use the main Hyto site. If it keeps happening, [[ayuda]].";
 export const AVISO_CODIGO_INVALIDO = "That code does not match. Check your email and try again.";
 export const AVISO_CODIGO_VENCIDO = "That code expired. Request another one.";
-export const AVISO_RED = "No connection. Check the network and try again.";
+export const AVISO_RED = "No connection. Check your internet and try again.";
 export const AVISO_GOOGLE_CERRADO = "You closed the Google window. Try again.";
 export const AVISO_GOOGLE_BLOQUEADO = "The browser blocked the Google window. Allow it and try again.";
 export const AVISO_CONFIG = "Sign-in isn't set up yet.";
@@ -24,7 +24,7 @@ export const AVISO_SPAM_ENLACE = "The link arrives by email. Check spam too.";
 export const AVISO_METODO_RECUPERACION = "This account needs a different sign-in. Use the sign-in option shown and try again.";
 /** An account made before enclave recovery was turned on, opened in a browser that never held its key. */
 export const AVISO_SIN_RESPALDO =
-  "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here.";
+  "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here. If you no longer have that browser, [[ayuda]].";
 
 export type AvisoIngreso = {
   texto: string;

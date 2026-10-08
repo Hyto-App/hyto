@@ -7,7 +7,8 @@ import { AVISO_DISPOSITIVO, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/li
 import { AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA } from "@/lib/integrante/avisosUsdc";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { rutaRetornoSegura, urlSignin } from "@/lib/sesion/retorno";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { mensajeClaro } from "@/lib/ui/claro";
 
 const REINGRESO = new Set([AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA, AVISO_ENTRAR, AVISO_USDC_FIRMANTE, AVISO_USDC_OTRA_CUENTA]);
@@ -27,7 +28,6 @@ export function esAvisoDispositivo(mensaje: string): boolean {
 
 export function AvisoFirma({ mensaje, className, alReintentar, reintentando }: Props) {
   const t = useTexto();
-  const claro = useClaro();
   const [saliendo, setSaliendo] = useState(false);
   const reingreso = REINGRESO.has(mensajeClaro(mensaje)) || REINGRESO.has(mensaje);
 
@@ -47,7 +47,9 @@ export function AvisoFirma({ mensaje, className, alReintentar, reintentando }: P
 
   return (
     <div className={className} role={reingreso ? "alert" : undefined}>
-      <p>{claro(mensaje)}</p>
+      <p>
+        <TextoClaro mensaje={mensaje} />
+      </p>
       {reingreso ? (
         <a
           href="/?signin=1"

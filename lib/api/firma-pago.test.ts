@@ -299,8 +299,8 @@ test("el indexador atrasado guarda el contrato predicho del token y no ofrece ot
     );
     assert.equal(enviado.status, 200);
     const json = (await enviado.json()) as { aviso: string; contrato: string };
-    assert.match(json.aviso, /indexing/);
-    assert.match(json.aviso, /Do not lock it again/);
+    assert.match(json.aviso, /30 seconds/);
+    assert.match(json.aviso, /Do not start over/);
     assert.equal(json.contrato, CONTRATO_XDR);
     assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, CONTRATO_XDR);
     assert.equal(lecturas.length, 4);
@@ -407,7 +407,7 @@ test("liberar con el hito atrasado guarda el hash, no marca pagado y una lectura
     );
     assert.equal(respuesta.status, 200);
     const cuerpo = (await respuesta.json()) as { aviso: string; hash: string };
-    assert.match(cuerpo.aviso, /Do not pay again/);
+    assert.match(cuerpo.aviso, /pay again/);
     assert.equal(cuerpo.hash, "11".repeat(32));
     assert.equal(estado.lecturas, 4);
     const pendiente = await almacen.leerTarea("comida");

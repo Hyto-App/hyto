@@ -30,6 +30,7 @@ import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow
 import { tareaEjemploDeDemo } from "@/lib/admin/ejemplo";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
+import { estaApartado, recordarApartado } from "@/lib/admin/yaApartado";
 import { centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
@@ -51,6 +52,7 @@ import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro, TextoRico } from "@/components/ui/TextoClaro";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -91,6 +93,7 @@ export function Revision({
   const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [contrato, setContrato] = useState<string | null>(null);
   const [fondeado, setFondeado] = useState<boolean | null>(null);
+  const [yaApartado, setYaApartado] = useState(false);
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
@@ -128,6 +131,7 @@ export function Revision({
     setHashPaso(null);
     setContrato(null);
     setFondeado(null);
+    setYaApartado(false);
     setReanudar(null);
     fondeoForzado.current = null;
     setWallet(null);
@@ -157,20 +161,24 @@ export function Revision({
       setFondeado(true);
       return;
     }
+    const apartado = estaApartado(contrato);
+    if (apartado) setYaApartado(true);
     let viva = true;
     setConsultaFondo("leyendo");
     void consultarHasta({
       leer: () => leerFondeo(contrato),
-      listo: (valor) => valor !== null,
+      listo: (valor) => (apartado ? valor === true : valor !== null),
       vivo: () => viva && fondeoForzado.current !== contrato,
     }).then((resultado) => {
       if (!viva || fondeoForzado.current === contrato) return;
       if (!resultado.listo) {
         setConsultaFondo("agotada");
+        if (apartado) setFondeado(false);
         return;
       }
       setConsultaFondo(null);
       setFondeado(resultado.valor);
+      if (resultado.valor === true) setYaApartado(false);
     });
     return () => {
       viva = false;
@@ -382,7 +390,11 @@ export function Revision({
       if (codigo === CODIGO_YA_FONDEADO) {
         // The network already holds the budget. Offering Finish locking again would lock it twice.
         yaEnRed = true;
-        if (contrato) fondeoForzado.current = contrato;
+        if (contrato) {
+          fondeoForzado.current = contrato;
+          recordarApartado(contrato);
+        }
+        setYaApartado(true);
         setFondeado(true);
         setReanudar(null);
         publicarAviso(null);
@@ -440,7 +452,7 @@ export function Revision({
     return (
       <main className="hyto-page">
         <p className="text-lg" role="alert">
-          {claro(aviso ?? "We couldn't find that task.")}
+          <TextoClaro mensaje={aviso ?? "We couldn't find that task."} />
         </p>
         {aviso ? (
           <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
@@ -700,7 +712,9 @@ export function Revision({
           {caja && aviso ? (
             <div className="hyto-callout mt-5">
               <p className="font-semibold">{tituloFallo(caja, idioma)}</p>
-              <p className="mt-1 text-sm">{detalleFallo(caja, avisoVisible ?? "", idioma)}</p>
+              <p className="mt-1 text-sm">
+                <TextoRico mensaje={detalleFallo(caja, avisoVisible ?? "", idioma)} />
+              </p>
             </div>
           ) : null}
 
@@ -798,7 +812,7 @@ export function Revision({
                 </BotonPrincipal>
               </>
             ) : null}
-            {botones.fondear ? (
+            {botones.fondear && !yaApartado ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
                 {faltaSaldo ? (
@@ -864,6 +878,17 @@ export function Revision({
               </p>
               {consultaPago === "agotada" ? (
                 <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaPago((actual) => actual + 1)}>
+                  {t("pago.checkAgain")}
+                </button>
+              ) : null}
+            </div>
+          ) : yaApartado && fondeado !== true && !paso ? (
+            <div className="mt-4" aria-live="polite">
+              <p className="text-sm leading-6 text-[var(--suave)]">
+                {consultaFondo === "leyendo" ? t("revision.checkingBudget") : t("errores.yaEnRed")}
+              </p>
+              {consultaFondo !== "leyendo" ? (
+                <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaFondo((actual) => actual + 1)}>
                   {t("pago.checkAgain")}
                 </button>
               ) : null}

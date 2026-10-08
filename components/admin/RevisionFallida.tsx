@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { DetalleRevision } from "@/lib/admin/remoto";
 import {
   correrReintento,
@@ -71,7 +72,6 @@ export function BotonReintentarRevision({
   onDetalle: (detalle: DetalleRevision) => void;
 }) {
   const t = useTexto();
-  const claro = useClaro();
   const [manual, setManual] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const ocupado = useSyncExternalStore(
@@ -104,7 +104,7 @@ export function BotonReintentarRevision({
       </button>
       {aviso ? (
         <p role="alert" className="mt-2 text-sm leading-6">
-          {claro(aviso)}
+          <TextoClaro mensaje={aviso} />
         </p>
       ) : null}
     </div>

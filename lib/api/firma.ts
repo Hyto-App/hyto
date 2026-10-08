@@ -421,9 +421,9 @@ async function guardarResultado(
 }
 
 const AVISO_DESPLIEGUE_ATRASADO =
-  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.";
+  "The setup is saved for this task. Wait 30 seconds. If the button to finish is still there, use it once. Do not start over.";
 export const AVISO_LIBERACION_ATRASADA =
-  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.";
+  "The payment was sent. Check again in 30 seconds. Do not set the money aside or pay again.";
 
 function contratoDeServidor(pago: PagoEnviado, contratoPreparado: string | null): string | null {
   if (pago.contrato && esContrato(pago.contrato)) return pago.contrato;
