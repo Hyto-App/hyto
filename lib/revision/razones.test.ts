@@ -140,9 +140,37 @@ test("Work unfinished y Not done at the requested place", () => {
   const aMedias = etiquetasDe(entrada({ trabajo: { ...trabajo(), t6: "a_medias" } }));
   assert.equal(aMedias.find((etiqueta) => etiqueta.id === "unfinished")?.texto, "Work unfinished");
   assert.equal(aMedias.find((etiqueta) => etiqueta.id === "unfinished")?.severidad, "warning");
-  const lugar = etiquetasDe(entrada({ trabajo: { ...trabajo(), t8: false } }));
+  const lugar = etiquetasDe(entrada({
+    trabajo: { ...trabajo(), t8: false },
+    condicion: "Paint the mural at the park",
+  }));
   assert.equal(lugar.find((etiqueta) => etiqueta.id === "wrong_place")?.texto, "Not done at the requested place");
   assert.deepEqual(lugar.find((etiqueta) => etiqueta.id === "wrong_place")?.preguntas, ["t8"]);
+  const sinLugar = etiquetasDe(entrada({
+    trabajo: { ...trabajo(), t8: false },
+    condicion: "Hacer un ensayo",
+  }));
+  assert.equal(sinLugar.some((etiqueta) => etiqueta.id === "wrong_place"), false);
+  const textoScout = unirDescripcion(
+    "An essay on the desk.",
+    escribirSnapshot({ clase: "trabajo", trabajo: { ...trabajo(), t8: false }, factura: null, cerca: [] }),
+  );
+  const leida = {
+    textoScout,
+    origen: "scout",
+    monto: null,
+    fecha: null,
+    tope: null,
+    tipo: "trabajo" as const,
+  };
+  assert.equal(
+    etiquetasDesdeVeredicto({ ...leida, condicion: "Hacer un ensayo" }).some((etiqueta) => etiqueta.id === "wrong_place"),
+    false,
+  );
+  assert.equal(
+    etiquetasDesdeVeredicto({ ...leida, condicion: "Escribir el ensayo en la escuela" }).some((etiqueta) => etiqueta.id === "wrong_place"),
+    true,
+  );
 });
 
 test("Receipt amount missing, Receipt date missing, No item named y Amount over the cap", () => {
@@ -237,6 +265,7 @@ test("los problemas van antes que los avisos y los aciertos", () => {
   const etiquetas = etiquetasDe(entrada({
     trabajo: { ...trabajo(), v2: 1, t8: false, t6: "a_medias" },
     cerca: ["v3", "t7"],
+    condicion: "Set the booth up at the entrance",
   }));
   const orden = etiquetas.map((etiqueta) => etiqueta.severidad);
   const problemas = orden.lastIndexOf("problem");
@@ -289,6 +318,7 @@ function entrada(parcial: Partial<EntradaRazones> & { trabajo?: RespuestasTrabaj
     monto: parcial.monto ?? null,
     fecha: parcial.fecha ?? null,
     tope: parcial.tope ?? null,
+    condicion: parcial.condicion,
   };
 }
 

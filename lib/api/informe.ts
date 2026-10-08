@@ -109,6 +109,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       fecha: evidencia?.fecha ?? null,
       tope: tarea.tope,
       tipo: tarea.tipo,
+      condicion: tarea.condicion,
     }),
     lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
   };

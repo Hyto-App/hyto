@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
+import { condicionPideLugar } from "./lugar-pedido";
 import {
   PESOS_PREGUNTAS,
   TOPE_NOTA_REEMBOLSO,
@@ -72,12 +73,47 @@ test("un trabajo correcto suma 100 y el crédito parcial resta la mitad del peso
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t10: 1 }), 100 - PESOS_PREGUNTAS.trabajo.t10 / 2);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), v4: true }), 100 - PESOS_PREGUNTAS.trabajo.v4);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t9: true }), 100 - PESOS_PREGUNTAS.trabajo.t9);
-  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t8: false }), 100 - PESOS_PREGUNTAS.trabajo.t8);
+  assert.equal(
+    notaDeTrabajo({ ...trabajoPerfecto(), t8: false }, "Pintar el mural en el parque"),
+    100 - PESOS_PREGUNTAS.trabajo.t8,
+  );
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t8: false }, "Hacer un ensayo"), 100);
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t8: false }), 100);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), v3: false }), 100 - PESOS_PREGUNTAS.trabajo.v3);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t7: false }), 100 - PESOS_PREGUNTAS.trabajo.t7);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), lugar: "no_claro" }), 100 - PESOS_PREGUNTAS.trabajo.lugar);
   assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t5: "otra_o_no_claro" }), 100 - PESOS_PREGUNTAS.trabajo.t5);
-  assert.equal(notaDeTrabajo(trabajoVacio()), 0);
+  assert.equal(notaDeTrabajo(trabajoVacio(), "Pintar el mural en el parque"), 0);
+  assert.equal(notaDeTrabajo(trabajoVacio(), "Hacer un ensayo"), PESOS_PREGUNTAS.trabajo.t8);
+});
+
+test("t8 es neutro cuando la condición no pide un lugar", () => {
+  assert.equal(condicionPideLugar("Hacer un ensayo"), false);
+  assert.equal(condicionPideLugar("Write an essay"), false);
+  assert.equal(condicionPideLugar("Photo of the meal receipt"), false);
+  assert.equal(condicionPideLugar("Replace the banner"), false);
+  assert.equal(condicionPideLugar("Banner visible and the table set up"), false);
+  assert.equal(condicionPideLugar(""), false);
+  assert.equal(condicionPideLugar("Pintar el mural en el parque"), true);
+  assert.equal(condicionPideLugar("Limpiar la playa"), true);
+  assert.equal(condicionPideLugar("Mural en la escuela"), true);
+  assert.equal(condicionPideLugar("Barrer la calle"), true);
+  assert.equal(condicionPideLugar("Ir al sitio indicado"), true);
+  assert.equal(condicionPideLugar("Seguir la dirección"), true);
+  assert.equal(condicionPideLugar("Set the table at the entrance"), true);
+  assert.equal(condicionPideLugar("Meet at the park"), true);
+  assert.equal(condicionPideLugar("Photo of the location"), true);
+  assert.equal(condicionPideLugar("Paint this place"), true);
+  assert.equal(notaDeTrabajo(trabajoPerfecto(), "Pintar el mural en el parque"), 100);
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t8: false }, "Set the table at the entrance"), 88);
+  assert.equal(notaDeTrabajo({ ...trabajoPerfecto(), t8: false }, "Hacer un ensayo"), 100);
+  assert.equal(
+    calificar(
+      notaDeTrabajo({ ...trabajoPerfecto(), v1: "es_otra_cosa", t8: false }, "Hacer un ensayo"),
+      ["no_coincide"],
+    ).nota,
+    TOPE_FALTA_GRAVE,
+  );
 });
 
 test("una factura correcta suma 100 y el crédito parcial resta la mitad del peso", () => {
