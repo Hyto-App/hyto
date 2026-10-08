@@ -280,6 +280,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
+    assert.match(texto(), /Confirm the amount before Lock budget can be used/);
+    assert.equal(bloqueado.getAttribute("aria-describedby"), "bloqueo-monto");
     await escribir("#monto-confirmado", "12.40");
     await pulsar("Confirm amount");
     await act(async () => {
@@ -290,6 +292,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
+    assert.equal(listo.getAttribute("aria-describedby"), null);
+    assert.equal(/Confirm the amount before Lock budget can be used/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
   } finally {
