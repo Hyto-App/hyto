@@ -15,6 +15,15 @@ export type LecturaVisible = {
   comercio: string | null;
 };
 
+/** Mile's explanation for a photo that is no longer the current one. */
+export type IntentoAnterior = {
+  /** 1 for the first photo sent. */
+  numero: number;
+  veredicto: Veredicto | null;
+  nota: number | null;
+  frase: string | null;
+};
+
 export type TareaAdmin = {
   id: string;
   titulo: string;
@@ -39,6 +48,8 @@ export type TareaAdmin = {
   motivoCopia?: string | null;
   etiquetas?: EtiquetaNota[];
   lectura?: LecturaVisible | null;
+  /** Earlier photos with a verdict, oldest first. Empty or missing when there is only one attempt. */
+  intentosAnteriores?: IntentoAnterior[];
 };
 
 export type TareaCreada = {

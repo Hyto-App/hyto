@@ -1,5 +1,5 @@
 import { bandejaDe, enBandeja, enlacePago, porPersona, resumir } from "@/lib/admin/vista";
-import type { TareaAdmin, Veredicto } from "@/lib/admin/tipos";
+import type { IntentoAnterior, TareaAdmin, Veredicto } from "@/lib/admin/tipos";
 import type { Almacen } from "@/lib/db/almacen";
 import { esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
@@ -77,9 +77,38 @@ export async function tareaEnBandeja(almacen: Almacen, tarea: TareaFila): Promis
   return enBandeja({ estado: tarea.estado, veredicto: bandaDe(veredicto) });
 }
 
+/**
+ * Mile's explanation for each photo that is not the one on screen, oldest first. When the latest
+ * verdict is hidden (another photo was asked for), that photo counts as an earlier attempt too.
+ * Failed reviews have no explanation and are skipped.
+ */
+export async function intentosAnteriores(
+  almacen: Almacen,
+  tarea: TareaFila,
+  actual: EvidenciaFila | null,
+  hayVeredictoVigente: boolean,
+): Promise<IntentoAnterior[]> {
+  const todas = await almacen.listarEvidencias(tarea.id);
+  const salida: IntentoAnterior[] = [];
+  for (const [indice, evidencia] of todas.entries()) {
+    if (hayVeredictoVigente && evidencia.id === actual?.id) continue;
+    const fila = await almacen.veredictoDe(evidencia.id);
+    if (!fila || fila.origen === "error") continue;
+    const nota = notaDe(fila);
+    salida.push({
+      numero: indice + 1,
+      veredicto: bandaDe(fila),
+      nota,
+      frase: fraseConNota(fila.frase ?? null, nota),
+    });
+  }
+  return salida;
+}
+
 export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>): Promise<TareaAdmin> {
   const mapa = nombres ?? new Map((await almacen.listarUsuarios()).map((usuario) => [usuario.id, usuario.nombre]));
   const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
+  const anteriores = await intentosAnteriores(almacen, tarea, evidencia, veredicto !== null);
   return {
     id: tarea.id,
     titulo: tarea.titulo,
@@ -111,6 +140,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       tipo: tarea.tipo,
     }),
     lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
+    ...(anteriores.length > 0 ? { intentosAnteriores: anteriores } : {}),
   };
 }
 

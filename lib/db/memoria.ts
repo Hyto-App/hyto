@@ -135,6 +135,11 @@ export function crearMemoria(): Almacen {
         .filter((evidencia) => evidencia.tareaId === tareaId)
         .sort((a, b) => (a.creadaEn < b.creadaEn ? 1 : -1))[0] ?? null;
     },
+    async listarEvidencias(tareaId) {
+      return [...evidencias.values()]
+        .filter((evidencia) => evidencia.tareaId === tareaId)
+        .sort((a, b) => (a.creadaEn < b.creadaEn ? -1 : 1));
+    },
     async evidenciaPorSha256(sha256) {
       return [...evidencias.values()].find((evidencia) => evidencia.sha256 === sha256) ?? null;
     },

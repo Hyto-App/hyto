@@ -462,6 +462,12 @@ export function Entrar({
     setAviso(null);
     setOcupado("envio");
     try {
+      // A new email on Sign in fails here instead of after the code is sent. If the check cannot run, the old path still catches it.
+      if (pestana === "signin" && (await cuentaNoExiste(email))) {
+        setAlertaRegreso(true);
+        setAviso(AVISO_SIN_CUENTA);
+        return;
+      }
       const politica = await politicaSegura(cargarPolitica);
       setRecuperacion(politica);
       if (politica.activa && politica.proveedor !== "email") {
@@ -1011,6 +1017,11 @@ export function Entrar({
                         </p>
                       )
                     ) : null}
+                    {aviso === AVISO_SIN_CUENTA ? (
+                      <button type="button" className="hyto-login-btn is-enlace" onClick={() => elegirPestana("signup")} disabled={ocupado !== null}>
+                        {t("entrar.irCrearCuenta")}
+                      </button>
+                    ) : null}
                     <button
                       type="submit"
                       disabled={ocupado !== null || espera > 0 || demo}
@@ -1264,6 +1275,22 @@ async function politicaSegura(cargar: CargarPolitica): Promise<PoliticaRecuperac
  * Google and Apple return to the tab that left, which kept its intent in sessionStorage. An email
  * link usually opens a new tab, so its intent and return path come from localStorage.
  */
+/** True only when the server says there is no account. Any failure of the check answers false. */
+async function cuentaNoExiste(email: string): Promise<boolean> {
+  try {
+    const respuesta = await fetch("/api/sesion/existe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!respuesta.ok) return false;
+    const cuerpo = (await respuesta.json().catch(() => null)) as { existe?: unknown } | null;
+    return cuerpo?.existe === false;
+  } catch {
+    return false;
+  }
+}
+
 function intencionDelRegreso(): IntencionIngreso {
   const enlace = tomarIntencionEnlace();
   const propia = intencionGuardada();

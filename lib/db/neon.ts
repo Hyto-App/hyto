@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -329,6 +329,12 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         .orderBy(desc(evidencias.creadaEn))
         .limit(1);
       return filas[0] ?? null;
+    },
+    async listarEvidencias(tareaId) {
+      if (!(await columnasListas())) {
+        return db.select(columnasPrevias).from(evidencias).where(eq(evidencias.tareaId, tareaId)).orderBy(asc(evidencias.creadaEn));
+      }
+      return db.select().from(evidencias).where(eq(evidencias.tareaId, tareaId)).orderBy(asc(evidencias.creadaEn));
     },
     async evidenciaPorSha256(sha256) {
       if (!(await columnasListas())) return null;
