@@ -17,6 +17,7 @@ import {
   etiquetaDesdeNota,
   notaDeTrabajo,
   puntosTecho80,
+  type LecturaParaTecho,
 } from "./pesos";
 
 const APAGADO = { HYTO_MILE_TECHO_80: "off" };
@@ -116,7 +117,7 @@ const RESCATADA: RespuestasTrabajo = {
 
 test("coincide si levanta el techo aunque Laya haya dicho que es otra cosa", () => {
   assert.equal(notaDeTrabajo(RESCATADA), 68);
-  const completa = { ...LECTURA_COMPLETA, coincide: "si" };
+  const completa: LecturaParaTecho = { ...LECTURA_COMPLETA, coincide: "si" };
   assert.equal(puntosTecho80(RESCATADA, completa, ENCENDIDO), 12);
   assert.equal(puntosTecho80(RESCATADA, completa, APAGADO), 0);
   assert.equal(puntosTecho80(RESCATADA, LECTURA_COMPLETA, ENCENDIDO), 0);
