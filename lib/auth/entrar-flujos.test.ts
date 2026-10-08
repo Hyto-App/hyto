@@ -5,6 +5,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { Entrar } from "../../components/admin/Entrar";
+import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { CLAVE_INTENCION } from "./intencion";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
@@ -43,6 +44,9 @@ test("Sign in y Crear cuenta ofrecen Google y correo, sin jerga, en pestañas", 
     await pulsar("Create account");
     const alta = texto();
     assert.equal(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent, "Create account");
+    assert.match(alta, /Create your Hyto account/);
+    assert.match(alta, /We create your Hyto account so you can get paid/);
+    assert.doesNotMatch(alta, /Sign up for Hyto|Sign-in by Cavos|hold your payment/);
     assert.match(alta, /Continue with Google/);
     assert.match(alta, /Continue with Apple/);
     assert.match(alta, /Continue with email/);
@@ -143,6 +147,27 @@ test("Continue with Apple guarda signin en Sign in y signup en Crear cuenta", as
     console.error = error;
     if (previo !== undefined) process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
     window.sessionStorage.clear();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en español la pestaña y el título dicen crear cuenta, sin passkey ni voseo", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(Entrar, { abrirLogin: true }),
+      }),
+    );
+    await pulsar("Crear cuenta");
+    const alta = texto();
+    assert.equal(document.querySelector('[role="tab"][aria-selected="true"]')?.textContent, "Crear cuenta");
+    assert.match(alta, /Crea tu cuenta en Hyto/);
+    assert.match(alta, /Creamos tu cuenta de Hyto para que puedas cobrar/);
+    assert.doesNotMatch(alta, /passkey|Agregá|ganás|Sign-in by Cavos|billetera/i);
+  } finally {
     await desmontar();
     limpiarPantalla();
   }
