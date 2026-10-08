@@ -4,6 +4,8 @@ import {
   CLAVE_RETORNO,
   DESTINO_TRAS_INGRESO,
   destinoTrasIngreso,
+  destinoTrasTipo,
+  rutaElegirTipo,
   guardarRetorno,
   leerRetorno,
   olvidarRetorno,
@@ -71,4 +73,14 @@ test("el retorno de OAuth se guarda en sessionStorage y se valida al leer", () =
 test("default signed-in landing matches Google (Events via /)", () => {
   assert.equal(DESTINO_TRAS_INGRESO, "/");
   assert.equal(destinoTrasIngreso(null), "/");
+});
+
+test("después de elegir el tipo, un alta sin retorno abre Eventos y un enlace seguro vuelve", () => {
+  assert.equal(destinoTrasTipo(undefined), "/eventos");
+  assert.equal(destinoTrasTipo("/configuracion/tipo"), "/eventos");
+  assert.equal(destinoTrasTipo("//evil.com"), "/eventos");
+  assert.equal(destinoTrasTipo("/join/ABC"), "/join/ABC");
+  assert.equal(rutaElegirTipo(), "/configuracion/tipo");
+  assert.equal(rutaElegirTipo("/configuracion/tipo"), "/configuracion/tipo");
+  assert.equal(rutaElegirTipo("/join/ABC"), "/configuracion/tipo?next=%2Fjoin%2FABC");
 });

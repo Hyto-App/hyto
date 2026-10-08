@@ -21,7 +21,7 @@
  * "Pintar el mural en el parque" does.
  */
 const PALABRAS = [
-  "lugares?",
+  "lugar(?:es)?",
   "sitios?",
   "parques?",
   "escuelas?",

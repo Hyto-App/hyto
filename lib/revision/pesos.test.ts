@@ -99,6 +99,8 @@ test("t8 es neutro cuando la condición no pide un lugar", () => {
   assert.equal(condicionPideLugar("Mural en la escuela"), true);
   assert.equal(condicionPideLugar("Barrer la calle"), true);
   assert.equal(condicionPideLugar("Ir al sitio indicado"), true);
+  assert.equal(condicionPideLugar("Indica el lugar"), true);
+  assert.equal(condicionPideLugar("Los lugares del evento"), true);
   assert.equal(condicionPideLugar("Seguir la dirección"), true);
   assert.equal(condicionPideLugar("Set the table at the entrance"), true);
   assert.equal(condicionPideLugar("Meet at the park"), true);

@@ -7,7 +7,7 @@ import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { faltaTipoCuenta } from "@/lib/api/tipo-cuenta";
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { sesionEsDemo } from "./demo";
-import { urlSignin } from "./retorno";
+import { rutaElegirTipo, urlSignin } from "./retorno";
 import { leerSesionActual } from "./vista";
 
 /** A prefetch often arrives without the session cookie. Redirecting it would send the person to sign-in. */
@@ -33,7 +33,7 @@ export async function exigirPagina(retorno?: string, opciones?: { omitirTipo?: b
   }
   if (!opciones?.omitirTipo && tipoCuentaActivo() && !sesionEsDemo(sesion)) {
     const almacen = await almacenNeon();
-    if (almacen && (await faltaTipoCuenta(almacen, sesion.usuarioId))) redirect("/configuracion/tipo");
+    if (almacen && (await faltaTipoCuenta(almacen, sesion.usuarioId))) redirect(rutaElegirTipo(retorno));
   }
   return sesion;
 }
