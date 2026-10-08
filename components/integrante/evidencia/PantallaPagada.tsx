@@ -12,7 +12,7 @@ import type { Tarea } from "@/lib/integrante/tipos";
 
 /**
  * Paid screen (spec §7.5). The first open is the hero. Later opens are the summary.
- * TODO(comision): show a fee line only when the backend sends a real amount. Do not invent 0.03.
+ * The figure is the amount released to the wallet. A fee breakdown stays out of this screen.
  */
 export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string }) {
   const t = useTexto();

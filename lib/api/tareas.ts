@@ -6,6 +6,7 @@ import { etiquetasDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota } from "@/lib/revision/razones";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
+import { brutoFondado, montoRecibido } from "@/lib/escrow/recibido";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
@@ -91,8 +92,11 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?:
   const visible = notaPublica(fila);
   const rechazo = rechazoPublico(tarea);
   const linea = lineaDeEnvio(tarea, evidencia, fila);
+  const bruto = brutoFondado(tarea, evidencia?.montoConfirmado);
   return {
     ...tareaPublica(tarea),
+    montoConfirmado: evidencia?.montoConfirmado ?? null,
+    montoPagado: tarea.estado === "pagado" && bruto ? montoRecibido(bruto) : null,
     evento: nombres?.get(tarea.proyectoId) ?? null,
     nota: visible?.nota ?? null,
     veredicto: visible?.veredicto ?? null,

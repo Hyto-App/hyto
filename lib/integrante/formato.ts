@@ -1,3 +1,5 @@
+import { normalizarMonto } from "@/lib/admin/vista";
+import { cifraConfirmada } from "@/lib/escrow/monto";
 import type { Idioma } from "@/lib/ui/idioma";
 
 function localeDe(idioma: Idioma): string {
@@ -74,4 +76,18 @@ export function montoDeTarea(
     return idioma === "es" ? `Hasta ${tope}` : `Up to ${tope}`;
   }
   return formatearMonto(tarea.monto, idioma);
+}
+
+/** Amount locked in the escrow, without the "up to" cap label. */
+export function montoAsegurado(
+  tarea: { tipo: "trabajo" | "reembolso"; monto: string; tope: string | null; montoConfirmado?: string | null },
+  idioma: Idioma = "en",
+): string {
+  if (tarea.tipo === "reembolso") {
+    const normal = normalizarMonto(tarea.montoConfirmado ?? "");
+    if (normal && cifraConfirmada(normal, tarea.tope, tarea.monto) !== null) return formatearMonto(normal, idioma);
+    return montoDeTarea(tarea, idioma);
+  }
+  const normal = normalizarMonto(tarea.monto);
+  return normal ? formatearMonto(normal, idioma) : "";
 }
