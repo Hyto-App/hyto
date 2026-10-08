@@ -19,8 +19,6 @@
  * in the page, under the iframe.
  */
 
-import { flushSync } from "react-dom";
-
 const CLASE_BAJO = "hyto-bajo-firma";
 const CLASE_FIRMANDO = "hyto-firmando";
 
@@ -81,9 +79,7 @@ export function bajarCapasParaCavos(): () => void {
 }
 
 function publicarYa(): void {
-  flushSync(() => {
-    for (const oyente of oyentes) oyente();
-  });
+  for (const oyente of oyentes) oyente();
 }
 
 function quitarCancelarFirma(): void {

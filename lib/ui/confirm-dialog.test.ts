@@ -59,6 +59,9 @@ test("while Cavos is signing the dialog and its cancel control are not in the pa
       onConfirmar: async () => {
         const restaurar = bajarCapasParaCavos();
         try {
+          await act(async () => {
+            await Promise.resolve();
+          });
           durante = document.querySelector("dialog") === null && document.querySelector("[data-hyto-cancelar-firma]") === null;
           assert.equal(document.documentElement.classList.contains("hyto-firmando"), true);
         } finally {
