@@ -119,6 +119,37 @@ test("si la cuenta no carga, el costo de pagar sigue en la página", async () =>
     assert.match(texto(), /We couldn't load your account/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /0\.3% fee/);
+    assert.match(texto(), /Use Hyto on other devices/);
+    assert.match(texto(), /Your sign-in is saved only on this device/);
+    const agregar = [...document.querySelectorAll("button")].find((nodo) => nodo.textContent?.includes("Add a passkey"));
+    assert.ok(agregar instanceof HTMLButtonElement);
+    assert.equal(agregar.disabled, false);
+    assert.equal(document.getElementById("passkey")?.getAttribute("data-estado"), "inicio");
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("si la cuenta no responde, la llave sigue en la página en tuteo", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error("network");
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta) }));
+    await asentar();
+    assert.match(texto(), /No pudimos cargar tu cuenta/);
+    assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
+    assert.match(texto(), /comisión del 0,3 %/);
+    assert.match(texto(), /Usa Hyto en otros dispositivos/);
+    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Usar un teléfono o una tablet/);
+    const agregar = [...document.querySelectorAll("button")].find((nodo) => nodo.textContent?.includes("Agregar llave de acceso"));
+    assert.ok(agregar instanceof HTMLButtonElement);
+    assert.equal(agregar.disabled, false);
+    assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b/i);
   } finally {
     globalThis.fetch = original;
     await desmontar();
