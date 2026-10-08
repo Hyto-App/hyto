@@ -168,12 +168,6 @@ export function idsCerca(json: unknown, ids: readonly string[]): string[] {
 /** Runs one Laya call. Each call gets its own signal, so the second one does not inherit what the first used. */
 export type LlamadaLaya = <T>(paso: (signal: AbortSignal | undefined) => Promise<T>) => Promise<T>;
 
-/** tipoTarea is ignored unless HYTO_MILE_TIPO_POR_TAREA is on. tipoPorTarea overrides that switch. */
-export type OpcionesPreguntarLaya = {
-  tipoTarea?: TipoTarea | null;
-  tipoPorTarea?: boolean;
-};
-
 export async function preguntarLaya(
   base: string,
   texto: string,
@@ -182,7 +176,16 @@ export async function preguntarLaya(
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
   regla?: string | null,
-  opciones?: OpcionesPreguntarLaya,
+  /**
+   * The only argument added after regla. Sibling switches put their own
+   * optional fields here (lectura, env) instead of another positional parameter.
+   */
+  opciones?: {
+    /** Ignored unless HYTO_MILE_TIPO_POR_TAREA is on. */
+    tipoTarea?: TipoTarea | null;
+    /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment. */
+    tipoPorTarea?: boolean;
+  },
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
