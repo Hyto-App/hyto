@@ -250,6 +250,10 @@ test("el panel muestra el neto recibido al lado del saldo, no el monto apartado"
     await montar(createElement(PanelCuenta));
     await asentar();
     assert.match(texto(), /Your Hyto balance: US\$14\.43656/);
+    assert.deepEqual(
+      [...document.querySelectorAll(".hyto-kpis .hyto-amount")].map((nodo) => nodo.textContent),
+      ["US$14.43", "US$0", "US$14.43"],
+    );
     assert.match(texto(), /All time/);
     assert.match(texto(), /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
     assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);

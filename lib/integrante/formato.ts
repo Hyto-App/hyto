@@ -10,14 +10,37 @@ function localeDe(idioma: Idioma): string {
 }
 
 export function formatearMonto(monto: string, idioma: Idioma = "en"): string {
+  return montoLocal(monto, idioma, null);
+}
+
+/**
+ * Balance notices always show cents (`US$1.00`, `US$6,00`).
+ * `formatearMonto` drops the cents of a whole dollar, which those sentences do not.
+ */
+export function formatearCentavos(monto: string, idioma: Idioma = "en"): string {
+  return montoLocal(monto, idioma, 2);
+}
+
+export function textosSaldo(
+  falta: { necesario: string; reserva: string; falta: string },
+  idioma: Idioma = "en",
+): { n: string; reserva: string; falta: string } {
+  return {
+    n: formatearCentavos(falta.necesario, idioma),
+    reserva: formatearCentavos(falta.reserva, idioma),
+    falta: formatearCentavos(falta.falta, idioma),
+  };
+}
+
+function montoLocal(monto: string, idioma: Idioma, centavosFijos: number | null): string {
   const limpio = monto.trim();
   if (!limpio) return "";
   const valor = Number(limpio);
   if (!Number.isFinite(valor)) return monto;
-  const decimales = Number.isInteger(valor) ? 0 : 2;
+  const decimales = centavosFijos ?? (Number.isInteger(valor) ? 0 : 2);
   return `US$${valor.toLocaleString(localeDe(idioma), {
     minimumFractionDigits: decimales,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: centavosFijos ?? 2,
   })}`;
 }
 
@@ -205,6 +228,50 @@ type MontoLista = {
   montoRevisado?: string | null;
 };
 
+export type VistaMonto = {
+  /** Amount that will be paid, when it is known and is not the cap itself. */
+  pago: string | null;
+  /** Reimbursement cap, already formatted. */
+  tope: string | null;
+  /** One line for a list or a chip. */
+  linea: string;
+};
+
+/**
+ * A reimbursement can show a cap ("Up to US$50") and a smaller amount to pay.
+ * When both exist and they differ, the line names each one.
+ */
+export function vistaMonto(
+  tarea: MontoLista,
+  idioma: Idioma = "en",
+  etiquetaLimite?: (monto: string) => string,
+): VistaMonto {
+  if (tarea.tipo !== "reembolso") {
+    return { pago: null, tope: null, linea: formatearMonto(tarea.monto, idioma) };
+  }
+  const tope = formatearMonto(tarea.tope ?? tarea.monto, idioma);
+  const pago = pagoDistintoDelTope(tarea, idioma, tope);
+  if (pago && tope) {
+    const limite = etiquetaLimite ? etiquetaLimite(tope) : texto(idioma, "eventos.limit", { amount: tope });
+    return {
+      pago,
+      tope,
+      linea: `${texto(idioma, "revision.amountToPay")} ${pago} · ${limite}`,
+    };
+  }
+  return { pago: null, tope: tope || null, linea: montoDeTarea(tarea, idioma) };
+}
+
+function pagoDistintoDelTope(tarea: MontoLista, idioma: Idioma, tope: string): string | null {
+  const confirmado = normalizarMonto(tarea.montoConfirmado ?? "");
+  const pago =
+    confirmado && cifraConfirmada(confirmado, tarea.tope, tarea.monto) !== null
+      ? formatearMonto(confirmado, idioma)
+      : (montosDeCobro(tarea, idioma)?.pago ?? null);
+  if (!pago || !tope || pago === tope) return null;
+  return pago;
+}
+
 /**
  * Amount on an event task row. A paid task shows the net and the fee.
  * Every paid task also shows its limit, whether or not the payment used the whole cap.
@@ -214,7 +281,7 @@ export function lineaMontoTarea(
   idioma: Idioma = "en",
   etiquetaLimite?: (monto: string) => string,
 ): string {
-  if (tarea.estado !== "pagado") return montoDeTarea(tarea, idioma);
+  if (tarea.estado !== "pagado") return vistaMonto(tarea, idioma, etiquetaLimite).linea;
   const detalle = detalleMonto({
     tipo: tarea.tipo,
     monto: tarea.monto,

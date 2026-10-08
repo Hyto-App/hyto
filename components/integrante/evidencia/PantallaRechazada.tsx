@@ -9,7 +9,7 @@ import { Icono } from "@/components/ui/Marca";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cuandoVence } from "@/lib/integrante/vence";
-import { formatearHora, montoDeTarea } from "@/lib/integrante/formato";
+import { formatearHora, montoDeTarea, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { iniciales, plazoVencido, puntosFallidos } from "@/lib/integrante/revision";
 import { textoVisible } from "@/lib/ui/etiquetas";
@@ -52,7 +52,7 @@ export function PantallaRechazada({
           <h1 className="hyto-tarea-titulo">{titulo}</h1>
           {evento ? <p className="hyto-tarea-meta">{textoVisible(evento, idioma)}</p> : null}
         </div>
-        <span className="hyto-chip-monto">{montoDeTarea(tarea, idioma)}</span>
+        <span className="hyto-chip-monto">{vistaMonto(tarea, idioma).linea}</span>
       </header>
 
       <div className="hyto-tarea-cols">
@@ -84,7 +84,7 @@ export function PantallaRechazada({
             </div>
           </section>
 
-          <LineaRevision tarea={tarea} revisionCerrada monto={montoDeTarea(tarea, idioma)} />
+          <LineaRevision tarea={tarea} revisionCerrada monto={vistaMonto(tarea, idioma).pago || montoDeTarea(tarea, idioma)} />
           <ActividadTarea tarea={tarea} />
 
           <Checklist condicion={tarea.condicion} fallidos={fallidos.length > 0 ? fallidos : null} titulo={t("evidencia.howPhoto")} />

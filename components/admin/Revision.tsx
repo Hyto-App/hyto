@@ -46,7 +46,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -537,11 +537,7 @@ export function Revision({
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
-          <p className="hyto-amount text-2xl">
-            {tarea.tipo === "reembolso"
-              ? t("eventos.limit", { amount: formatearMonto(tarea.tope ?? tarea.monto, idioma) })
-              : formatearMonto(tarea.monto, idioma)}
-          </p>
+          <MontoCabecera tarea={tarea} />
         </div>
       </header>
       {sesionVencida ? <AvisoSesion /> : null}
@@ -785,11 +781,7 @@ export function Revision({
                 ) : null}
                 {faltaSaldo ? (
                   <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                    {t("errores.saldoNoCubre", {
-                      n: faltaSaldo.necesario,
-                      reserva: faltaSaldo.reserva,
-                      falta: faltaSaldo.falta,
-                    })}
+                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
                   </p>
                 ) : null}
                 <BotonPrincipal
@@ -811,11 +803,7 @@ export function Revision({
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
                 {faltaSaldo ? (
                   <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                    {t("errores.saldoNoCubre", {
-                      n: faltaSaldo.necesario,
-                      reserva: faltaSaldo.reserva,
-                      falta: faltaSaldo.falta,
-                    })}
+                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
                   </p>
                 ) : null}
                 <BotonPrincipal
@@ -1135,5 +1123,29 @@ function FotoAmpliada({ src, alt, onCerrar }: { src: string; alt: string; onCerr
         </div>
       </div>
     </div>
+  );
+}
+
+function MontoCabecera({
+  tarea,
+}: {
+  tarea: Pick<TareaAdmin, "tipo" | "monto" | "tope" | "montoConfirmado" | "montoRevisado">;
+}) {
+  const t = useTexto();
+  const idioma = useIdioma();
+  const vista = vistaMonto(tarea, idioma);
+  if (vista.pago && vista.tope) {
+    return (
+      <>
+        <p className="text-sm text-[var(--suave)]">{t("revision.amountToPay")}</p>
+        <p className="hyto-amount text-2xl">{vista.pago}</p>
+        <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: vista.tope })}</p>
+      </>
+    );
+  }
+  return (
+    <p className="hyto-amount text-2xl">
+      {vista.tope ? t("eventos.limit", { amount: vista.tope }) : vista.linea}
+    </p>
   );
 }

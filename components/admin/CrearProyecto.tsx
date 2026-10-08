@@ -10,7 +10,7 @@ import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { faltaParaCrear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
-import { formatearMonto } from "@/lib/integrante/formato";
+import { formatearMonto, textosSaldo } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
@@ -406,7 +406,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               </p>
             ) : falta ? (
               <p id="aviso-saldo-crear" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                {t("errores.saldoNoCubre", { n: falta.necesario, reserva: falta.reserva, falta: falta.falta })}
+                {t("errores.saldoNoCubre", textosSaldo(falta, idioma))}
               </p>
             ) : aviso ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">

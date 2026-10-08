@@ -168,19 +168,22 @@ export function armarOrgullo(
 ): Orgullo {
   const pagadas = tareas.filter((tarea) => tarea.pagada);
   const porMes = new Map<string, bigint>();
-  let totalUnidades = 0n;
+  let totalCentavos = 0n;
   let sinFecha = 0;
 
   for (const tarea of pagadas) {
     const cifra = unidadesDeMonto(tarea.monto);
     if (cifra === null || cifra <= 0n) continue;
-    totalUnidades += cifra;
+    // Cada tarea ya se muestra redondeada al centavo. El total es la suma de
+    // esos centavos, así que sumar las tareas da la misma cifra.
+    const cents = centavosDeUnidades(cifra);
+    totalCentavos += cents;
     const clave = claveMesDe(tarea.pagadoEn, zona);
     if (!clave) {
       sinFecha += 1;
       continue;
     }
-    porMes.set(clave, (porMes.get(clave) ?? 0n) + cifra);
+    porMes.set(clave, (porMes.get(clave) ?? 0n) + cents);
   }
 
   const actual = claveDeFecha(ahora, zona);
@@ -194,9 +197,9 @@ export function armarOrgullo(
 
   return {
     vacio: pagadas.length === 0,
-    esteMes: textoCifra(actual ? (porMes.get(actual) ?? 0n) : 0n),
-    mesPasado: textoCifra(actual ? (porMes.get(desplazarMes(actual, -1)) ?? 0n) : 0n),
-    total: textoCifra(totalUnidades),
+    esteMes: textoDeCentavos(actual ? (porMes.get(actual) ?? 0n) : 0n),
+    mesPasado: textoDeCentavos(actual ? (porMes.get(desplazarMes(actual, -1)) ?? 0n) : 0n),
+    total: textoDeCentavos(totalCentavos),
     meses,
     tareasCompletadas: conteo.tareas,
     proyectosCompletados: conteo.proyectos,
@@ -251,7 +254,7 @@ function ventana(actual: string, porMes: Map<string, bigint>, idioma: Idioma = "
       clave,
       etiqueta: etiqueta(clave, "short", idioma),
       etiquetaLarga: etiqueta(clave, "long", idioma),
-      total: textoCifra(porMes.get(clave) ?? 0n),
+      total: textoDeCentavos(porMes.get(clave) ?? 0n),
     });
   }
   return meses;
@@ -290,7 +293,7 @@ function mejor(porMes: Map<string, bigint>): Orgullo["mejorMes"] {
     }
   }
   if (!elegido) return null;
-  return { clave: elegido.clave, etiqueta: etiqueta(elegido.clave, "long"), total: textoCifra(elegido.cifra) };
+  return { clave: elegido.clave, etiqueta: etiqueta(elegido.clave, "long"), total: textoDeCentavos(elegido.cifra) };
 }
 
 function recientes(pagadas: TareaCuenta[]): TareaReciente[] {
@@ -323,6 +326,15 @@ function unidadesDeMonto(valor: string): bigint | null {
   if (!/^\d+(\.\d{1,7})?$/.test(limpio)) return null;
   const [entera, fraccion = ""] = limpio.split(".");
   return BigInt(entera) * ESCALA_MONTO + BigInt(fraccion.padEnd(7, "0"));
+}
+
+function centavosDeUnidades(unidades: bigint): bigint {
+  return (unidades + UNIDAD_CENTAVO / 2n) / UNIDAD_CENTAVO;
+}
+
+function textoDeCentavos(centavos: bigint): string {
+  if (centavos <= 0n) return "0";
+  return textoMonto(Number(centavos));
 }
 
 function textoCifra(unidades: bigint): string {

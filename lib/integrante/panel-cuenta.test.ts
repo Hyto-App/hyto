@@ -140,11 +140,13 @@ test("el reembolso usa el monto confirmado y no el tope", async () => {
 
   assert.equal(vista.saldoEstado, "sin-wallet");
   assert.equal(vista.wallet, null);
-  assert.equal(vista.orgullo.total, montoRecibido("12.40"));
+  // 12.40 funded arrives as 12.3628. The account shows that net rounded to the cent.
+  assert.equal(vista.orgullo.total, "12.36");
+  assert.notEqual(vista.orgullo.total, montoRecibido("12.40"));
   assert.notEqual(vista.orgullo.total, "15");
   assert.notEqual(vista.orgullo.total, "12.40");
   assert.equal(vista.orgullo.tareasCompletadas, 2);
-  assert.equal(vista.orgullo.mesPasado, montoRecibido("12.40"));
+  assert.equal(vista.orgullo.mesPasado, "12.36");
 });
 
 test("el demo sin pagos usa las tareas reales y no llama a Horizon sin billetera", async () => {
@@ -263,7 +265,8 @@ test("Settings suma el neto recibido, no el monto apartado", async () => {
   });
 
   assert.equal(vista.saldo, "14.43656");
-  assert.equal(vista.orgullo.total, "14.43656");
+  assert.equal(vista.orgullo.total, "14.43");
+  assert.notEqual(vista.orgullo.total, "14.43656");
   assert.notEqual(vista.orgullo.total, "14.48");
   assert.deepEqual(
     vista.orgullo.recientes.map((item) => item.monto).sort(),

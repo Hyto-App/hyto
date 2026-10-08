@@ -13,7 +13,7 @@ import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
 import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
 import { puedeApartarSinEntrega, vistaAdmin } from "@/lib/admin/vista";
-import { lineaMontoTarea, montoDeTarea } from "@/lib/integrante/formato";
+import { lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
@@ -41,7 +41,7 @@ function PendientesSinFoto({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: I
           <li key={tarea.id} className="hyto-row flex items-center justify-between gap-3">
             <span className="min-w-0">
               <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
-              <span className="text-sm text-[var(--suave)]">{montoDeTarea(tarea, idioma)}</span>
+              <span className="text-sm text-[var(--suave)]">{vistaMonto(tarea, idioma).linea}</span>
             </span>
             <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
               {t("pago.lockBudget")}
@@ -62,7 +62,7 @@ function ListaRevision({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: Idiom
         <li key={tarea.id}>
           <Link href={`/revision/${tarea.id}`} className="hyto-card block p-4">
             <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
-            <span className="mt-1 block text-sm text-[var(--suave)]">{montoDeTarea(tarea, idioma)}</span>
+            <span className="mt-1 block text-sm text-[var(--suave)]">{vistaMonto(tarea, idioma).linea}</span>
             <span className="mt-2 inline-block text-sm font-medium">{t("bandeja.openReview")}</span>
           </Link>
         </li>
@@ -319,7 +319,7 @@ export function Bandeja({
                       <span className="min-w-0 flex-1">
                         <span className="flex items-start justify-between gap-3">
                           <span className="block font-semibold">{textoVisible(tarea.miembro, idioma)}</span>
-                          <span className="hyto-amount text-sm">{montoDeTarea(tarea, idioma)}</span>
+                          <span className="hyto-amount text-sm">{vistaMonto(tarea, idioma).linea}</span>
                         </span>
                         <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo, idioma)}</span>
                         <span className="mt-2 flex items-center justify-between gap-2">
@@ -343,7 +343,7 @@ export function Bandeja({
                 <div className="p-5">
                   <p className="text-sm text-[var(--suave)]">{etiquetaTipo(seleccion.tipo, idioma)} · {textoVisible(seleccion.miembro, idioma)}</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo, idioma)}</h3>
-                  <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion, idioma)}</p>
+                  <p className="hyto-amount mt-2 text-xl">{vistaMonto(seleccion, idioma).linea}</p>
                   {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase, idioma)}</p> : null}
                   {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
                     <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />
