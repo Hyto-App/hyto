@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { acortarDireccion, explicarNeto, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
@@ -218,14 +219,9 @@ function Direccion({ direccion }: { direccion: string }) {
         <button type="button" className="hyto-btn-line is-inline px-5" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? t("cuenta.copied") : t("cuenta.copy")}
         </button>
-        <a
-          className="hyto-btn-line is-inline px-5"
-          href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <EnlaceExplorador className="hyto-btn-line is-inline px-5" href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}>
           {t("cuenta.viewTestnet")}
-        </a>
+        </EnlaceExplorador>
       </div>
       {fallo ? (
         <label className="mt-3 block text-sm text-[var(--suave)]" htmlFor="direccion-publica">
