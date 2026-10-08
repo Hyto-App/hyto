@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { lineaMontoTarea } from "@/lib/integrante/formato";
+import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
@@ -132,7 +132,7 @@ export function TareasEvento({
     }
     const falta = faltaDeBorrador(tarea, borrador, saldo);
     if (falta) {
-      setAviso(t("errores.saldoNoCubre", { n: falta.necesario, reserva: falta.reserva, falta: falta.falta }));
+      setAviso(t("errores.saldoNoCubre", textosSaldo(falta, idioma)));
       return;
     }
     setAviso(null);
@@ -280,7 +280,7 @@ export function TareasEvento({
                   ) : null}
                   {faltaFila ? (
                     <p id={`saldo-${tarea.id}`} role="alert" className="text-sm leading-6 text-[var(--peligro)] sm:col-span-2">
-                      {t("errores.saldoNoCubre", { n: faltaFila.necesario, reserva: faltaFila.reserva, falta: faltaFila.falta })}
+                      {t("errores.saldoNoCubre", textosSaldo(faltaFila, idioma))}
                     </p>
                   ) : null}
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`asignar-editar-${tarea.id}`}>

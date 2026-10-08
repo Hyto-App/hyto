@@ -62,7 +62,11 @@ test("technical payment errors tell the person what to do", () => {
   assert.equal(saldo.includes("USDC"), false);
   assert.equal(
     mensajeClaro("Your balance does not cover US$40.60 (this amount plus a US$1.00 reserve). You are short US$39.30.", "es"),
-    "Tu saldo no cubre US$40.60 (este monto más una reserva de US$1.00). Te faltan US$39.30.",
+    "Tu saldo no cubre US$40,60 (este monto más una reserva de US$1,00). Te faltan US$39,30.",
+  );
+  assert.equal(
+    mensajeClaro("Your balance does not cover US$6.00 (this amount plus a US$1.00 reserve). You are short US$6.00.", "es"),
+    "Tu saldo no cubre US$6,00 (este monto más una reserva de US$1,00). Te faltan US$6,00.",
   );
 });
 

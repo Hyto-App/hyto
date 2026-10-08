@@ -26,6 +26,7 @@ import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
+import { formatearCentavos } from "@/lib/integrante/formato";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -293,7 +294,13 @@ export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
   const saldo = SALDO_NO_CUBRE.exec(limpio);
-  if (saldo) return texto(idioma, "errores.saldoNoCubre", { n: saldo[1], reserva: saldo[2], falta: saldo[3] });
+  if (saldo) {
+    return texto(idioma, "errores.saldoNoCubre", {
+      n: formatearCentavos(saldo[1] ?? "", idioma),
+      reserva: formatearCentavos(saldo[2] ?? "", idioma),
+      falta: formatearCentavos(saldo[3] ?? "", idioma),
+    });
+  }
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
   const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);

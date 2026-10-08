@@ -299,6 +299,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     assert.equal(/Confirm the amount before Lock budget can be used/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
+    assert.match(texto(), /US\$12\.40/);
+    assert.match(texto(), /Limit US\$15/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
