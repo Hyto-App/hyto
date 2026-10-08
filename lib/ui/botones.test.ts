@@ -13,7 +13,15 @@ function bloque(selector: string): string {
 }
 
 test("language and action buttons size to their label", () => {
-  for (const selector of [".hyto-idioma button", ".hyto-btn {", ".hyto-btn-line {", ".hyto-btn-danger {", ".hyto-cerrar {", ".hyto-opcion {"]) {
+  const compartido = bloque(".hyto-btn,");
+  assert.match(compartido, /height:\s*auto/);
+  assert.match(compartido, /min-height:\s*44px/);
+  assert.match(compartido, /max-width:\s*100%/);
+  assert.match(compartido, /width:\s*max-content/);
+  assert.equal(compartido.includes("text-overflow"), false);
+  assert.equal(compartido.includes("overflow: hidden"), false);
+  assert.equal(compartido.includes("white-space: nowrap"), false);
+  for (const selector of [".hyto-idioma button", ".hyto-cerrar {", ".hyto-opcion {"]) {
     const regla = bloque(selector);
     assert.equal(regla.includes("text-overflow"), false, selector);
     assert.equal(regla.includes("overflow: hidden"), false, selector);
@@ -21,6 +29,14 @@ test("language and action buttons size to their label", () => {
     assert.match(regla, /height:\s*auto/, selector);
     assert.match(regla, /max-width:\s*100%/, selector);
   }
+  for (const selector of [".hyto-btn-line {", ".hyto-btn-ghost {", ".hyto-btn-danger {"]) {
+    assert.ok(css.includes(selector));
+  }
+  assert.match(css, /\.hyto-btn:focus-visible/);
+  assert.match(css, /\.hyto-btn-danger:focus-visible/);
+  assert.match(css, /\.hyto-btn:active:not\(:disabled\)/);
+  assert.match(css, /\.hyto-btn\[aria-busy="true"\]/);
+  assert.match(css, /@keyframes hyto-boton-giro/);
   // Filter chips stay on one line and the row scrolls sideways (redesign spec §4); they must not be clipped.
   const chips = bloque(".hyto-chips button");
   assert.match(chips, /white-space:\s*nowrap/);
@@ -31,9 +47,6 @@ test("language and action buttons size to their label", () => {
   const idioma = bloque(".hyto-idioma button");
   assert.match(idioma, /min-width:\s*36px/);
   assert.match(idioma, /width:\s*auto/);
-  const primario = bloque(".hyto-btn {");
-  assert.match(primario, /width:\s*max-content/);
-  assert.match(primario, /min-height:\s*44px/);
-  assert.equal(/(?<![\w-])height:\s*44px/.test(primario), false);
+  assert.equal(/(?<![\w-])height:\s*44px/.test(compartido), false);
   assert.equal(/(?<![\w-])height:\s*52px/.test(css), false);
 });

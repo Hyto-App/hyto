@@ -45,6 +45,38 @@ export type PreguntasFactura = {
   g5: PreguntaScore;
 };
 
+function criteriosAccion(evento: boolean): Record<string, string> {
+  const criterios: Record<string, string> = {
+    pintar: evento
+      ? "Something was painted or drawn, such as a wall or a mural. A printed sign, a slide, a logo, or a mug is not painting."
+      : "Something was painted or drawn.",
+    limpiar: "An area was cleaned or cleared of trash.",
+    armar_o_montar: "Something was built, set up, or assembled, such as a stand or a booth.",
+    vender_o_atender: "People were selling, serving, or attending visitors.",
+    transportar: "Items or people were moved from one place to another.",
+  };
+  if (evento) {
+    criterios.documentar_evento =
+      "Documenting an event or an activity: a sign, a talk, a stand, a group photo, people at the event, or merch such as a mug. Not painting, cleaning, or building.";
+  }
+  criterios.otra_o_no_claro = "Something else, or the description does not say.";
+  return criterios;
+}
+
+function criteriosEstado(evento: boolean): Record<string, string> {
+  const criterios: Record<string, string> = {
+    terminado: "The description says the work is finished or complete.",
+    a_medias: "The description says part of the work is done and part is missing or still in progress.",
+    sin_empezar: "The description shows no work done, such as an empty wall or an empty room.",
+  };
+  if (evento) {
+    criterios.no_aplica =
+      "Does not apply: it is a scene or an event, such as a group photo, a talk, a sign, or a stand. The requested scene can be present. This is not work that has not started.";
+  }
+  criterios.no_claro = "The description does not say.";
+  return criterios;
+}
+
 function choice(instructions: string, criteria: Record<string, string>): PreguntaChoice {
   return { type: "choice", instructions, criteria };
 }
@@ -83,7 +115,11 @@ export function preguntasClasificacion(condicion: string): PreguntasClasificacio
   };
 }
 
-export function preguntasTrabajo(condicion: string): PreguntasTrabajo {
+/**
+ * `evento` is true only when HYTO_MILE_PREGUNTAS_EVENTO is on.
+ * False keeps the current work questions, including t5 and t6.
+ */
+export function preguntasTrabajo(condicion: string, evento = false): PreguntasTrabajo {
   const pedido = condicion.trim();
   return {
     lugar: choice("Which place does the written description show? Pick one label. Use only what the description states.", {
@@ -104,20 +140,18 @@ export function preguntasTrabajo(condicion: string): PreguntasTrabajo {
     ]),
     v3: siNo(conPedido("The organizer asked for: {pedido}. Does the written description name a place, an object, or an action that proves it?", pedido)),
     v4: siNo(conPedido("The organizer asked for: {pedido}. Does the written description say that something the organizer asked for is missing or not shown?", pedido)),
-    t5: choice("What was done, according to the written description? Pick one label. Use only what the description states.", {
-      pintar: "Something was painted or drawn.",
-      limpiar: "An area was cleaned or cleared of trash.",
-      armar_o_montar: "Something was built, set up, or assembled, such as a stand or a booth.",
-      vender_o_atender: "People were selling, serving, or attending visitors.",
-      transportar: "Items or people were moved from one place to another.",
-      otra_o_no_claro: "Something else, or the description does not say.",
-    }),
-    t6: choice("In what condition is the finished work, according to the written description? Pick one label. Use only what the description states.", {
-      terminado: "The description says the work is finished or complete.",
-      a_medias: "The description says part of the work is done and part is missing or still in progress.",
-      sin_empezar: "The description shows no work done, such as an empty wall or an empty room.",
-      no_claro: "The description does not say.",
-    }),
+    t5: choice(
+      evento
+        ? "What was done, according to the written description? Pick one label. Use only what the description states. A sign, a talk, a stand, a group photo, or event merch such as a mug is documenting an event, not painting."
+        : "What was done, according to the written description? Pick one label. Use only what the description states.",
+      criteriosAccion(evento),
+    ),
+    t6: choice(
+      evento
+        ? "In what condition is the finished work, according to the written description? Pick one label. Use only what the description states. If the description shows a scene or an event rather than physical work that starts and finishes, pick no_aplica. Do not pick sin_empezar when the requested scene is present."
+        : "In what condition is the finished work, according to the written description? Pick one label. Use only what the description states.",
+      criteriosEstado(evento),
+    ),
     t7: siNo("Does the written description name the tools or materials used, such as brushes, paint, trash bags, tables, or a vehicle?"),
     t8: siNo("Does the written description say that the work was done in the place the organizer asked for?"),
     t9: siNo("Does the written description say that any part of the work is unfinished, damaged, or not visible?"),

@@ -217,7 +217,7 @@
       "presente": true,
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
-      "sha256": "317f040107e5993f17d75dedc064793c4119b40515d2c81083a099c6fa92c258",
+      "sha256": "60d2f7f383ace8a3d0e0a401fdb9c24ad3a72a8945998a341095768d8984567b",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."

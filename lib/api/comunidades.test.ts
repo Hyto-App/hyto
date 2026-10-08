@@ -90,6 +90,66 @@ test("apagado no consulta comunidades y crear un evento sigue igual", async () =
   });
 });
 
+const APAGADOS = ["", "off", "OFF", "true", "yes", "1", "enabled", "onn", " onn "] as const;
+
+test("un valor que no es on no consulta comunidades ni guarda comunidad_id", async () => {
+  for (const valor of APAGADOS) {
+    await conInterruptor(valor, async () => {
+      assert.equal(comunidadesActivas(), false, valor);
+      const almacen = crearMemoria();
+      await sembrar(almacen);
+      const lista = await listarComunidadesHttp(almacen, "ana", "norte");
+      assert.equal(lista.status, 404, valor);
+      const creado = await crearProyectoHttp(
+        pedido({
+          nombre: "ZEEK",
+          comunidadId: "c-ajena",
+          tareas: [{ titulo: "Montar", tipo: "trabajo", monto: "20", condicion: "Foto del stand" }],
+        }),
+        almacen,
+        "ana",
+      );
+      assert.equal(creado.status, 201, valor);
+      const proyectos = await almacen.listarProyectos();
+      assert.equal(proyectos.length, 1);
+      assert.equal(proyectos[0]?.comunidadId ?? null, null);
+      await almacen.crearProyecto(
+        {
+          id: "directo",
+          nombre: "Directo",
+          creadoEn: "2026-10-08T00:00:00.000Z",
+          organizadorId: "ana",
+          comunidadId: "c-ajena",
+        },
+        [],
+      );
+      assert.equal((await almacen.leerProyecto("directo"))?.comunidadId ?? null, null);
+      await almacen.crearComunidad({
+        id: "c-ajena",
+        nombre: "Ajena",
+        descripcion: "",
+        fotoUrl: null,
+        visibilidad: "publica",
+        codigo: "AAAAAAAAAA",
+        creadoEn: "2026-10-08T00:00:00.000Z",
+        creadorId: "ana",
+      });
+      await almacen.guardarMiembroComunidad({
+        comunidadId: "c-ajena",
+        usuarioId: "ana",
+        rol: "admin",
+        creadoEn: "2026-10-08T00:00:00.000Z",
+      });
+      await almacen.fijarComunidadProyecto("directo", "c-ajena");
+      assert.equal(await almacen.leerComunidad("c-ajena"), null);
+      assert.deepEqual(await almacen.listarComunidades(), []);
+      assert.deepEqual(await almacen.comunidadesDeUsuario("ana"), []);
+      assert.equal((await almacen.leerProyecto("directo"))?.comunidadId ?? null, null);
+      assert.equal((await almacen.leerUsuario("ana"))?.rol, "organizador");
+    });
+  }
+});
+
 test("pública se une directo, privada pide aprobación y el código entra", async () => {
   await conInterruptor("on", async () => {
     const almacen = crearMemoria();
@@ -127,6 +187,40 @@ test("pública se une directo, privada pide aprobación y el código entra", asy
     const vista = (await detalle.json()) as { comunidad: { codigo?: string }; miembros: { usuarioId: string }[] };
     assert.equal(vista.comunidad.codigo, undefined);
     assert.ok(vista.miembros.some((miembro) => miembro.usuarioId === "leo"));
+  });
+});
+
+test("el rol de la comunidad no cambia el rol de la cuenta ni el del evento", async () => {
+  await conInterruptor("on", async () => {
+    const almacen = crearMemoria();
+    await sembrar(almacen);
+    const creado = await crearProyectoHttp(
+      pedido({
+        nombre: "Feria",
+        tareas: [{ titulo: "Cocinar", tipo: "trabajo", monto: "15", condicion: "Foto de la cocina" }],
+      }),
+      almacen,
+      "ana",
+    );
+    assert.equal(creado.status, 201);
+    const eventoId = ((await creado.json()) as { proyecto: { id: string } }).proyecto.id;
+    await almacen.guardarMiembro({
+      proyectoId: eventoId,
+      usuarioId: "leo",
+      rol: "volunteer",
+      estado: "active",
+      creadoEn: "2026-10-08T00:00:00.000Z",
+    });
+    const comunidad = await crearComunidadHttp(almacen, "ana", { nombre: "Norte", visibilidad: "publica" });
+    const comunidadId = ((await comunidad.json()) as { comunidad: { id: string } }).comunidad.id;
+    const unido = await unirseComunidadHttp(almacen, "leo", comunidadId);
+    assert.equal(unido.status, 201);
+    assert.equal((await almacen.leerUsuario("ana"))?.rol, "organizador");
+    assert.equal((await almacen.leerUsuario("leo"))?.rol, "voluntario");
+    assert.equal((await almacen.miembroComunidad(comunidadId, "ana"))?.rol, "admin");
+    assert.equal((await almacen.miembroComunidad(comunidadId, "leo"))?.rol, "miembro");
+    assert.equal((await almacen.listarMiembros(eventoId)).find((miembro) => miembro.usuarioId === "ana")?.rol, "organizer");
+    assert.equal((await almacen.listarMiembros(eventoId)).find((miembro) => miembro.usuarioId === "leo")?.rol, "volunteer");
   });
 });
 
