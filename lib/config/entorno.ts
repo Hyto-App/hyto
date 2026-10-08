@@ -117,18 +117,25 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
-    nombre: "HYTO_MILE_REQUISITOS",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
-  },
-  {
     nombre: "HYTO_MILE_INTENTOS",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
+  },
+  {
+    nombre: "HYTO_MILE_OTRA_CON_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on asks Groq for a required coincide (si, parcial, or no). Only si withholds Laya's something-else cap and the grade of 0. parcial, no, and a missing field keep them. At most one extra Groq call per photo, and never after a 429 or a quota error. Unset or anything else keeps the current prompt and the current cap.",
+  },
+  {
+    nombre: "HYTO_MILE_REQUISITOS",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
   },
   {
     nombre: "HYTO_COMUNIDADES",
