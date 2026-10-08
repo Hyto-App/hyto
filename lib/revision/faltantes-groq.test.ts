@@ -7,7 +7,7 @@ import { senalesDeFactura, senalesDeTrabajo, type RespuestasFactura, type Respue
 import { leerLectura, type LecturaEvidencia } from "./lectura";
 import { etiquetasDe } from "./razones";
 import { revisar } from "./revisar";
-import { pedidoVision } from "./scout";
+import { formatoRespuestaVision, pedidoVision } from "./scout";
 import { leerSnapshot, escribirSnapshot } from "./snapshot-razones";
 
 const APAGADO: EntornoFaltantesGroq = { HYTO_MILE_FALTANTES_GROQ: "off" };
@@ -70,6 +70,35 @@ test("encendido, el pedido pide faltantes de la condición, ignora el bokeh y co
   assert.match(enEspanol, /Keep each faltantes phrase in Spanish only, and in formal usted/);
   assert.match(enEspanol, /bokeh/);
   assert.equal(enEspanol.includes("Keep each faltantes phrase in English only"), false);
+});
+
+test("ambos interruptores encendidos, el pedido y el esquema llevan faltantes y coincide", () => {
+  const ambos = { HYTO_MILE_FALTANTES_GROQ: "on", HYTO_MILE_OTRA_CON_GROQ: "on" };
+  const prompt = pedidoVision(PEDIDO_VISION, ambos);
+  assert.match(prompt, /Reading rules for HYTO_MILE_FALTANTES_GROQ:/);
+  assert.match(prompt, /coincide is required on every reply/);
+  assert.match(prompt, /faltantes, coincide/);
+  const legible = prompt.indexOf("legible: true if the photo is sharp");
+  const bloque = prompt.indexOf("Reading rules for HYTO_MILE_FALTANTES_GROQ:");
+  const coincide = prompt.indexOf("coincide is required on every reply");
+  assert.equal(legible >= 0 && coincide > 0 && bloque > legible, true);
+  assert.equal(pedidoVision(PEDIDO_VISION, ENCENDIDO).includes("coincide is required"), false);
+
+  const formato = formatoRespuestaVision("qwen/qwen3.8-27b", ambos);
+  assert.equal(formato.type, "json_schema");
+  if (formato.type !== "json_schema") return;
+  const schema = formato.json_schema.schema;
+  const serializado = JSON.parse(JSON.stringify(schema)) as typeof schema;
+  assert.equal(serializado.type, "object");
+  assert.equal(serializado.additionalProperties, false);
+  const propiedades = serializado.properties as Record<string, { type?: string; enum?: string[]; items?: { type?: string } }>;
+  assert.deepEqual(propiedades.faltantes, { type: "array", items: { type: "string" } });
+  assert.deepEqual(propiedades.coincide, { type: "string", enum: ["si", "parcial", "no"] });
+  const required = serializado.required as string[];
+  assert.deepEqual([...required].sort(), Object.keys(propiedades).sort());
+  assert.ok(required.includes("faltantes"));
+  assert.ok(required.includes("coincide"));
+  assert.deepEqual(formatoRespuestaVision("qwen/qwen3.8-27b", ENCENDIDO), { type: "json_object" });
 });
 
 test("apagado, la respuesta v4 de Laya no cambia aunque Groq no vea faltantes", () => {

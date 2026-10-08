@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "@/lib/escrow/comision";
+import { AVISO_FEE_DISTINTA, AVISO_FEE_SIN_TRUSTLINE } from "@/lib/escrow/fee";
 import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import {
@@ -107,6 +108,10 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(tituloFallo("pago"), "Payment failed");
   assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC left the escrow.");
   assert.equal(detalleFallo("pago", mensajeClaro(AVISO_XLM_COMISION)), mensajeClaro(AVISO_XLM_COMISION));
+  assert.match(mensajeClaro(AVISO_FEE_DISTINTA), /0\.3%/);
+  assert.match(mensajeClaro(AVISO_FEE_DISTINTA, "es"), /0,3 %/);
+  assert.match(mensajeClaro(AVISO_FEE_SIN_TRUSTLINE), /error 13/);
+  assert.equal(detalleFallo("pago", mensajeClaro(AVISO_FEE_SIN_TRUSTLINE)), mensajeClaro(AVISO_FEE_SIN_TRUSTLINE));
   assert.match(mensajeClaro(AVISO_XLM_COMISION), /another account/);
   assert.match(mensajeClaro(CODIGO_XLM_COMISION), /another account/);
   assert.match(mensajeClaro(AVISO_XLM_COMISION, "es"), /otra cuenta/);

@@ -11,12 +11,13 @@ import { respuestaSiCuerpoGrande, respuestaSiExcedido, xdrDemasiadoLargo } from 
 import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/lib/escrow/indexador";
 import { confirmarEnRed, hashTestnetDeXdr, type OpcionesConfirmacion } from "@/lib/escrow/confirmacion";
 import { rechazoSiComision } from "@/lib/escrow/comision";
+import { AVISO_FEE_ILEGIBLE, CODIGO_FEE_ILEGIBLE, rechazoPrevioLiberacion, rechazoSiFeeAlEnviar } from "@/lib/escrow/fee";
 import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { escrowYaTieneFondos } from "@/lib/escrow/saldo-red";
 import { ErrorFirma, enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
-import { anclaDeXdr, esAltaDeFabrica, leerInvocacion } from "@/lib/escrow/xdr";
+import { anclaDeXdr, direccionFeeDeLiberacion, esAltaDeFabrica, leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisarCompletada } from "@/lib/tablon/publicar";
 import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
@@ -116,6 +117,10 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
       }
     }
   }
+  if (preparada.accion === "liberar") {
+    const previo = await rechazoPrevioLiberacion(body);
+    if (previo) return previo;
+  }
   const limitado = respuestaSiExcedido(request);
   if (limitado) return limitado;
   if (!secretoPreparado()) return sinSecreto();
@@ -123,6 +128,9 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
   if (sinComision) return sinComision;
   try {
     const listo = await preparar(preparada);
+    if (preparada.accion === "liberar" && !direccionFeeDeLiberacion(listo.xdr)) {
+      return Response.json({ aviso: AVISO_FEE_ILEGIBLE, codigo: CODIGO_FEE_ILEGIBLE }, { status: 502 });
+    }
     const corta = await rechazoSiComision(sesion.wallet, listo.xdr);
     if (corta) return corta;
     const monto = preparada.accion === "fondear" ? String(preparada.monto) : null;
@@ -198,6 +206,10 @@ export async function enviarFirmaHttp(
     }
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
     if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
+  }
+  if (invocacion.funcion === FUNCION_LIBERACION) {
+    const fee = await rechazoSiFeeAlEnviar(envio.xdr);
+    if (fee) return fee;
   }
   if (!envio.token) return Response.json({ aviso: AVISO_SIN_PREPARAR }, { status: 409 });
   // La huella ata el XDR entero. Si Cavos re-simula, cambian fee, footprint y auth;
