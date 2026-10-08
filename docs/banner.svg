@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Hyto. Proof before payout.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="Hyto. Proof before payout. Funds remain locked until an on-site photo is submitted and a person approves.">
   <rect width="1280" height="320" fill="#08090C"/>
   <ellipse cx="180" cy="40" rx="420" ry="180" fill="#B7EE34" opacity="0.14"/>
   <svg x="72" y="56" width="246" height="77" viewBox="15 14 935 292" aria-hidden="true">
@@ -7,5 +7,5 @@
     </g>
   </svg>
   <text x="72" y="196" fill="#F2F3F7" font-family="Poppins, ui-sans-serif, system-ui, sans-serif" font-size="44" font-weight="500">Proof before payout.</text>
-  <text x="72" y="240" fill="#B0B3C6" font-family="Poppins, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="400">The money waits for a photo taken on site and a person's yes.</text>
+  <text x="72" y="240" fill="#B0B3C6" font-family="Poppins, ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="400">Funds remain locked until an on-site photo is submitted and a person approves.</text>
 </svg>
