@@ -12,6 +12,7 @@ import { cuandoVence } from "@/lib/integrante/vence";
 import { formatearHora, montoDeTarea, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { iniciales, plazoVencido, puntosFallidos } from "@/lib/integrante/revision";
+import { nombreParaMostrar } from "@/lib/sesion/nombre";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import type { Tarea } from "@/lib/integrante/tipos";
 
@@ -39,7 +40,7 @@ export function PantallaRechazada({
   const hayPuntosBien = fallidos.length > 0 && puntos.some((_, indice) => !fallidos.includes(indice));
   const cerrado = plazoVencido(tarea.venceEn);
   const cuando = tarea.venceEn && !cerrado ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
-  const nombre = tarea.organizador?.nombre?.trim() || "";
+  const nombre = nombreParaMostrar(tarea.organizador?.nombre, evento || tarea.evento) || "";
   const nota = tarea.rechazo?.nota ?? null;
   const reembolso = tarea.tipo === "reembolso";
   const hora = horaDe(tarea.enviadaEn ?? tarea.rechazo?.en, idioma);

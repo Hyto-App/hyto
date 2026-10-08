@@ -63,6 +63,14 @@ test("asking for another photo drops the old AI result and leaves the inbox", ()
   const devuelta = sinVeredicto({ ...base, estado: "pendiente" });
   assert.equal(devuelta.veredicto, null);
   assert.equal(enBandeja(devuelta), false);
+
+  const comida = vista.tareas.find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const lectura = { moneda: "CRC" as const, montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda" };
+  const recibo = sinVeredicto({ ...comida, estado: "pendiente", lectura });
+  assert.equal(recibo.veredicto, null);
+  assert.equal(recibo.frase, null);
+  assert.deepEqual(recibo.lectura, lectura);
 });
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {
