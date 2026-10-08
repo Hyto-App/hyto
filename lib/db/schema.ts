@@ -16,7 +16,7 @@ export const usuarios = pgTable("usuarios", {
   etiquetas: text("etiquetas"),
 });
 
-// A community is a chapter, ambassador program, or builder group. It does not replace the per-event role.
+// A community is an organization. It does not replace the per-event role.
 export const comunidades = pgTable("comunidades", {
   id: text("id").primaryKey(),
   nombre: text("nombre").notNull(),

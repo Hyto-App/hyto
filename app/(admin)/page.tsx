@@ -16,11 +16,13 @@ export const metadata: Metadata = {
   title: { absolute: "Hyto · Sign in" },
   description: discurso.subheadline,
   openGraph: {
+    title: `Hyto · ${ESLOGAN}`,
     description: discurso.subheadline,
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `Hyto · ${ESLOGAN}` }],
   },
   twitter: {
     card: "summary_large_image",
+    title: `Hyto · ${ESLOGAN}`,
     description: discurso.subheadline,
     images: ["/twitter-image"],
   },
