@@ -11,6 +11,8 @@ import { ANCLA_PASSKEY, PARAM_PASSKEY } from "@/lib/integrante/enlacePasskey";
 import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import { TipoCuenta } from "@/components/cuenta/TipoCuenta";
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
+import { EditorPerfil } from "@/components/perfil/Editor";
+import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { leerModoDemo } from "@/lib/sesion/vista";
 
@@ -39,6 +41,7 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
       </div>
       <PanelCuenta />
       {tipoCuentaActivo() ? <TipoCuenta /> : null}
+      {perfilVoluntarioActivo() ? <EditorPerfil /> : null}
       <p className="mt-8 text-sm">
         <Link href="/privacy" className="text-[var(--suave)] underline underline-offset-4">
           {ENLACE_PRIVACIDAD}

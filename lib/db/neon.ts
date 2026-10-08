@@ -1,4 +1,6 @@
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
+import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
+import { etiquetasGuardadas } from "@/lib/perfil/reglas";
 import { neon } from "@neondatabase/serverless";
 import { comunidadesActivas } from "@/lib/comunidades/bandera";
 import { desc, and, eq, getTableColumns, sql } from "drizzle-orm";
@@ -73,11 +75,21 @@ function usuarioDesde(fila: typeof usuarios.$inferSelect): Usuario {
     email: fila.email,
     nombre: fila.nombre,
     rol: rolDe(fila.rol),
-    tipoCuenta: tipoCuentaDe(fila.tipoCuenta),
-    empresaNombre: fila.empresaNombre,
-    empresaActividad: fila.empresaActividad,
-    empresaDescripcion: fila.empresaDescripcion,
-    empresaFoto: fila.empresaFoto,
+    ...(tipoCuentaActivo()
+      ? {
+          tipoCuenta: tipoCuentaDe(fila.tipoCuenta),
+          empresaNombre: fila.empresaNombre,
+          empresaActividad: fila.empresaActividad,
+          empresaDescripcion: fila.empresaDescripcion,
+          empresaFoto: fila.empresaFoto,
+        }
+      : {}),
+    ...(perfilVoluntarioActivo()
+      ? {
+          experiencia: fila.experiencia,
+          etiquetas: etiquetasGuardadas(fila.etiquetas),
+        }
+      : {}),
   };
 }
 
@@ -114,21 +126,48 @@ function esColumnaAusente(error: unknown): boolean {
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
 }
 
-function columnasUsuarioSinTipo() {
+/** Each switch hides its own columns, so a migration that has not run yet is not selected. */
+function columnasUsuarioVisibles() {
+  const todas = getTableColumns(usuarios);
   const {
-    tipoCuenta: _tipoCuenta,
-    empresaNombre: _empresaNombre,
-    empresaActividad: _empresaActividad,
-    empresaDescripcion: _empresaDescripcion,
-    empresaFoto: _empresaFoto,
-    ...resto
-  } = getTableColumns(usuarios);
-  return resto;
+    tipoCuenta,
+    empresaNombre,
+    empresaActividad,
+    empresaDescripcion,
+    empresaFoto,
+    experiencia,
+    etiquetas,
+    ...base
+  } = todas;
+  return {
+    ...base,
+    ...(tipoCuentaActivo() ? { tipoCuenta, empresaNombre, empresaActividad, empresaDescripcion, empresaFoto } : {}),
+    ...(perfilVoluntarioActivo() ? { experiencia, etiquetas } : {}),
+  };
 }
 
-function usuarioSinTipo(usuario: Usuario): Usuario {
-  const { tipoCuenta: _tipo, empresaNombre: _nombre, empresaActividad: _actividad, empresaDescripcion: _descripcion, empresaFoto: _foto, ...resto } = usuario;
-  return resto;
+function filaUsuario(usuario: Usuario) {
+  return {
+    id: usuario.id,
+    email: usuario.email,
+    nombre: usuario.nombre,
+    rol: usuario.rol,
+    ...(tipoCuentaActivo()
+      ? {
+          tipoCuenta: usuario.tipoCuenta ?? null,
+          empresaNombre: usuario.empresaNombre ?? null,
+          empresaActividad: usuario.empresaActividad ?? null,
+          empresaDescripcion: usuario.empresaDescripcion ?? null,
+          empresaFoto: usuario.empresaFoto ?? null,
+        }
+      : {}),
+    ...(perfilVoluntarioActivo()
+      ? {
+          experiencia: usuario.experiencia ?? null,
+          etiquetas: usuario.etiquetas && usuario.etiquetas.length > 0 ? JSON.stringify(usuario.etiquetas) : null,
+        }
+      : {}),
+  };
 }
 
 function columnasTareaPrevias() {
@@ -199,41 +238,29 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
 
   return {
     async listarUsuarios() {
-      if (!tipoCuentaActivo()) {
-        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios);
-        return filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol) }));
-      }
-      const filas = await db.select().from(usuarios);
-      return filas.map(usuarioDesde);
+      const filas = await db.select(columnasUsuarioVisibles()).from(usuarios);
+      return filas.map((fila) => usuarioDesde(fila as typeof usuarios.$inferSelect));
     },
     async usuarioPorEmail(email) {
-      if (!tipoCuentaActivo()) {
-        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
-        const fila = filas[0];
-        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
-      }
-      const filas = await db.select().from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
-      return filas[0] ? usuarioDesde(filas[0]) : null;
+      const filas = await db
+        .select(columnasUsuarioVisibles())
+        .from(usuarios)
+        .where(eq(usuarios.email, email.trim().toLowerCase()))
+        .limit(1);
+      return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
     },
     async leerUsuario(id) {
-      if (!tipoCuentaActivo()) {
-        const filas = await db.select(columnasUsuarioSinTipo()).from(usuarios).where(eq(usuarios.id, id)).limit(1);
-        const fila = filas[0];
-        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
-      }
-      const filas = await db.select().from(usuarios).where(eq(usuarios.id, id)).limit(1);
-      return filas[0] ? usuarioDesde(filas[0]) : null;
+      const filas = await db.select(columnasUsuarioVisibles()).from(usuarios).where(eq(usuarios.id, id)).limit(1);
+      return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
     },
     async insertarUsuario(usuario) {
-      const valores = tipoCuentaActivo() ? usuario : usuarioSinTipo(usuario);
-      await db.insert(usuarios).values(valores).onConflictDoNothing();
+      await db.insert(usuarios).values(filaUsuario(usuario)).onConflictDoNothing();
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
-      const valores = tipoCuentaActivo() ? { ...usuario, email } : { ...usuarioSinTipo(usuario), email };
       await db
         .insert(usuarios)
-        .values(valores)
+        .values({ ...filaUsuario(usuario), email })
         .onConflictDoUpdate({
           target: usuarios.email,
           set: { nombre: usuario.nombre, rol: usuario.rol },
@@ -241,6 +268,10 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async guardarTipoCuenta(id, cambio) {
       if (!tipoCuentaActivo()) return;
+      await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
+    },
+    async guardarPerfilVoluntario(id, cambio) {
+      if (!perfilVoluntarioActivo()) return;
       await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
     },
     async leerProyecto(id) {

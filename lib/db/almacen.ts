@@ -52,6 +52,7 @@ export type Almacen = {
       empresaFoto: string | null;
     },
   ): Promise<void>;
+  guardarPerfilVoluntario(id: string, cambio: { experiencia: string | null; etiquetas: string }): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
   listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;

@@ -1085,6 +1085,23 @@ export const en = {
     guardado: "Saved.",
     noGuarda: "Could not save that. Try again.",
   },
+  perfil: {
+    titulo: "Volunteer profile",
+    subtitulo: "You choose these words. Nobody rates you, and there is no score.",
+    experiencia: "Your experience (optional)",
+    etiquetas: "Tags, up to 5",
+    guardar: "Save",
+    guardado: "Saved.",
+    noGuarda: "Could not save that. Try again.",
+    responsable: "reliable",
+    amable: "kind",
+    puntual: "on time",
+    creativo: "creative",
+    equipo: "teamwork",
+    comunicativo: "communicative",
+    organizado: "organized",
+    proactivo: "proactive",
+  },
 };
 
 type Rama<T> = {
@@ -2170,6 +2187,23 @@ export const es: Rama<typeof en> = {
     guardar: "Guardar",
     guardado: "Guardado.",
     noGuarda: "No se pudo guardar. Inténtalo de nuevo.",
+  },
+  perfil: {
+    titulo: "Perfil del voluntario",
+    subtitulo: "Estas palabras las eliges tú. Nadie te califica y no hay puntaje.",
+    experiencia: "Tu experiencia (opcional)",
+    etiquetas: "Etiquetas, máximo 5",
+    guardar: "Guardar",
+    guardado: "Guardado.",
+    noGuarda: "No se pudo guardar. Inténtalo de nuevo.",
+    responsable: "responsable",
+    amable: "amable",
+    puntual: "puntual",
+    creativo: "creativo",
+    equipo: "trabajo en equipo",
+    comunicativo: "comunicativo",
+    organizado: "organizado",
+    proactivo: "proactivo",
   },
 };
 

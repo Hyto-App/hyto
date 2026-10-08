@@ -11,6 +11,9 @@ export const usuarios = pgTable("usuarios", {
   empresaActividad: text("empresa_actividad"),
   empresaDescripcion: text("empresa_descripcion"),
   empresaFoto: text("empresa_foto"),
+  // Volunteer profile. Only read when HYTO_PERFIL_VOLUNTARIO is on.
+  experiencia: text("experiencia"),
+  etiquetas: text("etiquetas"),
 });
 
 // A community is an organization. It does not replace the per-event role.

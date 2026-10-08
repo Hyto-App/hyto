@@ -15,7 +15,9 @@ import { vistaAdmin } from "@/lib/admin/vista";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
+import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { iniciales } from "@/components/ui/Marca";
 import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
 
@@ -28,7 +30,7 @@ export function Bandeja({
   miembros = [],
 }: {
   proyectoId?: string;
-  miembros?: { usuarioId: string; email: string }[];
+  miembros?: { usuarioId: string; email: string; ficha?: Ficha }[];
 }) {
   const t = useTexto();
   const claro = useClaro();
@@ -266,6 +268,7 @@ export function Bandeja({
                       </select>
                     </label>
                   ) : null}
+                  {seleccion ? <FichaVoluntario ficha={miembros.find((persona) => persona.usuarioId === seleccion.miembroId)?.ficha ?? { experiencia: null, etiquetas: [] }} /> : null}
                   <Link href={`/revision/${seleccion.id}`} className="hyto-btn mt-5">
                     {t("bandeja.review")}
                   </Link>
