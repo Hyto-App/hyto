@@ -11,6 +11,10 @@ export type IdAtajo = (typeof ATAJOS)[number]["id"];
 
 export const PREGUNTAS = [
   "pago",
+  "fondear",
+  "costos",
+  "sinPagar",
+  "orgReembolso",
   "evidencia",
   "mile",
   "unirse",

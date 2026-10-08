@@ -139,6 +139,9 @@ test("la tarjeta de Cuenta agrega la llave de acceso y dice cómo usarla en otro
       }),
     );
     assert.match(texto(), /Use Hyto on other devices/);
+    assert.match(texto(), /Your sign-in is saved only on this device\. Add a passkey so you don't lose your account\./);
+    assert.equal(document.querySelector(".hyto-passkey [role='note']")?.textContent?.includes("Add a passkey"), true);
+    assert.doesNotMatch(texto(), /account key lives only in this browser/);
     await pulsar("Add a passkey");
     await act(async () => {
       await Promise.resolve();

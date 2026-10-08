@@ -65,6 +65,22 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "cuenta.pasaporteDetalle"), "Registra la participación y los logros en el ecosistema Stellar.");
   assert.equal(texto("en", "cuenta.pasaporteAbrir"), "Open Stellar Passport");
   assert.equal(texto("es", "cuenta.pasaporteAbrir"), "Abrir Stellar Passport");
+  assert.equal(
+    texto("en", "cuenta.passkeyDetalle"),
+    "Your sign-in is saved only on this device. Add a passkey so you don't lose your account.",
+  );
+  assert.equal(
+    texto("es", "cuenta.passkeyDetalle"),
+    "Tu acceso está guardado solo en este dispositivo. Agregá una passkey para no perder tu cuenta.",
+  );
+  assert.equal(texto("en", "cuenta.saldoHyto"), "Your Hyto balance");
+  assert.equal(texto("es", "cuenta.saldoHyto"), "Tu saldo en Hyto");
+  assert.equal(texto("en", "cuenta.cobroTitulo"), "How you get your money");
+  assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir tu dinero");
+  assert.equal(texto("en", "revision.technical"), "Advanced");
+  assert.equal(texto("es", "revision.technical"), "Avanzado");
+  assert.equal(texto("en", "revision.yourAccount", { direccion: "G…AAAA" }), "Payment account ID (for support): G…AAAA");
+  assert.equal(texto("es", "revision.yourAccount", { direccion: "G…AAAA" }), "ID de tu cuenta de pagos (para soporte): G…AAAA");
   assert.equal(texto("en", "evidencia.uploaded"), "Photo uploaded successfully");
   assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
   assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your photo already reached the organizer");

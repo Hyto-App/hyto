@@ -37,13 +37,23 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     });
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
-    assert.match(texto(), /Add a wallet to see your USDC/);
-    assert.match(texto(), /Stellar Passport/);
-    assert.match(texto(), /participation and achievements in the Stellar ecosystem/);
-    const pasaporte = document.querySelector("a[href='https://demo.stellarpassport.xyz/auth/signup']");
+    assert.match(texto(), /Your Hyto balance: —/);
+    assert.match(texto(), /Sign in to see your Hyto balance/);
+    assert.match(texto(), /How you get your money/);
+    assert.match(texto(), /practice money/);
+    assert.match(texto(), /Your sign-in is saved only on this device/);
+    assert.doesNotMatch(texto(), /account key lives only in this browser/);
+    const avanzado = document.querySelector("details");
+    assert.ok(avanzado);
+    assert.equal(avanzado.hasAttribute("open"), false);
+    assert.match(avanzado.textContent ?? "", /Stellar Passport/);
+    assert.match(avanzado.textContent ?? "", /participation and achievements in the Stellar ecosystem/);
+    const pasaporte = avanzado.querySelector("a[href='https://demo.stellarpassport.xyz/auth/signup']");
     assert.equal(pasaporte?.textContent, "Open Stellar Passport");
     assert.equal(pasaporte?.getAttribute("target"), "_blank");
     assert.equal(pasaporte?.getAttribute("rel"), "noreferrer");
+    const visible = texto().replace(avanzado.textContent ?? "", "");
+    assert.doesNotMatch(visible, /Stellar Passport|explorer|account key|USDC/);
     assert.match(texto(), /US\$0/);
     assert.equal(texto().includes("Demo sample"), false);
     assert.equal(document.querySelectorAll(".hyto-logro.is-on").length, 0);
@@ -73,8 +83,15 @@ test("una wallet ausente pide Get ready to be paid", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /not on the test network yet/);
+    assert.match(texto(), /cannot receive a payment yet/);
     assert.match(texto(), /Get ready to be paid/);
+    const avanzado = document.querySelector("details");
+    assert.equal(avanzado?.hasAttribute("open"), false);
+    assert.match(avanzado?.textContent ?? "", /Payment account ID \(for support\)/);
+    assert.match(avanzado?.textContent ?? "", new RegExp(WALLET.slice(0, 6)));
+    const visible = texto().replace(avanzado?.textContent ?? "", "");
+    assert.doesNotMatch(visible, new RegExp(WALLET.slice(0, 6)));
+    assert.doesNotMatch(visible, /explorer|Stellar Passport|USDC/);
   } finally {
     globalThis.fetch = original;
     await desmontar();
@@ -109,8 +126,11 @@ test("copiar la dirección pública confirma en el botón", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /US\$18\.50/);
-    const enlace = document.querySelector("a[href*='stellar.expert/explorer/testnet/account/']");
+    assert.match(texto(), /Your Hyto balance: US\$18\.50/);
+    assert.match(texto(), /Available now/);
+    const avanzado = document.querySelector("details");
+    assert.equal(avanzado?.hasAttribute("open"), false);
+    const enlace = avanzado?.querySelector("a[href*='stellar.expert/explorer/testnet/account/']");
     assert.equal(enlace?.getAttribute("href"), `https://stellar.expert/explorer/testnet/account/${encodeURIComponent(WALLET)}`);
     await pulsar("Copy address");
     assert.equal(copiado, WALLET);
