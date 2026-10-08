@@ -278,7 +278,7 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
-    assert.match(texto(), /Limit US\$15\. Confirm this amount before locking the budget\./);
+    assert.match(texto(), /Limit US\$15\.00\. Confirm this amount before locking the budget\./);
     assert.equal(texto().includes("deploy"), false);
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
@@ -542,7 +542,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
+    await esperar(() => texto().includes("Printed ₡6.900,00, converted at ₡505 per US dollar."));
     assert.match(texto(), /78% · Partially completed/);
     assert.match(texto(), /AI recommendation/);
     await confirmarPedir();
@@ -553,7 +553,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
     assert.match(texto(), /Amount on the receipt/);
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Printed ₡6\.900,00, converted at ₡505 per US dollar\./);
     assert.equal(texto().includes("78% · Partially completed"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -591,7 +591,7 @@ test("al recargar, el monto del recibo sigue en colones después de pedir otra f
     await esperar(() => texto().includes("Monto en el comprobante"));
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
-    assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
+    assert.match(texto(), /Impreso ₡6\.900,00, convertido a ₡505 por dólar\./);
     assert.equal(texto().includes("US$13.66"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -893,14 +893,13 @@ test("approve and pay shows US$2, the same amount as the rest of the screen", as
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => rotulo("Approve and pay"));
-    assert.match(texto(), /US\$2/);
+    assert.match(texto(), /US\$2\.00/);
     await pulsar("Approve and pay");
     const monto = document.querySelector(".hyto-dialogo-monto");
-    assert.equal(monto?.textContent, "US$2");
+    assert.equal(monto?.textContent, "US$2.00");
     assert.equal(monto?.querySelector("small"), null);
-    assert.equal(document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn")?.textContent, "Pay US$2");
+    assert.equal(document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn")?.textContent, "Pay US$2.00");
     assert.equal(texto().includes("USDC"), false);
-    assert.equal(texto().includes("2.00"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -974,7 +973,7 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Printed ₡6\.900,00, converted at ₡505 per US dollar\./);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;
@@ -1026,7 +1025,7 @@ test("a receipt above the cap prefills the cap and shows the overage note", asyn
     await esperar(() => Boolean(document.querySelector("#monto-confirmado")));
     const campo = document.querySelector("#monto-confirmado") as HTMLInputElement;
     assert.equal(campo.value, "15");
-    assert.match(texto(), /above the US\$15 cap/);
+    assert.match(texto(), /above the US\$15\.00 cap/);
     assert.match(texto(), /US\$15\.74/);
   } finally {
     globalThis.fetch = anterior;

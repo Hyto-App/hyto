@@ -46,7 +46,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearColones, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -632,8 +632,10 @@ export function Revision({
                     {tarea.montoRevisado && tarea.lectura.moneda && tarea.lectura.tasa
                       ? t("revision.printedConverted", {
                           monto: tarea.lectura.montoOriginal,
-                          tasa: String(tarea.lectura.tasa),
-                          moneda: tarea.lectura.moneda,
+                          tasa:
+                            tarea.lectura.moneda === "CRC"
+                              ? formatearColones(tarea.lectura.tasa, idioma)
+                              : String(tarea.lectura.tasa),
                         })
                       : t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
                   </dd>

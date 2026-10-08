@@ -621,7 +621,7 @@ export const en = {
     mileNo: "Mile is unavailable. No AI score for this photo.",
     amountReceipt: "Amount on the receipt",
     notShown: "Not shown",
-    printedConverted: "Printed {monto}, converted at {tasa} {moneda} per US dollar.",
+    printedConverted: "Printed {monto}, converted at {tasa} per US dollar.",
     printedNotConverted: "Printed {monto}. No currency Hyto can convert, so it was not converted to US dollars.",
     printedDate: "Printed {fecha}, which could not be read as a date.",
     amountToPay: "Amount to pay",
@@ -1041,7 +1041,7 @@ export const en = {
       "Open the review for that task and tap Lock budget. That sets the task amount aside from your Hyto balance. It does not pay the person yet. You pay from that same review after you approve the photo. Your balance has to cover the amount plus one extra US dollar. Hyto does not keep that extra dollar.",
     costosQ: "What does it cost to pay a task?",
     costosA:
-      "The payment processor charges a 0.3% fee, and that fee comes out of what the person who gets paid receives. If you set aside US$2, they receive US$1.99 (US$2 minus a US$0.01 fee). If you set aside US$12.48, they receive US$12.44 (US$12.48 minus a US$0.04 fee).",
+      "The payment processor charges a 0.3% fee, and that fee comes out of what the person who gets paid receives. If you set aside US$2.00, they receive US$1.99 (US$2.00 minus a US$0.01 fee). If you set aside US$12.48, they receive US$12.44 (US$12.48 minus a US$0.04 fee).",
     sinPagarQ: "What if I set money aside and I don't pay?",
     sinPagarA:
       "There is no button that returns that money to your Hyto balance. After you set an amount aside, it stays with the task until you pay it. This screen does not send it anywhere else.",
@@ -1797,7 +1797,7 @@ export const es: Rama<typeof en> = {
     mileNo: "Mile no está disponible. No hay puntaje de IA para esta foto.",
     amountReceipt: "Monto en el comprobante",
     notShown: "No aparece",
-    printedConverted: "Impreso {monto}, convertido a {tasa} {moneda} por dólar.",
+    printedConverted: "Impreso {monto}, convertido a {tasa} por dólar.",
     printedNotConverted: "Impreso {monto}. No tiene una moneda que Hyto pueda convertir, así que no se pasó a dólares.",
     printedDate: "Impreso {fecha}, que no se pudo leer como fecha.",
     amountToPay: "Monto a pagar",
@@ -2217,7 +2217,7 @@ export const es: Rama<typeof en> = {
       "Abra la revisión de esa tarea y toque Bloquear presupuesto. Eso aparta el monto de la tarea de su saldo en Hyto. Todavía no le paga a la persona. Paga desde esa misma revisión después de aprobar la foto. Su saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
     costosQ: "¿Cuánto cuesta pagar una tarea?",
     costosA:
-      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si apartas US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01). Si apartas US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
+      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si apartas US$2,00, esa persona recibe US$1,99 (US$2,00 menos comisión de US$0,01). Si apartas US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
     sinPagarQ: "¿Qué pasa si aparto el dinero y no pago?",
     sinPagarA:
       "No hay un botón que devuelva ese dinero a su saldo en Hyto. Después de apartar un monto, se queda en la tarea hasta que lo pague. Esta pantalla no lo envía a ningún otro lado.",

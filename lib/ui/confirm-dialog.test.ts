@@ -58,10 +58,9 @@ test("the dialog opens, cancel does not call the action, confirm calls it once",
   await pulsar("Open it");
   assert.equal(dialogo().open, true);
   const monto = document.querySelector(".hyto-dialogo-monto");
-  assert.equal(monto?.textContent, "US$20");
+  assert.equal(monto?.textContent, "US$20.00");
   assert.equal(monto?.querySelector("small"), null);
   assert.equal(texto().includes("USDC"), false);
-  assert.equal(texto().includes("20.00"), false);
   assert.match(texto(), /This can't be undone\./);
   await pulsar("Cancel");
   assert.equal(llamadas, 0);

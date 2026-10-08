@@ -102,7 +102,7 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
     assert.match(texto(), /You were paid/);
     // US$20 funded, minus the 0.3% protocol fee, shown in cents.
     assert.match(texto(), /\+US\$19\.94/);
-    assert.match(texto(), /US\$19\.94 \(US\$20 minus a US\$0\.06 fee\)/);
+    assert.match(texto(), /US\$19\.94 \(US\$20\.00 minus a US\$0\.06 fee\)/);
     assert.equal(texto().includes(FRASE_PAGO), false);
     assert.equal(texto().includes("84%"), false);
 
