@@ -5,7 +5,8 @@ import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
-import { CLAVES_LECTURA, leerLectura } from "./lectura";
+import { faltanteEnIdioma, idiomaDelTexto, redactarLectura } from "@/lib/ui/prosa-idioma";
+import { CLAVES_LECTURA, leerLectura, type LecturaEvidencia } from "./lectura";
 
 export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
 
@@ -93,7 +94,7 @@ export function leerDescripcion(texto: string, contexto: ContextoPedido = {}): D
   }
   if (!json || typeof json !== "object" || Array.isArray(json)) return null;
   const crudo = json as Record<string, unknown>;
-  const lectura = leerLectura(crudo, { pedido: contexto.condicion ?? null });
+  const lectura = alinearLectura(leerLectura(crudo, { pedido: contexto.condicion ?? null }), contexto.idioma);
   if (lectura) {
     return { texto: lectura.textoCompleto, monto: lectura.montoUsd, fecha: lectura.fecha, lectura };
   }
@@ -104,6 +105,20 @@ export function leerDescripcion(texto: string, contexto: ContextoPedido = {}): D
     monto: montoDe(crudo.monto),
     fecha: fechaDe(crudo.fecha),
   };
+}
+
+/** Keeps a description the model already wrote in the session language. Rewrites one that came back in the other language. */
+function alinearLectura(
+  lectura: LecturaEvidencia | null,
+  idioma: "en" | "es" | undefined,
+): LecturaEvidencia | null {
+  if (!lectura || !idioma) return lectura;
+  const faltantes = lectura.faltantes.map((item) => faltanteEnIdioma(item, idioma));
+  const detectado = idiomaDelTexto(lectura.textoCompleto);
+  const mismaLista = faltantes.length === lectura.faltantes.length && faltantes.every((item, i) => item === lectura.faltantes[i]);
+  if (!detectado || detectado === idioma) return mismaLista ? lectura : { ...lectura, faltantes };
+  const base = { ...lectura, faltantes };
+  return { ...base, textoCompleto: redactarLectura(base, idioma) };
 }
 
 function montoDe(valor: unknown): string | null {

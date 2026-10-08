@@ -4,6 +4,7 @@ import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import type { EstadoTarea } from "@/lib/integrante/tipos";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
+import { alinearFraseMile } from "@/lib/ui/prosa-idioma";
 
 const ESTADOS: Record<EstadoTarea, Clave> = {
   pendiente: "estados.pendiente",
@@ -133,6 +134,6 @@ export function textoVisible(valor: string | null | undefined, idioma: Idioma = 
         evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
       });
     });
-  if (idioma !== "es" || !frase.includes(MOTIVO_COPIA)) return frase;
-  return frase.replaceAll(MOTIVO_COPIA, texto("es", "revision.copia"));
+  const conCopia = idioma === "es" && frase.includes(MOTIVO_COPIA) ? frase.replaceAll(MOTIVO_COPIA, texto("es", "revision.copia")) : frase;
+  return alinearFraseMile(conCopia, idioma);
 }

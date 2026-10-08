@@ -246,3 +246,29 @@ test("cumple_reglas se guarda y una regla rota entra al texto de Laya", () => {
   })) ?? {});
   assert.equal(guardada?.cumpleReglas, false);
 });
+
+test("con la sesión en español, la descripción del recibo se guarda en español", () => {
+  const descripcion = leerDescripcion(
+    JSON.stringify({ ...LITTLE_CAESARS, faltantes: ["the date"] }),
+    { idioma: "es", tipoTarea: "reembolso" },
+  );
+  assert.ok(descripcion);
+  assert.match(descripcion.texto, /La foto muestra un recibo de Little Caesars/);
+  assert.match(descripcion.texto, /Pepperoni pizza/);
+  assert.match(descripcion.texto, /₡7\.350,00/);
+  assert.match(descripcion.texto, /02\/10\/2026/);
+  assert.match(descripcion.texto, /Falta en la foto: la fecha/);
+  assert.doesNotMatch(descripcion.texto, /\b(The|receipt|date)\b/);
+  assert.equal(descripcion.monto, "14.55");
+  assert.equal(descripcion.lectura?.faltantes[0], "la fecha");
+
+  const ya = leerDescripcion(
+    JSON.stringify({
+      ...LITTLE_CAESARS,
+      texto_completo:
+        "La foto muestra un recibo de Little Caesars. El total impreso es ₡7.350,00. La fecha impresa es 02/10/2026.",
+    }),
+    { idioma: "es" },
+  );
+  assert.match(ya?.texto ?? "", /^La foto muestra un recibo de Little Caesars/);
+});

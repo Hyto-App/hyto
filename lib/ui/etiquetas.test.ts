@@ -36,6 +36,16 @@ test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(textoNota(etiquetaVeredicto("parcial", "es"), 64), "64% · Parcialmente completado");
   assert.equal(textoVisible("Set up the booth", "es"), "Montar el stand");
   assert.equal(textoVisible("Montar el stand", "es"), "Montar el stand");
+  const ingles =
+    "A Soda La Esquina receipt for ₡6.900,00. The top is torn off, so there is no date. Category receipt, grade 64%.";
+  const visible = textoVisible(ingles, "es");
+  assert.match(visible, /recibo de Soda La Esquina/);
+  assert.match(visible, /₡6\.900,00/);
+  assert.match(visible, /No se ve la fecha/);
+  assert.match(visible, /Categoría recibo, nota 64%/);
+  assert.doesNotMatch(visible, /Use a phone|passkey|Category receipt/i);
+  assert.match(textoVisible(ingles, "en"), /Category receipt, grade 64%/);
+  assert.match(textoVisible(ingles, "en"), /Soda La Esquina receipt/);
 });
 
 test("estadoConFoto keeps a pending task pending when a photo exists", () => {

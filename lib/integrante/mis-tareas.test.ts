@@ -103,6 +103,10 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Booth") && texto().includes("Blank"));
+    assert.match(texto(), /US\$29\.91/);
+    assert.match(texto(), /Paid · US\$29\.91/);
+    assert.doesNotMatch(texto(), /in your wallet|USDC earned|en tu billetera/);
+    assert.equal(document.querySelector(".hyto-monto small"), null);
 
     await pulsar("Sort");
     const orden = document.querySelector("[aria-label='Sort tasks']");

@@ -76,3 +76,33 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo didn't pass Mile's check");
   assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta foto no pasó la revisión de Mile");
 });
+
+const VOSEO =
+  /\b(agregá|tenés|podés|querés|sabés|sos|debés|hacés|ganás|confirmá|revisá|mirá|andá|tocá|usá|guardá|elegí|probá|entrá|abrí|poné|decí|pasá|seguí|volvé|cambiá|creá|firmá|pagá|cobrá|subí|bajá|mandá|sacá|dejá|llevá|traé|mostrá|esperá|cancelá|compartí|escaneá|iniciá|fijate|decime|hacé)\b/i;
+
+test("el español usa tú y llave de acceso, y el ingreso no mezcla jerga", () => {
+  for (const clave of rutas(es)) {
+    const valor = leerTexto("es", clave);
+    assert.doesNotMatch(valor, /\bpasskey\b/i, clave);
+    assert.doesNotMatch(valor, /Use a phone or tablet|Create passkey|Use passkey/i, clave);
+    assert.doesNotMatch(valor, VOSEO, clave);
+  }
+  assert.equal(texto("es", "entrar.titleSignUp"), "Crea tu cuenta en Hyto");
+  assert.equal(texto("es", "entrar.createAccount"), "Crear cuenta");
+  assert.equal(texto("en", "entrar.titleSignUp"), "Create your Hyto account");
+  assert.equal(texto("en", "entrar.createAccount"), "Create account");
+  assert.equal(texto("en", "entrar.dialogSignUp"), "Create account");
+  assert.equal(texto("en", "entrar.mile.code"), "Your code is here.");
+  assert.equal(texto("es", "entrar.mile.code"), "Tu código ya está aquí.");
+  assert.equal(texto("en", "entrar.legal"), "You sign in with your email. That opens the account you already have.");
+  assert.equal(texto("en", "entrar.legalSignUp"), "You sign in with your email. We create your Hyto account so you can get paid.");
+  assert.equal(texto("es", "entrar.legalSignUp"), "Entras con tu correo. Creamos tu cuenta de Hyto para que puedas cobrar.");
+  assert.doesNotMatch(texto("en", "entrar.legalSignUp"), /hold your payment|Sign-in by Cavos|wallet/i);
+  assert.doesNotMatch(texto("es", "entrar.legalSignUp"), /guardar tu pago|Cavos|billetera/i);
+  assert.match(texto("es", "cuenta.passkeyTelefono"), /Usar un teléfono o una tablet/);
+  assert.match(texto("es", "guiaPasskey.paso3"), /Usar un teléfono o una tablet/);
+  assert.equal(texto("en", "tareas.paidNote", { amount: "US$12.44" }), "Paid · US$12.44");
+  assert.equal(texto("es", "tareas.paidNote", { amount: "US$12.44" }), "Pagada · US$12.44");
+  assert.doesNotMatch(texto("en", "tareas.paidNote", { amount: "US$12" }), /wallet|USDC/i);
+  assert.doesNotMatch(texto("es", "tareas.paidNote", { amount: "US$12" }), /billetera|USDC/i);
+});
