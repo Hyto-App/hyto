@@ -626,7 +626,7 @@ test("pedir otra foto confirma el envío en español", async () => {
     await esperar(() => texto().includes("Pendiente"));
     const aviso = document.querySelector(".hyto-pedir-listo");
     assert.equal(aviso?.getAttribute("role"), "status");
-    assert.equal(aviso?.textContent, "Pediste otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
+    assert.equal(aviso?.textContent, "Pidió otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
     assert.equal(aviso?.id, "bloqueo-foto");
     assert.equal(texto().includes("Esperando una foto nueva"), false);
   } finally {
@@ -703,7 +703,7 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
     await esperar(() => texto().includes("No se pudo enviar. Revise su conexión e intente de nuevo."));
     assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revise su conexión e intente de nuevo.");
     assert.match(texto(), /64% · Parcialmente completado/);
-    assert.equal(texto().includes("Pediste otra foto"), false);
+    assert.equal(texto().includes("Pidió otra foto"), false);
     assert.equal(texto().includes("Pendiente"), false);
   } finally {
     globalThis.fetch = anterior;
