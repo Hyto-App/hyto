@@ -59,7 +59,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
       : "",
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
     (espanol
-      ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
+      ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. If you address the reader, use formal usted, never tú or vos. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
       : "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."),
     "legible: true if the photo is sharp and clear enough to judge. false if it is blurry, too dark, or cut off.",
     "pais: the country as a two-letter ISO code, such as CR for Costa Rica, only if the photo shows it (an address, a phone code, a tax id, or the currency). Otherwise null.",
@@ -70,7 +70,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     "comercio: the store or business name, or null.",
     "articulos: a list of the items on the receipt, or of the main objects that prove the work. An empty list if there are none.",
     (espanol
-      ? "faltantes: a list of short phrases in Spanish only, never English, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."
+      ? "faltantes: a list of short phrases in Spanish only, never English, and in formal usted if they address the reader, never tú or vos, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."
       : "faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."),
   ]
     .filter(Boolean)

@@ -218,7 +218,7 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     const lecturasAntes = lecturas;
     await pulsar("Lock budget");
     await confirmarDialogo();
-    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
+    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step did not finish."));
     assert.match(texto(), /Budget not locked/);
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("No USDC left the escrow."), false);
@@ -700,8 +700,8 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
     await act(async () => {
       enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    await esperar(() => texto().includes("No se pudo enviar. Revisa tu conexión e intenta de nuevo."));
-    assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revisa tu conexión e intenta de nuevo.");
+    await esperar(() => texto().includes("No se pudo enviar. Revise su conexión e intente de nuevo."));
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revise su conexión e intente de nuevo.");
     assert.match(texto(), /64% · Parcialmente completado/);
     assert.equal(texto().includes("Pediste otra foto"), false);
     assert.equal(texto().includes("Pendiente"), false);
