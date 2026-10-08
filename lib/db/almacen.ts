@@ -1,4 +1,5 @@
 import type {
+  AvisoComunidad,
   Comunidad,
   ComunidadMiembro,
   ComunidadSolicitud,
@@ -92,4 +93,8 @@ export type Almacen = {
   crearSolicitudComunidad(solicitud: ComunidadSolicitud): Promise<void>;
   actualizarSolicitudComunidad(id: string, estado: EstadoSolicitudComunidad): Promise<void>;
   fijarComunidadProyecto(proyectoId: string, comunidadId: string | null): Promise<void>;
+  listarAvisosComunidad(comunidadId: string): Promise<AvisoComunidad[]>;
+  crearAvisoComunidad(aviso: AvisoComunidad): Promise<void>;
+  /** Assigns the task only while miembro_id is still empty. */
+  tomarTarea(tareaId: string, usuarioId: string): Promise<boolean>;
 };

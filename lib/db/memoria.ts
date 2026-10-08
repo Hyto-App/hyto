@@ -2,6 +2,7 @@ import { distanciaHamming } from "@/lib/evidencia/huella";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import type {
+  AvisoComunidad,
   Comunidad,
   ComunidadMiembro,
   ComunidadSolicitud,
@@ -29,6 +30,7 @@ export function crearMemoria(): Almacen {
   const comunidades = new Map<string, Comunidad>();
   const miembrosComunidad = new Map<string, ComunidadMiembro>();
   const solicitudesComunidad = new Map<string, ComunidadSolicitud>();
+  const avisosComunidad = new Map<string, AvisoComunidad>();
 
   function claveMiembro(proyectoId: string, usuarioId: string): string {
     return `${proyectoId}:${usuarioId}`;
@@ -271,6 +273,20 @@ export function crearMemoria(): Almacen {
     async fijarComunidadProyecto(proyectoId, comunidadId) {
       const actual = proyectos.get(proyectoId);
       if (actual) proyectos.set(proyectoId, { ...actual, comunidadId });
+    },
+    async listarAvisosComunidad(comunidadId) {
+      return [...avisosComunidad.values()]
+        .filter((aviso) => aviso.comunidadId === comunidadId)
+        .sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
+    },
+    async crearAvisoComunidad(aviso) {
+      avisosComunidad.set(aviso.id, aviso);
+    },
+    async tomarTarea(id, usuarioId) {
+      const actual = tareas.get(id);
+      if (!actual || actual.miembroId !== "") return false;
+      tareas.set(id, { ...actual, miembroId: usuarioId });
+      return true;
     },
   };
 }

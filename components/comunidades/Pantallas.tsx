@@ -183,7 +183,7 @@ export function FormularioComunidad() {
   );
 }
 
-export function PaginaComunidad({ id }: { id: string }) {
+export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mostrarTablon?: boolean }) {
   const t = useTexto();
   const [detalle, setDetalle] = useState<Detalle | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -292,6 +292,7 @@ export function PaginaComunidad({ id }: { id: string }) {
       ) : (
         <p className="mt-6 text-sm">{t("comunidades.yaMiembro")}</p>
       )}
+      {mostrarTablon && detalle.membresia ? <Tablon comunidadId={id} /> : null}
       <h2 className="mt-8 text-lg font-medium">{t("comunidades.miembros")}</h2>
       <ul className="mt-3 grid gap-2">
         {detalle.miembros.map((miembro) => (
@@ -364,6 +365,83 @@ export function PaginaComunidad({ id }: { id: string }) {
         </section>
       ) : null}
     </main>
+  );
+}
+
+type AvisoVista = {
+  id: string;
+  tipo: "disponible" | "asignada" | "completada";
+  titulo: string;
+  nombre: string | null;
+  tareaId: string | null;
+  libre: boolean;
+};
+
+function fraseAviso(
+  t: (clave: "tablon.disponible" | "tablon.asignada" | "tablon.completada", vars?: Record<string, string | number>) => string,
+  aviso: AvisoVista,
+): string {
+  if (aviso.tipo === "asignada") return t("tablon.asignada", { titulo: aviso.titulo, nombre: aviso.nombre ?? "" });
+  if (aviso.tipo === "completada") return t("tablon.completada", { titulo: aviso.titulo });
+  return t("tablon.disponible", { titulo: aviso.titulo });
+}
+
+function Tablon({ comunidadId }: { comunidadId: string }) {
+  const t = useTexto();
+  const [avisos, setAvisos] = useState<AvisoVista[] | null>(null);
+  const [nota, setNota] = useState<string | null>(null);
+
+  async function cargar() {
+    const respuesta = await fetch(`/api/comunidades/${encodeURIComponent(comunidadId)}/tablon`, { cache: "no-store" });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { avisos?: AvisoVista[] } | null;
+    if (!respuesta.ok) {
+      setNota(t("tablon.noCarga"));
+      setAvisos([]);
+      return;
+    }
+    setAvisos(cuerpo?.avisos ?? []);
+    setNota(null);
+  }
+
+  useEffect(() => {
+    void cargar();
+    // comunidadId is the only input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comunidadId]);
+
+  async function tomar(tareaId: string) {
+    const respuesta = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/tomar`, { method: "POST" });
+    if (respuesta.status === 409) {
+      setNota(t("tablon.tomada"));
+      await cargar();
+      return;
+    }
+    if (!respuesta.ok) {
+      setNota(t("tablon.noToma"));
+      return;
+    }
+    await cargar();
+  }
+
+  return (
+    <section className="mt-8" aria-label={t("tablon.titulo")}>
+      <h2 className="text-lg font-medium">{t("tablon.titulo")}</h2>
+      <p className="mt-1 text-sm text-[var(--suave)]">{t("tablon.subtitulo")}</p>
+      {nota ? <p className="mt-3 text-sm">{nota}</p> : null}
+      {avisos && avisos.length === 0 ? <p className="mt-3 text-sm text-[var(--suave)]">{t("tablon.vacio")}</p> : null}
+      <ul className="mt-3 grid gap-2">
+        {(avisos ?? []).map((aviso) => (
+          <li key={aviso.id} className="hyto-card flex flex-wrap items-center justify-between gap-3">
+            <p>{fraseAviso(t, aviso)}</p>
+            {aviso.libre && aviso.tareaId ? (
+              <button type="button" className="hyto-btn is-inline" onClick={() => void tomar(aviso.tareaId!)}>
+                {t("tablon.tomar")}
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -9,10 +9,10 @@ import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
 import { consultaPhashCercano } from "./sql";
-import { comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { comunidadAvisos, comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import type { Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, VeredictoFila } from "./tipos";
+import type { AvisoComunidad, Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoAviso, TipoInvitacion, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
 const schema = {
@@ -27,6 +27,7 @@ const schema = {
   comunidades,
   comunidadMiembros,
   comunidadSolicitudes,
+  comunidadAvisos,
 };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
@@ -603,6 +604,21 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       if (!comunidadesActivas()) return;
       await db.update(proyectos).set({ comunidadId }).where(eq(proyectos.id, proyectoId));
     },
+    async listarAvisosComunidad(comunidadId) {
+      const filas = await db.select().from(comunidadAvisos).where(eq(comunidadAvisos.comunidadId, comunidadId));
+      return filas.map(avisoDesde).sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
+    },
+    async crearAvisoComunidad(aviso) {
+      await db.insert(comunidadAvisos).values(aviso);
+    },
+    async tomarTarea(id, usuarioId) {
+      const filas = await db
+        .update(tareas)
+        .set({ miembroId: usuarioId })
+        .where(and(eq(tareas.id, id), eq(tareas.miembroId, "")))
+        .returning({ id: tareas.id });
+      return filas.length > 0;
+    },
   };
 }
 
@@ -688,6 +704,23 @@ function solicitudDesde(fila: typeof comunidadSolicitudes.$inferSelect): Comunid
     estado: estadoSolicitudDe(fila.estado),
     creadoEn: fila.creadoEn,
   };
+}
+
+function avisoDesde(fila: typeof comunidadAvisos.$inferSelect): AvisoComunidad {
+  return {
+    id: fila.id,
+    comunidadId: fila.comunidadId,
+    tipo: tipoAvisoDe(fila.tipo),
+    titulo: fila.titulo,
+    nombre: fila.nombre,
+    tareaId: fila.tareaId,
+    creadoEn: fila.creadoEn,
+  };
+}
+
+function tipoAvisoDe(valor: string): TipoAviso {
+  if (valor === "asignada" || valor === "completada") return valor;
+  return "disponible";
 }
 
 function rolComunidadDe(valor: string): RolComunidad {

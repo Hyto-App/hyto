@@ -1059,6 +1059,18 @@ export const en = {
     noGuarda: "Could not save that. Try again.",
     codigoInvalido: "That code is not valid.",
   },
+  tablon: {
+    titulo: "Bulletin",
+    subtitulo: "Automatic notices. Nobody writes here.",
+    vacio: "No notices yet.",
+    disponible: "New task available: {titulo}, the first person who can takes it.",
+    asignada: "Task {titulo} was assigned to {nombre}.",
+    completada: "Task completed: {titulo}",
+    tomar: "Take task",
+    tomada: "Someone already took this task.",
+    noToma: "Could not take the task.",
+    noCarga: "Could not load the bulletin.",
+  },
 };
 
 type Rama<T> = {
@@ -2118,6 +2130,18 @@ export const es: Rama<typeof en> = {
     noCarga: "No se pudieron cargar las comunidades.",
     noGuarda: "No se pudo guardar. Inténtalo de nuevo.",
     codigoInvalido: "Ese código no es válido.",
+  },
+  tablon: {
+    titulo: "Tablón",
+    subtitulo: "Avisos automáticos. Nadie escribe aquí.",
+    vacio: "Todavía no hay avisos.",
+    disponible: "Nueva tarea disponible: {titulo}, la toma el primero que pueda",
+    asignada: "La tarea {titulo} se le asignó a {nombre}",
+    completada: "Tarea completada: {titulo}",
+    tomar: "Tomar tarea",
+    tomada: "Esta tarea ya tiene dueño.",
+    noToma: "No se pudo tomar la tarea.",
+    noCarga: "No se pudo cargar el tablón.",
   },
 };
 
