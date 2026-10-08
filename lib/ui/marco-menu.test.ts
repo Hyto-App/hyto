@@ -111,6 +111,26 @@ test("el organizador ve sus secciones arriba y Eventos va primero en el móvil",
   }
 });
 
+test("subir evidencia conserva la navegación y la revisión sigue enfocada", async () => {
+  limpiarPantalla();
+  try {
+    await montar(createElement(Marco, { children: createElement("p", null, "tarea") }), { ruta: "/tareas/stand", push: () => undefined });
+    assert.equal(document.querySelector(".hyto-shell-foco"), null);
+    assert.ok(document.querySelector(".hyto-nav-movil"));
+    assert.ok(document.querySelector('a[href="/mis-tareas"]'));
+    await desmontar();
+    await montar(createElement(Marco, { children: createElement("p", null, "lista") }), { ruta: "/mis-tareas", push: () => undefined });
+    assert.equal(document.querySelector(".hyto-shell-foco"), null);
+    assert.ok(document.querySelector(".hyto-nav-movil"));
+    await desmontar();
+    await montar(createElement(Marco, { children: createElement("p", null, "revision") }), { ruta: "/revision/stand", push: () => undefined });
+    assert.ok(document.querySelector(".hyto-shell-foco"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("el enlace de comunidades solo aparece con el interruptor encendido", async () => {
   limpiarPantalla();
   try {

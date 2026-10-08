@@ -494,6 +494,11 @@ export const en = {
     mileWhy: "That way it reaches the organizer complete and you get paid faster.",
     cameraOff: "Camera off. Turn it on to take the photo.",
     galleryHint: "Take it now with the camera: old gallery photos are not accepted.",
+    noCameraLead: "This computer has no camera",
+    noCameraBody:
+      "The photo of the real work is taken at the moment. Old gallery photos are not accepted. Scan the code and continue this same task on your phone.",
+    noCameraQr: "QR code to open this task on your phone",
+    noCameraLink: "Open this task on your phone",
     onePhoto: "1 photo",
     sendEvidence: "Send evidence",
     takePhotoFirst: "Take the photo first",
@@ -1618,6 +1623,11 @@ export const es: Rama<typeof en> = {
     mileWhy: "Así llega completa al organizador y te pagan más rápido.",
     cameraOff: "Cámara apagada. Actívala para tomar la foto.",
     galleryHint: "Tómala ahora con la cámara: no se aceptan fotos viejas de la galería.",
+    noCameraLead: "Esta computadora no tiene cámara",
+    noCameraBody:
+      "La foto del trabajo real se toma en el momento. No se aceptan fotos viejas de la galería. Escanea el código y sigue esta misma tarea en el celular.",
+    noCameraQr: "Código QR para abrir esta tarea en el celular",
+    noCameraLink: "Abre esta tarea en el celular",
     onePhoto: "1 foto",
     sendEvidence: "Enviar evidencia",
     takePhotoFirst: "Primero toma la foto",
