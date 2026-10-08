@@ -298,6 +298,77 @@ test("una foto en revisión ya vieja ofrece reintentar", async () => {
   }
 });
 
+test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que le van a pagar", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "comida",
+            proyectoId: "uno",
+            titulo: "Meal",
+            tipo: "reembolso",
+            monto: "0.25",
+            tope: "0.25",
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: 79,
+            veredicto: "parcial",
+            montoRevisado: "0.30",
+            montoConfirmado: null,
+            notas: [
+              {
+                id: "over_cap",
+                texto: "Amount over the cap",
+                explicacion: "The amount is over the cap.",
+                severidad: "warning",
+                preguntas: [],
+              },
+            ],
+          },
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            rechazada: true,
+            rechazo: { nota: "The banner is cropped", fallidos: [], origen: "organizador" },
+            organizador: { nombre: "Ana" },
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Meal") && texto().includes("Booth"));
+    assert.match(texto(), /79%/);
+    assert.match(texto(), /Amount over the cap/);
+    assert.match(texto(), /Mile read US\$0\.30\. You'll be paid US\$0\.25\./);
+    assert.match(texto(), /The organizer asked for another photo/);
+    assert.match(texto(), /The banner is cropped/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 async function esperar(listo: () => boolean): Promise<void> {
   for (let i = 0; i < 25; i += 1) {
     if (listo()) return;

@@ -12,7 +12,7 @@ import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
 import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
-import { vistaAdmin } from "@/lib/admin/vista";
+import { puedeApartarSinEntrega, vistaAdmin } from "@/lib/admin/vista";
 import { lineaMontoTarea, montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
@@ -26,6 +26,32 @@ import type { Idioma } from "@/lib/ui/idioma";
 const PROTECCION_REINTENTO_MS = 8_000;
 
 type Filtro = "all" | "pagado" | Veredicto;
+
+function PendientesSinFoto({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: Idioma }) {
+  const t = useTexto();
+  if (tareas.length === 0) return null;
+  return (
+    <section className="mt-8" aria-labelledby="sin-foto">
+      <h2 id="sin-foto" className="text-lg font-semibold">
+        {t("bandeja.noPhotoYet")}
+      </h2>
+      <p className="mt-1 text-sm leading-6 text-[var(--suave)]">{t("bandeja.lockBefore")}</p>
+      <ul className="mt-3 grid gap-2">
+        {tareas.map((tarea) => (
+          <li key={tarea.id} className="hyto-row flex items-center justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
+              <span className="text-sm text-[var(--suave)]">{montoDeTarea(tarea, idioma)}</span>
+            </span>
+            <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
+              {t("pago.lockBudget")}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 function ListaPagadas({
   tareas,
@@ -178,6 +204,7 @@ export function Bandeja({
   }
 
   const pagadas = vista.tareas.filter((tarea) => tarea.estado === "pagado");
+  const sinEntrega = vista.ejemplo || filtro !== "all" ? [] : vista.tareas.filter(puedeApartarSinEntrega);
   const visibles = filtro === "all" || filtro === "pagado" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
   const fallidas = vista.ejemplo ? [] : vista.bandeja.filter((item) => item.origen === "error" && item.estado !== "pagado");
@@ -386,6 +413,8 @@ export function Bandeja({
           </>
         )}
       </section>
+
+      <PendientesSinFoto tareas={sinEntrega} idioma={idioma} />
 
       {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{claro(aviso)}</p> : null}
 

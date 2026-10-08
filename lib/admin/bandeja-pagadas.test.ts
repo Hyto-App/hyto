@@ -55,6 +55,69 @@ test("la bandeja deja ver una tarea pagada y abrir su revisión", async () => {
   }
 });
 
+test("una tarea pendiente sin foto ofrece bloquear el presupuesto", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/vista")) {
+      return json({
+        nombre: "Feria",
+        tareas: [
+          {
+            id: "stand",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "",
+            miembro: "Unassigned",
+            estado: "pendiente",
+            veredicto: null,
+            nota: null,
+            frase: null,
+            origen: null,
+            montoRevisado: null,
+            montoConfirmado: null,
+            hashPago: null,
+          },
+          {
+            id: "comida",
+            titulo: "Meal",
+            tipo: "reembolso",
+            monto: "15",
+            tope: "15",
+            condicion: "",
+            miembroId: "v",
+            miembro: "Ana",
+            estado: "pendiente",
+            veredicto: null,
+            nota: null,
+            frase: null,
+            origen: null,
+            montoRevisado: "12",
+            tipoArchivo: "image/jpeg",
+            hashPago: null,
+          },
+        ],
+      });
+    }
+    if (url.includes("/novedades")) return json({ cursor: "a".repeat(32), cambios: [] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Bandeja, { proyectoId: "evt" }));
+    await esperar(() => texto().includes("No photo yet"));
+    assert.match(texto(), /You can set this amount aside before a photo arrives/);
+    const enlace = document.querySelector('a[href="/revision/stand"]');
+    assert.equal(enlace?.textContent, "Lock budget");
+    assert.equal(document.querySelector('a[href="/revision/comida"]'), null);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,

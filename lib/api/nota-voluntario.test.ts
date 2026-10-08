@@ -89,8 +89,10 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "monto",
     "montoConfirmado",
     "montoPagado",
+    "montoRevisado",
     "nota",
     "notas",
+    "organizador",
     "prioridad",
     "proyectoId",
     "rechazada",
@@ -118,6 +120,7 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
   const sinNota = (await evento.json()) as { tareas: Registro[] };
   assert.equal(sinNota.tareas.some((tarea) => tarea.id === "stand"), true);
   assert.equal(sinNota.tareas.some((tarea) => "nota" in tarea || "veredicto" in tarea || "etapa" in tarea), false);
+  assert.equal(sinNota.tareas.some((tarea) => "montoRevisado" in tarea || "organizador" in tarea), false);
 
   await almacen.guardarVeredicto({ ...guardado, origen: "error", score: "40", frase: "SECRETO-LAYA", choice: "tiempo" });
   const fallo = await listarTareasHttp(almacen, { usuarioId: "voluntario-1", demo: false }, "mias");

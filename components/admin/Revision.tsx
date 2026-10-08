@@ -43,7 +43,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea } from "@/lib/integrante/formato";
+import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea, montoQueAparta } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -741,7 +741,7 @@ export function Revision({
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
+                  {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
                 </p>
                 {esperaOtraFoto ? (
                   <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">

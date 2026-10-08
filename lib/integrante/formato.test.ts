@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea } from "./formato";
+import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea, montoQueAparta, montosDeCobro } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -69,6 +69,24 @@ test("montos y fechas del integrante", () => {
     "US$12,48 · Límite US$15",
   );
   assert.equal(acortarDireccion("GABCDE1234567890WXYZ"), "GABCDE…WXYZ");
+  assert.equal(
+    montoQueAparta({ tipo: "reembolso", monto: "0.25", tope: "0.25", montoConfirmado: "0.22" }),
+    "US$0.22",
+  );
+  assert.equal(montoQueAparta({ tipo: "reembolso", monto: "0.25", tope: "0.25", montoConfirmado: "0.22" }).includes("Up to"), false);
+  assert.equal(montoQueAparta({ tipo: "reembolso", monto: "0.25", tope: "0.25", montoConfirmado: "0.22" }, "es"), "US$0,22");
+  assert.equal(montoQueAparta({ tipo: "reembolso", monto: "0.25", tope: "0.25" }, "es"), "hasta US$0,25");
+  assert.equal(montoQueAparta({ tipo: "reembolso", monto: "0.25", tope: "0.25" }), "up to US$0.25");
+  assert.equal(montoQueAparta({ tipo: "trabajo", monto: "20", tope: null }), "US$20");
+  assert.deepEqual(
+    montosDeCobro({ tipo: "reembolso", monto: "0.25", tope: "0.25", montoRevisado: "0.30", montoConfirmado: null }),
+    { leido: "US$0.30", pago: "US$0.25" },
+  );
+  assert.deepEqual(
+    montosDeCobro({ tipo: "reembolso", monto: "15", tope: "15", montoRevisado: "12.48", montoConfirmado: "12.48" }, "es"),
+    { leido: "US$12,48", pago: "US$12,48" },
+  );
+  assert.equal(montosDeCobro({ tipo: "trabajo", monto: "20", tope: null, montoRevisado: null }), null);
 });
 
 test("una hora se muestra en Costa Rica (UTC-6), no en UTC-7", () => {

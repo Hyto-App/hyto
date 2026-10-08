@@ -52,6 +52,8 @@ export type TareaAdmin = {
   perfilVoluntario?: { experiencia: string | null; etiquetas: string[] };
   /** Earlier photos with a verdict, oldest first. Empty or missing when there is only one attempt. */
   intentosAnteriores?: IntentoAnterior[];
+  /** True when the task already has an escrow contract, so the budget is set aside. */
+  apartado?: boolean;
 };
 
 export type TareaCreada = {

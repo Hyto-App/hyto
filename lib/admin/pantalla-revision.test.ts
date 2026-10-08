@@ -705,6 +705,87 @@ test("a pending task with no photo still offers lock budget", async () => {
   }
 });
 
+test("the lock sentence and the dialog use the confirmed amount, not the cap", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "0.25",
+        tope: "0.25",
+        estado: "en revisión",
+        montoRevisado: "0.25",
+        montoConfirmado: "0.22",
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await esperar(() => rotulo("Lock budget"));
+    assert.match(texto(), /This sets aside US\$0\.22/);
+    assert.equal(/This sets aside Up to/.test(texto()), false);
+    await pulsar("Lock budget");
+    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0.22");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en español la frase de apartar no lleva Hasta a media oración y Receipt se traduce", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Comida",
+        tipo: "reembolso",
+        monto: "0.25",
+        tope: "0.25",
+        estado: "en revisión",
+        veredicto: "parcial",
+        nota: 79,
+        montoRevisado: "0.25",
+        montoConfirmado: "0.22",
+        etiquetas: [
+          {
+            id: "date_missing",
+            texto: "Receipt date missing",
+            explicacion: "A date the stored pair does not know.",
+            severidad: "warning",
+            preguntas: [],
+          },
+        ],
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
+    await esperar(() => rotulo("Bloquear presupuesto"));
+    assert.match(texto(), /Esto aparta US\$0,22/);
+    assert.equal(/Esto aparta Hasta/.test(texto()), false);
+    assert.equal(texto().includes("Receipt"), false);
+    assert.match(texto(), /Falta la fecha del recibo/);
+    await pulsar("Bloquear presupuesto");
+    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("approve and pay shows US$2, the same amount as the rest of the screen", async () => {
   const contrato = "CSTAND";
   const anterior = globalThis.fetch;

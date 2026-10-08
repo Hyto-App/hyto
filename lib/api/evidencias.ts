@@ -261,7 +261,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
       await deps.almacen.crearEvidencia(evidencia);
     }
     if (tarea.estado === "pendiente") await deps.almacen.actualizarTarea(tareaId, { estado: "en revisión" });
-    if (mileActivo && (await deps.almacen.columnasRequisitos())) {
+    if (await deps.almacen.columnasRequisitos()) {
       await deps.almacen.actualizarTarea(tareaId, { rechazo: null });
     }
     if (wallet && wallet !== tarea.walletCobro) await deps.almacen.actualizarTarea(tareaId, { walletCobro: wallet });
