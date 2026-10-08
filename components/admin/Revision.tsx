@@ -26,6 +26,7 @@ import {
   type DetalleRevision,
 } from "@/lib/admin/remoto";
 import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow";
+import { tareaEjemploDeDemo } from "@/lib/admin/ejemplo";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
@@ -119,7 +120,8 @@ export function Revision({
 
   useEffect(() => {
     let viva = true;
-    setTarea(undefined);
+    const local = modoDemo ? tareaEjemploDeDemo(tareaId) : null;
+    setTarea(local ?? undefined);
     setFoto(null);
     setReal(false);
     setHashPaso(null);
@@ -132,6 +134,7 @@ export function Revision({
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
       if (!viva) return;
       if (!detalle) {
+        if (local) return;
         setTarea(null);
         publicarAviso("Could not load this review.");
         return;
@@ -759,7 +762,7 @@ export function Revision({
             ) : null}
 
             {pidioOtra ? (
-              <p role="status" className="hyto-pedir-listo">
+              <p id="bloqueo-foto" role="status" className="hyto-pedir-listo">
                 {t("revision.askedSent")}
               </p>
             ) : null}
@@ -769,7 +772,7 @@ export function Revision({
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
                 </p>
-                {esperaOtraFoto ? (
+                {esperaOtraFoto && !pidioOtra ? (
                   <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">
                     {t("revision.lockWaitingPhoto")}
                   </p>
@@ -982,6 +985,15 @@ export function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
       ),
     [src],
   );
+
+  useEffect(() => {
+    if (lista || rota) return;
+    const reloj = window.setTimeout(() => {
+      fallo.current = true;
+      setRota(true);
+    }, 8000);
+    return () => window.clearTimeout(reloj);
+  }, [src, lista, rota]);
 
   function cerrar() {
     setAmpliada(false);

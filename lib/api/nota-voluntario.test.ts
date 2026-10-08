@@ -104,9 +104,11 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "tipoArchivo",
     "titulo",
     "tope",
+    "ultimaEvidenciaId",
     "veredicto",
     "walletCobro",
   ]);
+  assert.equal(stand.ultimaEvidenciaId, "ejemplo-stand");
   assert.equal(stand.evento, "ZEEK");
   assert.deepEqual(stand.notas, []);
 
@@ -167,6 +169,7 @@ type Registro = {
   origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
+  ultimaEvidenciaId?: string | null;
   evento?: string | null;
   notas?: unknown[];
 };

@@ -485,7 +485,9 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                             <p className="hyto-nota-mile hyto-nota-mile-pend">
                               <Mile estado="cara-neutra" tamano={28} />
                               <span>
-                                {t("evidencia.organizerAsked")}
+                                {tarea.organizador?.nombre
+                                  ? t("evidencia.organizerAskedName", { name: tarea.organizador.nombre })
+                                  : t("evidencia.organizerAsked")}
                                 {tarea.rechazo?.nota ? (
                                   <>
                                     {" "}

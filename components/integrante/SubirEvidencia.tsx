@@ -576,10 +576,12 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     </header>
   );
 
+  const srcFoto =
+    fotoUrl ?? (tarea.ultimaEvidenciaId ? `/api/evidencias/${encodeURIComponent(tarea.ultimaEvidenciaId)}/foto` : null);
   const vistaFoto =
-    fotoUrl && !esDocumento ? (
+    srcFoto && !esDocumento ? (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={fotoUrl} alt={t("evidencia.alt")} />
+      <img src={srcFoto} alt={t("evidencia.alt")} />
     ) : null;
 
   if (revisando) {

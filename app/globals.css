@@ -5800,9 +5800,12 @@ html.hyto-firmando body {
   font-weight: 600;
 }
 
-.hyto-rastreo li[data-estado="hecho"]::before,
-.hyto-rastreo li[data-estado="ahora"]::before {
+.hyto-rastreo li[data-estado="hecho"]::before {
   background: var(--acento);
+}
+
+.hyto-rastreo li[data-estado="ahora"]::before {
+  background: linear-gradient(90deg, var(--acento) 55%, var(--linea) 55%);
 }
 
 .hyto-bitacora {

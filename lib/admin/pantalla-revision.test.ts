@@ -505,6 +505,8 @@ test("asking for another photo removes the old verdict pill", async () => {
       aviso?.textContent,
       "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.",
     );
+    assert.equal(aviso?.id, "bloqueo-foto");
+    assert.equal(texto().includes("Waiting for a new photo"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -539,6 +541,8 @@ test("pedir otra foto confirma el envío en español", async () => {
     const aviso = document.querySelector(".hyto-pedir-listo");
     assert.equal(aviso?.getAttribute("role"), "status");
     assert.equal(aviso?.textContent, "Pediste otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
+    assert.equal(aviso?.id, "bloqueo-foto");
+    assert.equal(texto().includes("Esperando una foto nueva"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -1006,6 +1010,25 @@ test("si el fondeo ya está en la red, terminar de bloquear no pide otra firma",
     assert.equal(rotulo("Finish locking"), false);
     assert.equal(texto().includes("Budget not locked"), false);
     assert.equal(firmas, 0);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en demo, demo-comida muestra la revisión de ejemplo aunque la red no responda", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (() => new Promise(() => undefined)) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        children: createElement(Revision, { tareaId: "demo-comida" }),
+      }),
+    );
+    await esperar(() => texto().includes("Team meal"));
+    assert.match(texto(), /90%/);
+    assert.equal(texto().includes("Loading…"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
