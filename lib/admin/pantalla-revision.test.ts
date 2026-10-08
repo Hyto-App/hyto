@@ -513,6 +513,168 @@ test("pedir otra foto confirma el envío en español", async () => {
   }
 });
 
+test("pedir otra foto sin red muestra el error y no cambia la tarea", async () => {
+  const anterior = globalThis.fetch;
+  const rechazos: unknown[] = [];
+  const oir = (razon: unknown) => {
+    rechazos.push(razon);
+  };
+  process.on("unhandledRejection", oir);
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) throw new TypeError("Failed to fetch");
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "Half of the booth is set up." }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("64% · Partially completed"));
+    await confirmarPedir();
+    await esperar(() => texto().includes("Could not send. Check your connection and try again."));
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "Could not send. Check your connection and try again.");
+    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Half of the booth is set up/);
+    assert.equal(texto().includes("Asked for another photo. The request was sent"), false);
+    assert.equal(texto().includes("What's missing?"), true);
+    assert.equal(rotulo("Lock budget") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget" && !(boton as HTMLButtonElement).disabled), true);
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.deepEqual(rechazos, []);
+  } finally {
+    process.off("unhandledRejection", oir);
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("pedir otra foto sin red avisa en español y deja la tarea en revisión", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) throw new TypeError("Failed to fetch");
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "La mitad del puesto está lista." }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => rotulo("Pedir otra foto"));
+    await pulsar("Pedir otra foto");
+    await esperar(() => texto().includes("¿Qué falta?"));
+    const enviar = document.querySelector(".hyto-pedir button[type='submit']");
+    if (!enviar) throw new Error("No send-back confirm.");
+    await act(async () => {
+      enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await esperar(() => texto().includes("No se pudo enviar. Revisa tu conexión e intenta de nuevo."));
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revisa tu conexión e intenta de nuevo.");
+    assert.match(texto(), /64% · Parcialmente completado/);
+    assert.equal(texto().includes("Pediste otra foto"), false);
+    assert.equal(texto().includes("Pendiente"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("lock budget stays off while a pending task waits for another photo", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        estado: "pendiente",
+        veredicto: null,
+        nota: null,
+        frase: null,
+        origen: null,
+        intentosAnteriores: [{ numero: 1, veredicto: "parcial", nota: 64, frase: "The first photo was incomplete." }],
+      }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Lock budget"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Lock budget");
+    assert.ok(bloqueo instanceof HTMLButtonElement);
+    assert.equal(bloqueo.disabled, true);
+    assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-foto");
+    assert.match(texto(), /Waiting for a new photo\. This stays off until it arrives\./);
+    assert.match(texto(), /Pending/);
+    await pulsar("Lock budget");
+    assert.equal(document.querySelector("dialog"), null);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("bloquear presupuesto queda apagado en español mientras espera la foto nueva", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ estado: "pendiente", veredicto: null, nota: null, frase: null, origen: null }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => rotulo("Bloquear presupuesto"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Bloquear presupuesto");
+    assert.ok(bloqueo instanceof HTMLButtonElement);
+    assert.equal(bloqueo.disabled, true);
+    assert.match(texto(), /Esperando una foto nueva\. Esto queda apagado hasta que llegue\./);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("a pending task with no photo still offers lock budget", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ estado: "pendiente", veredicto: null, nota: null, frase: null, origen: null }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Lock budget"));
+    const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Lock budget");
+    assert.ok(bloqueo instanceof HTMLButtonElement);
+    assert.equal(bloqueo.disabled, false);
+    assert.equal(texto().includes("Waiting for a new photo"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("approve and pay shows US$2, the same amount as the rest of the screen", async () => {
   const contrato = "CSTAND";
   const anterior = globalThis.fetch;

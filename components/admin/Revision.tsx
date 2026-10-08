@@ -44,6 +44,7 @@ import {
 import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
+import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -224,19 +225,24 @@ export function Revision({
       return;
     }
     publicarAviso(null);
-    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(cuerpo),
-    });
-    const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-    if (!respuesta.ok) {
-      publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
-      return;
+    try {
+      const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo),
+      });
+      const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+      if (!respuesta.ok) {
+        publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
+        return;
+      }
+      setHojaPedir(false);
+      setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
+      setPidioOtra(true);
+    } catch {
+      // A dropped connection rejects the fetch. The task stays in review until the request lands.
+      publicarAviso(AVISO_ENVIO_FALLIDO);
     }
-    setHojaPedir(false);
-    setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
-    setPidioOtra(true);
   }
 
   function decidir(decision: "pagado" | "pendiente") {
@@ -424,6 +430,18 @@ export function Revision({
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
+  // A real file on a pending task means the last photo was sent back. Lock stays off until a new one arrives.
+  const esperaOtraFoto =
+    real &&
+    tarea.estado === "pendiente" &&
+    tarea.veredicto === null &&
+    (pidioOtra || Boolean(foto) || (tarea.intentosAnteriores?.length ?? 0) > 0);
+  const describeBloqueo = [
+    esperaOtraFoto ? "bloqueo-foto" : "",
+    esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const origen = etiquetaOrigen(tarea.origen, idioma);
   const pago = enlacePago(tarea.hashPago);
   const pendiente = pagoPendiente(tarea);
@@ -713,6 +731,11 @@ export function Revision({
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
                 </p>
+                {esperaOtraFoto ? (
+                  <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("revision.lockWaitingPhoto")}
+                  </p>
+                ) : null}
                 {esperaConfirmacion && !puedeDesplegar ? (
                   <p id="bloqueo-monto" className="text-sm leading-6 text-[var(--suave)]">
                     {t("revision.lockNeedsAmount")}
@@ -720,10 +743,13 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo}
+                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto}
                   aria-busy={ocupado}
-                  aria-describedby={esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : undefined}
-                  onClick={() => setConfirmacion({ clave: "bloquear", abierto: true })}
+                  aria-describedby={describeBloqueo || undefined}
+                  onClick={() => {
+                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto) return;
+                    setConfirmacion({ clave: "bloquear", abierto: true });
+                  }}
                 >
                   {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
                 </BotonPrincipal>
@@ -763,7 +789,11 @@ export function Revision({
             </p>
           ) : null}
 
-          {avisoVisible ? <AvisoFirma mensaje={aviso ?? ""} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
+          {avisoVisible ? (
+            <div role={aviso === AVISO_ENVIO_FALLIDO ? "alert" : undefined}>
+              <AvisoFirma mensaje={aviso ?? ""} className="mt-4 text-sm leading-6 text-[var(--suave)]" />
+            </div>
+          ) : null}
 
           {real && pendiente ? (
             <div className="mt-4" aria-live="polite">
