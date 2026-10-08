@@ -144,6 +144,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
   },
   {
+    nombre: "HYTO_MILE_TIPO_POR_TAREA",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on picks Mile's work or receipt questions from the task type and Groq's evidence type. A close Laya c1 does not. Unset or anything else keeps today's path.",
+  },
+  {
     nombre: "HYTO_COMUNIDADES",
     ambito: "servidor",
     requerida: false,

@@ -154,6 +154,7 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
 | `HYTO_MILE_OTRA_CON_GROQ` | Exact value `on` asks Groq for a required `coincide` (`si`, `parcial`, or `no`) and withholds Laya's "something else" cap only when that field is `si`. `parcial`, `no`, and a missing field keep the cap. At most one extra Groq call per photo, and never after a 429 or a quota error. Unset or anything else keeps the current prompt, `json_object`, and the current cap. |
+| `HYTO_MILE_TIPO_POR_TAREA` | Server. Exact value `on` picks Mile's work or receipt questions from the task type and Groq's evidence type. A close Laya c1 does not. Unset keeps today's path. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
 | `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
 | `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |

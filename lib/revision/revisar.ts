@@ -40,6 +40,8 @@ export type ContextoRevision = {
   produccion?: boolean;
   /** Overrides HYTO_MILE_REQUISITOS. Unset reads the environment, which defaults to off. */
   mileActivo?: boolean;
+  /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment, which defaults to off. */
+  tipoPorTarea?: boolean;
   /** Photos already saved for this task, including the one under review. */
   intento?: number;
   maxIntentos?: number;
@@ -64,6 +66,9 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   const reservaLaya = contexto.layaUrl ? Math.min(RESERVA_LAYA_MS, Math.floor(presupuesto / 3)) : 0;
   const paraDescribir = { ...repeticion, deadline: repeticion.deadline - reservaLaya };
   const llamarLaya: LlamadaLaya = (paso) => conReintentos(paso, { ...repeticion, topeIntentoMs: TOPE_LAYA_MS });
+  // preguntarLaya reads these when the options object does not set them.
+  // The call below only passes lectura, the same line as the sibling switch.
+  Object.assign(llamarLaya, { tipoTarea: tarea.tipo, tipoPorTarea: contexto.tipoPorTarea });
   const claveGemini = contexto.claveGemini?.trim() || null;
   if (!esEvidenciaTextual(foto) && !contexto.claveGroq && !claveGemini) {
     return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));

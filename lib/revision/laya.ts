@@ -16,6 +16,7 @@ import { layaPuedeTaparPorOtra, type CoincideGroq, type EntornoOtraGroq } from "
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
+import { claseConTipoDeTarea, tipoPorTareaActivo } from "./tipo-por-tarea";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -209,7 +210,22 @@ export async function preguntarLaya(
   const claseJson = await preguntar(preguntasClasificacion(pedidoConRegla));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
+  const desdeLlamada = llamar as LlamadaLaya & {
+    tipoTarea?: TipoTarea | null;
+    tipoPorTarea?: boolean;
+  };
+  const tipoExplicito = opciones != null && "tipoTarea" in opciones;
+  const banderaExplicita = opciones != null && "tipoPorTarea" in opciones;
+  const seguirTarea = (banderaExplicita ? opciones?.tipoPorTarea : desdeLlamada.tipoPorTarea) ?? tipoPorTareaActivo();
+  const clase = seguirTarea
+    ? claseConTipoDeTarea(leida, {
+        tipoTarea: (tipoExplicito ? opciones?.tipoTarea : desdeLlamada.tipoTarea) ?? null,
+        texto,
+        c1Cerca: idsCerca(claseJson, ["c1"]).includes("c1"),
+      })
+    : leida === "trabajo" && esReciboEscrito(texto)
+      ? "factura"
+      : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
     const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla), reglaLimpia));
