@@ -1,5 +1,6 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import { comunidadDeAlta } from "@/lib/api/comunidades";
+import { avisarTareasNuevas } from "@/lib/tablon/publicar";
 import type { Almacen } from "@/lib/db/almacen";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
@@ -64,6 +65,7 @@ export async function crearProyectoHttp(
         creadoEn: fila.creadoEn,
       });
     }
+    await avisarTareasNuevas(almacen, fila.comunidadId, asignadas);
     return json({ proyecto: { id: fila.id, nombre: fila.nombre }, tareas: asignadas.map(tareaPublica) }, 201);
   } catch (error) {
     console.error("[api/proyectos] crear", detalleErrorCrear(error));

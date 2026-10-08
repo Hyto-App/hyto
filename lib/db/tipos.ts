@@ -54,6 +54,18 @@ export type ComunidadSolicitud = {
   creadoEn: string;
 };
 
+export type TipoAviso = "disponible" | "asignada" | "completada";
+
+export type AvisoComunidad = {
+  id: string;
+  comunidadId: string;
+  tipo: TipoAviso;
+  titulo: string;
+  nombre: string | null;
+  tareaId: string | null;
+  creadoEn: string;
+};
+
 export type TareaFila = {
   id: string;
   proyectoId: string;

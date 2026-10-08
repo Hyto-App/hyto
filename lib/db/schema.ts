@@ -74,6 +74,17 @@ export const tareas = pgTable("tareas", {
   rechazo: text("rechazo"),
 });
 
+// Read-only system notices. Only read when HYTO_TABLON is on.
+export const comunidadAvisos = pgTable("comunidad_avisos", {
+  id: text("id").primaryKey(),
+  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(),
+  titulo: text("titulo").notNull(),
+  nombre: text("nombre"),
+  tareaId: text("tarea_id").references(() => tareas.id, { onDelete: "set null" }),
+  creadoEn: text("creado_en").notNull(),
+});
+
 export const evidencias = pgTable("evidencias", {
   id: text("id").primaryKey(),
   tareaId: text("tarea_id")

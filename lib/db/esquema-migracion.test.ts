@@ -41,6 +41,7 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0007_requisitos_rechazo.sql",
     "0009_contexto_evento.sql",
     "0010_comunidades.sql",
+    "0013_tablon.sql",
   ]);
   assert.deepEqual(esperado.tablas, [
     "usuarios",
@@ -54,8 +55,9 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "comunidades",
     "comunidad_miembros",
     "comunidad_solicitudes",
+    "comunidad_avisos",
   ]);
-  assert.equal(esperado.columnas.length, 92);
+  assert.equal(esperado.columnas.length, 99);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -84,6 +86,8 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "comunidad_solicitudes.comunidad_id→comunidades.id",
       "comunidad_solicitudes.usuario_id→usuarios.id",
       "proyectos.comunidad_id→comunidades.id",
+      "comunidad_avisos.comunidad_id→comunidades.id",
+      "comunidad_avisos.tarea_id→tareas.id",
     ],
   );
   assert.equal(
@@ -114,6 +118,7 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "proyecto_invitaciones:id",
       "comunidades:id",
       "comunidad_solicitudes:id",
+      "comunidad_avisos:id",
     ],
   );
   assert.deepEqual(esperado.indices, [

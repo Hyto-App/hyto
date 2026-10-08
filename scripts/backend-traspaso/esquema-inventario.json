@@ -32,9 +32,10 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "62494890637fa23f1cf0c8ec450c944c5ac6c8a5f32d0468f7886f28b4631c5e",
+      "sha256": "c700e6d14dcb31ebc59dd7a51dca7327ea9866958d55e27e53b8c8616f9eb112",
       "detalle": {
         "exportacionesDeTabla": [
+          "comunidadAvisos",
           "comunidadMiembros",
           "comunidadSolicitudes",
           "comunidades",
@@ -83,7 +84,8 @@
           "drizzle/0006_prioridad_dificultad.sql",
           "drizzle/0007_requisitos_rechazo.sql",
           "drizzle/0009_contexto_evento.sql",
-          "drizzle/0010_comunidades.sql"
+          "drizzle/0010_comunidades.sql",
+          "drizzle/0013_tablon.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -214,6 +216,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "317f040107e5993f17d75dedc064793c4119b40515d2c81083a099c6fa92c258",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0013_tablon.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "24ac0dba8d206ec357efa42bd41d88e204e462968e647682feac278418e4bd5c",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -4238,6 +4252,343 @@
       ],
       "indices": [],
       "checks": []
+    },
+    {
+      "nombre": "comunidad_avisos",
+      "esquemaPostgres": null,
+      "archivoMigracion": "drizzle/0013_tablon.sql",
+      "archivoOrm": "lib/db/schema.ts",
+      "exportDrizzle": "comunidadAvisos",
+      "ifNotExists": true,
+      "rlsEnDrizzle": false,
+      "columnas": [
+        {
+          "nombre": "id",
+          "nombreEnDrizzle": "id",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "id",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "comunidad_id",
+          "nombreEnDrizzle": "comunidadId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "comunidad_id"
+            ],
+            "tabla": "comunidades",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "cascade",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "cascade",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_avisos_comunidad_id_comunidades_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "comunidadId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "tipo",
+          "nombreEnDrizzle": "tipo",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "tipo",
+            "tipoTs": "TipoAviso",
+            "literales": [
+              "disponible",
+              "asignada",
+              "completada"
+            ],
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
+          }
+        },
+        {
+          "nombre": "titulo",
+          "nombreEnDrizzle": "titulo",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "titulo",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "nombre",
+          "nombreEnDrizzle": "nombre",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "nombre",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "tarea_id",
+          "nombreEnDrizzle": "tareaId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "tarea_id"
+            ],
+            "tabla": "tareas",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "set null",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "set null",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_avisos_tarea_id_tareas_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "tareaId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "creado_en",
+          "nombreEnDrizzle": "creadoEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "AvisoComunidad",
+            "campo": "creadoEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        }
+      ],
+      "llavePrimaria": {
+        "columnas": [
+          "id"
+        ],
+        "nombreEnSql": null,
+        "nombreEnNeon": "confirmar con Esteban",
+        "createIndexEnLaMigracion": false
+      },
+      "unicos": [],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "comunidad_id"
+          ],
+          "tabla": "comunidades",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "cascade",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "cascade",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_avisos_comunidad_id_comunidades_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        },
+        {
+          "columnas": [
+            "tarea_id"
+          ],
+          "tabla": "tareas",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "set null",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "set null",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_avisos_tarea_id_tareas_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "indices": [],
+      "checks": []
     }
   ],
   "relaciones": [
@@ -4517,6 +4868,46 @@
       "declaradaEnSql": true,
       "declaradaEnDrizzle": true,
       "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_avisos",
+        "columnas": [
+          "comunidad_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "comunidades",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_avisos",
+        "columnas": [
+          "tarea_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "tareas",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "set null",
       "onUpdateEnSql": null,
       "nombreEnSql": null,
       "nombreEnNeon": "confirmar con Esteban"
