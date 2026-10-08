@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
@@ -823,19 +824,65 @@ export function Revision({
   );
 }
 
-function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
+function sincronizarImagen(nodo: HTMLImageElement | null, alCargar: () => void, alFallar: () => void): () => void {
+  if (!nodo) return () => undefined;
+  let viva = true;
+  if (nodo.complete && nodo.naturalWidth > 0) alCargar();
+  else if (nodo.complete) {
+    // A 404 that finished before hydration never fires onError. decode() rejects that case.
+    nodo.decode().then(
+      () => {
+        if (viva && nodo.naturalWidth > 0) alCargar();
+      },
+      () => {
+        if (viva) alFallar();
+      },
+    );
+  }
+  return () => {
+    viva = false;
+  };
+}
+
+export function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
   const t = useTexto();
+  const abrir = useRef<HTMLButtonElement>(null);
+  const imagen = useRef<HTMLImageElement>(null);
+  const fallo = useRef(false);
   const [lista, setLista] = useState(false);
   const [rota, setRota] = useState(false);
+  const [ampliada, setAmpliada] = useState(false);
+  const [srcActiva, setSrcActiva] = useState(src);
 
-  useEffect(() => {
+  if (src !== srcActiva) {
+    setSrcActiva(src);
+    fallo.current = false;
     setLista(false);
     setRota(false);
-  }, [src]);
+    setAmpliada(false);
+  }
+
+  useEffect(
+    () =>
+      sincronizarImagen(
+        imagen.current,
+        () => setLista(true),
+        () => {
+          fallo.current = true;
+          setRota(true);
+        },
+      ),
+    [src],
+  );
+
+  function cerrar() {
+    setAmpliada(false);
+    abrir.current?.focus();
+  }
 
   if (rota) {
     return (
-      <div className="hyto-photo-nota">
+      <div className="hyto-photo-nota" role="alert">
         <p>{t("revision.photoBroken")}</p>
       </div>
     );
@@ -846,16 +893,126 @@ function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
       {lista ? null : (
         <div className="hyto-photo-nota" role="status">
           <span className="hyto-spinner" aria-hidden="true" />
-          <span className="sr-only">{t("revision.loadingPhoto")}</span>
+          <span>{t("revision.loadingPhoto")}</span>
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        onLoad={() => setLista(true)}
-        onError={() => setRota(true)}
-        style={lista ? undefined : { opacity: 0 }}
-      />
+      <button
+        ref={abrir}
+        type="button"
+        className="hyto-photo-abrir"
+        aria-label={t("revision.viewLarger", { titulo: alt })}
+        aria-haspopup="dialog"
+        aria-expanded={ampliada}
+        aria-disabled={lista ? undefined : true}
+        tabIndex={lista ? 0 : -1}
+        onClick={() => {
+          if (lista) setAmpliada(true);
+        }}
+      >
+        <img
+          ref={imagen}
+          src={src}
+          alt=""
+          onLoad={() => setLista(true)}
+          onError={() => {
+            fallo.current = true;
+            setRota(true);
+          }}
+          style={lista ? undefined : { opacity: 0 }}
+        />
+      </button>
+      {ampliada
+        ? createPortal(
+            <FotoAmpliada src={src} alt={alt} onCerrar={cerrar} />,
+            document.body,
+          )
+        : null}
     </>
+  );
+}
+
+function FotoAmpliada({ src, alt, onCerrar }: { src: string; alt: string; onCerrar: () => void }) {
+  const t = useTexto();
+  const titulo = useId();
+  const cerrar = useRef<HTMLButtonElement>(null);
+  const imagen = useRef<HTMLImageElement>(null);
+  const fallo = useRef(false);
+  const alCerrar = useRef(onCerrar);
+  const [lista, setLista] = useState(false);
+  const [rota, setRota] = useState(false);
+  alCerrar.current = onCerrar;
+
+  useEffect(
+    () =>
+      sincronizarImagen(
+        imagen.current,
+        () => setLista(true),
+        () => {
+          fallo.current = true;
+          setRota(true);
+        },
+      ),
+    [src],
+  );
+
+  useEffect(() => {
+    cerrar.current?.focus();
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function tecla(evento: KeyboardEvent) {
+      if (evento.key === "Escape") {
+        evento.preventDefault();
+        alCerrar.current();
+        return;
+      }
+      if (evento.key !== "Tab") return;
+      evento.preventDefault();
+      cerrar.current?.focus();
+    }
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("keydown", tecla);
+      document.body.style.overflow = anterior;
+    };
+  }, []);
+
+  return (
+    <div className="hyto-photo-amplia" role="dialog" aria-modal="true" aria-labelledby={titulo} onClick={() => alCerrar.current()}>
+      <div className="hyto-photo-amplia-columna" onClick={(evento) => evento.stopPropagation()}>
+        <h2 id={titulo} className="sr-only">
+          {t("revision.viewLarger", { titulo: alt })}
+        </h2>
+        <button ref={cerrar} type="button" className="hyto-btn-line is-inline" onClick={() => alCerrar.current()}>
+          {t("revision.closePhoto")}
+        </button>
+        <div className="hyto-photo-amplia-marco">
+          {rota ? (
+            <p className="hyto-photo-nota" role="alert">
+              {t("revision.photoBroken")}
+            </p>
+          ) : (
+            <>
+              {lista ? null : (
+                <p className="hyto-photo-nota" role="status">
+                  <span className="hyto-spinner" aria-hidden="true" />
+                  <span>{t("revision.loadingPhoto")}</span>
+                </p>
+              )}
+              <img
+                ref={imagen}
+                src={src}
+                alt={alt}
+                onLoad={() => setLista(true)}
+                onError={() => {
+                  fallo.current = true;
+                  setRota(true);
+                }}
+                style={lista ? undefined : { opacity: 0 }}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
