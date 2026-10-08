@@ -4690,10 +4690,19 @@ html.hyto-firmando body {
 
 .hyto-estado-vacio-acciones {
   display: grid;
+  justify-items: stretch;
   width: 100%;
   max-width: 20rem;
   gap: 8px;
   margin-top: 6px;
+  margin-inline: auto;
+}
+
+/* Same width and centered text for every empty-state action (join, view events). */
+.hyto-estado-vacio-acciones > * {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 .hyto-como {
@@ -6343,4 +6352,67 @@ html.hyto-firmando body {
 
 .hyto-contador.is-alto {
   color: var(--contador-alto);
+}
+
+/* Sidebar footer: everything fits inside the sidebar width.
+   The column can't grow past the sidebar (minmax(0, 1fr)), so a long label truncates instead of pushing
+   the Ask Mile button and the theme toggle past the border. */
+.hyto-foot {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hyto-foot > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hyto-foot-acciones {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+/* Language and theme controls share one height. */
+.hyto-foot .hyto-idioma-menu-boton {
+  min-height: 40px;
+}
+
+/* Ask Mile, minimal: a quiet outlined row; the fill shows only on hover/focus. */
+.hyto-foot .hyto-preguntar {
+  min-width: 0;
+  min-height: 40px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border-color: var(--linea);
+  background: transparent;
+  font-size: 14px;
+  color: var(--suave);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hyto-foot .hyto-preguntar:hover,
+.hyto-foot .hyto-preguntar:focus-visible,
+.hyto-foot .hyto-preguntar[aria-expanded="true"] {
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+
+.hyto-foot .hyto-preguntar > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hyto-foot .hyto-preguntar kbd {
+  flex: none;
+  border: 1px solid var(--linea);
+  background: transparent;
+  padding: 1px 5px;
+  font-size: 10.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-foot .hyto-preguntar {
+    transition: none;
+  }
 }

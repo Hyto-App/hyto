@@ -130,7 +130,7 @@ export function Marco({
               aria-expanded={ayuda}
               onClick={(evento) => abrirAyuda(evento.currentTarget)}
             >
-              <Mile estado="cara-feliz" tamano={28} />
+              <Mile estado="cara-feliz" tamano={22} />
             </button>
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
@@ -196,7 +196,7 @@ export function Marco({
             aria-expanded={ayuda}
             onClick={(evento) => abrirAyuda(evento.currentTarget)}
           >
-            <Mile estado="cara-feliz" tamano={28} />
+            <Mile estado="cara-feliz" tamano={22} />
             <span>{t("nav.askMile")}</span>
             <kbd>Ctrl+K</kbd>
           </button>
