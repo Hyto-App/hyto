@@ -451,7 +451,7 @@ test("la sesión sale del correo firmado y el pago exige al organizador", async 
   const cuerpoAjeno = (await ajeno.json()) as { rol: string; email: string; nombre: string; usuarioId: string; nuevo: boolean };
   assert.equal(cuerpoAjeno.rol, "voluntario");
   assert.equal(cuerpoAjeno.email, "nadie@demo.hyto");
-  assert.equal(cuerpoAjeno.nombre, "nadie");
+  assert.equal(cuerpoAjeno.nombre, "");
   assert.equal(cuerpoAjeno.nuevo, true);
   assert.match(cuerpoAjeno.usuarioId, /^u-/);
 

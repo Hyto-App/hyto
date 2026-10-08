@@ -441,6 +441,123 @@ test("la tarjeta con monto confirmado dice el monto a pagar y el límite, y lo g
   }
 });
 
+test("otra foto pedida no usa un pedazo del correo y tiene Ver tarea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            evento: "North",
+            rechazada: true,
+            rechazo: { nota: "The banner is cropped", fallidos: [], origen: "organizador" },
+            organizador: { nombre: "ana@hyto.test" },
+          },
+          {
+            id: "mesa",
+            proyectoId: "dos",
+            titulo: "Tables",
+            tipo: "trabajo",
+            monto: "8",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            rechazada: true,
+            rechazo: { nota: null, fallidos: [], origen: "organizador" },
+            organizador: null,
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Booth") && texto().includes("Tables"));
+    assert.match(texto(), /North asked for another photo/);
+    assert.match(texto(), /The organizer asked for another photo/);
+    assert.equal(texto().includes("ana@"), false);
+    assert.equal(texto().includes("@"), false);
+    const booth = tarjetaDe("Booth");
+    const ver = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "View task");
+    const otra = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.includes("Take another photo"));
+    assert.equal(ver?.getAttribute("href"), "/tareas/stand");
+    assert.equal(ver?.className.includes("hyto-btn-line"), true);
+    assert.equal(otra?.getAttribute("href"), "/tareas/stand");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en español, otra foto pedida dice quien organiza o el evento, y Ver tarea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Puesto",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            rechazada: true,
+            rechazo: { nota: null, fallidos: [], origen: "organizador" },
+            organizador: null,
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Puesto"));
+    assert.match(texto(), /Quien organiza pidió otra foto/);
+    assert.equal(texto().includes("Rejected"), false);
+    assert.equal(texto().includes("Otra foto pedida"), true);
+    const ver = [...document.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "Ver tarea");
+    assert.equal(ver?.getAttribute("href"), "/tareas/stand");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+function tarjetaDe(titulo: string): HTMLElement {
+  const tarjeta = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === titulo);
+  if (!(tarjeta instanceof HTMLElement)) throw new Error(`No card ${titulo}`);
+  return tarjeta;
+}
+
 async function esperar(listo: () => boolean): Promise<void> {
   for (let i = 0; i < 25; i += 1) {
     if (listo()) return;

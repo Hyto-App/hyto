@@ -515,6 +515,90 @@ test("asking for another photo removes the old verdict pill", async () => {
   }
 });
 
+test("pedir otra foto deja el monto del recibo con colones y la conversión", async () => {
+  const anterior = globalThis.fetch;
+  const lectura = { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" };
+  const comida = tarea({
+    id: "comida",
+    titulo: "Team meal",
+    tipo: "reembolso",
+    monto: "15",
+    tope: "15",
+    condicion: "Photo of the meal receipt",
+    origen: "scout",
+    veredicto: "parcial",
+    nota: 78,
+    frase: "A receipt from Soda La Esquina.",
+    montoRevisado: "13.66",
+    fecha: null,
+    lectura,
+  });
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) return json({ estado: "pendiente" });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({ tarea: comida, foto: null, contratoEscrow: null, wallet: "GORGANIZADOR" });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
+    assert.match(texto(), /78% · Partially completed/);
+    assert.match(texto(), /AI recommendation/);
+    await confirmarPedir();
+    await esperar(() => texto().includes("The request was sent"));
+    const aviso = document.querySelector(".hyto-pedir-listo");
+    assert.equal(aviso?.textContent, "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.");
+    assert.equal(texto().includes("Waiting for a new photo"), false);
+    const monto = document.querySelector("dd.hyto-amount");
+    assert.equal(monto?.textContent, "₡6.900,00");
+    assert.match(texto(), /Amount on the receipt/);
+    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.equal(texto().includes("78% · Partially completed"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("al recargar, el monto del recibo sigue en colones después de pedir otra foto", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        estado: "pendiente",
+        origen: null,
+        veredicto: null,
+        nota: null,
+        frase: null,
+        montoRevisado: "13.66",
+        lectura: { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" },
+      }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
+    await esperar(() => texto().includes("Monto en el comprobante"));
+    const monto = document.querySelector("dd.hyto-amount");
+    assert.equal(monto?.textContent, "₡6.900,00");
+    assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
+    assert.equal(texto().includes("US$13.66"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("pedir otra foto confirma el envío en español", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
