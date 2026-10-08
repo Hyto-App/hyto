@@ -11,7 +11,7 @@ import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { faltaParaCrear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto, textosSaldo } from "@/lib/integrante/formato";
-import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
 import { AreaTexto, Contador, IconoCandado, ZonaPortada } from "./CamposEvento";
@@ -23,8 +23,6 @@ type Fila = {
   monto: string;
   condicion: string;
   asignado: string;
-  prioridad: PrioridadTarea;
-  dificultad: DificultadTarea | "";
 };
 
 const FILA_INICIAL: Fila = {
@@ -34,8 +32,6 @@ const FILA_INICIAL: Fila = {
   monto: "",
   condicion: "",
   asignado: "",
-  prioridad: "normal",
-  dificultad: "",
 };
 
 function sumarCentavos(filas: readonly Fila[]): { trabajo: number; reembolso: number } {
@@ -59,8 +55,6 @@ function filaNueva(): Fila {
     monto: "",
     condicion: "",
     asignado: "",
-    prioridad: "normal",
-    dificultad: "",
   };
 }
 
@@ -109,8 +103,6 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
         montoCrudo: fila.monto.trim(),
         condicion: fila.condicion.trim(),
         asignado: fila.asignado.trim(),
-        prioridad: fila.prioridad,
-        dificultad: fila.dificultad || null,
       }))
       .filter((fila) => fila.titulo || fila.montoCrudo);
 
@@ -304,34 +296,6 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
                       </p>
                     ) : null}
                   </div>
-                </div>
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
-                    {t("clasificacion.priority")}
-                    <select
-                      id={`prioridad-${fila.clave}`}
-                      value={fila.prioridad}
-                      onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="normal">{t("clasificacion.normal")}</option>
-                      <option value="high">{t("clasificacion.high")}</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
-                    {t("clasificacion.difficulty")}
-                    <select
-                      id={`dificultad-${fila.clave}`}
-                      value={fila.dificultad}
-                      onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="">{t("clasificacion.notSet")}</option>
-                      <option value="easy">{t("clasificacion.easy")}</option>
-                      <option value="medium">{t("clasificacion.medium")}</option>
-                      <option value="hard">{t("clasificacion.hard")}</option>
-                    </select>
-                  </label>
                 </div>
                 <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`condicion-${fila.clave}`}>
                   {t("eventos.photoMust")}

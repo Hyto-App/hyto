@@ -81,7 +81,7 @@ function leerCambio(body: unknown, tarea: TareaFila): { cambio: CambioTarea } | 
     cambio.titulo = titulo;
   }
   if ("condicion" in crudo) {
-    if (typeof crudo.condicion !== "string") return { aviso: "Enter what the photo must show." };
+    if (typeof crudo.condicion !== "string") return { aviso: "Enter what the evidence must show." };
     const condicion = crudo.condicion.trim();
     if (condicion.length > CONDICION_MAX) return { aviso: "That note is too long." };
     cambio.condicion = condicion;
