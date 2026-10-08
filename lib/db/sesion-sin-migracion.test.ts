@@ -155,18 +155,23 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
   assert.match(sqlUsuarios, /on conflict \("email"\) do update set "nombre" = excluded\."nombre", "rol" = excluded\."rol"/i);
 });
 
-test("el ingreso no nombra columnas de features aunque el interruptor esté encendido", async () => {
+test("el alta y el ingreso no nombran columnas de features aunque el interruptor esté encendido", async () => {
   process.env.HYTO_TIPO_CUENTA = "on";
   process.env.HYTO_PERFIL_VOLUNTARIO = "on";
   process.env.HYTO_COMUNIDADES = "on";
   process.env.HYTO_TABLON = "on";
   try {
-    const { almacen, consultas, usuarios } = ledgerSinMigrar();
+    const { almacen, consultas, usuarios, sesiones } = ledgerSinMigrar();
     usuarios.push({ id: "u-viejo", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
     const ingreso = await crearSesionHttp(pedido("ana@hyto.app", "signin"), almacen);
     assert.equal(ingreso.status, 200, consultas.join("\n"));
+    const alta = await crearSesionHttp(pedido("nuevo@hyto.app", "signup"), almacen);
+    assert.equal(alta.status, 200, consultas.join("\n"));
+    assert.equal(sesiones.length, 2);
+    assert.deepEqual(Object.keys(usuarios[1] ?? {}).sort(), ["email", "id", "nombre", "rol"]);
     const sqlUsuarios = consultas.filter((consulta) => consulta.includes('"usuarios"')).join("\n");
     assert.doesNotMatch(sqlUsuarios, COLUMNAS_NUEVAS);
+    assert.match(sqlUsuarios, /insert into "usuarios" \("id", "email", "nombre", "rol"\) values/i);
   } finally {
     delete process.env.HYTO_TIPO_CUENTA;
     delete process.env.HYTO_PERFIL_VOLUNTARIO;

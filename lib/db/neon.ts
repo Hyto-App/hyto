@@ -127,7 +127,13 @@ function esColumnaAusente(error: unknown): boolean {
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
 }
 
-/** Each switch hides its own columns, so a migration that has not run yet is not selected. */
+/**
+ * Each feature owns one group of columns on usuarios. A select includes a group only when
+ * that switch is on, so an unapplied migration is not named.
+ * Account type (0011, HYTO_TIPO_CUENTA) is the first group. The volunteer profile
+ * (0012, HYTO_PERFIL_VOLUNTARIO) is its own spread: add the next group the same way,
+ * without mixing its columns into this one.
+ */
 function columnasUsuarioVisibles() {
   const todas = getTableColumns(usuarios);
   const {
@@ -147,27 +153,13 @@ function columnasUsuarioVisibles() {
   };
 }
 
+/** Identity writes never name feature columns, even when a switch is on. */
 function filaUsuario(usuario: Usuario) {
   return {
     id: usuario.id,
     email: usuario.email,
     nombre: usuario.nombre,
     rol: usuario.rol,
-    ...(tipoCuentaActivo()
-      ? {
-          tipoCuenta: usuario.tipoCuenta ?? null,
-          empresaNombre: usuario.empresaNombre ?? null,
-          empresaActividad: usuario.empresaActividad ?? null,
-          empresaDescripcion: usuario.empresaDescripcion ?? null,
-          empresaFoto: usuario.empresaFoto ?? null,
-        }
-      : {}),
-    ...(perfilVoluntarioActivo()
-      ? {
-          experiencia: usuario.experiencia ?? null,
-          etiquetas: usuario.etiquetas && usuario.etiquetas.length > 0 ? JSON.stringify(usuario.etiquetas) : null,
-        }
-      : {}),
   };
 }
 

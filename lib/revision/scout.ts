@@ -1,9 +1,9 @@
 import { normalizarMonto } from "@/lib/admin/vista";
+import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { ajustarParaVision } from "@/lib/evidencia/vision";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
-import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
 
@@ -30,7 +30,10 @@ export type ContextoPedido = {
   idioma?: "en" | "es";
   /** Background about the event. Empty leaves the prompt as it was. */
   evento?: ContextoEvento | null;
-  /** The community description. Empty, or the switch off, leaves the prompt as it was. */
+  /**
+   * Company description. With HYTO_TIPO_CUENTA on it is placed inside <event_context>.
+   * Empty, or the switch off, leaves the prompt as it was.
+   */
   organizacion?: string | null;
 };
 
@@ -50,8 +53,7 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     "You read a photo that a volunteer sent as evidence for a task.",
     condicion ? `The organizer asked for: "${condicion}".` : "",
     tarea,
-    bloqueContextoEvento(contexto.evento),
-    bloqueOrganizacion(contexto.organizacion),
+    bloqueContextoEvento(contexto.evento, tipoCuentaActivo() ? contexto.organizacion : null),
     "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
     `Reply with JSON only, using exactly these keys: ${claves.join(", ")}.`,
     regla

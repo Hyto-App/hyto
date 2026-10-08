@@ -46,7 +46,7 @@ export type ContextoRevision = {
   idioma?: Idioma;
   /** The event's description and AI context. The description and the rules reach the vision prompt. The rules also reach Laya and the grade. */
   evento?: ContextoEvento | null;
-  /** Community description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
+  /** Company description. The vision prompt places it inside <event_context>. Ignored unless HYTO_TIPO_CUENTA is on. Laya does not see it. */
   organizacion?: string | null;
 };
 
