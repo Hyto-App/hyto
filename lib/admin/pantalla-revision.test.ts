@@ -218,7 +218,7 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     const lecturasAntes = lecturas;
     await pulsar("Lock budget");
     await confirmarDialogo();
-    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
+    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step did not finish."));
     assert.match(texto(), /Budget not locked/);
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("No USDC left the escrow."), false);
@@ -508,7 +508,91 @@ test("asking for another photo removes the old verdict pill", async () => {
       "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.",
     );
     assert.equal(aviso?.id, "bloqueo-foto");
-    assert.equal(texto().includes("Waiting for a new photo"), false);
+    assert.equal(texto().includes("when the new photo arrives"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("pedir otra foto deja el monto del recibo con colones y la conversión", async () => {
+  const anterior = globalThis.fetch;
+  const lectura = { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" };
+  const comida = tarea({
+    id: "comida",
+    titulo: "Team meal",
+    tipo: "reembolso",
+    monto: "15",
+    tope: "15",
+    condicion: "Photo of the meal receipt",
+    origen: "scout",
+    veredicto: "parcial",
+    nota: 78,
+    frase: "A receipt from Soda La Esquina.",
+    montoRevisado: "13.66",
+    fecha: null,
+    lectura,
+  });
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) return json({ estado: "pendiente" });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({ tarea: comida, foto: null, contratoEscrow: null, wallet: "GORGANIZADOR" });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
+    assert.match(texto(), /78% · Partially completed/);
+    assert.match(texto(), /AI recommendation/);
+    await confirmarPedir();
+    await esperar(() => texto().includes("The request was sent"));
+    const aviso = document.querySelector(".hyto-pedir-listo");
+    assert.equal(aviso?.textContent, "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.");
+    assert.equal(texto().includes("when the new photo arrives"), false);
+    const monto = document.querySelector("dd.hyto-amount");
+    assert.equal(monto?.textContent, "₡6.900,00");
+    assert.match(texto(), /Amount on the receipt/);
+    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.equal(texto().includes("78% · Partially completed"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("al recargar, el monto del recibo sigue en colones después de pedir otra foto", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        estado: "pendiente",
+        origen: null,
+        veredicto: null,
+        nota: null,
+        frase: null,
+        montoRevisado: "13.66",
+        lectura: { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" },
+      }),
+      foto: "/api/evidencias/1/foto",
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
+    await esperar(() => texto().includes("Monto en el comprobante"));
+    const monto = document.querySelector("dd.hyto-amount");
+    assert.equal(monto?.textContent, "₡6.900,00");
+    assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
+    assert.equal(texto().includes("US$13.66"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -542,9 +626,9 @@ test("pedir otra foto confirma el envío en español", async () => {
     await esperar(() => texto().includes("Pendiente"));
     const aviso = document.querySelector(".hyto-pedir-listo");
     assert.equal(aviso?.getAttribute("role"), "status");
-    assert.equal(aviso?.textContent, "Pediste otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
+    assert.equal(aviso?.textContent, "Pidió otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
     assert.equal(aviso?.id, "bloqueo-foto");
-    assert.equal(texto().includes("Esperando una foto nueva"), false);
+    assert.equal(texto().includes("cuando llegue la foto nueva"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -616,10 +700,10 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
     await act(async () => {
       enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    await esperar(() => texto().includes("No se pudo enviar. Revisa tu conexión e intenta de nuevo."));
-    assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revisa tu conexión e intenta de nuevo.");
+    await esperar(() => texto().includes("No se pudo enviar. Revise su conexión e intente de nuevo."));
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revise su conexión e intente de nuevo.");
     assert.match(texto(), /64% · Parcialmente completado/);
-    assert.equal(texto().includes("Pediste otra foto"), false);
+    assert.equal(texto().includes("Pidió otra foto"), false);
     assert.equal(texto().includes("Pendiente"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -653,7 +737,7 @@ test("lock budget stays off while a pending task waits for another photo", async
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-foto");
-    assert.match(texto(), /Waiting for a new photo\. This stays off until it arrives\./);
+    assert.match(texto(), /You can set the money aside when the new photo arrives\./);
     assert.match(texto(), /Pending/);
     await pulsar("Lock budget");
     assert.equal(document.querySelector("dialog"), null);
@@ -681,7 +765,7 @@ test("bloquear presupuesto queda apagado en español mientras espera la foto nue
     const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Bloquear presupuesto");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
-    assert.match(texto(), /Esperando una foto nueva\. Esto queda apagado hasta que llegue\./);
+    assert.match(texto(), /Va a poder apartar el dinero cuando llegue la foto nueva\./);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -706,7 +790,7 @@ test("a pending task with no photo still offers lock budget", async () => {
     const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Lock budget");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, false);
-    assert.equal(texto().includes("Waiting for a new photo"), false);
+    assert.equal(texto().includes("when the new photo arrives"), false);
     assert.equal(document.querySelector("#bloqueo-cobro"), null);
     assert.equal(texto().includes("You can't set the money aside yet"), false);
   } finally {
@@ -756,7 +840,7 @@ test("without a payout account for the volunteer, Lock budget is off and says so
   }
 });
 
-test("en español el aviso usa el tuteo y el nombre de quien tiene que abrir la tarea", async () => {
+test("en español el aviso usa usted y el nombre de quien tiene que abrir la tarea", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = revisionSinCobro("cuenta", []);
   try {
@@ -767,7 +851,7 @@ test("en español el aviso usa el tuteo y el nombre de quien tiene que abrir la 
     assert.equal(bloqueo.disabled, true);
     assert.equal(
       document.querySelector("#bloqueo-cobro")?.textContent,
-      "Todavía no puedes apartar la plata: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+      "Todavía no puede apartar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
     );
   } finally {
     globalThis.fetch = anterior;

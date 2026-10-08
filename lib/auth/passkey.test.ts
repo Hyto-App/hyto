@@ -169,7 +169,7 @@ test("la tarjeta de Cuenta en español usa tuteo y el nombre del botón del nave
         }),
       }),
     );
-    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|\bpasskey\b/i);
     await pulsar("Agregar llave de acceso");

@@ -27,12 +27,12 @@ test("el aviso de Lock budget sin cuenta nombra a quien tiene que abrir la tarea
   );
   assert.equal(
     avisoFaltaCobro({ ...base, faltaCobro: "cuenta" }, "es"),
-    "Todavía no puedes apartar la plata: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
+    "Todavía no puede apartar el dinero: Ana tiene que entrar a Hyto y abrir la tarea una vez.",
   );
   for (const miembro of ["u-1", "ana@hyto.test", ""]) {
     assert.equal(
       avisoFaltaCobro({ ...base, miembro, faltaCobro: "cuenta" }, "es"),
-      "Todavía no puedes apartar la plata: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
+      "Todavía no puede apartar el dinero: la persona voluntaria tiene que entrar a Hyto y abrir la tarea una vez.",
     );
   }
   assert.equal(
@@ -86,6 +86,14 @@ test("asking for another photo drops the old AI result and leaves the inbox", ()
   const devuelta = sinVeredicto({ ...base, estado: "pendiente" });
   assert.equal(devuelta.veredicto, null);
   assert.equal(enBandeja(devuelta), false);
+
+  const comida = vista.tareas.find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const lectura = { moneda: "CRC" as const, montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda" };
+  const recibo = sinVeredicto({ ...comida, estado: "pendiente", lectura });
+  assert.equal(recibo.veredicto, null);
+  assert.equal(recibo.frase, null);
+  assert.deepEqual(recibo.lectura, lectura);
 });
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {

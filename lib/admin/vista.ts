@@ -86,9 +86,12 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
   return sinVeredicto({ ...tarea, estado: "pendiente" });
 }
 
-/** After "Ask for another photo" the AI result belongs to the old file. */
+/**
+ * After "Ask for another photo" the score belongs to the old file.
+ * The receipt reading stays, so the amount on the receipt does not collapse to dollars.
+ */
 export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
-  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [], lectura: null };
+  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [] };
 }
 
 /**

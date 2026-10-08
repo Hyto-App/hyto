@@ -69,10 +69,10 @@ export function veredictoVigente(
 export async function leerVeredictoVigente(
   almacen: Almacen,
   tarea: TareaFila,
-): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null }> {
+): Promise<{ evidencia: EvidenciaFila | null; veredicto: VeredictoFila | null; guardado: VeredictoFila | null }> {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
-  const fila = await veredictoAlLeer(almacen, tarea, evidencia);
-  return { evidencia, veredicto: veredictoVigente(tarea, evidencia, fila) };
+  const guardado = await veredictoAlLeer(almacen, tarea, evidencia);
+  return { evidencia, veredicto: veredictoVigente(tarea, evidencia, guardado), guardado };
 }
 
 export async function tareaEnBandeja(almacen: Almacen, tarea: TareaFila): Promise<boolean> {
@@ -110,7 +110,7 @@ export async function intentosAnteriores(
 
 export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: Map<string, string>): Promise<TareaAdmin> {
   const mapa = nombres ?? new Map((await almacen.listarUsuarios()).map((usuario) => [usuario.id, usuario.nombre]));
-  const { evidencia, veredicto } = await leerVeredictoVigente(almacen, tarea);
+  const { evidencia, veredicto, guardado } = await leerVeredictoVigente(almacen, tarea);
   const anteriores = await intentosAnteriores(almacen, tarea, evidencia, veredicto !== null);
   return {
     id: tarea.id,
@@ -144,7 +144,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       tipo: tarea.tipo,
       condicion: tarea.condicion,
     }),
-    lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
+    lectura: lecturaDesdeVeredicto({ textoScout: guardado?.textoScout ?? null, origen: guardado?.origen ?? null }),
     ...(await fichaVoluntario(almacen, tarea.miembroId)),
     ...(anteriores.length > 0 ? { intentosAnteriores: anteriores } : {}),
   };

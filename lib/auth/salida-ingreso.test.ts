@@ -95,7 +95,7 @@ test("tras el código con next=/join/CODE vuelve al join y no a Mis tareas", asy
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
-    assert.match(texto(), /You're in\./);
+    assert.match(texto(), /You are signed in\./);
     await pulsar("Continue");
     assert.deepEqual(destinos, ["/join/CODE"]);
   } finally {
@@ -122,7 +122,7 @@ test("tras el código, una cuenta nueva abre Eventos y no Mis tareas", async () 
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
-    assert.match(texto(), /You're in\./);
+    assert.match(texto(), /You are signed in\./);
     await pulsar("Continue");
     assert.deepEqual(destinos, ["/eventos"]);
     await act(async () => {
@@ -196,7 +196,7 @@ test("una sesión ya iniciada muestra la misma salida, también en español", as
     const espanol = salida();
     assert.equal(espanol.getAttribute("href"), DESTINO);
     assert.equal(espanol.textContent?.trim(), "Preparar el cobro");
-    assert.match(texto(), /Da tu primer paso/);
+    assert.match(texto(), /Dé su primer paso/);
     assert.match(texto(), /Sesión iniciada/);
   } finally {
     await desmontar();

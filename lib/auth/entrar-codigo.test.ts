@@ -58,7 +58,7 @@ test("un 429 al pedir el código dice cuántos segundos faltan, en los dos idiom
     await entrar("es", authNuevo(1));
     await escribir('input[type="email"]', "ana@example.com");
     await pulsar("Continuar con correo");
-    assert.match(texto(), /Espera 19 s antes de pedir otro código/);
+    assert.match(texto(), /Espere 19 s antes de pedir otro código/);
     assert.equal(texto().includes("No hay conexión"), false);
     assert.equal(window.sessionStorage.getItem(CLAVE_RETO_CORREO), null);
 

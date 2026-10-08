@@ -176,7 +176,10 @@ test("a saved receipt reading reaches the review screen with the main reason fir
   await pedirOtraFotoHttp(almacen, "organizador", "comida");
   const tarea = await almacen.leerTarea("comida");
   assert.ok(tarea);
-  assert.equal((await tareaAdmin(almacen, tarea)).lectura, null);
+  const despues = await tareaAdmin(almacen, tarea);
+  assert.equal(despues.veredicto, null);
+  assert.equal(despues.nota, null);
+  assert.deepEqual(despues.lectura, { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" });
 });
 
 test("seeded sample tasks keep their sample verdict while pending", async () => {
