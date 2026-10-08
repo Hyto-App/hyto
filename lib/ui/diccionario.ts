@@ -1712,7 +1712,7 @@ export const es: Rama<typeof en> = {
     backToTasks: "Volver a mis tareas",
     taskRejected: "Tarea rechazada",
     missingPoint: "Falta: {point}",
-    organizerAsked: "El organizador pidió otra foto",
+    organizerAsked: "Quien organiza pidió otra foto",
     organizerAskedName: "{name} pidió otra foto",
     retakeFrame: "Toma otra foto con todo lo que se pide dentro del cuadro.",
     restFine: "Lo demás ya está bien.",

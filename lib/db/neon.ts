@@ -227,9 +227,10 @@ function identidadDeFila(crudo: Record<string, unknown> | undefined): Usuario | 
   if (!crudo) return null;
   const id = typeof crudo.id === "string" ? crudo.id : null;
   const email = typeof crudo.email === "string" ? crudo.email : null;
+  // An empty name is stored on purpose: it is not a piece of the email.
   const nombre = typeof crudo.nombre === "string" ? crudo.nombre : null;
   const rol = typeof crudo.rol === "string" ? crudo.rol : null;
-  if (!id || !email || !nombre || !rol) return null;
+  if (!id || !email || nombre === null || !rol) return null;
   return usuarioIdentidad({ id, email, nombre, rol });
 }
 
