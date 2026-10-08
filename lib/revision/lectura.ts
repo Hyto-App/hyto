@@ -129,7 +129,7 @@ export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?:
     legible: siNo(crudo.legible),
     faltantes: lista(crudo.faltantes),
     cumpleReglas: siNo(crudo.cumple_reglas),
-    coincide: coincideDe(crudo.coincide),
+    coincide: coincideDe(crudo.coincide ?? crudo.coincidencia),
   };
 }
 
@@ -282,6 +282,19 @@ function fechaDe(impresa: string, pedido: string | null, pais: string | null): s
     return `${dia}${separador}${mes}${separador}20${anio}`;
   });
   return leerFechaTrabajo(conAnio, { pedido, locale: pais === "US" ? "en-US" : "es-CR" }).elegida;
+}
+
+/**
+ * An explicit coincide assignment outside the parsed object, such as a line the model
+ * added after the JSON. Prose that merely discusses the photo is not a value.
+ */
+export function coincideMencionado(texto: string): CoincideGroq | null {
+  const marcado = texto.match(/["']coincide["']\s*:\s*["']([^"']+)["']/i);
+  if (marcado?.[1]) return coincideDe(marcado[1]);
+  // í is not a word character, so the boundary is checked after accents are folded.
+  const plano = texto.normalize("NFD").replace(/\p{M}/gu, "");
+  const suelto = plano.match(/\bcoincide\s*[:=]\s*["']?(si|yes|parcial|partial|no)\b/i);
+  return suelto?.[1] ? coincideDe(suelto[1]) : null;
 }
 
 /** si / parcial / no. Anything else, including an old reading with no key, is null. */

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { cerrar } from "./armar";
+import { FalloRevision } from "./fallo";
 import { etiquetasDe } from "./razones";
-import { escribirLectura, leerLectura, leerLecturaGuardada } from "./lectura";
+import { coincideMencionado, escribirLectura, leerLectura, leerLecturaGuardada } from "./lectura";
 import { preguntarLaya, senalesDeTrabajo, type RespuestasTrabajo } from "./laya";
 import { TOPE_FALTA_GRAVE } from "./pesos";
-import { pedidoVision } from "./scout";
+import { describirFoto, formatoRespuestaVision, modeloAdmiteEsquemaEstricto, pedidoVision } from "./scout";
 import { layaPuedeTaparPorOtra, mileOtraConGroqActivo, type EntornoOtraGroq } from "./otra-groq";
 
 const ENCENDIDO: EntornoOtraGroq = { HYTO_MILE_OTRA_CON_GROQ: "on" };
@@ -28,7 +29,7 @@ test("apagado, Laya puede tapar aunque Groq diga que coincide", () => {
   assert.equal(layaPuedeTaparPorOtra({ coincide: "no" }, APAGADO), true);
   assert.equal(layaPuedeTaparPorOtra(null, APAGADO), true);
   assert.equal(layaPuedeTaparPorOtra({ coincide: "si" }, ENCENDIDO), false);
-  assert.equal(layaPuedeTaparPorOtra({ coincide: "parcial" }, ENCENDIDO), false);
+  assert.equal(layaPuedeTaparPorOtra({ coincide: "parcial" }, ENCENDIDO), true);
   assert.equal(layaPuedeTaparPorOtra({ coincide: "no" }, ENCENDIDO), true);
   assert.equal(layaPuedeTaparPorOtra({}, ENCENDIDO), true);
   assert.equal(layaPuedeTaparPorOtra(null, ENCENDIDO), true);
@@ -40,9 +41,12 @@ test("apagado, el pedido a Groq no cambia; encendido, pide coincide", () => {
   assert.equal(pedidoVision(contexto, {}), apagado);
   assert.equal(apagado.includes("coincide"), false);
   const encendido = pedidoVision(contexto, ENCENDIDO);
-  assert.equal(encendido.replace(", coincide", "").replace(/\ncoincide: "si".*$/m, ""), apagado);
+  assert.notEqual(encendido, apagado);
   assert.match(encendido, /faltantes, coincide/);
-  assert.match(encendido, /coincide: "si" when the photo shows what the organizer asked for/);
+  assert.match(encendido, /coincide is required on every reply/);
+  assert.match(encendido, /Never omit the key/);
+  assert.match(encendido, /"si" only when the photo shows the thing the organizer asked for/);
+  assert.match(encendido, /The JSON is invalid without "coincide"/);
   assert.match(pedidoVision(contexto, { HYTO_MILE_OTRA_CON_GROQ: " ON " }), /faltantes, coincide/);
 });
 
@@ -60,6 +64,10 @@ test("coincide se lee y una lectura vieja sigue igual", () => {
   assert.equal(leerLectura({ ...base, coincide: "partial" })?.coincide, "parcial");
   assert.equal(leerLectura({ ...base, coincide: "no" })?.coincide, "no");
   assert.equal(leerLectura({ ...base, coincide: "maybe" })?.coincide, null);
+  assert.equal(leerLectura({ ...base, coincidencia: "si" })?.coincide, "si");
+  assert.equal(coincideMencionado('tail\n"coincide": "parcial"'), "parcial");
+  assert.equal(coincideMencionado("coincide: sí"), "si");
+  assert.equal(coincideMencionado("the photo does not match what was asked"), null);
 
   const con = leerLectura({ ...base, coincide: "si" });
   assert.ok(con);
@@ -83,23 +91,54 @@ test("apagado, otra y es_otra_cosa siguen en 0 aunque Groq diga que coincide", a
   assert.equal(cerrado?.veredicto, "insuficiente");
 });
 
-test("encendido, Groq que dice que coincide no deja que Laya ponga 0 ni el tope de 49", async () => {
-  for (const coincide of ["si", "parcial"] as const) {
-    const senales = await preguntar(ENCENDIDO, "otra", { coincide });
-    assert.notEqual(senales.score, "0");
-    assert.equal(senales.choice, "trabajo");
-    assert.equal(senales.motivos, undefined);
-    const cerrado = cerrar(
-      "trabajo",
-      null,
-      { texto: "Volunteers on stage.", monto: null, fecha: null, lectura: { ...lecturaMinima(), coincide } },
-      senales,
-      "scout",
-    );
-    assert.equal(cerrado?.nota, 80);
-    assert.equal(cerrado?.veredicto, "cumplió");
-    assert.ok((cerrado?.nota ?? 0) > TOPE_FALTA_GRAVE);
-  }
+test("encendido, solo coincide si quita el 0 y el tope de 49", async () => {
+  const senales = await preguntar(ENCENDIDO, "otra", { coincide: "si" });
+  assert.notEqual(senales.score, "0");
+  assert.equal(senales.choice, "trabajo");
+  assert.equal(senales.motivos, undefined);
+  const cerrado = cerrar(
+    "trabajo",
+    null,
+    { texto: "Volunteers on stage.", monto: null, fecha: null, lectura: { ...lecturaMinima(), coincide: "si" } },
+    senales,
+    "scout",
+  );
+  assert.equal(cerrado?.nota, 80);
+  assert.equal(cerrado?.veredicto, "cumplió");
+  assert.ok((cerrado?.nota ?? 0) > TOPE_FALTA_GRAVE);
+});
+
+test("encendido, coincide parcial conserva el 0 y el tope de 49 (caso 04)", async () => {
+  const cero = await preguntar(ENCENDIDO, "otra", { coincide: "parcial" });
+  assert.equal(cero.score, "0");
+  assert.equal(cero.choice, "otra");
+  assert.deepEqual(cero.motivos, ["otra"]);
+  const cerradoCero = cerrar(
+    "trabajo",
+    null,
+    {
+      texto: "Cursor stickers. ZEEK was asked and is not the brand in the photo.",
+      monto: null,
+      fecha: null,
+      lectura: { ...lecturaMinima(), coincide: "parcial" },
+    },
+    cero,
+    "scout",
+  );
+  assert.equal(cerradoCero?.nota, 0);
+
+  const trabajo = await preguntar(ENCENDIDO, "trabajo", { coincide: "parcial" });
+  assert.equal(trabajo.score, "80");
+  assert.deepEqual(trabajo.motivos, ["no_coincide"]);
+  const cerrado = cerrar(
+    "trabajo",
+    null,
+    { texto: "Cursor stickers.", monto: null, fecha: null, lectura: { ...lecturaMinima(), coincide: "parcial" } },
+    trabajo,
+    "scout",
+  );
+  assert.equal(cerrado?.nota, TOPE_FALTA_GRAVE);
+  assert.equal(cerrado?.veredicto, "insuficiente");
 });
 
 test("encendido, una foto de otra cosa sigue en 0 y el camino de trabajo sigue topado en 49", async () => {
@@ -169,6 +208,10 @@ test("la etiqueta del tope sigue a la misma regla", () => {
       false,
     );
     assert.equal(
+      etiquetasDe({ ...base, lectura: { ...lecturaMinima(), coincide: "parcial" } }).some((etiqueta) => etiqueta.id === "cap_no_coincide"),
+      true,
+    );
+    assert.equal(
       etiquetasDe({ ...base, lectura: { ...lecturaMinima(), coincide: "no" } }).some((etiqueta) => etiqueta.id === "cap_no_coincide"),
       true,
     );
@@ -180,6 +223,243 @@ test("la etiqueta del tope sigue a la misma regla", () => {
     if (previo === undefined) delete process.env.HYTO_MILE_OTRA_CON_GROQ;
     else process.env.HYTO_MILE_OTRA_CON_GROQ = previo;
   }
+});
+
+const FOTO = new Uint8Array([1, 2, 3]);
+const LECTURA_SIN = JSON.stringify({
+  tipo: "trabajo",
+  texto_completo: "Cursor stickers on a laptop. ZEEK was asked and is not visible.",
+  legible: true,
+  faltantes: ["ZEEK"],
+});
+
+test("el esquema exige coincide solo con el interruptor encendido", () => {
+  assert.equal(modeloAdmiteEsquemaEstricto("qwen/qwen3.8-27b"), true);
+  assert.equal(modeloAdmiteEsquemaEstricto("openai/gpt-oss-20b"), true);
+  assert.equal(modeloAdmiteEsquemaEstricto("openai/gpt-oss-120b"), true);
+  assert.equal(modeloAdmiteEsquemaEstricto("meta-llama/llama-4-scout-17b-16e-instruct"), false);
+  assert.deepEqual(formatoRespuestaVision("qwen/qwen3.8-27b", APAGADO), { type: "json_object" });
+  assert.deepEqual(formatoRespuestaVision("qwen/qwen3.8-27b", {}), { type: "json_object" });
+
+  const estricto = formatoRespuestaVision("qwen/qwen3.8-27b", ENCENDIDO);
+  assert.equal(estricto.type, "json_schema");
+  if (estricto.type !== "json_schema") return;
+  assert.equal(estricto.json_schema.strict, true);
+  assert.equal(estricto.json_schema.name, "lectura_hyto");
+  const required = estricto.json_schema.schema.required as string[];
+  assert.ok(required.includes("coincide"));
+  assert.equal(required.includes("texto_completo"), true);
+  assert.equal(estricto.json_schema.schema.additionalProperties, false);
+  const propiedades = estricto.json_schema.schema.properties as Record<string, { type?: string; enum?: string[] }>;
+  assert.deepEqual(propiedades.coincide, { type: "string", enum: ["si", "parcial", "no"] });
+
+  const laxo = formatoRespuestaVision("meta-llama/llama-4-scout-17b-16e-instruct", ENCENDIDO);
+  if (laxo.type === "json_schema") assert.equal(laxo.json_schema.strict, false);
+  const conRegla = formatoRespuestaVision("qwen/qwen3.8-27b", ENCENDIDO, true);
+  if (conRegla.type === "json_schema") assert.ok((conRegla.json_schema.schema.required as string[]).includes("cumple_reglas"));
+});
+
+test("apagado, Groq sigue en json_object y no reintenta aunque el texto mencione coincide", async () => {
+  let llamadas = 0;
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async (_input, init) => {
+      llamadas += 1;
+      const cuerpo = JSON.parse(String(init?.body)) as { response_format: unknown };
+      assert.deepEqual(cuerpo.response_format, { type: "json_object" });
+      return Response.json({ choices: [{ message: { content: `${LECTURA_SIN}\ncoincide: si` } }] });
+    },
+    undefined,
+    { condicion: "ZEEK stickers" },
+    APAGADO,
+  );
+  assert.equal(llamadas, 1);
+  assert.equal(descripcion.lectura?.coincide, null);
+});
+
+test("encendido, coincide dentro del JSON no pide otro llamado", async () => {
+  let llamadas = 0;
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async (_input, init) => {
+      llamadas += 1;
+      const cuerpo = JSON.parse(String(init?.body)) as { response_format: { type: string } };
+      assert.equal(cuerpo.response_format.type, "json_schema");
+      return Response.json({
+        choices: [{ message: { content: JSON.stringify({ ...JSON.parse(LECTURA_SIN), coincide: "si" }) } }],
+      });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 1);
+  assert.equal(descripcion.lectura?.coincide, "si");
+});
+
+test("encendido, un 400 del esquema reintenta una vez con json_object y no suma un tercero", async () => {
+  const formatos: unknown[] = [];
+  const conCampo = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async (_input, init) => {
+      const cuerpo = JSON.parse(String(init?.body)) as { response_format: unknown };
+      formatos.push(cuerpo.response_format);
+      if (formatos.length === 1) return new Response("json_schema is not supported", { status: 400 });
+      return Response.json({
+        choices: [{ message: { content: JSON.stringify({ ...JSON.parse(LECTURA_SIN), coincide: "no" }) } }],
+      });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(formatos.length, 2);
+  assert.equal((formatos[0] as { type: string }).type, "json_schema");
+  assert.deepEqual(formatos[1], { type: "json_object" });
+  assert.equal(conCampo.lectura?.coincide, "no");
+
+  let llamadas = 0;
+  const sinCampo = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async () => {
+      llamadas += 1;
+      if (llamadas === 1) return new Response("response_format rejected", { status: 400 });
+      return Response.json({ choices: [{ message: { content: LECTURA_SIN } }] });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 2);
+  assert.equal(sinCampo.lectura?.coincide ?? null, null);
+});
+
+test("encendido, un 400 de cupo y un 500 no cambian de formato", async () => {
+  let llamadas = 0;
+  await assert.rejects(
+    () =>
+      describirFoto(
+        FOTO,
+        "image/jpeg",
+        "clave",
+        async () => {
+          llamadas += 1;
+          return new Response(JSON.stringify({ error: { message: "You exceeded your token quota" } }), { status: 400 });
+        },
+        undefined,
+        {},
+        ENCENDIDO,
+      ),
+    (error: unknown) => error instanceof FalloRevision && error.code === "cupo",
+  );
+  assert.equal(llamadas, 1);
+
+  llamadas = 0;
+  await assert.rejects(
+    () =>
+      describirFoto(
+        FOTO,
+        "image/jpeg",
+        "clave",
+        async () => {
+          llamadas += 1;
+          return new Response("no", { status: 500 });
+        },
+        undefined,
+        {},
+        ENCENDIDO,
+      ),
+    (error: unknown) => error instanceof FalloRevision && error.code === "proveedor",
+  );
+  assert.equal(llamadas, 1);
+});
+
+test("encendido, coincide escrito fuera del JSON no pide otro llamado", async () => {
+  let llamadas = 0;
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async () => {
+      llamadas += 1;
+      return Response.json({ choices: [{ message: { content: `${LECTURA_SIN}\ncoincide: parcial` } }] });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 1);
+  assert.equal(descripcion.lectura?.coincide, "parcial");
+});
+
+test("encendido, si falta coincide hay un solo reintento de texto y un fallo conserva la lectura", async () => {
+  const cuerpos: { response_format?: { type?: string; json_schema?: { schema?: { required?: string[] } } }; messages?: { content: unknown }[] }[] = [];
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async (_input, init) => {
+      const cuerpo = JSON.parse(String(init?.body)) as (typeof cuerpos)[number];
+      cuerpos.push(cuerpo);
+      if (cuerpos.length === 1) return Response.json({ choices: [{ message: { content: LECTURA_SIN } }] });
+      return Response.json({ choices: [{ message: { content: '{"coincide":"si"}' } }] });
+    },
+    undefined,
+    { condicion: "ZEEK stickers" },
+    ENCENDIDO,
+  );
+  assert.equal(cuerpos.length, 2);
+  assert.ok(Array.isArray(cuerpos[0].messages?.[0]?.content));
+  assert.equal(typeof cuerpos[1].messages?.[0]?.content, "string");
+  assert.equal(cuerpos[1].response_format?.type, "json_schema");
+  assert.deepEqual(cuerpos[1].response_format?.json_schema?.schema?.required, ["coincide"]);
+  assert.match(String(cuerpos[1].messages?.[0]?.content), /ZEEK stickers/);
+  assert.equal(descripcion.lectura?.coincide, "si");
+
+  let llamadas = 0;
+  const sinCampo = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async () => {
+      llamadas += 1;
+      if (llamadas === 1) return Response.json({ choices: [{ message: { content: LECTURA_SIN } }] });
+      throw new TypeError("fetch failed");
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 2);
+  assert.equal(sinCampo.lectura?.coincide ?? null, null);
+  assert.match(sinCampo.texto, /Cursor stickers/);
+});
+
+test("encendido, la respuesta vieja sin lectura no pide coincide otra vez", async () => {
+  let llamadas = 0;
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async () => {
+      llamadas += 1;
+      return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 1);
+  assert.equal(descripcion.lectura, undefined);
+  assert.equal(descripcion.texto, "Mesa");
 });
 
 function lecturaMinima() {
@@ -238,7 +518,6 @@ async function preguntar(
     undefined,
     undefined,
     undefined,
-    lectura,
-    env,
+    { lectura, env },
   );
 }

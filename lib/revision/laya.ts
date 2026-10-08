@@ -1,4 +1,5 @@
 import { claveDeLaya } from "@/lib/config/entorno";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Senales } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { condicionParaLaya } from "./contexto-evento";
@@ -106,7 +107,7 @@ export function senalesDeTrabajo(
   env?: EntornoOtraGroq,
 ): Senales {
   const nota = notaDeTrabajo(respuestas, condicion);
-  // v1 es_otra_cosa still costs its weight. The 49 cap is separate, and Groq can withhold it.
+  // v1 es_otra_cosa still costs its weight. The 49 cap is separate, and only coincide "si" can withhold it.
   const motivos = motivosTrabajo(respuestas).filter(
     (motivo) => motivo !== "no_coincide" || layaPuedeTaparPorOtra(lectura, env),
   );
@@ -183,8 +184,20 @@ export async function preguntarLaya(
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
   regla?: string | null,
-  lectura?: { coincide?: CoincideGroq | null } | null,
-  env?: EntornoOtraGroq,
+  /**
+   * The only argument added after regla. Sibling switches put their own
+   * optional fields here (lectura, env) instead of another positional parameter.
+   */
+  opciones?: {
+    /** Ignored unless HYTO_MILE_TIPO_POR_TAREA is on. */
+    tipoTarea?: TipoTarea | null;
+    /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment. */
+    tipoPorTarea?: boolean;
+    /** Groq reading used by HYTO_MILE_OTRA_CON_GROQ. Only coincide "si" withholds the cap. */
+    lectura?: { coincide?: CoincideGroq | null } | null;
+    /** Overrides HYTO_MILE_OTRA_CON_GROQ. Unset reads the environment. */
+    env?: EntornoOtraGroq;
+  },
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
@@ -206,8 +219,8 @@ export async function preguntarLaya(
     const cumple = leerRegla(json, reglaLimpia);
     // "otra" used to force 0% before asking whether the photo matches the request.
     // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
-    // With HYTO_MILE_OTRA_CON_GROQ=on, Groq's coincide si/parcial withholds that 0.
-    if (clase === "otra" && respuestas.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(lectura, env)) {
+    // With HYTO_MILE_OTRA_CON_GROQ=on, only Groq's coincide "si" withholds that 0.
+    if (clase === "otra" && respuestas.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(opciones?.lectura, opciones?.env)) {
       return {
         choice: "otra",
         noul: false,
@@ -217,7 +230,7 @@ export async function preguntarLaya(
       };
     }
     return {
-      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido, lectura, env), cumple),
+      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido, opciones?.lectura, opciones?.env), cumple),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,

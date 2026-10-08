@@ -135,7 +135,7 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on asks Groq for coincide (si, parcial, or no). Laya's something-else cap applies only when Groq does not say the photo matches. Unset or anything else keeps the current prompt and the current cap.",
+    para: "Exact value on asks Groq for a required coincide (si, parcial, or no). Only si withholds Laya's something-else cap and the grade of 0. parcial, no, and a missing field keep them. One retry covers a rejected schema or a missing field. Unset or anything else keeps the current prompt and the current cap.",
   },
   {
     nombre: "HYTO_COMUNIDADES",

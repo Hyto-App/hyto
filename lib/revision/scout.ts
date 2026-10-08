@@ -4,9 +4,9 @@ import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { bloqueOrganizacion } from "./organizacion";
-import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
-import { CLAVES_LECTURA, leerLectura } from "./lectura";
-import { mileOtraConGroqActivo, type EntornoOtraGroq } from "./otra-groq";
+import { esCupo, falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
+import { CLAVES_LECTURA, coincideMencionado, leerLectura } from "./lectura";
+import { mileOtraConGroqActivo, type CoincideGroq, type EntornoOtraGroq } from "./otra-groq";
 
 export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
 
@@ -22,6 +22,8 @@ export function parametrosRazonamiento(modelo: string): { reasoning_effort?: "no
 const BASE = "https://api.groq.com/openai/v1";
 /** The structured reply carries a long description, so 1024 tokens could cut the JSON. */
 export const MAX_TOKENS = 2048;
+/** One short follow-up that only asks for coincide. It does not send the photo again. */
+const MAX_TOKENS_COINCIDE = 256;
 const MAX_CONDICION = 600;
 
 export type ContextoPedido = {
@@ -62,7 +64,12 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq
       : "",
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
     pedirCoincide
-      ? 'coincide: "si" when the photo shows what the organizer asked for. "parcial" when it shows part of it and something asked for is missing or unfinished. "no" when the photo is something else, such as a selfie, a blur, or an unrelated scene.'
+      ? [
+          'coincide is required on every reply. Use exactly one of "si", "parcial", or "no". Never omit the key. Never use null, true, or false.',
+          '"si" only when the photo shows the thing the organizer asked for, including the right object or brand.',
+          '"parcial" when that same thing is visible but something they asked for is missing or unfinished.',
+          '"no" when the photo shows something else: a different brand or object, a selfie, a blur, or an unrelated scene.',
+        ].join("\n")
       : "",
     (espanol
       ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. If you address the reader, use formal usted, never tú or vos. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
@@ -78,6 +85,7 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq
     (espanol
       ? "faltantes: a list of short phrases in Spanish only, never English, and in formal usted if they address the reader, never tú or vos, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."
       : "faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."),
+    pedirCoincide ? 'The JSON is invalid without "coincide". Include it as "si", "parcial", or "no".' : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -131,46 +139,122 @@ function fechaDe(valor: unknown): string | null {
   return `${calendario[1]}-${calendario[2]}-${calendario[3]}`;
 }
 
-export async function describirFoto(
-  bytes: Uint8Array,
-  tipo: string,
-  clave: string,
+/** Groq constrained decoding accepts strict schemas on these models. Anything else stays best-effort. */
+export function modeloAdmiteEsquemaEstricto(modelo: string): boolean {
+  return /^(?:qwen\/qwen3\.8-27b|openai\/gpt-oss-20b|openai\/gpt-oss-120b)$/i.test(modelo.trim());
+}
+
+type FormatoRespuesta = { type: "json_object" } | { type: "json_schema"; json_schema: { name: string; strict: boolean; schema: Record<string, unknown> } };
+
+/** Switch off: the same json_object as today. Switch on: coincide is a required enum. */
+export function formatoRespuestaVision(modelo: string, env: EntornoOtraGroq = process.env, conRegla = false): FormatoRespuesta {
+  if (!mileOtraConGroqActivo(env)) return { type: "json_object" };
+  const properties: Record<string, unknown> = {
+    tipo: { type: "string", enum: ["recibo", "trabajo", "otra"] },
+    pais: nulo("string"),
+    moneda: nulo("string"),
+    monto_original: nulo("string"),
+    monto_usd: { anyOf: [{ type: "string" }, { type: "number" }, { type: "null" }] },
+    fecha: nulo("string"),
+    comercio: nulo("string"),
+    articulos: { type: "array", items: { type: "string" } },
+    texto_completo: { type: "string" },
+    legible: { type: "boolean" },
+    faltantes: { type: "array", items: { type: "string" } },
+    coincide: { type: "string", enum: ["si", "parcial", "no"] },
+  };
+  if (conRegla) properties.cumple_reglas = { anyOf: [{ type: "boolean" }, { type: "null" }] };
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "lectura_hyto",
+      strict: modeloAdmiteEsquemaEstricto(modelo),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties,
+        required: Object.keys(properties),
+      },
+    },
+  };
+}
+
+function nulo(tipo: string): { anyOf: Array<{ type: string }> } {
+  return { anyOf: [{ type: tipo }, { type: "null" }] };
+}
+
+type MensajeGroq = { role: "user"; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> };
+
+function cuerpoChat(modelo: string, formato: FormatoRespuesta, messages: MensajeGroq[], maxTokens: number): Record<string, unknown> {
+  return {
+    model: modelo,
+    temperature: 0,
+    max_completion_tokens: maxTokens,
+    ...parametrosRazonamiento(modelo),
+    response_format: formato,
+    messages,
+  };
+}
+
+function formatoCoincide(modelo: string): FormatoRespuesta {
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "coincide_hyto",
+      strict: modeloAdmiteEsquemaEstricto(modelo),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { coincide: { type: "string", enum: ["si", "parcial", "no"] } },
+        required: ["coincide"],
+      },
+    },
+  };
+}
+
+function pedidoSoloCoincide(contexto: ContextoPedido, texto: string): string {
+  const condicion = contexto.condicion?.replace(/\s+/g, " ").trim().slice(0, MAX_CONDICION) ?? "";
+  return [
+    'Reply with JSON only. The only key is "coincide", and it must be "si", "parcial", or "no".',
+    '"si" only when the description shows the thing the organizer asked for, including the right object or brand.',
+    '"parcial" when that same thing is visible but something they asked for is missing.',
+    '"no" when it shows something else.',
+    condicion ? `The organizer asked for: "${condicion}".` : "",
+    `Description: ${texto}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function postGroq(
   fetchImpl: typeof fetch,
-  signal?: AbortSignal,
-  contexto: ContextoPedido = {},
-): Promise<Descripcion> {
-  if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
-  const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
-  const modelo = modeloVision();
-  let respuesta: Response;
+  clave: string,
+  cuerpo: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+): Promise<Response> {
   try {
-    respuesta = await fetchImpl(`${BASE}/chat/completions`, {
+    return await fetchImpl(`${BASE}/chat/completions`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${clave}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        model: modelo,
-        temperature: 0,
-        max_completion_tokens: MAX_TOKENS,
-        ...parametrosRazonamiento(modelo),
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: pedidoVision(contexto) },
-              { type: "image_url", image_url: { url: `data:${imagen.tipo};base64,${Buffer.from(imagen.bytes).toString("base64")}` } },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(cuerpo),
       signal,
     });
   } catch (error) {
     throw falloDeExcepcion(error, "groq", clave);
   }
+}
+
+/** A 400 that is not a quota error: Groq rejected the schema, so one json_object retry is safe. */
+async function formatoRechazado(respuesta: Response): Promise<boolean> {
+  if (respuesta.status !== 400) return false;
+  const crudo = await respuesta.clone().text();
+  return !esCupo(respuesta.status, crudo);
+}
+
+async function leerRespuestaGroq(respuesta: Response, clave: string): Promise<{ contenido: string; finish: string | undefined; status: number }> {
   if (!respuesta.ok) throw await falloHttp(respuesta, "groq", clave);
   let json: { choices?: { finish_reason?: string; message?: { content?: unknown } }[] };
   try {
@@ -188,15 +272,86 @@ export async function describirFoto(
       secreto: clave,
     });
   }
+  return { contenido, finish: choice?.finish_reason, status: respuesta.status };
+}
+
+function descripcionDe(contenido: string, finish: string | undefined, status: number, contexto: ContextoPedido, clave: string): Descripcion {
   const descripcion = leerDescripcion(contenido, contexto);
   if (!descripcion) {
-    const cortado = choice?.finish_reason === "length" || (contenido.includes("{") && !contenido.includes("}"));
+    const cortado = finish === "length" || (contenido.includes("{") && !contenido.includes("}"));
     throw new FalloRevision("respuesta", {
       fuente: "groq",
-      status: respuesta.status,
+      status,
       providerMessage: cortado ? "truncado" : "json",
       secreto: clave,
     });
   }
   return descripcion;
+}
+
+/**
+ * Switch on, and the structured reading still has no coincide: one text call, no photo.
+ * A failure here keeps the reading. The something-else cap stays, which is the safe side.
+ */
+async function coincidePorTexto(
+  fetchImpl: typeof fetch,
+  clave: string,
+  modelo: string,
+  contexto: ContextoPedido,
+  texto: string,
+  signal: AbortSignal | undefined,
+): Promise<CoincideGroq | null> {
+  try {
+    const respuesta = await postGroq(
+      fetchImpl,
+      clave,
+      cuerpoChat(modelo, formatoCoincide(modelo), [{ role: "user", content: pedidoSoloCoincide(contexto, texto) }], MAX_TOKENS_COINCIDE),
+      signal,
+    );
+    if (!respuesta.ok) return null;
+    const leida = await leerRespuestaGroq(respuesta, clave);
+    return coincideMencionado(leida.contenido);
+  } catch {
+    return null;
+  }
+}
+
+export async function describirFoto(
+  bytes: Uint8Array,
+  tipo: string,
+  clave: string,
+  fetchImpl: typeof fetch,
+  signal?: AbortSignal,
+  contexto: ContextoPedido = {},
+  env: EntornoOtraGroq = process.env,
+): Promise<Descripcion> {
+  if (!clave.trim()) throw new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" });
+  const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
+  const modelo = modeloVision();
+  const activo = mileOtraConGroqActivo(env);
+  const formato = formatoRespuestaVision(modelo, env, Boolean(reglaDeEvento(contexto.evento)));
+  const mensajes: MensajeGroq[] = [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: pedidoVision(contexto, env) },
+        { type: "image_url", image_url: { url: `data:${imagen.tipo};base64,${Buffer.from(imagen.bytes).toString("base64")}` } },
+      ],
+    },
+  ];
+  let respuesta = await postGroq(fetchImpl, clave, cuerpoChat(modelo, formato, mensajes, MAX_TOKENS), signal);
+  let reintentoFormato = false;
+  if (activo && formato.type === "json_schema" && (await formatoRechazado(respuesta))) {
+    reintentoFormato = true;
+    respuesta = await postGroq(fetchImpl, clave, cuerpoChat(modelo, { type: "json_object" }, mensajes, MAX_TOKENS), signal);
+  }
+  const leida = await leerRespuestaGroq(respuesta, clave);
+  const descripcion = descripcionDe(leida.contenido, leida.finish, leida.status, contexto, clave);
+  if (!activo || !descripcion.lectura || descripcion.lectura.coincide) return descripcion;
+  const mencionado = coincideMencionado(leida.contenido);
+  if (mencionado) return { ...descripcion, lectura: { ...descripcion.lectura, coincide: mencionado } };
+  if (reintentoFormato) return descripcion;
+  const pedido = await coincidePorTexto(fetchImpl, clave, modelo, contexto, descripcion.texto, signal);
+  if (!pedido) return descripcion;
+  return { ...descripcion, lectura: { ...descripcion.lectura, coincide: pedido } };
 }
