@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { TareasEvento } from "@/components/admin/TareasEvento";
 import { avisoBloqueo } from "@/lib/api/editar-tarea";
@@ -6,7 +6,7 @@ import { almacenNeon } from "@/lib/db/neon";
 import { exigirOrganizadorEvento, exigirPagina } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
-export const metadata: Metadata = { title: "Assign tasks" };
+export const generateMetadata = tituloDe("titulos.assign");
 
 export default async function PaginaTareasEvento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

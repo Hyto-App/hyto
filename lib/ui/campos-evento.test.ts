@@ -44,7 +44,7 @@ test("textareas do not resize by hand and previews use a 16:9 frame", () => {
 });
 
 test("the new strings exist in English and Spanish", () => {
-  for (const clave of ["detailsTitle", "coverDrop", "coverDropHelp", "coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
+  for (const clave of ["detailsTitle", "coverDrop","coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
     assert.ok((en.eventos as Record<string, string>)[clave], `en ${clave}`);
     assert.ok((es.eventos as Record<string, string>)[clave], `es ${clave}`);
   }

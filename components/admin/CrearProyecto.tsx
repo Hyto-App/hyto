@@ -178,7 +178,7 @@ export function CrearProyecto() {
       </header>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div>
+        <div className="min-w-0">
           <section className="hyto-card hyto-seccion" aria-labelledby="detalles-titulo">
             <h2 id="detalles-titulo" className="hyto-seccion-titulo">
               {t("eventos.detailsTitle")}
@@ -280,18 +280,6 @@ export function CrearProyecto() {
                         {t("tipos.reembolso")}
                       </button>
                     </div>
-                    <label className="sr-only" htmlFor={`tipo-${fila.clave}`}>
-                      {t("eventos.type")}
-                    </label>
-                    <select
-                      id={`tipo-${fila.clave}`}
-                      value={fila.tipo}
-                      onChange={(evento) => cambiar(fila.clave, { tipo: evento.target.value as TipoTarea })}
-                      className="sr-only"
-                    >
-                      <option value="trabajo">{t("tipos.trabajo")}</option>
-                      <option value="reembolso">{t("tipos.reembolso")}</option>
-                    </select>
                   </div>
                   <div>
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${fila.clave}`}>

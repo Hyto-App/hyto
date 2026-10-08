@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { TareasMiembro } from "@/components/admin/TareasMiembro";
@@ -9,7 +9,7 @@ import { almacenNeon } from "@/lib/db/neon";
 import { exigirEvento, exigirPagina, visorDeSesion } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
-export const metadata: Metadata = { title: "Event" };
+export const generateMetadata = tituloDe("titulos.event");
 
 export default async function PaginaEvento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

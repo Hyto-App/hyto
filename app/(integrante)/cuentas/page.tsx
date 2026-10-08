@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { RedirigirConfiguracion } from "@/components/integrante/RedirigirConfiguracion";
 import { ANCLA_PASSKEY, PARAM_PASSKEY, RUTA_PASSKEY_CUENTAS } from "@/lib/integrante/enlacePasskey";
 import { exigirPagina } from "@/lib/sesion/puerta";
 
-export const metadata: Metadata = { title: "Settings" };
+export const generateMetadata = tituloDe("titulos.settings");
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

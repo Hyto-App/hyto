@@ -10,7 +10,6 @@ import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
 import { useRolDemo } from "@/components/sesion/InsigniaDemo";
-import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import type { Clave } from "@/lib/ui/diccionario";
 import { idNavOrganizador, muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 import { destinoVolver } from "@/lib/ui/volver";
@@ -194,7 +193,7 @@ export function Marco({
             <kbd>Ctrl+K</kbd>
           </button>
           <Link href="/privacy" className="hyto-foot-privacidad">
-            {ENLACE_PRIVACIDAD}
+            {t("nav.privacy")}
           </Link>
           <div className="hyto-brand-acciones hyto-foot-acciones">
             <SelectorIdiomaMenu className="hyto-idioma-marco" />

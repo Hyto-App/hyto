@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { Informe } from "@/components/admin/Informe";
 import { almacenNeon } from "@/lib/db/neon";
 import { exigirOrganizadorEvento } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
-export const metadata: Metadata = { title: "Report" };
+export const generateMetadata = tituloDe("titulos.report");
 
 export default async function PaginaInformeEvento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

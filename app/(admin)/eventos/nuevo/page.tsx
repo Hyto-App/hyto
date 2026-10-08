@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { CrearProyecto } from "@/components/admin/CrearProyecto";
 import { exigirPagina } from "@/lib/sesion/puerta";
 
-export const metadata: Metadata = { title: "New event" };
+export const generateMetadata = tituloDe("titulos.newEvent");
 
 export default async function PaginaEventoNuevo() {
   await exigirPagina();

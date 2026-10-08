@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import Link from "next/link";
 import { Entrar } from "@/components/admin/Entrar";
 import { AnclaPasskey } from "@/components/integrante/AnclaPasskey";
@@ -8,11 +8,10 @@ import { Salir } from "@/components/sesion/Salir";
 import { Texto } from "@/components/ui/Idioma";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { ANCLA_PASSKEY, PARAM_PASSKEY } from "@/lib/integrante/enlacePasskey";
-import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { leerModoDemo } from "@/lib/sesion/vista";
 
-export const metadata: Metadata = { title: "Settings" };
+export const generateMetadata = tituloDe("titulos.settings");
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -38,7 +37,7 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
       <PanelCuenta />
       <p className="mt-8 text-sm">
         <Link href="/privacy" className="text-[var(--suave)] underline underline-offset-4">
-          {ENLACE_PRIVACIDAD}
+          <Texto clave="nav.privacy" />
         </Link>
       </p>
       {demo ? (

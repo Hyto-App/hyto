@@ -5426,6 +5426,7 @@ a {
   color: var(--tinta);
   font-weight: 500;
   text-align: left;
+  white-space: nowrap;
 }
 
 .hyto-preguntar kbd {
