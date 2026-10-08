@@ -29,7 +29,8 @@ import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow
 import { tareaEjemploDeDemo } from "@/lib/admin/ejemplo";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
-import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
 import { CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
@@ -44,7 +45,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea, montoQueAparta } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -53,14 +54,30 @@ import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, titulo
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
+function frasePagada(tarea: TareaAdmin, idioma: "en" | "es"): string {
+  const detalle = detalleMonto(tarea);
+  const frase = explicarPago(
+    {
+      tipo: tarea.tipo,
+      monto: tarea.monto,
+      tope: tarea.tope,
+      montoConfirmado: tarea.tipo === "reembolso" ? detalle.cifra : null,
+    },
+    idioma,
+  )?.frase;
+  return frase || formatearMonto(detalle.cifra, idioma);
+}
+
 export function Revision({
   tareaId,
   eventoId,
   firmar,
+  saldo = null,
 }: {
   tareaId: string;
   eventoId?: string;
   firmar?: (unsignedXdr: string) => Promise<string>;
+  saldo?: string | null;
 }) {
   const modoDemo = useModoDemo();
   const t = useTexto();
@@ -451,9 +468,13 @@ export function Revision({
     tarea.estado === "pendiente" &&
     tarea.veredicto === null &&
     (pidioOtra || Boolean(foto) || (tarea.intentosAnteriores?.length ?? 0) > 0);
+  const cifraBloqueo = montoDeVista(tarea);
+  const faltaSaldo =
+    real && cifraBloqueo !== null ? faltaParaBloquear(saldo, String(cifraBloqueo)) : null;
   const describeBloqueo = [
     esperaOtraFoto ? "bloqueo-foto" : "",
     esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
+    faltaSaldo ? "bloqueo-saldo" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -461,6 +482,7 @@ export function Revision({
   const pago = enlacePago(tarea.hashPago);
   const pendiente = pagoPendiente(tarea);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
+  const cadenaBloqueo = real && tarea.estado !== "pagado" && !pendiente ? enlaceContrato(contrato) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
@@ -514,7 +536,11 @@ export function Revision({
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
-          <p className="hyto-amount text-2xl">{montoDeTarea(tarea, idioma)}</p>
+          <p className="hyto-amount text-2xl">
+            {tarea.tipo === "reembolso"
+              ? t("eventos.limit", { amount: formatearMonto(tarea.tope ?? tarea.monto, idioma) })
+              : formatearMonto(tarea.monto, idioma)}
+          </p>
         </div>
       </header>
       {sesionVencida ? <AvisoSesion /> : null}
@@ -756,13 +782,22 @@ export function Revision({
                     {t("revision.lockNeedsAmount")}
                   </p>
                 ) : null}
+                {faltaSaldo ? (
+                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("errores.saldoNoCubre", {
+                      n: faltaSaldo.necesario,
+                      reserva: faltaSaldo.reserva,
+                      falta: faltaSaldo.falta,
+                    })}
+                  </p>
+                ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto}
+                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || Boolean(faltaSaldo)}
                   aria-busy={ocupado}
                   aria-describedby={describeBloqueo || undefined}
                   onClick={() => {
-                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto) return;
+                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || faltaSaldo) return;
                     setConfirmacion({ clave: "bloquear", abierto: true });
                   }}
                 >
@@ -773,7 +808,25 @@ export function Revision({
             {botones.fondear ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
-                <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "fondear", abierto: true })}>
+                {faltaSaldo ? (
+                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("errores.saldoNoCubre", {
+                      n: faltaSaldo.necesario,
+                      reserva: faltaSaldo.reserva,
+                      falta: faltaSaldo.falta,
+                    })}
+                  </p>
+                ) : null}
+                <BotonPrincipal
+                  type="button"
+                  disabled={ocupado || modoDemo || Boolean(faltaSaldo)}
+                  aria-busy={ocupado}
+                  aria-describedby={faltaSaldo ? "bloqueo-saldo" : undefined}
+                  onClick={() => {
+                    if (ocupado || modoDemo || faltaSaldo) return;
+                    setConfirmacion({ clave: "fondear", abierto: true });
+                  }}
+                >
                   {paso === "fondear" ? etiquetaPaso("fondear") : t("pago.finishLocking")}
                 </BotonPrincipal>
               </>
@@ -839,8 +892,8 @@ export function Revision({
             </div>
           ) : null}
 
-          {transaccion ? (
-            <a href={transaccion} className="hyto-btn-line is-inline mt-4 px-5">
+          {cadenaBloqueo || transaccion ? (
+            <a href={cadenaBloqueo ?? transaccion ?? ""} className="hyto-btn-line is-inline mt-4 px-5">
               {t("pago.viewChain")}
             </a>
           ) : null}
@@ -859,7 +912,7 @@ export function Revision({
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: formatearMonto(detalleMonto(tarea).cifra, idioma) })}</p>
+              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: frasePagada(tarea, idioma) })}</p>
               {pago ? (
                 <a href={pago} className="hyto-btn-line is-inline px-5">
                   {t("pago.viewChain")}

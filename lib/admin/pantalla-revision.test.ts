@@ -278,6 +278,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
+    assert.match(texto(), /Limit US\$15\. Confirm this amount before locking the budget\./);
+    assert.equal(texto().includes("deploy"), false);
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
@@ -1027,6 +1029,59 @@ test("en demo, demo-comida muestra la revisión de ejemplo aunque la red no resp
     await esperar(() => texto().includes("Team meal"));
     assert.match(texto(), /90%/);
     assert.equal(texto().includes("Loading…"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("bloquear queda apagado cuando el saldo no alcanza y el aviso usa dos decimales", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ monto: "39.60", veredicto: "cumplió", origen: "scout", nota: 90, frase: "Booth ready." }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand", saldo: "1.30" }));
+    await esperar(() => rotulo("Lock budget"));
+    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock budget");
+    assert.equal(boton instanceof HTMLButtonElement && boton.disabled, true);
+    const aviso = document.querySelector("#bloqueo-saldo");
+    assert.match(aviso?.textContent ?? "", /US\$40\.60/);
+    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /You are short US\$39\.30/);
+    assert.equal(/US\$40\.6(?!0)/.test(aviso?.textContent ?? ""), false);
+    assert.equal(document.querySelector("[role=dialog]"), null);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("una tarea ya bloqueada sigue mostrando Ver en la cadena de testnet al recargar", async () => {
+  const anterior = globalThis.fetch;
+  const contrato = `C${"B".repeat(55)}`;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: 20 } });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "20" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("View on blockchain"));
+    const enlace = [...document.querySelectorAll("a")].find((nodo) => nodo.textContent?.trim() === "View on blockchain");
+    assert.equal(enlace?.getAttribute("href"), `https://stellar.expert/explorer/testnet/contract/${contrato}`);
+    assert.equal(enlace?.getAttribute("href")?.includes("/public/"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

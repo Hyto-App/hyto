@@ -1,6 +1,8 @@
 import { detalleMonto, normalizarMonto } from "@/lib/admin/vista";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { cifraConfirmada, montoDentroDelTope } from "@/lib/escrow/monto";
+import { brutoDeNeto, brutoFondado, netoEnCentavos } from "@/lib/escrow/recibido";
+import { texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
 function localeDe(idioma: Idioma): string {
@@ -159,6 +161,41 @@ export function montoAsegurado(
   return normal ? formatearMonto(normal, idioma) : "";
 }
 
+type PagoVisible = {
+  tipo: "trabajo" | "reembolso";
+  monto: string;
+  tope: string | null;
+  montoConfirmado?: string | null;
+  montoPagado?: string | null;
+};
+
+/** Rounded net, and the same net with the fee written out when it changes the cents. */
+export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto: string; frase: string } | null {
+  const bruto =
+    brutoFondado(tarea, tarea.montoConfirmado) ?? (tarea.montoPagado ? brutoDeNeto(tarea.montoPagado) : null);
+  if (!bruto) return null;
+  const partes = netoEnCentavos(bruto);
+  if (!partes) return null;
+  const corto = formatearMonto(partes.neto, idioma);
+  if (!corto) return null;
+  if (partes.comision === "0") return { corto, frase: corto };
+  return {
+    corto,
+    frase: texto(idioma, "revision.netoExplicado", {
+      neto: corto,
+      bruto: formatearMonto(partes.bruto, idioma),
+      comision: formatearMonto(partes.comision, idioma),
+    }),
+  };
+}
+
+/** A stored net such as 12.44256, explained from the cent amount that was funded. */
+export function explicarNeto(neto: string, idioma: Idioma = "en"): string {
+  const bruto = brutoDeNeto(neto);
+  if (!bruto) return formatearRecibido(neto, idioma);
+  return explicarPago({ tipo: "trabajo", monto: bruto, tope: null }, idioma)?.frase || formatearRecibido(neto, idioma);
+}
+
 type MontoLista = {
   estado?: string;
   tipo: "trabajo" | "reembolso";
@@ -169,8 +206,8 @@ type MontoLista = {
 };
 
 /**
- * Amount on an event task row. A paid task shows what was paid.
- * A reimbursement that paid less than its cap also shows that cap.
+ * Amount on an event task row. A paid task shows the net and the fee.
+ * Every paid task also shows its limit, whether or not the payment used the whole cap.
  */
 export function lineaMontoTarea(
   tarea: MontoLista,
@@ -186,9 +223,12 @@ export function lineaMontoTarea(
     montoConfirmado: tarea.montoConfirmado ?? null,
     montoRevisado: tarea.montoRevisado ?? null,
   } as TareaAdmin);
-  const cifra = formatearMonto(detalle.cifra, idioma);
+  const confirmado = tarea.tipo === "reembolso" ? (tarea.montoConfirmado ?? detalle.cifra) : null;
+  const pago = explicarPago({ ...tarea, montoConfirmado: confirmado }, idioma);
+  const cifra = pago?.frase || formatearMonto(detalle.cifra, idioma);
   if (!cifra) return montoDeTarea(tarea, idioma);
-  const limite = detalle.tope && detalle.tope !== detalle.cifra ? formatearMonto(detalle.tope, idioma) : "";
+  const tope = tarea.tipo === "reembolso" ? (tarea.tope || tarea.monto) : tarea.monto;
+  const limite = tope ? formatearMonto(tope, idioma) : "";
   if (limite && etiquetaLimite) return `${cifra} · ${etiquetaLimite(limite)}`;
   return cifra;
 }

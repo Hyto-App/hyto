@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
+import { TituloDocumento } from "@/components/ui/TituloDocumento";
 import { ESLOGAN } from "@/components/ui/marca/trazos";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
@@ -60,7 +61,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <script dangerouslySetInnerHTML={{ __html: TEMA_BOOT }} />
       </head>
       <body className="min-h-dvh antialiased">
-        <ProveedorIdioma idioma={idioma}>{children}</ProveedorIdioma>
+        <ProveedorIdioma idioma={idioma}>
+          {children}
+          <TituloDocumento />
+        </ProveedorIdioma>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@ import { USDC } from "@/lib/integrante/identidades";
 import { HORIZON_TESTNET } from "@/lib/integrante/trustline";
 
 const ESCALA = 10_000_000n;
+const CENTAVO = 100_000n;
 const HORIZON_PUBLIC = "https://horizon.stellar.org";
 
 /** Small USDC reserve kept on top of the amount being locked. */
@@ -71,17 +72,63 @@ export function conReserva(monto: string): string | null {
   return desdeUnidades(base + reserva);
 }
 
+export type FaltaSaldo = {
+  necesario: string;
+  reserva: string;
+  falta: string;
+};
+
+/** US$40.6 and US$1 become US$40.60 and US$1.00. Null when the text is not an amount. */
+export function conDosDecimales(valor: string): string | null {
+  const unidades = aUnidades(valor);
+  if (unidades === null) return null;
+  return textoDeCentavos(redondearCentavos(unidades));
+}
+
+/**
+ * What is missing to lock `monto` plus the reserve.
+ * Null when the balance is unknown, the amount is empty, or the balance already covers it.
+ * Amounts always use two decimals.
+ */
+export function faltaParaBloquear(saldo: string | null, monto: string): FaltaSaldo | null {
+  if (saldo === null) return null;
+  const base = aUnidades(monto);
+  if (base === null || base <= 0n) return null;
+  const necesario = conReserva(monto);
+  const disponible = aUnidades(saldo);
+  const pedido = necesario ? aUnidades(necesario) : null;
+  if (disponible === null || pedido === null || disponible >= pedido) return null;
+  return {
+    necesario: textoDeCentavos(redondearCentavos(pedido)),
+    reserva: textoDeCentavos(redondearCentavos(aUnidades(RESERVA_USDC) ?? 0n)),
+    falta: textoDeCentavos(centavosHaciaArriba(pedido - disponible)),
+  };
+}
+
+export function avisoSaldoInsuficiente(falta: FaltaSaldo): string {
+  return `Your balance does not cover US$${falta.necesario} (this amount plus a US$${falta.reserva} reserve). You are short US$${falta.falta}.`;
+}
+
 /**
  * The create-event button uses this before it asks the server.
  * Null means the balance is unknown or already covers the tasks plus the reserve.
  */
-export function faltaParaCrear(saldo: string | null, montoTareas: string): { necesario: string; reserva: string } | null {
-  if (saldo === null) return null;
-  const base = aUnidades(montoTareas);
-  if (base === null || base <= 0n) return null;
-  const necesario = conReserva(montoTareas);
-  if (!necesario || alcanza(saldo, necesario)) return null;
-  return { necesario, reserva: RESERVA_USDC };
+export function faltaParaCrear(saldo: string | null, montoTareas: string): FaltaSaldo | null {
+  return faltaParaBloquear(saldo, montoTareas);
+}
+
+function redondearCentavos(unidades: bigint): bigint {
+  return (unidades + CENTAVO / 2n) / CENTAVO;
+}
+
+function centavosHaciaArriba(unidades: bigint): bigint {
+  return (unidades + CENTAVO - 1n) / CENTAVO;
+}
+
+function textoDeCentavos(centavos: bigint): string {
+  const entero = centavos / 100n;
+  const frac = (centavos % 100n).toString().padStart(2, "0");
+  return `${entero}.${frac}`;
 }
 
 /** Balance already on the ledger, or null when it cannot be read. Does not create anything. */
@@ -144,10 +191,12 @@ export async function rechazoSiFondos(wallet: string, monto: string, leer: Lecto
     const lectura = await leer(limpia);
     if (lectura.saldo === null) return Response.json({ aviso: "This wallet is not on the network yet." }, { status: 400 });
     if (!alcanza(lectura.saldo, necesario)) {
-      return Response.json(
-        { aviso: `Your balance does not cover US$${necesario} (this amount plus a US$${RESERVA_USDC} reserve).` },
-        { status: 400 },
-      );
+      const detalle = faltaParaBloquear(lectura.saldo, monto) ?? {
+        necesario: conDosDecimales(necesario) ?? necesario,
+        reserva: conDosDecimales(RESERVA_USDC) ?? RESERVA_USDC,
+        falta: "0.01",
+      };
+      return Response.json({ aviso: avisoSaldoInsuficiente(detalle) }, { status: 400 });
     }
   } catch {
     return Response.json({ aviso: "Could not read the USDC balance." }, { status: 503 });

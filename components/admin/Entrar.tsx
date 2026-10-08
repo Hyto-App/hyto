@@ -38,6 +38,8 @@ import {
   esCorreoDemo,
   textoEspera,
 } from "@/lib/auth/errores";
+import { pedirOtp } from "@/lib/auth/pedidoOtp";
+import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
@@ -251,13 +253,20 @@ export function Entrar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The ref has to match the second on screen before the effect runs. A tap in
+  // that gap used to see the previous second and do nothing.
+  esperaRef.current = espera;
+
   useEffect(() => {
-    esperaRef.current = espera;
     if (espera <= 0) {
       setMostrarEspera(false);
       return;
     }
-    const id = window.setTimeout(() => setEspera((actual) => Math.max(0, actual - 1)), 1000);
+    const id = window.setTimeout(() => {
+      // Move the ref before React paints, and before a click already in this turn.
+      const siguiente = tickEspera(esperaRef.current, esperaRef);
+      setEspera(siguiente);
+    }, 1000);
     return () => window.clearTimeout(id);
   }, [espera]);
 
@@ -512,7 +521,7 @@ export function Entrar({
         setAviso(AVISO_METODO_RECUPERACION);
         return;
       }
-      const auth = await crear();
+      const auth = authRef.current ?? (await crear());
       if (!auth) {
         console.error("Falta NEXT_PUBLIC_CAVOS_APP_ID");
         setAviso(AVISO_CONFIG);
@@ -522,7 +531,7 @@ export function Entrar({
         await enviarEnlace(auth, email);
         return;
       }
-      await Promise.all([auth.sendOtp(email), pausa(esperaMinima)]);
+      await Promise.all([pedirOtp(auth, email), pausa(esperaMinima)]);
       authRef.current = auth;
       const nonce = nonceDe(auth);
       if (nonce) guardarRetoCorreo({ email, nonce, intencion: pestana });
@@ -1141,9 +1150,10 @@ export function Entrar({
                 ) : null}
                 <button
                   type="button"
-                  className="hyto-login-btn is-fantasma"
+                  className={`hyto-login-btn is-fantasma${espera > 0 ? " is-espera" : ""}`}
                   onClick={pedirOtroEnlace}
-                  disabled={ocupado !== null || espera > 0}
+                  disabled={ocupado !== null}
+                  aria-disabled={espera > 0 || undefined}
                   data-foco=""
                 >
                   <Icono nombre="otra" />
@@ -1246,9 +1256,10 @@ export function Entrar({
                     </button>
                     <button
                       type="button"
-                      className="hyto-login-btn is-fantasma"
+                      className={`hyto-login-btn is-fantasma${espera > 0 ? " is-espera" : ""}`}
                       onClick={pedirOtroCodigo}
-                      disabled={ocupado !== null || espera > 0}
+                      disabled={ocupado !== null}
+                      aria-disabled={espera > 0 || undefined}
                     >
                       <Icono nombre="otra" />
                       {espera > 0 ? t("entrar.reenviarEn", { t: reloj(espera) }) : t("entrar.resend")}
@@ -1278,16 +1289,24 @@ export function Entrar({
                     ) : null}
                     <p className="hyto-login-reenvio">
                       {t("entrar.noLlego")}{" "}
-                      {espera > 0 ? (
-                        <span className="hyto-login-tenue">
-                          <Icono nombre="reloj" />
-                          {t("entrar.reenviarEn", { t: reloj(espera) })}
-                        </span>
-                      ) : (
-                        <button type="button" onClick={pedirOtroCodigo} disabled={ocupado !== null}>
-                          {enviando ? t("entrar.enviandoCodigo") : t("entrar.resend")}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className={espera > 0 ? "is-espera" : undefined}
+                        onClick={pedirOtroCodigo}
+                        disabled={ocupado !== null}
+                        aria-disabled={espera > 0 || undefined}
+                      >
+                        {espera > 0 ? (
+                          <>
+                            <Icono nombre="reloj" />
+                            {t("entrar.reenviarEn", { t: reloj(espera) })}
+                          </>
+                        ) : enviando ? (
+                          t("entrar.enviandoCodigo")
+                        ) : (
+                          t("entrar.resend")
+                        )}
+                      </button>
                     </p>
                     <p className="hyto-login-ayuda is-chica">{claro(AVISO_SPAM)}</p>
                   </>

@@ -198,10 +198,11 @@ test("el panel muestra el neto recibido al lado del saldo, no el monto apartado"
     await asentar();
     assert.match(texto(), /Your Hyto balance: US\$14\.43656/);
     assert.match(texto(), /All time/);
-    assert.match(texto(), /US\$1\.994/);
-    assert.match(texto(), /US\$12\.44256/);
+    assert.match(texto(), /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+    assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
+    assert.equal(texto().includes("US$1.994"), false);
+    assert.equal(texto().includes("US$12.44256"), false);
     assert.equal(texto().includes("US$14.48"), false);
-    assert.equal(texto().includes("US$2"), false);
     assert.equal(
       [...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")),
       false,

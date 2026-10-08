@@ -283,7 +283,8 @@ for (const clave of CLAVES_CONOCIDAS) {
 }
 
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
-const SALDO_NO_CUBRE = /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\.$/;
+const SALDO_NO_CUBRE =
+  /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\. You are short US\$([\d.]+)\.$/;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
@@ -292,7 +293,7 @@ export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
   const saldo = SALDO_NO_CUBRE.exec(limpio);
-  if (saldo) return texto(idioma, "errores.saldoNoCubre", { n: saldo[1], reserva: saldo[2] });
+  if (saldo) return texto(idioma, "errores.saldoNoCubre", { n: saldo[1], reserva: saldo[2], falta: saldo[3] });
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
   const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);

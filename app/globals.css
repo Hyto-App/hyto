@@ -3063,6 +3063,31 @@ html.hyto-firmando body {
   animation: hyto-login-aparece 200ms ease both;
 }
 
+/* Same node for the whole countdown, so a tap as it hits 0 is not lost on a swap. */
+.hyto-login-reenvio button.is-espera {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--l-tenue);
+  text-decoration: none;
+  animation: none;
+  cursor: default;
+}
+
+.hyto-login-reenvio button.is-espera .hyto-login-icono {
+  width: 15px;
+  height: 15px;
+}
+
+.hyto-login-btn.is-espera {
+  opacity: 0.4;
+}
+
+.hyto-login-btn.is-espera:hover,
+.hyto-login-btn.is-espera:active {
+  transform: none;
+}
+
 .hyto-login-tenue {
   display: inline-flex;
   align-items: center;
