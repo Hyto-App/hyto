@@ -3,6 +3,7 @@ import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { TareasEvento } from "@/components/admin/TareasEvento";
 import { avisoBloqueo } from "@/lib/api/editar-tarea";
 import { almacenNeon } from "@/lib/db/neon";
+import { personaVisible } from "@/lib/perfil/vista";
 import { exigirOrganizadorEvento, exigirPagina } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
@@ -18,10 +19,7 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
   const usuarios = await almacen.listarUsuarios();
   const miembros = (await almacen.listarMiembros(id))
     .filter((miembro) => miembro.estado === "active")
-    .map((miembro) => ({
-      usuarioId: miembro.usuarioId,
-      email: usuarios.find((usuario) => usuario.id === miembro.usuarioId)?.email ?? miembro.usuarioId,
-    }));
+    .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId));
   const tareas = await Promise.all(
     (await almacen.listarTareas())
       .filter((fila) => fila.proyectoId === id)

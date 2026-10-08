@@ -290,7 +290,22 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     motivoCopia: texto(datos.motivoCopia),
     etiquetas: leerEtiquetas(datos.etiquetas),
     lectura: leerLectura(datos.lectura),
+    ...perfilDe(datos.perfilVoluntario),
   };
+}
+
+function perfilDe(valor: unknown): { perfilVoluntario: { experiencia: string | null; etiquetas: string[] } } | Record<string, never> {
+  const perfil = leerPerfilVoluntario(valor);
+  return perfil ? { perfilVoluntario: perfil } : {};
+}
+
+function leerPerfilVoluntario(valor: unknown): { experiencia: string | null; etiquetas: string[] } | null {
+  if (!valor || typeof valor !== "object" || Array.isArray(valor)) return null;
+  const datos = valor as { experiencia?: unknown; etiquetas?: unknown };
+  const experiencia = typeof datos.experiencia === "string" && datos.experiencia.trim() ? datos.experiencia.trim() : null;
+  const etiquetas = Array.isArray(datos.etiquetas) ? datos.etiquetas.filter((item): item is string => typeof item === "string") : [];
+  if (!experiencia && etiquetas.length === 0) return null;
+  return { experiencia, etiquetas };
 }
 
 function leerLectura(valor: unknown): LecturaVisible | null {

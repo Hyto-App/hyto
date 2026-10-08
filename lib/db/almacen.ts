@@ -33,8 +33,10 @@ export type CambioTarea = Partial<
 export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
+  leerUsuario(id: string): Promise<Usuario | null>;
   insertarUsuario(usuario: Usuario): Promise<void>;
   guardarUsuario(usuario: Usuario): Promise<void>;
+  guardarPerfilVoluntario(id: string, cambio: { experiencia: string | null; etiquetas: string }): Promise<void>;
   leerProyecto(id: string): Promise<Proyecto | null>;
   listarProyectos(): Promise<Proyecto[]>;
   ultimoProyecto(): Promise<Proyecto | null>;

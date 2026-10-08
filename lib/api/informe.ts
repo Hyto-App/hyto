@@ -6,6 +6,8 @@ import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { etiquetasDesdeVeredicto, lecturaDesdeVeredicto } from "@/lib/revision/mostrar-razones";
 import { fraseConNota } from "@/lib/revision/armar";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
+import { fichaDeTarea } from "./perfil";
+import type { FichaVoluntario } from "@/lib/perfil/reglas";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { baseNoLista, json } from "./json";
 
@@ -111,7 +113,13 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
       tipo: tarea.tipo,
     }),
     lectura: lecturaDesdeVeredicto({ textoScout: veredicto?.textoScout ?? null, origen: veredicto?.origen ?? null }),
+    ...(await fichaVoluntario(almacen, tarea.miembroId)),
   };
+}
+
+async function fichaVoluntario(almacen: Almacen, usuarioId: string): Promise<{ perfilVoluntario?: FichaVoluntario }> {
+  const ficha = await fichaDeTarea(almacen, usuarioId);
+  return ficha ? { perfilVoluntario: ficha } : {};
 }
 
 export function pagoDe(hash: string | null): string | null {

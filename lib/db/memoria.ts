@@ -46,6 +46,21 @@ export function crearMemoria(): Almacen {
       const buscado = email.trim().toLowerCase();
       return [...usuarios.values()].find((usuario) => usuario.email === buscado) ?? null;
     },
+    async leerUsuario(id) {
+      return usuarios.get(id) ?? null;
+    },
+    async guardarPerfilVoluntario(id, cambio) {
+      const actual = usuarios.get(id);
+      if (!actual) return;
+      let etiquetas: string[] = [];
+      try {
+        const lista = JSON.parse(cambio.etiquetas) as unknown;
+        if (Array.isArray(lista)) etiquetas = lista.filter((item): item is string => typeof item === "string");
+      } catch {
+        etiquetas = [];
+      }
+      usuarios.set(id, { ...actual, experiencia: cambio.experiencia, etiquetas });
+    },
     async insertarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
       if ([...usuarios.values()].some((actual) => actual.email.trim().toLowerCase() === email)) return;

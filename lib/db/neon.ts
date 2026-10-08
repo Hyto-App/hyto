@@ -1,3 +1,5 @@
+import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
+import { etiquetasGuardadas } from "@/lib/perfil/reglas";
 import { neon } from "@neondatabase/serverless";
 import { desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
@@ -11,7 +13,7 @@ import { consultaPhashCercano } from "./sql";
 import { evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import type { ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, VeredictoFila } from "./tipos";
+import type { ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoInvitacion, Usuario, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
 const schema = { usuarios, proyectos, tareas, evidencias, veredictos, sesiones, proyectoMiembros, proyectoInvitaciones };
@@ -52,6 +54,17 @@ export async function cerrarPools(): Promise<void> {
   await Promise.all(abiertos.map((pool) => pool.end()));
 }
 
+function usuarioDesde(fila: typeof usuarios.$inferSelect): Usuario {
+  return {
+    id: fila.id,
+    email: fila.email,
+    nombre: fila.nombre,
+    rol: rolDe(fila.rol),
+    experiencia: fila.experiencia,
+    etiquetas: etiquetasGuardadas(fila.etiquetas),
+  };
+}
+
 function rolDe(valor: string): Rol {
   return valor === "organizador" ? "organizador" : "voluntario";
 }
@@ -78,6 +91,21 @@ export function origenDeFila(valor: string): VeredictoFila["origen"] {
 function esColumnaAusente(error: unknown): boolean {
   const mensaje = error instanceof Error ? error.message : String(error);
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
+}
+
+function columnasUsuarioSinPerfil() {
+  const { experiencia: _experiencia, etiquetas: _etiquetas, ...resto } = getTableColumns(usuarios);
+  return resto;
+}
+
+function filaUsuario(usuario: Usuario) {
+  const base = { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol };
+  if (!perfilVoluntarioActivo()) return base;
+  return {
+    ...base,
+    experiencia: usuario.experiencia ?? null,
+    etiquetas: usuario.etiquetas && usuario.etiquetas.length > 0 ? JSON.stringify(usuario.etiquetas) : null,
+  };
 }
 
 function columnasTareaPrevias() {
@@ -143,26 +171,47 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
 
   return {
     async listarUsuarios() {
+      if (!perfilVoluntarioActivo()) {
+        const filas = await db.select(columnasUsuarioSinPerfil()).from(usuarios);
+        return filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol) }));
+      }
       const filas = await db.select().from(usuarios);
-      return filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol) }));
+      return filas.map(usuarioDesde);
     },
     async usuarioPorEmail(email) {
+      if (!perfilVoluntarioActivo()) {
+        const filas = await db.select(columnasUsuarioSinPerfil()).from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
+        const fila = filas[0];
+        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      }
       const filas = await db.select().from(usuarios).where(eq(usuarios.email, email.trim().toLowerCase())).limit(1);
-      const fila = filas[0];
-      return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      return filas[0] ? usuarioDesde(filas[0]) : null;
+    },
+    async leerUsuario(id) {
+      if (!perfilVoluntarioActivo()) {
+        const filas = await db.select(columnasUsuarioSinPerfil()).from(usuarios).where(eq(usuarios.id, id)).limit(1);
+        const fila = filas[0];
+        return fila ? { ...fila, rol: rolDe(fila.rol) } : null;
+      }
+      const filas = await db.select().from(usuarios).where(eq(usuarios.id, id)).limit(1);
+      return filas[0] ? usuarioDesde(filas[0]) : null;
     },
     async insertarUsuario(usuario) {
-      await db.insert(usuarios).values(usuario).onConflictDoNothing();
+      await db.insert(usuarios).values(filaUsuario(usuario)).onConflictDoNothing();
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
       await db
         .insert(usuarios)
-        .values({ ...usuario, email })
+        .values({ ...filaUsuario(usuario), email })
         .onConflictDoUpdate({
           target: usuarios.email,
           set: { nombre: usuario.nombre, rol: usuario.rol },
         });
+    },
+    async guardarPerfilVoluntario(id, cambio) {
+      if (!perfilVoluntarioActivo()) return;
+      await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
     },
     async leerProyecto(id) {
       const filas = await db.select().from(proyectos).where(eq(proyectos.id, id)).limit(1);

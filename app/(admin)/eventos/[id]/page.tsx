@@ -6,6 +6,7 @@ import { ContextoEvento } from "@/components/integrante/ContextoEvento";
 import { tareasVisibles } from "@/lib/api/alcance";
 import { datosPublicosDeEvento } from "@/lib/api/contexto-evento";
 import { almacenNeon } from "@/lib/db/neon";
+import { personaVisible } from "@/lib/perfil/vista";
 import { exigirEvento, exigirPagina, visorDeSesion } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
@@ -26,10 +27,7 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
     const usuarios = await almacen.listarUsuarios();
     const personas = miembros
       .filter((miembro) => miembro.estado === "active")
-      .map((miembro) => ({
-        usuarioId: miembro.usuarioId,
-        email: usuarios.find((usuario) => usuario.id === miembro.usuarioId)?.email ?? miembro.usuarioId,
-      }));
+      .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId));
     return (
       <>
         <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" />

@@ -5,6 +5,9 @@ export const usuarios = pgTable("usuarios", {
   email: text("email").notNull().unique(),
   nombre: text("nombre").notNull(),
   rol: text("rol").notNull(),
+  // Volunteer profile. Only read when HYTO_PERFIL_VOLUNTARIO is on.
+  experiencia: text("experiencia"),
+  etiquetas: text("etiquetas"),
 });
 
 // Quien crea el proyecto queda en organizador_id. El rol global de usuarios

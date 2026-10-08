@@ -39,6 +39,8 @@ export type TareaAdmin = {
   motivoCopia?: string | null;
   etiquetas?: EtiquetaNota[];
   lectura?: LecturaVisible | null;
+  /** Self-written volunteer profile. Absent unless HYTO_PERFIL_VOLUNTARIO is on and the person filled it in. */
+  perfilVoluntario?: { experiencia: string | null; etiquetas: string[] };
 };
 
 export type TareaCreada = {

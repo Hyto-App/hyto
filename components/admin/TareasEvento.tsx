@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { montoDeTarea } from "@/lib/integrante/formato";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
@@ -30,12 +32,24 @@ type Borrador = {
   miembroId: string;
 };
 
+function FichaAsignada({
+  miembros,
+  miembroId,
+}: {
+  miembros: { usuarioId: string; ficha?: Ficha }[];
+  miembroId: string;
+}) {
+  const ficha = miembros.find((persona) => persona.usuarioId === miembroId)?.ficha;
+  if (!ficha) return null;
+  return <FichaVoluntario ficha={ficha} />;
+}
+
 export function TareasEvento({
   tareas,
   miembros,
 }: {
   tareas: FilaTareaEvento[];
-  miembros: { usuarioId: string; email: string }[];
+  miembros: { usuarioId: string; email: string; ficha?: Ficha }[];
 }) {
   const t = useTexto();
   const claro = useClaro();
@@ -293,6 +307,7 @@ export function TareasEvento({
                       ))}
                     </select>
                   </label>
+                  <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
                       {claro(tarea.bloqueo)}

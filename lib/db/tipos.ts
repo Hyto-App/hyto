@@ -7,6 +7,10 @@ export type Usuario = {
   email: string;
   nombre: string;
   rol: Rol;
+  /** Own words. Only read when HYTO_PERFIL_VOLUNTARIO is on. */
+  experiencia?: string | null;
+  /** Chosen tags, at most 5. Stored as JSON text. */
+  etiquetas?: string[] | null;
 };
 
 export type Proyecto = {
