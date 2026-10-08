@@ -81,6 +81,15 @@ export async function puedeVerTarea(almacen: Almacen, visor: Visor, tarea: Tarea
   return tarea.miembroId === visor.usuarioId;
 }
 
+/**
+ * `/tareas/[id]` only loads tasks assigned to the session (`tareasPropias`).
+ * The event's organizer opening someone else's task belongs on `/revision/[id]`.
+ */
+export async function organizaTareaAjena(almacen: Almacen, usuarioId: string, tarea: TareaFila): Promise<boolean> {
+  if (tarea.miembroId === usuarioId) return false;
+  return (await rolesDeUsuario(almacen, usuarioId)).get(tarea.proyectoId) === "organizer";
+}
+
 export async function accesoEvidencia(
   almacen: Almacen,
   visor: Visor,
