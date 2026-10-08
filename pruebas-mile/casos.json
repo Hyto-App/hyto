@@ -1,0 +1,202 @@
+[
+  {
+    "id": "ensayo-escrito-mano",
+    "archivo": "fotos/01-ensayo-bien.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano, en una hoja, con el título y varios párrafos que se leen completos.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Escribe a mano un ensayo corto en una hoja y fotografía la hoja completa, con luz y sin recortar."
+  },
+  {
+    "id": "ensayo-borroso",
+    "archivo": "fotos/02-ensayo-borroso.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano, en una hoja, con el título y varios párrafos que se leen completos.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "La misma hoja del ensayo, pero mueve la cámara para que el texto salga borroso."
+  },
+  {
+    "id": "otra-cosa",
+    "archivo": "fotos/03-otra-cosa.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano en una hoja.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Fotografía otra cosa, por ejemplo una taza o un gato. Que no se vea el ensayo."
+  },
+  {
+    "id": "ensayo-incompleto",
+    "archivo": "fotos/04-ensayo-incompleto.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano, la hoja completa, con el título y el texto hasta el final.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Fotografía solo la mitad de la hoja, cortando el final del texto."
+  },
+  {
+    "id": "ensayo-a-medias",
+    "archivo": "fotos/05-ensayo-a-medias.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano, terminado, con varios párrafos.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Escribe solo el título y dos líneas, y deja el resto de la hoja en blanco."
+  },
+  {
+    "id": "sin-lugar",
+    "archivo": "fotos/06-sin-lugar.jpg",
+    "tipo": "trabajo",
+    "condicion": "La mesa de bienvenida de ZEEK armada en la entrada, con el banner de frente.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Arma la mesa, pero tómala en otro cuarto, sin que se vea la entrada."
+  },
+  {
+    "id": "con-lugar",
+    "archivo": "fotos/07-con-lugar.jpg",
+    "tipo": "trabajo",
+    "condicion": "La mesa de bienvenida de ZEEK armada en la entrada, con el banner de frente.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Arma la mesa en la entrada y fotografía el banner de frente, con la entrada en la foto."
+  },
+  {
+    "id": "trabajo-claro",
+    "archivo": "fotos/08-trabajo-claro.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un stand de ZEEK armado: mesa, banner de frente y cajas abiertas.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Arma el stand completo y toma una foto nítida, de frente, con todo dentro del cuadro."
+  },
+  {
+    "id": "sin-empezar",
+    "archivo": "fotos/09-sin-empezar.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un stand de ZEEK armado: mesa, banner de frente y cajas abiertas.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Fotografía la mesa vacía, antes de armar nada."
+  },
+  {
+    "id": "oscuro",
+    "archivo": "fotos/10-oscuro.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un stand de ZEEK armado y visible.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Toma la foto tan oscura que no se distinga el stand."
+  },
+  {
+    "id": "pantalla",
+    "archivo": "fotos/11-pantalla.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano en papel, no en una pantalla.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "No uses papel. Fotografía la pantalla de un computador o un teléfono donde se vea un texto."
+  },
+  {
+    "id": "selfie",
+    "archivo": "fotos/12-selfie.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un stand de ZEEK armado, con el banner de frente.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Hazte una selfie donde no se vea el stand."
+  },
+  {
+    "id": "recorte",
+    "archivo": "fotos/13-recorte.jpg",
+    "tipo": "trabajo",
+    "condicion": "El banner de ZEEK completo, de frente, en la mesa.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Fotografía el banner tan de cerca que se corte y no se vea entero."
+  },
+  {
+    "id": "pared",
+    "archivo": "fotos/14-pared.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un stand de ZEEK armado.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Fotografía una pared vacía o el piso, sin el stand."
+  },
+  {
+    "id": "recibo-bueno",
+    "archivo": "fotos/15-recibo-bueno.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de una comida del equipo, en papel, con el comercio, la fecha y el total. El tope es 15 dólares.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Pide un recibo de una comida de menos de 15 dólares. Que se lean el comercio, la fecha y el total."
+  },
+  {
+    "id": "recibo-ilegible",
+    "archivo": "fotos/16-recibo-ilegible.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida en papel, con el total y la fecha legibles. El tope es 15 dólares.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "El mismo tipo de recibo, pero borroso, para que no se lea el total."
+  },
+  {
+    "id": "recibo-sin-total",
+    "archivo": "fotos/17-recibo-sin-total.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida con el total y la fecha visibles. El tope es 15 dólares.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Tapa el total con el dedo. Que se vea el resto del recibo."
+  },
+  {
+    "id": "recibo-sin-fecha",
+    "archivo": "fotos/18-recibo-sin-fecha.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida con el total y la fecha visibles. El tope es 15 dólares.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Tapa la fecha. Que el total se lea."
+  },
+  {
+    "id": "recibo-otro-gasto",
+    "archivo": "fotos/19-recibo-otro-gasto.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de una comida del equipo, no de otra compra. El tope es 15 dólares.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Fotografía un recibo que no sea de comida, por ejemplo de un taxi o de una farmacia."
+  },
+  {
+    "id": "recibo-pantalla",
+    "archivo": "fotos/20-recibo-pantalla.jpg",
+    "tipo": "reembolso",
+    "condicion": "El papel del recibo de una comida, no una pantalla. El tope es 15 dólares.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "No fotografíes el papel. Fotografía la pantalla del teléfono donde se vea un recibo."
+  },
+  {
+    "id": "recibo-sobre-tope",
+    "archivo": "fotos/21-recibo-sobre-tope.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida de hasta 15 dólares, con fecha y total.",
+    "esperado": "Parcial",
+    "nota_para_tomar_la_foto": "Un recibo de comida claro, de más de 15 dólares, con fecha y total."
+  },
+  {
+    "id": "recibo-a-mano",
+    "archivo": "fotos/22-recibo-a-mano.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida, aunque esté escrito a mano, con comercio, fecha y total. El tope es 15 dólares.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Pide un recibo de comida escrito a mano, de menos de 15 dólares, con fecha y total, y fotografía el papel."
+  },
+  {
+    "id": "recibo-colones",
+    "archivo": "fotos/23-recibo-colones.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida en colones, con el símbolo ₡, la fecha y el total. El tope es 15 dólares.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Un recibo de comida en colones, nítido, de menos de 15 dólares, con el ₡, la fecha y el total."
+  },
+  {
+    "id": "recibo-arrugado",
+    "archivo": "fotos/24-recibo-arrugado.jpg",
+    "tipo": "reembolso",
+    "condicion": "Un recibo de comida con fecha y total que se puedan leer. El tope es 15 dólares.",
+    "esperado": "Cumplió",
+    "nota_para_tomar_la_foto": "Arruga un poco el recibo, pero que la fecha y el total se sigan leyendo."
+  },
+  {
+    "id": "solo-titulo",
+    "archivo": "fotos/25-solo-titulo.jpg",
+    "tipo": "trabajo",
+    "condicion": "Un ensayo escrito a mano, con título y varios párrafos que se leen.",
+    "esperado": "Insuficiente",
+    "nota_para_tomar_la_foto": "Escribe solo el título en la hoja y fotografía eso. Sin párrafos."
+  }
+]
