@@ -36,7 +36,7 @@ test("un pago enviado que el indexador no muestra no ofrece fondear, pagar ni de
   }
 });
 
-test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async () => {
+test("la revisión muestra la etiqueta y sigue ofreciendo Set money aside", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -56,7 +56,7 @@ test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async ()
     assert.match(texto(), /49% · Insufficient/);
     assert.match(texto(), /Serious issue: does not match the request/);
     assert.match(texto(), /The photo does not match what was requested/);
-    assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"), true);
+    assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Set money aside"), true);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

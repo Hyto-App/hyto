@@ -120,7 +120,7 @@ test("crear evento sin saldo suficiente deja el botón apagado y no llama a la A
     assert.equal(boton.disabled, true);
     const aviso = document.querySelector("#aviso-saldo-crear");
     assert.match(aviso?.textContent ?? "", /Your balance does not cover US\$31\.00/);
-    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /always stays in your account/);
     assert.match(aviso?.textContent ?? "", /You are short US\$31\.00/);
     assert.equal(/US\$31(?!\.00)/.test(aviso?.textContent ?? ""), false);
     assert.equal((aviso?.textContent ?? "").includes("USDC"), false);

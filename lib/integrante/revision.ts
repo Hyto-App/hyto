@@ -1,4 +1,3 @@
-import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
 import type { EstadoTarea, EtapaTarea, OrigenRechazo, Rechazo, RequisitoRevision, Tarea } from "./tipos";
 
 /**
@@ -66,13 +65,6 @@ export function plazoVencido(iso: string | null | undefined, ahora = new Date())
   const fecha = new Date(iso);
   if (Number.isNaN(fecha.getTime())) return false;
   return fecha.getTime() <= ahora.getTime();
-}
-
-export function montoUsdc(tarea: Pick<Tarea, "tipo" | "monto" | "tope" | "montoPagado" | "montoConfirmado">): string {
-  const plano = recibidoDeCampos(tarea);
-  if (!plano) return "";
-  const unidades = unidadesUsdc(plano);
-  return unidades === null ? "" : presentarUsdc(unidades);
 }
 
 /**

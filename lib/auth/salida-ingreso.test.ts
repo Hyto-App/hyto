@@ -161,7 +161,7 @@ test("si el servidor no guardó la wallet, el código no deja la dirección en e
   limpiarPantalla();
   try {
     await llegarAlCodigo(async () => ({ aviso: "Could not save this session's wallet.", direccion: DIRECCION, guardada: false }));
-    assert.match(texto(), /Could not save this session's wallet/);
+    assert.match(texto(), /Could not save this session's account for receiving payments/);
     assert.doesNotMatch(texto(), /Signed in/);
     assert.equal(document.querySelector("a.hyto-post-login-cta"), null);
     assert.equal(window.localStorage.getItem("hyto-admin"), null);

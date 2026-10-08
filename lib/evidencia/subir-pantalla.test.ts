@@ -313,9 +313,9 @@ test("un 201 con aviso de cobro no se muestra como envío limpio", async () => {
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" }, aviso }, 201));
     assert.match(texto(), /Evidence sent, action needed/);
-    assert.match(texto(), /This sign-in has no payout account/);
+    assert.match(texto(), /This sign-in has no account for receiving payments/);
     assert.doesNotMatch(texto(), /The organizer can review it now/);
-    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("account for receiving payments"));
   } finally {
     globalThis.fetch = original;
     await desmontar();

@@ -263,6 +263,27 @@ const EXACTO: Record<string, Clave> = {
   "The submit does not match this task's escrow, so it was not marked paid.": "avisos.noContratoPago",
   "The submit was not confirmed, so it was not marked paid.": "avisos.noConfirmado",
   "The submit succeeded and there is no hash to save the payment.": "avisos.sinHash",
+  "Could not read the USDC balance.": "errores.saldoNoLeido",
+  "This wallet is not on the network yet.": "errores.cuentaFueraDeRed",
+  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.":
+    "errores.indexandoApartado",
+  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.":
+    "errores.pagoAunNoVisible",
+  "Confirm an amount within the limit before deploying.": "errores.confirmarAntesApartar",
+  "Confirm an amount within the limit before funding.": "errores.confirmarAntesTerminar",
+  "Could not reach Trustless Work.": "errores.servicioPagos",
+  "The payment contract is not valid.": "errores.referenciaInvalida",
+  "This sign-in has no payout account. Sign in again and open the task so we know where to pay.": "errores.sinCuentaRecibir",
+  "The budget for this task is already locked to another payout account. Sign in with that wallet to submit evidence.":
+    "errores.cobroYaFijado",
+  "Sign in again before setting up payouts.": "errores.entrarAntesCobro",
+  "We couldn't open this payout account on the test network. Try again.": "errores.abrirCuentaRecibir",
+  "We couldn't check the testnet account. Try again.": "errores.lecturaCuentaPractica",
+  "Testnet setup runs only when you sign up.": "errores.altaSoloAlCrear",
+  "We couldn't fund the testnet account.": "errores.altaSinDineroPractica",
+  "Could not save this session's wallet.": "errores.sesionSinGuardarCuenta",
+  "This account needs a little test balance for the network fee. Add some and try again.": "errores.comisionAgregar",
+  "The budget was sent, but we couldn't confirm it yet. Refresh and try again.": "errores.enviadoSinContrato",
 };
 
 const PATRONES: readonly (readonly [RegExp, Clave])[] = [

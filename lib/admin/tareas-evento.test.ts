@@ -61,7 +61,7 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
     assert.equal(texto().includes("Up to US$15"), false);
     assert.match(texto(), /Pending · US\$20/);
     const bloqueo = document.querySelector('a[href="/revision/stand"]');
-    assert.equal(bloqueo?.textContent, "Lock budget");
+    assert.equal(bloqueo?.textContent, "Set money aside");
     const comida = document.querySelector('a[href="/revision/comida"]');
     assert.equal(comida?.textContent, "Open review");
   } finally {
@@ -108,7 +108,7 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
     await escribir("#tope-comida", "50");
     const aviso = document.querySelector("#saldo-comida");
     assert.match(aviso?.textContent ?? "", /US\$51\.00/);
-    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /always stays in your account/);
     assert.match(aviso?.textContent ?? "", /You are short US\$49\.70/);
     assert.equal(/US\$51(?!\.00)/.test(aviso?.textContent ?? ""), false);
     assert.equal(/US\$49\.7(?!0)/.test(aviso?.textContent ?? ""), false);

@@ -326,14 +326,14 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
       await Promise.resolve();
     });
     assert.match(texto(), /Get ready to be paid/);
-    assert.match(texto(), /open it on the test network first/);
+    assert.match(texto(), /practice money first/);
     await pulsar("Get ready to be paid");
     assert.match(texto(), /Getting ready…/);
     await act(async () => {
       resolver({ hash: "abc" });
     });
-    assert.match(texto(), /Payout account ready/);
-    assert.match(texto(), /View on blockchain/);
+    assert.match(texto(), /Ready to receive payments/);
+    assert.match(texto(), /See public record/);
     const red = document.querySelector("a[href*='stellar.expert/explorer/testnet/tx/']");
     assert.equal(red?.getAttribute("target"), "_blank");
     assert.equal(red?.getAttribute("rel"), "noopener noreferrer");
@@ -350,7 +350,7 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
       await Promise.resolve();
     });
     await pulsar("Get ready to be paid");
-    assert.match(texto(), /couldn't finish setting up payouts/);
+    assert.match(texto(), /getting this account ready to receive payments/);
     assert.match(texto(), /Get ready to be paid/);
     assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
 
@@ -408,11 +408,11 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
     assert.ok(!botones.includes("Get ready to be paid"));
 
     await fallarCon(AVISO_USDC_SIN_XLM);
-    assert.match(texto(), /no test XLM for the network fee/);
+    assert.match(texto(), /payment-system cost/);
     assert.doesNotMatch(texto(), /Add some and try again/);
 
     await fallarCon(AVISO_USDC_OTRA_CUENTA);
-    assert.match(texto(), /different payout account/);
+    assert.match(texto(), /different account for receiving payments/);
     assert.equal(document.querySelector('a[href="/?signin=1"]')?.textContent, "Sign in again");
   } finally {
     await desmontar();
@@ -459,7 +459,7 @@ test("la guía de llave de acceso copia el enlace a Cuenta y Try again repite el
       await Promise.resolve();
     });
     assert.equal(intentos, 2);
-    assert.match(texto(), /Payout account ready/);
+    assert.match(texto(), /Ready to receive payments/);
     assert.doesNotMatch(texto(), /Set up this device/);
   } finally {
     if (portapapeles) Object.defineProperty(navigator, "clipboard", portapapeles);
@@ -572,7 +572,7 @@ test("en demo no aparece y en la revisión real sí", async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.doesNotMatch(texto(), /Get ready to be paid/);
-    assert.match(texto(), /Lock budget/);
+    assert.match(texto(), /Set money aside/);
 
     await montar(
       createElement(ProveedorModoDemo, {
