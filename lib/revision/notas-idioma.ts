@@ -62,6 +62,14 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
     texto: "Monto sobre el límite",
     explicacion: "El monto supera el límite de la tarea, así que la nota no puede llegar a completada. Se puede pagar hasta el límite.",
   },
+  amount_missing: {
+    texto: "Falta el monto del recibo",
+    explicacion: "Las respuestas del recibo no dan un monto.",
+  },
+  date_missing: {
+    texto: "Falta la fecha del recibo",
+    explicacion: "Las respuestas del recibo no dan una fecha.",
+  },
   low_detail: {
     texto: "Poco detalle",
     explicacion: "Dos o más respuestas no están claras o el modelo no estaba seguro, así que esta nota es menos segura.",

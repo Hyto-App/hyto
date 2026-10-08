@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
@@ -315,9 +316,16 @@ export function TareasEvento({
                       {claro(tarea.bloqueo)}
                     </p>
                   ) : (
-                    <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => abrir(tarea)}>
-                      {t("eventos.edit")}
-                    </button>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {tarea.estado === "pendiente" && !tarea.tieneFoto ? (
+                        <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
+                          {t("pago.lockBudget")}
+                        </Link>
+                      ) : null}
+                      <button type="button" className="hyto-btn-line is-inline px-5" onClick={() => abrir(tarea)}>
+                        {t("eventos.edit")}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

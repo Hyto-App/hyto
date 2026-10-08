@@ -131,6 +131,7 @@ export async function tareaAdmin(almacen: Almacen, tarea: TareaFila, nombres?: M
     montoConfirmado: evidencia?.montoConfirmado ?? null,
     fecha: evidencia?.fecha ?? null,
     tipoArchivo: evidencia?.tipoArchivo ?? null,
+    apartado: Boolean(tarea.contratoEscrow?.trim()),
     motivoCopia: evidencia?.motivoCopia ?? null,
     hashPago: tarea.hashPago,
     credencialUrl: tarea.credencialUrl,

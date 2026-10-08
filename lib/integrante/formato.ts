@@ -1,6 +1,6 @@
 import { detalleMonto, normalizarMonto } from "@/lib/admin/vista";
 import type { TareaAdmin } from "@/lib/admin/tipos";
-import { cifraConfirmada } from "@/lib/escrow/monto";
+import { cifraConfirmada, montoDentroDelTope } from "@/lib/escrow/monto";
 import type { Idioma } from "@/lib/ui/idioma";
 
 function localeDe(idioma: Idioma): string {
@@ -94,6 +94,55 @@ export function montoDeTarea(
     return idioma === "es" ? `Hasta ${tope}` : `Up to ${tope}`;
   }
   return formatearMonto(tarea.monto, idioma);
+}
+
+/**
+ * Amount the lock sentence and the confirm dialog must share.
+ * A confirmed reimbursement is that figure. Before confirmation the cap stays lowercase ("up to" / "hasta").
+ */
+export function montoQueAparta(
+  tarea: { tipo: "trabajo" | "reembolso"; monto: string; tope: string | null; montoConfirmado?: string | null },
+  idioma: Idioma = "en",
+): string {
+  if (tarea.tipo === "reembolso") {
+    const normal = normalizarMonto(tarea.montoConfirmado ?? "");
+    const cifra = normal ? cifraConfirmada(normal, tarea.tope, tarea.monto) : null;
+    if (cifra !== null) return formatearMonto(String(cifra), idioma);
+    const tope = formatearMonto(tarea.tope ?? tarea.monto, idioma);
+    if (!tope) return "";
+    return idioma === "es" ? `hasta ${tope}` : `up to ${tope}`;
+  }
+  const normal = normalizarMonto(tarea.monto);
+  return normal ? formatearMonto(normal, idioma) : "";
+}
+
+/**
+ * What Mile read, and the milestone that can be paid (confirmed amount, or the reading inside the cap).
+ * This is not the net after the protocol fee.
+ */
+export function montosDeCobro(
+  tarea: {
+    tipo: "trabajo" | "reembolso";
+    monto: string;
+    tope: string | null;
+    montoConfirmado?: string | null;
+    montoRevisado?: string | null;
+  },
+  idioma: Idioma = "en",
+): { leido: string; pago: string } | null {
+  const leidoNormal = normalizarMonto(tarea.montoRevisado ?? "");
+  const leido = leidoNormal ? formatearMonto(leidoNormal, idioma) : "";
+  if (!leido) return null;
+  let pagoNormal: string | null = null;
+  if (tarea.tipo === "reembolso") {
+    const confirmado = normalizarMonto(tarea.montoConfirmado ?? "");
+    if (confirmado && cifraConfirmada(confirmado, tarea.tope, tarea.monto) !== null) pagoNormal = confirmado;
+    else pagoNormal = montoDentroDelTope(leidoNormal ?? "", tarea.tope, tarea.monto);
+  } else {
+    pagoNormal = normalizarMonto(tarea.monto);
+  }
+  const pago = pagoNormal ? formatearMonto(pagoNormal, idioma) : leido;
+  return { leido, pago };
 }
 
 /** Amount locked in the escrow, without the "up to" cap label. */

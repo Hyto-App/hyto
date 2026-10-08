@@ -556,6 +556,8 @@ export const en = {
     fileSentAt: "File sent · {time}",
     useCameraShort: "Use camera",
     closePaid: "Close",
+    mileReadPay: "Mile read {leido}. You'll be paid {pago}.",
+    mileReadSame: "Mile read {monto}. That's what you'll be paid.",
   },
   bandeja: {
     inbox: "Inbox",
@@ -585,6 +587,8 @@ export const en = {
     retrying: "Retrying…",
     retryFail: "The review could not be retried.",
     paidList: "Paid tasks",
+    noPhotoYet: "No photo yet",
+    lockBefore: "You can set this amount aside before a photo arrives.",
   },
   numeros: {
     budget: "Budget",
@@ -1711,6 +1715,8 @@ export const es: Rama<typeof en> = {
     fileSentAt: "Archivo enviado · {time}",
     useCameraShort: "Usar cámara",
     closePaid: "Cerrar",
+    mileReadPay: "Mile leyó {leido}. Te van a pagar {pago}.",
+    mileReadSame: "Mile leyó {monto}. Eso es lo que te van a pagar.",
   },
   bandeja: {
     inbox: "Bandeja",
@@ -1740,6 +1746,8 @@ export const es: Rama<typeof en> = {
     retrying: "Reintentando…",
     retryFail: "No se pudo reintentar la revisión.",
     paidList: "Tareas pagadas",
+    noPhotoYet: "Todavía no hay foto",
+    lockBefore: "Puedes apartar este monto antes de que llegue la foto.",
   },
   numeros: {
     budget: "Presupuesto",
