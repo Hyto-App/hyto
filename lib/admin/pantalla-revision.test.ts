@@ -1082,7 +1082,117 @@ test("una tarea ya bloqueada sigue mostrando Ver en la cadena de testnet al reca
     const enlace = [...document.querySelectorAll("a")].find((nodo) => nodo.textContent?.trim() === "View on blockchain");
     assert.equal(enlace?.getAttribute("href"), `https://stellar.expert/explorer/testnet/contract/${contrato}`);
     assert.equal(enlace?.getAttribute("href")?.includes("/public/"), false);
+    assert.equal(enlace?.getAttribute("target"), "_blank");
+    assert.equal(enlace?.getAttribute("rel"), "noopener noreferrer");
   } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("al recargar, el presupuesto se revisa solo y no pide recargar la página", async () => {
+  const anterior = globalThis.fetch;
+  const marca = globalThis as { __HYTO_PAUSAS_CONSULTA__?: number[] };
+  marca.__HYTO_PAUSAS_CONSULTA__ = [1, 1, 1];
+  const contrato = `C${"D".repeat(55)}`;
+  let lecturas = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) {
+      lecturas += 1;
+      return json({ escrow: {} });
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "20" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Checking the locked budget"));
+    assert.equal(/refresh|reload|recarga|actualiza/i.test(texto()), false);
+    const enlace = [...document.querySelectorAll("a")].find((nodo) => nodo.textContent?.trim() === "View on blockchain");
+    assert.equal(enlace?.getAttribute("target"), "_blank");
+    assert.equal(enlace?.getAttribute("rel"), "noopener noreferrer");
+    await esperar(() => texto().includes("still isn't confirmed"));
+    assert.match(texto(), /You can try again when you want/);
+    assert.equal(/refresh|reload/i.test(texto()), false);
+    const antes = lecturas;
+    await pulsar("Try again");
+    await esperar(() => lecturas > antes);
+    assert.ok(lecturas > antes);
+  } finally {
+    delete marca.__HYTO_PAUSAS_CONSULTA__;
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en español el presupuesto sin confirmar ofrece intentarlo de nuevo", async () => {
+  const anterior = globalThis.fetch;
+  const marca = globalThis as { __HYTO_PAUSAS_CONSULTA__?: number[] };
+  marca.__HYTO_PAUSAS_CONSULTA__ = [1, 1, 1];
+  const contrato = `C${"E".repeat(55)}`;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) return json({ escrow: {} });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "20" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(Revision, { tareaId: "stand" }),
+      }),
+    );
+    await esperar(() => texto().includes("todavía no se confirma"));
+    assert.match(texto(), /Esto sigue solo|todavía no se confirma/);
+    assert.equal(/actualiza|recarga/i.test(texto()), false);
+    assert.equal(
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Intentar de nuevo"),
+      true,
+    );
+  } finally {
+    delete marca.__HYTO_PAUSAS_CONSULTA__;
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("si la red confirma el presupuesto en un reintento, la pantalla se actualiza sola", async () => {
+  const anterior = globalThis.fetch;
+  const marca = globalThis as { __HYTO_PAUSAS_CONSULTA__?: number[] };
+  marca.__HYTO_PAUSAS_CONSULTA__ = [1, 1, 1];
+  const contrato = `C${"F".repeat(55)}`;
+  let lecturas = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) {
+      lecturas += 1;
+      return json({ escrow: { balance: lecturas >= 2 ? 20 : null } });
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "20" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Budget secured"));
+    assert.ok(lecturas >= 2);
+    assert.equal(texto().includes("still isn't confirmed"), false);
+    assert.equal(
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Try again"),
+      false,
+    );
+  } finally {
+    delete marca.__HYTO_PAUSAS_CONSULTA__;
     globalThis.fetch = anterior;
     await desmontar();
   }

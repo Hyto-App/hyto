@@ -5358,6 +5358,47 @@ html.hyto-firmando body {
   color: var(--suave);
 }
 
+.hyto-recibo a.hyto-recibo-abrir {
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.hyto-recibo-pagina {
+  display: grid;
+  gap: 12px;
+  max-width: 32rem;
+}
+
+.hyto-recibo-pagina h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.hyto-recibo-neto {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--acento-texto);
+}
+
+.hyto-recibo-red {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.hyto-recibo-red a {
+  color: var(--suave);
+  text-underline-offset: 3px;
+}
+
 .hyto-pedir {
   display: grid;
   gap: 12px;

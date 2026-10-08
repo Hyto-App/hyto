@@ -6,7 +6,6 @@ import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
-import { enlacePago } from "@/lib/admin/vista";
 import { explicarPago } from "@/lib/integrante/formato";
 import { clavePagoVisto } from "@/lib/integrante/revision";
 import type { Tarea } from "@/lib/integrante/tipos";
@@ -23,8 +22,6 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
   const monto = pago?.frase ?? "";
   const corto = pago?.corto ?? "";
   const nombre = tarea.organizador?.nombre?.trim() || "";
-  const comprobante = enlacePago(tarea.hashPago);
-
   useEffect(() => {
     setVisto(window.localStorage.getItem(clavePagoVisto(tarea.id)) === "1");
   }, [tarea.id]);
@@ -50,7 +47,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
           <h1 className="hyto-tarea-titulo">{t("evidencia.youGotPaid")}</h1>
           <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
         </header>
-        <Recibo monto={monto} comprobante={comprobante} />
+        <Recibo monto={monto} tareaId={tarea.id} />
         <LineaRevision tarea={tarea} revisionCerrada monto={monto} />
         <ActividadTarea tarea={tarea} />
         <div className="hyto-enviada-acciones">
@@ -81,7 +78,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
       <p className="hyto-pagada-monto">+{corto}</p>
       {monto && monto !== corto ? <p className="hyto-tarea-meta">{monto}</p> : null}
       <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
-      <Recibo monto={monto} comprobante={comprobante} />
+      <Recibo monto={monto} tareaId={tarea.id} />
       <ActividadTarea tarea={tarea} />
       <div className="hyto-enviada-acciones">
         <Link href="/configuracion" className="hyto-btn hyto-btn-grande" onClick={marcarVisto}>
@@ -95,7 +92,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
   );
 }
 
-function Recibo({ monto, comprobante }: { monto: string; comprobante: string | null }) {
+function Recibo({ monto, tareaId }: { monto: string; tareaId: string }) {
   const t = useTexto();
   return (
     <section className="hyto-tarjeta hyto-recibo">
@@ -107,11 +104,9 @@ function Recibo({ monto, comprobante }: { monto: string; comprobante: string | n
         <span>{t("evidencia.youReceived")}</span>
         <strong className="hyto-recibo-lima">{monto}</strong>
       </div>
-      {comprobante ? (
-        <a href={comprobante} target="_blank" rel="noreferrer">
-          {t("evidencia.viewReceipt")}
-        </a>
-      ) : null}
+      <Link className="hyto-recibo-abrir" href={`/tareas/${encodeURIComponent(tareaId)}/recibo`}>
+        {t("evidencia.viewReceipt")}
+      </Link>
     </section>
   );
 }

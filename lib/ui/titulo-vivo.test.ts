@@ -13,6 +13,7 @@ test("las rutas de la app tienen título en los dos idiomas", () => {
   assert.equal(claveDeRuta("/eventos/"), "titulos.events");
   assert.equal(claveDeRuta("/eventos/nuevo"), "titulos.newEvent");
   assert.equal(claveDeRuta("/tareas/abc"), "titulos.task");
+  assert.equal(claveDeRuta("/tareas/abc/recibo"), "titulos.receipt");
   assert.equal(claveDeRuta("/revision/abc"), "titulos.review");
   assert.equal(claveDeRuta("/eventos/abc"), "titulos.event");
   assert.equal(claveDeRuta("/eventos/abc/tareas"), "titulos.assign");

@@ -41,6 +41,10 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
     assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
     assert.equal(texto().includes("US$15"), false);
     assert.equal(texto().includes("12.44256"), false);
+    const recibo = document.querySelector('a[href="/tareas/comida/recibo"]');
+    assert.equal(recibo?.textContent, "View receipt");
+    assert.equal(recibo?.getAttribute("target"), null);
+    assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
   } finally {
     await desmontar();
   }

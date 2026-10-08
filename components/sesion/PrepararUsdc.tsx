@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AvisoFirma, esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
 
@@ -111,12 +112,12 @@ export function PrepararUsdc({
         </button>
       ) : null}
       {estado === "hecho" && hash ? (
-        <a
+        <EnlaceExplorador
           href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
           className="hyto-btn-line is-inline mt-3 px-5"
         >
           {t("pago.viewChain")}
-        </a>
+        </EnlaceExplorador>
       ) : null}
       {estado === "hecho" ? (
         <p className="mt-3 text-sm leading-6 text-[var(--suave)]">

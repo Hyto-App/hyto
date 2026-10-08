@@ -20,6 +20,7 @@ export function claveDeRuta(ruta: string): ClaveTitulo | null {
   const exacta = EXACTAS[path];
   if (exacta) return exacta;
   if (path.startsWith("/join/")) return "titulos.joinEvent";
+  if (/^\/tareas\/[^/]+\/recibo$/.test(path)) return "titulos.receipt";
   if (/^\/tareas\/[^/]+$/.test(path)) return "titulos.task";
   if (/^\/revision\/[^/]+$/.test(path)) return "titulos.review";
   if (/^\/eventos\/[^/]+\/informe$/.test(path)) return "titulos.report";

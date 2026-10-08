@@ -197,6 +197,8 @@ test("copiar la dirección pública confirma en el botón", async () => {
     assert.equal(avanzado?.hasAttribute("open"), false);
     const enlace = avanzado?.querySelector("a[href*='stellar.expert/explorer/testnet/account/']");
     assert.equal(enlace?.getAttribute("href"), `https://stellar.expert/explorer/testnet/account/${encodeURIComponent(WALLET)}`);
+    assert.equal(enlace?.getAttribute("target"), "_blank");
+    assert.equal(enlace?.getAttribute("rel"), "noopener noreferrer");
     await pulsar("Copy address");
     assert.equal(copiado, WALLET);
     assert.match(texto(), /Copied/);

@@ -7,6 +7,7 @@ import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
@@ -868,9 +869,9 @@ export function Revision({
               <p className="text-sm leading-6 text-[var(--suave)]">
                 {consultaPago === "agotada" ? t("revision.paymentStillPending") : t("revision.paymentSent")}{" "}
                 {pago ? (
-                  <a href={pago} className="font-semibold underline-offset-4 hover:underline">
+                  <EnlaceExplorador href={pago} className="font-semibold underline-offset-4 hover:underline">
                     {t("pago.viewChain")}
-                  </a>
+                  </EnlaceExplorador>
                 ) : null}
               </p>
               {consultaPago === "agotada" ? (
@@ -886,16 +887,16 @@ export function Revision({
               </p>
               {consultaFondo === "agotada" ? (
                 <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaFondo((actual) => actual + 1)}>
-                  {t("pago.checkAgain")}
+                  {t("comunes.tryAgain")}
                 </button>
               ) : null}
             </div>
           ) : null}
 
           {cadenaBloqueo || transaccion ? (
-            <a href={cadenaBloqueo ?? transaccion ?? ""} className="hyto-btn-line is-inline mt-4 px-5">
+            <EnlaceExplorador href={cadenaBloqueo ?? transaccion ?? ""} className="hyto-btn-line is-inline mt-4 px-5">
               {t("pago.viewChain")}
-            </a>
+            </EnlaceExplorador>
           ) : null}
 
           {real && (wallet || contrato) ? (
@@ -914,9 +915,9 @@ export function Revision({
             <div className="mt-8 space-y-3">
               <p className="text-lg font-medium">{t("revision.paidAmount", { monto: frasePagada(tarea, idioma) })}</p>
               {pago ? (
-                <a href={pago} className="hyto-btn-line is-inline px-5">
+                <EnlaceExplorador href={pago} className="hyto-btn-line is-inline px-5">
                   {t("pago.viewChain")}
-                </a>
+                </EnlaceExplorador>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {real ? t("revision.paidWait") : t("revision.samplePay")}
