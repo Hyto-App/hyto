@@ -3,12 +3,20 @@ import type { Almacen } from "@/lib/db/almacen";
 import type { Proyecto } from "@/lib/db/tipos";
 import { tipoPorBytes } from "@/lib/evidencia/tipo";
 import type { ContextoEvento } from "@/lib/revision/contexto-evento";
+import {
+  CAMPOS_MILE,
+  ETIQUETAS_MILE,
+  LIMITES_MILE,
+  MAX_CONTEXTO_GUARDADO,
+  serializarContextoMile,
+  type CamposMile,
+} from "@/lib/revision/contexto-mile";
 import { esOrganizador } from "./invitaciones";
 import { proyectosVisibles, type Visor } from "./alcance";
 import { baseNoLista, json, sinFotos } from "./json";
 
 export const MAX_DESCRIPCION = 1000;
-export const MAX_CONTEXTO_IA = 2000;
+export const MAX_CONTEXTO_IA = MAX_CONTEXTO_GUARDADO;
 export const MAX_BYTES_PORTADA = 5 * 1024 * 1024;
 
 export const AVISO_PORTADA_TIPO = "The cover photo has to be a JPEG, PNG, or WebP image.";
@@ -26,7 +34,34 @@ function leerTexto(valor: unknown, maximo: number, aviso: string): Texto {
   return { ok: true, valor: limpio || null };
 }
 
-/** The two optional text fields of an event. Empty text is stored as null. */
+/** The guided "For Mile" answers, checked field by field and serialized. Empty gives null. */
+function leerContextoMileEntrada(valor: unknown): { ok: true; valor: string | null } | { ok: false; aviso: string } {
+  if (valor === undefined || valor === null) return { ok: true, valor: null };
+  if (typeof valor !== "object" || Array.isArray(valor)) return { ok: false, aviso: "The context for Mile is not valid." };
+  const crudo = valor as Record<string, unknown>;
+  const campos: CamposMile = {};
+  for (const clave of CAMPOS_MILE) {
+    const campo = crudo[clave];
+    if (campo === undefined || campo === null) continue;
+    const etiqueta = ETIQUETAS_MILE[clave];
+    if (typeof campo !== "string") return { ok: false, aviso: `"${etiqueta}" has to be text.` };
+    const limpio = campo.trim();
+    if (limpio.length > LIMITES_MILE[clave]) {
+      return { ok: false, aviso: `"${etiqueta}" can have up to ${LIMITES_MILE[clave]} characters.` };
+    }
+    if (limpio) campos[clave] = limpio;
+  }
+  const serializado = serializarContextoMile(campos);
+  if (serializado && serializado.length > MAX_CONTEXTO_GUARDADO) {
+    return { ok: false, aviso: `The context for Mile can have up to ${MAX_CONTEXTO_GUARDADO} characters in total.` };
+  }
+  return { ok: true, valor: serializado };
+}
+
+/**
+ * The optional text fields of an event. Empty text is stored as null. `contextoMile` (the guided answers)
+ * wins over the older plain `contextoIa` string, which is still accepted and stored as-is.
+ */
 export function leerContextoEvento(
   crudo: Record<string, unknown>,
 ): { descripcion: string | null; contextoIa: string | null } | { aviso: string } {
@@ -34,7 +69,9 @@ export function leerContextoEvento(
   if (!descripcion.ok) return { aviso: descripcion.aviso };
   const contextoIa = leerTexto(crudo.contextoIa, MAX_CONTEXTO_IA, `The context for the AI can have up to ${MAX_CONTEXTO_IA} characters.`);
   if (!contextoIa.ok) return { aviso: contextoIa.aviso };
-  return { descripcion: descripcion.valor, contextoIa: contextoIa.valor };
+  const guiado = leerContextoMileEntrada(crudo.contextoMile);
+  if (!guiado.ok) return { aviso: guiado.aviso };
+  return { descripcion: descripcion.valor, contextoIa: guiado.valor ?? contextoIa.valor };
 }
 
 /** What a member may read about an event. `contextoIa` is never part of it. */
