@@ -131,6 +131,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_FALTANTES_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on takes the work question \"is something missing?\" from Groq's faltantes list. An empty list is not a penalty. Unset or anything else keeps Laya's v4 answer.",
+  },
+  {
     nombre: "HYTO_COMUNIDADES",
     ambito: "servidor",
     requerida: false,

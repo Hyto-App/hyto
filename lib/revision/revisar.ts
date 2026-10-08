@@ -9,6 +9,7 @@ import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type Re
 import { reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
+import { aplicarV4DeFaltantes } from "./faltantes-groq";
 import { preguntarLaya, type LlamadaLaya } from "./laya";
 import { montoSinUsd } from "./lectura";
 import { motivosDeRegla } from "./pesos";
@@ -121,7 +122,11 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       llamarLaya,
       reglaDeEvento(contexto.evento),
     );
-    const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
+    // A transcribed file has no Groq list. An empty faltantes there is not "nothing missing".
+    const senalesParaNota = esEvidenciaTextual(foto)
+      ? senales
+      : aplicarV4DeFaltantes(senales, descripcion.lectura, tarea.condicion);
+    const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senalesParaNota, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;
   } catch (error) {
