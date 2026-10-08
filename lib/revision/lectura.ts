@@ -1,5 +1,6 @@
 import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { convertirAUsd } from "./divisas";
+import type { CoincideGroq } from "./otra-groq";
 import { leerMontoRecibo } from "./recibo-parser";
 import { leerFechaTrabajo } from "./trabajo-fechas";
 
@@ -36,6 +37,12 @@ export type LecturaEvidencia = {
    * does not show enough. Absent on readings stored before this field existed.
    */
   cumpleReglas?: boolean | null;
+  /**
+   * Whether the photo matches the request, as Groq stated it.
+   * Null when the model did not send si, parcial, or no. Absent on readings stored
+   * before HYTO_MILE_OTRA_CON_GROQ. The prompt asks for it only while that switch is on.
+   */
+  coincide?: CoincideGroq | null;
 };
 
 /** Keys the vision model must return. */
