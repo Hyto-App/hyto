@@ -94,7 +94,7 @@ test("cambiar el correo olvida el reto, y la pestaña sigue el idioma", async ()
     assert.equal(document.title, "Hyto · Entrar");
     await escribir('input[type="email"]', "ana@example.com");
     await pulsar("Continuar con correo");
-    assert.match(texto(), /Revisa tu correo/);
+    assert.match(texto(), /Revise su correo/);
     await pulsar("Cambiar correo");
     assert.equal(window.sessionStorage.getItem(CLAVE_RETO_CORREO), null);
     await desmontar();
