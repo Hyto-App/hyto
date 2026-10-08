@@ -102,8 +102,30 @@ test("el organizador ve sus secciones arriba y Eventos va primero en el móvil",
     const movil = [...(document.querySelector(".hyto-nav-movil")?.querySelectorAll("a") ?? [])].map((enlace) => enlace.getAttribute("href"));
     assert.equal(movil[0], "/eventos");
     assert.deepEqual(movil, escritorio);
+    assert.equal(document.querySelector('a[href="/comunidades"]'), null);
     const letras = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.ok(letras.every((letra) => letra === "O"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el enlace de comunidades solo aparece con el interruptor encendido", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(Marco, {
+        usuario: { nombre: "Ana", email: "ana@hyto.dev" },
+        mostrarComunidades: true,
+        children: createElement("p", null, "inicio"),
+      }),
+      { ruta: "/comunidades" },
+    );
+    const enlaces = [...document.querySelectorAll('a[href="/comunidades"]')];
+    assert.ok(enlaces.length >= 1);
+    assert.equal(enlaces[0]?.getAttribute("aria-current"), "page");
+    assert.match(texto(), /Communities/);
   } finally {
     await desmontar();
     limpiarPantalla();

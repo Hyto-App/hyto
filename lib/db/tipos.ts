@@ -20,6 +20,38 @@ export type Proyecto = {
   descripcion?: string | null;
   /** Only the AI reviewers read this. Never put it in a route response. */
   contextoIa?: string | null;
+  /** Set only when HYTO_COMUNIDADES is on. Null keeps the event on its own. */
+  comunidadId?: string | null;
+};
+
+export type VisibilidadComunidad = "publica" | "privada";
+export type RolComunidad = "admin" | "miembro";
+export type EstadoSolicitudComunidad = "pendiente" | "aprobada" | "rechazada";
+
+export type Comunidad = {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  fotoUrl: string | null;
+  visibilidad: VisibilidadComunidad;
+  codigo: string;
+  creadoEn: string;
+  creadorId: string;
+};
+
+export type ComunidadMiembro = {
+  comunidadId: string;
+  usuarioId: string;
+  rol: RolComunidad;
+  creadoEn: string;
+};
+
+export type ComunidadSolicitud = {
+  id: string;
+  comunidadId: string;
+  usuarioId: string;
+  estado: EstadoSolicitudComunidad;
+  creadoEn: string;
 };
 
 export type TareaFila = {

@@ -1,4 +1,8 @@
 import type {
+  Comunidad,
+  ComunidadMiembro,
+  ComunidadSolicitud,
+  EstadoSolicitudComunidad,
   EvidenciaFila,
   PedidoCanje,
   Proyecto,
@@ -76,4 +80,16 @@ export type Almacen = {
   crearInvitacion(invitacion: ProyectoInvitacion): Promise<void>;
   leerInvitacionPorHash(hash: string): Promise<ProyectoInvitacion | null>;
   canjearInvitacion(pedido: PedidoCanje): Promise<ResultadoCanje>;
+  listarComunidades(): Promise<Comunidad[]>;
+  leerComunidad(id: string): Promise<Comunidad | null>;
+  leerComunidadPorCodigo(codigo: string): Promise<Comunidad | null>;
+  crearComunidad(comunidad: Comunidad): Promise<void>;
+  listarMiembrosComunidad(comunidadId: string): Promise<ComunidadMiembro[]>;
+  comunidadesDeUsuario(usuarioId: string): Promise<ComunidadMiembro[]>;
+  miembroComunidad(comunidadId: string, usuarioId: string): Promise<ComunidadMiembro | null>;
+  guardarMiembroComunidad(miembro: ComunidadMiembro): Promise<void>;
+  listarSolicitudesComunidad(comunidadId: string): Promise<ComunidadSolicitud[]>;
+  crearSolicitudComunidad(solicitud: ComunidadSolicitud): Promise<void>;
+  actualizarSolicitudComunidad(id: string, estado: EstadoSolicitudComunidad): Promise<void>;
+  fijarComunidadProyecto(proyectoId: string, comunidadId: string | null): Promise<void>;
 };

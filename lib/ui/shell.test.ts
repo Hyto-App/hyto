@@ -19,6 +19,8 @@ test("Join is its own section, not Account", () => {
   assert.equal(seccionDe("/eventos/abc"), "bandeja");
   assert.equal(seccionDe("/eventos"), "eventos");
   assert.equal(seccionDe("/eventos/nuevo"), "eventos");
+  assert.equal(seccionDe("/comunidades"), "comunidades");
+  assert.equal(seccionDe("/comunidades/nueva"), "comunidades");
 });
 
 test("Back exists on the pass-through screens with the spec defaults", () => {
