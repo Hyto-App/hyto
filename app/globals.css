@@ -1873,6 +1873,22 @@ a {
  * and no backdrop-filter. The swirl bitmaps come pre-blurred. Every loop
  * pauses while the tab is hidden ([data-oculto]).
  */
+/* Hidden while the Cavos vault is asking for a signature, so the iframe is not covered. */
+.hyto-login.hyto-bajo-firma {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.hyto-cancelar-firma {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 2147483647;
+  width: auto;
+  padding-inline: 16px;
+  background: var(--card-bg, #fff);
+}
+
 .hyto-login {
   --l-acento: #b7ee34;
   --l-sobre: #08090c;

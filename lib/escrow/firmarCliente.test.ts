@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import {
   AVISO_DEMO_FIRMA,
   AVISO_DISPOSITIVO,
@@ -402,6 +403,48 @@ function jwt(payload: Record<string, unknown>): string {
   const parte = (valor: Record<string, unknown>) => Buffer.from(JSON.stringify(valor)).toString("base64url");
   return `${parte({ alg: "none" })}.${parte(payload)}.x`;
 }
+
+test("una firma que no contesta corta Setting up y un aborto no envía", async () => {
+  const lenta = fetchDe([
+    { body: { xdr: XDR, token: "tok" } },
+    { body: { hash: "h".repeat(64) } },
+  ]);
+  await assert.rejects(
+    () =>
+      firmarYEnviar("fondear", "stand", {}, {
+        fetch: lenta.fetch,
+        topeMs: 30,
+        firmar: () => new Promise<string>(() => undefined),
+      }),
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_USDC_LENTO,
+  );
+  assert.equal(lenta.llamadas.length, 1);
+
+  let empezo: () => void = () => undefined;
+  const lista = new Promise<void>((resolver) => {
+    empezo = resolver;
+  });
+  const senal = new AbortController();
+  const red = fetchDe([
+    { body: { xdr: XDR, token: "tok" } },
+    { body: { hash: "h".repeat(64) } },
+  ]);
+  const pendiente = firmarYEnviar("desplegar", "stand", {}, {
+    fetch: red.fetch,
+    senal: senal.signal,
+    firmar: () => {
+      empezo();
+      return new Promise<string>(() => undefined);
+    },
+  });
+  await lista;
+  senal.abort();
+  await assert.rejects(
+    pendiente,
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_RECHAZO,
+  );
+  assert.equal(red.llamadas.length, 1);
+});
 
 test("con la recuperación de Cavos (enclave), un navegador sin la llave pide entrar otra vez", async () => {
   const { AVISO_SIN_RESPALDO } = await import("@/lib/auth/errores");

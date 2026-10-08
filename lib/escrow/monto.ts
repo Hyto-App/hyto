@@ -20,6 +20,17 @@ export function cifraConfirmada(
   return cifra / 100;
 }
 
+/**
+ * The amount that can be paid. A reading above the task cap becomes the cap.
+ * Lower amounts stay as entered. Invalid text stays null.
+ */
+export function montoDentroDelTope(valor: string, tope: string | null, presupuesto: string): string | null {
+  const limite = textoTope(tope, presupuesto);
+  const normal = normalizarMonto(valor);
+  if (!limite || !normal) return null;
+  return centavos(normal) > centavos(limite) ? limite : normal;
+}
+
 export function validarMontoConfirmado(
   valor: unknown,
   tope: string | null,
@@ -27,10 +38,9 @@ export function validarMontoConfirmado(
 ): { monto: string } | { aviso: string } {
   const texto =
     typeof valor === "number" && Number.isFinite(valor) ? String(valor) : typeof valor === "string" ? valor : "";
-  const normal = normalizarMonto(texto);
-  if (!normal) return { aviso: AVISO_MONTO_INVALIDO };
-  if (cifraConfirmada(normal, tope, presupuesto) === null) return { aviso: AVISO_MONTO_TOPE };
-  return { monto: normal };
+  const ajustado = montoDentroDelTope(texto, tope, presupuesto);
+  if (!ajustado) return { aviso: AVISO_MONTO_INVALIDO };
+  return { monto: ajustado };
 }
 
 function textoTope(tope: string | null, presupuesto: string): string | null {
