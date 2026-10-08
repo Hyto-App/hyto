@@ -109,7 +109,7 @@ test("tras el código con next=/join/CODE vuelve al join y no a Mis tareas", asy
   }
 });
 
-test("tras el código, la pantalla de éxito lleva a Events (/) como Google y no a Mis tareas", async () => {
+test("tras el código, una cuenta nueva abre Eventos y no Mis tareas", async () => {
   limpiarPantalla();
   const destinos: string[] = [];
   const asignar = window.location.assign.bind(window.location);
@@ -124,11 +124,11 @@ test("tras el código, la pantalla de éxito lleva a Events (/) como Google y no
     });
     assert.match(texto(), /You're in\./);
     await pulsar("Continue");
-    assert.deepEqual(destinos, [DESTINO]);
+    assert.deepEqual(destinos, ["/eventos"]);
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
     });
-    assert.deepEqual(destinos, [DESTINO, DESTINO]);
+    assert.deepEqual(destinos, ["/eventos", "/eventos"]);
     assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);
   } finally {
     window.location.assign = asignar;
