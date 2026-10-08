@@ -75,4 +75,14 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envía la foto otra vez.");
   assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo didn't pass Mile's check");
   assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta foto no pasó la revisión de Mile");
+  assert.equal(
+    texto("en", "entrar.legalSignUp"),
+    "Secure sign-in with Cavos. We create a free account where your earnings arrive.",
+  );
+  assert.equal(
+    texto("es", "entrar.legalSignUp"),
+    "Inicio seguro con Cavos. Creamos una cuenta gratis donde te llega lo que ganás.",
+  );
+  assert.doesNotMatch(texto("en", "entrar.legalSignUp"), /hold your payment|wallet/i);
+  assert.doesNotMatch(texto("es", "entrar.legalSignUp"), /guardar tu pago|billetera/i);
 });
