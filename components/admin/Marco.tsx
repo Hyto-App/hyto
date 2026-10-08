@@ -44,12 +44,25 @@ const TRABAJO: readonly EnlaceNavDato[] = [
   { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" },
 ];
 
-function enlacesOrganizador(eventoId: string): EnlaceNavDato[] {
+/** Event home, tasks, and report already show Inbox, Tasks, and Report as tabs. */
+export function pestanasEventoVisibles(ruta: string): boolean {
+  return /^\/eventos\/(?!nuevo(?:\/|$))[^/]+(?:\/(?:tareas|informe))?\/?$/.test(ruta);
+}
+
+function enlacesOrganizador(eventoId: string, conPestanas: boolean): EnlaceNavDato[] {
+  const eventos: EnlaceNavDato = { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" };
+  const tareas: EnlaceNavDato = {
+    seccion: "tareasEvento",
+    href: `/eventos/${eventoId}/tareas`,
+    clave: "eventos.tasks",
+    icono: "tasks",
+  };
+  if (conPestanas) return [eventos, tareas];
   return [
-    { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" },
+    eventos,
     { seccion: "bandeja", href: `/eventos/${eventoId}`, clave: "eventos.inbox", icono: "inbox" },
     { seccion: "informe", href: `/eventos/${eventoId}/informe`, clave: "eventos.report", icono: "report" },
-    { seccion: "tareasEvento", href: `/eventos/${eventoId}/tareas`, clave: "nav.eventTasks", icono: "tasks" },
+    tareas,
   ];
 }
 
@@ -73,7 +86,7 @@ export function Marco({
   const demoOrganizador = rolDemo === "organizador";
   const organiza = muestraNavOrganizador(eventosOrganizados, demoOrganizador);
   const eventoId = idNavOrganizador(ruta, eventosOrganizados, demoOrganizador);
-  const propios = organiza && eventoId ? enlacesOrganizador(eventoId) : [];
+  const propios = organiza && eventoId ? enlacesOrganizador(eventoId, pestanasEventoVisibles(ruta)) : [];
   const enlaceComunidades: EnlaceNavDato | null = mostrarComunidades
     ? { seccion: "comunidades", href: "/comunidades", clave: "nav.communities", icono: "projects" }
     : null;

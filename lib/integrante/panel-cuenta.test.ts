@@ -162,6 +162,7 @@ test("el demo sin pagos usa las tareas reales y no llama a Horizon sin billetera
   });
 
   assert.equal(vista.demo, true);
+  assert.equal(vista.organiza, false);
   assert.equal(vista.muestra, false);
   assert.equal(vista.walletMuestra, false);
   assert.equal(vista.wallet, null);
@@ -204,6 +205,30 @@ test("si Horizon falla, el panel igual devuelve lo ganado", async () => {
     leerSaldo: async () => ({ saldo: null }),
   });
   assert.equal(ausente.saldoEstado, "ausente");
+  assert.equal(ausente.organiza, false);
+});
+
+test("quien organiza un evento queda marcado aunque no tenga pagos propios", async () => {
+  const almacen = crearMemoria();
+  await almacen.crearProyecto(proyecto("zeek", "ZEEK"), []);
+  await almacen.guardarMiembro({
+    proyectoId: "zeek",
+    usuarioId: "ana",
+    rol: "organizer",
+    estado: "active",
+    creadoEn: "2026-09-01T12:00:00.000Z",
+  });
+  const vista = await armarVistaCuenta({
+    almacen,
+    usuarioId: "ana",
+    email: "ana@hyto.test",
+    wallet: "",
+    demo: false,
+    ahora: AHORA,
+    leerSaldo: async () => ({ saldo: null }),
+  });
+  assert.equal(vista.organiza, true);
+  assert.equal(vista.orgullo.vacio, true);
 });
 
 test("la ruta de cuenta es de solo lectura y no mezcla a otra persona", async () => {

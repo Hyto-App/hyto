@@ -277,6 +277,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
+    assert.match(texto(), /Confirm the amount before you pay/);
+    assert.doesNotMatch(texto(), /deploying/);
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);

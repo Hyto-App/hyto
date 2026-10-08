@@ -440,11 +440,12 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           </div>
                           <InsigniasClasificacion tarea={tarea} />
                           {mejores.has(tarea.id) ? (
-                            <p className="mt-2">
+                            <p className="mt-2 flex flex-wrap items-center gap-2">
                               <span className="hyto-pill hyto-pill-ok">
                                 <i className="hyto-dot" aria-hidden="true" />
                                 {t("tareas.bestPaid")}
                               </span>
+                              <span className="text-sm text-[var(--suave)]">{t("tareas.bestPaidHelp")}</span>
                             </p>
                           ) : null}
                           {abierta ? (

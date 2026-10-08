@@ -15,7 +15,7 @@ import { cuentaTieneUsdc, estadoCobro } from "@/lib/integrante/usdc";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { json } from "./json";
 
-export const AVISO_USDC_DEMO = "Demo mode can't set up payouts. Sign in with your email to continue.";
+export const AVISO_USDC_DEMO = "Payout setup stays off in this practice session. You can still look around. No money moves in the demo.";
 export const AVISO_USDC_SIN_WALLET = "Sign in again before setting up payouts.";
 export const AVISO_USDC_SIN_CUENTA = "We couldn't open this payout account on the test network. Try again.";
 export const AVISO_USDC_SOLO_TESTNET = "Payout accounts are only opened on the test network.";

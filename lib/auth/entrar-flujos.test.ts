@@ -148,6 +148,21 @@ test("Continue with Apple guarda signin en Sign in y signup en Crear cuenta", as
   }
 });
 
+test("la entrada al demo son dos botones que dicen qué se va a ver", async () => {
+  limpiarPantalla();
+  try {
+    await montar(createElement(Entrar, { demoHabilitado: true }));
+    assert.equal(document.querySelector("select"), null);
+    assert.doesNotMatch(texto(), /Enter as demo/);
+    const botones = [...document.querySelectorAll("button")].map((boton) => boton.textContent ?? "");
+    assert.ok(botones.some((rotulo) => rotulo.includes("See it as organizer") && rotulo.includes("events, the reviews")));
+    assert.ok(botones.some((rotulo) => rotulo.includes("See it as volunteer") && rotulo.includes("tasks assigned to you")));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("dos Entrar en la misma página (Hero y Cierre) no repiten ids", async () => {
   limpiarPantalla();
   try {

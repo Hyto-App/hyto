@@ -109,11 +109,95 @@ test("en demo la bienvenida no pide el cobro", async () => {
       await Promise.resolve();
     });
     assert.match(texto(), /You're in/);
-    assert.match(texto(), /Demo mode can't set up payouts/);
+    assert.match(texto(), /Do the task, send a photo/);
+    assert.match(texto(), /volunteer view/);
+    assert.match(texto(), /No money moves in the demo/);
+    assert.doesNotMatch(texto(), /can't set up payouts/);
     assert.doesNotMatch(texto(), /Take your first step/);
     assert.doesNotMatch(texto(), /Get ready to be paid/);
     assert.equal(llamadas, 0);
   } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el organizador no ve el cobro ni la bienvenida de quien hace la tarea", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/api/usdc")) return json({ listo: true });
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK", rol: "organizer", pendientes: 1 }] });
+    return json({}, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ListaEventos));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    assert.match(texto(), /You organize the event/);
+    assert.doesNotMatch(texto(), /Do the task, send a photo/);
+    assert.doesNotMatch(texto(), /Ready to be paid/);
+    assert.doesNotMatch(texto(), /Get ready to be paid/);
+    assert.doesNotMatch(texto(), /digital dollars \(USDC\)/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el demo organizador no ve el aviso de cobro", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "organizador",
+        children: createElement(Bienvenida),
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /organizer view/);
+    assert.match(texto(), /No money moves in the demo/);
+    assert.doesNotMatch(texto(), /can't set up payouts/);
+    assert.doesNotMatch(texto(), /Do the task, send a photo/);
+    assert.doesNotMatch(texto(), /Ready to be paid/);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el demo voluntario no ve el botón de crear evento", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/api/proyectos")) return json({ proyectos: [] });
+    return json({}, 404);
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "voluntario",
+        children: createElement(ListaEventos),
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    assert.equal(document.querySelector('a[href="/eventos/nuevo"]'), null);
+    assert.match(texto(), /volunteer view/);
+    assert.doesNotMatch(texto(), /You organize the event/);
+  } finally {
+    globalThis.fetch = original;
     await desmontar();
     limpiarPantalla();
   }

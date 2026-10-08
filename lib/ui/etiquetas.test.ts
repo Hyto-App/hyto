@@ -12,6 +12,7 @@ test("las frases de ejemplo se traducen sin el prefijo Ejemplo o Example", () =>
     "Table set up, ZEEK banner facing forward, and the room is visible.",
   );
   assert.equal(textoVisible("Montar el stand"), "Set up the booth");
+  assert.equal(textoVisible("Lista de quienes llegaron al evento"), "List of people who arrived");
   assert.equal(textoVisible("Ejemplo. Montar el stand"), "Set up the booth");
   assert.equal(textoVisible("Example. Table set up."), "Table set up.");
   assert.equal(

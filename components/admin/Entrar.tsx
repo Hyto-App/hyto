@@ -158,8 +158,6 @@ export function Entrar({
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
   const [correo, setCorreo] = useState("");
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
-  const [verDemo, setVerDemo] = useState(false);
-  const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [alertaRegreso, setAlertaRegreso] = useState(false);
@@ -578,7 +576,7 @@ export function Entrar({
     }
   }
 
-  async function entrarDemo(rolPedido = rolDemo) {
+  async function entrarDemo(rolPedido: "organizador" | "voluntario") {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -770,7 +768,7 @@ export function Entrar({
             {t("entrar.signIn")}
           </button>
         </section>
-        {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
+        {demoHabilitado ? <Demo ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
         {mensaje ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
             {claro(mensaje)}
@@ -1051,19 +1049,8 @@ export function Entrar({
                 {demoHabilitado ? (
                   <div className="hyto-login-demo">
                     <p>{t("entrar.soloMirar")}</p>
-                    <button
-                      type="button"
-                      className="hyto-login-btn is-fantasma"
-                      onClick={() => setVerDemo((actual) => !actual)}
-                      aria-expanded={verDemo}
-                      disabled={ocupado !== null}
-                    >
-                      {t("entrar.probarDemo")}
-                    </button>
+                    <Demo ocupado={ocupado} entrarDemo={entrarDemo} />
                   </div>
-                ) : null}
-                {demoHabilitado && verDemo ? (
-                  <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
                 <p className="hyto-login-legal">
                   {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
@@ -1328,40 +1315,25 @@ function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionI
 }
 
 function Demo({
-  rolDemo,
-  setRolDemo,
   ocupado,
   entrarDemo,
 }: {
-  rolDemo: "organizador" | "voluntario";
-  setRolDemo: (rol: "organizador" | "voluntario") => void;
   ocupado: Ocupado | null;
-  entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
+  entrarDemo: (rolPedido: "organizador" | "voluntario") => Promise<void>;
 }) {
   const t = useTexto();
-  const idRol = `${useId()}-rol-demo`;
+  const ocupadoDemo = ocupado === "demo";
   return (
     <div className="hyto-card grid gap-3 p-4">
       <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
       <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-      <label className="sr-only" htmlFor={idRol}>
-        {t("entrar.demoRole")}
-      </label>
-      <select
-        id={idRol}
-        value={rolDemo}
-        onChange={(evento) => {
-          const valor = evento.target.value;
-          if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
-        }}
-        disabled={ocupado !== null}
-        className="hyto-input"
-      >
-        <option value="organizador">{t("entrar.organizerDemo")}</option>
-        <option value="voluntario">{t("entrar.volunteerDemo")}</option>
-      </select>
-      <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
-        {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
+      <button type="button" onClick={() => void entrarDemo("organizador")} disabled={ocupado !== null} className="hyto-btn-line hyto-btn-demo">
+        <span>{ocupadoDemo ? t("entrar.signingIn") : t("entrar.seeOrganizer")}</span>
+        <span className="text-sm font-normal text-[var(--suave)]">{t("entrar.seeOrganizerHelp")}</span>
+      </button>
+      <button type="button" onClick={() => void entrarDemo("voluntario")} disabled={ocupado !== null} className="hyto-btn-line hyto-btn-demo">
+        <span>{ocupadoDemo ? t("entrar.signingIn") : t("entrar.seeVolunteer")}</span>
+        <span className="text-sm font-normal text-[var(--suave)]">{t("entrar.seeVolunteerHelp")}</span>
       </button>
     </div>
   );

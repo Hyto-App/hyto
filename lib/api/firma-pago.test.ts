@@ -606,7 +606,7 @@ test("un reembolso no se despliega ni se fondea hasta confirmar un monto dentro 
     assert.equal(bloqueado.status, 409);
     assert.equal(
       ((await bloqueado.json()) as { aviso: string }).aviso,
-      "Confirm an amount within the limit before deploying.",
+      "Confirm the amount before you pay.",
     );
     assert.equal(montos.length, 0);
     assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.monto, "20");

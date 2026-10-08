@@ -402,6 +402,14 @@ a {
   outline-offset: 2px;
 }
 
+.hyto-btn-demo {
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
 .hyto-btn-line.is-inline {
   width: max-content;
   max-width: 100%;

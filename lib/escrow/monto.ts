@@ -2,7 +2,7 @@ import { centavos, normalizarMonto } from "@/lib/admin/vista";
 
 export const AVISO_MONTO_INVALIDO = "Enter an amount greater than zero, with up to two decimals.";
 export const AVISO_MONTO_TOPE = "The amount cannot be higher than the limit.";
-export const AVISO_CONFIRMAR_MONTO = "Confirm an amount within the limit before deploying.";
+export const AVISO_CONFIRMAR_MONTO = "Confirm the amount before you pay.";
 export const AVISO_CONFIRMAR_FONDEO = "Confirm an amount within the limit before funding.";
 export const AVISO_MONTO_TARDE = "This payment is already set up.";
 

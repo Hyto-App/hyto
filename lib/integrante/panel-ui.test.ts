@@ -54,6 +54,38 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
   }
 });
 
+test("quien organiza sin pagos propios no ve ganancias, hitos ni racha", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    responder({
+      demo: false,
+      organiza: true,
+      muestra: false,
+      email: "org@hyto.test",
+      wallet: null,
+      walletMuestra: false,
+      saldo: null,
+      saldoEstado: "sin-wallet",
+      orgullo: armarOrgullo([]),
+    })) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.doesNotMatch(texto(), /Earned from events/);
+    assert.doesNotMatch(texto(), /Milestones released/);
+    assert.doesNotMatch(texto(), /Streak/);
+    assert.doesNotMatch(texto(), /Earnings by month/);
+    assert.doesNotMatch(texto(), /Three-month streak/);
+    assert.match(texto(), /Wallet/);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
 test("una wallet ausente pide Get ready to be paid", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;

@@ -22,7 +22,7 @@ import {
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
 import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
-import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
+import { AVISO_CONFIRMAR_MONTO, AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
 import { type Clave, texto } from "@/lib/ui/diccionario";
@@ -86,6 +86,7 @@ const EXACTO: Record<string, Clave> = {
   "Accounts are waiting for the Cavos app id.": "errores.cuentasNo",
   "The account did not land on Stellar.": "errores.cuentaNoAbrio",
   "Demo mode cannot prepare USDC.": "errores.demoCobro",
+  [AVISO_CONFIRMAR_MONTO]: "errores.confirmarAntesDePagar",
   "Demo mode: signatures are off": "errores.demoPagos",
   "The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM. If it is short, fund it with Friendbot.":
     "errores.saldoRed",

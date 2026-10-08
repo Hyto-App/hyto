@@ -7,7 +7,8 @@ import { ZONA_HORA } from "@/lib/integrante/formato";
 import type { Tarea } from "@/lib/integrante/tipos";
 import type { Clave } from "@/lib/ui/diccionario";
 
-const PASO: Record<"aprobada" | "enviado" | "pagado", Clave> = {
+const PASO: Record<"revision" | "aprobada" | "enviado" | "pagado", Clave> = {
+  revision: "actividad.revision",
   aprobada: "actividad.aprobada",
   enviado: "actividad.enviado",
   pagado: "actividad.pagado",

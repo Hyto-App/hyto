@@ -36,8 +36,12 @@ test("la foto guarda su hora y Mile no tiene una", () => {
     { id: "envio", en: "2026-10-06T15:04:00.000Z" },
     { id: "mile", en: null },
   ]);
+  assert.equal(vista.pasos[0]?.id, "revision");
   assert.equal(vista.pasos[0]?.estado, "ahora");
-  assert.equal(vista.pasos[2]?.estado, "despues");
+  assert.deepEqual(
+    vista.pasos.map((paso) => paso.estado),
+    ["ahora", "despues", "despues"],
+  );
 });
 
 test("un hash sin pago no marca aprobada y deja el pago en camino, sin hora", () => {
@@ -52,8 +56,9 @@ test("un hash sin pago no marca aprobada y deja el pago en camino, sin hora", ()
   });
   assert.deepEqual(
     vista.pasos.map((paso) => paso.estado),
-    ["ahora", "hecho", "ahora"],
+    ["despues", "ahora", "despues"],
   );
+  assert.equal(vista.pasos[0]?.id, "aprobada");
   assert.deepEqual(
     vista.eventos.map((evento) => evento.id),
     ["envio", "mile", "camino"],

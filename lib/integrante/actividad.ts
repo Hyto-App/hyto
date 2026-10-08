@@ -1,7 +1,7 @@
 import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
 import type { Tarea } from "./tipos";
 
-export type IdPaso = "aprobada" | "enviado" | "pagado";
+export type IdPaso = "revision" | "aprobada" | "enviado" | "pagado";
 export type EstadoPaso = "hecho" | "ahora" | "despues";
 export type IdEvento = "envio" | "mile" | "aprobada" | "camino" | "pagado";
 
@@ -34,11 +34,15 @@ export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado:
 
 export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[] } {
   const marcas = marcasPago(tarea);
-  const empezo = Boolean(instanteGuardado(tarea.enviadaEn) || tarea.etapa || tarea.estado !== "pendiente" || marcas.enviado);
+  // In review is its own step. Approved stays unpainted until the task is paid.
+  const enRevision = tarea.estado === "en revisión" && !marcas.enviado && !marcas.pagado;
   const pasos: PasoActividad[] = [
-    { id: "aprobada", estado: marcas.aprobada ? "hecho" : empezo ? "ahora" : "despues" },
-    { id: "enviado", estado: marcas.enviado ? "hecho" : marcas.aprobada ? "ahora" : "despues" },
-    { id: "pagado", estado: marcas.pagado ? "hecho" : marcas.enviado ? "ahora" : "despues" },
+    {
+      id: enRevision ? "revision" : "aprobada",
+      estado: enRevision ? "ahora" : marcas.pagado ? "hecho" : "despues",
+    },
+    { id: "enviado", estado: marcas.pagado ? "hecho" : marcas.enviado ? "ahora" : "despues" },
+    { id: "pagado", estado: marcas.pagado ? "hecho" : "despues" },
   ];
 
   const eventos: EventoActividad[] = [];

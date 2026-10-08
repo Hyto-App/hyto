@@ -7,7 +7,7 @@ import { personaVisible } from "@/lib/perfil/vista";
 import { exigirOrganizadorEvento, exigirPagina } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
-export const generateMetadata = tituloDe("titulos.assign");
+export const generateMetadata = tituloDe("titulos.tasks");
 
 export default async function PaginaTareasEvento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

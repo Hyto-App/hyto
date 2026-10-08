@@ -103,10 +103,14 @@ export function PanelCuenta() {
       <Billetera vista={vista} />
       {vista.muestra ? null : <PasskeyCuenta />}
       <PasaporteStellar />
-      <Ganancias orgullo={vista.orgullo} />
-      <OrgulloFila orgullo={vista.orgullo} />
-      <Insignias insignias={vista.orgullo.insignias} />
-      <Recientes orgullo={vista.orgullo} muestra={vista.muestra} />
+      {vista.organiza && vista.orgullo.vacio ? null : (
+        <>
+          <Ganancias orgullo={vista.orgullo} />
+          <OrgulloFila orgullo={vista.orgullo} />
+          <Insignias insignias={vista.orgullo.insignias} />
+          <Recientes orgullo={vista.orgullo} muestra={vista.muestra} />
+        </>
+      )}
     </div>
   );
 }
