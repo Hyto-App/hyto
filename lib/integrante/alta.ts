@@ -1,3 +1,4 @@
+import { AVISO_USDC_LENTO } from "./avisosUsdc";
 import type { BilleteraCobro } from "./tipos";
 import { asegurarCobroUsdc, consultarUsdc } from "./usdc";
 
@@ -33,7 +34,9 @@ export async function completarAltaTestnet(
       return { ok: false, aviso: lista.detalle ?? "We couldn't add the USDC trustline on Stellar testnet." };
     }
     return { ok: true, friendbot, trustline: !yaUsdc };
-  } catch {
+  } catch (error) {
+    const texto = error instanceof Error ? error.message : "";
+    if (texto === AVISO_USDC_LENTO || /cancelled the confirmation/i.test(texto)) return { ok: false, aviso: texto };
     return { ok: false, aviso: "We couldn't add the USDC trustline on Stellar testnet." };
   }
 }

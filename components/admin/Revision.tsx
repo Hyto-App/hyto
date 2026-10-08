@@ -28,7 +28,7 @@ import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
-import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
+import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
   AVISO_REINGRESO,
@@ -150,13 +150,16 @@ export function Revision({
     };
   }, [real, contrato, vueltaFondo]);
 
-  const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
+  const claveMonto = tarea
+    ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}|${tarea.tope ?? ""}|${tarea.monto}`
+    : "";
   const tareaMontoRef = useRef(tarea);
   tareaMontoRef.current = tarea;
   useEffect(() => {
     const actual = tareaMontoRef.current;
     if (!actual || actual.tipo !== "reembolso") return;
-    setBorrador(actual.montoConfirmado ?? actual.montoRevisado ?? "");
+    const base = actual.montoConfirmado ?? actual.montoRevisado ?? "";
+    setBorrador(montoDentroDelTope(base, actual.tope, actual.monto) ?? "");
   }, [claveMonto]);
 
   const pasoRef = useRef(paso);
@@ -281,20 +284,15 @@ export function Revision({
 
   async function confirmar() {
     if (confirmando || !tarea || tarea.tipo !== "reembolso") return;
-    const normal = normalizarMonto(borrador);
-    if (!normal) {
+    const pago = montoDentroDelTope(borrador, tarea.tope, tarea.monto);
+    if (!pago) {
       publicarAviso(AVISO_MONTO_INVALIDO);
-      return;
-    }
-    const tope = normalizarMonto(tarea.tope ?? "") ?? normalizarMonto(tarea.monto);
-    if (!tope || centavos(normal) > centavos(tope)) {
-      publicarAviso(AVISO_MONTO_TOPE);
       return;
     }
     setConfirmando(true);
     publicarAviso(null);
     try {
-      const resultado = await confirmarMonto(tareaId, normal);
+      const resultado = await confirmarMonto(tareaId, pago);
       if ("aviso" in resultado) {
         publicarAviso(resultado.aviso);
         return;
@@ -306,7 +304,7 @@ export function Revision({
     }
   }
 
-  async function correr(acciones: readonly AccionCliente[]) {
+  async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal) {
     if (paso || !tarea) return;
     if (!wallet) {
       publicarAviso(AVISO_REINGRESO);
@@ -323,6 +321,7 @@ export function Revision({
     try {
       pago = await firmarPasos(acciones, tareaId, {
         ...(firmar ? { firmar } : {}),
+        ...(senal ? { senal } : {}),
         extra: {
           firmante: wallet,
           ...(contrato ? { contrato } : {}),
@@ -415,6 +414,8 @@ export function Revision({
   const botones = botonesRevision(tarea, real, { contrato, fondeado });
   const esperaConfirmacion =
     real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
+  const topePago = normalizarMonto(tarea.tope ?? "") ?? normalizarMonto(tarea.monto);
+  const sobreTope = Boolean(topePago && tarea.montoRevisado && centavos(tarea.montoRevisado) > centavos(topePago));
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
@@ -437,14 +438,14 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: () => correr(pasosDesde(reanudar)),
+        onConfirmar: (senal) => correr(pasosDesde(reanudar), senal),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
       monto,
       detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
       confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
-      onConfirmar: () => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
+      onConfirmar: (senal) => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };
   };
   const etiquetaPaso = (accion: AccionCliente) =>
@@ -602,7 +603,7 @@ export function Revision({
                 name="monto-confirmado"
                 inputMode="decimal"
                 required
-                aria-describedby="monto-confirmado-ayuda"
+                aria-describedby={sobreTope ? "monto-confirmado-ayuda monto-confirmado-tope" : "monto-confirmado-ayuda"}
                 value={borrador}
                 onChange={(evento) => setBorrador(evento.target.value)}
                 className="hyto-input mt-2"
@@ -610,6 +611,14 @@ export function Revision({
               <p id="monto-confirmado-ayuda" className="mt-2 text-sm leading-6 text-[var(--suave)]">
                 {t("revision.upTo", { monto: formatearMonto(tarea.tope ?? tarea.monto, idioma) })}
               </p>
+              {sobreTope ? (
+                <p id="monto-confirmado-tope" className="mt-2 text-sm leading-6 text-[var(--suave)]">
+                  {t("revision.overCap", {
+                    leido: formatearMonto(tarea.montoRevisado ?? "", idioma),
+                    tope: formatearMonto(topePago ?? "", idioma),
+                  })}
+                </p>
+              ) : null}
               <button
                 type="button"
                 disabled={confirmando || coincide || modoDemo}
