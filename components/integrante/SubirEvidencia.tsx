@@ -12,6 +12,7 @@ import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
+import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -19,7 +20,7 @@ import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
-import { formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { formatearFecha, formatearHora, formatearMonto, montoDeTarea, montosDeCobro } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
 import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
@@ -485,6 +486,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const enviada = fase === "lista" || cerrada;
   const revisando = fase === "enviando" || esperando;
   const montoVisible = montoDeTarea(tarea, idioma);
+  const cobro = montosDeCobro(tarea, idioma);
+  const montoPaso = cobro?.pago || montoVisible;
   const calificacion = notaDeTarea(tarea);
   const insuficiente = calificacion?.veredicto === "insuficiente";
   const parcial = calificacion?.veredicto === "parcial";
@@ -681,6 +684,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               <div className="hyto-resumen-nota">
                 <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
                 <EtiquetasNota etiquetas={tarea.notas} />
+                <NotaCobro tarea={tarea} />
                 <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
               </div>
             ) : null}
@@ -691,7 +695,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           tarea={tarea}
           revisionCerrada={esperaAgotada || !!avisoEnvio}
           mileSinTerminar={mileSinTerminar}
-          monto={montoVisible}
+          monto={montoPaso}
           archivo={documental}
         />
         <ActividadTarea tarea={tarea} />

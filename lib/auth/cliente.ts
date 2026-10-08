@@ -2,6 +2,7 @@ import type { AuthProvider, Identity } from "@cavos/kit";
 import { olvidarDireccionAdmin } from "@/lib/admin/memoria";
 import { borrarCavosLocal, recordarTokenCavos, userIdCavosGuardado } from "@/lib/auth/cavosSesion";
 import { avisoDeIngreso } from "@/lib/auth/errores";
+import { conNonce } from "@/lib/auth/retoCorreo";
 import { leerPoliticaRecuperacion, opcionesRecuperacion } from "@/lib/auth/enclave";
 import { debeProvisionar, type IntencionIngreso } from "@/lib/auth/intencion";
 import { completarAltaTestnet } from "@/lib/integrante/alta";
@@ -109,7 +110,7 @@ export async function entrarConCodigo(
   codigo: string,
   intencion: IntencionIngreso = "signin",
 ): Promise<IngresoCerrado & { identity: Identity }> {
-  const identity = await authComo(auth).verifyOtp(email, codigo);
+  const identity = await conNonce(auth, () => authComo(auth).verifyOtp(email, codigo));
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
   const sesion = await publicarSesion(identity.email ?? email, auth.getAuthToken?.() ?? null, intencion);
   if (!sesion.ok) return { identity, aviso: sesion.aviso, direccion: null, guardada: false };

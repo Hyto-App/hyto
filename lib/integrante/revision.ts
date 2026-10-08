@@ -26,6 +26,7 @@ export type CamposRevision = {
   requisitos: RequisitoRevision[];
   montoConfirmado: string | null;
   montoPagado: string | null;
+  montoRevisado: string | null;
 };
 
 export function leerCamposRevision(crudo: Record<string, unknown>, estado: EstadoTarea): CamposRevision {
@@ -52,6 +53,7 @@ export function leerCamposRevision(crudo: Record<string, unknown>, estado: Estad
     requisitos,
     montoConfirmado: textoCorto(crudo.montoConfirmado, 32),
     montoPagado: textoCorto(crudo.montoPagado, 32),
+    montoRevisado: textoCorto(typeof crudo.montoRevisado === "number" ? String(crudo.montoRevisado) : crudo.montoRevisado, 32),
   };
 }
 
@@ -103,7 +105,7 @@ export function clavePagoVisto(tareaId: string): string {
   return `hyto-pago-visto:${tareaId}`;
 }
 
-/** Body the organizer sheet sends. The API ignores it until the review columns exist. */
+/** Body the organizer sheet sends. The server stores it as the ask for another photo. */
 export function cuerpoPedirOtra(nota: string, fallidos: number[], puntos: string[]): {
   nota: string | null;
   fallidos: string[];

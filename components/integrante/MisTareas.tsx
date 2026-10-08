@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
+import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
@@ -456,6 +457,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               <div className="mt-3">
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                                 <EtiquetasNota etiquetas={tarea.notas} />
+                                <NotaCobro tarea={tarea} />
                               </div>
                             ) : reintento ? (
                               <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
@@ -477,6 +479,20 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
                               <span>{t("tareas.paidNote", { amount: recibido })}</span>
+                            </p>
+                          ) : null}
+                          {tarea.estado === "pendiente" && tarea.rechazada ? (
+                            <p className="hyto-nota-mile hyto-nota-mile-pend">
+                              <Mile estado="cara-neutra" tamano={28} />
+                              <span>
+                                {t("evidencia.organizerAsked")}
+                                {tarea.rechazo?.nota ? (
+                                  <>
+                                    {" "}
+                                    <q>{tarea.rechazo.nota}</q>
+                                  </>
+                                ) : null}
+                              </span>
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (

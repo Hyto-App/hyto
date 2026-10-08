@@ -30,6 +30,7 @@ import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
+import { CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
@@ -42,7 +43,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -344,6 +345,7 @@ export function Revision({
     let actual: AccionCliente | null = null;
     let pago: PagoFirmado | null = null;
     let contratoParcial: string | null = null;
+    let yaEnRed = false;
     try {
       pago = await firmarPasos(acciones, tareaId, {
         ...(firmar ? { firmar } : {}),
@@ -369,21 +371,30 @@ export function Revision({
       setHashPaso(pago.hash);
       if (pago.aviso) publicarAviso(mensajeClaro(pago.aviso));
     } catch (error) {
-      if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
-      if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
       const codigo = error instanceof ErrorFirmaCliente ? error.codigo : null;
-      publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
-        paso: actual,
-        codigo,
-      });
+      if (codigo === CODIGO_YA_FONDEADO) {
+        // The network already holds the budget. Offering Finish locking again would lock it twice.
+        yaEnRed = true;
+        if (contrato) fondeoForzado.current = contrato;
+        setFondeado(true);
+        setReanudar(null);
+        publicarAviso(null);
+      } else {
+        if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
+        if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
+        publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
+          paso: actual,
+          codigo,
+        });
+      }
     } finally {
       setPaso(null);
-      if (!pago && contratoParcial) setContrato(contratoParcial);
-      if (!pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
+      if (!yaEnRed && !pago && contratoParcial) setContrato(contratoParcial);
+      if (!yaEnRed && !pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
       const fresco = await cargarDetalleOrganizador(tareaId);
       const contratoConocido = fresco?.contratoEscrow ?? pago?.contrato ?? contratoParcial;
       if (contratoConocido) setContrato(contratoConocido);
-      if (!pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
+      if (!yaEnRed && !pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
       if (fresco) {
         setTarea(fresco.tarea);
         setFoto(fresco.foto);
@@ -748,9 +759,7 @@ export function Revision({
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {t("revision.setsAside", {
-                    monto: formatearMonto(tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto, idioma),
-                  })}
+                  {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
                 </p>
                 {esperaOtraFoto ? (
                   <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">

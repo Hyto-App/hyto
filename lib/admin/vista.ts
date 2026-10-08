@@ -103,6 +103,26 @@ export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
   return tareas.filter((tarea) => enBandeja(tarea));
 }
 
+/** Pending task with no delivery and no escrow yet. The organizer can open review and lock the budget. */
+export function puedeApartarSinEntrega(tarea: {
+  estado: string;
+  hashPago?: string | null;
+  apartado?: boolean;
+  tipoArchivo?: string | null;
+  montoRevisado?: string | null;
+  fecha?: string | null;
+  intentosAnteriores?: unknown[] | null;
+}): boolean {
+  if (tarea.estado !== "pendiente") return false;
+  if (tarea.hashPago?.trim()) return false;
+  if (tarea.apartado) return false;
+  if (tarea.tipoArchivo) return false;
+  if (tarea.montoRevisado) return false;
+  if (tarea.fecha) return false;
+  if (tarea.intentosAnteriores && tarea.intentosAnteriores.length > 0) return false;
+  return true;
+}
+
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
   const orden: string[] = [];
   const grupos = new Map<string, PersonaInforme>();

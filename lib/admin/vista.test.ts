@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -16,6 +16,16 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(notaManual("sin_clave"), null);
   assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
   assert.equal(notaCopia("   "), null);
+});
+
+test("solo una tarea pendiente sin entrega se puede apartar desde la lista", () => {
+  const base = { estado: "pendiente", hashPago: null, tipoArchivo: null, montoRevisado: null, fecha: null };
+  assert.equal(puedeApartarSinEntrega(base), true);
+  assert.equal(puedeApartarSinEntrega({ ...base, estado: "en revisión" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, tipoArchivo: "image/jpeg" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, montoRevisado: "0.22" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, apartado: true }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, hashPago: "ab" }), false);
 });
 
 test("la bandeja y el contador usan la misma regla", () => {
