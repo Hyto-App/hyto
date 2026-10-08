@@ -108,10 +108,10 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     await pulsar("Sort");
     const orden = document.querySelector("[aria-label='Sort tasks']");
     assert.ok(orden);
-    assert.equal(orden?.querySelectorAll("button").length, 3);
+    assert.equal(orden?.querySelectorAll("button").length, 2);
     assert.deepEqual(
       [...(orden?.querySelectorAll("button") ?? [])].map((boton) => boton.textContent),
-      ["Priority", "Highest pay", "Default"],
+      ["Highest pay", "Default"],
     );
     assert.equal(orden?.querySelector("[aria-checked='true']")?.textContent, "Default");
     await pulsar("Default");
@@ -138,25 +138,8 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     await pulsar("All");
     assert.deepEqual(titulos(), ["Booth", "Meal", "Check-in", "Blank"]);
 
-    const booth = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Booth");
-    const checkin = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Check-in");
-    const blank = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Blank");
-    const boothAltas = [...(booth?.querySelectorAll(".hyto-pill-ok") ?? [])].map((nodo) => nodo.textContent ?? "");
-    assert.equal(boothAltas.some((textoPildora) => textoPildora.includes("High priority")), false);
-    assert.match(booth?.querySelector(".hyto-pill-muted")?.textContent ?? "", /Hard/);
-    assert.equal(booth?.querySelector(".hyto-pill-muted")?.className.includes("hyto-pill-bad"), false);
-    assert.match(checkin?.querySelector(".hyto-pill-ok")?.textContent ?? "", /High priority/);
-    assert.match(checkin?.textContent ?? "", /Medium/);
-    assert.equal(checkin?.querySelector(".hyto-pill-ok")?.className.includes("hyto-pill "), true);
-    assert.equal(blank?.textContent?.includes("High priority"), false);
-    assert.equal(/\b(Easy|Medium|Hard)\b/.test(blank?.textContent ?? ""), false);
-
-    await pulsar("Sort");
-    await pulsar("Priority");
-    await pulsar("Sort");
-    assert.equal(document.querySelector("[aria-label='Sort tasks'] [aria-checked='true']")?.textContent, "Priority");
-    await pulsar("Priority");
-    assert.deepEqual(titulos(), ["Check-in", "Meal", "Booth", "Blank"]);
+    assert.equal(texto().includes("High priority"), false);
+    assert.equal(/\b(Easy|Medium|Hard)\b/.test(document.querySelector("main")?.textContent ?? ""), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
