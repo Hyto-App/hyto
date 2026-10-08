@@ -56,9 +56,11 @@ test("vercel.json usa el script del repo como Ignored Build Step", () => {
 test("solo docs, buzon, changelog o markdown salta el build", () => {
   for (const rutas of [["docs/AUDIT.md", "docs/img/plano.png"], ["README.md", "lib/notas.md"], ["buzon/028.txt", "buzon.json"], ["changelog/2026-10.json"], ["CHANGELOG.MD"]]) {
     conBase((r) => {
+      const previo = r.git("rev-parse", "HEAD");
       for (const ruta of rutas) r.escribir(ruta);
       r.commit();
-      assert.equal(r.correr(), 0, rutas.join(", "));
+      assert.equal(r.correr(previo), 0, rutas.join(", "));
+      assert.equal(r.correr(), 1, `sin deploy previo: ${rutas.join(", ")}`);
     });
   }
 });
@@ -66,9 +68,10 @@ test("solo docs, buzon, changelog o markdown salta el build", () => {
 test("un archivo de la app entre los cambios construye", () => {
   for (const rutas of [["lib/a.ts"], ["docs/x.md", "app/page.tsx"], ["package.json"], ["lib/docs/x.ts"], ["docsx/a.ts"], ["vercel.json"]]) {
     conBase((r) => {
+      const previo = r.git("rev-parse", "HEAD");
       for (const ruta of rutas) r.escribir(ruta);
       r.commit();
-      assert.equal(r.correr(), 1, rutas.join(", "));
+      assert.equal(r.correr(previo), 1, rutas.join(", "));
     });
   }
 });
@@ -78,10 +81,12 @@ test("compara contra el último despliegue y no solo contra el commit anterior",
     const desplegado = r.git("rev-parse", "HEAD");
     r.escribir("lib/a.ts");
     r.commit();
+    const despuesDelCodigo = r.git("rev-parse", "HEAD");
     r.escribir("docs/nota.md");
     r.commit();
-    assert.equal(r.correr(), 0);
+    assert.equal(r.correr(), 1);
     assert.equal(r.correr(desplegado), 1);
+    assert.equal(r.correr(despuesDelCodigo), 0);
   });
 });
 
@@ -95,8 +100,9 @@ test("ante la duda construye: sin padre, sin cambios, despliegue fuera del clon 
     rmSync(r.dir, { recursive: true, force: true });
   }
   conBase((r) => {
+    const previo = r.git("rev-parse", "HEAD");
     r.commit();
-    assert.equal(r.correr(), 1);
+    assert.equal(r.correr(previo), 1);
   });
   conBase((r) => {
     r.escribir("docs/a.md");
@@ -104,9 +110,10 @@ test("ante la duda construye: sin padre, sin cambios, despliegue fuera del clon 
     assert.equal(r.correr("0".repeat(40)), 1);
   });
   conBase((r) => {
+    const previo = r.git("rev-parse", "HEAD");
     mkdirSync(join(r.dir, "docs"));
     renameSync(join(r.dir, "app/page.tsx"), join(r.dir, "docs/page.tsx"));
     r.commit();
-    assert.equal(r.correr(), 1);
+    assert.equal(r.correr(previo), 1);
   });
 });
