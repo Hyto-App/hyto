@@ -280,6 +280,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
+    assert.match(texto(), /Confirm the amount before Lock budget can be used/);
+    assert.equal(bloqueado.getAttribute("aria-describedby"), "bloqueo-monto");
     await escribir("#monto-confirmado", "12.40");
     await pulsar("Confirm amount");
     await act(async () => {
@@ -290,6 +292,8 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
+    assert.equal(listo.getAttribute("aria-describedby"), null);
+    assert.equal(/Confirm the amount before Lock budget can be used/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
   } finally {
@@ -523,6 +527,44 @@ async function esperar(listo: () => boolean): Promise<void> {
   }
   throw new Error(`Timed out. Screen: ${texto()}`);
 }
+
+test("a receipt above the cap prefills the cap and shows the overage note", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "comida", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        id: "comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        origen: "scout",
+        veredicto: "parcial",
+        nota: 79,
+        frase: "A receipt from Soda La Esquina.",
+        montoRevisado: "15.74",
+        montoConfirmado: null,
+        lectura: { moneda: "CRC", montoOriginal: "₡7.950,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" },
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "comida" }));
+    await esperar(() => Boolean(document.querySelector("#monto-confirmado")));
+    const campo = document.querySelector("#monto-confirmado") as HTMLInputElement;
+    assert.equal(campo.value, "15");
+    assert.match(texto(), /above the US\$15 cap/);
+    assert.match(texto(), /US\$15\.74/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
 
 function tarea(parcial: Record<string, unknown>) {
   return {

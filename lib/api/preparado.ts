@@ -11,6 +11,8 @@ export type CargaPreparado = {
   monto: string;
   // Predicted escrow id from the deploy prepare, so any instance can save it on submit.
   contrato?: string;
+  // Host-function anchor (contract, name, args). Lets a re-simulated signature through.
+  ancla?: string;
   exp: number;
 };
 
@@ -53,6 +55,7 @@ export function secretoPreparado(env?: EntornoSecreto): string | null {
 function canonico(carga: CargaPreparado): string {
   const partes = [carga.usuarioId, carga.sesionId, carga.huella, carga.accion, carga.tareaId, carga.monto, String(carga.exp)];
   if (carga.contrato) partes.push(`contrato:${carga.contrato}`);
+  if (carga.ancla) partes.push(`ancla:${carga.ancla}`);
   return partes.join("\n");
 }
 
@@ -67,6 +70,7 @@ function cargaValida(valor: unknown): valor is CargaPreparado {
     typeof datos.tareaId === "string" &&
     typeof datos.monto === "string" &&
     (datos.contrato === undefined || typeof datos.contrato === "string") &&
+    (datos.ancla === undefined || typeof datos.ancla === "string") &&
     typeof datos.exp === "number" &&
     Number.isFinite(datos.exp)
   );
@@ -87,7 +91,7 @@ export function emitirTokenPreparado(
 
 export function verificarTokenPreparado(
   token: string,
-  esperado: { usuarioId: string; sesionId: string; huella: string },
+  esperado: { usuarioId: string; sesionId: string; huella: string; ancla?: string | null },
   ahora = Date.now(),
   env?: EntornoSecreto,
 ): { ok: true; carga: CargaPreparado } | { ok: false; codigo: FalloPreparado } {
@@ -108,6 +112,13 @@ export function verificarTokenPreparado(
   if (firma.length !== recibida.length || !timingSafeEqual(firma, recibida)) return { ok: false, codigo: "invalido" };
   if (carga.exp <= ahora) return { ok: false, codigo: "vencido" };
   if (carga.usuarioId !== esperado.usuarioId || carga.sesionId !== esperado.sesionId) return { ok: false, codigo: "sesion" };
-  if (carga.huella !== esperado.huella) return { ok: false, codigo: "huella" };
+  const huellaOk = carga.huella === esperado.huella;
+  const anclaOk = anclaCoincide(carga.ancla, esperado.ancla);
+  if (!huellaOk && !anclaOk) return { ok: false, codigo: "huella" };
   return { ok: true, carga };
+}
+
+function anclaCoincide(guardada: string | undefined, recibida: string | null | undefined): boolean {
+  if (!guardada || !recibida) return false;
+  return /^[a-f0-9]{64}$/.test(guardada) && guardada === recibida;
 }

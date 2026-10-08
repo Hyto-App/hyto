@@ -26,6 +26,7 @@ export function etiquetasDesdeVeredicto(entrada: {
     tope: entrada.tope,
     tipo: entrada.tipo,
     lectura: separado.lectura,
+    cumpleRegla: separado.detalle.cumpleRegla ?? null,
     condicion: entrada.condicion,
   });
 }

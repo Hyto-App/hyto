@@ -6,11 +6,12 @@ import { ajustarParaVision } from "@/lib/evidencia/vision";
 import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
-import { condicionParaLaya, type ContextoEvento } from "./contexto-evento";
+import { reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
 import { preguntarLaya, type LlamadaLaya } from "./laya";
 import { montoSinUsd } from "./lectura";
+import { motivosDeRegla } from "./pesos";
 import { estructurarTranscripcion, textoParaLaya } from "./texto-estructurado";
 import { preguntarRequisitos } from "./requisitos-laya";
 import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
@@ -44,9 +45,9 @@ export type ContextoRevision = {
   intento?: number;
   maxIntentos?: number;
   idioma?: Idioma;
-  /** The event's description and AI context. Read by the vision prompt only. */
+  /** The event's description and AI context. The description and the rules reach the vision prompt. The rules also reach Laya and the grade. */
   evento?: ContextoEvento | null;
-  /** Company description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
+  /** Community description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
   organizacion?: string | null;
 };
 
@@ -117,10 +118,11 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
     const senales = await preguntarLaya(
       contexto.layaUrl,
       paraLaya,
-      condicionParaLaya(tarea.condicion, contexto.evento),
+      tarea.condicion,
       fetchImpl,
       undefined,
       llamarLaya,
+      reglaDeEvento(contexto.evento),
     );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
@@ -153,6 +155,8 @@ function cerrarRequisitos(
     monto,
     fecha,
     montoSinUsd: montoSinUsd(descripcion.lectura),
+    cumpleReglas: descripcion.lectura?.cumpleReglas,
+    motivos: motivosDeRegla(descripcion.lectura?.cumpleReglas),
     score: String(decision.puntaje),
   });
   if (!armado) return null;

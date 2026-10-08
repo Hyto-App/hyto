@@ -1873,6 +1873,29 @@ a {
  * and no backdrop-filter. The swirl bitmaps come pre-blurred. Every loop
  * pauses while the tab is hidden ([data-oculto]).
  */
+/* Hidden while the Cavos vault is asking for a signature, so the iframe is not covered. */
+.hyto-login.hyto-bajo-firma {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * The vault iframe is a child of body. IntersectionObserver v2 reports its card as not
+ * visible when html or body has opacity, a transform, a filter, or will-change.
+ * This class is on html only while Cavos is signing.
+ */
+html.hyto-firmando,
+html.hyto-firmando body {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: auto !important;
+  animation: none !important;
+}
+
 .hyto-login {
   --l-acento: #b7ee34;
   --l-sobre: #08090c;

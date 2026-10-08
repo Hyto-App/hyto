@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { crearConfirmacion } from "@/lib/ui/confirmar";
 
@@ -17,7 +18,7 @@ type Props = {
   irreversible?: boolean;
   confirmar: string;
   peligro?: boolean;
-  onConfirmar: () => Promise<void>;
+  onConfirmar: (senal: AbortSignal) => Promise<void>;
 };
 
 export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
@@ -28,21 +29,36 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
   const cancelar = useRef<HTMLButtonElement>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const firmando = useSyncExternalStore(suscribirFirmaCavos, firmaCavosActiva, () => false);
   const idTitulo = useId();
   const idDetalle = useId();
+  const abiertoPrevio = useRef(false);
 
   useEffect(() => {
+    if (firmando) return;
     const el = dialogo.current;
+    const acabaDeAbrir = abierto && !abiertoPrevio.current;
+    abiertoPrevio.current = abierto;
     if (!el) return;
     if (abierto && !el.open) {
-      origen.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setError(null);
+      if (acabaDeAbrir) {
+        origen.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setError(null);
+      }
       el.showModal();
       cancelar.current?.focus();
     } else if (!abierto && el.open) {
       el.close();
     }
-  }, [abierto]);
+  }, [abierto, firmando]);
+
+  useEffect(() => {
+    if (!error || firmando) return;
+    const el = dialogo.current;
+    if (!el) return;
+    if (el.open) el.close();
+    el.showModal();
+  }, [error, firmando]);
 
   useEffect(() => {
     if (abierto) return;
@@ -55,16 +71,36 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
   const ejecutar = useMemo(
     () =>
       crearConfirmacion(
-        () => ultimo.current.onConfirmar(),
+        (senal) => ultimo.current.onConfirmar(senal),
         { ocupado: setOcupado, error: setError, cerrar: () => ultimo.current.onCerrar() },
         (fallo) => ultimo.current.claro(fallo instanceof Error && fallo.message ? fallo.message : ultimo.current.t("confirmar.failed")),
       ),
     [],
   );
+  const ejecutarRef = useRef(ejecutar);
+  ejecutarRef.current = ejecutar;
+
+  useEffect(() => {
+    if (!ocupado) return;
+    const alTecla = (evento: KeyboardEvent) => {
+      if (evento.key !== "Escape") return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      ejecutarRef.current.cancelar();
+    };
+    window.addEventListener("keydown", alTecla, true);
+    return () => window.removeEventListener("keydown", alTecla, true);
+  }, [ocupado]);
 
   function cerrar() {
-    if (!ocupado) onCerrar();
+    if (ocupado) {
+      ejecutar.cancelar();
+      return;
+    }
+    onCerrar();
   }
+
+  if (firmando) return null;
 
   return (
     <dialog
@@ -110,7 +146,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
           </p>
         ) : null}
         <div className="hyto-dialogo-acciones">
-          <button ref={cancelar} type="button" className="hyto-btn-line" disabled={ocupado} onClick={cerrar}>
+          <button ref={cancelar} type="button" className="hyto-btn-line" onClick={cerrar}>
             {t("confirmar.cancel")}
           </button>
           <button
@@ -118,7 +154,9 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
             className={`hyto-btn hyto-btn-grande${peligro ? " hyto-btn-rosa" : ""}`}
             disabled={ocupado}
             aria-busy={ocupado}
-            onClick={() => void ejecutar()}
+            onClick={() => {
+              void ejecutar();
+            }}
           >
             {ocupado ? t("confirmar.working") : confirmar}
           </button>

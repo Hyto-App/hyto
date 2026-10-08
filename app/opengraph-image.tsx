@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { comoDataUri, svgLogo } from "@/components/ui/marca/imagen";
-import { CASI_NEGRO, ESLOGAN, LIMA, NAVY } from "@/components/ui/marca/trazos";
+import { CASI_NEGRO, ESLOGAN, ESLOGAN_ACENTO, ESLOGAN_LINEA, LINEA_OG, LIMA, NAVY } from "@/components/ui/marca/trazos";
 
 export const alt = `Hyto · ${ESLOGAN}`;
 export const size = { width: 1200, height: 630 };
@@ -38,11 +38,9 @@ export default async function OpenGraph() {
       >
         <img src={comoDataUri(svgLogo(LIMA, "#FFFFFF"))} width={237} height={74} alt="" />
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5 }}>Prove your worth.</div>
-          <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5, color: LIMA }}>Get paid.</div>
-          <div style={{ display: "flex", marginTop: 28, fontSize: 30, color: "#A3A6B8" }}>
-            Do small tasks for real events. Send a photo. Get paid in digital dollars (USDC).
-          </div>
+          <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5 }}>{ESLOGAN_LINEA}</div>
+          <div style={{ display: "flex", fontSize: 92, fontWeight: 500, lineHeight: 1.08, letterSpacing: -2.5, color: LIMA }}>{ESLOGAN_ACENTO}</div>
+          <div style={{ display: "flex", marginTop: 28, fontSize: 30, color: "#A3A6B8" }}>{LINEA_OG}</div>
         </div>
       </div>
     ),

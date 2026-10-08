@@ -1,18 +1,16 @@
 import assert from "node:assert/strict";
 import { after, before, beforeEach, test } from "node:test";
-import { Address } from "@stellar/stellar-sdk";
 import type { SesionFila } from "../db/tipos";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { RPC_TESTNET, hashTestnetDeXdr } from "../escrow/confirmacion";
-import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
+import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeAlta, xdrDeInvocacion } from "../escrow/prueba-xdr";
 import { CODIGO_CONFIRMADO_EN_RED, CODIGO_SIN_CONFIRMAR, enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
 import { leerRevisionHttp } from "./revision";
 
 const RECEPTOR = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
-const DESPLEGADOR = Address.contract(new Uint8Array(32).fill(5)).toString();
 const USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
 const ENTORNO = ["HYTO_TOKEN_SECRET", "TRUSTLESS_API_KEY", "HYTO_ESCROW_PLATFORM", "HYTO_ESCROW_RESOLVER", "HYTO_ESCROW_ADMIN"];
 const previo = new Map<string, string | undefined>();
@@ -121,7 +119,7 @@ const pausasVistas: number[] = [];
 const opciones = { sondeo: { esperar: async (ms: number) => void pausasVistas.push(ms) } };
 
 test("the testnet hash of the signed XDR is the prepare fingerprint", () => {
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   assert.equal(hashTestnetDeXdr(alta), huellaDeXdr(alta));
   assert.equal(hashTestnetDeXdr("not xdr"), null);
   assert.equal(RPC_TESTNET, "https://soroban-testnet.stellar.org");
@@ -135,7 +133,7 @@ test("deploy submit throws but the transaction landed: the predicted contract is
     rpc: ["NOT_FOUND", "SUCCESS"],
     escrow: () => Response.json({ contractId: CONTRATO_XDR, balance: 0, milestones: [{ released: false }] }),
   });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({
@@ -173,7 +171,7 @@ test("deploy submit throws and the escrow read lags: the contract is still saved
   const almacen = await base();
   await almacen.actualizarTarea("registro", { walletCobro: RECEPTOR });
   simularRed({ envio: () => Response.json({ detail: "Gateway Timeout" }, { status: 504 }), rpc: ["SUCCESS"] });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({
@@ -195,7 +193,7 @@ test("deploy submit throws and testnet never sees the transaction: nothing is sa
   await almacen.actualizarTarea("registro", { walletCobro: RECEPTOR });
   pausasVistas.length = 0;
   const visto = simularRed({ envio: caida, rpc: ["NOT_FOUND"] });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({
@@ -221,7 +219,7 @@ test("deploy submit throws and testnet says FAILED: the original error comes bac
   const almacen = await base();
   await almacen.actualizarTarea("registro", { walletCobro: RECEPTOR });
   const visto = simularRed({ envio: caida, rpc: ["FAILED"] });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({
@@ -247,7 +245,7 @@ test("a definite rejection checks testnet once and does not wait", async () => {
     envio: () => Response.json({ code: "STELLAR_TX_BAD_SEQ", detail: "Bad sequence." }, { status: 400 }),
     rpc: ["NOT_FOUND"],
   });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({
@@ -273,7 +271,7 @@ test("a resubmit of a deploy that already landed is recovered instead of failing
     rpc: ["SUCCESS"],
     escrow: () => Response.json({ contractId: CONTRATO_XDR, balance: 0 }),
   });
-  const alta = xdrDeInvocacion({ contrato: DESPLEGADOR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const alta = xdrDeAlta(FIRMANTE_XDR);
   const respuesta = await enviarFirmaHttp(
     sesion(),
     pedido({

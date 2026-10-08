@@ -1,7 +1,9 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 import { AVISO_SIN_RESPALDO, esMetodoRecuperacion, esSinRespaldo } from "@/lib/auth/errores";
+import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
+import { bajarCapasParaCavos, soltarDialogosModales } from "./capaCavos";
 
 export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
 export const AVISO_XLM = "This account needs a little test balance for the network fee. Add some and try again.";
@@ -48,12 +50,41 @@ export type PagoFirmado = {
   monto: number | null;
 };
 
+/** Same deadline as Get ready to be paid. Cavos sets none of its own on signXdr. */
+export const TOPE_FIRMA_MS = 60_000;
+
 export type OpcionesFirma = {
   fetch?: typeof fetch;
   firmar?: (unsignedXdr: string) => Promise<string>;
   extra?: ExtraFirma;
   alEmpezar?: (accion: AccionCliente) => void;
+  /** Cancel or Escape abort the prepare. Reject in the Cavos prompt aborts the signature. */
+  senal?: AbortSignal;
+  topeMs?: number;
 };
+
+/**
+ * Resolves with the Cavos call, or rejects when the person cancels or the vault never answers.
+ * The underlying Cavos promise can still be pending after a timeout. Reject in the vault if it
+ * is still on screen. The next signature waits on that vault until it closes.
+ */
+export function esperarCavos<T>(promesa: Promise<T>, ms = TOPE_FIRMA_MS, senal?: AbortSignal): Promise<T> {
+  let reloj: ReturnType<typeof setTimeout> | undefined;
+  let alAbortar: (() => void) | undefined;
+  const tope = new Promise<never>((_, rechazar) => {
+    alAbortar = () => rechazar(new ErrorFirmaCliente(AVISO_RECHAZO));
+    if (senal?.aborted) {
+      alAbortar();
+      return;
+    }
+    reloj = setTimeout(() => rechazar(new ErrorFirmaCliente(AVISO_USDC_LENTO)), ms);
+    senal?.addEventListener("abort", alAbortar, { once: true });
+  });
+  return Promise.race([promesa, tope]).finally(() => {
+    if (reloj) clearTimeout(reloj);
+    if (alAbortar) senal?.removeEventListener("abort", alAbortar);
+  });
+}
 
 const ACCIONES = new Set<AccionCliente>(["desplegar", "fondear", "marcar", "aprobar", "liberar"]);
 
@@ -87,18 +118,23 @@ export async function firmarYEnviar(
   if (!id) throw new ErrorFirmaCliente("The task is missing.");
 
   const fetchImpl = opciones.fetch ?? fetch;
-  const preparado = await postJson(fetchImpl, "/api/firma", cuerpoFirma(accion, id, extra));
+  const preparado = await postJson(fetchImpl, "/api/firma", cuerpoFirma(accion, id, extra), opciones.senal);
   const listo = leerPreparado(preparado.cuerpo);
   let firmado: string;
+  const restaurar = bajarCapasParaCavos();
   try {
-    firmado = (await (opciones.firmar ?? firmarConCavos)(listo.xdr)).trim();
+    firmado = (
+      await esperarCavos((opciones.firmar ?? firmarConCavos)(listo.xdr), opciones.topeMs ?? TOPE_FIRMA_MS, opciones.senal)
+    ).trim();
   } catch (error) {
     throw traducirFirma(error);
+  } finally {
+    restaurar();
   }
   if (!firmado) throw new ErrorFirmaCliente(AVISO_FIRMA);
 
   const contrato = listo.contrato ?? texto(extra.contrato);
-  const enviado = await postJson(fetchImpl, "/api/firma/enviar", cuerpoEnvio(firmado, accion, id, contrato, listo.token));
+  const enviado = await postJson(fetchImpl, "/api/firma/enviar", cuerpoEnvio(firmado, accion, id, contrato, listo.token), opciones.senal);
   const pago = leerPago(enviado.cuerpo, contrato);
   return { ...pago, monto: listo.monto };
 }
@@ -206,13 +242,17 @@ export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
 }
 
 async function firmarConCavos(unsignedXdr: string): Promise<string> {
-  return firmanteDe(await conectarBilleteraDeSesion()).signXdr(unsignedXdr);
+  const billetera = firmanteDe(await conectarBilleteraDeSesion());
+  // Connect can take a moment. Drop any modal that came back before the vault paints.
+  soltarDialogosModales();
+  return billetera.signXdr(unsignedXdr);
 }
 
 async function postJson(
   fetchImpl: typeof fetch,
   url: string,
   cuerpo: Record<string, unknown>,
+  senal?: AbortSignal,
 ): Promise<{ cuerpo: unknown }> {
   let respuesta: Response;
   try {
@@ -220,6 +260,7 @@ async function postJson(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(cuerpo),
+      signal: senal,
     });
   } catch (error) {
     throw traducirFirma(error);
@@ -300,7 +341,7 @@ function esPasskeyAjena(textoError: string): boolean {
 }
 
 function esRechazo(textoError: string): boolean {
-  return /reject|rechaz|denied|declin|cancel/i.test(textoError);
+  return /reject|rechaz|denied|declin|cancel|abort/i.test(textoError);
 }
 
 function esXlm(textoError: string): boolean {

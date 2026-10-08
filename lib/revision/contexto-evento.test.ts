@@ -25,6 +25,10 @@ test("las reglas para la IA llegan al prompt y se pide decir si la foto las cump
   const prompt = pedidoVision({ ...BASE, evento: { contextoIa: "The receipt must be from a supermarket." } });
   assert.match(prompt, /Rules the evidence must follow[\s\S]*The receipt must be from a supermarket\./);
   assert.match(prompt, /whether the photo meets each rule/);
+  assert.match(prompt, /cumple_reglas/);
+  assert.match(prompt, /tipo, pais, moneda, monto_original, monto_usd, fecha, comercio, articulos, texto_completo, legible, faltantes, cumple_reglas/);
+  const sinRegla = pedidoVision(BASE);
+  assert.equal(sinRegla.includes("cumple_reglas"), false);
 });
 
 test("Laya puntúa contra la condición más la regla; sin regla la condición no cambia", () => {

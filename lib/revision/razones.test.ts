@@ -89,6 +89,9 @@ test("Serious issue: the work has not started", () => {
 test("Serious issue: a different expense", () => {
   const etiquetas = etiquetasDe(factura({ f1: "otro_gasto" }));
   assert.equal(etiquetas.find((etiqueta) => etiqueta.id === "cap_otro_gasto")?.texto, "Serious issue: a different expense");
+  const regla = etiquetasDe({ ...factura({}), cumpleRegla: false });
+  assert.equal(regla.find((etiqueta) => etiqueta.id === "cap_regla_evento")?.texto, "Serious issue: it breaks the organizer's rule");
+  assert.equal(etiquetasDe(factura({})).some((etiqueta) => etiqueta.id === "cap_regla_evento"), false);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "matches"), false);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.texto === "Not what was requested"), false);
 });

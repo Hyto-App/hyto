@@ -1,5 +1,5 @@
 /**
- * Public landing speech. `discurso` stays English so existing checks keep one source.
+ * Public landing speech for community accountability. `discurso` stays English so existing checks keep one source.
  * `discursoEs` is the Costa Rica Spanish twin. `discursoDe` picks one; English is the default.
  * Keys stay stable. Components read these strings; they do not invent sentences.
  * `ctaSignIn` matches the Sign in button rendered by Entrar.
@@ -45,17 +45,20 @@ export const CLAVES_DISCURSO = [
   "faqTitle",
   "faqCryptoQuestion",
   "faqCryptoAnswer",
+  "faqDollarsQuestion",
+  "faqDollarsAnswer",
 ] as const;
 
 export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
 
 export const discurso: Record<ClaveDiscurso, string> = {
-  sloganLead: "Prove your worth,",
-  sloganPay: "get paid.",
-  subheadline: "A marketplace of small tasks. You get paid in dollars in crypto (USDC).",
+  sloganLead: "Show the spend,",
+  sloganPay: "on the record.",
+  subheadline:
+    "Communities in Latin America funded from afar account for every spend. Lock digital dollars (USDC), send a photo of the work or the receipt, and a person releases the payment.",
   networkLead: "Practice network.",
   networkBody:
-    "Dollars in crypto (USDC) are digital dollars. This app runs on a practice network for now, so the money is for trying Hyto. It is not real cash.",
+    "Digital dollars (USDC) here are for practice. Nothing on this network is real cash, and no live payment is recorded yet.",
   ctaSignIn: "Sign in",
   ctaDemo: "Try the demo",
   ctaDemoHelp: "No account needed. Open a practice session as a volunteer or as an organizer.",
@@ -64,41 +67,46 @@ export const discurso: Record<ClaveDiscurso, string> = {
   ctaDemoBusy: "Opening…",
   ctaDemoError: "Could not open the demo. Try again.",
   stepsTitle: "How it works",
-  step1Title: "Pick a task",
-  step1Body: "Choose a short job on an event, like setting up a table or a team meal.",
+  step1Title: "Lock the funding",
+  step1Body:
+    "The funder sets each task amount aside in digital dollars (USDC) before the work starts. A stipend, a scholarship, or money to run an event, often sent by someone who is not there.",
   step2Title: "Send a photo",
-  step2Body: "Take a picture that shows the work is done. That photo is your proof.",
-  step3Title: "Get paid",
-  step3Body: "When the organizer approves it, you receive dollars in crypto (USDC).",
+  step2Body: "Photograph the work where it happened, or the receipt, including one in colones. That photo is the proof of the spend.",
+  step3Title: "Release the payment",
+  step3Body: "A person reviews the photo and releases the payment. Mile only recommends.",
   audienceTitle: "Who it is for",
-  workersTitle: "Volunteers and workers",
-  workersBody: "Join an event, see the tasks assigned to you, and get paid for the ones you finish.",
-  organizersTitle: "Organizers",
-  organizersBody: "List the tasks, set the money aside, and approve each payment before it goes out.",
+  workersTitle: "Community members",
+  workersBody: "Join the event, do the task assigned to you, and send the photo that accounts for the spend.",
+  organizersTitle: "Organizers and funders",
+  organizersBody: "The funder may be abroad. Lock the funding per task, review the proof, and release each payment. That record replaces loose screenshots and a spreadsheet.",
   trustTitle: "Why you can trust a payment",
-  trustApproveTitle: "The organizer approves every payment",
-  trustApproveBody: "A person reviews the photo and decides. Hyto does not pay on its own.",
-  trustAiTitle: "The AI only suggests",
-  trustAiBody: "An assistant reads the photo and suggests a score. It cannot sign or move the money.",
-  trustEscrowTitle: "The money is set aside before the work",
-  trustEscrowBody: "The organizer sets the task amount aside first, so the payment is waiting when the work is approved.",
-  legal: "Sign-in by Cavos. An account is created to hold your payment. You do not need a separate crypto app.",
+  trustApproveTitle: "A person releases every payment",
+  trustApproveBody: "Someone reviews the photo and decides. Hyto does not pay on its own.",
+  trustAiTitle: "Mile only recommends",
+  trustAiBody: "Mile reads the photo and suggests a score. Mile cannot sign or move the money.",
+  trustEscrowTitle: "The money is set aside first",
+  trustEscrowBody: "The organizer sets the task amount aside before the work, so the payment is waiting when the proof is approved.",
+  legal: "Sign in with email through Cavos. An account is created to hold the payment. You do not need a separate crypto app.",
   mileKicker: "Meet Mile",
   closeKicker: "Start",
-  closeTitle: "Ready to prove your worth?",
+  closeTitle: "Ready to show the spend?",
   faqKicker: "Questions",
   faqTitle: "Before you start",
   faqCryptoQuestion: "Do I need to know crypto?",
-  faqCryptoAnswer: "No. You can pick a task and send a photo without learning crypto first.",
+  faqCryptoAnswer: "No. Sign in with your email, do the task, and send a photo.",
+  faqDollarsQuestion: "Why digital dollars, and not a local transfer?",
+  faqDollarsAnswer:
+    "The money comes from abroad in dollars, and the funder needs proof of the spend. Loose screenshots, a spreadsheet, or a local transfer such as SINPE do not leave a record anyone can check.",
 };
 
 export const discursoEs: Record<ClaveDiscurso, string> = {
-  sloganLead: "Demuestra tu valor,",
-  sloganPay: "recibe tu pago.",
-  subheadline: "Un mercado de tareas cortas. Te pagan en dólares en cripto (USDC).",
+  sloganLead: "Muestra el gasto,",
+  sloganPay: "que quede registrado.",
+  subheadline:
+    "Las comunidades en Latinoamérica que reciben fondos desde lejos rinden cuentas de cada gasto. Aparta dólares digitales (USDC), envía una foto del trabajo o del recibo, y una persona libera el pago.",
   networkLead: "Red de práctica.",
   networkBody:
-    "Los dólares en cripto (USDC) son dólares digitales. Por ahora esta app corre en una red de práctica, así que el dinero es para probar Hyto. No es dinero real.",
+    "Los dólares digitales (USDC) aquí son para practicar. Nada en esta red es dinero real, y todavía no hay un pago en vivo registrado.",
   ctaSignIn: "Entrar",
   ctaDemo: "Probar el demo",
   ctaDemoHelp: "No necesitas una cuenta. Abre una sesión de práctica como voluntario o como organizador.",
@@ -107,33 +115,37 @@ export const discursoEs: Record<ClaveDiscurso, string> = {
   ctaDemoBusy: "Abriendo…",
   ctaDemoError: "No se pudo abrir el demo. Inténtalo de nuevo.",
   stepsTitle: "Cómo funciona",
-  step1Title: "Elige una tarea",
-  step1Body: "Escoge un trabajo corto en un evento, como armar una mesa o una comida del equipo.",
+  step1Title: "Aparta el financiamiento",
+  step1Body:
+    "Quien financia aparta el monto de cada tarea en dólares digitales (USDC) antes de que empiece el trabajo. Un estipendio, una beca o fondos para un evento, a menudo enviados por alguien que no está ahí.",
   step2Title: "Envía una foto",
-  step2Body: "Toma una foto que muestre que el trabajo está listo. Esa foto es tu prueba.",
-  step3Title: "Cobra",
-  step3Body: "Cuando quien organiza lo aprueba, recibes dólares en cripto (USDC).",
+  step2Body: "Fotografía el trabajo en el lugar, o el recibo, incluso si está en colones. Esa foto es la prueba del gasto.",
+  step3Title: "Libera el pago",
+  step3Body: "Una persona revisa la foto y libera el pago. Mile solo recomienda.",
   audienceTitle: "Para quién es",
-  workersTitle: "Voluntarios y trabajadores",
-  workersBody: "Únete a un evento, mira las tareas que te asignaron y cobra las que termines.",
-  organizersTitle: "Organizadores",
-  organizersBody: "Publica las tareas, aparta el dinero y aprueba cada pago antes de que salga.",
+  workersTitle: "Miembros de la comunidad",
+  workersBody: "Únete al evento, haz la tarea que te asignaron y envía la foto que comprueba el gasto.",
+  organizersTitle: "Quienes organizan y financian",
+  organizersBody: "Quien financia puede estar lejos. Aparta el financiamiento por tarea, revisa la prueba y libera cada pago. Ese registro reemplaza las capturas sueltas y la hoja de cálculo.",
   trustTitle: "Por qué puedes confiar en un pago",
-  trustApproveTitle: "Quien organiza aprueba cada pago",
-  trustApproveBody: "Una persona revisa la foto y decide. Hyto no paga solo.",
-  trustAiTitle: "La IA solo sugiere",
-  trustAiBody: "Un asistente lee la foto y sugiere una nota. No puede firmar ni mover el dinero.",
-  trustEscrowTitle: "El dinero se aparta antes del trabajo",
+  trustApproveTitle: "Una persona libera cada pago",
+  trustApproveBody: "Alguien revisa la foto y decide. Hyto no paga solo.",
+  trustAiTitle: "Mile solo recomienda",
+  trustAiBody: "Mile lee la foto y sugiere una nota. No puede firmar ni mover el dinero.",
+  trustEscrowTitle: "El dinero se aparta primero",
   trustEscrowBody:
-    "Quien organiza aparta el monto de la tarea primero, así el pago está esperando cuando se aprueba el trabajo.",
-  legal: "El ingreso es con Cavos. Se crea una cuenta para guardar tu pago. No necesitas otra app de cripto.",
+    "Quien organiza aparta el monto de la tarea antes del trabajo, así el pago está esperando cuando se aprueba la prueba.",
+  legal: "Entras con tu correo por Cavos. Se crea una cuenta para guardar el pago. No necesitas otra app de cripto.",
   mileKicker: "Conoce a Mile",
   closeKicker: "Empieza",
-  closeTitle: "¿Listo para demostrar lo que vales?",
+  closeTitle: "¿Listo para mostrar el gasto?",
   faqKicker: "Preguntas",
   faqTitle: "Antes de empezar",
   faqCryptoQuestion: "¿Necesito saber de cripto?",
-  faqCryptoAnswer: "No. Puedes elegir una tarea y enviar una foto sin aprender cripto primero.",
+  faqCryptoAnswer: "No. Entra con tu correo, haz la tarea y envía una foto.",
+  faqDollarsQuestion: "¿Por qué dólares digitales y no una transferencia local?",
+  faqDollarsAnswer:
+    "El dinero llega del extranjero en dólares, y quien financia pide prueba del gasto. Las capturas sueltas, una hoja de cálculo o una transferencia local como SINPE no dejan un registro que cualquiera pueda revisar.",
 };
 
 export function discursoDe(idioma: "en" | "es"): Record<ClaveDiscurso, string> {
@@ -158,7 +170,10 @@ export function audienciasDiscurso(copia: Record<ClaveDiscurso, string> = discur
 }
 
 export function preguntasDiscurso(copia: Record<ClaveDiscurso, string> = discurso): readonly BloqueDiscurso[] {
-  return [{ titulo: copia.faqCryptoQuestion, cuerpo: copia.faqCryptoAnswer }];
+  return [
+    { titulo: copia.faqCryptoQuestion, cuerpo: copia.faqCryptoAnswer },
+    { titulo: copia.faqDollarsQuestion, cuerpo: copia.faqDollarsAnswer },
+  ];
 }
 
 export function confianzaDiscurso(copia: Record<ClaveDiscurso, string> = discurso): readonly BloqueDiscurso[] {

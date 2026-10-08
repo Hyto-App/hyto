@@ -3,7 +3,8 @@ import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
 import { etiquetasGuardadas } from "@/lib/perfil/reglas";
 import { neon } from "@neondatabase/serverless";
 import { comunidadesActivas } from "@/lib/comunidades/bandera";
-import { and, asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { tablonActivo } from "@/lib/tablon/bandera";
+import { and, asc, desc, eq, getTableColumns, sql, type SQL } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -170,6 +171,38 @@ function filaUsuario(usuario: Usuario) {
   };
 }
 
+/**
+ * Drizzle's insert names every column on the table and fills omitted values with
+ * DEFAULT. Migrations 0010–0013 add the account-type columns, the volunteer
+ * profile columns, and the community id on events, plus the community tables. With those
+ * unapplied, naming a missing column fails even when the flags are off and the
+ * values object leaves the key out. This statement lists only keys that are present.
+ */
+function sqlInsertarFila(tabla: Parameters<typeof getTableColumns>[0], fila: Record<string, unknown>, conflicto: SQL) {
+  const columnas = getTableColumns(tabla);
+  const pares = Object.entries(fila).flatMap(([clave, valor]) => {
+    if (valor === undefined) return [];
+    const columna = columnas[clave as keyof typeof columnas];
+    return columna ? [{ nombre: columna.name, valor }] : [];
+  });
+  const nombres = sql.join(
+    pares.map((par) => sql.identifier(par.nombre)),
+    sql`, `,
+  );
+  const valores = sql.join(
+    pares.map((par) => sql`${par.valor}`),
+    sql`, `,
+  );
+  return sql`insert into ${tabla} (${nombres}) values (${valores}) ${conflicto}`;
+}
+
+function sqlInsertarUsuario(fila: Record<string, unknown>, actualizar: boolean) {
+  const conflicto = actualizar
+    ? sql`on conflict ("email") do update set "nombre" = excluded."nombre", "rol" = excluded."rol"`
+    : sql`on conflict do nothing`;
+  return sqlInsertarFila(usuarios, fila, conflicto);
+}
+
 function columnasTareaPrevias() {
   const { requisitos: _requisitos, rechazo: _rechazo, ...resto } = getTableColumns(tareas);
   return resto;
@@ -254,17 +287,11 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
     },
     async insertarUsuario(usuario) {
-      await db.insert(usuarios).values(filaUsuario(usuario)).onConflictDoNothing();
+      await db.execute(sqlInsertarUsuario(filaUsuario(usuario), false));
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
-      await db
-        .insert(usuarios)
-        .values({ ...filaUsuario(usuario), email })
-        .onConflictDoUpdate({
-          target: usuarios.email,
-          set: { nombre: usuario.nombre, rol: usuario.rol },
-        });
+      await db.execute(sqlInsertarUsuario({ ...filaUsuario(usuario), email }, true));
     },
     async guardarTipoCuenta(id, cambio) {
       if (!tipoCuentaActivo()) return;
@@ -299,7 +326,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async crearProyecto(proyecto, filas) {
       const valores = valoresProyecto(proyecto);
-      await db.insert(proyectos).values(valores).onConflictDoNothing();
+      await db.execute(sqlInsertarFila(proyectos, valores, sql`on conflict do nothing`));
       if (filas.length > 0) {
         const listo = await columnasMile();
         const valores = listo
@@ -649,28 +676,35 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       return { ok: false, motivo: "missing" };
     },
     async listarComunidades() {
+      if (!comunidadesActivas()) return [];
       return (await db.select().from(comunidades)).map(comunidadDesde);
     },
     async leerComunidad(id) {
+      if (!comunidadesActivas()) return null;
       const filas = await db.select().from(comunidades).where(eq(comunidades.id, id)).limit(1);
       return filas[0] ? comunidadDesde(filas[0]) : null;
     },
     async leerComunidadPorCodigo(codigo) {
+      if (!comunidadesActivas()) return null;
       const filas = await db.select().from(comunidades).where(eq(comunidades.codigo, codigo)).limit(1);
       return filas[0] ? comunidadDesde(filas[0]) : null;
     },
     async crearComunidad(comunidad) {
+      if (!comunidadesActivas()) return;
       await db.insert(comunidades).values(comunidad);
     },
     async listarMiembrosComunidad(comunidadId) {
+      if (!comunidadesActivas()) return [];
       const filas = await db.select().from(comunidadMiembros).where(eq(comunidadMiembros.comunidadId, comunidadId));
       return filas.map(miembroComunidadDesde);
     },
     async comunidadesDeUsuario(usuarioId) {
+      if (!comunidadesActivas()) return [];
       const filas = await db.select().from(comunidadMiembros).where(eq(comunidadMiembros.usuarioId, usuarioId));
       return filas.map(miembroComunidadDesde);
     },
     async miembroComunidad(comunidadId, usuarioId) {
+      if (!comunidadesActivas()) return null;
       const filas = await db
         .select()
         .from(comunidadMiembros)
@@ -679,6 +713,7 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       return filas[0] ? miembroComunidadDesde(filas[0]) : null;
     },
     async guardarMiembroComunidad(miembro) {
+      if (!comunidadesActivas()) return;
       await db
         .insert(comunidadMiembros)
         .values(miembro)
@@ -688,13 +723,16 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
         });
     },
     async listarSolicitudesComunidad(comunidadId) {
+      if (!comunidadesActivas()) return [];
       const filas = await db.select().from(comunidadSolicitudes).where(eq(comunidadSolicitudes.comunidadId, comunidadId));
       return filas.map(solicitudDesde);
     },
     async crearSolicitudComunidad(solicitud) {
+      if (!comunidadesActivas()) return;
       await db.insert(comunidadSolicitudes).values(solicitud);
     },
     async actualizarSolicitudComunidad(id, estado) {
+      if (!comunidadesActivas()) return;
       await db.update(comunidadSolicitudes).set({ estado }).where(eq(comunidadSolicitudes.id, id));
     },
     async fijarComunidadProyecto(proyectoId, comunidadId) {
@@ -702,10 +740,12 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       await db.update(proyectos).set({ comunidadId }).where(eq(proyectos.id, proyectoId));
     },
     async listarAvisosComunidad(comunidadId) {
+      if (!tablonActivo() || !comunidadesActivas()) return [];
       const filas = await db.select().from(comunidadAvisos).where(eq(comunidadAvisos.comunidadId, comunidadId));
       return filas.map(avisoDesde).sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
     },
     async crearAvisoComunidad(aviso) {
+      if (!tablonActivo() || !comunidadesActivas()) return;
       await db.insert(comunidadAvisos).values(aviso);
     },
     async tomarTarea(id, usuarioId) {
