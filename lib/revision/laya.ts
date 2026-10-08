@@ -101,9 +101,17 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
 }
 
 // The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
-export function senalesDeTrabajo(respuestas: RespuestasTrabajo, condicion = ""): Senales {
+export function senalesDeTrabajo(
+  respuestas: RespuestasTrabajo,
+  condicion = "",
+  lectura?: { coincide?: CoincideGroq | null } | null,
+  env?: EntornoOtraGroq,
+): Senales {
   const nota = notaDeTrabajo(respuestas, condicion);
-  const motivos = motivosTrabajo(respuestas);
+  // v1 es_otra_cosa still costs its weight. The 49 cap is separate, and only coincide "si" can withhold it.
+  const motivos = motivosTrabajo(respuestas).filter(
+    (motivo) => motivo !== "no_coincide" || layaPuedeTaparPorOtra(lectura, env),
+  );
   return {
     choice: "trabajo",
     noul: nota === 100,
@@ -227,7 +235,8 @@ export async function preguntarLaya(
     const cumple = leerRegla(json, reglaLimpia);
     // "otra" used to force 0% before asking whether the photo matches the request.
     // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
-    if (clase === "otra" && respuestas.v1 === "es_otra_cosa") {
+    // With HYTO_MILE_OTRA_CON_GROQ=on, only Groq's coincide "si" withholds that 0.
+    if (clase === "otra" && respuestas.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(opciones?.lectura, opciones?.env)) {
       return {
         choice: "otra",
         noul: false,
@@ -237,7 +246,7 @@ export async function preguntarLaya(
       };
     }
     return {
-      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido), cumple),
+      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido, opciones?.lectura, opciones?.env), cumple),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,
