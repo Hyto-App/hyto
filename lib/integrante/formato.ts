@@ -1,7 +1,7 @@
-import { detalleMonto, normalizarMonto } from "@/lib/admin/vista";
+import { centavos, detalleMonto, normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { cifraConfirmada, montoDentroDelTope } from "@/lib/escrow/monto";
-import { brutoDeNeto, brutoFondado, netoEnCentavos } from "@/lib/escrow/recibido";
+import { brutoDeNeto, brutoFondado, netoEnCentavos, type NetoEnCentavos } from "@/lib/escrow/recibido";
 import { texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -192,12 +192,15 @@ type PagoVisible = {
   montoPagado?: string | null;
 };
 
-/** Rounded net, and the same net with the fee written out when it changes the cents. */
-export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto: string; frase: string } | null {
+function partesDePago(tarea: PagoVisible): NetoEnCentavos | null {
   const bruto =
     brutoFondado(tarea, tarea.montoConfirmado) ?? (tarea.montoPagado ? brutoDeNeto(tarea.montoPagado) : null);
-  if (!bruto) return null;
-  const partes = netoEnCentavos(bruto);
+  return bruto ? netoEnCentavos(bruto) : null;
+}
+
+/** Rounded net, and the same net with the fee written out when it changes the cents. */
+export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto: string; frase: string } | null {
+  const partes = partesDePago(tarea);
   if (!partes) return null;
   const corto = formatearMonto(partes.neto, idioma);
   if (!corto) return null;
@@ -210,6 +213,20 @@ export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto
       comision: formatearMonto(partes.comision, idioma),
     }),
   };
+}
+
+/**
+ * Paid total for the My tasks header. Adds the cent net each paid card shows, like the account
+ * total (`armarOrgullo`): nets of 12.44256, 1.994 and 1.994 add up to US$16.42, not US$16.43.
+ */
+export function totalGanado(tareas: readonly (PagoVisible & { estado: string })[], idioma: Idioma = "en"): string {
+  let total = 0;
+  for (const tarea of tareas) {
+    if (tarea.estado !== "pagado") continue;
+    const partes = partesDePago(tarea);
+    if (partes) total += centavos(partes.neto);
+  }
+  return formatearMonto(textoMonto(total), idioma);
 }
 
 /** A stored net such as 12.44256, explained from the cent amount that was funded. */

@@ -373,7 +373,7 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
   }
 });
 
-test("la tarjeta con monto confirmado dice el monto a pagar y el límite", async () => {
+test("la tarjeta con monto confirmado dice el monto a pagar y el límite, y lo ganado va en centavos", async () => {
   const pagada = (id: string, extra: Partial<Tarea>): Tarea => ({
     id,
     proyectoId: "uno",
@@ -421,17 +421,20 @@ test("la tarjeta con monto confirmado dice el monto a pagar y el límite", async
     return json({ aviso: "no" }, 404);
   }) as typeof fetch;
   const tarjeta = () => [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Meal");
+  const ganado = () => [...document.querySelectorAll(".hyto-metrica-ganado")].map((nodo) => nodo.textContent);
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Meal"));
     assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Amount to pay US$39.60 · Limit US$50");
     assert.match(tarjeta()?.textContent ?? "", /Mile read US\$39\.60/);
-    assert.doesNotMatch(tarjeta()?.textContent ?? "", /USDC|Up to/);
+    assert.deepEqual(ganado(), ["US$16.42earned", "US$16.42earned"]);
+    assert.doesNotMatch(texto(), /USDC|Up to|16\.43/);
 
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
     await esperar(() => texto().includes("Meal"));
     assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Monto a pagar US$39,60 · Límite US$50");
-    assert.doesNotMatch(tarjeta()?.textContent ?? "", /USDC|Hasta/);
+    assert.deepEqual(ganado(), ["US$16,42ganados", "US$16,42ganados"]);
+    assert.doesNotMatch(texto(), /USDC|Hasta|16[.,]43/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

@@ -13,8 +13,7 @@ import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
-import { explicarPago, vistaMonto } from "@/lib/integrante/formato";
+import { explicarPago, totalGanado, vistaMonto } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
@@ -51,17 +50,6 @@ function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
   );
 }
 
-function totalRecibido(tareas: readonly Tarea[]): string {
-  let total = 0n;
-  for (const tarea of tareas) {
-    if (tarea.estado !== "pagado") continue;
-    const plano = recibidoDeCampos(tarea);
-    const unidades = plano ? unidadesUsdc(plano) : null;
-    if (unidades !== null) total += unidades;
-  }
-  return presentarUsdc(total);
-}
-
 function Monto({ tarea }: { tarea: Tarea }) {
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
@@ -89,7 +77,7 @@ function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: st
     <div className={`hyto-metricas ${className}`.trim()}>
       <div className="hyto-metrica-ganado">
         <b>{ganado}</b>
-        <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
+        <span>{t("tareas.earnedShort")}</span>
       </div>
       <div>
         <b>{revision}</b>
@@ -258,7 +246,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const mejores = idsMejorPagadas(tareas);
   const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
-  const ganado = totalRecibido(tareas);
+  const ganado = totalGanado(tareas, idioma);
   const enRevision = contarEnRevision(tareas);
   const idAbierta = porEvento.flatMap((grupo) => grupo.tareas).find((tarea) => tarea.estado === "pendiente")?.id ?? null;
   const eventosDeTareas = new Set(tareas.map((tarea) => tarea.proyectoId));

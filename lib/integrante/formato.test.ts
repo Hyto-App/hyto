@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, explicarNeto, explicarPago, formatearCentavos, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea, montoQueAparta, montosDeCobro, textosSaldo, vistaMonto } from "./formato";
+import { acortarDireccion, explicarNeto, explicarPago, formatearCentavos, formatearFecha, formatearHora, formatearMonto, formatearRecibido, lineaMontoTarea, montoAsegurado, montoDeTarea, montoQueAparta, montosDeCobro, textosSaldo, totalGanado, vistaMonto } from "./formato";
+import { armarOrgullo } from "./orgullo";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -120,6 +121,35 @@ test("la línea de un reembolso confirmado se parte solo entre el monto a pagar 
   assert.deepEqual(vistaMonto(confirmado).partes, ["Amount to pay US$39.60", "Limit US$50"]);
   assert.deepEqual(vistaMonto({ tipo: "reembolso", monto: "50", tope: "50" }, "es").partes, ["Hasta US$50"]);
   assert.deepEqual(vistaMonto({ tipo: "trabajo", monto: "20", tope: null }).partes, ["US$20"]);
+});
+
+test("lo ganado suma el neto al centavo de cada tarea pagada, como la cuenta", () => {
+  const tareas = [
+    { estado: "pagado", tipo: "reembolso" as const, monto: "15", tope: "15", montoConfirmado: "12.48", montoPagado: "12.44256" },
+    { estado: "pagado", tipo: "trabajo" as const, monto: "2", tope: null, montoPagado: "1.994" },
+    { estado: "pagado", tipo: "trabajo" as const, monto: "2", tope: null, montoPagado: "1.994" },
+    { estado: "en revisión", tipo: "trabajo" as const, monto: "20", tope: null },
+  ];
+  assert.equal(totalGanado(tareas), "US$16.42");
+  assert.equal(totalGanado(tareas, "es"), "US$16,42");
+  assert.deepEqual(
+    tareas.filter((tarea) => tarea.estado === "pagado").map((tarea) => explicarPago(tarea)?.corto),
+    ["US$12.44", "US$1.99", "US$1.99"],
+  );
+  const cuenta = armarOrgullo(
+    ["12.44256", "1.994", "1.994"].map((monto, indice) => ({
+      id: `pagada-${indice}`,
+      titulo: "Tarea",
+      proyectoId: "evento",
+      proyecto: "Evento",
+      pagada: true,
+      monto,
+      pagadoEn: null,
+    })),
+  );
+  assert.equal(formatearMonto(cuenta.total, "es"), totalGanado(tareas, "es"));
+  assert.equal(totalGanado([]), "US$0");
+  assert.equal(totalGanado([{ estado: "pagado", tipo: "reembolso", monto: "15", tope: "15" }], "es"), "US$0");
 });
 
 test("el neto pagado dice el bruto y la comisión redondeada", () => {
