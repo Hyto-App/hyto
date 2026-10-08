@@ -170,6 +170,33 @@ function filaUsuario(usuario: Usuario) {
   };
 }
 
+/**
+ * Drizzle's insert names every column on `usuarios` and fills the ones omitted
+ * from the values object with DEFAULT. Migrations 0011 and 0012 are the only
+ * source of tipo_cuenta, empresa_* , experiencia, and etiquetas. With those
+ * unapplied, that INSERT fails even when the flags are off and `filaUsuario`
+ * leaves the keys out. This statement lists only the keys that are present.
+ */
+function sqlInsertarUsuario(fila: Record<string, unknown>, actualizar: boolean) {
+  const columnas = getTableColumns(usuarios);
+  const pares = Object.entries(fila).flatMap(([clave, valor]) => {
+    const columna = columnas[clave as keyof typeof columnas];
+    return columna ? [{ nombre: columna.name, valor }] : [];
+  });
+  const nombres = sql.join(
+    pares.map((par) => sql.identifier(par.nombre)),
+    sql`, `,
+  );
+  const valores = sql.join(
+    pares.map((par) => (par.valor === undefined ? sql`default` : sql`${par.valor}`)),
+    sql`, `,
+  );
+  const conflicto = actualizar
+    ? sql`on conflict ("email") do update set "nombre" = excluded."nombre", "rol" = excluded."rol"`
+    : sql`on conflict do nothing`;
+  return sql`insert into ${usuarios} (${nombres}) values (${valores}) ${conflicto}`;
+}
+
 function columnasTareaPrevias() {
   const { requisitos: _requisitos, rechazo: _rechazo, ...resto } = getTableColumns(tareas);
   return resto;
@@ -254,17 +281,11 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
     },
     async insertarUsuario(usuario) {
-      await db.insert(usuarios).values(filaUsuario(usuario)).onConflictDoNothing();
+      await db.execute(sqlInsertarUsuario(filaUsuario(usuario), false));
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
-      await db
-        .insert(usuarios)
-        .values({ ...filaUsuario(usuario), email })
-        .onConflictDoUpdate({
-          target: usuarios.email,
-          set: { nombre: usuario.nombre, rol: usuario.rol },
-        });
+      await db.execute(sqlInsertarUsuario({ ...filaUsuario(usuario), email }, true));
     },
     async guardarTipoCuenta(id, cambio) {
       if (!tipoCuentaActivo()) return;
