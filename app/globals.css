@@ -1879,14 +1879,21 @@ a {
   pointer-events: none;
 }
 
-.hyto-cancelar-firma {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  right: 12px;
-  z-index: 2147483647;
-  width: auto;
-  padding-inline: 16px;
-  background: var(--card-bg, #fff);
+/*
+ * The vault iframe is a child of body. IntersectionObserver v2 reports its card as not
+ * visible when html or body has opacity, a transform, a filter, or will-change.
+ * This class is on html only while Cavos is signing.
+ */
+html.hyto-firmando,
+html.hyto-firmando body {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: auto !important;
+  animation: none !important;
 }
 
 .hyto-login {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { crearConfirmacion } from "@/lib/ui/confirmar";
 
@@ -29,31 +29,36 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
   const cancelar = useRef<HTMLButtonElement>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const firmando = useSyncExternalStore(suscribirFirmaCavos, firmaCavosActiva, () => false);
   const idTitulo = useId();
   const idDetalle = useId();
+  const abiertoPrevio = useRef(false);
 
   useEffect(() => {
+    if (firmando) return;
     const el = dialogo.current;
+    const acabaDeAbrir = abierto && !abiertoPrevio.current;
+    abiertoPrevio.current = abierto;
     if (!el) return;
     if (abierto && !el.open) {
-      origen.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      setError(null);
-      delete el.dataset.capa;
+      if (acabaDeAbrir) {
+        origen.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setError(null);
+      }
       el.showModal();
       cancelar.current?.focus();
     } else if (!abierto && el.open) {
       el.close();
     }
-  }, [abierto]);
+  }, [abierto, firmando]);
 
   useEffect(() => {
-    if (!error) return;
+    if (!error || firmando) return;
     const el = dialogo.current;
     if (!el) return;
-    delete el.dataset.capa;
     if (el.open) el.close();
     el.showModal();
-  }, [error]);
+  }, [error, firmando]);
 
   useEffect(() => {
     if (abierto) return;
@@ -84,16 +89,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
       ejecutarRef.current.cancelar();
     };
     window.addEventListener("keydown", alTecla, true);
-    const id = window.setInterval(() => {
-      const boton = document.querySelector("[data-hyto-cancelar-firma]");
-      if (boton && boton.parentElement === document.body && document.body.lastElementChild !== boton) {
-        document.body.append(boton);
-      }
-    }, 200);
-    return () => {
-      window.removeEventListener("keydown", alTecla, true);
-      window.clearInterval(id);
-    };
+    return () => window.removeEventListener("keydown", alTecla, true);
   }, [ocupado]);
 
   function cerrar() {
@@ -104,14 +100,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
     onCerrar();
   }
 
-  /** Leaves the top layer before Cavos paints, so the vault card can become visible. */
-  function soltarCapa() {
-    const el = dialogo.current;
-    if (!el?.open) return;
-    el.dataset.capa = "libre";
-    el.close();
-    el.show();
-  }
+  if (firmando) return null;
 
   return (
     <dialog
@@ -166,7 +155,6 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
             disabled={ocupado}
             aria-busy={ocupado}
             onClick={() => {
-              soltarCapa();
               void ejecutar();
             }}
           >
@@ -174,14 +162,6 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
           </button>
         </div>
       </div>
-      {ocupado
-        ? createPortal(
-            <button type="button" className="hyto-btn-line hyto-cancelar-firma" data-hyto-cancelar-firma="" onClick={cerrar}>
-              {t("confirmar.cancel")}
-            </button>,
-            document.body,
-          )
-        : null}
     </dialog>
   );
 }
