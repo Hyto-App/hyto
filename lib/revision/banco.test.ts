@@ -37,7 +37,7 @@ test("Little Caesars en colones llega a Laya convertido y queda en Completed", a
   assert.deepEqual(clase?.preguntas, ["c1"]);
   assert.deepEqual(factura?.preguntas, ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
   for (const llamada of resultado.laya) {
-    assert.match(llamada.estado, /Total in US dollars: 14\.55, converted by Hyto at 505 CRC per US dollar\./);
+    assert.match(llamada.estado, /Total in US dollars: 14\.55, converted by Hyto at 505 CRC per US dollar \(fallback rate, last set by hand on 2026-10-04\)\./);
     assert.match(llamada.estado, /Purchase date: 2026-10-02 \(printed as 02\/10\/2026\)\./);
     assert.match(llamada.estado, /Condition: Photo of the meal receipt$/);
   }

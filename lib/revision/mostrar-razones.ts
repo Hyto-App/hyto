@@ -42,5 +42,6 @@ export function lecturaDesdeVeredicto(entrada: { textoScout: string | null; orig
     tasa: lectura.tasa,
     fechaImpresa: lectura.fechaImpresa,
     comercio: lectura.comercio,
+    ...(lectura.fuenteTasa ? { fuente: lectura.fuenteTasa, fechaTasa: lectura.fechaTasa ?? null } : {}),
   };
 }

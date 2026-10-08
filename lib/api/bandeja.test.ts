@@ -169,7 +169,15 @@ test("a saved receipt reading reaches the review screen with the main reason fir
   assert.equal(vista.veredicto, "parcial");
   assert.equal(vista.montoRevisado, "13.66");
   assert.equal(vista.fecha, null);
-  assert.deepEqual(vista.lectura, { moneda: "CRC", montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda La Esquina" });
+  assert.deepEqual(vista.lectura, {
+    moneda: "CRC",
+    montoOriginal: "₡6.900,00",
+    tasa: 505,
+    fechaImpresa: null,
+    comercio: "Soda La Esquina",
+    fuente: "respaldo",
+    fechaTasa: null,
+  });
   assert.equal(vista.etiquetas?.[0]?.id, "date_missing");
   assert.equal((await almacen.veredictoDe("ev-crc"))?.frase.includes("@@"), false);
 

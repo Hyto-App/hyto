@@ -102,7 +102,7 @@ test("Laya recibe la lectura completa y no una sola frase", () => {
   assert.match(contexto, /Items: Pepperoni pizza, Soda\./);
   assert.match(contexto, /Total as printed: ₡7\.350,00\./);
   assert.match(contexto, /Currency: CRC \(Costa Rican colones\)\./);
-  assert.match(contexto, /Total in US dollars: 14\.55, converted by Hyto at 505 CRC per US dollar\./);
+  assert.match(contexto, /Total in US dollars: 14\.55, converted by Hyto at 505 CRC per US dollar \(fallback rate, last set by hand on 2026-10-04\)\./);
   assert.match(contexto, /Purchase date: 2026-10-02 \(printed as 02\/10\/2026\)\./);
   assert.match(contexto, /Country: CR\./);
   assert.match(contexto, /Missing from the photo: none\./);

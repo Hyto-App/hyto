@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_CAVOS_APP_ID: ci-cavos-app
+          HYTO_TOKEN_SECRET: ci-token-secret-not-a-real-key-32
+          HYTO_TEST_SESSION_KEY: ci-test-session-key
+          CAVOS_JWT_ISSUER: https://emisor.prueba
+          CAVOS_JWT_AUDIENCE: hyto-ci
+          DATABASE_URL: postgres://hyto:hyto@127.0.0.1:5432/hyto
+          HYTO_DEMO_LOGIN: "0"

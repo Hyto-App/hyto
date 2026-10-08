@@ -8,17 +8,36 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
-test("guardar la wallet no pide el alta de testnet; eso lo hace solo Sign up", async () => {
+test("guardar la wallet pide un reto, lo firma y no abre el alta de testnet", async () => {
   const original = globalThis.fetch;
   const pedidos: { url: string; cuerpo: unknown }[] = [];
+  const firmados: string[] = [];
   globalThis.fetch = (async (input, init) => {
-    pedidos.push({ url: String(input), cuerpo: JSON.parse(String(init?.body)) });
+    const cuerpo = JSON.parse(String(init?.body));
+    pedidos.push({ url: String(input), cuerpo });
+    if (String(input).endsWith("/reto")) return json({ mensaje: "firma esto", token: "reto-1" });
     return json({ wallet: WALLET });
   }) as typeof fetch;
   try {
-    const guardada = await fijarWallet(WALLET);
+    const guardada = await fijarWallet(WALLET, async (mensaje) => {
+      firmados.push(mensaje);
+      return new Uint8Array([1, 2, 3]);
+    });
     assert.deepEqual(guardada, { ok: true });
-    assert.deepEqual(pedidos, [{ url: "/api/sesion/wallet", cuerpo: { wallet: WALLET } }]);
+    assert.deepEqual(firmados, ["firma esto"]);
+    assert.deepEqual(pedidos[0], { url: "/api/sesion/wallet/reto", cuerpo: { wallet: WALLET } });
+    assert.equal(pedidos[1]?.url, "/api/sesion/wallet");
+    assert.deepEqual(pedidos[1]?.cuerpo, { wallet: WALLET, reto: "reto-1", firma: btoa("\u0001\u0002\u0003") });
+
+    pedidos.length = 0;
+    globalThis.fetch = (async () => json({ listo: true, wallet: WALLET })) as typeof fetch;
+    assert.deepEqual(await fijarWallet(WALLET), { ok: true });
+
+    globalThis.fetch = (async (input) => {
+      if (String(input).endsWith("/reto")) return json({ mensaje: "firma esto", token: "reto-1" });
+      return json({ wallet: WALLET });
+    }) as typeof fetch;
+    assert.deepEqual(await fijarWallet(WALLET), { ok: false, aviso: "Sign this account to prove you control it." });
 
     globalThis.fetch = (async () => json({ aviso: "No." }, 400)) as typeof fetch;
     assert.deepEqual(await fijarWallet(WALLET), { ok: false, aviso: "No." });

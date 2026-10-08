@@ -15,7 +15,9 @@ import { AVISO_SIN_CUENTA, publicarEvidenciaHttp, leerEvidenciaHttp, leerFotoHtt
 import { informeHttp } from "./informe";
 import { crearProyectoHttp } from "./proyectos";
 import { leerRevisionHttp } from "./revision";
-import { crearSesionHttp, fijarWalletHttp } from "./sesion";
+import { crearSesionHttp, fijarWalletHttp, retoWalletHttp } from "./sesion";
+import { bytesMensajeCavos } from "../sesion/prueba-wallet";
+import { Keypair } from "@stellar/stellar-sdk";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
 
@@ -773,8 +775,38 @@ test("resolve_dispute no se envía si la wallet de la sesión no es disputeResol
   }
 });
 
-test("la wallet de la sesión se guarda para poder resolver", async () => {
+function pedidoWallet(token: string, cuerpo: Record<string, unknown>): Request {
+  return new Request("http://local/api/sesion/wallet", {
+    method: "POST",
+    headers: { cookie: `hyto_sesion=${token}`, "content-type": "application/json" },
+    body: JSON.stringify(cuerpo),
+  });
+}
+
+async function cuerpoFirmado(
+  token: string,
+  par: Keypair,
+  almacen: Parameters<typeof retoWalletHttp>[1],
+): Promise<{ wallet: string; reto: string; firma: string }> {
+  const wallet = par.publicKey();
+  const reto = await retoWalletHttp(
+    new Request("http://local/api/sesion/wallet/reto", {
+      method: "POST",
+      headers: { cookie: `hyto_sesion=${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ wallet }),
+    }),
+    almacen,
+  );
+  assert.equal(reto.status, 200);
+  const cuerpo = (await reto.json()) as { mensaje: string; token: string };
+  const firma = Buffer.from(par.sign(Buffer.from(bytesMensajeCavos(cuerpo.mensaje)))).toString("base64");
+  return { wallet, reto: cuerpo.token, firma };
+}
+
+test("la wallet de la sesión se guarda cuando la clave firma el reto", async () => {
   const almacen = crearMemoria();
+  const par = Keypair.random();
+  const wallet = par.publicKey();
   await almacen.crearSesion({
     token: "tok-wallet",
     email: "voluntario1@demo.hyto",
@@ -783,27 +815,20 @@ test("la wallet de la sesión se guarda para poder resolver", async () => {
     expiraEn: new Date(Date.now() + 60_000).toISOString(),
     wallet: "",
   });
-  const respuesta = await fijarWalletHttp(
-    new Request("http://local/api/sesion/wallet", {
-      method: "POST",
-      headers: { cookie: "hyto_sesion=tok-wallet", "content-type": "application/json" },
-      body: JSON.stringify({ wallet: RESOLUTOR }),
-    }),
-    almacen,
-  );
-  assert.equal(respuesta.status, 200);
-  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
+  const sinFirma = await fijarWalletHttp(pedidoWallet("tok-wallet", { wallet }), almacen);
+  assert.equal(sinFirma.status, 400);
+  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, "");
 
-  const otra = await fijarWalletHttp(
-    new Request("http://local/api/sesion/wallet", {
-      method: "POST",
-      headers: { cookie: "hyto_sesion=tok-wallet", "content-type": "application/json" },
-      body: JSON.stringify({ wallet: ORGANIZADOR }),
-    }),
-    almacen,
-  );
+  const respuesta = await fijarWalletHttp(pedidoWallet("tok-wallet", await cuerpoFirmado("tok-wallet", par, almacen)), almacen);
+  assert.equal(respuesta.status, 200);
+  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, wallet);
+
+  const misma = await fijarWalletHttp(pedidoWallet("tok-wallet", { wallet }), almacen);
+  assert.equal(misma.status, 200);
+
+  const otra = await fijarWalletHttp(pedidoWallet("tok-wallet", { wallet: ORGANIZADOR }), almacen);
   assert.equal(otra.status, 400);
-  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, RESOLUTOR);
+  assert.equal((await almacen.leerSesion("tok-wallet"))?.wallet, wallet);
 });
 
 test("guardar la wallet nunca llama a Friendbot, aunque el cliente mande alta", async () => {
@@ -823,21 +848,37 @@ test("guardar la wallet nunca llama a Friendbot, aunque el cliente mande alta", 
     return new Response("missing", { status: 404 });
   }) as typeof fetch;
   try {
-    const respuesta = await fijarWalletHttp(
-      new Request("http://local/api/sesion/wallet", {
-        method: "POST",
-        headers: { cookie: "hyto_sesion=tok-alta", "content-type": "application/json" },
-        body: JSON.stringify({ wallet: RESOLUTOR, alta: true }),
-      }),
-      almacen,
-    );
+    const par = Keypair.random();
+    const respuesta = await fijarWalletHttp(pedidoWallet("tok-alta", { ...(await cuerpoFirmado("tok-alta", par, almacen)), alta: true }), almacen);
     assert.equal(respuesta.status, 200);
-    assert.deepEqual(await respuesta.json(), { wallet: RESOLUTOR });
-    assert.equal((await almacen.leerSesion("tok-alta"))?.wallet, RESOLUTOR);
+    assert.deepEqual(await respuesta.json(), { wallet: par.publicKey() });
+    assert.equal((await almacen.leerSesion("tok-alta"))?.wallet, par.publicKey());
     assert.deepEqual(urls, []);
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test("un ingreso sin verificar no guarda la wallet, y uno verificado que la nombra sí", async () => {
+  const almacen = crearMemoria();
+  const par = Keypair.random();
+  const wallet = par.publicKey();
+  await almacen.crearSesion({
+    token: "tok-prueba",
+    email: "ana@hyto.app",
+    usuarioId: "ana",
+    rol: "voluntario",
+    expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    wallet: "",
+  });
+  const falso = `aaaa.${Buffer.from(JSON.stringify({ sub: "x", wallet })).toString("base64url")}.bbbb`;
+  const rechazado = await fijarWalletHttp(pedidoWallet("tok-prueba", { wallet, ingreso: falso }), almacen);
+  assert.equal(rechazado.status, 400);
+  assert.equal((await almacen.leerSesion("tok-prueba"))?.wallet, "");
+
+  const aceptado = await fijarWalletHttp(pedidoWallet("tok-prueba", { wallet, ingreso: token("ana@hyto.app", { wallet }) }), almacen);
+  assert.equal(aceptado.status, 200);
+  assert.equal((await almacen.leerSesion("tok-prueba"))?.wallet, wallet);
 });
 
 test("si el ingreso trae wallet, no se guarda otra", async () => {

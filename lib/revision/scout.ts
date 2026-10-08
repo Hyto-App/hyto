@@ -5,6 +5,7 @@ import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
+import type { TasaCrc } from "./divisas";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
 
 export const MODELO_VISION_DEFECTO = "qwen/qwen3.8-27b";
@@ -32,6 +33,8 @@ export type ContextoPedido = {
   evento?: ContextoEvento | null;
   /** The community description. Empty, or the switch off, leaves the prompt as it was. */
   organizacion?: string | null;
+  /** Colones per dollar already loaded for this review. Absent uses the labeled fallback. */
+  tasaCrc?: TasaCrc | null;
 };
 
 /** The prompt sent with the photo. The task condition is part of it, so the description answers the request. */
@@ -93,7 +96,7 @@ export function leerDescripcion(texto: string, contexto: ContextoPedido = {}): D
   }
   if (!json || typeof json !== "object" || Array.isArray(json)) return null;
   const crudo = json as Record<string, unknown>;
-  const lectura = leerLectura(crudo, { pedido: contexto.condicion ?? null });
+  const lectura = leerLectura(crudo, { pedido: contexto.condicion ?? null, tasaCrc: contexto.tasaCrc ?? null });
   if (lectura) {
     return { texto: lectura.textoCompleto, monto: lectura.montoUsd, fecha: lectura.fecha, lectura };
   }

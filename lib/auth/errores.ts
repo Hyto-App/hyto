@@ -8,6 +8,8 @@ export const AVISO_RED = "No connection. Check the network and try again.";
 export const AVISO_GOOGLE_CERRADO = "You closed the Google window. Try again.";
 export const AVISO_GOOGLE_BLOQUEADO = "The browser blocked the Google window. Allow it and try again.";
 export const AVISO_CONFIG = "Sign-in isn't set up yet.";
+export const AVISO_OAUTH_PREVIEW =
+  "Google and Apple sign-in are tried on the production site. This preview address is not registered with Cavos.";
 export const AVISO_CORREO = "Enter a valid email.";
 export const AVISO_DEMO = "That demo email does not receive messages. Use a real email or sign in with Google.";
 export const AVISO_SIN_CUENTA = "No Hyto account for this sign-in. Sign up first.";

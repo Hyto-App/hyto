@@ -1,5 +1,6 @@
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
+import type { TasaCrc } from "./divisas";
 import { contextoParaLaya, leerLectura, type LecturaEvidencia } from "./lectura";
 import { compararFechaPedido, leerMontoRecibo } from "./recibo-parser";
 import { leerFechaTrabajo } from "./trabajo-fechas";
@@ -11,10 +12,10 @@ import { leerFechaTrabajo } from "./trabajo-fechas";
  */
 export function estructurarTranscripcion(
   texto: string,
-  contexto: { condicion?: string | null; tipoTarea?: TipoTarea | null } = {},
+  contexto: { condicion?: string | null; tipoTarea?: TipoTarea | null; tasaCrc?: TasaCrc | null } = {},
 ): Descripcion {
   const limpio = texto.trim();
-  const lectura = lecturaDeTranscripcion(limpio, contexto.condicion ?? null);
+  const lectura = lecturaDeTranscripcion(limpio, contexto.condicion ?? null, contexto.tasaCrc ?? null);
   if (!lectura) return { texto: limpio, monto: null, fecha: null };
   const reembolso = contexto.tipoTarea === "reembolso" || lectura.tipo === "recibo";
   return {
@@ -25,7 +26,7 @@ export function estructurarTranscripcion(
   };
 }
 
-export function lecturaDeTranscripcion(texto: string, pedido: string | null = null): LecturaEvidencia | null {
+export function lecturaDeTranscripcion(texto: string, pedido: string | null = null, tasaCrc: TasaCrc | null = null): LecturaEvidencia | null {
   const limpio = texto.trim();
   if (!limpio) return null;
   const fechaImpresa = fechaImpresaDe(limpio);
@@ -47,7 +48,7 @@ export function lecturaDeTranscripcion(texto: string, pedido: string | null = nu
       legible: true,
       faltantes: [],
     },
-    { pedido },
+    { pedido, tasaCrc },
   );
 }
 

@@ -28,6 +28,7 @@ import {
   AVISO_DEMO,
   AVISO_GENERICO,
   AVISO_METODO_RECUPERACION,
+  AVISO_OAUTH_PREVIEW,
   AVISO_SIN_CUENTA,
   AVISO_SPAM,
   AVISO_SPAM_ENLACE,
@@ -37,6 +38,7 @@ import {
   esCorreoDemo,
   textoEspera,
 } from "@/lib/auth/errores";
+import { esHostPreview } from "@/lib/auth/preview";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
@@ -158,8 +160,8 @@ export function Entrar({
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
   const [correo, setCorreo] = useState("");
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
-  const [verDemo, setVerDemo] = useState(false);
   const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
+  const [previewOAuth, setPreviewOAuth] = useState(false);
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [alertaRegreso, setAlertaRegreso] = useState(false);
@@ -209,6 +211,7 @@ export function Entrar({
       }
     }
     setDireccion(leerMemoriaAdmin().direccion);
+    setPreviewOAuth(esHostPreview(window.location.hostname));
   }, []);
 
   useEffect(() => {
@@ -606,6 +609,10 @@ export function Entrar({
   }
 
   async function google(intencion: IntencionIngreso, proveedor: "google" | "apple" = "google") {
+    if (esHostPreview(window.location.hostname)) {
+      setAviso(AVISO_OAUTH_PREVIEW);
+      return;
+    }
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -948,6 +955,7 @@ export function Entrar({
                     {ocupado === "apple" ? t("entrar.openingApple") : t("entrar.appleContinuar")}
                   </button>
                 ) : null}
+                {previewOAuth ? <p className="hyto-login-ayuda">{t("entrar.oauthPreview")}</p> : null}
                 {!conCorreo && mensaje ? (
                   alertaFormulario ? (
                     <div className="hyto-login-alerta" role="alert">
@@ -1054,16 +1062,20 @@ export function Entrar({
                     <button
                       type="button"
                       className="hyto-login-btn is-fantasma"
-                      onClick={() => setVerDemo((actual) => !actual)}
-                      aria-expanded={verDemo}
+                      onClick={() => void entrarDemo("organizador")}
                       disabled={ocupado !== null}
                     >
-                      {t("entrar.probarDemo")}
+                      {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.probarDemo")}
+                    </button>
+                    <button
+                      type="button"
+                      className="hyto-login-btn is-enlace"
+                      onClick={() => void entrarDemo("voluntario")}
+                      disabled={ocupado !== null}
+                    >
+                      {t("entrar.demoVoluntario")}
                     </button>
                   </div>
-                ) : null}
-                {demoHabilitado && verDemo ? (
-                  <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
                 <p className="hyto-login-legal">
                   {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}

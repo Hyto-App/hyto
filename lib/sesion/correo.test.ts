@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createSign, generateKeyPairSync, type JsonWebKey, type KeyObject } from "node:crypto";
 import test from "node:test";
 import { correoAppleSinCorreo, correoDelToken, walletDelToken } from "./correo";
-import { HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
+import { AUDIENCIA_JWT_CAVOS, EMISORES_JWT_DEFECTO, HOLGURA_JWT_SEGUNDOS, verificarJwt, type AjustesJwt } from "./jwt";
 
 delete process.env.CAVOS_JWT_JWK;
 delete process.env.CAVOS_JWKS_URL;
@@ -132,7 +132,7 @@ test("los ingresos por código y por Google usan emisores y claves distintos", a
       { ...google.jwk, iss: EMISOR_GOOGLE },
     ],
   };
-  const codigo = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
+  const codigo = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
   const conGoogle = firmar(claims({ iss: EMISOR_GOOGLE, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
   assert.equal((await correoDelToken(codigo, "voluntario1@demo.hyto", ambos))?.correo, "voluntario1@demo.hyto");
   assert.equal((await correoDelToken(conGoogle, "voluntario1@demo.hyto", ambos))?.correo, "voluntario1@demo.hyto");
@@ -154,7 +154,7 @@ test("los ingresos por código y por Google usan emisores y claves distintos", a
     const desdeEntorno: AjustesJwt = { ahora: AHORA, audiencia: null, jwksUrl: null };
     assert.equal((await correoDelToken(codigo, "voluntario1@demo.hyto", desdeEntorno))?.correo, "voluntario1@demo.hyto");
     assert.equal((await correoDelToken(conGoogle, "voluntario1@demo.hyto", desdeEntorno))?.correo, "voluntario1@demo.hyto");
-    const cruzado = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
+    const cruzado = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
     assert.equal(await correoDelToken(cruzado, "voluntario1@demo.hyto", desdeEntorno), null);
   } finally {
     restaurar("CAVOS_JWT_ISSUER", previoEmisor);
@@ -178,11 +178,11 @@ test("cada URL de JWKS verifica el emisor que le corresponde", async () => {
       audiencia: null,
       jwksUrl: `${urlCavos}, ${urlGoogle}`,
     };
-    const codigo = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
+    const codigo = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
     const conGoogle = firmar(claims({ iss: EMISOR_GOOGLE, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
     assert.equal((await correoDelToken(codigo, "voluntario1@demo.hyto", ajustes))?.correo, "voluntario1@demo.hyto");
     assert.equal((await correoDelToken(conGoogle, "voluntario1@demo.hyto", ajustes))?.correo, "voluntario1@demo.hyto");
-    const cruzado = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
+    const cruzado = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
     assert.equal(await correoDelToken(cruzado, "voluntario1@demo.hyto", ajustes), null);
   } finally {
     globalThis.fetch = original;
@@ -208,7 +208,7 @@ test("un JWKS que falla no anula las claves del otro emisor", async () => {
       audiencia: null,
       jwksUrl: `${urlCavos}, ${urlGoogle}`,
     };
-    const codigo = firmar(claims({ iss: EMISOR_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
+    const codigo = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS, email: "voluntario1@demo.hyto" }), cavos.privateKey, "cavos");
     const conGoogle = firmar(claims({ iss: EMISOR_GOOGLE, email: "voluntario1@demo.hyto" }), google.privateKey, "google");
     assert.equal(await correoDelToken(codigo, "voluntario1@demo.hyto", ajustes), null);
     assert.equal((await correoDelToken(conGoogle, "voluntario1@demo.hyto", ajustes))?.correo, "voluntario1@demo.hyto");
@@ -269,6 +269,32 @@ test("la audiencia solo se comprueba si está configurada", async () => {
   assert.equal((await correoDelToken(token, "organizador@demo.hyto", { ...conClave, audiencia: null }))?.correo, "organizador@demo.hyto");
 });
 
+test("los emisores por defecto rechazan un iss ajeno y producción no salta la audiencia", async () => {
+  const previo = { node: process.env.NODE_ENV, vercel: process.env.VERCEL_ENV };
+  const base: AjustesJwt = { ahora: AHORA, emisor: EMISORES_JWT_DEFECTO, claves: [google.jwk], jwksUrl: null, audiencia: null };
+  const firebase = "https://securetoken.google.com/hyto-demo";
+  try {
+    const googleTok = firmar(claims({ iss: "https://accounts.google.com", aud: "cliente-google" }), google.privateKey, "google");
+    assert.equal((await verificarJwt(googleTok, base))?.iss, "https://accounts.google.com");
+    const ajeno = firmar(claims({ iss: "https://evil.example", aud: "cliente-google" }), google.privateKey, "google");
+    assert.equal(await verificarJwt(ajeno, base), null);
+
+    const bueno = firmar(claims({ iss: firebase, aud: "hyto-demo" }), google.privateKey, "google");
+    assert.equal((await verificarJwt(bueno, base))?.iss, firebase);
+    const mal = firmar(claims({ iss: firebase, aud: "otro" }), google.privateKey, "google");
+    assert.equal(await verificarJwt(mal, base), null);
+
+    restaurar("NODE_ENV", "production");
+    delete process.env.VERCEL_ENV;
+    assert.equal(await verificarJwt(googleTok, base), null);
+    assert.equal((await verificarJwt(bueno, base))?.aud, "hyto-demo");
+    assert.equal((await verificarJwt(googleTok, { ...base, audiencia: "cliente-google" }))?.iss, "https://accounts.google.com");
+  } finally {
+    restaurar("NODE_ENV", previo.node);
+    restaurar("VERCEL_ENV", previo.vercel);
+  }
+});
+
 test("rechaza un token sin sujeto", async () => {
   assert.equal(await correoDelToken(payload(claims({ sub: undefined })), "organizador@demo.hyto", sinClave), null);
   assert.equal(await correoDelToken("no-es-token", "organizador@demo.hyto", sinClave), null);
@@ -293,6 +319,91 @@ test("Apple sin correo usa una dirección .invalid estable; los demás emisores 
   assert.equal(await correoDelToken(googleSinCorreo, "", ajustes), null);
   const reservado = firmar(claims({ iss: EMISOR_GOOGLE, email: correo?.correo }), google.privateKey, "google");
   assert.equal(await correoDelToken(reservado, "", ajustes), null);
+});
+
+test("el correo de Cavos acepta aud cavos-starknet y rechaza otra app aunque el entorno nombre esa audiencia", async () => {
+  const previo = { node: process.env.NODE_ENV, vercel: process.env.VERCEL_ENV };
+  const base: AjustesJwt = {
+    ahora: AHORA,
+    emisor: EMISORES_JWT_DEFECTO,
+    claves: [{ ...cavos.jwk, iss: EMISOR_CAVOS }, google.jwk],
+    jwksUrl: null,
+    audiencia: "cliente-google",
+  };
+  try {
+    restaurar("NODE_ENV", "production");
+    delete process.env.VERCEL_ENV;
+    const real = firmar(claims({ iss: EMISOR_CAVOS, aud: AUDIENCIA_JWT_CAVOS }), cavos.privateKey, "cavos");
+    assert.equal((await verificarJwt(real, base))?.iss, EMISOR_CAVOS);
+    assert.equal((await correoDelToken(real, "organizador@demo.hyto", base))?.correo, "organizador@demo.hyto");
+    const otraApp = firmar(claims({ iss: EMISOR_CAVOS, aud: "otra-app" }), cavos.privateKey, "cavos");
+    assert.equal(await verificarJwt(otraApp, { ...base, audiencia: "otra-app" }), null);
+    assert.equal(await verificarJwt(otraApp, { ...base, audiencia: null }), null);
+    const ajeno = firmar(claims({ iss: "https://evil.example", aud: AUDIENCIA_JWT_CAVOS }), cavos.privateKey, "cavos");
+    assert.equal(await verificarJwt(ajeno, base), null);
+    const googleTok = firmar(claims({ iss: EMISOR_GOOGLE, aud: "cliente-google" }), google.privateKey, "google");
+    assert.equal((await verificarJwt(googleTok, base))?.aud, "cliente-google");
+    const googleAjeno = firmar(claims({ iss: EMISOR_GOOGLE, aud: "otro-cliente" }), google.privateKey, "google");
+    assert.equal(await verificarJwt(googleAjeno, base), null);
+  } finally {
+    restaurar("NODE_ENV", previo.node);
+    restaurar("VERCEL_ENV", previo.vercel);
+  }
+});
+
+test("el rechazo de la sesión anota solo aud, iss y el motivo", async () => {
+  const { crearMemoria } = await import("../db/memoria");
+  const { crearSesionHttp } = await import("../api/sesion");
+  const avisos: string[] = [];
+  const original = console.warn;
+  console.warn = (mensaje?: unknown) => {
+    avisos.push(String(mensaje));
+  };
+  const previo = {
+    node: process.env.NODE_ENV,
+    vercel: process.env.VERCEL_ENV,
+    jwk: process.env.CAVOS_JWT_JWK,
+    emisor: process.env.CAVOS_JWT_ISSUER,
+    audiencia: process.env.CAVOS_JWT_AUDIENCE,
+  };
+  const secreto = "persona@demo.hyto";
+  const sub = "sub-secreto";
+  try {
+    restaurar("NODE_ENV", "production");
+    delete process.env.VERCEL_ENV;
+    process.env.CAVOS_JWT_JWK = JSON.stringify({ ...cavos.jwk, iss: EMISOR_CAVOS });
+    process.env.CAVOS_JWT_ISSUER = EMISOR_CAVOS;
+    process.env.CAVOS_JWT_AUDIENCE = "cliente-google";
+    const token = firmar(
+      claims({ iss: EMISOR_CAVOS, aud: "otra-app", email: secreto, sub, exp: Math.floor(Date.now() / 1000) + 3600 }),
+      cavos.privateKey,
+      "cavos",
+    );
+    const respuesta = await crearSesionHttp(
+      new Request("http://local/api/sesion", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: secreto, token }),
+      }),
+      crearMemoria(),
+    );
+    assert.equal(respuesta.status, 400);
+    assert.equal(avisos.length, 1);
+    const linea = avisos[0] ?? "";
+    assert.match(linea, /sign-in rejected: audience/);
+    assert.match(linea, /iss=https:\/\/cavos\.app\/firebase/);
+    assert.match(linea, /aud=otra-app/);
+    assert.equal(linea.includes(secreto), false);
+    assert.equal(linea.includes(sub), false);
+    assert.equal(linea.includes(token), false);
+  } finally {
+    console.warn = original;
+    restaurar("NODE_ENV", previo.node);
+    restaurar("VERCEL_ENV", previo.vercel);
+    restaurar("CAVOS_JWT_JWK", previo.jwk);
+    restaurar("CAVOS_JWT_ISSUER", previo.emisor);
+    restaurar("CAVOS_JWT_AUDIENCE", previo.audiencia);
+  }
 });
 
 test("la audiencia acepta varios client id separados por coma (Google y Apple)", async () => {

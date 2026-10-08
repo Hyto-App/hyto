@@ -168,6 +168,8 @@ const EXACTO: Record<string, Clave> = {
   "Could not prepare the account.": "eventos.prepareFail",
   "Account setup isn't available yet.": "errores.cuentasNo",
   "Could not open the demo. Try again.": "entrar.demoOpenFail",
+  "Google and Apple sign-in are tried on the production site. This preview address is not registered with Cavos.":
+    "entrar.oauthPreview",
   "Could not save that task.": "eventos.saveFail",
   "Only the organizer can edit tasks.": "eventos.editOnly",
   "This task already has a photo, so it can't be edited.": "eventos.editPhoto",
