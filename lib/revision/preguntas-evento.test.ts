@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { cerrar } from "./armar";
-import { leerTrabajo, preguntarLaya, senalesDeTrabajo, type RespuestasTrabajo } from "./laya";
+import { leerTrabajo, preguntarLaya, senalesDeTrabajo, type LlamadaLaya, type RespuestasTrabajo } from "./laya";
 import { preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 import { TOPE_FALTA_GRAVE, calificar, notaDeTrabajo } from "./pesos";
 import { preguntasEventoActivas } from "./preguntas-evento-bandera";
@@ -197,6 +197,87 @@ test("la lectura y el snapshot aceptan las opciones nuevas y rechazan una etique
   assert.equal(leerSnapshot(texto.replace("t6=no_aplica", "t6=sin_empezar"))?.trabajo?.t6, "sin_empezar");
 });
 
+test("tipo por tarea sigue ofreciendo documentar_evento y no_aplica, y otra con Groq no los convierte en sin empezar", async () => {
+  const texto = "Evidence type: work, a place, or a scene the organizer asked to see.\nDescription: A group photo with the banners.";
+  const facturaClara = { probabilities: { trabajo: 0.1, factura: 0.8, otra: 0.1 } };
+  const otraClara = { probabilities: { trabajo: 0.1, factura: 0.1, otra: 0.8 } };
+  const escena = { ...respuestas(), t5: { choice: "documentar_evento" }, t6: { choice: "no_aplica" } };
+  const encendido = await caminoComoRevision({
+    evento: "on",
+    c1: facturaClara,
+    trabajo: escena,
+    coincide: "si",
+    tipoPorTarea: true,
+    texto,
+  });
+  const apagado = await caminoComoRevision({
+    evento: undefined,
+    c1: facturaClara,
+    trabajo: respuestas(),
+    coincide: "si",
+    tipoPorTarea: true,
+    texto,
+  });
+  const sinTipo = await caminoComoRevision({
+    evento: "on",
+    c1: facturaClara,
+    trabajo: respuestasFacturaCamino(),
+    coincide: "si",
+    tipoPorTarea: false,
+    texto,
+  });
+  assert.deepEqual(Object.keys(encendido.trabajo.t5?.criteria ?? {}).filter((clave) => clave === "documentar_evento"), ["documentar_evento"]);
+  assert.deepEqual(Object.keys(encendido.trabajo.t6?.criteria ?? {}).filter((clave) => clave === "no_aplica"), ["no_aplica"]);
+  assert.equal("t5" in encendido.trabajo, true);
+  assert.equal("f1" in encendido.trabajo, false);
+  assert.equal("documentar_evento" in (apagado.trabajo.t5?.criteria ?? {}), false);
+  assert.equal("no_aplica" in (apagado.trabajo.t6?.criteria ?? {}), false);
+  assert.equal("t5" in sinTipo.trabajo, false);
+  assert.equal("f1" in sinTipo.trabajo, true);
+  assert.equal(encendido.senales.choice, "trabajo");
+  assert.equal(encendido.senales.motivos, undefined);
+
+  const coincide = cerradoCon(
+    senalesDeTrabajo({ ...trabajo(), t5: "documentar_evento", t6: "no_aplica", v1: "es_otra_cosa" }, PEDIDO, { coincide: "si" }, { HYTO_MILE_OTRA_CON_GROQ: "on" }),
+  );
+  const noCoincide = cerradoCon(
+    senalesDeTrabajo({ ...trabajo(), t5: "documentar_evento", t6: "no_aplica", v1: "es_otra_cosa" }, PEDIDO, { coincide: "no" }, { HYTO_MILE_OTRA_CON_GROQ: "on" }),
+  );
+  const sinEmpezar = cerradoCon(
+    senalesDeTrabajo({ ...trabajo(), t6: "sin_empezar" }, PEDIDO, { coincide: "si" }, { HYTO_MILE_OTRA_CON_GROQ: "on" }),
+  );
+  assert.equal(coincide?.nota, notaDeTrabajo({ ...trabajo(), t5: "documentar_evento", t6: "no_aplica", v1: "es_otra_cosa" }));
+  assert.equal(coincide?.motivos, undefined);
+  assert.equal(noCoincide?.nota, TOPE_FALTA_GRAVE);
+  assert.deepEqual(noCoincide?.motivos, ["no_coincide"]);
+  assert.equal(sinEmpezar?.nota, TOPE_FALTA_GRAVE);
+  assert.deepEqual(sinEmpezar?.motivos, ["sin_empezar"]);
+
+  const cero = await caminoComoRevision({
+    evento: "on",
+    c1: otraClara,
+    trabajo: { ...escena, v1: { choice: "es_otra_cosa" } },
+    coincide: "no",
+    tipoPorTarea: true,
+    texto,
+  });
+  const sinCero = await caminoComoRevision({
+    evento: "on",
+    c1: otraClara,
+    trabajo: { ...escena, v1: { choice: "es_otra_cosa" } },
+    coincide: "si",
+    tipoPorTarea: true,
+    texto,
+  });
+  assert.equal("documentar_evento" in (cero.trabajo.t5?.criteria ?? {}), true);
+  assert.equal(cero.senales.choice, "otra");
+  assert.equal(cero.senales.score, "0");
+  assert.deepEqual(cero.senales.motivos, ["otra"]);
+  assert.equal(sinCero.senales.choice, "trabajo");
+  assert.notEqual(sinCero.senales.score, "0");
+  assert.equal(sinCero.senales.motivos, undefined);
+});
+
 test("Laya recibe las opciones solo cuando el interruptor está on", async () => {
   const apagado = await preguntasEnviadas(undefined);
   const encendido = await preguntasEnviadas("on");
@@ -269,24 +350,113 @@ function respuestas(): Record<string, unknown> {
 }
 
 async function preguntasEnviadas(valor: string | undefined) {
-  const previo = process.env[ENV];
-  if (valor === undefined) delete process.env[ENV];
-  else process.env[ENV] = valor;
-  try {
-    const capturas: Array<Record<string, { criteria?: Record<string, string> }>> = [];
-    await preguntarLaya("https://laya.example", "A group photo with banners.", PEDIDO, async (_input, init) => {
-      const cuerpo = JSON.parse(String(init?.body)) as {
-        questions: Record<string, { criteria?: Record<string, string> }>;
-      };
-      if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "trabajo" } } });
-      capturas.push(cuerpo.questions);
-      return Response.json({ answers: respuestas() });
-    });
-    const preguntas = capturas[0];
-    if (!preguntas) throw new Error("no se enviaron las preguntas de trabajo");
-    return preguntas;
-  } finally {
-    if (previo === undefined) delete process.env[ENV];
-    else process.env[ENV] = previo;
-  }
+  return enExclusiva(async () => {
+    const previo = process.env[ENV];
+    if (valor === undefined) delete process.env[ENV];
+    else process.env[ENV] = valor;
+    try {
+      const capturas: Array<Record<string, { criteria?: Record<string, string> }>> = [];
+      await preguntarLaya("https://laya.example", "A group photo with banners.", PEDIDO, async (_input, init) => {
+        const cuerpo = JSON.parse(String(init?.body)) as {
+          questions: Record<string, { criteria?: Record<string, string> }>;
+        };
+        if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "trabajo" } } });
+        capturas.push(cuerpo.questions);
+        return Response.json({ answers: respuestas() });
+      });
+      const preguntas = capturas[0];
+      if (!preguntas) throw new Error("no se enviaron las preguntas de trabajo");
+      return preguntas;
+    } finally {
+      if (previo === undefined) delete process.env[ENV];
+      else process.env[ENV] = previo;
+    }
+  });
+}
+
+function cerradoCon(senales: ReturnType<typeof senalesDeTrabajo>) {
+  return cerrar(
+    "trabajo",
+    null,
+    { texto: "A group photo with the banners. Everything requested is present.", monto: null, fecha: null },
+    senales,
+    "scout",
+  );
+}
+
+function respuestasFacturaCamino(): Record<string, unknown> {
+  return {
+    f1: { choice: "coincide_con_lo_pedido" },
+    f2: { noul: true },
+    f3: { noul: true },
+    f4: { score: 2 },
+    g1: { choice: "comida_o_bebida" },
+    g2: { noul: true },
+    g3: { noul: true },
+    g4: { noul: true },
+    g5: { score: 2 },
+  };
+}
+
+/**
+ * Same shape as revisar: the task type rides on the Laya caller, and the
+ * options object carries only the Groq reading. Event questions still come
+ * from HYTO_MILE_PREGUNTAS_EVENTO.
+ */
+async function caminoComoRevision(entrada: {
+  evento: string | undefined;
+  c1: { probabilities: Record<string, number> };
+  trabajo: Record<string, unknown>;
+  coincide: "si" | "parcial" | "no";
+  tipoPorTarea: boolean;
+  texto: string;
+}) {
+  return enExclusiva(async () => {
+    const previo = process.env[ENV];
+    if (entrada.evento === undefined) delete process.env[ENV];
+    else process.env[ENV] = entrada.evento;
+    try {
+      const rondas: Array<Record<string, { criteria?: Record<string, string> }>> = [];
+      const llamar = Object.assign(((paso: (signal: AbortSignal | undefined) => Promise<unknown>) => paso(undefined)) as LlamadaLaya, {
+        tipoTarea: "trabajo" as const,
+        tipoPorTarea: entrada.tipoPorTarea,
+      });
+      const senales = await preguntarLaya(
+        "https://laya.example",
+        entrada.texto,
+        PEDIDO,
+        async (_input, init) => {
+          const cuerpo = JSON.parse(String(init?.body)) as {
+            questions: Record<string, { criteria?: Record<string, string> }>;
+          };
+          rondas.push(cuerpo.questions);
+          if ("c1" in cuerpo.questions && !("t5" in cuerpo.questions) && !("f1" in cuerpo.questions)) {
+            return Response.json({ answers: { c1: entrada.c1 } });
+          }
+          return Response.json({ answers: entrada.trabajo });
+        },
+        undefined,
+        llamar,
+        null,
+        { lectura: { coincide: entrada.coincide }, env: { HYTO_MILE_OTRA_CON_GROQ: "on" } },
+      );
+      const trabajo = rondas[1];
+      if (!trabajo) throw new Error("no hubo segunda ronda");
+      return { senales, trabajo };
+    } finally {
+      if (previo === undefined) delete process.env[ENV];
+      else process.env[ENV] = previo;
+    }
+  });
+}
+
+let cola: Promise<unknown> = Promise.resolve();
+
+function enExclusiva<T>(paso: () => Promise<T>): Promise<T> {
+  const siguiente = cola.then(paso, paso);
+  cola = siguiente.then(
+    () => undefined,
+    () => undefined,
+  );
+  return siguiente;
 }

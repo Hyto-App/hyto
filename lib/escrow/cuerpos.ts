@@ -185,6 +185,9 @@ function pedidoV2(accion: AccionFirma): Pedido | string {
     };
   }
   if (accion.accion === "liberar") {
+    // The public release-funds schema rejects unknown properties. The 0.3% fee
+    // address is an argument of release_funds, not a field of this body. Hyto
+    // pins it to HYTO_TRUSTLESS_FEE after the XDR comes back (lib/escrow/fee.ts).
     return {
       ruta: "/escrow/multi-release/v2/release-funds",
       cuerpo: {
