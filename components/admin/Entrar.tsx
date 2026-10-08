@@ -45,7 +45,6 @@ import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/Insig
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
-import { ENLACE_PRIVACIDAD } from "@/lib/ui/privacidad";
 import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
 /** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
@@ -1051,7 +1050,7 @@ export function Entrar({
                 ) : null}
                 <p className="hyto-login-legal">
                   {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
-                  <Link href="/privacy">{ENLACE_PRIVACIDAD}</Link>
+                  <Link href="/privacy">{t("nav.privacy")}</Link>
                 </p>
               </div>
             ) : null}

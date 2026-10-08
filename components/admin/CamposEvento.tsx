@@ -118,7 +118,6 @@ export function ZonaPortada({
           >
             <IconoImagen />
             <span>{t("eventos.coverDrop")}</span>
-            <span className="hyto-zona-ayuda">{t("eventos.coverDropHelp")}</span>
           </div>
         )}
         <input
@@ -164,6 +163,12 @@ export function AreaTexto({
     area.style.height = "auto";
     area.style.height = `${area.scrollHeight}px`;
   }, [valor]);
+  // Back navigation can restore the field text before React knows it; read the real value once on mount.
+  useEffect(() => {
+    const real = ref.current?.value ?? "";
+    if (real && real !== valor) onCambio(real);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
   return (
     <textarea
       ref={ref}

@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import { tituloDe } from "@/lib/ui/titulo";
 import { SubirEvidencia } from "@/components/integrante/SubirEvidencia";
 import { leerPerfil } from "@/lib/sesion/perfil";
 import { exigirPagina, exigirTarea } from "@/lib/sesion/puerta";
 
-export const metadata: Metadata = { title: "Task" };
+export const generateMetadata = tituloDe("titulos.task");
 
 export default async function PaginaEvidencia({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

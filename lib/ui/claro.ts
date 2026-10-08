@@ -271,12 +271,15 @@ for (const clave of CLAVES_CONOCIDAS) {
 }
 
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
+const SALDO_NO_CUBRE = /^Your USDC balance does not cover ([\d.]+) USDC \(this amount plus a ([\d.]+) USDC reserve\)\.$/;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
   if (!limpio) return limpio;
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
+  const saldo = SALDO_NO_CUBRE.exec(limpio);
+  if (saldo) return texto(idioma, "errores.saldoNoCubre", { n: saldo[1], reserva: saldo[2] });
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
   const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);

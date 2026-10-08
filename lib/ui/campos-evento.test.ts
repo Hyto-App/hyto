@@ -58,7 +58,7 @@ test("the organizer's event page renders the cover and description card", () => 
 });
 
 test("the new strings exist in English and Spanish", () => {
-  for (const clave of ["detailsTitle", "coverDrop", "coverDropHelp", "coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
+  for (const clave of ["detailsTitle", "coverDrop","coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
     assert.ok((en.eventos as Record<string, string>)[clave], `en ${clave}`);
     assert.ok((es.eventos as Record<string, string>)[clave], `es ${clave}`);
   }
