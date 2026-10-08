@@ -152,6 +152,13 @@ export function enlacePago(hash: string | null | undefined): string | null {
   return `https://stellar.expert/explorer/testnet/tx/${limpio}`;
 }
 
+/** Persisted lock (the escrow contract) on Stellar testnet. A payment hash uses enlacePago. */
+export function enlaceContrato(contrato: string | null | undefined): string | null {
+  const limpio = contrato?.trim() ?? "";
+  if (!/^C[A-Z2-7]{55}$/.test(limpio)) return null;
+  return `https://stellar.expert/explorer/testnet/contract/${limpio}`;
+}
+
 export function enlaceCredencial(url: string | null | undefined): string | null {
   const limpio = url?.trim() ?? "";
   if (!limpio) return null;

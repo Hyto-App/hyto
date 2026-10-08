@@ -50,12 +50,19 @@ test("technical payment errors tell the person what to do", () => {
     "Ese paso no se completó. Intenta de nuevo.",
   );
   assert.equal(mensajeClaro("Wait 8 s before requesting another code", "es"), "Espera 8 s antes de pedir otro código");
-  const saldo = mensajeClaro("Your balance does not cover US$31 (this amount plus a US$1 reserve).");
-  assert.equal(saldo, "Your balance does not cover US$31 (this amount plus a US$1 reserve).");
+  const saldo = mensajeClaro(
+    "Your balance does not cover US$40.60 (this amount plus a US$1.00 reserve). You are short US$39.30.",
+  );
+  assert.equal(
+    saldo,
+    "Your balance does not cover US$40.60 (this amount plus a US$1.00 reserve). You are short US$39.30.",
+  );
+  assert.equal(saldo.includes("US$40.6 "), false);
+  assert.equal(/US\$40\.6(?!0)/.test(saldo), false);
   assert.equal(saldo.includes("USDC"), false);
   assert.equal(
-    mensajeClaro("Your balance does not cover US$31 (this amount plus a US$1 reserve).", "es"),
-    "Tu saldo no cubre US$31 (este monto más una reserva de US$1).",
+    mensajeClaro("Your balance does not cover US$40.60 (this amount plus a US$1.00 reserve). You are short US$39.30.", "es"),
+    "Tu saldo no cubre US$40.60 (este monto más una reserva de US$1.00). Te faltan US$39.30.",
   );
 });
 

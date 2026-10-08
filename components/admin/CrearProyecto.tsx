@@ -406,7 +406,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               </p>
             ) : falta ? (
               <p id="aviso-saldo-crear" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                {t("errores.saldoNoCubre", { n: falta.necesario, reserva: falta.reserva })}
+                {t("errores.saldoNoCubre", { n: falta.necesario, reserva: falta.reserva, falta: falta.falta })}
               </p>
             ) : aviso ? (
               <p role="alert" className="text-sm leading-6 text-[var(--suave)]">
