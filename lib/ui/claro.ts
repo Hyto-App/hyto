@@ -182,7 +182,7 @@ const EXACTO: Record<string, Clave> = {
   "The amount is already locked in the payment, so this task can't be edited.": "eventos.editLocked",
   "Enter a title.": "eventos.needTitle",
   "Title is too long.": "eventos.titleLong",
-  "Enter what the photo must show.": "eventos.needPhoto",
+  "Enter what the evidence must show.": "eventos.needPhoto",
   "That note is too long.": "eventos.noteLong",
   "Work tasks don't have a cap.": "eventos.noCap",
   "Choose a person in this event.": "eventos.choosePerson",

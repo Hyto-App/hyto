@@ -2,21 +2,10 @@ import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
-import { act } from "react";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { leerMemoriaAdmin } from "./memoria";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
-
-async function elegir(selector: string, valor: string): Promise<void> {
-  const nodo = document.querySelector(selector);
-  if (!(nodo instanceof HTMLSelectElement)) throw new Error(`No está ${selector}.`);
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-  await act(async () => {
-    setter?.call(nodo, valor);
-    nodo.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-}
 
 test("en modo demo CrearProyecto no guarda y muestra el aviso", async () => {
   limpiarPantalla();
@@ -41,7 +30,7 @@ test("en modo demo CrearProyecto no guarda y muestra el aviso", async () => {
   }
 });
 
-test("crear evento manda la prioridad y la dificultad que elige el organizador", async () => {
+test("crear evento no ofrece prioridad ni dificultad y no las manda", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;
   const cuerpos: { nombre?: string; tareas?: { prioridad?: string; dificultad?: string | null; titulo?: string }[] }[] = [];
@@ -55,22 +44,17 @@ test("crear evento manda la prioridad y la dificultad que elige el organizador",
   const idas: string[] = [];
   try {
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    const prioridad = document.querySelector("#prioridad-1");
-    const dificultad = document.querySelector("#dificultad-1");
-    assert.ok(prioridad instanceof HTMLSelectElement && prioridad.value === "normal");
-    assert.ok(dificultad instanceof HTMLSelectElement && dificultad.value === "");
-    assert.match(prioridad.closest("div")?.className ?? "", /grid-cols-1/);
-    assert.match(prioridad.closest("div")?.className ?? "", /sm:grid-cols-2/);
+    assert.equal(document.querySelector("#prioridad-1"), null);
+    assert.equal(document.querySelector("#dificultad-1"), null);
+    assert.match(document.querySelector("label[for=condicion-1]")?.textContent ?? "", /^Evidence must show$/);
     await escribir("#nombre-proyecto", "Feria");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await elegir("#prioridad-1", "high");
-    await elegir("#dificultad-1", "hard");
     await pulsar("Create event");
     assert.equal(cuerpos.length, 1);
     assert.equal(cuerpos[0]?.tareas?.[0]?.titulo, "Cajas");
-    assert.equal(cuerpos[0]?.tareas?.[0]?.prioridad, "high");
-    assert.equal(cuerpos[0]?.tareas?.[0]?.dificultad, "hard");
+    assert.equal(cuerpos[0]?.tareas?.[0]?.prioridad, undefined);
+    assert.equal(cuerpos[0]?.tareas?.[0]?.dificultad, undefined);
     assert.deepEqual(idas, ["/eventos/evt"]);
   } finally {
     globalThis.fetch = anterior;
