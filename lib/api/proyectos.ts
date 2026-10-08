@@ -1,8 +1,8 @@
 import { normalizarMonto } from "@/lib/admin/vista";
-import { comunidadDeAlta } from "@/lib/api/comunidades";
-import { avisarTareasNuevas } from "@/lib/tablon/publicar";
+import { organizacionDeAlta, rechazoSiNoEsAdmin } from "@/lib/api/organizaciones";
+import { correoSegun, registrarParticipacion, veCorreosDelEvento } from "@/lib/organizaciones/contactos";
 import type { Almacen } from "@/lib/db/almacen";
-import type { SesionFila, TareaFila } from "@/lib/db/tipos";
+import type { Proyecto, SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import { leerDificultadEntrada, leerPrioridadEntrada } from "@/lib/tareas/clasificacion";
@@ -36,8 +36,8 @@ export async function crearProyectoHttp(
   }
   const proyecto = leerProyecto(body);
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
-  const comunidadPedida = await comunidadDeAlta(body);
-  if (comunidadPedida instanceof Response) return comunidadPedida;
+  const organizacionPedida = organizacionDeAlta(body);
+  if (organizacionPedida instanceof Response) return organizacionPedida;
   try {
     const asignadas = await asignarTareas(almacen, organizadorId, proyecto.tareas);
     if (asignadas instanceof Response) return asignadas;
@@ -48,14 +48,13 @@ export async function crearProyectoHttp(
       const rechazo = await rechazoSiFondos(fondos.wallet, suma!, fondos.leerSaldo);
       if (rechazo) return rechazo;
     }
-    if (comunidadPedida) {
-      const comunidad = await almacen.leerComunidad(comunidadPedida);
-      if (!comunidad) return json({ aviso: "We couldn't find that community." }, 404);
-      const miembro = await almacen.miembroComunidad(comunidadPedida, organizadorId);
-      if (!miembro) return json({ aviso: "Join that community before adding an event." }, 403);
+    if (organizacionPedida) {
+      const rechazo = await rechazoSiNoEsAdmin(almacen, organizacionPedida, organizadorId);
+      if (rechazo) return rechazo;
     }
-    const fila = { ...proyecto.proyecto, organizadorId, ...(comunidadPedida ? { comunidadId: comunidadPedida } : {}) };
+    const fila = { ...proyecto.proyecto, organizadorId, ...(organizacionPedida ? { organizacionId: organizacionPedida } : {}) };
     await almacen.crearProyecto(fila, asignadas);
+    const registrados = new Set<string>();
     for (const tarea of asignadas) {
       if (!tarea.miembroId || tarea.miembroId === organizadorId) continue;
       await almacen.guardarMiembro({
@@ -65,8 +64,11 @@ export async function crearProyectoHttp(
         estado: "active",
         creadoEn: fila.creadoEn,
       });
+      // One person with several tasks still joins the event once.
+      if (registrados.has(tarea.miembroId)) continue;
+      registrados.add(tarea.miembroId);
+      await registrarParticipacion(almacen, fila.id, tarea.miembroId, false);
     }
-    await avisarTareasNuevas(almacen, fila.comunidadId, asignadas);
     return json({ proyecto: { id: fila.id, nombre: fila.nombre }, tareas: asignadas.map(tareaPublica) }, 201);
   } catch (error) {
     console.error("[api/proyectos] crear", detalleErrorCrear(error));
@@ -117,7 +119,7 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
       tareas: tareas.map(tareaPublica),
       miembros:
         rol === "organizer"
-          ? await personasDelEvento(almacen, proyecto.id)
+          ? await personasDelEvento(almacen, proyecto, visor.usuarioId)
           : [],
     });
   } catch (error) {
@@ -133,14 +135,23 @@ async function contarBandeja(almacen: Almacen, tareas: TareaFila[]): Promise<num
   return total;
 }
 
-async function personasDelEvento(almacen: Almacen, proyectoId: string): Promise<{ usuarioId: string; email: string; rol: string }[]> {
-  const miembros = (await almacen.listarMiembros(proyectoId)).filter((miembro) => miembro.estado === "active");
+async function personasDelEvento(
+  almacen: Almacen,
+  proyecto: Proyecto,
+  visorId: string | null | undefined,
+): Promise<{ usuarioId: string; email: string; rol: string }[]> {
+  const miembros = (await almacen.listarMiembros(proyecto.id)).filter((miembro) => miembro.estado === "active");
   const usuarios = await almacen.listarUsuarios();
-  return miembros.map((miembro) => ({
-    usuarioId: miembro.usuarioId,
-    email: usuarios.find((usuario) => usuario.id === miembro.usuarioId)?.email ?? miembro.usuarioId,
-    rol: miembro.rol,
-  }));
+  // In an organization's event, only that organization's admins read other people's emails.
+  const veCorreos = visorId ? await veCorreosDelEvento(almacen, proyecto, visorId) : false;
+  return miembros.map((miembro) => {
+    const email = usuarios.find((usuario) => usuario.id === miembro.usuarioId)?.email ?? miembro.usuarioId;
+    return {
+      usuarioId: miembro.usuarioId,
+      email: miembro.usuarioId === visorId ? email : correoSegun(email, veCorreos),
+      rol: miembro.rol,
+    };
+  });
 }
 
 type TareaBorrador = TareaFila & { asignado: string };

@@ -251,6 +251,8 @@ function archivosQueLeeMigrar(texto: string, raiz: string): string[] {
 
 function valorDefaultDrizzle(valor: unknown): { valor: string | number | boolean | null; opaco: boolean } {
   if (valor === undefined) return { valor: null, opaco: false };
+  // An empty array default is '{}' in SQL.
+  if (Array.isArray(valor) && valor.length === 0) return { valor: "{}", opaco: false };
   if (typeof valor === "string" || typeof valor === "number" || typeof valor === "boolean" || valor === null) {
     return { valor, opaco: false };
   }

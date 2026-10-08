@@ -46,6 +46,6 @@ test("un corte de conexión no se disfraza de migración faltante", () => {
 });
 
 test("crear un evento sin la columna de la migración lo dice así", () => {
-  const error = Object.assign(new Error('column "comunidad_id" of relation "proyectos" does not exist'), { code: "42703" });
+  const error = Object.assign(new Error('column "organizacion_id" of relation "proyectos" does not exist'), { code: "42703" });
   assert.deepEqual(clasificarErrorCrear(error), { aviso: "The database is missing a migration.", status: 503 });
 });

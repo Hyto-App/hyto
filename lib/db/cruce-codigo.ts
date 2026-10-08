@@ -311,7 +311,8 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
         continue;
       }
       const resto = match[5];
-      const tipo = tipoDeBuilder(match[2], match[4]);
+      const base = tipoDeBuilder(match[2], match[4]);
+      const tipo = base && /\.array\(\s*\)/.test(resto) ? `${base}[]` : base;
       if (!tipo) {
         avisos.push(`No se reconoció el builder ${match[2]}() de ${tabla}.${match[3]} en schema.ts. Confirmar con Esteban.`);
       }
@@ -356,6 +357,7 @@ export function leerSchemaDrizzle(fuente: string): { columnas: ColumnaDrizzle[];
 
 function defectoDrizzle(resto: string): string | null {
   if (/\.defaultNow\(\s*\)/.test(resto)) return "now()";
+  if (/\.default\(\s*\[\s*\]\s*\)/.test(resto)) return "'{}'";
   const texto = /\.default\(\s*"((?:\\.|[^"\\])*)"\s*\)/.exec(resto);
   if (texto) return `'${texto[1].replace(/'/g, "''")}'`;
   const booleano = /\.default\(\s*(true|false)\s*\)/i.exec(resto);

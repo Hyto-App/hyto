@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { SelectorContactos } from "@/components/organizaciones/SelectorContactos";
 import { useTexto } from "@/components/ui/Idioma";
 
 export function CabeceraEvento({
@@ -10,11 +11,14 @@ export function CabeceraEvento({
   nombre,
   rol,
   pestana,
+  enOrganizacion = false,
 }: {
   id: string;
   nombre: string;
   rol: "organizer" | "team" | "volunteer";
   pestana: "inbox" | "tasks" | "report";
+  /** The event belongs to an organization: pick people from its saved volunteers. */
+  enOrganizacion?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [secreto, setSecreto] = useState<string | null>(null);
@@ -46,6 +50,23 @@ export function CabeceraEvento({
     window.setTimeout(() => setCopiado(false), 2000);
   }
 
+  const invitarPorCorreo = (
+    <>
+      <label className="sr-only" htmlFor="invite-email">
+        {t("eventos.email")}
+      </label>
+      <input id="invite-email" className="hyto-input" value={email} placeholder={t("eventos.email")} onChange={(evento) => setEmail(evento.target.value)} />
+      <button
+        type="button"
+        className="hyto-btn-line"
+        disabled={!email.trim()}
+        onClick={() => setConfirmacion({ tipo: "direct", abierto: true })}
+      >
+        {t("eventos.inviteEmail")}
+      </button>
+    </>
+  );
+
   return (
     <div className="hyto-page pb-0">
       <p className="hyto-crumb">
@@ -67,18 +88,7 @@ export function CabeceraEvento({
           <button type="button" className="hyto-btn-line" onClick={() => setConfirmacion({ tipo: "code", abierto: true })}>
             {t("eventos.createCode")}
           </button>
-          <label className="sr-only" htmlFor="invite-email">
-            {t("eventos.email")}
-          </label>
-          <input id="invite-email" className="hyto-input" value={email} placeholder={t("eventos.email")} onChange={(evento) => setEmail(evento.target.value)} />
-          <button
-            type="button"
-            className="hyto-btn-line"
-            disabled={!email.trim()}
-            onClick={() => setConfirmacion({ tipo: "direct", abierto: true })}
-          >
-            {t("eventos.inviteEmail")}
-          </button>
+          {enOrganizacion ? <SelectorContactos proyectoId={id} respaldo={invitarPorCorreo} /> : invitarPorCorreo}
           {secreto ? <p className="break-all font-mono text-2xl font-semibold tracking-wide">{secreto}</p> : null}
           {secreto ? (
             <button type="button" className="hyto-btn-line" onClick={() => void copiar()}>

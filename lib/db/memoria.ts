@@ -2,12 +2,10 @@ import { distanciaHamming } from "@/lib/evidencia/huella";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import type {
-  AvisoComunidad,
-  Comunidad,
-  ComunidadMiembro,
-  ComunidadSolicitud,
-  EstadoSolicitudComunidad,
   EvidenciaFila,
+  Organizacion,
+  OrganizacionAdmin,
+  OrganizacionVoluntario,
   Proyecto,
   ProyectoInvitacion,
   ProyectoMiembro,
@@ -27,10 +25,9 @@ export function crearMemoria(): Almacen {
   const sesiones = new Map<string, SesionFila>();
   const miembros = new Map<string, ProyectoMiembro>();
   const invitaciones = new Map<string, ProyectoInvitacion>();
-  const comunidades = new Map<string, Comunidad>();
-  const miembrosComunidad = new Map<string, ComunidadMiembro>();
-  const solicitudesComunidad = new Map<string, ComunidadSolicitud>();
-  const avisosComunidad = new Map<string, AvisoComunidad>();
+  const organizaciones = new Map<string, Organizacion>();
+  const admins = new Map<string, OrganizacionAdmin>();
+  const voluntarios = new Map<string, OrganizacionVoluntario>();
 
   function claveMiembro(proyectoId: string, usuarioId: string): string {
     return `${proyectoId}:${usuarioId}`;
@@ -264,57 +261,41 @@ export function crearMemoria(): Almacen {
       });
       return { ok: true, proyectoId: invitacion.proyectoId, rol };
     },
-    async listarComunidades() {
-      return [...comunidades.values()];
+    async leerOrganizacion(id) {
+      return organizaciones.get(id) ?? null;
     },
-    async leerComunidad(id) {
-      return comunidades.get(id) ?? null;
+    async crearOrganizacion(organizacion, admin) {
+      organizaciones.set(organizacion.id, organizacion);
+      admins.set(`${admin.organizacionId}:${admin.usuarioId}`, admin);
     },
-    async leerComunidadPorCodigo(codigo) {
-      return [...comunidades.values()].find((comunidad) => comunidad.codigo === codigo) ?? null;
+    async actualizarOrganizacion(id, cambio) {
+      const actual = organizaciones.get(id);
+      if (actual) organizaciones.set(id, { ...actual, ...cambio });
     },
-    async crearComunidad(comunidad) {
-      comunidades.set(comunidad.id, comunidad);
+    async listarAdmins(organizacionId) {
+      return [...admins.values()].filter((admin) => admin.organizacionId === organizacionId);
     },
-    async listarMiembrosComunidad(comunidadId) {
-      return [...miembrosComunidad.values()].filter((miembro) => miembro.comunidadId === comunidadId);
+    async adminsDeUsuario(usuarioId) {
+      return [...admins.values()].filter((admin) => admin.usuarioId === usuarioId);
     },
-    async comunidadesDeUsuario(usuarioId) {
-      return [...miembrosComunidad.values()].filter((miembro) => miembro.usuarioId === usuarioId);
+    async guardarAdmin(admin) {
+      admins.set(`${admin.organizacionId}:${admin.usuarioId}`, admin);
     },
-    async miembroComunidad(comunidadId, usuarioId) {
-      return miembrosComunidad.get(`${comunidadId}:${usuarioId}`) ?? null;
+    async quitarAdmin(organizacionId, usuarioId) {
+      admins.delete(`${organizacionId}:${usuarioId}`);
     },
-    async guardarMiembroComunidad(miembro) {
-      miembrosComunidad.set(`${miembro.comunidadId}:${miembro.usuarioId}`, miembro);
+    async listarVoluntarios(organizacionId) {
+      return [...voluntarios.values()].filter((voluntario) => voluntario.organizacionId === organizacionId);
     },
-    async listarSolicitudesComunidad(comunidadId) {
-      return [...solicitudesComunidad.values()].filter((solicitud) => solicitud.comunidadId === comunidadId);
+    async leerVoluntario(organizacionId, email) {
+      return voluntarios.get(`${organizacionId}:${email.trim().toLowerCase()}`) ?? null;
     },
-    async crearSolicitudComunidad(solicitud) {
-      solicitudesComunidad.set(solicitud.id, solicitud);
+    async guardarVoluntario(voluntario) {
+      const email = voluntario.email.trim().toLowerCase();
+      voluntarios.set(`${voluntario.organizacionId}:${email}`, { ...voluntario, email });
     },
-    async actualizarSolicitudComunidad(id, estado: EstadoSolicitudComunidad) {
-      const actual = solicitudesComunidad.get(id);
-      if (actual) solicitudesComunidad.set(id, { ...actual, estado });
-    },
-    async fijarComunidadProyecto(proyectoId, comunidadId) {
-      const actual = proyectos.get(proyectoId);
-      if (actual) proyectos.set(proyectoId, { ...actual, comunidadId });
-    },
-    async listarAvisosComunidad(comunidadId) {
-      return [...avisosComunidad.values()]
-        .filter((aviso) => aviso.comunidadId === comunidadId)
-        .sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
-    },
-    async crearAvisoComunidad(aviso) {
-      avisosComunidad.set(aviso.id, aviso);
-    },
-    async tomarTarea(id, usuarioId) {
-      const actual = tareas.get(id);
-      if (!actual || actual.miembroId !== "") return false;
-      tareas.set(id, { ...actual, miembroId: usuarioId });
-      return true;
+    async quitarVoluntario(organizacionId, email) {
+      voluntarios.delete(`${organizacionId}:${email.trim().toLowerCase()}`);
     },
   };
 }

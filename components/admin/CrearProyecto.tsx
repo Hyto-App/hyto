@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
@@ -64,7 +64,14 @@ function filaNueva(): Fila {
   };
 }
 
-export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
+export function CrearProyecto({
+  saldo = null,
+  organizaciones = [],
+}: {
+  saldo?: string | null;
+  /** Organizations where the creator is an admin. Empty with the flag off. */
+  organizaciones?: readonly { id: string; nombre: string }[];
+}) {
   const router = useRouter();
   const modoDemo = useModoDemo();
   const t = useTexto();
@@ -78,6 +85,23 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
   const [portada, setPortada] = useState<File | null>(null);
   const [contextoAbiertoPorUsuario, setContextoAbiertoPorUsuario] = useState(false);
   const [creadoId, setCreadoId] = useState<string | null>(null);
+  const [organizacionId, setOrganizacionId] = useState("");
+  const [sugeridos, setSugeridos] = useState<{ email: string; nombre: string | null }[]>([]);
+
+  useEffect(() => {
+    setSugeridos([]);
+    if (!organizacionId) return;
+    let vigente = true;
+    void fetch(`/api/organizaciones/${encodeURIComponent(organizacionId)}/contactos`, { cache: "no-store" })
+      .then(async (respuesta) => (respuesta.ok ? ((await respuesta.json()) as { contactos?: { email: string; nombre: string | null }[] }) : null))
+      .catch(() => null)
+      .then((cuerpo) => {
+        if (vigente) setSugeridos(cuerpo?.contactos ?? []);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [organizacionId]);
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
     setFilas((actuales) => actuales.map((fila) => (fila.clave === clave ? { ...fila, ...cambio } : fila)));
@@ -138,7 +162,13 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
       respuesta = await fetch("/api/proyectos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre: nombreLimpio, descripcion: descripcion.trim(), contextoIa: contextoIa.trim(), tareas: payload }),
+        body: JSON.stringify({
+          nombre: nombreLimpio,
+          descripcion: descripcion.trim(),
+          contextoIa: contextoIa.trim(),
+          tareas: payload,
+          ...(organizacionId ? { organizacionId } : {}),
+        }),
       });
     } catch {
       setAviso("Could not reach the server. Check your connection and try again.");
@@ -196,6 +226,31 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               onChange={(evento) => setNombre(evento.target.value)}
               className="hyto-input mt-2"
             />
+
+            {organizaciones.length > 0 ? (
+              <div className="mt-6">
+                <label className="block text-sm text-[var(--suave)]" htmlFor="organizacion-proyecto">
+                  {t("organizaciones.organizacion")}
+                </label>
+                <select
+                  id="organizacion-proyecto"
+                  value={organizacionId}
+                  onChange={(evento) => setOrganizacionId(evento.target.value)}
+                  className="hyto-input mt-2"
+                  aria-describedby="organizacion-ayuda"
+                >
+                  <option value="">{t("organizaciones.sinOrganizacion")}</option>
+                  {organizaciones.map((organizacion) => (
+                    <option key={organizacion.id} value={organizacion.id}>
+                      {organizacion.nombre}
+                    </option>
+                  ))}
+                </select>
+                <p id="organizacion-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+                  {t("organizaciones.organizacionAyuda")}
+                </p>
+              </div>
+            ) : null}
 
             <div className="mt-6">
               <ZonaPortada
@@ -351,6 +406,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
                   value={fila.asignado}
                   onChange={(evento) => cambiar(fila.clave, { asignado: evento.target.value })}
                   className="hyto-input mt-2"
+                  list={sugeridos.length > 0 ? "sugeridos-asignado" : undefined}
                 />
                 {filas.length > 1 ? (
                   <button
@@ -364,6 +420,14 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               </fieldset>
             ))}
           </div>
+
+          {sugeridos.length > 0 ? (
+            <datalist id="sugeridos-asignado">
+              {sugeridos.map((contacto) => (
+                <option key={contacto.email} value={contacto.email} label={contacto.nombre ?? undefined} />
+              ))}
+            </datalist>
+          ) : null}
 
           <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="hyto-btn-line is-inline mt-4 px-5">
             {t("eventos.addTask")}

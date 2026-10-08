@@ -32,49 +32,37 @@ export type Proyecto = {
   descripcion?: string | null;
   /** Only the AI reviewers read this. Never put it in a route response. */
   contextoIa?: string | null;
-  /** Set only when HYTO_COMUNIDADES is on. Null keeps the event on its own. */
-  comunidadId?: string | null;
+  /** Set only when HYTO_ORGANIZACIONES is on. Null keeps the event on its own. */
+  organizacionId?: string | null;
 };
 
-export type VisibilidadComunidad = "publica" | "privada";
-export type RolComunidad = "admin" | "miembro";
-export type EstadoSolicitudComunidad = "pendiente" | "aprobada" | "rechazada";
-
-export type Comunidad = {
+export type Organizacion = {
   id: string;
   nombre: string;
   descripcion: string;
-  fotoUrl: string | null;
-  visibilidad: VisibilidadComunidad;
-  codigo: string;
+  etiquetas: string[];
   creadoEn: string;
   creadorId: string;
 };
 
-export type ComunidadMiembro = {
-  comunidadId: string;
+export type OrganizacionAdmin = {
+  organizacionId: string;
   usuarioId: string;
-  rol: RolComunidad;
   creadoEn: string;
 };
 
-export type ComunidadSolicitud = {
-  id: string;
-  comunidadId: string;
-  usuarioId: string;
-  estado: EstadoSolicitudComunidad;
-  creadoEn: string;
-};
+export type OrigenContacto = "manual" | "evento" | "invitacion";
 
-export type TipoAviso = "disponible" | "asignada" | "completada";
-
-export type AvisoComunidad = {
-  id: string;
-  comunidadId: string;
-  tipo: TipoAviso;
-  titulo: string;
+/** A volunteer contact of one organization. The email is always lowercase. */
+export type OrganizacionVoluntario = {
+  organizacionId: string;
+  email: string;
+  usuarioId: string | null;
   nombre: string | null;
-  tareaId: string | null;
+  etiquetas: string[];
+  origen: OrigenContacto;
+  participaciones: number;
+  ultimaParticipacion: string | null;
   creadoEn: string;
 };
 

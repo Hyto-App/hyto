@@ -15,24 +15,24 @@ test("producción sin URL detiene el deploy y un preview sin URL sigue", () => {
 });
 
 test("un deploy de Vercel migra solo el host de su DATABASE_URL y no enciende features", () => {
-  const previo = process.env.HYTO_COMUNIDADES;
-  delete process.env.HYTO_COMUNIDADES;
+  const previo = process.env.HYTO_ORGANIZACIONES;
+  delete process.env.HYTO_ORGANIZACIONES;
   try {
     const decision = decidirMigracionDeploy({
       VERCEL: "1",
       VERCEL_ENV: "production",
       DATABASE_URL: URL,
-      HYTO_COMUNIDADES: "on",
+      HYTO_ORGANIZACIONES: "on",
     });
     assert.equal(decision.accion, "migrar");
     if (decision.accion !== "migrar") return;
     assert.equal(decision.host, "ep-hyto.us-east-2.aws.neon.tech");
     assert.equal(decision.url.includes("clave"), true);
-    assert.equal(process.env.HYTO_COMUNIDADES, undefined);
+    assert.equal(process.env.HYTO_ORGANIZACIONES, undefined);
     const texto = JSON.stringify({ accion: decision.accion, host: decision.host });
     assert.equal(texto.includes("clave"), false);
   } finally {
-    if (previo === undefined) delete process.env.HYTO_COMUNIDADES;
-    else process.env.HYTO_COMUNIDADES = previo;
+    if (previo === undefined) delete process.env.HYTO_ORGANIZACIONES;
+    else process.env.HYTO_ORGANIZACIONES = previo;
   }
 });

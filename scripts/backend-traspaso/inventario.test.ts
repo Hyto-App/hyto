@@ -16,10 +16,10 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.deepEqual(inventario.comparacionSqlYDrizzle.diferencias, []);
   assert.deepEqual(
     inventario.tablas.map((tabla) => tabla.nombre),
-    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "comunidades", "comunidad_miembros", "comunidad_solicitudes", "comunidad_avisos"],
+    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "organizaciones", "organizacion_admins", "organizacion_voluntarios"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 16);
+  assert.equal(inventario.relaciones.length, 14);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);
@@ -45,21 +45,27 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.equal(proyectoId?.claveForanea?.onDeleteEnDrizzle, "no action");
   assert.equal(proyectoId?.claveForanea?.nombreEnNeon, "confirmar con Esteban");
 
+  // Each index is listed twice: once from the SQL and once from schema.ts.
+  const indicesEsperados: Record<string, string[]> = {
+    evidencias: ["evidencias_phash_idx", "evidencias_sha256_idx"],
+    organizacion_admins: ["organizacion_admins_usuario_idx"],
+    organizacion_voluntarios: ["organizacion_voluntarios_usuario_idx"],
+    proyectos: ["proyectos_organizacion_idx"],
+  };
   for (const tabla of inventario.tablas) {
-    if (tabla.nombre === "evidencias") {
-      assert.deepEqual(
-        tabla.indices.map((indice) => indice.nombre).sort(),
-        ["evidencias_phash_idx", "evidencias_sha256_idx", "evidencias_phash_idx", "evidencias_sha256_idx"].sort(),
-      );
-    } else {
-      assert.equal(tabla.indices.length, 0);
-    }
+    const esperados = indicesEsperados[tabla.nombre] ?? [];
+    assert.deepEqual(
+      tabla.indices.map((indice) => indice.nombre).sort(),
+      [...esperados, ...esperados].sort(),
+    );
     assert.equal(tabla.llavePrimaria.createIndexEnLaMigracion, false);
     assert.equal(tabla.llavePrimaria.nombreEnNeon, "confirmar con Esteban");
     for (const columna of tabla.columnas) {
-      const entero = columna.nombre === "max_usos" || columna.nombre === "usos";
-      assert.equal(columna.tipoSql, entero ? "integer" : "text");
-      assert.equal(columna.tipoDrizzle, entero ? "integer" : "text");
+      const entero = columna.nombre === "max_usos" || columna.nombre === "usos" || columna.nombre === "participaciones";
+      const lista = columna.nombre === "etiquetas" && tabla.nombre.startsWith("organizacion");
+      const tipo = entero ? "integer" : lista ? "text[]" : "text";
+      assert.equal(columna.tipoSql, tipo);
+      assert.equal(columna.tipoDrizzle, tipo);
     }
   }
 

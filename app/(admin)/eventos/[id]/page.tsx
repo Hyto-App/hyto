@@ -6,6 +6,7 @@ import { ContextoEvento } from "@/components/integrante/ContextoEvento";
 import { tareasVisibles } from "@/lib/api/alcance";
 import { datosPublicosDeEvento } from "@/lib/api/contexto-evento";
 import { almacenNeon } from "@/lib/db/neon";
+import { correoSegun, veCorreosDelEvento } from "@/lib/organizaciones/contactos";
 import { personaVisible } from "@/lib/perfil/vista";
 import { exigirEvento, exigirPagina, visorDeSesion } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
@@ -25,13 +26,15 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
   const rol = propio.rol;
   if (rol === "organizer") {
     const usuarios = await almacen.listarUsuarios();
+    const veCorreos = await veCorreosDelEvento(almacen, proyecto, sesion.usuarioId);
     const personas = miembros
       .filter((miembro) => miembro.estado === "active")
-      .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId));
+      .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId))
+      .map((persona) => ({ ...persona, email: persona.usuarioId === sesion.usuarioId ? persona.email : correoSegun(persona.email, veCorreos) }));
     const publicoOrganizador = datosPublicosDeEvento(proyecto);
     return (
       <>
-        <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" />
+        <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" enOrganizacion={Boolean(proyecto.organizacionId)} />
         <div className="hyto-page pb-0 pt-0">
           <ContextoEvento
             proyectoId={proyecto.id}

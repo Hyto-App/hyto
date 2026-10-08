@@ -131,18 +131,11 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
-    nombre: "HYTO_COMUNIDADES",
+    nombre: "HYTO_ORGANIZACIONES",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on turns on communities (a group in Latin America that holds events). Stellar is the settlement rail, not the audience. Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
-  },
-  {
-    nombre: "HYTO_TABLON",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on turns on the community bulletin (task available, assigned, or done). Also needs HYTO_COMUNIDADES=on. Unset or anything else keeps the app as it is. Do not turn this on until migrations 0010 and 0013 are applied.",
+    para: "Exact value on turns on organizations (the company or community that owns events and keeps its own list of volunteers). Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
   },
   {
     nombre: "HYTO_TIPO_CUENTA",

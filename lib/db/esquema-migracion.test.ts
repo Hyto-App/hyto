@@ -29,6 +29,8 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
     "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
     "Hay un CHECK en proyecto_invitaciones que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en organizacion_voluntarios que este script no compara. Confirmar con Esteban.",
+    "Hay un CHECK en organizacion_voluntarios que este script no compara. Confirmar con Esteban.",
   ]);
   assert.deepEqual(esperado.archivos, [
     "0000_inicio.sql",
@@ -40,10 +42,9 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0006_prioridad_dificultad.sql",
     "0007_requisitos_rechazo.sql",
     "0009_contexto_evento.sql",
-    "0010_comunidades.sql",
+    "0010_organizaciones.sql",
     "0011_tipo_cuenta.sql",
     "0012_perfil_voluntario.sql",
-    "0013_tablon.sql",
   ]);
   assert.deepEqual(esperado.tablas, [
     "usuarios",
@@ -54,12 +55,11 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "sesiones",
     "proyecto_miembros",
     "proyecto_invitaciones",
-    "comunidades",
-    "comunidad_miembros",
-    "comunidad_solicitudes",
-    "comunidad_avisos",
+    "organizaciones",
+    "organizacion_admins",
+    "organizacion_voluntarios",
   ]);
-  assert.equal(esperado.columnas.length, 106);
+  assert.equal(esperado.columnas.length, 100);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -82,14 +82,12 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "proyecto_miembros.usuario_id→usuarios.id",
       "proyecto_invitaciones.proyecto_id→proyectos.id",
       "proyecto_invitaciones.creado_por→usuarios.id",
-      "comunidades.creador_id→usuarios.id",
-      "comunidad_miembros.comunidad_id→comunidades.id",
-      "comunidad_miembros.usuario_id→usuarios.id",
-      "comunidad_solicitudes.comunidad_id→comunidades.id",
-      "comunidad_solicitudes.usuario_id→usuarios.id",
-      "proyectos.comunidad_id→comunidades.id",
-      "comunidad_avisos.comunidad_id→comunidades.id",
-      "comunidad_avisos.tarea_id→tareas.id",
+      "organizaciones.creador_id→usuarios.id",
+      "organizacion_admins.organizacion_id→organizaciones.id",
+      "organizacion_admins.usuario_id→usuarios.id",
+      "organizacion_voluntarios.organizacion_id→organizaciones.id",
+      "organizacion_voluntarios.usuario_id→usuarios.id",
+      "proyectos.organizacion_id→organizaciones.id",
     ],
   );
   assert.equal(
@@ -104,13 +102,13 @@ test("la migración real declara las seis tablas y las relaciones que el código
   assert.deepEqual(esperado.uniques, [
     { tabla: "usuarios", columnas: ["email"] },
     { tabla: "proyecto_invitaciones", columnas: ["secreto_hash"] },
-    { tabla: "comunidades", columnas: ["codigo"] },
   ]);
   assert.deepEqual(
     esperado.primaryKeys.map((grupo) => `${grupo.tabla}:${grupo.columnas.join(",")}`),
     [
       "proyecto_miembros:proyecto_id,usuario_id",
-      "comunidad_miembros:comunidad_id,usuario_id",
+      "organizacion_admins:organizacion_id,usuario_id",
+      "organizacion_voluntarios:organizacion_id,email",
       "usuarios:id",
       "proyectos:id",
       "tareas:id",
@@ -118,14 +116,15 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "veredictos:id",
       "sesiones:token",
       "proyecto_invitaciones:id",
-      "comunidades:id",
-      "comunidad_solicitudes:id",
-      "comunidad_avisos:id",
+      "organizaciones:id",
     ],
   );
   assert.deepEqual(esperado.indices, [
     { nombre: "evidencias_sha256_idx", tabla: "evidencias" },
     { nombre: "evidencias_phash_idx", tabla: "evidencias" },
+    { nombre: "organizacion_admins_usuario_idx", tabla: "organizacion_admins" },
+    { nombre: "organizacion_voluntarios_usuario_idx", tabla: "organizacion_voluntarios" },
+    { nombre: "proyectos_organizacion_idx", tabla: "proyectos" },
   ]);
   const estado = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "estado");
   const condicion = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "condicion");

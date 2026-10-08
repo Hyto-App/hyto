@@ -16,13 +16,12 @@ process.env.CAVOS_JWT_ISSUER = EMISOR;
 delete process.env.CAVOS_JWT_AUDIENCE;
 delete process.env.CAVOS_JWKS_URL;
 delete process.env.HYTO_PERMITIR_JWT_SIN_FIRMA;
-delete process.env.HYTO_COMUNIDADES;
+delete process.env.HYTO_ORGANIZACIONES;
 delete process.env.HYTO_TIPO_CUENTA;
 delete process.env.HYTO_PERFIL_VOLUNTARIO;
-delete process.env.HYTO_TABLON;
 
 const COLUMNAS_NUEVAS =
-  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id)\b/;
+  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|organizaciones|organizacion_admins|organizacion_voluntarios|organizacion_id)\b/;
 
 type Fila = Record<string, unknown>;
 
@@ -110,7 +109,7 @@ function pedido(email: string, intencion: "signup" | "signin") {
   });
 }
 
-test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", async () => {
+test("el alta y el ingreso crean la sesión sin las columnas de 0010–0012", async () => {
   const { almacen, consultas, usuarios, sesiones } = ledgerSinMigrar();
   usuarios.push({ id: "u-viejo", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
 
@@ -158,8 +157,7 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
 test("el ingreso no nombra columnas de features aunque el interruptor esté encendido", async () => {
   process.env.HYTO_TIPO_CUENTA = "on";
   process.env.HYTO_PERFIL_VOLUNTARIO = "on";
-  process.env.HYTO_COMUNIDADES = "on";
-  process.env.HYTO_TABLON = "on";
+  process.env.HYTO_ORGANIZACIONES = "on";
   try {
     const { almacen, consultas, usuarios } = ledgerSinMigrar();
     usuarios.push({ id: "u-viejo", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario" });
@@ -170,7 +168,6 @@ test("el ingreso no nombra columnas de features aunque el interruptor esté ence
   } finally {
     delete process.env.HYTO_TIPO_CUENTA;
     delete process.env.HYTO_PERFIL_VOLUNTARIO;
-    delete process.env.HYTO_COMUNIDADES;
-    delete process.env.HYTO_TABLON;
+    delete process.env.HYTO_ORGANIZACIONES;
   }
 });

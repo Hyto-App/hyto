@@ -18,7 +18,6 @@ import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
 import { anclaDeXdr, esAltaDeFabrica, leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
-import { avisarCompletada } from "@/lib/tablon/publicar";
 import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
@@ -416,7 +415,6 @@ async function guardarResultado(
   const liberado = await sondearEscrow(tarea.contratoEscrow, hitoLiberado, sondeo);
   if (!liberado) return { aviso: AVISO_LIBERACION_ATRASADA, estadoHttp: 200 };
   await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
-  await avisarCompletada(almacen, tarea.id);
   return { aviso: null, estadoHttp: 200 };
 }
 
@@ -471,7 +469,6 @@ export async function conciliarPagoPendiente(
   const liberado = await sondearEscrow(tarea.contratoEscrow, hitoLiberado, sondeo);
   if (!liberado) return false;
   await almacen.actualizarTarea(tarea.id, { estado: "pagado" });
-  await avisarCompletada(almacen, tarea.id);
   return true;
 }
 

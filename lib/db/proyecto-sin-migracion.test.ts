@@ -3,15 +3,15 @@ import test from "node:test";
 import { drizzle as drizzleProxy, type RemoteCallback } from "drizzle-orm/pg-proxy";
 import { contextoParaRevision } from "@/lib/api/contexto-evento";
 import { crearProyectoHttp, leerProyectoHttp } from "@/lib/api/proyectos";
+import { registrarInvitado, registrarParticipacion } from "@/lib/organizaciones/contactos";
 import { crearAlmacenDesde, type DbAlmacen } from "./neon";
 
-delete process.env.HYTO_COMUNIDADES;
+delete process.env.HYTO_ORGANIZACIONES;
 delete process.env.HYTO_TIPO_CUENTA;
 delete process.env.HYTO_PERFIL_VOLUNTARIO;
-delete process.env.HYTO_TABLON;
 
 const COLUMNAS_NUEVAS =
-  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id)\b/;
+  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|organizaciones|organizacion_admins|organizacion_voluntarios|organizacion_id)\b/;
 
 const WALLET = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
@@ -67,7 +67,7 @@ function ledgerSinMigrar() {
   const callback: RemoteCallback = async (consulta, params) => {
     consultas.push(consulta);
     if (COLUMNAS_NUEVAS.test(consulta)) {
-      throw Object.assign(new Error(`column or table from 0010–0013 is not on this ledger: ${consulta}`), { code: "42703" });
+      throw Object.assign(new Error(`column or table from 0010–0012 is not on this ledger: ${consulta}`), { code: "42703" });
     }
     const texto = consulta.replace(/\s+/g, " ").trim();
     const bajo = texto.toLowerCase();
@@ -114,46 +114,37 @@ function ledgerSinMigrar() {
   return { consultas, almacen: crearAlmacenDesde(db as unknown as DbAlmacen) };
 }
 
-test("crear un evento y leerlo no nombra columnas ni tablas de 0010–0013", async () => {
+test("crear un evento y leerlo no nombra columnas ni tablas de 0010–0012", async () => {
   const { almacen, consultas } = ledgerSinMigrar();
   const antes = consultas.length;
-  assert.deepEqual(await almacen.listarComunidades(), []);
-  assert.equal(await almacen.leerComunidad("c1"), null);
-  assert.equal(await almacen.leerComunidadPorCodigo("HYTO"), null);
-  await almacen.crearComunidad({
-    id: "c1",
-    nombre: "Norte",
-    descripcion: "",
-    fotoUrl: null,
-    visibilidad: "publica",
-    codigo: "HYTO",
-    creadoEn: new Date().toISOString(),
-    creadorId: "org-1",
-  });
-  assert.deepEqual(await almacen.listarMiembrosComunidad("c1"), []);
-  assert.deepEqual(await almacen.comunidadesDeUsuario("org-1"), []);
-  assert.equal(await almacen.miembroComunidad("c1", "org-1"), null);
-  await almacen.guardarMiembroComunidad({ comunidadId: "c1", usuarioId: "org-1", rol: "admin", creadoEn: new Date().toISOString() });
-  assert.deepEqual(await almacen.listarSolicitudesComunidad("c1"), []);
-  await almacen.crearSolicitudComunidad({
-    id: "s1",
-    comunidadId: "c1",
-    usuarioId: "org-1",
-    estado: "pendiente",
-    creadoEn: new Date().toISOString(),
-  });
-  await almacen.actualizarSolicitudComunidad("s1", "aprobada");
-  await almacen.fijarComunidadProyecto("p1", "c1");
-  assert.deepEqual(await almacen.listarAvisosComunidad("c1"), []);
-  await almacen.crearAvisoComunidad({
-    id: "a1",
-    comunidadId: "c1",
-    tipo: "disponible",
-    titulo: "Cajas",
+  const ahora = new Date().toISOString();
+  assert.equal(await almacen.leerOrganizacion("o1"), null);
+  await almacen.crearOrganizacion(
+    { id: "o1", nombre: "Norte", descripcion: "", etiquetas: [], creadoEn: ahora, creadorId: "org-1" },
+    { organizacionId: "o1", usuarioId: "org-1", creadoEn: ahora },
+  );
+  await almacen.actualizarOrganizacion("o1", { nombre: "Sur" });
+  assert.deepEqual(await almacen.listarAdmins("o1"), []);
+  assert.deepEqual(await almacen.adminsDeUsuario("org-1"), []);
+  await almacen.guardarAdmin({ organizacionId: "o1", usuarioId: "org-2", creadoEn: ahora });
+  await almacen.quitarAdmin("o1", "org-2");
+  assert.deepEqual(await almacen.listarVoluntarios("o1"), []);
+  assert.equal(await almacen.leerVoluntario("o1", "ana@example.com"), null);
+  await almacen.guardarVoluntario({
+    organizacionId: "o1",
+    email: "ana@example.com",
+    usuarioId: null,
     nombre: null,
-    tareaId: null,
-    creadoEn: new Date().toISOString(),
+    etiquetas: [],
+    origen: "manual",
+    participaciones: 0,
+    ultimaParticipacion: null,
+    creadoEn: ahora,
   });
+  await almacen.quitarVoluntario("o1", "ana@example.com");
+  // The join and invite hooks also stay quiet with the flag off.
+  await registrarParticipacion(almacen, "p1", "u1", false);
+  await registrarInvitado(almacen, "p1", "ana@example.com");
   assert.equal(consultas.length, antes);
 
   const creado = await crearProyectoHttp(
@@ -221,8 +212,8 @@ test("el contexto para la IA se escribe y se lee en contexto_ia", async () => {
   assert.match(consultas.join("\n"), /update "proyectos" set "contexto_ia"/);
 });
 
-test("con comunidades encendidas el alta nombra comunidad_id", async () => {
-  process.env.HYTO_COMUNIDADES = "on";
+test("con organizaciones encendidas el alta nombra organizacion_id", async () => {
+  process.env.HYTO_ORGANIZACIONES = "on";
   try {
     const consultas: string[] = [];
     const db = drizzleProxy(async (consulta) => {
@@ -236,12 +227,12 @@ test("con comunidades encendidas el alta nombra comunidad_id", async () => {
         nombre: "Feria",
         creadoEn: new Date().toISOString(),
         organizadorId: null,
-        comunidadId: "c1",
+        organizacionId: "o1",
       },
       [],
     );
-    assert.match(consultas[0] ?? "", /"comunidad_id"/);
+    assert.match(consultas[0] ?? "", /"organizacion_id"/);
   } finally {
-    delete process.env.HYTO_COMUNIDADES;
+    delete process.env.HYTO_ORGANIZACIONES;
   }
 });

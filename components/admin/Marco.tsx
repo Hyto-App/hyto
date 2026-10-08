@@ -14,13 +14,13 @@ import type { Clave } from "@/lib/ui/diccionario";
 import { idNavOrganizador, muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 import { destinoVolver } from "@/lib/ui/volver";
 
-type Seccion = "tareas" | "eventos" | "bandeja" | "informe" | "tareasEvento" | "unirme" | "cuenta" | "comunidades";
+type Seccion = "tareas" | "eventos" | "bandeja" | "informe" | "tareasEvento" | "unirme" | "cuenta" | "organizaciones";
 type IconoNav = "tasks" | "projects" | "plus" | "inbox" | "report";
 
 /** Which section the route belongs to (`/join*` is Join, not Account). */
 export function seccionDe(ruta: string): Seccion | null {
   if (ruta.startsWith("/join")) return "unirme";
-  if (ruta.startsWith("/comunidades")) return "comunidades";
+  if (ruta.startsWith("/organizaciones")) return "organizaciones";
   if (ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas")) return "tareas";
   if (ruta.startsWith("/cuentas") || ruta.startsWith("/configuracion")) return "cuenta";
   if (ruta === "/informe" || /\/informe\/?$/.test(ruta)) return "informe";
@@ -59,13 +59,13 @@ export function Marco({
   children,
   usuario,
   eventosOrganizados = [],
-  mostrarComunidades = false,
+  mostrarOrganizaciones = false,
 }: {
   children: ReactNode;
   demoHabilitado?: boolean;
   usuario?: UsuarioMarco | null;
   eventosOrganizados?: readonly string[];
-  mostrarComunidades?: boolean;
+  mostrarOrganizaciones?: boolean;
 }) {
   const t = useTexto();
   const ruta = usePathname();
@@ -74,13 +74,13 @@ export function Marco({
   const organiza = muestraNavOrganizador(eventosOrganizados, demoOrganizador);
   const eventoId = idNavOrganizador(ruta, eventosOrganizados, demoOrganizador);
   const propios = organiza && eventoId ? enlacesOrganizador(eventoId) : [];
-  const enlaceComunidades: EnlaceNavDato | null = mostrarComunidades
-    ? { seccion: "comunidades", href: "/comunidades", clave: "nav.communities", icono: "projects" }
+  const enlaceOrganizaciones: EnlaceNavDato | null = mostrarOrganizaciones
+    ? { seccion: "organizaciones", href: "/organizaciones", clave: "nav.organizations", icono: "projects" }
     : null;
   const trabajoBase = organiza ? TRABAJO.filter((enlace) => enlace.seccion !== "eventos") : TRABAJO;
   const movilBase = propios.length > 0 ? [...propios, ...MOVIL.filter((enlace) => enlace.seccion !== "eventos")] : MOVIL;
-  const trabajo = enlaceComunidades ? [...trabajoBase, enlaceComunidades] : trabajoBase;
-  const movil = enlaceComunidades ? [...movilBase, enlaceComunidades] : movilBase;
+  const trabajo = enlaceOrganizaciones ? [...trabajoBase, enlaceOrganizaciones] : trabajoBase;
+  const movil = enlaceOrganizaciones ? [...movilBase, enlaceOrganizaciones] : movilBase;
   const actual = seccionDe(ruta);
   const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento";
   const foco = ruta.startsWith("/revision") || ruta.startsWith("/tareas");

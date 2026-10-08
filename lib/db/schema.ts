@@ -16,32 +16,41 @@ export const usuarios = pgTable("usuarios", {
   etiquetas: text("etiquetas"),
 });
 
-// A community is an organization. It does not replace the per-event role.
-export const comunidades = pgTable("comunidades", {
+// An organization owns events and keeps its own list of volunteers (contacts).
+// It does not replace the per-event role. Only read when HYTO_ORGANIZACIONES is on.
+export const organizaciones = pgTable("organizaciones", {
   id: text("id").primaryKey(),
   nombre: text("nombre").notNull(),
   descripcion: text("descripcion").notNull().default(""),
-  fotoUrl: text("foto_url"),
-  visibilidad: text("visibilidad").notNull().default("publica"),
-  codigo: text("codigo").notNull().unique(),
+  etiquetas: text("etiquetas").array().notNull().default([]),
   creadoEn: text("creado_en").notNull(),
   creadorId: text("creador_id").notNull().references(() => usuarios.id),
 });
 
-export const comunidadMiembros = pgTable("comunidad_miembros", {
-  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
+export const organizacionAdmins = pgTable("organizacion_admins", {
+  organizacionId: text("organizacion_id").notNull().references(() => organizaciones.id, { onDelete: "cascade" }),
   usuarioId: text("usuario_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
-  rol: text("rol").notNull(),
   creadoEn: text("creado_en").notNull(),
-}, (tabla) => [primaryKey({ columns: [tabla.comunidadId, tabla.usuarioId] })]);
+}, (tabla) => [
+  primaryKey({ columns: [tabla.organizacionId, tabla.usuarioId] }),
+  index("organizacion_admins_usuario_idx").on(tabla.usuarioId),
+]);
 
-export const comunidadSolicitudes = pgTable("comunidad_solicitudes", {
-  id: text("id").primaryKey(),
-  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
-  usuarioId: text("usuario_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
-  estado: text("estado").notNull().default("pendiente"),
+// Contacts are keyed by organization and lowercased email. Only that organization's admins read them.
+export const organizacionVoluntarios = pgTable("organizacion_voluntarios", {
+  organizacionId: text("organizacion_id").notNull().references(() => organizaciones.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  usuarioId: text("usuario_id").references(() => usuarios.id, { onDelete: "set null" }),
+  nombre: text("nombre"),
+  etiquetas: text("etiquetas").array().notNull().default([]),
+  origen: text("origen").notNull().default("manual"),
+  participaciones: integer("participaciones").notNull().default(0),
+  ultimaParticipacion: text("ultima_participacion"),
   creadoEn: text("creado_en").notNull(),
-});
+}, (tabla) => [
+  primaryKey({ columns: [tabla.organizacionId, tabla.email] }),
+  index("organizacion_voluntarios_usuario_idx").on(tabla.usuarioId),
+]);
 
 // Quien crea el proyecto queda en organizador_id. El rol global de usuarios
 // no autoriza el escrow ni la revisión de ese proyecto.
@@ -54,9 +63,9 @@ export const proyectos = pgTable("proyectos", {
   portada: text("portada"),
   descripcion: text("descripcion"),
   contextoIa: text("contexto_ia"),
-  // Null keeps the event on its own. Only read when HYTO_COMUNIDADES is on.
-  comunidadId: text("comunidad_id").references(() => comunidades.id, { onDelete: "set null" }),
-});
+  // Null keeps the event on its own. Only read when HYTO_ORGANIZACIONES is on.
+  organizacionId: text("organizacion_id").references(() => organizaciones.id, { onDelete: "set null" }),
+}, (tabla) => [index("proyectos_organizacion_idx").on(tabla.organizacionId)]);
 
 export const tareas = pgTable("tareas", {
   id: text("id").primaryKey(),
@@ -81,17 +90,6 @@ export const tareas = pgTable("tareas", {
   requisitos: text("requisitos"),
   // JSON { nota, fallidos, en, origen, intento, puntaje, nota_mile, resultados }.
   rechazo: text("rechazo"),
-});
-
-// Read-only system notices. Only read when HYTO_TABLON is on.
-export const comunidadAvisos = pgTable("comunidad_avisos", {
-  id: text("id").primaryKey(),
-  comunidadId: text("comunidad_id").notNull().references(() => comunidades.id, { onDelete: "cascade" }),
-  tipo: text("tipo").notNull(),
-  titulo: text("titulo").notNull(),
-  nombre: text("nombre"),
-  tareaId: text("tarea_id").references(() => tareas.id, { onDelete: "set null" }),
-  creadoEn: text("creado_en").notNull(),
 });
 
 export const evidencias = pgTable("evidencias", {

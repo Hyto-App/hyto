@@ -249,7 +249,14 @@ function parsearTipo(cursor: Cursor): string {
     break;
   }
   if (partes.length === 0) throw new Error("falta el tipo de la columna");
-  return partes.join(" ").replaceAll(" (", "(");
+  // text[] is an array of the base type.
+  let arreglo = "";
+  while (cursor.verSimbolo("[")) {
+    cursor.tomar();
+    cursor.esperarSimbolo("]");
+    arreglo += "[]";
+  }
+  return partes.join(" ").replaceAll(" (", "(") + arreglo;
 }
 
 function leerDefault(cursor: Cursor): DefaultSql {

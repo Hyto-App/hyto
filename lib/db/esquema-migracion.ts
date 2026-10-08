@@ -419,7 +419,8 @@ function leerTipo(texto: string): { tipo: string; resto: string } | null {
     /^double\s+precision\b/i,
     /^character\s+varying\b(?:\s*\(\s*\d+\s*\))?/i,
     /^character\b(?:\s*\(\s*\d+\s*\))?/i,
-    /^(?:varchar|char|text|integer|int|bigint|smallint|boolean|bool|numeric|decimal|real|uuid|jsonb|json|bytea|date|smallserial|bigserial|serial)\b(?:\s*\([^)]*\))?/i,
+    // text[] is an array: information_schema reports it as ARRAY with udt _text.
+    /^(?:varchar|char|text|integer|int|bigint|smallint|boolean|bool|numeric|decimal|real|uuid|jsonb|json|bytea|date|smallserial|bigserial|serial)\b(?:\s*\([^)]*\))?(?:\s*\[\s*\])*/i,
   ];
   for (const patron of patrones) {
     const match = patron.exec(texto);

@@ -10,9 +10,9 @@ import {
 } from "./aviso-base";
 
 test("una columna o tabla ausente es una migración, no un corte de red", () => {
-  const columna = Object.assign(new Error('column "comunidad_id" of relation "proyectos" does not exist'), { code: "42703" });
+  const columna = Object.assign(new Error('column "organizacion_id" of relation "proyectos" does not exist'), { code: "42703" });
   assert.deepEqual(clasificarFalloBase(columna), { clase: "esquema", aviso: AVISO_BASE_ESQUEMA, status: 503 });
-  const tabla = Object.assign(new Error('relation "comunidades" does not exist'), { code: "42P01" });
+  const tabla = Object.assign(new Error('relation "organizaciones" does not exist'), { code: "42P01" });
   assert.equal(clasificarFalloBase(tabla)?.clase, "esquema");
 });
 

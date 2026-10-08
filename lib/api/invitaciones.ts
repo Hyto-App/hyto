@@ -2,6 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Almacen } from "@/lib/db/almacen";
 import type { ProyectoInvitacion, RolInvitacion, TipoInvitacion } from "@/lib/db/tipos";
 import { anotarFalloCanje, canjeBloqueado, clienteDe } from "@/lib/escrow/limite";
+import { organizacionesActivas } from "@/lib/organizaciones/bandera";
+import { registrarInvitado, registrarParticipacion } from "@/lib/organizaciones/contactos";
 import { json } from "./json";
 
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -62,6 +64,7 @@ export async function crearInvitacionHttp(
     creadoEn: ahora.toISOString(),
   };
   await almacen.crearInvitacion(fila);
+  if (pedido.tipo === "direct") await registrarInvitado(almacen, proyectoId, pedido.email);
   return json({ secreto, tipo: fila.tipo, rol: fila.rol, expiraEn: fila.expiraEn, maxUsos: fila.maxUsos }, 201);
 }
 
@@ -78,8 +81,11 @@ export async function canjearInvitacionHttp(request: Request, almacen: Almacen, 
   if (claves.some((clave) => canjeBloqueado(clave))) {
     return json({ aviso: "Too many failed codes. Wait 15 minutes and try again." }, 429);
   }
+  const secretoHash = hashSecreto(secreto);
+  // Read before redeeming: the first join of each event is the one that counts for an organization.
+  const yaEraMiembro = organizacionesActivas() ? await eraMiembro(almacen, secretoHash, usuarioId) : true;
   const resultado = await almacen.canjearInvitacion({
-    secretoHash: hashSecreto(secreto),
+    secretoHash,
     usuarioId,
     email,
     ahora: new Date().toISOString(),
@@ -88,7 +94,15 @@ export async function canjearInvitacionHttp(request: Request, almacen: Almacen, 
     for (const clave of claves) anotarFalloCanje(clave);
     return json({ aviso: avisoCanje(resultado.motivo) }, 400);
   }
+  if (resultado.rol !== "organizer") await registrarParticipacion(almacen, resultado.proyectoId, usuarioId, yaEraMiembro);
   return json({ proyectoId: resultado.proyectoId, rol: resultado.rol });
+}
+
+async function eraMiembro(almacen: Almacen, secretoHash: string, usuarioId: string): Promise<boolean> {
+  const invitacion = await almacen.leerInvitacionPorHash(secretoHash);
+  if (!invitacion) return true;
+  const miembros = await almacen.listarMiembros(invitacion.proyectoId);
+  return miembros.some((miembro) => miembro.usuarioId === usuarioId);
 }
 
 function avisoCanje(motivo: "missing" | "expired" | "used" | "email"): string {

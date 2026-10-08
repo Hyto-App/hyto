@@ -15,7 +15,7 @@ export default async function PaginaInformeEvento({ params }: { params: Promise<
   if (!proyecto) notFound();
   return (
     <>
-      <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="report" />
+      <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="report" enOrganizacion={Boolean(proyecto.organizacionId)} />
       <Informe proyectoId={id} />
     </>
   );

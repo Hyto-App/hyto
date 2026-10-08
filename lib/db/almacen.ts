@@ -1,10 +1,8 @@
 import type {
-  AvisoComunidad,
-  Comunidad,
-  ComunidadMiembro,
-  ComunidadSolicitud,
-  EstadoSolicitudComunidad,
   EvidenciaFila,
+  Organizacion,
+  OrganizacionAdmin,
+  OrganizacionVoluntario,
   PedidoCanje,
   Proyecto,
   ProyectoInvitacion,
@@ -96,20 +94,19 @@ export type Almacen = {
   crearInvitacion(invitacion: ProyectoInvitacion): Promise<void>;
   leerInvitacionPorHash(hash: string): Promise<ProyectoInvitacion | null>;
   canjearInvitacion(pedido: PedidoCanje): Promise<ResultadoCanje>;
-  listarComunidades(): Promise<Comunidad[]>;
-  leerComunidad(id: string): Promise<Comunidad | null>;
-  leerComunidadPorCodigo(codigo: string): Promise<Comunidad | null>;
-  crearComunidad(comunidad: Comunidad): Promise<void>;
-  listarMiembrosComunidad(comunidadId: string): Promise<ComunidadMiembro[]>;
-  comunidadesDeUsuario(usuarioId: string): Promise<ComunidadMiembro[]>;
-  miembroComunidad(comunidadId: string, usuarioId: string): Promise<ComunidadMiembro | null>;
-  guardarMiembroComunidad(miembro: ComunidadMiembro): Promise<void>;
-  listarSolicitudesComunidad(comunidadId: string): Promise<ComunidadSolicitud[]>;
-  crearSolicitudComunidad(solicitud: ComunidadSolicitud): Promise<void>;
-  actualizarSolicitudComunidad(id: string, estado: EstadoSolicitudComunidad): Promise<void>;
-  fijarComunidadProyecto(proyectoId: string, comunidadId: string | null): Promise<void>;
-  listarAvisosComunidad(comunidadId: string): Promise<AvisoComunidad[]>;
-  crearAvisoComunidad(aviso: AvisoComunidad): Promise<void>;
-  /** Assigns the task only while miembro_id is still empty. */
-  tomarTarea(tareaId: string, usuarioId: string): Promise<boolean>;
+  // Organizations. With HYTO_ORGANIZACIONES off, Neon answers empty and writes nothing.
+  leerOrganizacion(id: string): Promise<Organizacion | null>;
+  /** Creates the organization and its first admin. */
+  crearOrganizacion(organizacion: Organizacion, admin: OrganizacionAdmin): Promise<void>;
+  actualizarOrganizacion(id: string, cambio: Partial<Pick<Organizacion, "nombre" | "descripcion" | "etiquetas">>): Promise<void>;
+  listarAdmins(organizacionId: string): Promise<OrganizacionAdmin[]>;
+  /** The organizations where this user is an admin. */
+  adminsDeUsuario(usuarioId: string): Promise<OrganizacionAdmin[]>;
+  guardarAdmin(admin: OrganizacionAdmin): Promise<void>;
+  quitarAdmin(organizacionId: string, usuarioId: string): Promise<void>;
+  listarVoluntarios(organizacionId: string): Promise<OrganizacionVoluntario[]>;
+  leerVoluntario(organizacionId: string, email: string): Promise<OrganizacionVoluntario | null>;
+  /** Insert or replace by (organization, lowercased email). */
+  guardarVoluntario(voluntario: OrganizacionVoluntario): Promise<void>;
+  quitarVoluntario(organizacionId: string, email: string): Promise<void>;
 };

@@ -2,8 +2,7 @@ import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
 import { etiquetasGuardadas } from "@/lib/perfil/reglas";
 import { neon } from "@neondatabase/serverless";
-import { comunidadesActivas } from "@/lib/comunidades/bandera";
-import { tablonActivo } from "@/lib/tablon/bandera";
+import { organizacionesActivas } from "@/lib/organizaciones/bandera";
 import { and, asc, desc, eq, getTableColumns, sql, type SQL } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
@@ -13,10 +12,10 @@ import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
 import { consultaPhashCercano } from "./sql";
-import { comunidadAvisos, comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { evidencias, organizacionAdmins, organizacionVoluntarios, organizaciones, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
-import type { AvisoComunidad, Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoAviso, TipoCuentaGuardado, TipoInvitacion, Usuario, VeredictoFila } from "./tipos";
+import type { Organizacion, OrganizacionAdmin, OrganizacionVoluntario, OrigenContacto, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolEvento, RolInvitacion, TareaFila, TipoCuentaGuardado, TipoInvitacion, Usuario, VeredictoFila } from "./tipos";
 import { urlDeBase } from "@/lib/config/entorno";
 
 const schema = {
@@ -28,10 +27,9 @@ const schema = {
   sesiones,
   proyectoMiembros,
   proyectoInvitaciones,
-  comunidades,
-  comunidadMiembros,
-  comunidadSolicitudes,
-  comunidadAvisos,
+  organizaciones,
+  organizacionAdmins,
+  organizacionVoluntarios,
 };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
@@ -239,8 +237,8 @@ function columnasTareaPrevias() {
   return resto;
 }
 
-function columnasProyectoSinComunidad() {
-  const { comunidadId: _comunidadId, ...resto } = getTableColumns(proyectos);
+function columnasProyectoSinOrganizacion() {
+  const { organizacionId: _organizacionId, ...resto } = getTableColumns(proyectos);
   return resto;
 }
 
@@ -339,24 +337,24 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
     },
     async leerProyecto(id) {
-      if (!comunidadesActivas()) {
-        const filas = await db.select(columnasProyectoSinComunidad()).from(proyectos).where(eq(proyectos.id, id)).limit(1);
-        return filas[0] ? { ...filas[0], comunidadId: null } : null;
+      if (!organizacionesActivas()) {
+        const filas = await db.select(columnasProyectoSinOrganizacion()).from(proyectos).where(eq(proyectos.id, id)).limit(1);
+        return filas[0] ? { ...filas[0], organizacionId: null } : null;
       }
       const filas = await db.select().from(proyectos).where(eq(proyectos.id, id)).limit(1);
       return filas[0] ?? null;
     },
     async listarProyectos() {
-      if (!comunidadesActivas()) {
-        const filas = await db.select(columnasProyectoSinComunidad()).from(proyectos);
-        return filas.map((fila) => ({ ...fila, comunidadId: null }));
+      if (!organizacionesActivas()) {
+        const filas = await db.select(columnasProyectoSinOrganizacion()).from(proyectos);
+        return filas.map((fila) => ({ ...fila, organizacionId: null }));
       }
       return db.select().from(proyectos);
     },
     async ultimoProyecto() {
-      if (!comunidadesActivas()) {
-        const filas = await db.select(columnasProyectoSinComunidad()).from(proyectos).orderBy(desc(proyectos.creadoEn)).limit(1);
-        return filas[0] ? { ...filas[0], comunidadId: null } : null;
+      if (!organizacionesActivas()) {
+        const filas = await db.select(columnasProyectoSinOrganizacion()).from(proyectos).orderBy(desc(proyectos.creadoEn)).limit(1);
+        return filas[0] ? { ...filas[0], organizacionId: null } : null;
       }
       const filas = await db.select().from(proyectos).orderBy(desc(proyectos.creadoEn)).limit(1);
       return filas[0] ?? null;
@@ -712,93 +710,85 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       }
       return { ok: false, motivo: "missing" };
     },
-    async listarComunidades() {
-      if (!comunidadesActivas()) return [];
-      return (await db.select().from(comunidades)).map(comunidadDesde);
+    async leerOrganizacion(id) {
+      if (!organizacionesActivas()) return null;
+      const filas = await db.select().from(organizaciones).where(eq(organizaciones.id, id)).limit(1);
+      return filas[0] ? organizacionDesde(filas[0]) : null;
     },
-    async leerComunidad(id) {
-      if (!comunidadesActivas()) return null;
-      const filas = await db.select().from(comunidades).where(eq(comunidades.id, id)).limit(1);
-      return filas[0] ? comunidadDesde(filas[0]) : null;
+    async crearOrganizacion(organizacion, admin) {
+      if (!organizacionesActivas()) return;
+      await db.insert(organizaciones).values(organizacion);
+      await db.insert(organizacionAdmins).values(admin).onConflictDoNothing();
     },
-    async leerComunidadPorCodigo(codigo) {
-      if (!comunidadesActivas()) return null;
-      const filas = await db.select().from(comunidades).where(eq(comunidades.codigo, codigo)).limit(1);
-      return filas[0] ? comunidadDesde(filas[0]) : null;
+    async actualizarOrganizacion(id, cambio) {
+      if (!organizacionesActivas()) return;
+      if (Object.keys(cambio).length === 0) return;
+      await db.update(organizaciones).set(cambio).where(eq(organizaciones.id, id));
     },
-    async crearComunidad(comunidad) {
-      if (!comunidadesActivas()) return;
-      await db.insert(comunidades).values(comunidad);
+    async listarAdmins(organizacionId) {
+      if (!organizacionesActivas()) return [];
+      const filas = await db.select().from(organizacionAdmins).where(eq(organizacionAdmins.organizacionId, organizacionId));
+      return filas.map(adminDesde);
     },
-    async listarMiembrosComunidad(comunidadId) {
-      if (!comunidadesActivas()) return [];
-      const filas = await db.select().from(comunidadMiembros).where(eq(comunidadMiembros.comunidadId, comunidadId));
-      return filas.map(miembroComunidadDesde);
+    async adminsDeUsuario(usuarioId) {
+      if (!organizacionesActivas()) return [];
+      const filas = await db.select().from(organizacionAdmins).where(eq(organizacionAdmins.usuarioId, usuarioId));
+      return filas.map(adminDesde);
     },
-    async comunidadesDeUsuario(usuarioId) {
-      if (!comunidadesActivas()) return [];
-      const filas = await db.select().from(comunidadMiembros).where(eq(comunidadMiembros.usuarioId, usuarioId));
-      return filas.map(miembroComunidadDesde);
+    async guardarAdmin(admin) {
+      if (!organizacionesActivas()) return;
+      await db.insert(organizacionAdmins).values(admin).onConflictDoNothing();
     },
-    async miembroComunidad(comunidadId, usuarioId) {
-      if (!comunidadesActivas()) return null;
+    async quitarAdmin(organizacionId, usuarioId) {
+      if (!organizacionesActivas()) return;
+      await db
+        .delete(organizacionAdmins)
+        .where(and(eq(organizacionAdmins.organizacionId, organizacionId), eq(organizacionAdmins.usuarioId, usuarioId)));
+    },
+    async listarVoluntarios(organizacionId) {
+      if (!organizacionesActivas()) return [];
+      const filas = await db.select().from(organizacionVoluntarios).where(eq(organizacionVoluntarios.organizacionId, organizacionId));
+      return filas.map(voluntarioDesde);
+    },
+    async leerVoluntario(organizacionId, email) {
+      if (!organizacionesActivas()) return null;
       const filas = await db
         .select()
-        .from(comunidadMiembros)
-        .where(and(eq(comunidadMiembros.comunidadId, comunidadId), eq(comunidadMiembros.usuarioId, usuarioId)))
+        .from(organizacionVoluntarios)
+        .where(and(eq(organizacionVoluntarios.organizacionId, organizacionId), eq(organizacionVoluntarios.email, email.trim().toLowerCase())))
         .limit(1);
-      return filas[0] ? miembroComunidadDesde(filas[0]) : null;
+      return filas[0] ? voluntarioDesde(filas[0]) : null;
     },
-    async guardarMiembroComunidad(miembro) {
-      if (!comunidadesActivas()) return;
+    async guardarVoluntario(voluntario) {
+      if (!organizacionesActivas()) return;
+      const valores = { ...voluntario, email: voluntario.email.trim().toLowerCase() };
       await db
-        .insert(comunidadMiembros)
-        .values(miembro)
+        .insert(organizacionVoluntarios)
+        .values(valores)
         .onConflictDoUpdate({
-          target: [comunidadMiembros.comunidadId, comunidadMiembros.usuarioId],
-          set: { rol: miembro.rol },
+          target: [organizacionVoluntarios.organizacionId, organizacionVoluntarios.email],
+          set: {
+            usuarioId: valores.usuarioId,
+            nombre: valores.nombre,
+            etiquetas: valores.etiquetas,
+            origen: valores.origen,
+            participaciones: valores.participaciones,
+            ultimaParticipacion: valores.ultimaParticipacion,
+          },
         });
     },
-    async listarSolicitudesComunidad(comunidadId) {
-      if (!comunidadesActivas()) return [];
-      const filas = await db.select().from(comunidadSolicitudes).where(eq(comunidadSolicitudes.comunidadId, comunidadId));
-      return filas.map(solicitudDesde);
-    },
-    async crearSolicitudComunidad(solicitud) {
-      if (!comunidadesActivas()) return;
-      await db.insert(comunidadSolicitudes).values(solicitud);
-    },
-    async actualizarSolicitudComunidad(id, estado) {
-      if (!comunidadesActivas()) return;
-      await db.update(comunidadSolicitudes).set({ estado }).where(eq(comunidadSolicitudes.id, id));
-    },
-    async fijarComunidadProyecto(proyectoId, comunidadId) {
-      if (!comunidadesActivas()) return;
-      await db.update(proyectos).set({ comunidadId }).where(eq(proyectos.id, proyectoId));
-    },
-    async listarAvisosComunidad(comunidadId) {
-      if (!tablonActivo() || !comunidadesActivas()) return [];
-      const filas = await db.select().from(comunidadAvisos).where(eq(comunidadAvisos.comunidadId, comunidadId));
-      return filas.map(avisoDesde).sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
-    },
-    async crearAvisoComunidad(aviso) {
-      if (!tablonActivo() || !comunidadesActivas()) return;
-      await db.insert(comunidadAvisos).values(aviso);
-    },
-    async tomarTarea(id, usuarioId) {
-      const filas = await db
-        .update(tareas)
-        .set({ miembroId: usuarioId })
-        .where(and(eq(tareas.id, id), eq(tareas.miembroId, "")))
-        .returning({ id: tareas.id });
-      return filas.length > 0;
+    async quitarVoluntario(organizacionId, email) {
+      if (!organizacionesActivas()) return;
+      await db
+        .delete(organizacionVoluntarios)
+        .where(and(eq(organizacionVoluntarios.organizacionId, organizacionId), eq(organizacionVoluntarios.email, email.trim().toLowerCase())));
     },
   };
 }
 
 function valoresProyecto(proyecto: Proyecto) {
-  if (comunidadesActivas()) return proyecto;
-  const { comunidadId: _comunidadId, ...resto } = proyecto;
+  if (organizacionesActivas()) return proyecto;
+  const { organizacionId: _organizacionId, ...resto } = proyecto;
   return resto;
 }
 
@@ -848,62 +838,37 @@ function invitacionDesde(fila: typeof proyectoInvitaciones.$inferSelect): Proyec
   };
 }
 
-function comunidadDesde(fila: typeof comunidades.$inferSelect): Comunidad {
+function organizacionDesde(fila: typeof organizaciones.$inferSelect): Organizacion {
   return {
     id: fila.id,
     nombre: fila.nombre,
     descripcion: fila.descripcion,
-    fotoUrl: fila.fotoUrl,
-    visibilidad: fila.visibilidad === "privada" ? "privada" : "publica",
-    codigo: fila.codigo,
+    etiquetas: fila.etiquetas ?? [],
     creadoEn: fila.creadoEn,
     creadorId: fila.creadorId,
   };
 }
 
-function miembroComunidadDesde(fila: typeof comunidadMiembros.$inferSelect): ComunidadMiembro {
-  return {
-    comunidadId: fila.comunidadId,
-    usuarioId: fila.usuarioId,
-    rol: rolComunidadDe(fila.rol),
-    creadoEn: fila.creadoEn,
-  };
+function adminDesde(fila: typeof organizacionAdmins.$inferSelect): OrganizacionAdmin {
+  return { organizacionId: fila.organizacionId, usuarioId: fila.usuarioId, creadoEn: fila.creadoEn };
 }
 
-function solicitudDesde(fila: typeof comunidadSolicitudes.$inferSelect): ComunidadSolicitud {
-  return {
-    id: fila.id,
-    comunidadId: fila.comunidadId,
-    usuarioId: fila.usuarioId,
-    estado: estadoSolicitudDe(fila.estado),
-    creadoEn: fila.creadoEn,
-  };
+function origenContactoDe(valor: string): OrigenContacto {
+  return valor === "evento" || valor === "invitacion" ? valor : "manual";
 }
 
-function avisoDesde(fila: typeof comunidadAvisos.$inferSelect): AvisoComunidad {
+function voluntarioDesde(fila: typeof organizacionVoluntarios.$inferSelect): OrganizacionVoluntario {
   return {
-    id: fila.id,
-    comunidadId: fila.comunidadId,
-    tipo: tipoAvisoDe(fila.tipo),
-    titulo: fila.titulo,
+    organizacionId: fila.organizacionId,
+    email: fila.email,
+    usuarioId: fila.usuarioId,
     nombre: fila.nombre,
-    tareaId: fila.tareaId,
+    etiquetas: fila.etiquetas ?? [],
+    origen: origenContactoDe(fila.origen),
+    participaciones: fila.participaciones,
+    ultimaParticipacion: fila.ultimaParticipacion,
     creadoEn: fila.creadoEn,
   };
-}
-
-function tipoAvisoDe(valor: string): TipoAviso {
-  if (valor === "asignada" || valor === "completada") return valor;
-  return "disponible";
-}
-
-function rolComunidadDe(valor: string): RolComunidad {
-  return valor === "admin" ? "admin" : "miembro";
-}
-
-function estadoSolicitudDe(valor: string): EstadoSolicitudComunidad {
-  if (valor === "aprobada" || valor === "rechazada") return valor;
-  return "pendiente";
 }
 
 function tareaDesde(fila: typeof tareas.$inferSelect): TareaFila {
