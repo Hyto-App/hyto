@@ -74,12 +74,12 @@ test("verdict labels and the payout notices keep their English wording", () => {
   );
   assert.equal(
     texto("es", "cuenta.passkeyDetalle"),
-    "Tu acceso está guardado solo en este dispositivo. Agrega una llave de acceso para no perder tu cuenta.",
+    "Su acceso está guardado solo en este dispositivo. Agregue una llave de acceso para no perder su cuenta.",
   );
   assert.equal(texto("en", "cuenta.saldoHyto"), "Your Hyto balance");
-  assert.equal(texto("es", "cuenta.saldoHyto"), "Tu saldo en Hyto");
+  assert.equal(texto("es", "cuenta.saldoHyto"), "Su saldo en Hyto");
   assert.equal(texto("en", "cuenta.cobroTitulo"), "How you get your money");
-  assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir tu dinero");
+  assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir su dinero");
   assert.equal(texto("en", "revision.technical"), "Advanced");
   assert.equal(texto("es", "revision.technical"), "Avanzado");
   assert.equal(texto("en", "revision.refPendiente"), "The payment reference appears when you set the money aside.");
@@ -194,5 +194,5 @@ test("configuración en español usa tuteo y no deja la llave de acceso en ingl�
   assert.match(texto("es", "guiaPasskey.ayuda1"), /computadora portátil/);
   assert.match(texto("es", "errores.passkey"), /Usar llave de acceso/);
   assert.doesNotMatch(texto("es", "guiaPasskey.introCuenta"), /\bagregá\b/i);
-  assert.match(texto("es", "guiaPasskey.introCuenta"), /Agrégala/);
+  assert.match(texto("es", "guiaPasskey.introCuenta"), /Agréguela/);
 });

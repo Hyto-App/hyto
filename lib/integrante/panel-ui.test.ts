@@ -79,7 +79,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
   }
 });
 
-test("configuración en español muestra el costo y la llave en tuteo", async () => {
+test("configuración en español muestra el costo y la llave en usted", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
   globalThis.fetch = (async () =>
@@ -100,7 +100,7 @@ test("configuración en español muestra el costo y la llave en tuteo", async ()
     assert.match(texto(), /comisión del 0,3 %/);
     assert.match(texto(), /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
     assert.match(texto(), /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
-    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b/i);
   } finally {
@@ -131,7 +131,7 @@ test("si la cuenta no carga, el costo de pagar sigue en la página", async () =>
   }
 });
 
-test("si la cuenta no responde, la llave sigue en la página en tuteo", async () => {
+test("si la cuenta no responde, la llave sigue en la página en usted", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
   globalThis.fetch = (async () => {
@@ -140,11 +140,11 @@ test("si la cuenta no responde, la llave sigue en la página en tuteo", async ()
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta) }));
     await asentar();
-    assert.match(texto(), /No pudimos cargar tu cuenta/);
+    assert.match(texto(), /No pudimos cargar su cuenta/);
     assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
     assert.match(texto(), /comisión del 0,3 %/);
-    assert.match(texto(), /Usa Hyto en otros dispositivos/);
-    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Use Hyto en otros dispositivos/);
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     const agregar = [...document.querySelectorAll("button")].find((nodo) => nodo.textContent?.includes("Agregar llave de acceso"));
     assert.ok(agregar instanceof HTMLButtonElement);
