@@ -158,6 +158,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
   },
   {
+    nombre: "HYTO_MILE_TECHO_80",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on lets a legible work photo with nothing missing reach Completed when the two how-much-is-shown answers sit on the middle step, or when the reading's coincide field is si. Absent, parcial, and no do not lift. Unset or anything else keeps the current grade. Does not move the 80 threshold.",
+  },
+  {
     nombre: "HYTO_MILE_TIPO_POR_TAREA",
     ambito: "servidor",
     requerida: false,
