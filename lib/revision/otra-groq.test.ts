@@ -6,7 +6,7 @@ import { etiquetasDe } from "./razones";
 import { coincideMencionado, escribirLectura, leerLectura, leerLecturaGuardada } from "./lectura";
 import { preguntarLaya, senalesDeTrabajo, type RespuestasTrabajo } from "./laya";
 import { TOPE_FALTA_GRAVE } from "./pesos";
-import { describirFoto, formatoRespuestaVision, modeloAdmiteEsquemaEstricto, pedidoVision } from "./scout";
+import { bloqueCoincideGroq, describirFoto, formatoRespuestaVision, modeloAdmiteEsquemaEstricto, pedidoVision, propiedadCoincide } from "./scout";
 import { layaPuedeTaparPorOtra, mileOtraConGroqActivo, type EntornoOtraGroq } from "./otra-groq";
 
 const ENCENDIDO: EntornoOtraGroq = { HYTO_MILE_OTRA_CON_GROQ: "on" };
@@ -340,6 +340,79 @@ test("encendido, un 400 del esquema reintenta una vez con json_object y no suma 
   );
   assert.equal(llamadas, 2);
   assert.equal(sinCampo.lectura?.coincide ?? null, null);
+});
+
+test("el bloque de coincide no toca la regla de faltantes", () => {
+  assert.equal(bloqueCoincideGroq(APAGADO), "");
+  assert.equal(bloqueCoincideGroq({}), "");
+  assert.equal(propiedadCoincide(APAGADO), null);
+  const bloque = bloqueCoincideGroq(ENCENDIDO);
+  assert.match(bloque, /coincide is required on every reply/);
+  assert.equal(bloque.includes("faltantes:"), false);
+  const encendido = pedidoVision({ condicion: PEDIDO, tipoTarea: "trabajo" }, ENCENDIDO);
+  const faltantes = encendido.split("\n").find((linea) => linea.startsWith("faltantes:"));
+  assert.ok(faltantes);
+  assert.equal(faltantes.includes("coincide"), false);
+  assert.ok(encendido.includes(bloque));
+});
+
+test("encendido, un 429 o una cuota no gasta un llamado de más", async () => {
+  let llamadas = 0;
+  await assert.rejects(
+    () =>
+      describirFoto(
+        FOTO,
+        "image/jpeg",
+        "clave",
+        async () => {
+          llamadas += 1;
+          return new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 });
+        },
+        undefined,
+        {},
+        ENCENDIDO,
+      ),
+    (error: unknown) => error instanceof FalloRevision && error.code === "cupo",
+  );
+  assert.equal(llamadas, 1);
+
+  llamadas = 0;
+  await assert.rejects(
+    () =>
+      describirFoto(
+        FOTO,
+        "image/jpeg",
+        "clave",
+        async () => {
+          llamadas += 1;
+          if (llamadas === 1) return new Response("json_schema is not supported", { status: 400 });
+          return new Response(JSON.stringify({ error: { message: "Rate limit reached" } }), { status: 429 });
+        },
+        undefined,
+        {},
+        ENCENDIDO,
+      ),
+    (error: unknown) => error instanceof FalloRevision && error.code === "cupo",
+  );
+  assert.equal(llamadas, 2);
+
+  llamadas = 0;
+  const sinCampo = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async () => {
+      llamadas += 1;
+      if (llamadas === 1) return Response.json({ choices: [{ message: { content: LECTURA_SIN } }] });
+      return new Response("rate limit", { status: 429 });
+    },
+    undefined,
+    {},
+    ENCENDIDO,
+  );
+  assert.equal(llamadas, 2);
+  assert.equal(sinCampo.lectura?.coincide ?? null, null);
+  assert.match(sinCampo.texto, /Cursor stickers/);
 });
 
 test("encendido, un 400 de cupo y un 500 no cambian de formato", async () => {

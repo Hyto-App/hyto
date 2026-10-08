@@ -48,9 +48,8 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq
         : "";
   const espanol = contexto.idioma === "es";
   const regla = reglaDeEvento(contexto.evento);
-  const pedirCoincide = mileOtraConGroqActivo(env);
   const claves = regla ? [...CLAVES_LECTURA, "cumple_reglas"] : [...CLAVES_LECTURA];
-  if (pedirCoincide) claves.push("coincide");
+  if (mileOtraConGroqActivo(env)) claves.push("coincide");
   return [
     "You read a photo that a volunteer sent as evidence for a task.",
     condicion ? `The organizer asked for: "${condicion}".` : "",
@@ -63,14 +62,7 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq
       ? "cumple_reglas: true only when the photo meets every rule inside <event_context>. false when it breaks at least one, for example a receipt from a different kind of store than the rule allows. null only when the photo does not show enough to decide."
       : "",
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
-    pedirCoincide
-      ? [
-          'coincide is required on every reply. Use exactly one of "si", "parcial", or "no". Never omit the key. Never use null, true, or false.',
-          '"si" only when the photo shows the thing the organizer asked for, including the right object or brand.',
-          '"parcial" when that same thing is visible but something they asked for is missing or unfinished.',
-          '"no" when the photo shows something else: a different brand or object, a selfie, a blur, or an unrelated scene.',
-        ].join("\n")
-      : "",
+    bloqueCoincideGroq(env),
     (espanol
       ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. If you address the reader, use formal usted, never tú or vos. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."
       : "texto_completo: a detailed description in English only, never Spanish or any other language, even when the request or the receipt is in Spanish. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."),
@@ -85,7 +77,6 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoOtraGroq
     (espanol
       ? "faltantes: a list of short phrases in Spanish only, never English, and in formal usted if they address the reader, never tú or vos, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."
       : "faltantes: a list of short phrases in English only, never Spanish, naming what the organizer asked for that the photo does not show. An empty list if nothing is missing."),
-    pedirCoincide ? 'The JSON is invalid without "coincide". Include it as "si", "parcial", or "no".' : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -139,16 +130,42 @@ function fechaDe(valor: unknown): string | null {
   return `${calendario[1]}-${calendario[2]}-${calendario[3]}`;
 }
 
+/**
+ * Prompt rules for HYTO_MILE_OTRA_CON_GROQ only.
+ * Empty when the switch is off, so the rest of pedidoVision stays unchanged.
+ * Other switches, including HYTO_MILE_FALTANTES_GROQ, add their own block and do not edit this one.
+ */
+export function bloqueCoincideGroq(env: EntornoOtraGroq = process.env): string {
+  if (!mileOtraConGroqActivo(env)) return "";
+  return [
+    'coincide is required on every reply. Use exactly one of "si", "parcial", or "no". Never omit the key. Never use null, true, or false.',
+    '"si" only when the photo shows the thing the organizer asked for, including the right object or brand.',
+    '"parcial" when that same thing is visible but something they asked for is missing or unfinished.',
+    '"no" when the photo shows something else: a different brand or object, a selfie, a blur, or an unrelated scene.',
+    'The JSON is invalid without "coincide". Include it as "si", "parcial", or "no".',
+  ].join("\n");
+}
+
 /** Groq constrained decoding accepts strict schemas on these models. Anything else stays best-effort. */
 export function modeloAdmiteEsquemaEstricto(modelo: string): boolean {
   return /^(?:qwen\/qwen3\.8-27b|openai\/gpt-oss-20b|openai\/gpt-oss-120b)$/i.test(modelo.trim());
 }
 
+/**
+ * Schema fragment for HYTO_MILE_OTRA_CON_GROQ. Null when the switch is off.
+ * Other switches add their own fragment beside this one.
+ */
+export function propiedadCoincide(env: EntornoOtraGroq = process.env): { coincide: { type: "string"; enum: string[] } } | null {
+  if (!mileOtraConGroqActivo(env)) return null;
+  return { coincide: { type: "string", enum: ["si", "parcial", "no"] } };
+}
+
 type FormatoRespuesta = { type: "json_object" } | { type: "json_schema"; json_schema: { name: string; strict: boolean; schema: Record<string, unknown> } };
 
-/** Switch off: the same json_object as today. Switch on: coincide is a required enum. */
+/** Switch off: the same json_object as today. Switch on: coincide is a required enum, added only by propiedadCoincide. */
 export function formatoRespuestaVision(modelo: string, env: EntornoOtraGroq = process.env, conRegla = false): FormatoRespuesta {
-  if (!mileOtraConGroqActivo(env)) return { type: "json_object" };
+  const coincide = propiedadCoincide(env);
+  if (!coincide) return { type: "json_object" };
   const properties: Record<string, unknown> = {
     tipo: { type: "string", enum: ["recibo", "trabajo", "otra"] },
     pais: nulo("string"),
@@ -161,7 +178,7 @@ export function formatoRespuestaVision(modelo: string, env: EntornoOtraGroq = pr
     texto_completo: { type: "string" },
     legible: { type: "boolean" },
     faltantes: { type: "array", items: { type: "string" } },
-    coincide: { type: "string", enum: ["si", "parcial", "no"] },
+    ...coincide,
   };
   if (conRegla) properties.cumple_reglas = { anyOf: [{ type: "boolean" }, { type: "null" }] };
   return {
@@ -247,9 +264,12 @@ async function postGroq(
   }
 }
 
-/** A 400 that is not a quota error: Groq rejected the schema, so one json_object retry is safe. */
-async function formatoRechazado(respuesta: Response): Promise<boolean> {
-  if (respuesta.status !== 400) return false;
+/**
+ * True only for a schema rejection. HTTP 429 and any quota error are false:
+ * those must not start another Groq call.
+ */
+async function rechazoDeEsquema(respuesta: Response): Promise<boolean> {
+  if (respuesta.status === 429 || respuesta.status !== 400) return false;
   const crudo = await respuesta.clone().text();
   return !esCupo(respuesta.status, crudo);
 }
@@ -290,8 +310,9 @@ function descripcionDe(contenido: string, finish: string | undefined, status: nu
 }
 
 /**
- * Switch on, and the structured reading still has no coincide: one text call, no photo.
- * A failure here keeps the reading. The something-else cap stays, which is the safe side.
+ * One text call, no photo, when the reading still has no coincide.
+ * A 429, a quota error, or any other failure returns null and does not call again.
+ * The something-else cap stays, which is the safe side.
  */
 async function coincidePorTexto(
   fetchImpl: typeof fetch,
@@ -340,9 +361,10 @@ export async function describirFoto(
     },
   ];
   let respuesta = await postGroq(fetchImpl, clave, cuerpoChat(modelo, formato, mensajes, MAX_TOKENS), signal);
-  let reintentoFormato = false;
-  if (activo && formato.type === "json_schema" && (await formatoRechazado(respuesta))) {
-    reintentoFormato = true;
+  // The photo call is the first one. At most one more, and never after a 429 or a quota error.
+  let extras = 0;
+  if (activo && formato.type === "json_schema" && extras < 1 && (await rechazoDeEsquema(respuesta))) {
+    extras += 1;
     respuesta = await postGroq(fetchImpl, clave, cuerpoChat(modelo, { type: "json_object" }, mensajes, MAX_TOKENS), signal);
   }
   const leida = await leerRespuestaGroq(respuesta, clave);
@@ -350,7 +372,8 @@ export async function describirFoto(
   if (!activo || !descripcion.lectura || descripcion.lectura.coincide) return descripcion;
   const mencionado = coincideMencionado(leida.contenido);
   if (mencionado) return { ...descripcion, lectura: { ...descripcion.lectura, coincide: mencionado } };
-  if (reintentoFormato) return descripcion;
+  if (extras >= 1) return descripcion;
+  extras += 1;
   const pedido = await coincidePorTexto(fetchImpl, clave, modelo, contexto, descripcion.texto, signal);
   if (!pedido) return descripcion;
   return { ...descripcion, lectura: { ...descripcion.lectura, coincide: pedido } };
