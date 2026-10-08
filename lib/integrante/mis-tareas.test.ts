@@ -197,7 +197,7 @@ test("un veredicto de error no dice que Mile sigue revisando", async () => {
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Receipt"));
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.doesNotMatch(texto(), /Mile is checking your file/);
   } finally {
@@ -242,7 +242,7 @@ test("una foto reciente en revisión dice que Mile sigue, y al llegar la nota la
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Still reviewing"));
     assert.match(texto(), /Mile is checking your photo/);
-    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.doesNotMatch(texto(), /Mile could not finish/);
     assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "View task");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 400));
@@ -289,7 +289,7 @@ test("una foto en revisión ya vieja ofrece reintentar", async () => {
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Booth"));
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.doesNotMatch(texto(), /Still reviewing/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "Try again");

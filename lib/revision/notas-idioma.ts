@@ -31,7 +31,7 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
     explicacion: "La descripción dice que la foto está borrosa, oscura o es difícil de leer.",
   },
   selfie_or_empty: {
-    texto: "Parece un selfie / no se ve el trabajo ni un recibo",
+    texto: "Parece una foto de la persona / no se ve el trabajo ni un recibo",
     explicacion: "La foto se clasificó como algo distinto del trabajo pedido o de un recibo.",
   },
   unclear_match: {

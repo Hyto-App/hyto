@@ -61,7 +61,7 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "errores.cobroPendiente"), AVISO_USDC_PENDIENTE);
   assert.equal(texto("en", "errores.cobroOtraCuenta"), AVISO_USDC_OTRA_CUENTA);
   assert.equal(texto("en", "errores.cobroLento"), AVISO_USDC_LENTO);
-  assert.equal(texto("es", "entrar.espera", { n: 12 }), "Espera 12 s antes de pedir otro código");
+  assert.equal(texto("es", "entrar.espera", { n: 12 }), "Espere 12 s antes de pedir otro código");
   assert.equal(texto("en", "cuenta.pasaporteTitulo"), "Stellar Passport");
   assert.equal(texto("es", "cuenta.pasaporteTitulo"), "Stellar Passport");
   assert.equal(texto("en", "cuenta.pasaporteDetalle"), "It records participation and achievements in the Stellar ecosystem.");
@@ -74,29 +74,29 @@ test("verdict labels and the payout notices keep their English wording", () => {
   );
   assert.equal(
     texto("es", "cuenta.passkeyDetalle"),
-    "Tu acceso está guardado solo en este dispositivo. Agrega una llave de acceso para no perder tu cuenta.",
+    "Su acceso está guardado solo en este dispositivo. Agregue una llave de acceso para no perder su cuenta.",
   );
   assert.equal(texto("en", "cuenta.saldoHyto"), "Your Hyto balance");
-  assert.equal(texto("es", "cuenta.saldoHyto"), "Tu saldo en Hyto");
-  assert.equal(texto("en", "cuenta.cobroTitulo"), "How you get your money");
-  assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir tu dinero");
+  assert.equal(texto("es", "cuenta.saldoHyto"), "Su saldo en Hyto");
+  assert.equal(texto("en", "cuenta.cobroTitulo"), "How to receive your money");
+  assert.equal(texto("es", "cuenta.cobroTitulo"), "Cómo recibir su dinero");
   assert.equal(texto("en", "revision.technical"), "Advanced");
   assert.equal(texto("es", "revision.technical"), "Avanzado");
   assert.equal(texto("en", "revision.refPendiente"), "The payment reference appears when you set the money aside.");
-  assert.equal(texto("es", "revision.refPendiente"), "La referencia del pago aparece cuando apartes el dinero.");
+  assert.equal(texto("es", "revision.refPendiente"), "La referencia del pago aparece cuando aparte el dinero.");
   assert.equal(texto("en", "cuenta.ausente"), "This account cannot receive a payment yet.");
   assert.equal(texto("es", "cuenta.ausente"), "Esta cuenta todavía no puede recibir un pago.");
   assert.equal(texto("en", "revision.yourAccount", { direccion: "G…AAAA" }), "Payment account ID (for support): G…AAAA");
-  assert.equal(texto("es", "revision.yourAccount", { direccion: "G…AAAA" }), "ID de tu cuenta de pagos (para soporte): G…AAAA");
+  assert.equal(texto("es", "revision.yourAccount", { direccion: "G…AAAA" }), "ID de su cuenta de pagos (para soporte): G…AAAA");
   assert.equal(texto("en", "evidencia.uploaded"), "Photo uploaded successfully");
   assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
   assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your photo already reached the organizer");
-  assert.equal(texto("es", "evidencia.reachedOrganizer"), "Tu foto ya le llegó al organizador");
-  assert.equal(texto("en", "evidencia.mileCouldntFinish"), "Mile couldn't finish — retry");
-  assert.equal(texto("es", "evidencia.mileCouldntFinish"), "Mile no pudo terminar — reintenta");
+  assert.equal(texto("es", "evidencia.reachedOrganizer"), "Su foto ya le llegó al organizador");
+  assert.equal(texto("en", "evidencia.mileCouldntFinish"), "Mile could not finish. Try again.");
+  assert.equal(texto("es", "evidencia.mileCouldntFinish"), "Mile no pudo terminar. Intente de nuevo.");
   assert.equal(texto("en", "evidencia.mileRetry"), "The review did not finish. Send the photo again.");
-  assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envía la foto otra vez.");
-  assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo didn't pass Mile's check");
+  assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envíe la foto otra vez.");
+  assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo did not pass Mile's review");
   assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta foto no pasó la revisión de Mile");
 });
 
@@ -155,7 +155,7 @@ function textosDe(nodo: unknown): string[] {
   return Object.values(nodo).flatMap((hijo) => textosDe(hijo));
 }
 
-test("configuración en español usa tuteo y no deja la llave de acceso en inglés", () => {
+test("configuración en español usa usted y no deja la llave de acceso en inglés", () => {
   const textos = [
     ...textosDe(es.cuenta),
     ...textosDe(es.guiaPasskey),
@@ -194,5 +194,12 @@ test("configuración en español usa tuteo y no deja la llave de acceso en ingl�
   assert.match(texto("es", "guiaPasskey.ayuda1"), /computadora portátil/);
   assert.match(texto("es", "errores.passkey"), /Usar llave de acceso/);
   assert.doesNotMatch(texto("es", "guiaPasskey.introCuenta"), /\bagregá\b/i);
-  assert.match(texto("es", "guiaPasskey.introCuenta"), /Agrégala/);
+  assert.match(texto("es", "guiaPasskey.introCuenta"), /Agréguela/);
+  for (const valor of textosDe(es)) {
+    assert.equal(/\bplata\b/i.test(valor), false, valor);
+    for (const verbo of VOSEO) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
 });

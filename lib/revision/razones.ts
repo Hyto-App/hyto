@@ -143,7 +143,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   if (otra) {
     etiquetas.push(etiqueta(
       "selfie_or_empty",
-      "Looks like a selfie / no work or receipt shown",
+      "Looks like a photo of the person / no work or receipt shown",
       "The photo was classified as something other than the requested work or a receipt.",
       "problem",
       ["c1"],
