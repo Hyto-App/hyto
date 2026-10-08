@@ -73,6 +73,7 @@ export function Revision({
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
   const [hojaPedir, setHojaPedir] = useState(false);
+  const [pidioOtra, setPidioOtra] = useState(false);
   const [notaPedir, setNotaPedir] = useState("");
   const [fallidosPedir, setFallidosPedir] = useState<number[]>([]);
   const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
@@ -219,6 +220,7 @@ export function Revision({
     if (!real) {
       setHojaPedir(false);
       decidir("pendiente");
+      setPidioOtra(true);
       return;
     }
     publicarAviso(null);
@@ -234,6 +236,7 @@ export function Revision({
     }
     setHojaPedir(false);
     setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
+    setPidioOtra(true);
   }
 
   function decidir(decision: "pagado" | "pendiente") {
@@ -431,7 +434,7 @@ export function Revision({
   const avisoVisible = aviso ? claro(aviso) : null;
   const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
     const cifra = montoDeVista(tarea);
-    const monto = cifra === null ? undefined : cifra.toFixed(2);
+    const monto = cifra === null ? undefined : formatearMonto(cifra.toString(), idioma);
     if (clave === "pagar")
       return {
         titulo: t("confirmar.payTitle"),
@@ -697,6 +700,12 @@ export function Revision({
                   <BotonPrincipal type="submit">{t("revision.askAnother")}</BotonPrincipal>
                 </div>
               </form>
+            ) : null}
+
+            {pidioOtra ? (
+              <p role="status" className="hyto-pedir-listo">
+                {t("revision.askedSent")}
+              </p>
             ) : null}
 
             {puedeDesplegar || esperaConfirmacion ? (
