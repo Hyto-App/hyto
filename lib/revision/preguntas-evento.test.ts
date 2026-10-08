@@ -210,16 +210,17 @@ async function preguntasEnviadas(valor: string | undefined) {
   if (valor === undefined) delete process.env[ENV];
   else process.env[ENV] = valor;
   try {
-    let preguntas: Record<string, { criteria?: Record<string, string> }> | null = null;
+    const capturas: Array<Record<string, { criteria?: Record<string, string> }>> = [];
     await preguntarLaya("https://laya.example", "A group photo with banners.", PEDIDO, async (_input, init) => {
       const cuerpo = JSON.parse(String(init?.body)) as {
         questions: Record<string, { criteria?: Record<string, string> }>;
       };
       if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "trabajo" } } });
-      preguntas = cuerpo.questions;
+      capturas.push(cuerpo.questions);
       return Response.json({ answers: respuestas() });
     });
-    assert.ok(preguntas);
+    const preguntas = capturas[0];
+    if (!preguntas) throw new Error("no se enviaron las preguntas de trabajo");
     return preguntas;
   } finally {
     if (previo === undefined) delete process.env[ENV];
