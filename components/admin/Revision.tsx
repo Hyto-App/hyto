@@ -438,14 +438,14 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: (senal) => correr(pasosDesde(reanudar), senal),
+        onConfirmar: (senal: AbortSignal) => correr(pasosDesde(reanudar), senal),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
       monto,
       detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
       confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
-      onConfirmar: (senal) => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
+      onConfirmar: (senal: AbortSignal) => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };
   };
   const etiquetaPaso = (accion: AccionCliente) =>
