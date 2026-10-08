@@ -8,6 +8,7 @@ import { destinoInicio } from "@/lib/sesion/destino";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { eventosOrganizados } from "@/lib/sesion/organiza";
 import { leerSesionActual } from "@/lib/sesion/vista";
+import { ESLOGAN } from "@/components/ui/marca/trazos";
 import { discurso } from "@/lib/ui/discurso";
 import { redirect } from "next/navigation";
 
@@ -15,11 +16,13 @@ export const metadata: Metadata = {
   title: { absolute: "Hyto · Sign in" },
   description: discurso.subheadline,
   openGraph: {
+    title: `Hyto · ${ESLOGAN}`,
     description: discurso.subheadline,
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Hyto · Prove your worth. Get paid." }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `Hyto · ${ESLOGAN}` }],
   },
   twitter: {
     card: "summary_large_image",
+    title: `Hyto · ${ESLOGAN}`,
     description: discurso.subheadline,
     images: ["/twitter-image"],
   },

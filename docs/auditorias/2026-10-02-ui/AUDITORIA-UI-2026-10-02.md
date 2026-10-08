@@ -1,5 +1,7 @@
 # Auditoría UI/UX — hyto.vercel.app (2 oct 2026)
 
+**Pitch, 8 de octubre de 2026.** El eslogan de la app pasó a «Show the spend. On the record.» La historia es la rendición de cuentas de comunidades en Latinoamérica que reciben fondos desde lejos. Stellar es el riel del pago, no el público ([README.md](../../../README.md)). Los hallazgos de abajo registran lo que decían la app y los mockups el 2 de octubre, incluido «Prove your worth. Get paid.» Eso es historia de la auditoría, no el pitch actual.
+
 **Para:** Josué / Jayden · **De:** ARGOS (PM, UI/UX) con Abdiel · **Base:** `main` @ `2b9fad4`, sitio público, sesión demo organizador y voluntario.
 **Evidencia completa:** `ANEXO-evidencia.md` (crawl automatizado: Playwright, axe-core, 390×844 y 1440×900, oscuro y claro) + carpeta `capturas/`.
 

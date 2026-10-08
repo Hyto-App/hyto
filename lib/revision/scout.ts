@@ -30,7 +30,7 @@ export type ContextoPedido = {
   idioma?: "en" | "es";
   /** Background about the event. Empty leaves the prompt as it was. */
   evento?: ContextoEvento | null;
-  /** The organizer's company description. Empty, or the switch off, leaves the prompt as it was. */
+  /** The community description. Empty, or the switch off, leaves the prompt as it was. */
   organizacion?: string | null;
 };
 
