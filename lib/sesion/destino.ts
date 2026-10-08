@@ -13,3 +13,9 @@ export function destinoInicio(
   if (sesionEsDemo(sesion) && sesion.rol === "organizador") return "/eventos";
   return "/mis-tareas";
 }
+
+/** The assignee uploads the photo. An organizer who is not the assignee opens the review. */
+export function rutaDeTarea(id: string, miembroId: string, usuarioId: string): `/tareas/${string}` | `/revision/${string}` {
+  if (miembroId === usuarioId) return `/tareas/${id}`;
+  return `/revision/${id}`;
+}

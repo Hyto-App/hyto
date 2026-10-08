@@ -76,7 +76,7 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(tituloFallo("bloqueo"), "Budget not locked");
   assert.equal(detalleFallo("bloqueo", AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(tituloFallo("pago"), "Payment failed");
-  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC left the escrow.");
+  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC was sent.");
 });
 
 test("the payment steps move from the photo to the locked budget to paid", () => {

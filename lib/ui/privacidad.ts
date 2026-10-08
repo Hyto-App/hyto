@@ -7,6 +7,11 @@ import type { Idioma } from "@/lib/ui/idioma";
 
 export const ENLACE_PRIVACIDAD = "Privacy";
 
+/** Footer label. Spanish says Privacidad. */
+export function enlacePrivacidad(idioma: Idioma): string {
+  return idioma === "es" ? "Privacidad" : ENLACE_PRIVACIDAD;
+}
+
 const EN = {
   titulo: "Privacy",
   kicker: "Privacy",

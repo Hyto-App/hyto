@@ -162,11 +162,11 @@ test("el demo sin pagos usa las tareas reales y no llama a Horizon sin billetera
   });
 
   assert.equal(vista.demo, true);
-  assert.equal(vista.muestra, false);
-  assert.equal(vista.walletMuestra, false);
-  assert.equal(vista.wallet, null);
-  assert.equal(vista.saldo, null);
-  assert.equal(vista.saldoEstado, "sin-wallet");
+  assert.equal(vista.muestra, true);
+  assert.equal(vista.walletMuestra, true);
+  assert.equal(vista.wallet, "EJEMPLO-NO-ES-UNA-CUENTA");
+  assert.equal(vista.saldo, "0");
+  assert.equal(vista.saldoEstado, "ok");
   assert.equal(vista.orgullo.tareasCompletadas, 0);
   assert.equal(vista.orgullo.total, "0");
   assert.equal(vista.orgullo.vacio, true);

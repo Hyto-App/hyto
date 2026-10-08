@@ -35,6 +35,14 @@ test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(etiquetaVeredicto("cumplió", "es"), "Completado");
   assert.equal(textoNota(etiquetaVeredicto("parcial", "es"), 64), "64% · Parcialmente completado");
   assert.equal(textoVisible("Set up the booth", "es"), "Montar el stand");
+  assert.equal(
+    textoVisible("Example. Team meal receipt, with the amount and date visible.", "es"),
+    "Comprobante de la comida del equipo, con monto y fecha visibles.",
+  );
+  assert.equal(
+    textoVisible("A short demo event with a booth, a check-in, and a team meal. Nothing here moves money.", "es"),
+    "Un evento corto de demostración, con un stand, un registro y una comida del equipo. Aquí no se mueve dinero.",
+  );
   assert.equal(textoVisible("Montar el stand", "es"), "Montar el stand");
 });
 

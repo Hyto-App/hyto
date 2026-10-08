@@ -1,4 +1,5 @@
 import type { SesionFila, Usuario } from "@/lib/db/tipos";
+import type { Idioma } from "@/lib/ui/idioma";
 
 export const AVISO_FIRMA_DEMO = "Demo mode can't send payments. Sign in with your email to continue.";
 export const AVISO_PROYECTO_DEMO = "Demo mode cannot create events. Sign in with your email to create one.";
@@ -32,6 +33,20 @@ export function usuariosDemo(): Usuario[] {
 
 export function usuarioDemo(rol: RolDemo): Usuario {
   return { ...FILAS[rol] };
+}
+
+const NOMBRES_DEMO: Record<string, Record<Idioma, string>> = {
+  "organizer (demo)": { en: "Organizer (demo)", es: "Organizador (demo)" },
+  "volunteer (demo)": { en: "Volunteer (demo)", es: "Voluntario (demo)" },
+  "organizador (demo)": { en: "Organizer (demo)", es: "Organizador (demo)" },
+  "voluntario (demo)": { en: "Volunteer (demo)", es: "Voluntario (demo)" },
+};
+
+/** The stored demo name, in the session language. Any other name is unchanged. */
+export function nombreDemoVisible(nombre: string | null | undefined, idioma: Idioma): string | null {
+  const limpio = (nombre ?? "").trim();
+  if (!limpio) return null;
+  return NOMBRES_DEMO[limpio.toLowerCase()]?.[idioma] ?? limpio;
 }
 
 export function rolDemoDe(valor: unknown): RolDemo | null {

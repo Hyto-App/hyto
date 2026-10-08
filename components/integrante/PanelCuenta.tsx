@@ -145,7 +145,7 @@ function PasaporteStellar() {
 function Billetera({ vista }: { vista: VistaCuenta }) {
   const t = useTexto();
   const idioma = useIdioma();
-  const publica = direccionPublica(vista.wallet);
+  const publica = direccionVisible(vista);
   return (
     <section className="hyto-card p-5 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -154,7 +154,11 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
             <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.wallet")}</h2>
             {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
           </div>
-          {publica ? <Direccion direccion={publica} /> : <p className="mt-2 max-w-sm text-sm leading-6">{t("cuenta.signInWallet")}</p>}
+          {publica ? (
+            <Direccion direccion={publica} explorar={Boolean(direccionPublica(publica))} completa={vista.walletMuestra} />
+          ) : (
+            <p className="mt-2 max-w-sm text-sm leading-6">{t("cuenta.signInWallet")}</p>
+          )}
         </div>
         <div className="min-w-[10rem]">
           <p className="text-sm text-[var(--suave)]">{t("cuenta.testnetUsdc")}</p>
@@ -166,7 +170,7 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
   );
 }
 
-function Direccion({ direccion }: { direccion: string }) {
+function Direccion({ direccion, explorar, completa = false }: { direccion: string; explorar: boolean; completa?: boolean }) {
   const t = useTexto();
   const [copiado, setCopiado] = useState(false);
   const [fallo, setFallo] = useState(false);
@@ -190,21 +194,23 @@ function Direccion({ direccion }: { direccion: string }) {
   return (
     <div className="mt-2">
       <p className="font-mono text-xl tracking-tight">
-        {acortarDireccion(direccion)}
+        {completa ? direccion : acortarDireccion(direccion)}
         <span className="sr-only">{direccion}</span>
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="hyto-btn-line is-inline px-5" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? t("cuenta.copied") : t("cuenta.copy")}
         </button>
-        <a
-          className="hyto-btn-line is-inline px-5"
-          href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t("cuenta.viewTestnet")}
-        </a>
+        {explorar ? (
+          <a
+            className="hyto-btn-line is-inline px-5"
+            href={`${EXPLORADOR}${encodeURIComponent(direccion)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t("cuenta.viewTestnet")}
+          </a>
+        ) : null}
       </div>
       {fallo ? (
         <label className="mt-3 block text-sm text-[var(--suave)]" htmlFor="direccion-publica">
@@ -429,4 +435,10 @@ function copiarConSeleccion(texto: string): boolean {
 function direccionPublica(direccion: string | null): string | null {
   if (!direccion || !/^G[A-Z2-7]{55}$/.test(direccion)) return null;
   return direccion;
+}
+
+/** A sample address is not an account on the network, and it is still shown. */
+function direccionVisible(vista: VistaCuenta): string | null {
+  if (vista.walletMuestra && vista.wallet?.trim()) return vista.wallet.trim();
+  return direccionPublica(vista.wallet);
 }

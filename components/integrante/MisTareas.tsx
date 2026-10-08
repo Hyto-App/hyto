@@ -21,6 +21,7 @@ import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
 import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { nombreDemoVisible } from "@/lib/sesion/demo";
 import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
 
 type Filtro = "all" | EstadoTarea;
@@ -120,7 +121,8 @@ function Saludo({ nombre }: { nombre: string | null }) {
     return () => media.removeEventListener("change", aplicar);
   }, []);
 
-  const persona = primerNombre(nombre);
+  const idioma = useIdioma();
+  const persona = primerNombre(nombreDemoVisible(nombre, idioma));
   const frase = ahora ? t(claveSaludo(franjaDe(ahora), persona !== null), persona ? { name: persona } : undefined) : t("tareas.title");
 
   return (
