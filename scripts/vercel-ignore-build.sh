@@ -25,14 +25,14 @@ solo_documentos() {
 }
 
 # Vercel sets VERCEL_GIT_PREVIOUS_SHA to the last successful deployment of this
-# branch. The clone is shallow, so that commit may be missing: then build.
+# branch. Empty means the branch has never deployed: always build. Comparing
+# against HEAD^ would skip that first preview when the tip commit only touches
+# docs or markdown (#124). A set SHA missing from the shallow clone also builds.
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
-if [ -n "$base" ]; then
-  git cat-file -e "${base}^{commit}" 2>/dev/null || construir "previous deployment ${base} is not in this clone"
-else
-  git rev-parse -q --verify 'HEAD^' >/dev/null 2>&1 || construir "no previous commit to compare"
-  base='HEAD^'
+if [ -z "$base" ]; then
+  construir "no previous deployment for this branch"
 fi
+git cat-file -e "${base}^{commit}" 2>/dev/null || construir "previous deployment ${base} is not in this clone"
 
 # --no-renames lists both sides of a move, so moving code into docs/ still builds.
 cambios="$(git -c core.quotePath=false diff --name-only --no-renames "$base" HEAD)" || construir "git diff failed"
