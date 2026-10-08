@@ -1,8 +1,10 @@
 # Stack
 
-Current as of `main` at `5c6613f` (7 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
+Current as of `main` at `c17baf7` (8 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
-One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Evidence, the AI review, and the report stay off-chain.
+Hyto is the accountability layer for Stellar communities in Latin America. One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Trustless Work is the base, not a product Hyto competes with. Evidence, the AI review, and the report stay off-chain. A receipt in colones is read from the photo and converted with a hand-updated rate. There is no mainnet payment and no recorded testnet hash yet.
+
+Communities (`drizzle/0010` through `0013`) are the same story: a chapter, a bulletin, an account type, and a member profile. The flags `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO` stay off.
 
 ## Layers
 
@@ -12,7 +14,7 @@ One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one con
 | UI | Poppins 400/500/600. `--acento` `#B7EE34`, `--sobre-acento` `#08090C`. Light and dark in `app/globals.css`. English and Spanish dictionaries in `lib/ui/diccionario.ts` (cookie `hyto_idioma`, English fallback). Figma: [Hyto – App](https://www.figma.com/design/4LoHfVpaXEG5n4DdF6z2Yy), page "Nuevo diseño". |
 | Shell | Events (`/eventos`), Tasks (`/mis-tareas`), Account (`/configuracion`). `/` sends an organizer, including the demo organizer, to `/eventos`, and everyone else to `/mis-tareas`. `/cuentas` redirects to `/configuracion`. |
 | Host | Vercel. Push to `main` deploys https://hyto.vercel.app. Each PR gets a preview. |
-| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0009_contexto_evento.sql`. `0004` was applied on 2026-10-01. `0009` adds the cover, the public description, and the AI-only context. |
+| Data | Neon Postgres, Drizzle. Migrations `drizzle/0000_inicio.sql` through `drizzle/0013_tablon.sql`. `0004` was applied on 2026-10-01. `0009` adds the cover, the public description, and the AI-only context. `0010` through `0013` add communities, account type, the volunteer profile, and the bulletin. Those four stay behind their flags. |
 | Files | Private Vercel Blob. The photo is not written on-chain. |
 | Wallet | `@cavos/kit` 0.2.5. `chains: ["stellar"]`, `network: "testnet"`, `appSalt` `hyto`. Changing the salt later creates a different wallet. |
 | Escrow | `https://beta.api.trustlesswork.com`. Unsigned XDR from the server, `wallet.signXdr` in the browser, `POST /stellar/send-transaction`. Not the Cavos `TrustlessWorkEscrow` wrapper. |

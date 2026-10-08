@@ -1,16 +1,28 @@
 # Hyto
 
-Milestone payments on Stellar. Someone with funds creates an event, locks the budget in a Trustless Work escrow, and pays USDC on testnet after a photo is reviewed. Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+Hyto is the accountability layer for Stellar communities in Latin America: lock USDC per task, prove the spend with a photo, and a person releases the payment on a public trail.
 
-This file is the short map. Agents and contributors should read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md).
+Stellar communities — ambassador programs, local chapters, and builder groups — receive stipends, scholarships (becas), grants, and event sponsorship from abroad, and they have to show how that money was spent. The funder or organizer locks USDC in a Trustless Work escrow for each task. The member does the work and uploads an in-place photo, or a receipt in colones. Mile recommends a score and never moves money. A person releases the payment on Stellar, so the trail is public. Sign-in is an email through Cavos. You do not install a wallet first.
+
+Why USDC, and not a local transfer such as SINPE: the money arrives from abroad in dollars, and the funder wants proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor, and Hyto is not an on-ramp.
+
+Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+
+This file is the short map. Agents and contributors should read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md). The pitch the team can reuse is in [Hyto-informe.md](Hyto-informe.md).
+
+## Testnet proof
+
+TODO: paste the hash of the first successful testnet USDC payment here, as `https://stellar.expert/explorer/testnet/tx/<hash>`.
+
+No hash is in this repo yet. The pay button prepares a testnet transaction. It does not invent a payment. Amounts in the ZEEK sample (three US$20 work tasks and a meal cap of US$15) are examples in the seed. They are not real money and not real wallets. There is no pilot and no mainnet payment.
 
 ## What it does
 
-Login does not pick a global role. A signed-in user who can cover the budget plus a 1 USDC reserve creates an event and becomes that event's organizer. Other people join with a direct invite or a code `HYTO-` plus 12 characters. Invites expire in 7 days. Members see the tasks assigned to them. The organizer sees every task and assigns them at `/eventos/[id]/tareas`.
+Login does not pick a global role, and it does not ask for a wallet. A signed-in user who can cover the budget plus a 1 USDC reserve creates an event and becomes that event's organizer. Other people join with a direct invite or a code `HYTO-` plus 12 characters. Invites expire in 7 days. Members see the tasks assigned to them. The organizer sees every task and assigns them at `/eventos/[id]/tareas`.
 
-The shell is Events, Tasks, and Account (light and dark). Evidence is a photo. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
+The shell is Events, Tasks, and Account (light and dark). Evidence is a photo of the work in place, or a receipt. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
 
-There is no successful on-chain USDC payment recorded in this repo. No transaction hash is stored here, and `tareas.hash_pago` in the sample data is empty. The pay button prepares a testnet transaction; it does not invent a payment.
+Communities, the bulletin, account type, and the volunteer profile are the same story: a chapter that holds events, notices when a task moves, and a profile a member writes for themselves. They stay behind `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO`. Those flags stay off until their migrations are applied and someone sets the value to `on`.
 
 ## Screens
 

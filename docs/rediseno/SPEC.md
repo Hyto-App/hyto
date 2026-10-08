@@ -1,5 +1,7 @@
 # Hyto · Rediseño de la app (voluntario) — spec para construir en 3 partes
 
+> **Historia del producto, 8 de octubre de 2026.** Hyto es la capa de rendición de cuentas para comunidades de Stellar en América Latina (estipendios, becas, subvenciones, patrocinio de eventos). El eslogan de la app es «Show the spend. On the record.» Este spec sigue valiendo para layout, Mile y la regla de no escribir jerga de pago en la UI. No describe un mercado de tareas ni una app de gastos para empresas.
+
 > Aprobado por Abdiel el 2026-10-04. Este documento es **autocontenido**: quien construye solo necesita este repo.
 > Base de código: rama `abdiel/sin-landing` (PR #143: `/` abre el login; con sesión redirige a `/mis-tareas`).
 > Rama de trabajo del rediseño: `abdiel/rediseno-app` (cada PARTE sale en su propia rama/PR desde ahí).

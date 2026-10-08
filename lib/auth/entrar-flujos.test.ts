@@ -28,7 +28,7 @@ test("Sign in y Crear cuenta ofrecen Google y correo, sin jerga, en pestañas", 
     assert.match(ingreso, /Continue with Google/);
     assert.match(ingreso, /Continue with Apple/);
     assert.match(ingreso, /Continue with email/);
-    assert.match(ingreso, /Prove your worth,/);
+    assert.match(ingreso, /Show the spend,/);
     assert.ok(document.querySelector('input[type="email"]'));
     const pestanas = [...document.querySelectorAll('[role="tab"]')];
     assert.deepEqual(

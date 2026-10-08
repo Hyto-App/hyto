@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `2b9fad4` (2 October 2026). The September kickoff that assigned a global product role at login is retired. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `c17baf7` (8 October 2026). Hyto is for Stellar communities in Latin America — ambassador programs, local chapters, and builder groups — that receive funding and have to account for it. The funder or organizer locks USDC per task. A member proves the spend with a photo. Login does not assign a global product role. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 

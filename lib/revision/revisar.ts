@@ -45,7 +45,7 @@ export type ContextoRevision = {
   idioma?: Idioma;
   /** The event's description and AI context. Read by the vision prompt only. */
   evento?: ContextoEvento | null;
-  /** Company description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
+  /** Community description for the vision prompt. Ignored unless HYTO_TIPO_CUENTA is on. */
   organizacion?: string | null;
 };
 
