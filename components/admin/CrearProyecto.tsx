@@ -12,6 +12,8 @@ import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
+import { contextoAbierto } from "@/lib/ui/campos-evento";
+import { AreaTexto, Contador, IconoCandado, ZonaPortada } from "./CamposEvento";
 
 const TIPOS_PORTADA = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES_PORTADA = 5 * 1024 * 1024;
@@ -63,6 +65,7 @@ export function CrearProyecto() {
   const [descripcion, setDescripcion] = useState("");
   const [contextoIa, setContextoIa] = useState("");
   const [portada, setPortada] = useState<File | null>(null);
+  const [contextoAbiertoPorUsuario, setContextoAbiertoPorUsuario] = useState(false);
   const [creadoId, setCreadoId] = useState<string | null>(null);
 
   function cambiar(clave: string, cambio: Partial<Fila>) {
@@ -176,62 +179,72 @@ export function CrearProyecto() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div>
-          <label className="block text-sm text-[var(--suave)]" htmlFor="nombre-proyecto">
-            {t("eventos.name")}
-          </label>
-          <input
-            id="nombre-proyecto"
-            value={nombre}
-            onChange={(evento) => setNombre(evento.target.value)}
-            className="hyto-input mt-2"
-          />
+          <section className="hyto-card hyto-seccion" aria-labelledby="detalles-titulo">
+            <h2 id="detalles-titulo" className="hyto-seccion-titulo">
+              {t("eventos.detailsTitle")}
+            </h2>
+            <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor="nombre-proyecto">
+              {t("eventos.name")}
+            </label>
+            <input
+              id="nombre-proyecto"
+              value={nombre}
+              onChange={(evento) => setNombre(evento.target.value)}
+              className="hyto-input mt-2"
+            />
 
-          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="portada-proyecto">
-            {t("eventos.coverPhoto")}
-          </label>
-          <input
-            id="portada-proyecto"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-describedby="portada-ayuda"
-            onChange={(evento) => setPortada(evento.target.files?.[0] ?? null)}
-            className="hyto-input mt-2"
-          />
-          <p id="portada-ayuda" className="mt-2 text-xs text-[var(--suave)]">
-            {t("eventos.coverHelp")}
-          </p>
+            <div className="mt-6">
+              <ZonaPortada
+                id="portada-proyecto"
+                archivo={portada}
+                nombreEvento={nombre}
+                etiqueta={t("eventos.coverPhoto")}
+                ayudaId="portada-ayuda"
+                onArchivo={setPortada}
+              />
+              <p id="portada-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+                {t("eventos.coverHelp")}
+              </p>
+            </div>
 
-          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="descripcion-proyecto">
-            {t("eventos.description")}
-          </label>
-          <textarea
-            id="descripcion-proyecto"
-            value={descripcion}
-            maxLength={1000}
-            rows={4}
-            aria-describedby="descripcion-ayuda"
-            onChange={(evento) => setDescripcion(evento.target.value)}
-            className="hyto-input mt-2"
-          />
-          <p id="descripcion-ayuda" className="mt-2 text-xs text-[var(--suave)]">
-            {t("eventos.descriptionHelp")} {descripcion.length}/1000
-          </p>
+            <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="descripcion-proyecto">
+              {t("eventos.description")}
+            </label>
+            <AreaTexto id="descripcion-proyecto" valor={descripcion} max={1000} filas={5} ayudaId="descripcion-ayuda" onCambio={setDescripcion} />
+            <p id="descripcion-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+              {t("eventos.descriptionHelp")}
+            </p>
+            <Contador largo={descripcion.length} max={1000} />
+          </section>
 
-          <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="contexto-ia-proyecto">
-            {t("eventos.aiContext")}
-          </label>
-          <textarea
-            id="contexto-ia-proyecto"
-            value={contextoIa}
-            maxLength={2000}
-            rows={5}
-            aria-describedby="contexto-ia-ayuda"
-            onChange={(evento) => setContextoIa(evento.target.value)}
-            className="hyto-input mt-2"
-          />
-          <p id="contexto-ia-ayuda" className="mt-2 text-xs text-[var(--suave)]">
-            {t("eventos.aiContextHelp")} {contextoIa.length}/2000
-          </p>
+          <section className="hyto-card hyto-seccion" aria-labelledby="mile-titulo">
+            <h2 id="mile-titulo" className="hyto-seccion-titulo">
+              <IconoCandado />
+              {t("eventos.mileTitle")}
+            </h2>
+            <p className="hyto-seccion-nota">{t("eventos.mileLock")}</p>
+            {contextoAbierto(contextoIa, contextoAbiertoPorUsuario) ? (
+              <div className="mt-4">
+                <label className="block text-sm text-[var(--suave)]" htmlFor="contexto-ia-proyecto">
+                  {t("eventos.aiContext")}
+                </label>
+                <AreaTexto id="contexto-ia-proyecto" valor={contextoIa} max={2000} filas={6} ayudaId="contexto-ia-ayuda" onCambio={setContextoIa} />
+                <p id="contexto-ia-ayuda" className="mt-2 text-xs text-[var(--suave)]">
+                  {t("eventos.aiContextHelp")}
+                </p>
+                <Contador largo={contextoIa.length} max={2000} />
+                {contextoIa.length === 0 ? (
+                  <button type="button" onClick={() => setContextoAbiertoPorUsuario(false)} className="hyto-btn-line is-inline mt-3 px-4">
+                    {t("eventos.mileHide")}
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <button type="button" onClick={() => setContextoAbiertoPorUsuario(true)} aria-expanded="false" className="hyto-btn-line is-inline mt-4 px-5">
+                {t("eventos.mileAdd")}
+              </button>
+            )}
+          </section>
 
           <div className="mt-8 space-y-4">
             {filas.map((fila, indice) => (
