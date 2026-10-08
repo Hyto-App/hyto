@@ -53,7 +53,7 @@ test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async ()
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /49% · Insufficient/);
+    assert.match(texto(), /Mile: 49% match/);
     assert.match(texto(), /Serious issue: does not match the request/);
     assert.match(texto(), /The photo does not match what was requested/);
     assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"), true);

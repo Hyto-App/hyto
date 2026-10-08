@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { PresentacionMile } from "@/components/admin/PresentacionMile";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
@@ -459,6 +460,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {tarea.estado === "en revisión" ? (
                             typeof tarea.nota === "number" && tarea.veredicto ? (
                               <div className="mt-3">
+                                <PresentacionMile />
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                                 <EtiquetasNota etiquetas={tarea.notas} />
                               </div>

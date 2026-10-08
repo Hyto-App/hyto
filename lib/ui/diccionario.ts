@@ -66,6 +66,13 @@ export const en = {
     requisitosLista: "Requirements have to be a list.",
     requisitosMax: "Enter at most 3 requirements.",
     demoSugerir: "Demo mode cannot suggest requirements.",
+    presentacion: "Mile (our AI reviewer)",
+    coincidencia: "Mile: {n}% match",
+    verMas: "See more",
+    verMenos: "See less",
+    describio: "Mile described this photo.",
+    reciboDe: "Receipt from {comercio} for {monto}.",
+    reciboComercio: "Receipt from {comercio}.",
   },
   confirmar: {
     cancel: "Cancel",
@@ -605,6 +612,8 @@ export const en = {
     printedConverted: "Printed {monto}, converted at {tasa} {moneda} per US dollar.",
     printedNotConverted: "Printed {monto}. No currency Hyto can convert, so it was not converted to US dollars.",
     printedDate: "Printed {fecha}, which could not be read as a date.",
+    mileAmount: "{impreso} ≈ {dolares}",
+    amountDetails: "Printed total and exchange rate",
     amountToPay: "Amount to pay",
     upTo: "Up to {monto}. Confirm this amount before deploying.",
     overCap: "The receipt converts to {leido}, above the {tope} cap. The amount to pay is the cap.",
@@ -984,6 +993,7 @@ export const en = {
   },
   ayuda: {
     titulo: "Ask Mile",
+    intro: "Search the frequently asked questions. This is not a chat.",
     buscar: "Search",
     placeholder: "Search the answers",
     atajos: "Shortcuts",
@@ -996,7 +1006,7 @@ export const en = {
     atajoFaq: "Frequently asked questions",
     pagoQ: "How do I get paid?",
     pagoA:
-      "You send a photo of the work, or of a receipt in colones. Mile reads it and leaves a score. A person releases the payment in digital dollars (USDC) to the account you prepared in Settings. Mile does not sign or move money. The funding arrives from afar in dollars, so the record is that payment, not loose screenshots, a spreadsheet, or a local transfer such as SINPE.",
+      "You send a photo of the work, or of a receipt in colones. Mile reads it and leaves a score. A person releases the payment in digital dollars (USDC) to the account you prepared in Settings. The funding arrives from afar in dollars, so the record is that payment, not loose screenshots, a spreadsheet, or a local transfer such as SINPE.",
     evidenciaQ: "What do I send?",
     evidenciaA:
       "A photo taken where the work happened. For a reimbursement, photograph the receipt, including one in colones. Hyto does not ask for another kind of evidence.",
@@ -1191,6 +1201,13 @@ export const es: Rama<typeof en> = {
     requisitosLista: "Los requisitos tienen que ir en una lista.",
     requisitosMax: "Escribe como máximo 3 requisitos.",
     demoSugerir: "El modo de prueba no sugiere requisitos.",
+    presentacion: "Mile (nuestro revisor con IA)",
+    coincidencia: "Mile: {n} % de coincidencia",
+    verMas: "Ver más",
+    verMenos: "Ver menos",
+    describio: "Mile describió esta foto.",
+    reciboDe: "Recibo de {comercio} por {monto}.",
+    reciboComercio: "Recibo de {comercio}.",
   },
   confirmar: {
     cancel: "Cancelar",
@@ -1729,6 +1746,8 @@ export const es: Rama<typeof en> = {
     printedConverted: "Impreso {monto}, convertido a {tasa} {moneda} por dólar.",
     printedNotConverted: "Impreso {monto}. No tiene una moneda que Hyto pueda convertir, así que no se pasó a dólares.",
     printedDate: "Impreso {fecha}, que no se pudo leer como fecha.",
+    mileAmount: "{impreso} ≈ {dolares}",
+    amountDetails: "Total impreso y tipo de cambio",
     amountToPay: "Monto a pagar",
     upTo: "Hasta {monto}. Confirma este monto antes de desplegar.",
     overCap: "El recibo equivale a {leido}, por encima del límite de {tope}. El monto a pagar es el límite.",
@@ -2108,6 +2127,7 @@ export const es: Rama<typeof en> = {
   },
   ayuda: {
     titulo: "Pregúntale a Mile",
+    intro: "Busca en las preguntas frecuentes. Esto no es un chat.",
     buscar: "Buscar",
     placeholder: "Busca en las respuestas",
     atajos: "Atajos",
@@ -2120,7 +2140,7 @@ export const es: Rama<typeof en> = {
     atajoFaq: "Preguntas frecuentes",
     pagoQ: "¿Cómo me pagan?",
     pagoA:
-      "Envías una foto del trabajo, o de un recibo en colones. Mile la lee y deja una nota. Una persona libera el pago en dólares digitales (USDC) a la cuenta que preparaste en Configuración. Mile no firma ni mueve el dinero. El financiamiento llega desde lejos en dólares, así que el registro es ese pago, no capturas sueltas, una hoja de cálculo ni una transferencia local como SINPE.",
+      "Envías una foto del trabajo, o de un recibo en colones. Mile la lee y deja una nota. Una persona libera el pago en dólares digitales (USDC) a la cuenta que preparaste en Configuración. El financiamiento llega desde lejos en dólares, así que el registro es ese pago, no capturas sueltas, una hoja de cálculo ni una transferencia local como SINPE.",
     evidenciaQ: "¿Qué tengo que enviar?",
     evidenciaA:
       "Una foto tomada donde pasó el trabajo. Si es un reembolso, fotografía el recibo, incluso si está en colones. Hyto no pide otro tipo de evidencia.",

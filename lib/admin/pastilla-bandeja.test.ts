@@ -20,18 +20,18 @@ test("la pastilla sin nota muestra la palabra y no un porcentaje", async () => {
 
 test("el porcentaje y la etiqueta van juntos en la pastilla", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 84 }));
-  const palabra = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "84% · Completed");
+  const palabra = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "Mile: 84% match");
   assert.match(palabra?.className ?? "", /hyto-pill /);
   assert.match(palabra?.className ?? "", /hyto-pill-ok/);
   await desmontar();
 
   await montar(createElement(PastillaVeredicto, { veredicto: "insuficiente", nota: 40 }));
-  const mala = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "40% · Insufficient");
+  const mala = [...document.querySelectorAll("span")].find((nodo) => nodo.textContent === "Mile: 40% match");
   assert.match(mala?.className ?? "", /hyto-pill-bad/);
   await desmontar();
 
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 64 }));
-  assert.equal(texto(), "64% · Partially completed");
+  assert.equal(texto(), "Mile: 64% match");
   assert.match(document.querySelector(".hyto-pill")?.className ?? "", /hyto-pill-mid/);
   await desmontar();
 });
@@ -45,8 +45,8 @@ test("la pastilla sigue el idioma elegido", async () => {
   );
   const pill = document.querySelector(".hyto-pill");
   assert.ok(pill instanceof HTMLElement);
-  assert.equal(pill.getAttribute("aria-label"), "64% · Parcialmente completado");
-  assert.equal(pill.textContent, "64% · Parcialmente completado");
+  assert.equal(pill.getAttribute("aria-label"), "Mile: 64 % de coincidencia");
+  assert.equal(pill.textContent, "Mile: 64 % de coincidencia");
   assert.equal(pill.querySelector(".hyto-pill-vista")?.getAttribute("data-etiqueta"), "Parcialmente completado");
   await desmontar();
 });
@@ -56,8 +56,8 @@ test("la pastilla anuncia solo el texto final y esconde el número que se anima"
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: 64 }));
   const pill = document.querySelector(".hyto-pill");
   assert.ok(pill instanceof HTMLElement);
-  assert.equal(pill.getAttribute("aria-label"), "64% · Partially completed");
-  assert.equal(pill.textContent, "64% · Partially completed");
+  assert.equal(pill.getAttribute("aria-label"), "Mile: 64% match");
+  assert.equal(pill.textContent, "Mile: 64% match");
   assert.equal(pill.querySelector(".hyto-pill-vista")?.getAttribute("aria-hidden"), "true");
   assert.equal(pill.querySelector(".hyto-pill-sr")?.getAttribute("aria-hidden"), "true");
   assert.equal(pill.querySelector(".hyto-pill-bar")?.getAttribute("aria-hidden"), "true");
@@ -82,8 +82,8 @@ test("con menos movimiento la nota y la barra saltan al valor final", async () =
     assert.ok(pill instanceof HTMLElement);
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "40");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "40");
-    assert.equal(pill.getAttribute("aria-label"), "40% · Insufficient");
-    assert.equal(texto(), "40% · Insufficient");
+    assert.equal(pill.getAttribute("aria-label"), "Mile: 40% match");
+    assert.equal(texto(), "Mile: 40% match");
   } finally {
     restaurar();
     await desmontar();
@@ -100,29 +100,29 @@ test("la nota sube desde el valor anterior y el texto final no cambia en el cami
     await pintar(root, 64, "cumplió");
     const pill = document.querySelector(".hyto-pill");
     assert.ok(pill instanceof HTMLElement);
-    assert.equal(pill.textContent, "64% · Partially completed");
+    assert.equal(pill.textContent, "Mile: 64% match");
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "");
 
     reloj.disparar();
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "0");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "0.00");
-    assert.equal(pill.textContent, "64% · Partially completed");
+    assert.equal(pill.textContent, "Mile: 64% match");
 
     reloj.avanzar(600);
     reloj.disparar();
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "56");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "56.00");
-    assert.equal(pill.getAttribute("aria-label"), "64% · Partially completed");
+    assert.equal(pill.getAttribute("aria-label"), "Mile: 64% match");
 
     reloj.avanzar(600);
     reloj.disparar();
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "64");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "64");
-    assert.equal(texto(), "64% · Partially completed");
+    assert.equal(texto(), "Mile: 64% match");
 
     await pintar(root, 20, "cumplió");
-    assert.equal(pill.getAttribute("aria-label"), "20% · Insufficient");
-    assert.equal(pill.textContent, "20% · Insufficient");
+    assert.equal(pill.getAttribute("aria-label"), "Mile: 20% match");
+    assert.equal(pill.textContent, "Mile: 20% match");
     reloj.disparar();
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "64");
     reloj.avanzar(1200);

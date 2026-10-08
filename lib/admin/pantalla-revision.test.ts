@@ -59,7 +59,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
-    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Mile: 64% match/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -84,7 +84,7 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Sample recommendation/);
-    assert.match(texto(), /100% · Completed/);
+    assert.match(texto(), /Mile: 100% match/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
   } finally {
@@ -427,7 +427,7 @@ test("asking for another photo removes the old verdict pill", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => texto().includes("64% · Partially completed"));
+    await esperar(() => texto().includes("Mile: 64% match"));
     await confirmarPedir();
     await esperar(() => !texto().includes("Partially completed"));
     assert.equal(texto().includes("AI recommendation"), false);
@@ -497,8 +497,8 @@ test("the review card shows the main reason next to the percentage and what the 
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => texto().includes("78% · Partially completed"));
-    const pill = document.querySelector('[aria-label="78% · Partially completed"]');
+    await esperar(() => texto().includes("Mile: 78% match"));
+    const pill = document.querySelector('[aria-label="Mile: 78% match"]');
     const motivo = document.querySelector("[data-motivo]");
     assert.ok(pill instanceof HTMLElement);
     assert.ok(motivo instanceof HTMLElement);
@@ -506,7 +506,12 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /₡6\.900,00 ≈ US\$13\.66/);
+    const detalles = document.querySelector("details.hyto-mile-mas");
+    assert.ok(detalles instanceof HTMLElement);
+    assert.equal(detalles.tagName, "DETAILS");
+    assert.equal(detalles.hasAttribute("open"), false);
+    assert.match(detalles.textContent ?? "", /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;

@@ -48,7 +48,7 @@ export function PastillaVeredicto({ veredicto, nota = null }: { veredicto: Vered
   const idioma = useIdioma();
   const banda = typeof nota === "number" ? etiquetaDesdeNota(nota) : veredicto;
   const etiqueta = etiquetaVeredicto(banda, idioma);
-  const texto = textoNota(etiqueta, nota);
+  const texto = textoNota(etiqueta, nota, idioma);
   const destino = typeof nota === "number" && Number.isFinite(nota) ? nota : null;
   const pillRef = useRef<HTMLSpanElement>(null);
   const mostrado = useRef(0);

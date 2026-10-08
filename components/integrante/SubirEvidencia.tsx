@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { PresentacionMile } from "@/components/admin/PresentacionMile";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
@@ -679,6 +680,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             ) : null}
             {calificacion ? (
               <div className="hyto-resumen-nota">
+                <PresentacionMile />
                 <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
                 <EtiquetasNota etiquetas={tarea.notas} />
                 <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
