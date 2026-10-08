@@ -1,0 +1,44 @@
+POST /api/firma/enviar 409 "The transaction does not deploy the escrow."
+Seen on deploy after Cavos approve. Nothing is submitted. About 325 ms.
+
+Root cause
+enviarFirmaHttp (lib/api/firma.ts) returns that 409 before enviar() when
+accion is "desplegar" and the host function read from the XDR is not the
+string "deploy" (FUNCION_DESPLIEGUE).
+
+leerInvocacion (lib/escrow/xdr.ts) reads the Soroban invokeHostFunction name.
+The signed deploy calls tw_new_multi_release_escrow on the Trustless Work
+factory CDRCUUCXNNUWYEYWSDM7DJTAKPLEVIQXLYG5B7RIJCB6GFAGSENTKVG7. The
+predicted escrow (CCBPB…) is not the invoked contract. The prepare route is
+/escrow/multi-release/v2/deploy; the on-chain name is tw_new_multi_release_escrow.
+Those two strings differ, so the check fails.
+
+The wallet-signer check already passed (otherwise the aviso would be
+"This session's wallet did not sign the XDR."). esFeeBump did not match
+(that is a different 400). The HMAC fingerprint check runs later and was
+not reached.
+
+Tests build XDRs with xdrDeInvocacion({ funcion: "deploy" }), so they never
+use the real host function.
+
+Next wall if only the function name is relaxed
+verificarTokenPreparado requires huellaDeXdr(signed XDR) to equal the hash
+stored at prepare. A Cavos re-simulation (fee, footprint, auth) changes that
+hash and then returns 409 "This signature does not match the prepared payment."
+
+Fund, approve, release
+They do not compare the host function to "deploy" before submit. They require
+the session wallet as the only signer, then the same hash token. A rebuilt
+fund, approve, or release XDR fails that hash check, not this deploy string.
+After a release submit, guardarResultado marks the task paid only when the
+function is "release_funds". A different on-chain name can land and leave the
+task unpaid (200 with a warning, not this 409).
+
+Keep the XLM fee pre-check added in #216 (rechazoSiComision on prepare).
+It is not this 409.
+
+Direction, not implemented
+Accept tw_new_multi_release_escrow on the known factory when the args match
+the prepared escrow (roles, amount, milestones, predicted contract). Accept a
+signature whose hash differs when those args still match. Keep rejecting
+unrelated invocations.
