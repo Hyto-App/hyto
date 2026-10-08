@@ -179,6 +179,9 @@ test("calificar aplica el tope más bajo y deja los pesos como están", () => {
   assert.equal(calificar(84, ["sin_empezar"]).nota, 49);
   assert.equal(calificar(82, ["otro_gasto"]).nota, 49);
   assert.equal(calificar(80, ["gasto_no_razonable"]).nota, TOPE_FALTA_SERIA);
+  assert.equal(calificar(79, ["regla_evento"]).nota, TOPE_FALTA_GRAVE);
+  assert.equal(calificar(79, ["gasto_no_razonable", "regla_evento"]).nota, TOPE_FALTA_GRAVE);
+  assert.notEqual(calificar(79, ["gasto_no_razonable"]).nota, calificar(79, ["gasto_no_razonable", "regla_evento"]).nota);
   assert.equal(calificar(79, ["gasto_no_razonable"]).veredicto, "parcial");
   assert.equal(calificar(100, ["sin_monto"]).nota, TOPE_NOTA_REEMBOLSO);
   assert.equal(calificar(90, ["gasto_no_razonable", "sin_monto"]).nota, 40);

@@ -1,4 +1,4 @@
-/** Organizer-written background about the event. It reaches the vision prompt and nothing else. */
+/** Organizer-written background about the event. The description and the AI rules reach the vision prompt. The rules also reach Laya and the grade. */
 export type ContextoEvento = {
   /** The public description members also read. */
   descripcion?: string | null;
@@ -13,12 +13,17 @@ function limpiar(texto: string | null | undefined): string {
   return (texto ?? "").replace(/<\/?\s*event_context\s*>/gi, "").trim();
 }
 
+/** The organizer's rules for the reviewers, or "" when there are none. Laya sees at most 600 characters. */
+export function reglaDeEvento(contexto: ContextoEvento | null | undefined): string {
+  return limpiar(contexto?.contextoIa).slice(0, 600);
+}
+
 /**
  * The request Laya scores against: the task condition plus the organizer's rules for the AI, so a
  * photo that breaks a rule does not match. Without rules it is the condition unchanged.
  */
 export function condicionParaLaya(condicion: string, contexto: ContextoEvento | null | undefined): string {
-  const ia = limpiar(contexto?.contextoIa).slice(0, 600);
+  const ia = reglaDeEvento(contexto);
   return ia ? `${condicion.trim()} Rule for this event: ${ia}` : condicion;
 }
 
