@@ -138,21 +138,40 @@ export function segundosDeRetryAfter(valor: string | null | undefined, ahora = D
 }
 
 /**
- * Wait time for an OTP 429. `Retry-After` wins when it is present. Otherwise the
- * body (`wait_seconds` or "wait N seconds") is the same fact. A 429 with neither
- * still waits a short while, and it is never a dropped connection.
+ * Wait stated by one OTP response. `Retry-After` and the body (`wait_seconds`
+ * or "wait N seconds") are the same fact; the longer one wins, so a countdown
+ * does not reach 0 while the server still refuses. A 429 with neither still
+ * waits a short while, and it is never a dropped connection. A success with
+ * neither says nothing here.
  */
-export async function esperaDeRespuesta429(respuesta: Response, ahora = Date.now()): Promise<number | null> {
-  if (respuesta.status !== 429) return null;
-  const header = segundosDeRetryAfter(respuesta.headers.get("retry-after"), ahora);
-  if (header !== null) return Math.max(1, Math.ceil(header));
+export function esperaDeclaradaDe(header: string | null | undefined, cuerpo: string, ahora = Date.now()): number | null {
+  const deHeader = segundosDeRetryAfter(header, ahora);
+  const deCuerpo = segundosEnTexto(cuerpo);
+  const valores = [deHeader, deCuerpo].filter((n): n is number => n !== null && n >= 0);
+  if (valores.length === 0) return null;
+  return Math.max(1, Math.ceil(Math.max(...valores)));
+}
+
+export async function esperaDeclarada(respuesta: Response, ahora = Date.now()): Promise<number | null> {
   let cuerpo = "";
   try {
     cuerpo = await respuesta.clone().text();
   } catch {
     cuerpo = "";
   }
-  return avisoDeIngreso(`-> 429 ${cuerpo}`).esperaSegundos;
+  const dicha = esperaDeclaradaDe(respuesta.headers.get("retry-after"), cuerpo, ahora);
+  if (dicha !== null) return dicha;
+  if (respuesta.status === 429) return ESPERA_SI_FALTA;
+  return null;
+}
+
+export async function esperaDeRespuesta429(respuesta: Response, ahora = Date.now()): Promise<number | null> {
+  if (respuesta.status !== 429) return null;
+  return esperaDeclarada(respuesta, ahora);
+}
+
+function segundosEnTexto(texto: string): number | null {
+  return segundosDeEspera(jsonEmpotrado(texto), texto);
 }
 
 function esperaAdjunta(error: unknown): number | null {
