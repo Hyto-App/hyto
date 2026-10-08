@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { VARIABLES } from "@/lib/config/entorno";
-import type { LecturaEvidencia } from "./lectura";
+import { aplicarV4DeFaltantes, mileFaltantesGroqActivo } from "./faltantes-groq";
+import { leerLectura, type LecturaEvidencia } from "./lectura";
 import { senalesDeFactura, senalesDeTrabajo, type RespuestasTrabajo } from "./laya";
-import { escribirSnapshot } from "./snapshot-razones";
+import { mileOtraConGroqActivo } from "./otra-groq";
+import { preguntasEventoActivas } from "./preguntas-evento-bandera";
+import { escribirSnapshot, leerSnapshot } from "./snapshot-razones";
+import { claseConTipoDeTarea, tipoPorTareaActivo } from "./tipo-por-tarea";
 import { cerrar, type Descripcion, type Senales } from "./armar";
 import { CASOS_TECHO, type CasoTecho } from "./techo-casos";
 import { mileTecho80Activo } from "./techo-bandera";
@@ -65,6 +69,8 @@ test("HYTO_MILE_TECHO_80 solo se enciende con on", () => {
   const definida = VARIABLES.find((variable) => variable.nombre === "HYTO_MILE_TECHO_80");
   assert.equal(definida?.silenciosa, true);
   assert.equal(definida?.requerida, false);
+  const miles = VARIABLES.map((variable) => variable.nombre).filter((nombre) => nombre.startsWith("HYTO_MILE_"));
+  assert.deepEqual(miles, [...miles].sort((a, b) => a.localeCompare(b)));
 });
 
 test("una lectura completa con las respuestas reales de Laya llega a cumplió solo con el interruptor", () => {
@@ -113,12 +119,16 @@ test("coincide si levanta el techo aunque Laya haya dicho que es otra cosa", () 
   const completa = { ...LECTURA_COMPLETA, coincide: "si" };
   assert.equal(puntosTecho80(RESCATADA, completa, ENCENDIDO), 12);
   assert.equal(puntosTecho80(RESCATADA, completa, APAGADO), 0);
-  assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide: "sí" }, ENCENDIDO), 12);
-  assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide: " SI " }, ENCENDIDO), 12);
   assert.equal(puntosTecho80(RESCATADA, LECTURA_COMPLETA, ENCENDIDO), 0);
-  for (const coincide of [undefined, null, "", "parcial", "partial", "no", "yes", "1", 1, true] as const) {
+  for (const coincide of [undefined, null, "parcial", "no"] as const) {
     assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide }, ENCENDIDO), 0, String(coincide));
   }
+  const desdeSi = leerLectura({ tipo: "trabajo", legible: true, faltantes: [], texto_completo: "The photo shows the requested work.", coincide: "sí" });
+  const desdeYes = leerLectura({ tipo: "trabajo", legible: true, faltantes: [], texto_completo: "The photo shows the requested work.", coincide: "yes" });
+  assert.equal(desdeSi?.coincide, "si");
+  assert.equal(desdeYes?.coincide, "si");
+  assert.equal(puntosTecho80(RESCATADA, desdeSi, ENCENDIDO), 12);
+  assert.equal(puntosTecho80(RESCATADA, desdeYes, ENCENDIDO), 12);
   assert.equal(puntosTecho80(RESCATADA, { ...completa, faltantes: ["the banner"] }, ENCENDIDO), 0);
   assert.equal(puntosTecho80(RESCATADA, { ...completa, legible: false }, ENCENDIDO), 0);
   assert.equal(puntosTecho80(RESCATADA, { ...completa, tipo: "otra" }, ENCENDIDO), 0);
@@ -140,6 +150,98 @@ test("coincide si levanta el techo aunque Laya haya dicho que es otra cosa", () 
   assert.equal(cerrar("trabajo", null, descripcionConCoincide("parcial"), sinTope, "scout", ENCENDIDO)?.nota, 68);
   assert.equal(cerrar("trabajo", null, descripcionConCoincide("no"), sinTope, "scout", ENCENDIDO)?.nota, 68);
   assert.equal(cerrar("trabajo", null, descripcion(LECTURA_COMPLETA), sinTope, "scout", ENCENDIDO)?.nota, 68);
+});
+
+test("el techo convive con los otros interruptores de Mile y cada uno sigue apagado salvo on", () => {
+  assert.equal(mileFaltantesGroqActivo({}), false);
+  assert.equal(mileFaltantesGroqActivo({ HYTO_MILE_FALTANTES_GROQ: "true" }), false);
+  assert.equal(mileOtraConGroqActivo({}), false);
+  assert.equal(mileOtraConGroqActivo({ HYTO_MILE_OTRA_CON_GROQ: "1" }), false);
+  assert.equal(preguntasEventoActivas({}), false);
+  assert.equal(preguntasEventoActivas({ HYTO_MILE_PREGUNTAS_EVENTO: "yes" }), false);
+  assert.equal(tipoPorTareaActivo({}), false);
+  assert.equal(tipoPorTareaActivo({ HYTO_MILE_TIPO_POR_TAREA: "off" }), false);
+
+  const lecturaSi = leerLectura({
+    tipo: "trabajo",
+    legible: true,
+    faltantes: [],
+    texto_completo: "The photo shows the requested work in full.",
+    coincide: "si",
+  });
+  assert.ok(lecturaSi);
+  const descSi: Descripcion = {
+    texto: lecturaSi.textoCompleto,
+    monto: null,
+    fecha: null,
+    lectura: lecturaSi,
+  };
+  const rescate = {
+    ...senalesDeTrabajo(RESCATADA, SIN_LUGAR, lecturaSi, { HYTO_MILE_OTRA_CON_GROQ: "on" }),
+    detalle: escribirSnapshot({ clase: "trabajo", trabajo: RESCATADA, factura: null, cerca: [] }),
+  };
+  assert.equal(rescate.motivos, undefined);
+  assert.equal(cerrar("trabajo", null, descSi, rescate, "scout", ENCENDIDO)?.nota, 80);
+  assert.equal(cerrar("trabajo", null, descSi, rescate, "scout", APAGADO)?.nota, 68);
+  const tapada = {
+    ...senalesDeTrabajo(RESCATADA, SIN_LUGAR, lecturaSi, { HYTO_MILE_OTRA_CON_GROQ: "off" }),
+    detalle: escribirSnapshot({ clase: "trabajo", trabajo: RESCATADA, factura: null, cerca: [] }),
+  };
+  assert.deepEqual(tapada.motivos, ["no_coincide"]);
+  assert.equal(cerrar("trabajo", null, descSi, tapada, "scout", ENCENDIDO)?.nota, 49);
+
+  const sinFalta = aplicarV4DeFaltantes(senalesTrabajo(REALISTA), lecturaSi, SIN_LUGAR, { HYTO_MILE_FALTANTES_GROQ: "on" });
+  assert.equal(leerSnapshot(sinFalta.detalle ?? "")?.trabajo?.v4, false);
+  assert.equal(sinFalta.score, "87");
+  assert.equal(cerrar("trabajo", null, descSi, sinFalta, "scout", ENCENDIDO)?.nota, 99);
+  assert.equal(cerrar("trabajo", null, descSi, sinFalta, "scout", APAGADO)?.nota, 87);
+  const lecturaFalta = leerLectura({
+    tipo: "trabajo",
+    legible: true,
+    faltantes: ["the banner"],
+    texto_completo: "The photo shows part of the requested work.",
+    coincide: "si",
+  });
+  assert.ok(lecturaFalta);
+  const conFalta = aplicarV4DeFaltantes(senalesTrabajo(REALISTA), lecturaFalta, SIN_LUGAR, { HYTO_MILE_FALTANTES_GROQ: "on" });
+  const descFalta: Descripcion = { texto: lecturaFalta.textoCompleto, monto: null, fecha: null, lectura: lecturaFalta };
+  assert.equal(cerrar("trabajo", null, descFalta, conFalta, "scout", ENCENDIDO)?.nota, 77);
+
+  const evento: RespuestasTrabajo = { ...REALISTA, t5: "documentar_evento", t6: "no_aplica", v4: false };
+  const notaEvento = notaDeTrabajo(evento);
+  const senalesEvento = senalesTrabajo(evento);
+  assert.equal(senalesEvento.motivos, undefined);
+  assert.equal(cerrar("trabajo", null, descSi, senalesEvento, "scout", ENCENDIDO)?.nota, notaEvento + 12);
+  assert.equal(cerrar("trabajo", null, descSi, senalesEvento, "scout", APAGADO)?.nota, notaEvento);
+
+  assert.equal(
+    claseConTipoDeTarea("factura", {
+      tipoTarea: "trabajo",
+      texto: "Evidence type: work, a place, or a scene.",
+      c1Cerca: true,
+    }),
+    "trabajo",
+  );
+  assert.equal(
+    claseConTipoDeTarea("trabajo", {
+      tipoTarea: "reembolso",
+      texto: "Evidence type: a receipt or an invoice.",
+      c1Cerca: false,
+    }),
+    "factura",
+  );
+  assert.equal(cerrar("trabajo", null, descSi, senalesTrabajo(REALISTA), "scout", ENCENDIDO)?.nota, 89);
+  assert.equal(
+    cerrar(
+      "reembolso",
+      "15",
+      { texto: "Team meal receipt.", monto: "12.00", fecha: "2026-10-02", lectura: lecturaSi },
+      senalesTrabajo(REALISTA),
+      "scout",
+      ENCENDIDO,
+    )?.nota,
+    77,
+  );
 });
 
 test("cerrar aplica el techo y deja los topes donde estaban", () => {

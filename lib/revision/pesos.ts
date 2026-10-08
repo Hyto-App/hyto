@@ -1,6 +1,7 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { condicionPideLugar } from "./lugar-pedido";
+import type { CoincideGroq } from "./otra-groq";
 import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
 
 /**
@@ -17,8 +18,11 @@ import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
  * - v2 parts named: index 2 = 1, index 1 = 0.5, index 0 = 0
  * - v3 names a proof: yes = 1, no = 0
  * - v4 something requested is missing: no = 1, yes = 0
- * - t5 what was done: a named action = 1, otra_o_no_claro = 0
- * - t6 state: terminado = 1, a_medias = 0.5, sin_empezar = 0, no_claro = 0
+ * - t5 what was done: a named action = 1, including documentar_evento, otra_o_no_claro = 0
+ * - t6 state: terminado = 1, no_aplica = 1, a_medias = 0.5, sin_empezar = 0, no_claro = 0.
+ *   no_aplica means the photo is a scene or an event, so the finished / not-started
+ *   question does not apply. It is neutral (full credit) and does not add sin_empezar.
+ *   Laya is offered that option only when HYTO_MILE_PREGUNTAS_EVENTO is on.
  * - t7 tools or materials: yes = 1, no = 0
  * - t8 done at the requested place: yes = 1, no = 0.
  *   When the condition does not ask for a place (`condicionPideLugar`), t8 is
@@ -51,7 +55,8 @@ import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
  * The screen shows those bands as Insufficient, Partially completed, and Completed.
  *
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
- * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar,
+ * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar
+ *   (t6 no_aplica does not use this cap),
  *   f1 otro_gasto (a different kind of expense), or a photo that breaks a rule the organizer
  *   wrote for the event. The band stays insuficiente. A receipt that follows the rule is not
  *   capped by it, so it does not land on the same grade as one that breaks it.
@@ -65,7 +70,7 @@ import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
  * HYTO_MILE_TECHO_80 does not change these weights or the 80 band. When it is
  * on, puntosTecho80 returns the half of v2 and of t10 that the middle step
  * withholds, and only for a legible work reading that lists nothing missing
- * and that Laya called a match, or whose optional coincide field is si.
+ * and that Laya called a match, or whose coincide field is the stored value si.
  * Absent, parcial, and no do not lift. Off, that function returns 0.
  */
 export const PESOS_PREGUNTAS = {
@@ -228,25 +233,18 @@ export type LecturaParaTecho = {
   legible: boolean | null;
   faltantes: readonly string[];
   /**
-   * Optional. A later reading may set "si", "parcial", or "no".
-   * Absent, or any value other than si, does not count as a match.
+   * Groq's match, already parsed onto the reading (`CoincideGroq`).
+   * Absent, null, parcial, and no are not a match. Only the stored value si is.
    */
-  coincide?: unknown;
+  coincide?: CoincideGroq | null;
 };
-
-/** Only the token si, after trim, case, and accent folding. Anything else is not a match. */
-function lecturaCoincideSi(valor: unknown): boolean {
-  if (typeof valor !== "string") return false;
-  const limpio = valor.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return limpio === "si";
-}
 
 /**
  * Points to add to notaDeTrabajo. Zero unless HYTO_MILE_TECHO_80 is on and the
  * reading is a legible work photo with an empty missing-items list. The match
- * can come from Laya (v1 es_lo_pedido) or from the reading's optional coincide
- * field when it is si. Only the middle step (index 1) is lifted to full
- * credit. Index 0 stays a real miss. Caps still apply to the sum.
+ * can come from Laya (v1 es_lo_pedido) or from the reading's coincide field
+ * when it is the stored value si. Only the middle step (index 1) is lifted to
+ * full credit. Index 0 stays a real miss. Caps still apply to the sum.
  */
 export function puntosTecho80(
   trabajo: RespuestasTrabajo | null | undefined,
@@ -257,7 +255,7 @@ export function puntosTecho80(
   if (!trabajo || !lectura) return 0;
   if (lectura.tipo !== "trabajo" || lectura.legible !== true) return 0;
   if (!Array.isArray(lectura.faltantes) || lectura.faltantes.length > 0) return 0;
-  if (trabajo.v1 !== "es_lo_pedido" && !lecturaCoincideSi(lectura.coincide)) return 0;
+  if (trabajo.v1 !== "es_lo_pedido" && lectura.coincide !== "si") return 0;
   const peso = PESOS_PREGUNTAS.trabajo;
   let extra = 0;
   if (trabajo.v2 === 1) extra += peso.v2 / 2;
@@ -292,7 +290,7 @@ function creditoF1(valor: RespuestasFactura["f1"]): number {
 }
 
 function creditoEstado(valor: RespuestasTrabajo["t6"]): number {
-  if (valor === "terminado") return 1;
+  if (valor === "terminado" || valor === "no_aplica") return 1;
   if (valor === "a_medias") return 0.5;
   return 0;
 }
