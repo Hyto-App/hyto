@@ -137,7 +137,7 @@ test("una cuenta antigua sin su clave en este navegador da un aviso que dice quÃ
   assert.deepEqual(red.vistos, ["preparar"]);
   assert.equal(avisos.length, 1);
   assert.match(avisos[0] ?? "", /^\[usdc\] .*needs-device-approval/);
-  assert.doesNotMatch(mensajeClaro(AVISO_DISPOSITIVO), /didn't go through/);
+  assert.doesNotMatch(mensajeClaro(AVISO_DISPOSITIVO), /did not finish/);
 });
 
 test("con una llave de acceso guardada, un navegador sin la clave pide usarla en vez de mandar al navegador original", async () => {
@@ -187,7 +187,7 @@ test("el error crudo de Cavos no llega a la pantalla y la consola lo guarda sin 
       return visible === "We couldn't confirm the payout setup. Try again.";
     },
   );
-  assert.doesNotMatch(mensajeClaro(visible), /didn't go through/);
+  assert.doesNotMatch(mensajeClaro(visible), /did not finish/);
   assert.equal(avisos.length, 1);
   assert.match(avisos[0] ?? "", /spend key does not match/);
   assert.match(avisos[0] ?? "", /\[email\]/);
@@ -400,7 +400,7 @@ test("los avisos de cuenta antigua se leen en el botÃ³n y solo ofrecen volver a 
     assert.match(texto(), /Tap Try again, then choose Use passkey/);
     assert.match(texto(), /Don't remember where you signed up\?/);
     assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);
-    assert.doesNotMatch(texto(), /didn't go through/);
+    assert.doesNotMatch(texto(), /did not finish/);
     assert.equal(document.querySelector('a[href="/?signin=1"]'), null);
     const botones = [...document.querySelectorAll("button")].map((boton) => boton.textContent);
     assert.ok(botones.includes("Try again"));

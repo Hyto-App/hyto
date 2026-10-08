@@ -3,6 +3,7 @@ import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { nombreVisible } from "@/lib/sesion/nombre";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
@@ -51,11 +52,10 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       if (intencion === "signin") {
         return json({ aviso: AVISO_SIN_CUENTA }, 404);
       }
-      const local = email.split("@")[0] ?? "";
       usuario = await almacen.insertarUsuario({
         id: `u-${crypto.randomUUID()}`,
         email,
-        nombre: local || email,
+        nombre: "",
         rol: "voluntario",
       });
       nuevo = true;
@@ -76,7 +76,14 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     if (provisionar) cookies.push(encabezadoAlta(true));
     else if (intencion === "signin") cookies.push(encabezadoAlta(false));
     return jsonCookies(
-      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, nuevo, provisionar },
+      {
+        email: usuario.email,
+        rol: usuario.rol,
+        usuarioId: usuario.id,
+        nombre: nombreVisible(usuario.nombre, usuario.email) ?? "",
+        nuevo,
+        provisionar,
+      },
       200,
       cookies,
     );

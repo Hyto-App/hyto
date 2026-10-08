@@ -7,18 +7,14 @@ import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota } from "@/lib/revision/razones";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
 import { brutoFondado, montoRecibido } from "@/lib/escrow/recibido";
+import { nombreOrganizadorVisible } from "@/lib/sesion/nombre";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
+import { guardarCobroPropio } from "./cobro";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 import { veredictoAlLeer } from "./revision-vencida";
 
 const PRIVADA = { "cache-control": "private, no-store" };
-
-function nombreVisible(nombre: string | null | undefined): string | null {
-  const limpio = (nombre ?? "").replace(/\s+/g, " ").trim();
-  if (!limpio || limpio.includes("@")) return null;
-  return limpio.slice(0, 80);
-}
 
 export function tareaPublica(tarea: TareaFila) {
   return {
@@ -96,7 +92,7 @@ export async function tareaConNota(
   almacen: Almacen,
   tarea: TareaFila,
   nombres?: Map<string, string>,
-  organizadores?: Map<string, string>,
+  organizadores?: Map<string, { nombre: string; email: string } | null>,
 ) {
   const evidencia = await almacen.ultimaEvidencia(tarea.id);
   const fila = await veredictoAlLeer(almacen, tarea, evidencia);
@@ -104,7 +100,8 @@ export async function tareaConNota(
   const rechazo = rechazoPublico(tarea);
   const linea = lineaDeEnvio(tarea, evidencia, fila);
   const bruto = brutoFondado(tarea, evidencia?.montoConfirmado);
-  const nombreOrg = nombreVisible(organizadores?.get(tarea.proyectoId));
+  const quien = organizadores?.get(tarea.proyectoId);
+  const nombreOrg = nombreOrganizadorVisible(quien?.nombre, quien?.email, nombres?.get(tarea.proyectoId));
   return {
     ...tareaPublica(tarea),
     montoConfirmado: evidencia?.montoConfirmado ?? null,
@@ -129,13 +126,20 @@ export async function tareaConNota(
 
 export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: "evento" | "mias" = "evento"): Promise<Response> {
   try {
-    const tareas = alcance === "mias" ? await tareasPropias(almacen, visor) : await tareasVisibles(almacen, visor);
-    if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) }, 200, PRIVADA);
+    if (alcance !== "mias") return json({ tareas: (await tareasVisibles(almacen, visor)).map(tareaPublica) }, 200, PRIVADA);
+    const propias = await tareasPropias(almacen, visor);
+    const tareas =
+      visor.usuarioId && !visor.demo && visor.wallet
+        ? await guardarCobroPropio(almacen, propias, visor.usuarioId, visor.wallet)
+        : propias;
     const [proyectos, usuarios] = await Promise.all([almacen.listarProyectos(), almacen.listarUsuarios()]);
     const nombres = new Map(proyectos.map((proyecto) => [proyecto.id, proyecto.nombre]));
-    const porUsuario = new Map(usuarios.map((usuario) => [usuario.id, usuario.nombre]));
+    const porUsuario = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
     const organizadores = new Map(
-      proyectos.map((proyecto) => [proyecto.id, proyecto.organizadorId ? (porUsuario.get(proyecto.organizadorId) ?? "") : ""]),
+      proyectos.map((proyecto) => {
+        const quien = proyecto.organizadorId ? porUsuario.get(proyecto.organizadorId) : undefined;
+        return [proyecto.id, quien ? { nombre: quien.nombre, email: quien.email } : null] as const;
+      }),
     );
     return json(
       { tareas: await Promise.all(tareas.map((tarea) => tareaConNota(almacen, tarea, nombres, organizadores))) },

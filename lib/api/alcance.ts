@@ -7,6 +7,8 @@ import { exigirSesion } from "@/lib/sesion/exigir";
 export type Visor = {
   usuarioId: string | null;
   demo: boolean;
+  /** This sign-in's account. Never set for a demo session. */
+  wallet?: string;
 };
 
 export async function visorDe(request: Request): Promise<Visor | Response> {
@@ -16,7 +18,8 @@ export async function visorDe(request: Request): Promise<Visor | Response> {
     return sesion;
   }
   if (demoHabilitado() && sesionEsDemo(sesion)) return { usuarioId: sesion.usuarioId, demo: true };
-  return { usuarioId: sesion.usuarioId, demo: false };
+  if (sesionEsDemo(sesion)) return { usuarioId: sesion.usuarioId, demo: false };
+  return { usuarioId: sesion.usuarioId, demo: false, wallet: sesion.wallet };
 }
 
 export function visorSesion(usuarioId: string): Visor {
@@ -79,6 +82,15 @@ export async function puedeVerTarea(almacen: Almacen, visor: Visor, tarea: Tarea
   const rol = (await rolesDeUsuario(almacen, visor.usuarioId)).get(proyecto.id);
   if (rol === "organizer") return true;
   return tarea.miembroId === visor.usuarioId;
+}
+
+/**
+ * `/tareas/[id]` only loads tasks assigned to the session (`tareasPropias`).
+ * The event's organizer opening someone else's task belongs on `/revision/[id]`.
+ */
+export async function organizaTareaAjena(almacen: Almacen, usuarioId: string, tarea: TareaFila): Promise<boolean> {
+  if (tarea.miembroId === usuarioId) return false;
+  return (await rolesDeUsuario(almacen, usuarioId)).get(tarea.proyectoId) === "organizer";
 }
 
 export async function accesoEvidencia(

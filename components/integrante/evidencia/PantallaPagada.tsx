@@ -8,6 +8,7 @@ import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { explicarPago } from "@/lib/integrante/formato";
 import { clavePagoVisto } from "@/lib/integrante/revision";
+import { nombreParaMostrar } from "@/lib/sesion/nombre";
 import type { Tarea } from "@/lib/integrante/tipos";
 
 /**
@@ -21,7 +22,8 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
   const pago = explicarPago(tarea, idioma);
   const monto = pago?.frase ?? "";
   const corto = pago?.corto ?? "";
-  const nombre = tarea.organizador?.nombre?.trim() || "";
+  const nombre = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento) || "";
+
   useEffect(() => {
     setVisto(window.localStorage.getItem(clavePagoVisto(tarea.id)) === "1");
   }, [tarea.id]);

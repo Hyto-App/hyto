@@ -2,6 +2,7 @@ import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
 export { notaCopia, notaManual } from "@/lib/evidencia/copia";
 import { texto } from "@/lib/ui/diccionario";
+import { textoVisible } from "@/lib/ui/etiquetas";
 import type { Idioma } from "@/lib/ui/idioma";
 import type { MemoriaAdmin, PersonaInforme, Resumen, TareaAdmin, TareaCreada, VistaAdmin } from "./tipos";
 
@@ -85,9 +86,12 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
   return sinVeredicto({ ...tarea, estado: "pendiente" });
 }
 
-/** After "Ask for another photo" the AI result belongs to the old file. */
+/**
+ * After "Ask for another photo" the score belongs to the old file.
+ * The receipt reading stays, so the amount on the receipt does not collapse to dollars.
+ */
 export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
-  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [], lectura: null };
+  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [] };
 }
 
 /**
@@ -121,6 +125,18 @@ export function puedeApartarSinEntrega(tarea: {
   if (tarea.fecha) return false;
   if (tarea.intentosAnteriores && tarea.intentosAnteriores.length > 0) return false;
   return true;
+}
+
+/** The line under Lock budget while it has nobody to pay. Null once the assigned person has an account. */
+export function avisoFaltaCobro(
+  tarea: Pick<TareaAdmin, "faltaCobro" | "miembro" | "miembroId">,
+  idioma: Idioma = "en",
+): string | null {
+  if (!tarea.faltaCobro) return null;
+  if (tarea.faltaCobro === "asignar") return texto(idioma, "revision.lockNeedsAssignee");
+  const nombre = textoVisible(tarea.miembro, idioma).trim();
+  if (!nombre || nombre === tarea.miembroId || nombre.includes("@")) return texto(idioma, "errores.sinWalletVoluntario");
+  return texto(idioma, "revision.lockNeedsPayout", { name: nombre });
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {

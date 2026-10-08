@@ -50,7 +50,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.ok(preparar instanceof HTMLButtonElement);
     assert.equal(preparar.disabled, false);
     assert.equal(texto().includes("Open Events and tap Get ready to be paid"), false);
-    assert.match(texto(), /How you get your money/);
+    assert.match(texto(), /How to receive your money/);
     assert.match(texto(), /practice money/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /The payment processor charges a 0\.3% fee/);

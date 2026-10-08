@@ -131,6 +131,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_PREGUNTAS_EVENTO",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on adds event options to Mile's work questions: documenting an event, and a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+  },
+  {
     nombre: "HYTO_COMUNIDADES",
     ambito: "servidor",
     requerida: false,

@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { MisTareas } from "@/components/integrante/MisTareas";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { INTERVALO_SEGUIMIENTO_MS, LIMITE_SEGUIMIENTO_MS } from "./seguimiento";
 import type { Tarea } from "./tipos";
@@ -196,7 +197,7 @@ test("un veredicto de error no dice que Mile sigue revisando", async () => {
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Receipt"));
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.doesNotMatch(texto(), /Mile is checking your file/);
   } finally {
@@ -241,7 +242,7 @@ test("una foto reciente en revisión dice que Mile sigue, y al llegar la nota la
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Still reviewing"));
     assert.match(texto(), /Mile is checking your photo/);
-    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.doesNotMatch(texto(), /Mile could not finish/);
     assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "View task");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 400));
@@ -288,7 +289,7 @@ test("una foto en revisión ya vieja ofrece reintentar", async () => {
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Booth"));
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.doesNotMatch(texto(), /Still reviewing/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "Try again");
@@ -371,6 +372,191 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
     await desmontar();
   }
 });
+
+test("la tarjeta con monto confirmado dice el monto a pagar y el límite, y lo ganado va en centavos", async () => {
+  const pagada = (id: string, extra: Partial<Tarea>): Tarea => ({
+    id,
+    proyectoId: "uno",
+    titulo: id,
+    tipo: "trabajo",
+    monto: "2",
+    tope: null,
+    condicion: "",
+    miembroId: "v",
+    walletCobro: "",
+    estado: "pagado",
+    prioridad: "normal",
+    dificultad: null,
+    montoPagado: "1.994",
+    ...extra,
+  });
+  const tareas: Tarea[] = [
+    {
+      id: "comida",
+      proyectoId: "uno",
+      titulo: "Meal",
+      tipo: "reembolso",
+      monto: "50",
+      tope: "50",
+      condicion: "",
+      miembroId: "v",
+      walletCobro: "",
+      estado: "en revisión",
+      prioridad: "normal",
+      dificultad: null,
+      nota: 84,
+      veredicto: "cumplió",
+      montoRevisado: "39.60",
+      montoConfirmado: "39.60",
+    },
+    pagada("Banner", { tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48", montoPagado: "12.44256" }),
+    pagada("Chairs", {}),
+    pagada("Tables", {}),
+  ];
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) return json({ tareas });
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  const tarjeta = () => [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === "Meal");
+  const ganado = () => [...document.querySelectorAll(".hyto-metrica-ganado")].map((nodo) => nodo.textContent);
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Meal"));
+    assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Amount to pay US$39.60 · Limit US$50");
+    assert.match(tarjeta()?.textContent ?? "", /Mile read US\$39\.60/);
+    assert.deepEqual(ganado(), ["US$16.42earned", "US$16.42earned"]);
+    assert.doesNotMatch(texto(), /USDC|Up to|16\.43/);
+
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Meal"));
+    assert.equal(tarjeta()?.querySelector(".hyto-monto")?.textContent, "Monto a pagar US$39,60 · Límite US$50");
+    assert.deepEqual(ganado(), ["US$16,42ganados", "US$16,42ganados"]);
+    assert.doesNotMatch(texto(), /USDC|Hasta|16[.,]43/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("otra foto pedida no usa un pedazo del correo y tiene Ver tarea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Booth",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            evento: "North",
+            rechazada: true,
+            rechazo: { nota: "The banner is cropped", fallidos: [], origen: "organizador" },
+            organizador: { nombre: "ana@hyto.test" },
+          },
+          {
+            id: "mesa",
+            proyectoId: "dos",
+            titulo: "Tables",
+            tipo: "trabajo",
+            monto: "8",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            rechazada: true,
+            rechazo: { nota: null, fallidos: [], origen: "organizador" },
+            organizador: null,
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Booth") && texto().includes("Tables"));
+    assert.match(texto(), /North asked for another photo/);
+    assert.match(texto(), /The organizer asked for another photo/);
+    assert.equal(texto().includes("ana@"), false);
+    assert.equal(texto().includes("@"), false);
+    const booth = tarjetaDe("Booth");
+    const ver = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "View task");
+    const otra = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.includes("Take another photo"));
+    assert.equal(ver?.getAttribute("href"), "/tareas/stand");
+    assert.equal(ver?.className.includes("hyto-btn-line"), true);
+    assert.equal(otra?.getAttribute("href"), "/tareas/stand");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("en español, otra foto pedida dice quien organiza o el evento, y Ver tarea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "stand",
+            proyectoId: "uno",
+            titulo: "Puesto",
+            tipo: "trabajo",
+            monto: "20",
+            tope: null,
+            condicion: "",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "pendiente",
+            prioridad: "normal",
+            dificultad: null,
+            rechazada: true,
+            rechazo: { nota: null, fallidos: [], origen: "organizador" },
+            organizador: null,
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Puesto"));
+    assert.match(texto(), /Quien organiza pidió otra foto/);
+    assert.equal(texto().includes("Rejected"), false);
+    assert.equal(texto().includes("Otra foto pedida"), true);
+    const ver = [...document.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "Ver tarea");
+    assert.equal(ver?.getAttribute("href"), "/tareas/stand");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+function tarjetaDe(titulo: string): HTMLElement {
+  const tarjeta = [...document.querySelectorAll("article")].find((nodo) => nodo.querySelector("h3")?.textContent === titulo);
+  if (!(tarjeta instanceof HTMLElement)) throw new Error(`No card ${titulo}`);
+  return tarjeta;
+}
 
 async function esperar(listo: () => boolean): Promise<void> {
   for (let i = 0; i < 25; i += 1) {

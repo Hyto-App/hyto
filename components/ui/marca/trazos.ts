@@ -20,8 +20,8 @@ export const TRAZO_PALABRA =
 export const LIMA = "#B7EE34";
 export const CASI_NEGRO = "#08090C";
 export const NAVY = "#14162B";
-export const ESLOGAN_LINEA = "Show the spend.";
-export const ESLOGAN_ACENTO = "On the record.";
+export const ESLOGAN_LINEA = "Proof before";
+export const ESLOGAN_ACENTO = "payout.";
 export const ESLOGAN = `${ESLOGAN_LINEA} ${ESLOGAN_ACENTO}`;
 export const LINEA_OG =
   "Communities in Latin America funded from afar account for the spend with a photo. A person releases the payment in digital dollars.";
