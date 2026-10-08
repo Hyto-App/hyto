@@ -861,6 +861,74 @@ test("a receipt above the cap prefills the cap and shows the overage note", asyn
   }
 });
 
+test("un escrow con fondos en la red no ofrece terminar de bloquear", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: 0.22 } });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: "CSTAND" }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "0.22" }), foto: null, contratoEscrow: "CSTAND", wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => texto().includes("Budget secured"));
+    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(rotulo("Lock budget"), false);
+    assert.equal(rotulo("Approve and pay"), true);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("si el fondeo ya está en la red, terminar de bloquear no pide otra firma", async () => {
+  const anterior = globalThis.fetch;
+  let firmas = 0;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: 0 } });
+    if (method === "POST" && url === "/api/firma") {
+      return json(
+        {
+          aviso: "This budget is already locked on the network. Refresh this page. Do not lock it again.",
+          codigo: "ya_fondeado",
+        },
+        409,
+      );
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: "CSTAND" }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({}), foto: null, contratoEscrow: "CSTAND", wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(Revision, {
+        tareaId: "stand",
+        firmar: async () => {
+          firmas += 1;
+          return "SIGNED";
+        },
+      }),
+    );
+    await esperar(() => rotulo("Finish locking"));
+    await pulsar("Finish locking");
+    await confirmarDialogo();
+    await esperar(() => texto().includes("Budget secured") && rotulo("Approve and pay"));
+    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(texto().includes("Budget not locked"), false);
+    assert.equal(firmas, 0);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function tarea(parcial: Record<string, unknown>) {
   return {
     id: "stand",

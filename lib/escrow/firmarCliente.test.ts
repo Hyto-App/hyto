@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import {
   AVISO_DEMO_FIRMA,
   AVISO_DISPOSITIVO,
@@ -404,22 +403,45 @@ function jwt(payload: Record<string, unknown>): string {
   return `${parte({ alg: "none" })}.${parte(payload)}.x`;
 }
 
-test("una firma que no contesta corta Setting up y un aborto no envía", async () => {
+test("la firma espera aunque Cavos tarde más que el tope, y un aborto cierra el overlay sin enviar", async () => {
   const lenta = fetchDe([
-    { body: { xdr: XDR, token: "tok" } },
-    { body: { hash: "h".repeat(64) } },
+    { body: { xdr: XDR, token: "tok", contrato: "C1" } },
+    { body: { hash: "h".repeat(64), contrato: "C1" } },
   ]);
-  await assert.rejects(
-    () =>
-      firmarYEnviar("fondear", "stand", {}, {
-        fetch: lenta.fetch,
-        topeMs: 30,
-        firmar: () => new Promise<string>(() => undefined),
-      }),
-    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_USDC_LENTO,
-  );
-  assert.equal(lenta.llamadas.length, 1);
+  const pago = await firmarYEnviar("fondear", "stand", {}, {
+    fetch: lenta.fetch,
+    topeMs: 15,
+    firmar: () => new Promise<string>((resolver) => setTimeout(() => resolver(FIRMADO), 40)),
+  });
+  assert.equal(pago.hash, "h".repeat(64));
+  assert.equal(lenta.llamadas.length, 2);
+  assert.equal(lenta.llamadas[1]?.url, "/api/firma/enviar");
 
+  const quitados: string[] = [];
+  const iframe = {
+    getAttribute: (nombre: string) => (nombre === "aria-label" ? "Cavos" : null),
+    remove: () => quitados.push("iframe"),
+  };
+  const clases = new Set<string>();
+  const documento = globalThis.document;
+  Object.assign(globalThis, {
+    document: {
+      documentElement: {
+        classList: {
+          add: (clase: string) => clases.add(clase),
+          remove: (clase: string) => clases.delete(clase),
+          contains: (clase: string) => clases.has(clase),
+          toggle: (clase: string, activo?: boolean) => {
+            const puesta = activo ?? !clases.has(clase);
+            if (puesta) clases.add(clase);
+            else clases.delete(clase);
+            return puesta;
+          },
+        },
+      },
+      querySelectorAll: (selector: string) => (selector === 'iframe[aria-label="Cavos"]' ? [iframe] : []),
+    },
+  });
   let empezo: () => void = () => undefined;
   const lista = new Promise<void>((resolver) => {
     empezo = resolver;
@@ -429,12 +451,18 @@ test("una firma que no contesta corta Setting up y un aborto no envía", async (
     { body: { xdr: XDR, token: "tok" } },
     { body: { hash: "h".repeat(64) } },
   ]);
+  let aprobo = false;
   const pendiente = firmarYEnviar("desplegar", "stand", {}, {
     fetch: red.fetch,
     senal: senal.signal,
     firmar: () => {
       empezo();
-      return new Promise<string>(() => undefined);
+      return new Promise<string>((resolver) => {
+        setTimeout(() => {
+          aprobo = true;
+          resolver(FIRMADO);
+        }, 50);
+      });
     },
   });
   await lista;
@@ -444,6 +472,12 @@ test("una firma que no contesta corta Setting up y un aborto no envía", async (
     (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_RECHAZO,
   );
   assert.equal(red.llamadas.length, 1);
+  assert.deepEqual(quitados, ["iframe"]);
+  await new Promise((resolver) => setTimeout(resolver, 60));
+  assert.equal(aprobo, true);
+  assert.equal(red.llamadas.length, 1);
+  if (documento === undefined) delete (globalThis as { document?: Document }).document;
+  else globalThis.document = documento;
 });
 
 test("el vault que rechaza este sitio no se traduce como sesión vencida", async () => {
