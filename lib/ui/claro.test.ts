@@ -21,7 +21,7 @@ test("technical payment errors tell the person what to do", () => {
   assert.match(mensajeClaro("The v2 network does not accept a fee-bump. The Cavos account has to pay the fee in XLM."), /test balance/);
   assert.match(mensajeClaro("HYTO_ESCROW_PLATFORM is missing"), /isn't complete/);
   assert.match(mensajeClaro("ESCROW_RECEIVER_TRUSTLINE_MISSING"), /Get ready to be paid/);
-  assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Lock the budget before you pay.");
+  assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Reserve the payment before you pay.");
   assert.equal(
     mensajeClaro("The task has no payout wallet. Ask the volunteer to sign in and open the task."),
     "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
@@ -74,10 +74,10 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(cajaDeFallo({ paso: null, codigo: CODIGO_HORIZON_RECEPTOR }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "liberar", codigo: null }), "pago");
   assert.equal(cajaDeFallo({ paso: null, codigo: null }), null);
-  assert.equal(tituloFallo("bloqueo"), "Budget not locked");
+  assert.equal(tituloFallo("bloqueo"), "Not reserved");
   assert.equal(detalleFallo("bloqueo", AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(tituloFallo("pago"), "Payment failed");
-  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC left the escrow.");
+  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No money left the reserved payment.");
   assert.equal(detalleFallo("pago", mensajeClaro(AVISO_XLM_COMISION)), mensajeClaro(AVISO_XLM_COMISION));
   assert.match(mensajeClaro(AVISO_XLM_COMISION), /another account/);
   assert.match(mensajeClaro(CODIGO_XLM_COMISION), /another account/);

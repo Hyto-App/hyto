@@ -18,6 +18,20 @@ export function formatearMonto(monto: string, idioma: Idioma = "en"): string {
   })}`;
 }
 
+/**
+ * US$ prefix, keeping the decimals the ledger uses (up to 7).
+ * `formatearMonto` rounds to cents and would hide a net such as 12.44256.
+ */
+export function formatearDolaresTexto(valor: string, idioma: Idioma = "en"): string {
+  const limpio = valor.trim().replace(/,/g, "");
+  if (!/^\d+(\.\d+)?$/.test(limpio)) return limpio ? `US$${valor.trim()}` : "";
+  const [entera, fraccion = ""] = limpio.split(".");
+  const grupo = Number(entera).toLocaleString(localeDe(idioma));
+  const decimales = fraccion.replace(/0+$/, "");
+  if (!decimales) return `US$${grupo}`;
+  return `US$${grupo}${idioma === "es" ? "," : "."}${decimales}`;
+}
+
 function fechaDeCalendario(anio: number, mes: number, dia: number, idioma: Idioma = "en"): string | null {
   if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
   const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));

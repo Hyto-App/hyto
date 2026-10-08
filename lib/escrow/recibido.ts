@@ -42,15 +42,35 @@ export function presentarUsdc(unidades: bigint): string {
  * Net the milestone receiver gets. `comisionPlataformaBps` is the platform fee
  * in basis points. Hyto's deploy uses 0.
  */
-export function montoRecibido(bruto: string, comisionPlataformaBps = BPS_PLATAFORMA_HYTO): string | null {
+export type PartesPago = {
+  bruto: string;
+  /** Trustless Work protocol fee. Hyto's own platform fee stays 0. */
+  comision: string;
+  neto: string;
+};
+
+/**
+ * Gross funded amount, the 0.3% taken when the payment is sent, and what the
+ * payee receives. Reserving does not take this fee.
+ */
+export function partesDePago(bruto: string, comisionPlataformaBps = BPS_PLATAFORMA_HYTO): PartesPago | null {
   const unidades = unidadesUsdc(bruto);
   if (unidades === null) return null;
   if (comisionPlataformaBps < 0n || comisionPlataformaBps >= BPS) return null;
   const protocolo = (unidades * BPS_PROTOCOLO) / BPS;
   const plataforma = (unidades * comisionPlataformaBps) / BPS;
-  const neto = unidades - protocolo - plataforma;
+  const comision = protocolo + plataforma;
+  const neto = unidades - comision;
   if (neto <= 0n) return null;
-  return textoDesdeUnidades(neto);
+  return {
+    bruto: textoDesdeUnidades(unidades),
+    comision: textoDesdeUnidades(comision),
+    neto: textoDesdeUnidades(neto),
+  };
+}
+
+export function montoRecibido(bruto: string, comisionPlataformaBps = BPS_PLATAFORMA_HYTO): string | null {
+  return partesDePago(bruto, comisionPlataformaBps)?.neto ?? null;
 }
 
 /**

@@ -124,12 +124,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
         </button>
         <h2 id={idTitulo}>{titulo}</h2>
         <div id={idDetalle} className="grid gap-3">
-          {monto ? (
-            <p className="hyto-dialogo-monto">
-              {monto}
-              <small>USDC</small>
-            </p>
-          ) : null}
+          {monto ? <p className="hyto-dialogo-monto">{monto.startsWith("US$") ? monto : `US$${monto}`}</p> : null}
           {destinatario ? (
             <p className="hyto-dialogo-destino">
               {t("confirmar.to")} {destinatario.nombre ?? ""}

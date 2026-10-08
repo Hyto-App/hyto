@@ -2,9 +2,13 @@ import { textoMonto } from "@/lib/admin/vista";
 
 /**
  * Colones per US dollar. There is no live exchange-rate call: update this
- * number by hand when the rate moves. Set on 2026-10-04.
+ * number by hand when the rate moves, and update `FECHA_TASA` in the same edit.
+ * Set on 2026-10-04.
  */
 export const CRC_POR_USD = 505;
+
+/** Calendar day `CRC_POR_USD` was last set. The review screen shows this date. */
+export const FECHA_TASA = "2026-10-04";
 
 /** Units of each currency per 1 USD. A currency that is not listed is not converted. */
 export const UNIDADES_POR_USD: Readonly<Record<string, number>> = {

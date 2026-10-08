@@ -36,10 +36,11 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
   try {
     await montar(createElement(PantallaPagada, { tarea, titulo: "Team meal" }));
     await esperar(() => texto().includes("You received"));
-    assert.match(texto(), /\+12\.44256 USDC/);
+    assert.match(texto(), /\+US\$12\.44256/);
     assert.match(texto(), /You received/);
-    assert.match(texto(), /12\.44256 USDC/);
-    assert.equal(texto().includes("15 USDC"), false);
+    assert.match(texto(), /US\$12\.44256/);
+    assert.equal(texto().includes("USDC"), false);
+    assert.equal(texto().includes("15"), false);
   } finally {
     await desmontar();
   }
@@ -84,8 +85,10 @@ test("después de fondear, el texto dice el monto bloqueado y no el tope", async
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida", eventoId: "evt" }));
-    await esperar(() => texto().includes("The payment sends US$12.48"));
-    assert.equal(texto().includes("The payment sends Up to"), false);
+    await esperar(() => texto().includes("US$12.48 is reserved for this payment."));
+    assert.match(texto(), /they receive US\$12\.44256/);
+    assert.equal(texto().includes("Up to"), false);
+    assert.equal(texto().includes("The payment sends"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

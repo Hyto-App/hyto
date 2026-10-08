@@ -44,7 +44,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /Review failed/);
     assert.match(texto(), /Mile is unavailable/);
     assert.equal(
-      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"),
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Reserve"),
       true,
     );
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
@@ -213,18 +213,18 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
 
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Lock budget"));
+    await esperar(() => rotulo("Reserve"));
     const lecturasAntes = lecturas;
-    await pulsar("Lock budget");
+    await pulsar("Reserve");
     await confirmarDialogo();
-    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step didn't go through."));
-    assert.match(texto(), /Budget not locked/);
+    await esperar(() => rotulo("Finish reserving") && !rotulo("Reserve") && texto().includes("That step didn't go through."));
+    assert.match(texto(), /Not reserved/);
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("No money left the reserved payment."), false);
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
-    await pulsar("Finish locking");
+    await pulsar("Finish reserving");
     await confirmarDialogo();
     await esperar(() => firmas.filter((item) => item.url === "/api/firma/enviar" && item.body.accion === "fondear").length === 2);
     const reintento = firmas.filter((item) => item.url === "/api/firma" && item.body.accion === "fondear").at(-1);
@@ -277,10 +277,10 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
-    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Reserve"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
-    assert.match(texto(), /Confirm the amount before Lock budget can be used/);
+    assert.match(texto(), /Confirm the amount before you can reserve the payment/);
     assert.equal(bloqueado.getAttribute("aria-describedby"), "bloqueo-monto");
     await escribir("#monto-confirmado", "12.40");
     await pulsar("Confirm amount");
@@ -289,11 +289,11 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     const post = llamadas.find((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/comida/monto");
     assert.equal(post?.body, JSON.stringify({ monto: "12.40" }));
-    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Reserve"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
     assert.equal(listo.getAttribute("aria-describedby"), null);
-    assert.equal(/Confirm the amount before Lock budget can be used/.test(texto()), false);
+    assert.equal(/Confirm the amount before you can reserve the payment/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
   } finally {
@@ -317,13 +317,13 @@ test("lock budget shows the payout error and does not claim USDC left an escrow"
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Lock budget"));
-    await pulsar("Lock budget");
+    await esperar(() => rotulo("Reserve"));
+    await pulsar("Reserve");
     await confirmarDialogo();
-    await esperar(() => texto().includes("Budget not locked"));
+    await esperar(() => texto().includes("Not reserved"));
     assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("No money left the reserved payment."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -352,9 +352,9 @@ test("pay still says the payment failed when release does not go through", async
     await pulsar("Approve and pay");
     await confirmarDialogo();
     await esperar(() => texto().includes("Payment failed"));
-    assert.match(texto(), /No USDC left the escrow/);
+    assert.match(texto(), /No money left the reserved payment/);
     assert.match(texto(), /The milestone isn't ready/);
-    assert.equal(texto().includes("Budget not locked"), false);
+    assert.equal(texto().includes("Not reserved"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -381,8 +381,8 @@ test("an error outside lock or pay does not use the payment box", async () => {
     await confirmarPedir();
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("Budget not locked"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("Not reserved"), false);
+    assert.equal(texto().includes("No money left the reserved payment."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -506,7 +506,13 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Hyto's rate, set on Oct 4, 2026: 505 CRC per US dollar/);
+    assert.match(texto(), /the organizer absorbs the difference/);
+    assert.match(
+      texto(),
+      /The volunteer spent ₡6\.900,00 \(about US\$13\.66\)\. We reserve the cap \(US\$15\) and pay only US\$13\.66\./,
+    );
+    assert.equal(texto().includes("converted at 505"), false);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;

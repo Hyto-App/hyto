@@ -98,7 +98,7 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
     assert.match(texto(), /You got paid/);
     // 20 USDC funded, minus the 0.3% protocol fee.
-    assert.match(texto(), /\+19\.94 USDC/);
+    assert.match(texto(), /\+US\$19\.94/);
     assert.equal(texto().includes(FRASE_PAGO), false);
     assert.equal(texto().includes("84%"), false);
 

@@ -37,7 +37,8 @@ test("the dialog opens, cancel does not call the action, confirm calls it once",
   assert.equal(dialogo().open, false);
   await pulsar("Open it");
   assert.equal(dialogo().open, true);
-  assert.match(texto(), /20\.00USDC/);
+  assert.match(texto(), /US\$20\.00/);
+  assert.equal(texto().includes("20.00USDC"), false);
   assert.match(texto(), /This can't be undone\./);
   await pulsar("Cancel");
   assert.equal(llamadas, 0);

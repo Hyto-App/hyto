@@ -14,6 +14,7 @@ import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
+import { formatearDolaresTexto, formatearMonto } from "@/lib/integrante/formato";
 import { montoUsdc } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
@@ -61,42 +62,28 @@ function totalRecibido(tareas: readonly Tarea[]): string {
   return presentarUsdc(total);
 }
 
-function cifra(valor: number, idioma: "en" | "es"): string {
-  return valor.toLocaleString(idioma === "es" ? "es-CR" : "en-US", {
-    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function Monto({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
     const recibido = montoUsdc(tarea);
     if (!recibido) return null;
-    return (
-      <span className="hyto-monto">
-        {recibido}
-        <small>USDC</small>
-      </span>
-    );
+    return <span className="hyto-monto">{formatearDolaresTexto(recibido, idioma)}</span>;
   }
-  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
+  const valor = formatearMonto(tarea.tope ?? tarea.monto, idioma);
   return (
-    <span className="hyto-monto">
-      {tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}
-      <small>USDC</small>
-    </span>
+    <span className="hyto-monto">{tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}</span>
   );
 }
 
 function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: string; revision: number; pendientes: number; className?: string }) {
   const t = useTexto();
+  const idioma = useIdioma();
   return (
     <div className={`hyto-metricas ${className}`.trim()}>
       <div className="hyto-metrica-ganado">
-        <b>{ganado}</b>
-        <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
+        <b>{formatearDolaresTexto(ganado || "0", idioma)}</b>
+        <span>{t("tareas.earnedUsdc")}</span>
       </div>
       <div>
         <b>{revision}</b>
@@ -481,7 +468,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {recibido ? (
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: `${recibido} USDC` })}</span>
+                              <span>{t("tareas.paidNote", { amount: formatearDolaresTexto(recibido, idioma) })}</span>
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (

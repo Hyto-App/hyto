@@ -37,7 +37,8 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     });
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
-    assert.match(texto(), /Add a wallet to see your USDC/);
+    assert.match(texto(), /Add a wallet to see your balance/);
+    assert.match(texto(), /Payments use USDC, a digital dollar, on the test network/);
     assert.match(texto(), /Stellar Passport/);
     assert.match(texto(), /participation and achievements in the Stellar ecosystem/);
     const pasaporte = document.querySelector("a[href='https://demo.stellarpassport.xyz/auth/signup']");

@@ -160,6 +160,7 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
           <p className="text-sm text-[var(--suave)]">{t("cuenta.testnetUsdc")}</p>
           <p className="hyto-amount mt-1 text-3xl">{vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo, idioma) : "—"}</p>
           <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-[var(--suave)]">{t("cuenta.notaUsdc")}</p>
         </div>
       </div>
     </section>
