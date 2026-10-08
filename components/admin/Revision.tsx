@@ -94,6 +94,8 @@ export function Revision({
   const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
   const [vueltaPago, setVueltaPago] = useState(0);
   const [confirmacion, setConfirmacion] = useState<{ clave: "bloquear" | "fondear" | "pagar"; abierto: boolean } | null>(null);
+  const [demoReservado, setDemoReservado] = useState(false);
+  const demoLocal = useRef(false);
 
   useEffect(() => {
     let viva = true;
@@ -107,6 +109,8 @@ export function Revision({
     fondeoForzado.current = null;
     setWallet(null);
     publicarAviso(null);
+    setDemoReservado(false);
+    demoLocal.current = false;
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
       if (!viva) return;
       if (!detalle) {
@@ -181,6 +185,7 @@ export function Revision({
     exigirFoto: true,
     fotoDe: (id) => (id === tareaId ? fotoRef.current : null),
     alCambiar: async (ids) => {
+      if (modoDemo && demoLocal.current) return { ok: true, avisar: false };
       const marca = localRef.current;
       if (pasoRef.current || confirmandoRef.current || reintentoFondoEnCurso(tareaId)) {
         return { ok: false, avisar: false };
@@ -293,6 +298,11 @@ export function Revision({
     setConfirmando(true);
     publicarAviso(null);
     try {
+      if (modoDemo) {
+        demoLocal.current = true;
+        setTarea((actual) => (actual ? { ...actual, montoConfirmado: pago } : actual));
+        return;
+      }
       const resultado = await confirmarMonto(tareaId, pago);
       if ("aviso" in resultado) {
         publicarAviso(resultado.aviso);
@@ -519,7 +529,7 @@ export function Revision({
               {pasosDePago({
                 tieneVeredicto: Boolean(tarea.veredicto),
                 revisionFallida: tarea.origen === "error",
-                presupuestoListo: Boolean(contrato) && fondeado === true,
+                presupuestoListo: modoDemo ? demoReservado || tarea.estado === "pagado" : Boolean(contrato) && fondeado === true,
                 pagado: tarea.estado === "pagado",
               }, idioma).map((item, indice) => (
                 <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
@@ -623,7 +633,7 @@ export function Revision({
               ) : null}
               <button
                 type="button"
-                disabled={confirmando || coincide || modoDemo}
+                disabled={confirmando || coincide}
                 onClick={() => void confirmar()}
                 className="hyto-btn-line mt-4 disabled:cursor-not-allowed disabled:opacity-70"
               >
@@ -645,9 +655,7 @@ export function Revision({
           ) : null}
 
           <div className="hyto-actions">
-            {modoDemo && (esperaConfirmacion || puedeDesplegar || botones.fondear || botones.pagar) ? (
-              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNoMoney")}</p>
-            ) : null}
+            {modoDemo ? <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNoMoney")}</p> : null}
             {botones.aprobarLocal ? (
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
                 {t("revision.approve")}
@@ -698,7 +706,7 @@ export function Revision({
               </form>
             ) : null}
 
-            {puedeDesplegar || esperaConfirmacion ? (
+            {(puedeDesplegar || esperaConfirmacion) && !(modoDemo && (demoReservado || tarea.estado === "pagado")) ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
@@ -710,16 +718,34 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo}
+                  disabled={ocupado || !puedeDesplegar}
                   aria-busy={ocupado}
                   aria-describedby={esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : undefined}
-                  onClick={() => setConfirmacion({ clave: "bloquear", abierto: true })}
+                  onClick={() => {
+                    if (modoDemo) {
+                      demoLocal.current = true;
+                      setDemoReservado(true);
+                      return;
+                    }
+                    setConfirmacion({ clave: "bloquear", abierto: true });
+                  }}
                 >
                   {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
                 </BotonPrincipal>
               </>
             ) : null}
-            {botones.fondear ? (
+            {modoDemo && demoReservado && tarea.estado !== "pagado" ? (
+              <BotonPrincipal
+                type="button"
+                onClick={() => {
+                  demoLocal.current = true;
+                  setTarea((actual) => (actual ? { ...actual, estado: "pagado" } : actual));
+                }}
+              >
+                {t("pago.approvePay")}
+              </BotonPrincipal>
+            ) : null}
+            {botones.fondear && !modoDemo ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
                 <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "fondear", abierto: true })}>
@@ -727,7 +753,7 @@ export function Revision({
                 </BotonPrincipal>
               </>
             ) : null}
-            {botones.pagar ? (
+            {botones.pagar && !modoDemo ? (
               <>
                 {fondeado === true ? (
                   <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
@@ -798,7 +824,13 @@ export function Revision({
             </details>
           ) : null}
 
-          {tarea.estado === "pagado" ? (
+          {tarea.estado === "pagado" && modoDemo ? (
+            <p className="mt-8 text-lg font-medium" role="status">
+              {t("numeros.paid")} ✓
+            </p>
+          ) : null}
+
+          {tarea.estado === "pagado" && !modoDemo ? (
             <div className="mt-8 space-y-3">
               <p className="text-lg font-medium">{t("revision.paidAmount", { monto: formatearMonto(detalleMonto(tarea).cifra, idioma) })}</p>
               {pago ? (

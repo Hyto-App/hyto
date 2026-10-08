@@ -42,13 +42,15 @@ export function ActividadTarea({ tarea }: { tarea: Tarea }) {
   return (
     <section className="hyto-tarjeta hyto-actividad" aria-labelledby={titulo}>
       <h2 id={titulo}>{t("actividad.titulo")}</h2>
-      <ol className="hyto-rastreo" aria-label={t("actividad.rastreo")}>
-        {pasos.map((paso) => (
-          <li key={paso.id} data-estado={paso.estado} aria-current={paso.estado === "ahora" ? "step" : undefined}>
-            {t(PASO[paso.id])}
-          </li>
-        ))}
-      </ol>
+      {pasos.length > 0 ? (
+        <ol className="hyto-rastreo" aria-label={t("actividad.rastreo")}>
+          {pasos.map((paso) => (
+            <li key={paso.id} data-estado={paso.estado} aria-current={paso.estado === "ahora" ? "step" : undefined}>
+              {t(PASO[paso.id])}
+            </li>
+          ))}
+        </ol>
+      ) : null}
       {eventos.length === 0 ? <p className="hyto-actividad-vacio">{t("actividad.vacio")}</p> : null}
       {eventos.length > 0 ? (
         <ol className="hyto-bitacora">

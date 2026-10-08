@@ -32,24 +32,30 @@ export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado:
   return { aprobada, enviado, pagado };
 }
 
+/**
+ * Each step and each event exists only after it happened.
+ * A pending task has no current send: a stored score, an old clock, or a sample etapa
+ * does not become "you sent", "Mile reviewed", or "Approved".
+ */
 export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[] } {
   const marcas = marcasPago(tarea);
-  const empezo = Boolean(instanteGuardado(tarea.enviadaEn) || tarea.etapa || tarea.estado !== "pendiente" || marcas.enviado);
-  const pasos: PasoActividad[] = [
-    { id: "aprobada", estado: marcas.aprobada ? "hecho" : empezo ? "ahora" : "despues" },
-    { id: "enviado", estado: marcas.enviado ? "hecho" : marcas.aprobada ? "ahora" : "despues" },
-    { id: "pagado", estado: marcas.pagado ? "hecho" : marcas.enviado ? "ahora" : "despues" },
-  ];
+  const pasos: PasoActividad[] = [];
+  if (marcas.aprobada) pasos.push({ id: "aprobada", estado: "hecho" });
+  if (marcas.enviado) pasos.push({ id: "enviado", estado: "hecho" });
+  if (marcas.pagado) pasos.push({ id: "pagado", estado: "hecho" });
+
+  const pendienteSinPago = tarea.estado === "pendiente" && !marcas.enviado && !marcas.pagado;
+  if (pendienteSinPago) return { pasos, eventos: [] };
 
   const eventos: EventoActividad[] = [];
   const enviada = instanteGuardado(tarea.enviadaEn);
-  if (enviada || tarea.etapa) eventos.push({ id: "envio", en: enviada });
+  if (enviada) eventos.push({ id: "envio", en: enviada });
   const mileReviso =
     !tarea.revisionFallida &&
     (typeof tarea.nota === "number" || Boolean(tarea.veredicto) || tarea.etapa === "enviada_organizador" || marcas.aprobada);
   if (mileReviso) eventos.push({ id: "mile", en: null });
   if (marcas.aprobada) eventos.push({ id: "aprobada", en: null });
-  if (marcas.enviado) eventos.push({ id: "camino", en: null });
+  if (marcas.enviado && !marcas.pagado) eventos.push({ id: "camino", en: null });
   if (marcas.pagado) eventos.push({ id: "pagado", en: null });
   return { pasos, eventos };
 }
