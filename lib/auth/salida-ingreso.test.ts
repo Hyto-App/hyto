@@ -95,7 +95,7 @@ test("tras el código con next=/join/CODE vuelve al join y no a Mis tareas", asy
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
-    assert.match(texto(), /You're in\./);
+    assert.match(texto(), /You are signed in\./);
     await pulsar("Continue");
     assert.deepEqual(destinos, ["/join/CODE"]);
   } finally {
@@ -122,7 +122,7 @@ test("tras el código, una cuenta nueva abre Eventos y no Mis tareas", async () 
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
-    assert.match(texto(), /You're in\./);
+    assert.match(texto(), /You are signed in\./);
     await pulsar("Continue");
     assert.deepEqual(destinos, ["/eventos"]);
     await act(async () => {
@@ -196,7 +196,7 @@ test("una sesión ya iniciada muestra la misma salida, también en español", as
     const espanol = salida();
     assert.equal(espanol.getAttribute("href"), DESTINO);
     assert.equal(espanol.textContent?.trim(), "Preparar el cobro");
-    assert.match(texto(), /Da tu primer paso/);
+    assert.match(texto(), /Dé su primer paso/);
     assert.match(texto(), /Sesión iniciada/);
   } finally {
     await desmontar();
@@ -315,13 +315,13 @@ test("Mis tareas, el destino del botón, funciona sin tareas y con una tarea", a
     await esperar(() => texto().includes("No tasks yet"));
     assert.equal(document.querySelector('a[href="/mis-tareas"]') !== null, true);
     assert.equal(document.querySelector('a[href="/eventos"]') !== null, true);
-    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening/);
+    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening|Good night/);
 
     globalThis.fetch = fetchTareas([TAREA]);
     await montar(createElement(Marco, { children: createElement(MisTareas) }), { ruta: DESTINO });
     await esperar(() => texto().includes("Booth"));
     assert.doesNotMatch(texto(), /No tasks yet/);
-    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening/);
+    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening|Good night/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

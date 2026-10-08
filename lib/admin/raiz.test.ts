@@ -8,5 +8,9 @@ test("la raíz manda a eventos a quien organiza y a mis tareas al resto", () => 
   assert.match(pagina, /destinoInicio\(sesion, organiza\)/);
   assert.match(pagina, /eventosOrganizados\(sesion\.usuarioId\)/);
   assert.match(pagina, /<Entrar abrirLogin/);
+  assert.match(pagina, /tituloDocumento/);
+  assert.match(pagina, /generateMetadata/);
+  assert.match(pagina, /entrar\.tituloPestana/);
+  assert.doesNotMatch(pagina, /absolute: "Hyto · Sign in"/);
   assert.equal(existsSync(new URL("../../components/admin/Landing.tsx", import.meta.url)), false);
 });

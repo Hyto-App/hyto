@@ -139,6 +139,25 @@ export function decidirRequisitos(entrada: {
   };
 }
 
+/** Organizer ask for another photo. An empty note still counts, so the member can see the ask. */
+export function rechazoDeOrganizador(pedido: unknown, ahora: string): RechazoGuardado {
+  const raiz = objeto(pedido);
+  const anidado = objeto(raiz?.rechazo);
+  const nota = sanear(anidado?.nota ?? raiz?.nota, NOTA_MAX);
+  const fallidos = idsDe(anidado?.fallidos ?? raiz?.fallidos).slice(0, MAX_REQUISITOS);
+  const marca = typeof ahora === "string" ? ahora.trim().slice(0, 40) : "";
+  return {
+    nota,
+    fallidos,
+    en: marca || new Date(0).toISOString(),
+    origen: "organizador",
+    intento: 1,
+    puntaje: null,
+    notaMile: null,
+    resultados: [],
+  };
+}
+
 export function rechazoDeDecision(decision: DecisionRequisitos, intento: number, ahora: string): RechazoGuardado | null {
   if (decision.accion !== "rechazar") return null;
   return {

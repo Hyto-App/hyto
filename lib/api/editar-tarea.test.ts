@@ -160,6 +160,61 @@ test("el cuerpo no puede cambiar el estado ni el contrato", async () => {
   assert.equal(fila?.walletCobro, "");
 });
 
+test("subir el tope por encima del saldo avisa con dos decimales y no guarda", async () => {
+  const almacen = await escenario();
+  const wallet = "G".padEnd(56, "A");
+  const respuesta = await editarTareaHttp(
+    pedido({ titulo: "Lunch", condicion: "Receipt photo", monto: "15", tope: "50" }),
+    almacen,
+    "t2",
+    "org",
+    { wallet, leerSaldo: async () => ({ saldo: "1.30" }) },
+  );
+  assert.equal(respuesta.status, 400);
+  const aviso = ((await respuesta.json()) as { aviso: string }).aviso;
+  assert.match(aviso, /US\$51\.00/);
+  assert.match(aviso, /US\$1\.00 reserve/);
+  assert.match(aviso, /You are short US\$49\.70/);
+  assert.equal(/US\$51(?!\.00)/.test(aviso), false);
+  assert.equal(/US\$49\.7(?!0)/.test(aviso), false);
+  assert.equal((await almacen.leerTarea("t2"))?.tope, "15");
+});
+
+test("bajar el tope o editar el título sigue guardando aunque el saldo no cubra el monto anterior", async () => {
+  const almacen = await escenario();
+  const wallet = "G".padEnd(56, "A");
+  const titulo = await editarTareaHttp(
+    pedido({ titulo: "Lunch note", monto: "15", tope: "15" }),
+    almacen,
+    "t2",
+    "org",
+    { wallet, leerSaldo: async () => ({ saldo: "1.30" }) },
+  );
+  assert.equal(titulo.status, 200);
+  const baja = await editarTareaHttp(
+    pedido({ titulo: "Lunch note", monto: "2", tope: "2" }),
+    almacen,
+    "t2",
+    "org",
+    { wallet, leerSaldo: async () => ({ saldo: "1.30" }) },
+  );
+  assert.equal(baja.status, 200);
+  assert.equal((await almacen.leerTarea("t2"))?.tope, "2");
+});
+
+test("un tope que el saldo sí cubre se guarda", async () => {
+  const almacen = await escenario();
+  const respuesta = await editarTareaHttp(
+    pedido({ titulo: "Lunch", monto: "12", tope: "14" }),
+    almacen,
+    "t2",
+    "org",
+    { wallet: "G".padEnd(56, "A"), leerSaldo: async () => ({ saldo: "100.00" }) },
+  );
+  assert.equal(respuesta.status, 200);
+  assert.equal((await almacen.leerTarea("t2"))?.tope, "14");
+});
+
 test("estadoConFoto keeps a pending task pending when a photo exists", () => {
   assert.equal(estadoConFoto("pendiente", true), "pendiente");
   assert.equal(estadoConFoto("pendiente", false), "pendiente");

@@ -85,9 +85,12 @@ export function aplicarDecision(tarea: TareaAdmin, decision: "pagado" | "pendien
   return sinVeredicto({ ...tarea, estado: "pendiente" });
 }
 
-/** After "Ask for another photo" the AI result belongs to the old file. */
+/**
+ * After "Ask for another photo" the score belongs to the old file.
+ * The receipt reading stays, so the amount on the receipt does not collapse to dollars.
+ */
 export function sinVeredicto(tarea: TareaAdmin): TareaAdmin {
-  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [], lectura: null };
+  return { ...tarea, veredicto: null, nota: null, frase: null, origen: null, codigo: null, etiquetas: [] };
 }
 
 /**
@@ -101,6 +104,26 @@ export function enBandeja(tarea: { estado: string; veredicto?: string | null }):
 
 export function bandejaDe(tareas: TareaAdmin[]): TareaAdmin[] {
   return tareas.filter((tarea) => enBandeja(tarea));
+}
+
+/** Pending task with no delivery and no escrow yet. The organizer can open review and lock the budget. */
+export function puedeApartarSinEntrega(tarea: {
+  estado: string;
+  hashPago?: string | null;
+  apartado?: boolean;
+  tipoArchivo?: string | null;
+  montoRevisado?: string | null;
+  fecha?: string | null;
+  intentosAnteriores?: unknown[] | null;
+}): boolean {
+  if (tarea.estado !== "pendiente") return false;
+  if (tarea.hashPago?.trim()) return false;
+  if (tarea.apartado) return false;
+  if (tarea.tipoArchivo) return false;
+  if (tarea.montoRevisado) return false;
+  if (tarea.fecha) return false;
+  if (tarea.intentosAnteriores && tarea.intentosAnteriores.length > 0) return false;
+  return true;
 }
 
 export function porPersona(tareas: TareaAdmin[]): PersonaInforme[] {
@@ -130,6 +153,13 @@ export function enlacePago(hash: string | null | undefined): string | null {
   const limpio = hash?.trim() ?? "";
   if (!/^[a-fA-F0-9]{64}$/.test(limpio)) return null;
   return `https://stellar.expert/explorer/testnet/tx/${limpio}`;
+}
+
+/** Persisted lock (the escrow contract) on Stellar testnet. A payment hash uses enlacePago. */
+export function enlaceContrato(contrato: string | null | undefined): string | null {
+  const limpio = contrato?.trim() ?? "";
+  if (!/^C[A-Z2-7]{55}$/.test(limpio)) return null;
+  return `https://stellar.expert/explorer/testnet/contract/${limpio}`;
 }
 
 export function enlaceCredencial(url: string | null | undefined): string | null {

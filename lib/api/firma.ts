@@ -12,6 +12,8 @@ import { esHashPago, hitoLiberado, sondearEscrow, type OpcionesSondeo } from "@/
 import { confirmarEnRed, hashTestnetDeXdr, type OpcionesConfirmacion } from "@/lib/escrow/confirmacion";
 import { rechazoSiComision } from "@/lib/escrow/comision";
 import { AVISO_FEE_ILEGIBLE, CODIGO_FEE_ILEGIBLE, rechazoPrevioLiberacion, rechazoSiFeeAlEnviar } from "@/lib/escrow/fee";
+import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
+import { escrowYaTieneFondos } from "@/lib/escrow/saldo-red";
 import { ErrorFirma, enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
@@ -106,6 +108,10 @@ export async function prepararFirmaHttp(sesion: SesionFila, request: Request, al
       if (ajustada instanceof Response) return ajustada;
       preparada = ajustada;
       if (ajustada.accion === "fondear") {
+        // The indexer's balance can stay 0 after the fund is already on testnet. A second fund would lock it twice.
+        if (await escrowYaTieneFondos(ajustada.contrato)) {
+          return Response.json({ aviso: AVISO_YA_FONDEADO, codigo: CODIGO_YA_FONDEADO }, { status: 409 });
+        }
         const fondos = await rechazoSiFondos(sesion.wallet, String(ajustada.monto));
         if (fondos) return fondos;
       }
