@@ -118,7 +118,7 @@ export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: 
     if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) }, 200, PRIVADA);
     const nombres = new Map((await almacen.listarProyectos()).map((proyecto) => [proyecto.id, proyecto.nombre]));
     return json({ tareas: await Promise.all(tareas.map((tarea) => tareaConNota(almacen, tarea, nombres))) }, 200, PRIVADA);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

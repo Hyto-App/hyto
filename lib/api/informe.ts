@@ -16,8 +16,8 @@ export async function informeHttp(almacen: Almacen, visor: Visor): Promise<Respo
   try {
     const vista = await armarInforme(almacen, visor);
     return json(vista);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -47,8 +47,8 @@ export async function vistaEventoHttp(almacen: Almacen, visor: Visor, proyectoId
     const lista = await proyectosVisibles(almacen, visor);
     if (!lista.some((item) => item.id === id)) return json({ aviso: "We couldn't find that event." }, 404);
     return json(await armarInforme(almacen, visor, id));
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 

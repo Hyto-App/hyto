@@ -17,8 +17,8 @@ export async function leerSesionHttp(request: Request, almacen: Almacen): Promis
     const sesion = await almacen.leerSesion(token);
     if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
     return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) }, 200, PRIVADA);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -52,13 +52,12 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
         return json({ aviso: AVISO_SIN_CUENTA }, 404);
       }
       const local = email.split("@")[0] ?? "";
-      await almacen.insertarUsuario({
+      usuario = await almacen.insertarUsuario({
         id: `u-${crypto.randomUUID()}`,
         email,
         nombre: local || email,
         rol: "voluntario",
       });
-      usuario = await almacen.usuarioPorEmail(email);
       nuevo = true;
     }
     if (!usuario) throw new Error("Could not register the user.");
@@ -81,8 +80,8 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       200,
       cookies,
     );
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -130,7 +129,7 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
     }
     await almacen.guardarWallet(token, wallet);
     return json({ wallet }, 200);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
