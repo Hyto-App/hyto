@@ -1,3 +1,4 @@
+import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
 import type { EstadoTarea, EtapaTarea, OrigenRechazo, Rechazo, RequisitoRevision, Tarea } from "./tipos";
 
 /**
@@ -23,7 +24,9 @@ export type CamposRevision = {
   hashPago: string | null;
   etapa: EtapaTarea | null;
   requisitos: RequisitoRevision[];
+  montoConfirmado: string | null;
   montoPagado: string | null;
+  montoRevisado: string | null;
 };
 
 export function leerCamposRevision(crudo: Record<string, unknown>, estado: EstadoTarea): CamposRevision {
@@ -48,7 +51,9 @@ export function leerCamposRevision(crudo: Record<string, unknown>, estado: Estad
     ["hashPago"]: textoCorto(crudo.hashPago, 128),
     etapa,
     requisitos,
-    montoPagado: textoCorto(crudo.montoPagado, 32) ?? textoCorto(crudo.montoConfirmado, 32),
+    montoConfirmado: textoCorto(crudo.montoConfirmado, 32),
+    montoPagado: textoCorto(crudo.montoPagado, 32),
+    montoRevisado: textoCorto(typeof crudo.montoRevisado === "number" ? String(crudo.montoRevisado) : crudo.montoRevisado, 32),
   };
 }
 
@@ -63,12 +68,11 @@ export function plazoVencido(iso: string | null | undefined, ahora = new Date())
   return fecha.getTime() <= ahora.getTime();
 }
 
-export function montoUsdc(tarea: Pick<Tarea, "tipo" | "monto" | "tope" | "montoPagado">): string {
-  const crudo = tarea.montoPagado || (tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto);
-  const valor = Number(String(crudo).trim());
-  if (!Number.isFinite(valor)) return String(crudo).trim();
-  const decimales = Number.isInteger(valor) ? 0 : 2;
-  return valor.toLocaleString("en-US", { minimumFractionDigits: decimales, maximumFractionDigits: 2 });
+export function montoUsdc(tarea: Pick<Tarea, "tipo" | "monto" | "tope" | "montoPagado" | "montoConfirmado">): string {
+  const plano = recibidoDeCampos(tarea);
+  if (!plano) return "";
+  const unidades = unidadesUsdc(plano);
+  return unidades === null ? "" : presentarUsdc(unidades);
 }
 
 /**
@@ -101,7 +105,7 @@ export function clavePagoVisto(tareaId: string): string {
   return `hyto-pago-visto:${tareaId}`;
 }
 
-/** Body the organizer sheet sends. The API ignores it until the review columns exist. */
+/** Body the organizer sheet sends. The server stores it as the ask for another photo. */
 export function cuerpoPedirOtra(nota: string, fallidos: number[], puntos: string[]): {
   nota: string | null;
   fallidos: string[];

@@ -31,6 +31,11 @@ export type LecturaEvidencia = {
   /** False when the model says the photo is blurry, dark, or cut off. */
   legible: boolean | null;
   faltantes: string[];
+  /**
+   * Whether the photo meets the organizer's rules. Null when there were no rules or the photo
+   * does not show enough. Absent on readings stored before this field existed.
+   */
+  cumpleReglas?: boolean | null;
 };
 
 /** Keys the vision model must return. */
@@ -116,6 +121,7 @@ export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?:
     textoCompleto,
     legible: siNo(crudo.legible),
     faltantes: lista(crudo.faltantes),
+    cumpleReglas: siNo(crudo.cumple_reglas),
   };
 }
 
@@ -140,6 +146,8 @@ export function contextoParaLaya(lectura: LecturaEvidencia): string {
   }
   if (lectura.pais) lineas.push(`Country: ${lectura.pais}.`);
   lineas.push(`Missing from the photo: ${lectura.faltantes.length > 0 ? lectura.faltantes.join("; ") : "none"}.`);
+  if (lectura.cumpleReglas === true) lineas.push("Organizer rules: the description says the photo meets them.");
+  if (lectura.cumpleReglas === false) lineas.push("Organizer rules: the description says the photo breaks at least one.");
   lineas.push(`Description: ${lectura.textoCompleto}`);
   return lineas.join("\n");
 }
@@ -159,6 +167,7 @@ export function escribirLectura(lectura: LecturaEvidencia): string {
     articulos: lectura.articulos,
     legible: lectura.legible,
     faltantes: lectura.faltantes,
+    cumple_reglas: lectura.cumpleReglas ?? null,
   });
 }
 
@@ -187,6 +196,7 @@ export function leerLecturaGuardada(crudo: string, textoCompleto: string): Lectu
     textoCompleto: textoCompleto.trim(),
     legible: siNo(valor.legible),
     faltantes: lista(valor.faltantes),
+    cumpleReglas: siNo(valor.cumple_reglas),
   };
 }
 

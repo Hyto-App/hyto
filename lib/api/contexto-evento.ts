@@ -90,8 +90,8 @@ export async function guardarPortadaHttp(
     }
     await almacen.actualizarProyecto(proyectoId, { portada: id });
     return json({ portada: true }, 201);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -131,7 +131,7 @@ export async function leerPortadaHttp(almacen: Almacen, fotos: Fotos | null, pro
         "x-content-type-options": "nosniff",
       },
     });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

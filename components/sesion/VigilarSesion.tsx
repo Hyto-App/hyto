@@ -40,6 +40,9 @@ export function VigilarSesion({ confirmada = false }: { confirmada?: boolean }) 
     if (demo || confirmada) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("signin") === "1") return;
+    // `/` is already the sign-in screen. Replacing it with `/?signin=1` reloads
+    // the document and drops the email code, whose nonce only lived in this tab.
+    if (window.location.pathname === "/") return;
     // A Google/Apple return carries a one-time Cavos code that Entrar is still
     // redeeming. Before POST /api/sesion lands, GET answers 401, and a redirect
     // here would drop the code and leave the person signed out with no notice.

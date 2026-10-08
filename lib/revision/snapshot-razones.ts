@@ -12,6 +12,8 @@ export type DetalleRazones = {
   trabajo: RespuestasTrabajo | null;
   factura: RespuestasFactura | null;
   cerca: string[];
+  /** Null when the organizer wrote no rule. False when the photo breaks it. */
+  cumpleRegla?: boolean | null;
 };
 
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
@@ -78,6 +80,8 @@ export function escribirSnapshot(detalle: DetalleRazones): string {
   }
   const cerca = detalle.cerca.filter((id, indice) => IDS_CERCA.has(id) && detalle.cerca.indexOf(id) === indice);
   if (cerca.length > 0) partes.push(`cerca=${cerca.join(",")}`);
+  if (detalle.cumpleRegla === true) partes.push("r1=1");
+  if (detalle.cumpleRegla === false) partes.push("r1=0");
   return partes.join("&");
 }
 
@@ -122,15 +126,18 @@ export function leerSnapshot(crudo: string): DetalleRazones | null {
     .split(",")
     .map((id) => id.trim())
     .filter((id) => IDS_CERCA.has(id));
-  if (clase === "otra") return { clase, trabajo: null, factura: null, cerca };
+  const marca = mapa.get("r1");
+  const cumpleRegla = marca === "1" ? true : marca === "0" ? false : null;
+  const regla = cumpleRegla === null ? {} : { cumpleRegla };
+  if (clase === "otra") return { clase, trabajo: null, factura: null, cerca, ...regla };
   if (clase === "trabajo") {
     const trabajo = leerTrabajo(mapa);
     if (!trabajo) return null;
-    return { clase, trabajo, factura: null, cerca };
+    return { clase, trabajo, factura: null, cerca, ...regla };
   }
   const factura = leerFactura(mapa);
   if (!factura) return null;
-  return { clase, trabajo: null, factura, cerca };
+  return { clase, trabajo: null, factura, cerca, ...regla };
 }
 
 function leerTrabajo(mapa: Map<string, string>): RespuestasTrabajo | null {

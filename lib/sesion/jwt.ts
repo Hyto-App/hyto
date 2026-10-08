@@ -10,8 +10,11 @@ import { createPublicKey, createVerify, type JsonWebKey } from "node:crypto";
  */
 export const HOLGURA_JWT_SEGUNDOS = 60;
 
-const TTL_MS = 10 * 60 * 1000;
+const TTL_MS = 60 * 60 * 1000;
 const cache = new Map<string, { hasta: number; claves: ClavePublica[] }>();
+const vuelos = new Map<string, Promise<ClavePublica[]>>();
+const publicas = new WeakMap<object, ReturnType<typeof createPublicKey>>();
+let jwkEntorno: { texto: string; claves: ClavePublica[] } | null = null;
 
 type ClavePublica = {
   jwk: JsonWebKey;
@@ -138,7 +141,7 @@ function firmaValida(encabezado: string, cuerpo: string, firma: string, claves: 
   const datos = Buffer.from(`${encabezado}.${cuerpo}`);
   for (const clave of claves) {
     try {
-      const publica = createPublicKey({ key: clave, format: "jwk" });
+      const publica = llaveDe(clave);
       const verificar = createVerify("RSA-SHA256");
       verificar.update(datos);
       verificar.end();
@@ -150,12 +153,24 @@ function firmaValida(encabezado: string, cuerpo: string, firma: string, claves: 
   return false;
 }
 
+function llaveDe(clave: JsonWebKey): ReturnType<typeof createPublicKey> {
+  const guardada = publicas.get(clave);
+  if (guardada) return guardada;
+  const publica = createPublicKey({ key: clave, format: "jwk" });
+  publicas.set(clave, publica);
+  return publica;
+}
+
 function jwkDeEntorno(valor: string | undefined): ClavePublica[] | null {
   const texto = valor?.trim();
   if (!texto) return null;
+  if (jwkEntorno?.texto === texto) return jwkEntorno.claves;
   try {
-    return interpretarClaves(JSON.parse(texto) as unknown);
+    const claves = interpretarClaves(JSON.parse(texto) as unknown);
+    jwkEntorno = { texto, claves };
+    return claves;
   } catch {
+    jwkEntorno = { texto, claves: [] };
     return [];
   }
 }
@@ -216,6 +231,16 @@ async function descargar(url: string): Promise<ClavePublica[]> {
   const ahora = Date.now();
   const guardada = cache.get(segura);
   if (guardada && guardada.hasta > ahora) return guardada.claves;
+  const enVuelo = vuelos.get(segura);
+  if (enVuelo) return enVuelo;
+  const trabajo = bajarJwks(segura, ahora).finally(() => {
+    if (vuelos.get(segura) === trabajo) vuelos.delete(segura);
+  });
+  vuelos.set(segura, trabajo);
+  return trabajo;
+}
+
+async function bajarJwks(segura: string, ahora: number): Promise<ClavePublica[]> {
   const respuesta = await fetch(segura, {
     redirect: "error",
     signal: AbortSignal.timeout(4000),

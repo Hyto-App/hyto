@@ -315,13 +315,13 @@ test("Mis tareas, el destino del botón, funciona sin tareas y con una tarea", a
     await esperar(() => texto().includes("No tasks yet"));
     assert.equal(document.querySelector('a[href="/mis-tareas"]') !== null, true);
     assert.equal(document.querySelector('a[href="/eventos"]') !== null, true);
-    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening/);
+    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening|Good night/);
 
     globalThis.fetch = fetchTareas([TAREA]);
     await montar(createElement(Marco, { children: createElement(MisTareas) }), { ruta: DESTINO });
     await esperar(() => texto().includes("Booth"));
     assert.doesNotMatch(texto(), /No tasks yet/);
-    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening/);
+    assert.match(document.querySelector("h1")?.textContent ?? "", /My tasks|Good morning|Good afternoon|Good evening|Good night/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

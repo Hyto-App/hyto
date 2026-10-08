@@ -1,15 +1,17 @@
 import { claveDeLaya } from "@/lib/config/entorno";
 import type { Senales } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
+import { condicionParaLaya } from "./contexto-evento";
 import {
   cuerpoLaya,
+  preguntaRegla,
   preguntasClasificacion,
   preguntasFactura,
   preguntasTrabajo,
   type Pregunta,
 } from "./laya-preguntas";
 import { noulCerca, probabilidadesCerca } from "./margen";
-import { motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo } from "./pesos";
+import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
 
@@ -171,22 +173,26 @@ export async function preguntarLaya(
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
+  regla?: string | null,
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
   const pedido = condicion.trim();
+  const reglaLimpia = (regla ?? "").trim();
+  const pedidoConRegla = reglaLimpia ? condicionParaLaya(pedido, { contextoIa: reglaLimpia }) : pedido;
   const preguntar = (preguntas: Record<string, Pregunta>) =>
-    llamar((senal) => enviar(base, texto, pedido, preguntas, fetchImpl, senal, clave));
-  const claseJson = await preguntar(preguntasClasificacion(pedido));
+    llamar((senal) => enviar(base, texto, pedidoConRegla, preguntas, fetchImpl, senal, clave));
+  const claseJson = await preguntar(preguntasClasificacion(pedidoConRegla));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
   const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
-    const json = await preguntar(preguntasTrabajo(pedido));
+    const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla), reglaLimpia));
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
     const cerca = [...cercaClase, ...idsCerca(json, IDS_TRABAJO)];
+    const cumple = leerRegla(json, reglaLimpia);
     // "otra" used to force 0% before asking whether the photo matches the request.
     // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
     if (clase === "otra" && respuestas.v1 === "es_otra_cosa") {
@@ -194,33 +200,63 @@ export async function preguntarLaya(
         choice: "otra",
         noul: false,
         score: "0",
-        motivos: ["otra"],
-        detalle: escribirSnapshot({ clase: "otra", trabajo: null, factura: null, cerca }),
+        motivos: unirMotivos(["otra"], cumple),
+        detalle: escribirSnapshot({ clase: "otra", trabajo: null, factura: null, cerca, cumpleRegla: cumple }),
       };
     }
     return {
-      ...senalesDeTrabajo(respuestas, pedido),
+      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido), cumple),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,
         factura: null,
         cerca,
+        cumpleRegla: cumple,
       }),
     };
   }
-  const json = await preguntar(preguntasFactura(pedido));
+  const json = await preguntar(conRegla(preguntasFactura(pedidoConRegla), reglaLimpia));
   const leidas = leerFactura(json);
   if (!leidas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "factura", secreto: clave });
   const respuestas = corregirFactura(leidas, texto, pedido);
+  const cumple = leerRegla(json, reglaLimpia);
   return {
-    ...senalesDeFactura(respuestas),
+    ...conMotivoRegla(senalesDeFactura(respuestas), cumple),
     detalle: escribirSnapshot({
       clase: "factura",
       trabajo: null,
       factura: respuestas,
       cerca: [...cercaClase, ...idsCerca(json, IDS_FACTURA)],
+      cumpleRegla: cumple,
     }),
   };
+}
+
+function conRegla(preguntas: Record<string, Pregunta>, regla: string): Record<string, Pregunta> {
+  if (!regla) return preguntas;
+  return { ...preguntas, r1: preguntaRegla(regla) };
+}
+
+/** Null when the organizer wrote no rule. A missing answer when a rule exists is a failed review. */
+function leerRegla(json: unknown, regla: string): boolean | null {
+  if (!regla) return null;
+  const cumple = leerSiNo(json, "r1");
+  if (cumple === null) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "r1" });
+  return cumple;
+}
+
+function unirMotivos(base: MotivoTope[], cumple: boolean | null): MotivoTope[] {
+  const motivos = [...base];
+  for (const motivo of motivosDeRegla(cumple)) {
+    if (!motivos.includes(motivo)) motivos.push(motivo);
+  }
+  return motivos;
+}
+
+function conMotivoRegla(senales: Senales, cumple: boolean | null): Senales {
+  const motivos = unirMotivos(senales.motivos ?? [], cumple);
+  if (motivos.length === 0) return senales;
+  return { ...senales, motivos };
 }
 
 async function enviar(

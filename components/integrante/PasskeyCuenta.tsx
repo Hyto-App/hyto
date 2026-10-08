@@ -66,8 +66,10 @@ export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
     >
       {resaltada && estado !== "hecho" ? <p className="hyto-passkey-chip">{t("cuenta.passkeyEmpieza")}</p> : null}
       <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.passkeyTitulo")}</h2>
-      <p className="mt-2 max-w-prose text-[15px] font-medium leading-6">{t("cuenta.passkeyPorQue")}</p>
-      <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.passkeyDetalle")}</p>
+      <p className="hyto-note mt-3 max-w-prose" role="note">
+        {t("cuenta.passkeyDetalle")}
+      </p>
+      <p className="mt-3 max-w-prose text-sm leading-6">{t("cuenta.passkeyPorQue")}</p>
       <p className="mt-2 max-w-prose text-sm leading-6 text-[var(--suave)]">{t("cuenta.passkeyTelefono")}</p>
       {estado === "hecho" ? (
         <p className="mt-3 max-w-prose text-sm leading-6" role="status" aria-live="polite">

@@ -1,6 +1,6 @@
 # Plan
 
-Current as of `main` at `2b9fad4` (2 October 2026). The 27–28 September kickoff (who codes first, "no backend", "login is broken", Fondear does not sign) described an older tree. It is not a task list. Behavior lives in [AGENTS.md](AGENTS.md) and [STACK.md](STACK.md).
+Current as of `main` at `c958992` (8 October 2026). The product is one story: Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. Trustless Work escrow on testnet is the base. The 27–28 September kickoff (who codes first, "no backend", "login is broken", Fondear does not sign) described an older tree. It is not a task list. Behavior lives in [AGENTS.md](AGENTS.md) and [STACK.md](STACK.md). The pitch is in [Hyto-informe.md](Hyto-informe.md).
 
 ## Done in the repo
 
@@ -19,7 +19,7 @@ Current as of `main` at `2b9fad4` (2 October 2026). The 27–28 September kickof
 3. **Escrow preflight.** Check the receiver's USDC trustline before deploy (Trustless Work returns `ESCROW_RECEIVER_TRUSTLINE_MISSING`). Persist the predicted contract id in the database instead of the process map. The Account screen still uses the self-paid trustline route.
 4. **Laya in the environment.** The code calls `LAYA_URL` when it is set and otherwise uses the stub. Whether that URL is set in Vercel is not visible in the repo.
 
-The MVP stays on escrow payments. New product surfaces wait until a real payment and the open security items are done.
+The product stays on testnet escrow payments for community funding. Communities, the bulletin, account type, and the volunteer profile are that same story and stay behind their flags. Do not claim a live payment, a pilot, or a real wallet until the testnet hash in the README exists.
 
 ## How a change lands
 

@@ -23,9 +23,9 @@ export function leerPerfilCuenta(body: unknown): PerfilCuenta | { aviso: string 
   if (crudo.tipo === "voluntario") return { tipo: "voluntario" };
   if (crudo.tipo !== "empresa") return { aviso: "Choose an account type." };
   const nombre = texto(crudo.nombre, MAX_NOMBRE);
-  if (!nombre) return { aviso: "Enter the organization name." };
+  if (!nombre) return { aviso: "Enter the community name." };
   const actividad = texto(crudo.actividad, MAX_ACTIVIDAD);
-  if (!actividad) return { aviso: "Say what the organization does." };
+  if (!actividad) return { aviso: "Say what the community does." };
   const descripcion = texto(crudo.descripcion, MAX_DESCRIPCION);
   if (!descripcion) return { aviso: "Enter a short description." };
   const foto = crudo.fotoUrl === undefined || crudo.fotoUrl === null || crudo.fotoUrl === "" ? null : fotoDe(crudo.fotoUrl);

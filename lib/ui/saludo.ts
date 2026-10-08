@@ -1,11 +1,16 @@
-/** Local-time greeting. Costa Rica: morning until noon, afternoon until 7, then evening. */
-export type Franja = "manana" | "tarde" | "noche";
+/**
+ * Greeting from the clock on `fecha`. `getHours()` is that date's local hour,
+ * which on the tasks screen is the person's browser, not UTC.
+ * Morning from 5, afternoon until 7, evening until midnight, then night.
+ */
+export type Franja = "manana" | "tarde" | "noche" | "madrugada";
 
 export function franjaDe(fecha: Date): Franja {
   const hora = fecha.getHours();
   if (hora >= 5 && hora < 12) return "manana";
   if (hora >= 12 && hora < 19) return "tarde";
-  return "noche";
+  if (hora >= 19) return "noche";
+  return "madrugada";
 }
 
 /** First word of a display name. An email or an empty value is no name. */

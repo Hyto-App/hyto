@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { Entrar } from "@/components/admin/Entrar";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { faltaTipoCuenta } from "@/lib/api/tipo-cuenta";
@@ -8,22 +9,33 @@ import { destinoInicio } from "@/lib/sesion/destino";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { eventosOrganizados } from "@/lib/sesion/organiza";
 import { leerSesionActual } from "@/lib/sesion/vista";
-import { discurso } from "@/lib/ui/discurso";
+import { ESLOGAN } from "@/components/ui/marca/trazos";
+import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
+import { texto } from "@/lib/ui/diccionario";
+import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: { absolute: "Hyto · Sign in" },
-  description: discurso.subheadline,
-  openGraph: {
-    description: discurso.subheadline,
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Hyto · Prove your worth. Get paid." }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    description: discurso.subheadline,
-    images: ["/twitter-image"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const jar = await cookies();
+  const guardado = jar.get(COOKIE_IDIOMA)?.value;
+  const idioma = guardado ? idiomaDe(guardado) : idiomaDeNavegador((await headers()).get("accept-language"));
+  const marca = `Hyto · ${ESLOGAN}`;
+  return {
+    title: { absolute: texto(idioma, "entrar.tituloPestana") },
+    description: DESCRIPCION_PAGINA,
+    openGraph: {
+      title: marca,
+      description: DESCRIPCION_PAGINA,
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: marca }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: marca,
+      description: DESCRIPCION_PAGINA,
+      images: ["/twitter-image"],
+    },
+  };
+}
 
 export default async function PaginaInicio() {
   const sesion = await leerSesionActual();
@@ -36,5 +48,5 @@ export default async function PaginaInicio() {
     }
     redirect(destino);
   }
-  return <Entrar abrirLogin demoHabilitado={demoHabilitado()} />;
+  return <Entrar abrirLogin tituloDocumento demoHabilitado={demoHabilitado()} />;
 }

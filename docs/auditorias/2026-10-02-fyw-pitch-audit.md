@@ -1,5 +1,7 @@
 # Hyto — Find Your Way Pitch Audit (Stellar Hackathons)
 
+**Pitch update, 8 October 2026.** The product story is accountability for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. See [README.md](../../README.md) and [Hyto-informe.md](../../Hyto-informe.md). The recommendations below record what this audit advised on 2 October (volunteers, events, milestone evidence). They are not the current pitch. Do not claim a live payment or a pilot from this file.
+
 **Audience:** Hyto team (ZEEK / Costa Rica)  
 **Purpose:** Reverse-engineer what wins Stellar hackathons and ground Hyto’s Find Your Way CR submission + pitch  
 **Prepared:** 2 Oct 2026 (America/Costa_Rica)  
@@ -317,7 +319,7 @@ Source: https://stellar.org/blog/ecosystem/stellar-i-awards-2025 — **100,000 X
 
 ### 4.4 Differentiator vs lookalikes
 
-- **Lance** (HackMeridian) ≈ freelancer escrow marketplace — Hyto should stress **volunteers/events + milestone evidence + AI review**, not generic freelance.  
+- **Lance** (HackMeridian) ≈ freelancer escrow marketplace — on 2 October this audit said Hyto should stress volunteers, events, milestone evidence, and AI review, not generic freelance. **Superseded 8 October 2026:** the product is accountability for communities in Latin America funded from afar (stipends, scholarships, event funds), with an in-place photo and a public Stellar testnet trail. Stellar is the rail, not the audience. See [Hyto-informe.md](../../Hyto-informe.md).  
 - **Payroll Genius** ≈ SME salary vaults — Hyto is **event/volunteer episodic payouts**, not HR payroll.  
 - Own the ZEEK / civic volunteering narrative that CR Morpho alumni will recognize.
 

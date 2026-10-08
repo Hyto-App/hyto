@@ -135,28 +135,28 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on turns on communities. Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
+    para: "Exact value on turns on communities (a group in Latin America that holds events). Stellar is the settlement rail, not the audience. Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
   },
   {
     nombre: "HYTO_TABLON",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on turns on the community bulletin. Also needs HYTO_COMUNIDADES=on. Unset or anything else keeps the app as it is. Do not turn this on until migrations 0010 and 0013 are applied.",
+    para: "Exact value on turns on the community bulletin (task available, assigned, or done). Also needs HYTO_COMUNIDADES=on. Unset or anything else keeps the app as it is. Do not turn this on until migrations 0010 and 0013 are applied.",
   },
   {
     nombre: "HYTO_TIPO_CUENTA",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on asks for an account type after sign-in. Unset or anything else keeps the app as it is. Do not turn this on until migration 0011 is applied.",
+    para: "Exact value on asks whether the account is a community or chapter, or a volunteer. It does not change the event role. Unset or anything else keeps the app as it is. Do not turn this on until migration 0011 is applied.",
   },
   {
     nombre: "HYTO_PERFIL_VOLUNTARIO",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on lets a person write a short profile and choose up to 5 tags. Unset or anything else keeps the app as it is. Do not turn this on until migration 0012 is applied.",
+    para: "Exact value on lets a community member write a short profile and choose up to 5 tags. Nobody scores them. Unset or anything else keeps the app as it is. Do not turn this on until migration 0012 is applied.",
   },
 ];
 

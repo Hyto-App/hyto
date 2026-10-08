@@ -1,6 +1,6 @@
 # Hyto — context for the team and for agents
 
-Read this before touching the repo. It describes `main` at `5c6613f` (7 October 2026): roleless events, invites, one app shell, and an event cover, public description, and AI-only context. If an older doc disagrees, this file and the code win.
+Read this before touching the repo. It describes `main` at `c958992` (8 October 2026): Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. The app has roleless events, invites, one app shell, and an event cover, public description, and AI-only context. If an older doc disagrees, this file and the code win.
 
 Production is Next.js on Vercel: https://hyto.vercel.app. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only.
 
@@ -21,9 +21,13 @@ Facts that bound this app, checked on 2026-10-02:
 
 ## What Hyto is
 
-Hyto locks a budget and pays milestones on Stellar testnet. One Trustless Work v2 multi-release contract per task. The organizer locks USDC, a member uploads a photo, Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. The AI does not sign or move money.
+Hyto is the accountability layer for communities funded from afar in Latin America, including multichain groups headquartered abroad or not physically present. They receive stipends, scholarships, and funds to run events, and they have to prove how that money was spent. Stellar is the settlement rail, not the audience. The funder locks USDC in one Trustless Work v2 multi-release contract per task. A member does the task and uploads an in-place photo and receipts in colones. Groq describes it, Laya scores that text when configured, and the organizer pays the full milestone. Mile recommends. The AI does not sign or move money. The payment, when it exists, is a public testnet transaction.
 
-The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example.
+Why USDC and not a local rail such as SINPE: the money comes from abroad in dollars, and the funder wants a public proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor.
+
+Communities, the bulletin, account type, and the volunteer profile (`HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, `HYTO_PERFIL_VOLUNTARIO`) are the same story. They stay off until their migrations are applied and someone sets the flag to `on`.
+
+The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example. They are not real payments or real wallets. There is still no testnet USDC payment hash in this repo. Login is Cavos email. It does not ask the person to install a wallet first.
 
 ### Membership (per event, not a login role)
 

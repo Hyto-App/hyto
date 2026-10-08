@@ -18,6 +18,10 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
     texto: "Problema grave: es otro gasto",
     explicacion: "El gasto es de otro tipo, así que la nota se queda en insuficiente.",
   },
+  cap_regla_evento: {
+    texto: "Problema grave: no cumple la regla del evento",
+    explicacion: "La foto no sigue una regla que la persona organizadora escribió para este evento, así que la nota se queda en insuficiente.",
+  },
   cap_no_razonable: {
     texto: "No puede quedar completada: el gasto no es razonable",
     explicacion: "El gasto no es razonable para la tarea, así que la nota no puede llegar a completada.",
@@ -57,6 +61,14 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   over_cap: {
     texto: "Monto sobre el límite",
     explicacion: "El monto supera el límite de la tarea, así que la nota no puede llegar a completada. Se puede pagar hasta el límite.",
+  },
+  amount_missing: {
+    texto: "Falta el monto del recibo",
+    explicacion: "Las respuestas del recibo no dan un monto.",
+  },
+  date_missing: {
+    texto: "Falta la fecha del recibo",
+    explicacion: "Las respuestas del recibo no dan una fecha.",
   },
   low_detail: {
     texto: "Poco detalle",

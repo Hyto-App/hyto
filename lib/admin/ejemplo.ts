@@ -3,6 +3,14 @@ import type { TareaAdmin } from "./tipos";
 
 export const PROYECTO_EJEMPLO = "ZEEK";
 
+/** Seeded demo review, so /revision/demo-comida can paint before the API answers. */
+export function tareaEjemploDeDemo(id: string): TareaAdmin | null {
+  const limpio = id.trim().replace(/^demo-/, "");
+  const base = tareasEjemploAdmin().find((tarea) => tarea.id === limpio);
+  if (!base) return null;
+  return { ...base, id: id.trim() };
+}
+
 export function tareasEjemploAdmin(): TareaAdmin[] {
   return [
     {

@@ -51,7 +51,9 @@ import { condicionPideLugar } from "./lugar-pedido";
  *
  * Caps live in calificar. They do not change PESOS_PREGUNTAS.
  * - TOPE_FALTA_GRAVE (49): classification "otra" with no match, v1 es_otra_cosa, t6 sin_empezar,
- *   or f1 otro_gasto (a different kind of expense). The band stays insuficiente.
+ *   f1 otro_gasto (a different kind of expense), or a photo that breaks a rule the organizer
+ *   wrote for the event. The band stays insuficiente. A receipt that follows the rule is not
+ *   capped by it, so it does not land on the same grade as one that breaks it.
  * - TOPE_FALTA_SERIA (79): g2 is false. The band cannot be cumplió. A reimbursement also stops at 79
  *   when the purchase date is missing, when the printed total has no currency Hyto can convert to US
  *   dollars, or when the dollar amount is over the task cap. The confirmed amount, which cannot pass
@@ -97,6 +99,7 @@ export type MotivoTope =
   | "no_coincide"
   | "sin_empezar"
   | "otro_gasto"
+  | "regla_evento"
   | "gasto_no_razonable"
   | "sin_monto"
   | "sin_fecha"
@@ -108,6 +111,7 @@ const TOPE_DE: Record<MotivoTope, number> = {
   no_coincide: TOPE_FALTA_GRAVE,
   sin_empezar: TOPE_FALTA_GRAVE,
   otro_gasto: TOPE_FALTA_GRAVE,
+  regla_evento: TOPE_FALTA_GRAVE,
   gasto_no_razonable: TOPE_FALTA_SERIA,
   sin_monto: TOPE_NOTA_REEMBOLSO,
   sin_fecha: TOPE_FALTA_SERIA,
@@ -120,6 +124,11 @@ export function motivosTrabajo(respuestas: RespuestasTrabajo): MotivoTope[] {
   if (respuestas.v1 === "es_otra_cosa") motivos.push("no_coincide");
   if (respuestas.t6 === "sin_empezar") motivos.push("sin_empezar");
   return motivos;
+}
+
+/** A broken organizer rule. A missing answer is not a broken rule. */
+export function motivosDeRegla(cumple: boolean | null | undefined): MotivoTope[] {
+  return cumple === false ? ["regla_evento"] : [];
 }
 
 export function motivosFactura(respuestas: RespuestasFactura): MotivoTope[] {

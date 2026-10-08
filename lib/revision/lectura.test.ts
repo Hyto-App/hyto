@@ -222,3 +222,27 @@ test("el veredicto lleva la lectura y la frase no muestra las marcas", () => {
   assert.match(etiquetas[0]?.explicacion ?? "", /did not assume US dollars/);
   assert.equal(etiquetas.some((etiqueta) => etiqueta.id === "amount_missing"), false);
 });
+
+test("cumple_reglas se guarda y una regla rota entra al texto de Laya", () => {
+  const ausente = lectura();
+  assert.equal(ausente.cumpleReglas, null);
+  assert.equal(contextoParaLaya(ausente).includes("Organizer rules"), false);
+  const rota = lectura({ cumple_reglas: false });
+  assert.equal(rota.cumpleReglas, false);
+  assert.match(contextoParaLaya(rota), /Organizer rules: the description says the photo breaks at least one/);
+  const guardada = leerLectura(JSON.parse(JSON.stringify({
+    tipo: rota.tipo,
+    pais: rota.pais,
+    moneda: rota.moneda,
+    monto_original: rota.montoOriginal,
+    monto_usd: rota.montoUsd,
+    fecha: rota.fechaImpresa,
+    comercio: rota.comercio,
+    articulos: rota.articulos,
+    texto_completo: rota.textoCompleto,
+    legible: rota.legible,
+    faltantes: rota.faltantes,
+    cumple_reglas: false,
+  })) ?? {});
+  assert.equal(guardada?.cumpleReglas, false);
+});

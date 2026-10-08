@@ -471,6 +471,38 @@ test("un recibo que Laya llama trabajo se puntúa como factura y nombra los íte
   assert.equal(corregirFactura({ ...base, g3: false }, "Items: none named.").g3, false);
 });
 
+test("la regla del evento es una pregunta propia y un no baja la nota", async () => {
+  const regla = "Only supermarket receipts count.";
+  const cuerpos: Array<{ state: string; questions: Record<string, { instructions?: string }> }> = [];
+  const pedir = (cumple: boolean) =>
+    preguntarLaya(
+      "https://laya.example",
+      "Merchant: Super.\nItems: Milk.",
+      "A receipt for food",
+      async (_input, init) => {
+        const cuerpo = JSON.parse(String(init?.body)) as (typeof cuerpos)[number];
+        cuerpos.push(cuerpo);
+        const ids = Object.keys(cuerpo.questions);
+        if (ids.includes("c1") && !ids.includes("f1")) return Response.json({ answers: { c1: { choice: "factura" } } });
+        return Response.json({ answers: { ...respuestasFactura(), r1: { noul: cumple } } });
+      },
+      undefined,
+      undefined,
+      regla,
+    );
+  const cumple = await pedir(true);
+  const rompe = await pedir(false);
+  assert.equal(cumple.score, "100");
+  assert.equal(cumple.motivos, undefined);
+  assert.deepEqual(rompe.motivos, ["regla_evento"]);
+  assert.equal(rompe.score, "100");
+  const factura = cuerpos.find((cuerpo) => "f1" in cuerpo.questions && "r1" in cuerpo.questions);
+  assert.ok(factura);
+  assert.match(factura.state, /Rule for this event: Only supermarket receipts count\./);
+  assert.match(factura.questions.r1?.instructions ?? "", /Only supermarket receipts count\./);
+  assert.equal(cuerpos.some((cuerpo) => "c1" in cuerpo.questions && "r1" in cuerpo.questions), false);
+});
+
 function assertListaDeTres(criterios: readonly string[], esperados: [string, string, string]) {
   assert.equal(Array.isArray(criterios), true);
   assert.deepEqual([...criterios], esperados);

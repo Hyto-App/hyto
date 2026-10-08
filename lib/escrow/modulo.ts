@@ -1,4 +1,5 @@
 import { claveDeTrustless } from "@/lib/config/entorno";
+import { AVISO_XLM_COMISION } from "./comision";
 import { baseDe, convieneFriendbot, esContrato, pedidoAccion, pedidoDespliegue } from "./cuerpos";
 import { revisarResolucion } from "./resolver";
 import type { AccionFirma, CuentasDespliegue, OpcionesRed, PagoEnviado, XdrListo } from "./tipos";
@@ -153,7 +154,7 @@ function problemaDe(json: unknown): { detail: string; codigo: string | null } {
   }
   if (codigo === "STELLAR_TX_INSUFFICIENT_BALANCE") {
     return {
-      detail: "The account does not have enough XLM for the fee. Fund it with Friendbot on testnet and try again.",
+      detail: AVISO_XLM_COMISION,
       codigo,
     };
   }

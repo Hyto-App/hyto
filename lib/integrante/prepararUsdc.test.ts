@@ -334,6 +334,9 @@ test("el botón muestra listo, preparando, hecho y error", async () => {
     });
     assert.match(texto(), /Payout account ready/);
     assert.match(texto(), /View on blockchain/);
+    const red = document.querySelector("a[href*='stellar.expert/explorer/testnet/tx/']");
+    assert.equal(red?.getAttribute("target"), "_blank");
+    assert.equal(red?.getAttribute("rel"), "noopener noreferrer");
 
     await montar(
       createElement(PrepararUsdc, {
