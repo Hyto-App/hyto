@@ -24,12 +24,13 @@ export function CabeceraEvento({
   const t = useTexto();
   const organiza = rol === "organizer";
 
-  async function invitar(tipo: "code" | "direct") {
+  async function invitar(tipo: "code" | "direct", senal?: AbortSignal) {
     setCopiado(false);
     const respuesta = await fetch(`/api/eventos/${encodeURIComponent(id)}/invitaciones`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(tipo === "code" ? { tipo: "code", rol: "volunteer" } : { tipo: "direct", email, rol: "volunteer" }),
+      signal: senal,
     });
     const cuerpo = (await respuesta.json().catch(() => null)) as { secreto?: string; aviso?: string } | null;
     if (!respuesta.ok || !cuerpo?.secreto) throw new Error(cuerpo?.aviso ?? "Could not create the invite.");
@@ -105,7 +106,7 @@ export function CabeceraEvento({
               : t("confirmar.inviteEmailDetail", { email: email.trim() })
           }
           confirmar={t(confirmacion.tipo === "code" ? "confirmar.inviteCodeAction" : "confirmar.inviteEmailAction")}
-          onConfirmar={() => invitar(confirmacion.tipo)}
+          onConfirmar={(senal) => invitar(confirmacion.tipo, senal)}
         />
       ) : null}
       {organiza ? (

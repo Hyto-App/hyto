@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { crearConfirmacion } from "./confirmar";
 
-function armar(accion: () => Promise<void>) {
+function armar(accion: (senal: AbortSignal) => Promise<void>) {
   const eventos: string[] = [];
   const confirmar = crearConfirmacion(
     accion,
@@ -38,4 +38,26 @@ test("nothing runs until confirm is called (cancel path)", () => {
     llamadas += 1;
   });
   assert.equal(llamadas, 0);
+});
+
+test("cancelar aborts the action and closes without leaving an error", async () => {
+  let senal: AbortSignal | undefined;
+  const { confirmar, eventos } = armar(
+    (actual) =>
+      new Promise((resolve) => {
+        senal = actual;
+        actual.addEventListener("abort", () => resolve());
+      }),
+  );
+  const pendiente = confirmar();
+  await Promise.resolve();
+  confirmar.cancelar();
+  await pendiente;
+  assert.equal(senal?.aborted, true);
+  assert.ok(eventos.includes("cerrar"));
+  assert.equal(
+    eventos.some((evento) => evento.startsWith("error:") && evento !== "error:null"),
+    false,
+  );
+  assert.equal(eventos.at(-1), "ocupado:false");
 });

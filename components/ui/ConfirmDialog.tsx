@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { crearConfirmacion } from "@/lib/ui/confirmar";
@@ -17,7 +18,7 @@ type Props = {
   irreversible?: boolean;
   confirmar: string;
   peligro?: boolean;
-  onConfirmar: () => Promise<void>;
+  onConfirmar: (senal: AbortSignal) => Promise<void>;
 };
 
 export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
@@ -37,12 +38,22 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
     if (abierto && !el.open) {
       origen.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setError(null);
+      delete el.dataset.capa;
       el.showModal();
       cancelar.current?.focus();
     } else if (!abierto && el.open) {
       el.close();
     }
   }, [abierto]);
+
+  useEffect(() => {
+    if (!error) return;
+    const el = dialogo.current;
+    if (!el) return;
+    delete el.dataset.capa;
+    if (el.open) el.close();
+    el.showModal();
+  }, [error]);
 
   useEffect(() => {
     if (abierto) return;
@@ -55,15 +66,51 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
   const ejecutar = useMemo(
     () =>
       crearConfirmacion(
-        () => ultimo.current.onConfirmar(),
+        (senal) => ultimo.current.onConfirmar(senal),
         { ocupado: setOcupado, error: setError, cerrar: () => ultimo.current.onCerrar() },
         (fallo) => ultimo.current.claro(fallo instanceof Error && fallo.message ? fallo.message : ultimo.current.t("confirmar.failed")),
       ),
     [],
   );
+  const ejecutarRef = useRef(ejecutar);
+  ejecutarRef.current = ejecutar;
+
+  useEffect(() => {
+    if (!ocupado) return;
+    const alTecla = (evento: KeyboardEvent) => {
+      if (evento.key !== "Escape") return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      ejecutarRef.current.cancelar();
+    };
+    window.addEventListener("keydown", alTecla, true);
+    const id = window.setInterval(() => {
+      const boton = document.querySelector("[data-hyto-cancelar-firma]");
+      if (boton && boton.parentElement === document.body && document.body.lastElementChild !== boton) {
+        document.body.append(boton);
+      }
+    }, 200);
+    return () => {
+      window.removeEventListener("keydown", alTecla, true);
+      window.clearInterval(id);
+    };
+  }, [ocupado]);
 
   function cerrar() {
-    if (!ocupado) onCerrar();
+    if (ocupado) {
+      ejecutar.cancelar();
+      return;
+    }
+    onCerrar();
+  }
+
+  /** Leaves the top layer before Cavos paints, so the vault card can become visible. */
+  function soltarCapa() {
+    const el = dialogo.current;
+    if (!el?.open) return;
+    el.dataset.capa = "libre";
+    el.close();
+    el.show();
   }
 
   return (
@@ -110,7 +157,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
           </p>
         ) : null}
         <div className="hyto-dialogo-acciones">
-          <button ref={cancelar} type="button" className="hyto-btn-line" disabled={ocupado} onClick={cerrar}>
+          <button ref={cancelar} type="button" className="hyto-btn-line" onClick={cerrar}>
             {t("confirmar.cancel")}
           </button>
           <button
@@ -118,12 +165,23 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
             className={`hyto-btn hyto-btn-grande${peligro ? " hyto-btn-rosa" : ""}`}
             disabled={ocupado}
             aria-busy={ocupado}
-            onClick={() => void ejecutar()}
+            onClick={() => {
+              soltarCapa();
+              void ejecutar();
+            }}
           >
             {ocupado ? t("confirmar.working") : confirmar}
           </button>
         </div>
       </div>
+      {ocupado
+        ? createPortal(
+            <button type="button" className="hyto-btn-line hyto-cancelar-firma" data-hyto-cancelar-firma="" onClick={cerrar}>
+              {t("confirmar.cancel")}
+            </button>,
+            document.body,
+          )
+        : null}
     </dialog>
   );
 }
