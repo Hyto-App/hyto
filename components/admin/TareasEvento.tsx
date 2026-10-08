@@ -36,12 +36,12 @@ function FichaAsignada({
   miembros,
   miembroId,
 }: {
-  miembros: { usuarioId: string; ficha?: Ficha }[];
+  miembros: { usuarioId: string; email?: string; ficha?: Ficha }[];
   miembroId: string;
 }) {
-  const ficha = miembros.find((persona) => persona.usuarioId === miembroId)?.ficha;
-  if (!ficha) return null;
-  return <FichaVoluntario ficha={ficha} />;
+  const persona = miembros.find((item) => item.usuarioId === miembroId);
+  if (!persona?.ficha) return null;
+  return <FichaVoluntario ficha={persona.ficha} nombre={persona.email} />;
 }
 
 export function TareasEvento({

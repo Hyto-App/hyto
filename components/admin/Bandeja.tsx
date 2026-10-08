@@ -16,9 +16,10 @@ import { montoDeTarea } from "@/lib/integrante/formato";
 import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
+import { claseBoton } from "@/components/ui/Boton";
+import { Identidad } from "@/components/ui/Identidad";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { iniciales } from "@/components/ui/Marca";
 import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
 
 const PROTECCION_REINTENTO_MS = 8_000;
@@ -213,21 +214,20 @@ export function Bandeja({
                     onClick={() => setSelId(tarea.id)}
                     className={`hyto-row ${activo ? "is-on bg-[var(--papel)]" : "hover:bg-[var(--papel)]"}`}
                   >
-                    <div className="flex items-start gap-3">
-                      <span className="hyto-avatar">{iniciales(textoVisible(tarea.miembro, idioma))}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-start justify-between gap-3">
-                          <span className="block font-semibold">{textoVisible(tarea.miembro, idioma)}</span>
-                          <span className="hyto-amount text-sm">{montoDeTarea(tarea, idioma)}</span>
-                        </span>
-                        <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo, idioma)}</span>
-                        <span className="mt-2 flex items-center justify-between gap-2">
-                          <span className="text-xs text-[var(--suave)]">{etiquetaTipo(tarea.tipo, idioma)}</span>
-                          {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
-                        </span>
-                        <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
+                    <Identidad
+                      enLinea
+                      plana
+                      nombre={textoVisible(tarea.miembro, idioma)}
+                      rol={etiquetaTipo(tarea.tipo, idioma)}
+                      detalle={textoVisible(tarea.titulo, idioma)}
+                      extra={<span className="hyto-amount text-sm">{montoDeTarea(tarea, idioma)}</span>}
+                    />
+                    {tarea.veredicto ? (
+                      <span className="mt-2 flex">
+                        <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                       </span>
-                    </div>
+                    ) : null}
+                    <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
                   </button>
                 );
               })}
@@ -268,8 +268,13 @@ export function Bandeja({
                       </select>
                     </label>
                   ) : null}
-                  {seleccion ? <FichaVoluntario ficha={miembros.find((persona) => persona.usuarioId === seleccion.miembroId)?.ficha ?? { experiencia: null, etiquetas: [] }} /> : null}
-                  <Link href={`/revision/${seleccion.id}`} className="hyto-btn mt-5">
+                  {seleccion ? (
+                    <FichaVoluntario
+                      ficha={miembros.find((persona) => persona.usuarioId === seleccion.miembroId)?.ficha ?? { experiencia: null, etiquetas: [] }}
+                      nombre={textoVisible(seleccion.miembro, idioma)}
+                    />
+                  ) : null}
+                  <Link href={`/revision/${seleccion.id}`} className={`${claseBoton("primario")} mt-5`}>
                     {t("bandeja.review")}
                   </Link>
                 </div>
@@ -319,7 +324,7 @@ export function Bandeja({
                   </details>
                 ) : null}
                 <p className="mt-6 text-sm leading-6 text-[var(--suave)]">{t("bandeja.mileSuggests")}</p>
-                <Link href={`/revision/${seleccion.id}`} className="hyto-btn-line mt-4">
+                <Link href={`/revision/${seleccion.id}`} className={`${claseBoton("fantasma")} mt-4`}>
                   {t("bandeja.openReview")}
                 </Link>
               </aside>

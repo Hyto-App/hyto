@@ -471,7 +471,7 @@ export function Revision({
           <p className="hyto-sub">
             {etiquetaTipo(tarea.tipo, idioma)} · {textoVisible(tarea.miembro, idioma)}
           </p>
-          {tarea.perfilVoluntario ? <FichaVoluntario ficha={tarea.perfilVoluntario} /> : null}
+          {tarea.perfilVoluntario ? <FichaVoluntario ficha={tarea.perfilVoluntario} nombre={textoVisible(tarea.miembro, idioma)} /> : null}
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
