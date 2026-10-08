@@ -12,6 +12,7 @@ import {
   type Pregunta,
 } from "./laya-preguntas";
 import { noulCerca, probabilidadesCerca } from "./margen";
+import { layaPuedeTaparPorOtra, type CoincideGroq, type EntornoOtraGroq } from "./otra-groq";
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
@@ -185,6 +186,10 @@ export async function preguntarLaya(
     tipoTarea?: TipoTarea | null;
     /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment. */
     tipoPorTarea?: boolean;
+    /** Groq reading used by HYTO_MILE_OTRA_CON_GROQ. Only coincide "si" withholds the cap. */
+    lectura?: { coincide?: CoincideGroq | null } | null;
+    /** Overrides HYTO_MILE_OTRA_CON_GROQ. Unset reads the environment. */
+    env?: EntornoOtraGroq;
   },
 ): Promise<Senales> {
   const clave = claveDeLaya();
@@ -197,10 +202,16 @@ export async function preguntarLaya(
   const claseJson = await preguntar(preguntasClasificacion(pedidoConRegla));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  const seguirTarea = opciones?.tipoPorTarea ?? tipoPorTareaActivo();
+  const desdeLlamada = llamar as LlamadaLaya & {
+    tipoTarea?: TipoTarea | null;
+    tipoPorTarea?: boolean;
+  };
+  const tipoExplicito = opciones != null && "tipoTarea" in opciones;
+  const banderaExplicita = opciones != null && "tipoPorTarea" in opciones;
+  const seguirTarea = (banderaExplicita ? opciones?.tipoPorTarea : desdeLlamada.tipoPorTarea) ?? tipoPorTareaActivo();
   const clase = seguirTarea
     ? claseConTipoDeTarea(leida, {
-        tipoTarea: opciones?.tipoTarea ?? null,
+        tipoTarea: (tipoExplicito ? opciones?.tipoTarea : desdeLlamada.tipoTarea) ?? null,
         texto,
         c1Cerca: idsCerca(claseJson, ["c1"]).includes("c1"),
       })

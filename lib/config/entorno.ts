@@ -117,18 +117,18 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
-    nombre: "HYTO_MILE_REQUISITOS",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
-  },
-  {
     nombre: "HYTO_MILE_INTENTOS",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
+  },
+  {
+    nombre: "HYTO_MILE_REQUISITOS",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
   },
   {
     nombre: "HYTO_MILE_TIPO_POR_TAREA",
