@@ -2,7 +2,7 @@ import { normalizarMonto } from "@/lib/admin/vista";
 import { ajustarParaVision } from "@/lib/evidencia/vision";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
-import { bloqueContextoEvento, type ContextoEvento } from "./contexto-evento";
+import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { bloqueOrganizacion } from "./organizacion";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, leerLectura } from "./lectura";
@@ -44,6 +44,8 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
         ? "This is a work task, so the photo should show the place, the people, the objects, the food, or the result the organizer asked for."
         : "";
   const espanol = contexto.idioma === "es";
+  const regla = reglaDeEvento(contexto.evento);
+  const claves = regla ? [...CLAVES_LECTURA, "cumple_reglas"] : [...CLAVES_LECTURA];
   return [
     "You read a photo that a volunteer sent as evidence for a task.",
     condicion ? `The organizer asked for: "${condicion}".` : "",
@@ -51,7 +53,10 @@ export function pedidoVision(contexto: ContextoPedido = {}): string {
     bloqueContextoEvento(contexto.evento),
     bloqueOrganizacion(contexto.organizacion),
     "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
-    `Reply with JSON only, using exactly these keys: ${CLAVES_LECTURA.join(", ")}.`,
+    `Reply with JSON only, using exactly these keys: ${claves.join(", ")}.`,
+    regla
+      ? "cumple_reglas: true only when the photo meets every rule inside <event_context>. false when it breaks at least one, for example a receipt from a different kind of store than the rule allows. null only when the photo does not show enough to decide."
+      : "",
     'tipo: "recibo" for a receipt, an invoice, or a payment screen. "trabajo" for a place, people, objects, food, or work the organizer asked to see. "otra" for anything else, such as a selfie or an unrelated image.',
     (espanol
       ? "texto_completo: a detailed description in Spanish only, never English or any other language, even when the request or the receipt is in English. 4 to 8 sentences. Say what is shown and where. Say what was done, whether it looks finished, and which tools, materials, or items are visible. Say how the photo relates to what the organizer asked for, and what is missing, unfinished, or not visible. For a receipt, include the merchant, the items, the total exactly as printed with its currency, and the date exactly as printed."

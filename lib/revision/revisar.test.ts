@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { TareaFila } from "@/lib/db/tipos";
 import { pdfConTexto } from "../evidencia/muestras";
 import { tareasSemilla } from "../db/semilla";
 import { guionFijo } from "./armar";
@@ -668,4 +669,103 @@ test("un PDF de una página vacía falla con un mensaje claro", async () => {
   assert.equal(resultado.codigo, "sin_texto");
   assert.match(resultado.frase, /PDF has no readable text/);
   assert.match(resultado.frase, /not approved automatically/);
+});
+
+const REGLA = "Only supermarket receipts count.";
+
+const TAREA_RECIBO: TareaFila = {
+  id: "comida-regla",
+  proyectoId: "p1",
+  titulo: "Groceries",
+  tipo: "reembolso",
+  monto: "20",
+  tope: "20",
+  condicion: "A receipt for food",
+  miembroId: "",
+  walletCobro: "",
+  estado: "en revisión",
+  hashPago: null,
+  contratoEscrow: null,
+  credencialUrl: null,
+  prioridad: "normal",
+  dificultad: null,
+};
+
+function recibo(cumple: boolean | null) {
+  return {
+    tipo: "recibo",
+    pais: "US",
+    moneda: "USD",
+    monto_original: "$12.40",
+    monto_usd: "12.40",
+    fecha: "10/02/2026",
+    comercio: cumple === false ? "Hardware store" : "Supermarket",
+    articulos: cumple === false ? ["Hammer"] : ["Milk"],
+    texto_completo:
+      "A sharp printed receipt. The total is $12.40 and the date is 10/02/2026. The store name and the items are visible. The whole receipt is in the frame.",
+    legible: true,
+    faltantes: [],
+    ...(cumple === null ? {} : { cumple_reglas: cumple }),
+  };
+}
+
+function respuestasRecibo(g2: boolean, r1: boolean) {
+  return {
+    f1: { choice: "coincide_con_lo_pedido" },
+    f2: { noul: true },
+    f3: { noul: true },
+    f4: { score: 2 },
+    g1: { choice: "comida_o_bebida" },
+    g2: { noul: g2 },
+    g3: { noul: true },
+    g4: { noul: true },
+    g5: { score: 2 },
+    r1: { noul: r1 },
+  };
+}
+
+async function revisarRegla(cumpleVision: boolean | null, g2: boolean, r1: boolean) {
+  const prompts: string[] = [];
+  const preguntas: string[][] = [];
+  const resultado = await revisar(TAREA_RECIBO, FOTO, {
+    claveGroq: "clave",
+    layaUrl: "https://laya.example",
+    evento: { contextoIa: REGLA },
+    fetchImpl: async (input, init) => {
+      const url = String(input);
+      const cuerpo = JSON.parse(String(init?.body)) as {
+        messages?: { content: { type: string; text?: string }[] }[];
+        questions?: Record<string, { instructions?: string }>;
+        state?: string;
+      };
+      if (url.includes("groq.com")) {
+        prompts.push(cuerpo.messages?.[0]?.content.find((parte) => parte.type === "text")?.text ?? "");
+        return Response.json({ choices: [{ message: { content: JSON.stringify(recibo(cumpleVision)) } }] });
+      }
+      const ids = Object.keys(cuerpo.questions ?? {});
+      preguntas.push(ids);
+      if (ids.includes("c1") && !ids.includes("f1")) return Response.json({ answers: { c1: { choice: "factura" } } });
+      assert.match(cuerpo.state ?? "", new RegExp(REGLA.replace(/[.]/g, "\\.")));
+      assert.match(cuerpo.questions?.r1?.instructions ?? "", /Only supermarket receipts count/);
+      return Response.json({ answers: respuestasRecibo(g2, r1) });
+    },
+  });
+  return { resultado, prompts, preguntas };
+}
+
+test("un recibo que rompe la regla del evento no queda en el mismo 79 que uno que la cumple", async () => {
+  const cumple = await revisarRegla(null, false, true);
+  const rompe = await revisarRegla(null, false, false);
+  const visto = await revisarRegla(false, true, true);
+  const vistoBien = await revisarRegla(true, true, true);
+  assert.match(cumple.prompts[0] ?? "", /Only supermarket receipts count/);
+  assert.match(cumple.prompts[0] ?? "", /cumple_reglas/);
+  assert.equal(cumple.preguntas.some((ids) => ids.includes("r1")), true);
+  assert.equal(cumple.resultado.nota, 79);
+  assert.equal(rompe.resultado.nota, 49);
+  assert.notEqual(cumple.resultado.nota, rompe.resultado.nota);
+  assert.equal(visto.resultado.nota, 49);
+  assert.equal(vistoBien.resultado.nota, 100);
+  assert.equal(vistoBien.resultado.veredicto, "cumplió");
+  assert.equal(rompe.resultado.veredicto, "insuficiente");
 });
