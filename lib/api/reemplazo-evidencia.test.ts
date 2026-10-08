@@ -70,7 +70,7 @@ test("el voluntario reemplaza la foto mientras no está pagada y la etapa sigue 
 test("sin veredicto la etapa queda en revisión", async () => {
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
-  const creadaEn = "2026-10-05T18:04:00.000Z";
+  const creadaEn = new Date().toISOString();
   await almacen.crearEvidencia({
     id: "foto-real",
     tareaId: "bienvenida",

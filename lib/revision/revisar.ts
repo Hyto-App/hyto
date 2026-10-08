@@ -2,19 +2,29 @@ import { claveDeGemini, claveDeGroq, enProduccion, urlDeLaya } from "@/lib/confi
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
 import { esEvidenciaTextual } from "@/lib/evidencia/tipo";
+import { ajustarParaVision } from "@/lib/evidencia/vision";
 import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
 import type { ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
-import { preguntarLaya } from "./laya";
+import { preguntarLaya, type LlamadaLaya } from "./laya";
 import { montoSinUsd } from "./lectura";
 import { estructurarTranscripcion, textoParaLaya } from "./texto-estructurado";
 import { preguntarRequisitos } from "./requisitos-laya";
 import { maxIntentosMile, mileRequisitosActivo } from "./requisitos-bandera";
 import { decidirRequisitos, leerRequisitos, rechazoDeDecision, serializarRechazo } from "./requisitos";
-import { conReintentos, esperaReintento, PAUSAS_REINTENTO_MS, PRESUPUESTO_REVISION_MS, TOPE_GROQ_MS, TOPE_LAYA_MS, type OpcionesReintento } from "./reintento";
+import {
+  conReintentos,
+  esperaReintento,
+  PAUSAS_REINTENTO_MS,
+  PRESUPUESTO_REVISION_MS,
+  RESERVA_LAYA_MS,
+  TOPE_GROQ_MS,
+  TOPE_LAYA_MS,
+  type OpcionesReintento,
+} from "./reintento";
 import { describirFoto } from "./scout";
 
 export type ContextoRevision = {
@@ -41,12 +51,16 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   if (!foto) return fallar(new FalloRevision("sin_foto", { fuente: "revision", providerMessage: "foto" }));
   const fetchImpl = contexto.fetchImpl ?? fetch;
   const ahora = contexto.ahora ?? Date.now;
+  const presupuesto = contexto.presupuestoMs ?? PRESUPUESTO_REVISION_MS;
   const repeticion = {
     ahora,
     esperar: contexto.esperar ?? esperaReintento,
-    deadline: ahora() + (contexto.presupuestoMs ?? PRESUPUESTO_REVISION_MS),
+    deadline: ahora() + presupuesto,
     pausas: PAUSAS_REINTENTO_MS,
   };
+  const reservaLaya = contexto.layaUrl ? Math.min(RESERVA_LAYA_MS, Math.floor(presupuesto / 3)) : 0;
+  const paraDescribir = { ...repeticion, deadline: repeticion.deadline - reservaLaya };
+  const llamarLaya: LlamadaLaya = (paso) => conReintentos(paso, { ...repeticion, topeIntentoMs: TOPE_LAYA_MS });
   const claveGemini = contexto.claveGemini?.trim() || null;
   if (!esEvidenciaTextual(foto) && !contexto.claveGroq && !claveGemini) {
     return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
@@ -60,7 +74,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
           contexto.claveGroq,
           claveGemini,
           fetchImpl,
-          repeticion,
+          paraDescribir,
           contexto.idioma ?? "en",
           contexto.evento,
         );
@@ -94,10 +108,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
         if (!(error instanceof FalloRevision)) throw error;
       }
     }
-    const senales = await conReintentos(
-      (signal) => preguntarLaya(contexto.layaUrl!, paraLaya, tarea.condicion, fetchImpl, signal),
-      { ...repeticion, topeIntentoMs: TOPE_LAYA_MS },
-    );
+    const senales = await preguntarLaya(contexto.layaUrl, paraLaya, tarea.condicion, fetchImpl, undefined, llamarLaya);
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;
@@ -156,9 +167,13 @@ function cerrarRequisitos(
   };
 }
 
-/** Groq first. Gemini runs on the same deadline only when Groq throws and a key is set. */
+/**
+ * Groq first. Gemini runs on the same deadline only when Groq throws and a key is set.
+ * The photo is turned upright and shrunk once, before the first attempt, so that work does not
+ * eat into a 20 s attempt. The adjusted bytes are already upright, so each provider's own pass is a no-op.
+ */
 async function describirConReserva(
-  foto: FotoLeida,
+  original: FotoLeida,
   tarea: TareaFila,
   claveGroq: string | null,
   claveGemini: string | null,
@@ -169,6 +184,7 @@ async function describirConReserva(
 ): Promise<Descripcion> {
   const pedido = { condicion: tarea.condicion, tipoTarea: tarea.tipo, idioma, evento };
   const opciones = { ...repeticion, topeIntentoMs: TOPE_GROQ_MS };
+  const foto = await ajustarParaVision(original.bytes, original.tipo || "image/jpeg");
   if (!claveGroq) {
     return conReintentos(
       (signal) => describirFotoGemini(foto.bytes, foto.tipo, claveGemini ?? "", fetchImpl, signal, pedido),

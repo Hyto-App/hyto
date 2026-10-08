@@ -5,6 +5,8 @@ export const PAUSAS_REINTENTO_MS = [200, 500] as const;
 export const PRESUPUESTO_REVISION_MS = 45_000;
 export const TOPE_GROQ_MS = 20_000;
 export const TOPE_LAYA_MS = 14_000;
+/** Kept out of the description's share of the budget so Laya can still score a slow Groq or Gemini reply. */
+export const RESERVA_LAYA_MS = 10_000;
 
 const MIN_INTENTO_MS = 700;
 
