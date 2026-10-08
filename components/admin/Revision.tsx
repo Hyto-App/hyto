@@ -701,10 +701,16 @@ export function Revision({
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
                 </p>
+                {esperaConfirmacion && !puedeDesplegar ? (
+                  <p id="bloqueo-monto" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("revision.lockNeedsAmount")}
+                  </p>
+                ) : null}
                 <BotonPrincipal
                   type="button"
                   disabled={ocupado || !puedeDesplegar || modoDemo}
                   aria-busy={ocupado}
+                  aria-describedby={esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : undefined}
                   onClick={() => setConfirmacion({ clave: "bloquear", abierto: true })}
                 >
                   {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}

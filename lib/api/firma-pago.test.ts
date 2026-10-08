@@ -7,7 +7,7 @@ import { asegurarSemilla } from "../db/semilla";
 import { reiniciarLimite } from "../escrow/limite";
 import { USDC_SAC_TESTNET } from "../escrow/desplegar";
 import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "../escrow/comision";
-import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeInvocacion } from "../escrow/prueba-xdr";
+import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeAlta, xdrDeInvocacion } from "../escrow/prueba-xdr";
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
 import { leerRevisionHttp } from "./revision";
@@ -158,7 +158,7 @@ test("desplegar prepara el escrow y el envío guarda el contrato y el hash", asy
     assert.equal(noDespliega.status, 409);
     assert.equal((await almacen.leerTarea("stand"))?.contratoEscrow, null);
 
-    const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const alta = xdrDeAlta(FIRMANTE_XDR);
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: alta, accion: "desplegar", tareaId: "stand", contrato: CONTRATO, token: tokenDe(alta, { accion: "desplegar", tareaId: "stand", monto: "20" }) }),
@@ -287,7 +287,7 @@ test("el indexador atrasado guarda el contrato predicho del token y no ofrece ot
     const preparado = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
     assert.equal(preparado.status, 200);
     const { token } = (await preparado.json()) as { token: string };
-    const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const alta = xdrDeAlta(FIRMANTE_XDR);
     const carga = JSON.parse(Buffer.from(token.split(".")[0] ?? "", "base64url").toString("utf8")) as { contrato?: string };
     assert.equal(carga.contrato, CONTRATO_XDR);
     const tokenAlta = tokenDe(alta, { accion: "desplegar", tareaId: "registro", monto: "20", contrato: CONTRATO_XDR });
@@ -357,7 +357,7 @@ test("si la base falla después del envío, la respuesta es 200 con el hash", as
       (await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen)).status,
       200,
     );
-    const alta = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+    const alta = xdrDeAlta(FIRMANTE_XDR);
     const enviado = await enviarFirmaHttp(
       sesion(FIRMANTE_XDR),
       pedido({ xdr: alta, accion: "desplegar", tareaId: "bienvenida", token: tokenDe(alta, { accion: "desplegar", tareaId: "bienvenida", monto: "20" }) }),
@@ -959,7 +959,7 @@ test("desplegar no arma el XDR si la cuenta ya existe y no tiene saldo para la c
   process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
   process.env.HYTO_ESCROW_ADMIN = ADMIN;
   const original = globalThis.fetch;
-  const xdr = xdrDeInvocacion({ contrato: CONTRATO_XDR, funcion: "deploy", firmante: FIRMANTE_XDR });
+  const xdr = xdrDeAlta(FIRMANTE_XDR);
   let despliegues = 0;
   const urls: string[] = [];
   function red(nativo: string): typeof fetch {

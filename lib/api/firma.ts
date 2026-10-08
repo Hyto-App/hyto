@@ -14,14 +14,13 @@ import { rechazoSiComision } from "@/lib/escrow/comision";
 import { ErrorFirma, enviar, envioConfirmado, leerEscrow, preparar, prepararDespliegue, respuestaDeErrorFirma } from "@/lib/escrow/modulo";
 import { resolutoresDe } from "@/lib/escrow/resolver";
 import type { AccionFirma, PagoEnviado } from "@/lib/escrow/tipos";
-import { leerInvocacion } from "@/lib/escrow/xdr";
+import { anclaDeXdr, esAltaDeFabrica, leerInvocacion } from "@/lib/escrow/xdr";
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisarCompletada } from "@/lib/tablon/publicar";
 import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
-const FUNCION_DESPLIEGUE = "deploy";
 const FUNCION_LIBERACION = "release_funds";
 const CODIGO_INDEXADOR_ATRASADO = "STELLAR_TX_SUBMITTED_INDEXER_LAGGING";
 export const CODIGO_CONFIRMADO_EN_RED = "HYTO_TX_CONFIRMED_ON_TESTNET";
@@ -56,6 +55,7 @@ function tokenDePreparado(
   monto: string | null,
   contrato: string | null = null,
 ): string | null {
+  const ancla = anclaDeXdr(xdr);
   return emitirTokenPreparado({
     usuarioId: sesion.usuarioId,
     sesionId: sesion.token,
@@ -64,6 +64,7 @@ function tokenDePreparado(
     tareaId: tareaId ?? "",
     monto: monto ?? "",
     ...(contrato ? { contrato } : {}),
+    ...(ancla ? { ancla } : {}),
   });
 }
 
@@ -176,7 +177,7 @@ export async function enviarFirmaHttp(
       return respuestaDeErrorFirma(error, "Could not read the escrow.");
     }
   } else {
-    const despliegue = envio.accion === "desplegar" || invocacion.funcion === FUNCION_DESPLIEGUE;
+    const despliegue = envio.accion === "desplegar" || esAltaDeFabrica(invocacion);
     const rechazo = await respuestaSiNoOrganiza(
       base,
       sesion.usuarioId,
@@ -185,17 +186,21 @@ export async function enviarFirmaHttp(
     if (rechazo) return rechazo;
   }
   if (envio.accion === "desplegar") {
-    if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
+    // La ruta de prepare dice deploy. En la red la factory expone tw_new_multi_release_escrow.
+    if (!esAltaDeFabrica(invocacion)) {
       return Response.json({ aviso: "The transaction does not deploy the escrow." }, { status: 409 });
     }
     const ocupada = await escrowYaGuardado(base, envio.tareaId);
     if (ocupada) return Response.json({ aviso: "This task already has an escrow." }, { status: 409 });
   }
   if (!envio.token) return Response.json({ aviso: AVISO_SIN_PREPARAR }, { status: 409 });
+  // La huella ata el XDR entero. Si Cavos re-simula, cambian fee, footprint y auth;
+  // el ancla sigue atando contrato, función y argumentos del escrow.
   const preparado = verificarTokenPreparado(envio.token, {
     usuarioId: sesion.usuarioId,
     sesionId: sesion.token,
     huella: huellaDeXdr(envio.xdr),
+    ancla: anclaDeXdr(envio.xdr),
   });
   if (!preparado.ok) {
     if (preparado.codigo === "secreto") return Response.json({ aviso: "The server cannot confirm this payment." }, { status: 503 });
@@ -368,7 +373,7 @@ async function guardarResultado(
   const tarea = await almacen.leerTarea(envio.tareaId);
   if (!tarea) return { aviso: "We couldn't find that task to save the payment.", estadoHttp: 200 };
   if (envio.accion === "desplegar") {
-    if (invocacion.funcion !== FUNCION_DESPLIEGUE) {
+    if (!esAltaDeFabrica(invocacion)) {
       return { aviso: "The transaction does not deploy the escrow.", estadoHttp: 409 };
     }
     if (tarea.contratoEscrow && esContrato(tarea.contratoEscrow)) {
