@@ -4,6 +4,7 @@ import { AVISO_ORGANIZADOR, respuestaSiNoOrganiza } from "@/lib/api/organizador"
 import { esProyectoDemo } from "@/lib/db/semilla";
 import { respuestaSiExcedido } from "@/lib/escrow/limite";
 import { leerEscrow, respuestaDeLectura } from "@/lib/escrow/modulo";
+import { completarEscrow } from "@/lib/escrow/saldo-red";
 import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { exigirSesion } from "@/lib/sesion/exigir";
 
@@ -23,7 +24,7 @@ export async function GET(request: Request, contexto: { params: Promise<{ contra
     const rechazo = await respuestaSiNoOrganiza(almacen, sesion.usuarioId, { contrato: id }, AVISO_ORGANIZADOR);
     if (rechazo) return rechazo;
     try {
-      const escrow = await leerEscrow(id);
+      const escrow = await completarEscrow(await leerEscrow(id));
       return Response.json({ escrow });
     } catch (error) {
       return respuestaDeLectura(error);

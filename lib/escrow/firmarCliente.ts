@@ -1,3 +1,4 @@
+import { VaultClient } from "@cavos/kit";
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 import { AVISO_ORIGEN_CAVOS, AVISO_SIN_RESPALDO, esMetodoRecuperacion, esOrigenCavos, esSinRespaldo } from "@/lib/auth/errores";
@@ -52,7 +53,12 @@ export type PagoFirmado = {
   monto: number | null;
 };
 
-/** Same deadline as Get ready to be paid. Cavos sets none of its own on signXdr. */
+/**
+ * Deadline for a Cavos call that should answer on its own (a trustline, an execute).
+ * A payment signature does not use it: the person has to approve, and Cavos can take
+ * longer than this to show the prompt. Giving up first leaves an overlay that still
+ * approves and then does nothing.
+ */
 export const TOPE_FIRMA_MS = 60_000;
 
 export type OpcionesFirma = {
@@ -62,6 +68,10 @@ export type OpcionesFirma = {
   alEmpezar?: (accion: AccionCliente) => void;
   /** Cancel or Escape abort the prepare. Reject in the Cavos prompt aborts the signature. */
   senal?: AbortSignal;
+  /**
+   * Ignored for a payment signature. That wait ends when the person approves, rejects,
+   * or cancels. `esperarCavos` still uses a deadline for trustline setup.
+   */
   topeMs?: number;
 };
 
@@ -125,9 +135,8 @@ export async function firmarYEnviar(
   let firmado: string;
   const restaurar = bajarCapasParaCavos();
   try {
-    firmado = (
-      await esperarCavos((opciones.firmar ?? firmarConCavos)(listo.xdr), opciones.topeMs ?? TOPE_FIRMA_MS, opciones.senal)
-    ).trim();
+    const pedirFirma = opciones.firmar ?? ((xdr: string) => firmarConCavos(xdr, opciones.senal));
+    firmado = (await esperarFirmaPersona(pedirFirma(listo.xdr), opciones.senal)).trim();
   } catch (error) {
     throw traducirFirma(error);
   } finally {
@@ -243,11 +252,76 @@ export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
   throw new ErrorFirmaCliente(aviso, null, null, billetera.status);
 }
 
-async function firmarConCavos(unsignedXdr: string): Promise<string> {
+async function firmarConCavos(unsignedXdr: string, senal?: AbortSignal): Promise<string> {
+  if (senal?.aborted) throw new ErrorFirmaCliente(AVISO_RECHAZO);
   const billetera = firmanteDe(await conectarBilleteraDeSesion());
+  if (senal?.aborted) throw new ErrorFirmaCliente(AVISO_RECHAZO);
   // Connect can take a moment. Drop any modal that came back before the vault paints.
   soltarDialogosModales();
-  return billetera.signXdr(unsignedXdr);
+  const firmado = billetera.signXdr(unsignedXdr);
+  if (senal?.aborted) {
+    soltarVaultCavos();
+    throw new ErrorFirmaCliente(AVISO_RECHAZO);
+  }
+  return firmado;
+}
+
+/**
+ * Waits until the person approves, rejects, or cancels. There is no clock on this wait:
+ * the vault can appear after the old 60s cap, and approving it has to be the signature
+ * we submit. Cancel closes the overlay so a late Approve cannot send.
+ */
+export function esperarFirmaPersona<T>(promesa: Promise<T>, senal?: AbortSignal): Promise<T> {
+  if (senal?.aborted) {
+    soltarVaultCavos();
+    return Promise.reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+  }
+  return new Promise((resolve, reject) => {
+    let cerrado = false;
+    const terminar = (seguir: () => void) => {
+      if (cerrado) return;
+      cerrado = true;
+      senal?.removeEventListener("abort", alAbortar);
+      seguir();
+    };
+    const alAbortar = () => {
+      terminar(() => {
+        soltarVaultCavos();
+        reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+      });
+    };
+    senal?.addEventListener("abort", alAbortar, { once: true });
+    promesa.then(
+      (valor) => {
+        terminar(() => {
+          if (senal?.aborted) {
+            soltarVaultCavos();
+            reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+            return;
+          }
+          resolve(valor);
+        });
+      },
+      (error) => {
+        terminar(() => {
+          if (senal?.aborted) {
+            soltarVaultCavos();
+            reject(new ErrorFirmaCliente(AVISO_RECHAZO));
+            return;
+          }
+          reject(error);
+        });
+      },
+    );
+  });
+}
+
+/** Drops the shared Cavos iframe so an abandoned Approve cannot be used, and the next signature can open a new one. */
+export function soltarVaultCavos(): void {
+  const mapa = (VaultClient as unknown as { attached?: { clear?: () => void } }).attached;
+  mapa?.clear?.();
+  if (typeof document === "undefined") return;
+  for (const marco of document.querySelectorAll('iframe[aria-label="Cavos"]')) marco.remove();
 }
 
 async function postJson(

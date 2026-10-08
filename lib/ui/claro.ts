@@ -22,6 +22,7 @@ import {
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
 import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_ORIGEN_CAVOS, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED, esOrigenCavos } from "@/lib/auth/errores";
+import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
@@ -70,6 +71,7 @@ const EXACTO: Record<string, Clave> = {
   "This task has no escrow yet. Deploy and fund it first.": "errores.bloquearAntes",
   "The transaction does not deploy the escrow.": "errores.presupuestoNoBloqueado",
   "This task already has an escrow.": "errores.yaBloqueado",
+  [AVISO_YA_FONDEADO]: "errores.yaEnRed",
   "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
   "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
   "Review pending": "errores.esperaRevision",
@@ -336,6 +338,7 @@ const PASOS_PAGO = new Set(["marcar", "aprobar", "liberar"]);
 export type CajaFallo = "bloqueo" | "pago";
 
 export function cajaDeFallo(entrada: { paso: string | null; codigo: string | null }): CajaFallo | null {
+  if (entrada.codigo === CODIGO_YA_FONDEADO) return null;
   if (entrada.paso && PASOS_BLOQUEO.has(entrada.paso)) return "bloqueo";
   if (entrada.paso && PASOS_PAGO.has(entrada.paso)) return "pago";
   if (entrada.codigo === CODIGO_RECEPTOR_NO_LISTO || entrada.codigo === CODIGO_HORIZON_RECEPTOR) return "bloqueo";

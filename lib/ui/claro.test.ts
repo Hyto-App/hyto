@@ -13,6 +13,7 @@ import {
   AVISO_USDC_VENCIDO,
   CODIGO_USDC_SIN_XLM,
 } from "@/lib/integrante/avisosUsdc";
+import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { cajaDeFallo, detalleFallo, mensajeClaro, pasosDePago, tituloFallo } from "./claro";
 
 test("technical payment errors tell the person what to do", () => {
@@ -84,6 +85,9 @@ test("payout setup notices for old accounts keep their own words instead of the 
 test("the failure box follows the step, not words in the message", () => {
   assert.equal(cajaDeFallo({ paso: "desplegar", codigo: CODIGO_RECEPTOR_NO_LISTO }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "fondear", codigo: null }), "bloqueo");
+  assert.equal(cajaDeFallo({ paso: "fondear", codigo: CODIGO_YA_FONDEADO }), null);
+  assert.equal(mensajeClaro(AVISO_YA_FONDEADO), "This budget is already locked on the network. Refresh this page. Do not lock it again.");
+  assert.match(mensajeClaro(AVISO_YA_FONDEADO, "es"), /ya está bloqueado en la red/);
   assert.equal(cajaDeFallo({ paso: null, codigo: CODIGO_HORIZON_RECEPTOR }), "bloqueo");
   assert.equal(cajaDeFallo({ paso: "liberar", codigo: null }), "pago");
   assert.equal(cajaDeFallo({ paso: null, codigo: null }), null);
