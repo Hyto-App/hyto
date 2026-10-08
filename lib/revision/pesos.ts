@@ -1,6 +1,7 @@
 import type { Veredicto } from "@/lib/admin/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { condicionPideLugar } from "./lugar-pedido";
+import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
 
 /**
  * Weights for Laya's second call. Tune these numbers. Each path sums to 100.
@@ -60,6 +61,11 @@ import { condicionPideLugar } from "./lugar-pedido";
  *   the cap, is what gets paid.
  * - TOPE_NOTA_REEMBOLSO (40): a reimbursement with no positive total at all.
  * When more than one cap applies, the lowest one wins.
+ *
+ * HYTO_MILE_TECHO_80 does not change these weights or the 80 band. When it is
+ * on, puntosTecho80 returns the half of v2 and of t10 that the middle step
+ * withholds, and only for a legible work reading that lists nothing missing
+ * and whose match answer is yes. Off, that function returns 0.
  */
 export const PESOS_PREGUNTAS = {
   trabajo: {
@@ -210,6 +216,39 @@ function creditoNivel(indice: 0 | 1 | 2): number {
   if (indice === 2) return 1;
   if (indice === 1) return 0.5;
   return 0;
+}
+
+/**
+ * What the vision reading has to show before the middle step of v2 and t10
+ * can be scored as "all of it". The rest of the reading is ignored.
+ */
+export type LecturaParaTecho = {
+  tipo: string | null;
+  legible: boolean | null;
+  faltantes: readonly string[];
+};
+
+/**
+ * Points to add to notaDeTrabajo. Zero unless HYTO_MILE_TECHO_80 is on, the
+ * reading is a legible work photo with an empty missing-items list, and Laya
+ * said the photo matches. Only the middle step (index 1) is lifted to full
+ * credit. Index 0 stays a real miss. Caps still apply to the sum.
+ */
+export function puntosTecho80(
+  trabajo: RespuestasTrabajo | null | undefined,
+  lectura: LecturaParaTecho | null | undefined,
+  env: EntornoTecho = process.env,
+): number {
+  if (!mileTecho80Activo(env)) return 0;
+  if (!trabajo || !lectura) return 0;
+  if (lectura.tipo !== "trabajo" || lectura.legible !== true) return 0;
+  if (!Array.isArray(lectura.faltantes) || lectura.faltantes.length > 0) return 0;
+  if (trabajo.v1 !== "es_lo_pedido") return 0;
+  const peso = PESOS_PREGUNTAS.trabajo;
+  let extra = 0;
+  if (trabajo.v2 === 1) extra += peso.v2 / 2;
+  if (trabajo.t10 === 1) extra += peso.t10 / 2;
+  return extra;
 }
 
 function creditoSi(valor: boolean): number {
