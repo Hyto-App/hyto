@@ -13,6 +13,7 @@ import {
   avisoDeIngreso,
   correoValido,
   esCorreoDemo,
+  esperaDeclarada,
   esperaDeRespuesta429,
   segundosDeRetryAfter,
   textoEspera,
@@ -101,7 +102,7 @@ test("un 429 con wait_seconds no es un fallo de red", () => {
   assert.notEqual(aviso.texto, AVISO_RED);
 });
 
-test("Retry-After manda sobre el cuerpo, y una fecha HTTP también cuenta", async () => {
+test("la espera más larga manda, y una fecha HTTP también cuenta", async () => {
   const ahora = Date.parse("2026-10-08T12:00:00.000Z");
   assert.equal(segundosDeRetryAfter("19"), 19);
   assert.equal(segundosDeRetryAfter("Thu, 08 Oct 2026 12:00:12 GMT", ahora), 12);
@@ -110,12 +111,20 @@ test("Retry-After manda sobre el cuerpo, y una fecha HTTP también cuenta", asyn
     JSON.stringify({ error: "rate_limited", message: "Please wait 53 seconds before requesting another code.", wait_seconds: 53 }),
     { status: 429, headers: { "retry-after": "19", "content-type": "application/json" } },
   );
-  assert.equal(await esperaDeRespuesta429(conHeader, ahora), 19);
+  assert.equal(await esperaDeRespuesta429(conHeader, ahora), 53);
+  const soloHeader = new Response("too many", { status: 429, headers: { "retry-after": "19" } });
+  assert.equal(await esperaDeRespuesta429(soloHeader, ahora), 19);
   const soloCuerpo = new Response(JSON.stringify({ error: "rate_limited", wait_seconds: 8 }), { status: 429 });
   assert.equal(await esperaDeRespuesta429(soloCuerpo, ahora), 8);
   const vacio = new Response("too many", { status: 429 });
   assert.equal(await esperaDeRespuesta429(vacio, ahora), 20);
   assert.equal(await esperaDeRespuesta429(new Response("no", { status: 500 }), ahora), null);
+  const aceptado = new Response(JSON.stringify({ status: "sent" }), {
+    status: 200,
+    headers: { "retry-after": "45" },
+  });
+  assert.equal(await esperaDeclarada(aceptado, ahora), 45);
+  assert.equal(await esperaDeclarada(new Response(JSON.stringify({ status: "sent" }), { status: 200 }), ahora), null);
 });
 
 test("un 502 de la ruta propia sin red sigue siendo falta de conexión", () => {
