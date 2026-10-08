@@ -2,7 +2,7 @@
 
 **Hyto: proof before payout.** Funders lock USDC for each task on Stellar. The person who completes the work submits a photo taken on site with the application camera, together with receipts. Mile, the AI assistant, compares that evidence and recommends. A person approves, and only then is the payment released. Sign-in is by email through Cavos, without a separate wallet application or a seed phrase to store. This is a prototype built for Find Your Way. There are no pilots yet.
 
-**En español.** Primero la prueba, después el pago. Quien financia reserva USDC para cada tarea en Stellar. Quien realiza el trabajo envía una foto tomada en el lugar, con la cámara de la aplicación, y los recibos. Mile compara la evidencia y recomienda. Una persona aprueba, y solo entonces se libera el pago. El texto completo está en [README.es.md](README.es.md).
+**En español.** Primero la prueba, después el pago. Quien aporta el dinero lo reserva para cada tarea, en dólares digitales, en la red Stellar. Quien realiza el trabajo envía una foto tomada en el lugar, con la cámara de la aplicación, y los recibos. Mile compara esa información y recomienda. Una persona aprueba, y solo entonces sale el pago. El texto completo, en la forma de usted, está en [README.es.md](README.es.md).
 
 ## Who it is for
 

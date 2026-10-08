@@ -1,31 +1,31 @@
-![Hyto. Primero la prueba, después el pago. Los fondos permanecen reservados hasta que se envía una foto tomada en el lugar y una persona aprueba.](docs/banner.svg)
+![Hyto. Primero la prueba, después el pago. El dinero permanece reservado hasta que alguien envía una foto tomada en el lugar y una persona aprueba.](docs/banner.svg)
 
-**Hyto: primero la prueba, después el pago.** Quien financia reserva USDC para cada tarea en Stellar. Quien realiza el trabajo envía una foto tomada en el lugar, con la cámara de la aplicación, junto con los recibos. Mile, el asistente de inteligencia artificial, compara esa evidencia y recomienda. Una persona aprueba, y solo entonces se libera el pago. El acceso es por correo electrónico, mediante Cavos, sin una aplicación de billetera aparte ni una frase secreta que conservar. Es un prototipo elaborado para Find Your Way. Aún no hay pilotos.
+**Hyto: primero la prueba, después el pago.** Quien aporta el dinero lo reserva para cada tarea, en dólares digitales, en la red Stellar. Quien realiza el trabajo envía una foto tomada en el lugar, con la cámara de la aplicación, y los recibos. Mile, el asistente, compara esa información y recomienda. Una persona aprueba, y solo entonces sale el pago. Usted ingresa con su correo, por Cavos. No necesita instalar una billetera ni guardar una frase secreta. Es un prototipo elaborado para Find Your Way. Aún no hay pilotos.
 
-La versión principal, en inglés, está en [README.md](README.md).
+Si prefiere leer en inglés, abra la versión principal en [README.md](README.md).
 
 ## A quién se dirige
 
-A comunidades de América Latina, incluidas las que operan en cualquier cadena y las que no están presentes físicamente. Reciben estipendios, subvenciones y fondos para eventos desde la distancia, y deben demostrar cómo se gastaron esos fondos. Stellar es la red de liquidación.
+A comunidades de América Latina, también si usan otra red o si no están en el lugar. Reciben estipendios, subvenciones y fondos para eventos desde la distancia, y tienen que mostrar en qué se usó ese dinero. El pago sale por la red Stellar.
 
 ## Pantallas
 
-Las imágenes corresponden al modo de demostración, en el ancho de un teléfono. El evento de ejemplo proviene de los datos locales de ejemplo. En el modo de demostración, crear un evento y firmar un pago requieren una sesión con correo electrónico.
+Estas imágenes son del modo de demostración, en el ancho de un teléfono. El evento de ejemplo viene de datos locales. En la demostración, para crear un evento o firmar un pago, ingrese con su correo.
 
 ![Eventos, con el evento de demostración y una tarea en revisión](docs/screenshots/eventos.png)
 
-![Tareas asignadas. Mile revisa la foto antes de que el envío continúe.](docs/screenshots/tareas.png)
+![Tareas asignadas. Mile revisa la foto antes de pasarla a quien aprueba.](docs/screenshots/tareas.png)
 
-![Revisión de una foto de trabajo. Reservar presupuesto permanece deshabilitado en el modo de demostración.](docs/screenshots/revision.png)
+![Revisión de una foto de trabajo. En la demostración no puede reservar el dinero.](docs/screenshots/revision.png)
 
 ## Cómo funciona
 
-1. **Reservar.** Quien organiza reserva USDC para una tarea. Hyto abre un contrato multi-release v2 de [Trustless Work](https://www.trustlesswork.com) por tarea y deposita los fondos. La comisión de plataforma en Hyto es 0. Crear un evento requiere que la billetera de la sesión cubra los montos de las tareas más 1 USDC de reserva.
-2. **Probar.** Una tarea de trabajo requiere una foto reciente tomada con la cámara de la aplicación, en el lugar donde se realizó el trabajo. Las fotos de la galería se rechazan en esa tarea. Un reembolso también requiere el recibo. Quien organiza confirma el monto antes de que esa tarea pueda reservarse.
-3. **Recomendar.** Mile compara la foto y los recibos con los requisitos de la tarea, y recomienda. Mile no aprueba el pago y no mueve los fondos.
-4. **Liberar.** Una persona aprueba. Hyto marca el hito, lo aprueba y libera el pago en Stellar. El enlace abre stellar.expert cuando el hash de la transacción está disponible.
+1. **Reservar.** Quien organiza aparta el dinero de una tarea, en dólares digitales (USDC). Hyto lo guarda aparte, en un contrato por tarea, por medio de [Trustless Work](https://www.trustlesswork.com). Hyto no cobra comisión. Para crear un evento, la cuenta de quien organiza debe cubrir la suma de las tareas y un dólar más de reserva.
+2. **Probar.** En una tarea de trabajo, la foto se toma en el lugar y en el momento, con la cámara de la aplicación. Una foto anterior, de la galería, no se acepta en esa tarea. En un reembolso también se envía el recibo, y quien organiza confirma el monto antes de reservar esa tarea.
+3. **Recomendar.** Mile compara la foto y los recibos con lo que pedía la tarea, y recomienda. Mile no aprueba el pago y no mueve el dinero.
+4. **Liberar.** Una persona aprueba. Solo entonces Hyto libera el pago en la red Stellar. Cuando el pago queda registrado, puede abrir el comprobante público en stellar.expert.
 
-Los pagos de este repositorio se liquidan en la red de prueba (testnet) de Stellar. Un saldo de USDC clásico requiere una línea de confianza (trustline) para que la cuenta pueda conservar el activo. La aplicación puede preparar esa línea de confianza para la billetera de la sesión.
+Los pagos de este proyecto, hoy, son de prueba en la red Stellar: no son dinero real. Para recibir esos dólares, la cuenta tiene que poder aceptarlos. La aplicación puede dejarla lista.
 
 ## Stack técnico
 
@@ -49,7 +49,7 @@ npm run db:local
 npm run dev
 ```
 
-`npm run db:local` espera Postgres en `127.0.0.1:5432` (`postgres://hyto:hyto@127.0.0.1:5432/hyto`). Si no hay un servicio en ese puerto, inicia Postgres según `docker-compose.yml`, aplica `drizzle/*.sql` y carga el ejemplo ZEEK. Se copia [.env.example](.env.example) a `.env.local` y se definen solo las variables necesarias para la ejecución local. Los secretos permanecen fuera del repositorio.
+`npm run db:local` espera Postgres en `127.0.0.1:5432` (`postgres://hyto:hyto@127.0.0.1:5432/hyto`). Si no hay un servicio en ese puerto, inicia Postgres según `docker-compose.yml`, aplica `drizzle/*.sql` y carga el ejemplo ZEEK. Copie [.env.example](.env.example) a `.env.local` y defina solo las variables necesarias para la ejecución local. No incluya secretos en el repositorio.
 
 El acceso de demostración es `HYTO_DEMO_LOGIN=1`. La pantalla de acceso ofrece entonces una cuenta de organizador y una cuenta de voluntario. Esas sesiones no crean eventos ni firman un pago.
 
@@ -59,13 +59,13 @@ npx tsc --noEmit
 npm run build
 ```
 
-`npm test` ejecuta los archivos `*.test.ts` de `lib/`, `scripts/backend-traspaso` y dos archivos de `tests/integracion`, con `tsx`. `npm run test:integracion` se conecta a Postgres y se ejecuta por separado. Una base de producción se migra o se carga con datos de ejemplo solo cuando la persona responsable define `HYTO_CONFIRMAR_BASE_PRODUCCION=si`.
+`npm test` ejecuta los archivos `*.test.ts` de `lib/`, `scripts/backend-traspaso` y dos archivos de `tests/integracion`, con `tsx`. `npm run test:integracion` se conecta a Postgres. Ejecútelo por separado. No migre ni cargue datos de ejemplo en una base de producción, salvo que usted sea responsable de esa base y defina `HYTO_CONFIRMAR_BASE_PRODUCCION=si`.
 
-Antes de modificar el código, se consulta [AGENTS.md](AGENTS.md). El detalle del stack está en [STACK.md](STACK.md).
+Antes de modificar el código, consulte [AGENTS.md](AGENTS.md). El detalle técnico está en [STACK.md](STACK.md).
 
 ## Comprobante en testnet
 
-El primer pago de extremo a extremo registrado en testnet es esta transacción `release_funds` del 8 de octubre de 2026. Horizon la informa como exitosa. La función invocada es `release_funds`, y el sobre de la transacción incluye USDC. Se envió la misma mañana que la corrección del despliegue en [#219](https://github.com/Hyto-App/hyto/pull/219).
+El primer pago completo registrado en la red de prueba es del 8 de octubre de 2026. Quedó confirmado. En el registro público la operación se llama `release_funds` y mueve dólares digitales de prueba (USDC). Horizon la informa como exitosa. Ocurrió la misma mañana que la corrección publicada en [#219](https://github.com/Hyto-App/hyto/pull/219).
 
 [stellar.expert/explorer/testnet/tx/efb5826e291cae2540e3def1857d7d27d591a40fdbffd1afeb7ab96ba9b5b33c](https://stellar.expert/explorer/testnet/tx/efb5826e291cae2540e3def1857d7d27d591a40fdbffd1afeb7ab96ba9b5b33c)
 
