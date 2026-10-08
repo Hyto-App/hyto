@@ -96,6 +96,12 @@ function finalizarSinPantalla(resultado: ResultadoIngreso) {
   window.location.replace(`${ruta}?signin=1`);
 }
 
+/**
+ * Login asks for no role: an organizer is whoever creates an event. A new account therefore
+ * opens Events, where Create event lives, instead of an empty task list.
+ */
+const DESTINO_ALTA = "/eventos";
+
 const DIGITOS_CODIGO = 6;
 const CODIGO_VACIO: string[] = Array.from({ length: DIGITOS_CODIGO }, () => "");
 const ENVIO_MINIMO_MS = 600;
@@ -284,7 +290,7 @@ export function Entrar({
       setCanjeando(false);
       if (resultado.guardada && resultado.direccion) {
         setAlertaRegreso(false);
-        entrarListo(resultado.direccion, resultado.pendiente, true);
+        entrarListo(resultado.direccion, resultado.pendiente, true, intencion);
         return;
       }
       setAlertaRegreso(Boolean(resultado.aviso));
@@ -301,14 +307,14 @@ export function Entrar({
    * (safe `next` / return path, else `/` → Events), matching Google. A pending
    * testnet setup never navigates, so the notice stays visible.
    */
-  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean) {
+  function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean, intencion: IntencionIngreso = pestana) {
     setDireccion(direccionGuardada);
     setPedirIngreso(false);
     setAviso(null);
     setFase("inicio");
     setAltaPendiente(pendiente);
     if (recargar && !pendiente) {
-      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), "/");
+      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), intencion === "signup" ? DESTINO_ALTA : "/");
       olvidarRetorno();
       window.location.assign(destino);
     }
@@ -357,7 +363,7 @@ export function Entrar({
   }
 
   function irATareas() {
-    const destino = destinoTrasIngreso(retorno ?? leerRetorno());
+    const destino = destinoTrasIngreso(retorno ?? leerRetorno(), pestana === "signup" ? DESTINO_ALTA : undefined);
     olvidarRetorno();
     window.location.assign(destino);
   }
@@ -788,7 +794,7 @@ export function Entrar({
         : alertaCodigo
           ? t("entrar.chipError")
           : fase === "codigo"
-            ? t("entrar.chipCodigo")
+            ? t("entrar.chipCodigoLlego")
             : fase === "enlace"
               ? t("entrar.chipEnlace")
               : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
@@ -1195,6 +1201,14 @@ export function Entrar({
                           : t(alta ? "entrar.createAccount" : "entrar.signIn")}
                       </span>
                     </button>
+                    {confirmando || fase === "exito" ? (
+                      <div role="status" aria-live="polite" aria-busy="true">
+                        <p className="hyto-login-ayuda">{t(alta ? "entrar.settingUp" : "entrar.signingIn")}</p>
+                        <div className="hyto-login-barra" aria-hidden="true">
+                          <i className="is-indeterminada" />
+                        </div>
+                      </div>
+                    ) : null}
                     <p className="hyto-login-reenvio">
                       {t("entrar.noLlego")}{" "}
                       {espera > 0 ? (
