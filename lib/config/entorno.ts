@@ -144,6 +144,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Exact value on asks Groq for a required coincide (si, parcial, or no). Only si withholds Laya's something-else cap and the grade of 0. parcial, no, and a missing field keep them. At most one extra Groq call per photo, and never after a 429 or a quota error. Unset or anything else keeps the current prompt and the current cap.",
   },
   {
+    nombre: "HYTO_MILE_PREGUNTAS_EVENTO",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on adds Spanish event options to Mile's work questions: documentar_evento, and no_aplica for a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+  },
+  {
     nombre: "HYTO_MILE_REQUISITOS",
     ambito: "servidor",
     requerida: false,
