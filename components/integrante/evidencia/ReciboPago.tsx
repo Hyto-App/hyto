@@ -13,7 +13,7 @@ export function ReciboPago({ tarea }: { tarea: Tarea }) {
   const datos = datosRecibo(tarea, idioma);
   const volver = (
     <Link href={`/tareas/${encodeURIComponent(tarea.id)}`} className="hyto-btn-line is-inline px-5">
-      {t("evidencia.backToTask")}
+      {t("evidencia.receiptBack")}
     </Link>
   );
 
