@@ -88,6 +88,7 @@ export function PanelCuenta() {
           </button>
         </section>
         <ComoCobrar />
+        <CostoDePagar />
       </div>
     );
   }
@@ -102,6 +103,7 @@ export function PanelCuenta() {
       ) : null}
       <Billetera vista={vista} alListo={() => setIntento((valor) => valor + 1)} />
       <ComoCobrar />
+      <CostoDePagar />
       {vista.muestra ? null : <PasskeyCuenta />}
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />
@@ -136,6 +138,17 @@ function ComoCobrar() {
       <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.cobroTitulo")}</h2>
       <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.cobroCuerpo")}</p>
       <p className="mt-2 max-w-prose text-sm leading-6">{t("cuenta.cobroDespues")}</p>
+    </section>
+  );
+}
+
+/** The same answer Mile already has. Settings shows it for whoever organizes and whoever gets paid. */
+function CostoDePagar() {
+  const t = useTexto();
+  return (
+    <section className="hyto-card p-5 sm:p-6">
+      <h2 className="text-sm font-medium text-[var(--suave)]">{t("ayuda.costosQ")}</h2>
+      <p className="mt-2 max-w-prose text-sm leading-6">{t("ayuda.costosA")}</p>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { PanelCuenta } from "../../components/integrante/PanelCuenta";
+import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { armarOrgullo } from "./orgullo";
 
@@ -51,6 +52,10 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.equal(texto().includes("Open Events and tap Get ready to be paid"), false);
     assert.match(texto(), /How you get your money/);
     assert.match(texto(), /practice money/);
+    assert.match(texto(), /What does it cost to pay a task\?/);
+    assert.match(texto(), /The payment processor charges a 0\.3% fee/);
+    assert.match(texto(), /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+    assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
     assert.match(texto(), /Your sign-in is saved only on this device/);
     assert.doesNotMatch(texto(), /account key lives only in this browser/);
     const avanzado = document.querySelector("details");
@@ -68,6 +73,52 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.equal(texto().includes("Demo sample"), false);
     assert.equal(document.querySelectorAll(".hyto-logro.is-on").length, 0);
     assert.equal(document.querySelectorAll(".hyto-logro").length, 6);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("configuración en español muestra el costo y la llave en tuteo", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    responder({
+      demo: false,
+      muestra: false,
+      email: "ana@hyto.test",
+      wallet: null,
+      walletMuestra: false,
+      saldo: null,
+      saldoEstado: "sin-wallet",
+      orgullo: armarOrgullo([]),
+    })) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta) }));
+    await asentar();
+    assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
+    assert.match(texto(), /comisión del 0,3 %/);
+    assert.match(texto(), /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
+    assert.match(texto(), /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
+    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Usar un teléfono o una tablet/);
+    assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b/i);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("si la cuenta no carga, el costo de pagar sigue en la página", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => responder({ aviso: "We couldn't load your account." }, 500)) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta));
+    await asentar();
+    assert.match(texto(), /We couldn't load your account/);
+    assert.match(texto(), /What does it cost to pay a task\?/);
+    assert.match(texto(), /0\.3% fee/);
   } finally {
     globalThis.fetch = original;
     await desmontar();
