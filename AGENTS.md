@@ -153,11 +153,11 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `GROQ_VISION_MODEL` | Optional Groq vision model. Unset uses `qwen/qwen3.8-27b`, the only vision model Groq listed on 2026-10-05. Reasoning parameters are sent only to `qwen/qwen3…` ids. |
 | `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
-| `HYTO_MILE_TECHO_80` | Exact value `on` lets a legible work photo whose reading lists nothing missing reach Completed when Laya's two "how much is shown" answers (v2 and t10) sit on the middle step. Unset or any other value keeps the current grade. It does not move the 80 threshold. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
 | `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
 | `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |
 | `CAVOS_JWT_JWK` | Public JWK. Wins over `CAVOS_JWKS_URL`. |
+| `HYTO_MILE_TECHO_80` | Exact value `on` lets a legible work photo whose reading lists nothing missing reach Completed when Laya's two "how much is shown" answers (v2 and t10) sit on the middle step. The same lift applies when the reading's optional `coincide` field is `si`. Absent, `parcial`, and `no` do not. Unset or any other value keeps the current grade. It does not move the 80 threshold. |
 | `HYTO_PERMITIR_JWT_SIN_FIRMA` | Exact `1`, and never in production. |
 | `HYTO_DEMO_LOGIN` | Exact `1` turns demo login on. |
 | `HYTO_STELLAR_NETWORK` | `public` or `mainnet` points the USDC balance read at public Horizon. Anything else, including unset, is testnet. The escrow API stays on the Trustless testnet base. |

@@ -117,13 +117,6 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
-    nombre: "HYTO_MILE_REQUISITOS",
-    ambito: "servidor",
-    requerida: false,
-    silenciosa: true,
-    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
-  },
-  {
     nombre: "HYTO_MILE_INTENTOS",
     ambito: "servidor",
     requerida: false,
@@ -131,11 +124,18 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_REQUISITOS",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
+  },
+  {
     nombre: "HYTO_MILE_TECHO_80",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on lets a legible work photo with nothing missing reach Completed when the two how-much-is-shown answers sit on the middle step. Unset or anything else keeps the current grade. Does not move the 80 threshold.",
+    para: "Exact value on lets a legible work photo with nothing missing reach Completed when the two how-much-is-shown answers sit on the middle step, or when the reading's optional coincide field is si. Absent, parcial, and no do not lift. Unset or anything else keeps the current grade. Does not move the 80 threshold.",
   },
   {
     nombre: "HYTO_COMUNIDADES",

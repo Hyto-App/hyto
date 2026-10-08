@@ -101,6 +101,47 @@ test("una foto a medias se queda entre 50 y 79, y una foto que no es lo pedido s
   assert.equal(puntosTecho80(REALISTA, { ...LECTURA_COMPLETA, tipo: "otra" }, ENCENDIDO), 0);
 });
 
+const RESCATADA: RespuestasTrabajo = {
+  ...REALISTA,
+  v1: "es_otra_cosa",
+  v4: false,
+  t7: true,
+};
+
+test("coincide si levanta el techo aunque Laya haya dicho que es otra cosa", () => {
+  assert.equal(notaDeTrabajo(RESCATADA), 68);
+  const completa = { ...LECTURA_COMPLETA, coincide: "si" };
+  assert.equal(puntosTecho80(RESCATADA, completa, ENCENDIDO), 12);
+  assert.equal(puntosTecho80(RESCATADA, completa, APAGADO), 0);
+  assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide: "sí" }, ENCENDIDO), 12);
+  assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide: " SI " }, ENCENDIDO), 12);
+  assert.equal(puntosTecho80(RESCATADA, LECTURA_COMPLETA, ENCENDIDO), 0);
+  for (const coincide of [undefined, null, "", "parcial", "partial", "no", "yes", "1", 1, true] as const) {
+    assert.equal(puntosTecho80(RESCATADA, { ...LECTURA_COMPLETA, coincide }, ENCENDIDO), 0, String(coincide));
+  }
+  assert.equal(puntosTecho80(RESCATADA, { ...completa, faltantes: ["the banner"] }, ENCENDIDO), 0);
+  assert.equal(puntosTecho80(RESCATADA, { ...completa, legible: false }, ENCENDIDO), 0);
+  assert.equal(puntosTecho80(RESCATADA, { ...completa, tipo: "otra" }, ENCENDIDO), 0);
+  assert.equal(puntosTecho80(MALA, { ...LECTURA_COMPLETA, coincide: "si" }, ENCENDIDO), 0);
+
+  const desc = descripcionConCoincide("si");
+  const sinTope = sinMotivos(senalesTrabajo(RESCATADA));
+  const encendida = cerrar("trabajo", null, desc, sinTope, "scout", ENCENDIDO);
+  const apagada = cerrar("trabajo", null, desc, sinTope, "scout", APAGADO);
+  assert.equal(apagada?.nota, 68);
+  assert.equal(apagada?.veredicto, "parcial");
+  assert.equal(encendida?.nota, 80);
+  assert.ok((encendida?.nota ?? 0) >= UMBRAL_CUMPLIO);
+  assert.equal(encendida?.veredicto, "cumplió");
+
+  const conTope = senalesTrabajo(RESCATADA);
+  assert.equal(cerrar("trabajo", null, desc, conTope, "scout", ENCENDIDO)?.nota, 49);
+  assert.equal(cerrar("trabajo", null, desc, conTope, "scout", APAGADO)?.nota, 49);
+  assert.equal(cerrar("trabajo", null, descripcionConCoincide("parcial"), sinTope, "scout", ENCENDIDO)?.nota, 68);
+  assert.equal(cerrar("trabajo", null, descripcionConCoincide("no"), sinTope, "scout", ENCENDIDO)?.nota, 68);
+  assert.equal(cerrar("trabajo", null, descripcion(LECTURA_COMPLETA), sinTope, "scout", ENCENDIDO)?.nota, 68);
+});
+
 test("cerrar aplica el techo y deja los topes donde estaban", () => {
   const completa = cerrar("trabajo", null, descripcion(LECTURA_COMPLETA), senalesTrabajo(REALISTA), "scout", ENCENDIDO);
   const apagada = cerrar("trabajo", null, descripcion(LECTURA_COMPLETA), senalesTrabajo(REALISTA), "scout", APAGADO);
@@ -177,6 +218,21 @@ function lecturaDe(caso: Pick<CasoTecho, "tipoLectura" | "legible" | "faltantes"
     legible: caso.legible,
     faltantes: Array.from({ length: caso.faltantes }, (_, indice) => `missing ${indice + 1}`),
   };
+}
+
+function descripcionConCoincide(coincide: unknown): Descripcion {
+  return {
+    texto: "The photo shows the requested work.",
+    monto: null,
+    fecha: null,
+    lectura: Object.assign(lecturaDe({ tipoLectura: "trabajo", legible: true, faltantes: 0 }), { coincide }),
+  };
+}
+
+function sinMotivos(senales: Senales): Senales {
+  const copia = { ...senales };
+  delete copia.motivos;
+  return copia;
 }
 
 function descripcion(lectura: { tipo: LecturaEvidencia["tipo"]; legible: boolean; faltantes: readonly string[] }): Descripcion {

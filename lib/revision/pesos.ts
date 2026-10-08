@@ -65,7 +65,8 @@ import { mileTecho80Activo, type EntornoTecho } from "./techo-bandera";
  * HYTO_MILE_TECHO_80 does not change these weights or the 80 band. When it is
  * on, puntosTecho80 returns the half of v2 and of t10 that the middle step
  * withholds, and only for a legible work reading that lists nothing missing
- * and whose match answer is yes. Off, that function returns 0.
+ * and that Laya called a match, or whose optional coincide field is si.
+ * Absent, parcial, and no do not lift. Off, that function returns 0.
  */
 export const PESOS_PREGUNTAS = {
   trabajo: {
@@ -226,12 +227,25 @@ export type LecturaParaTecho = {
   tipo: string | null;
   legible: boolean | null;
   faltantes: readonly string[];
+  /**
+   * Optional. A later reading may set "si", "parcial", or "no".
+   * Absent, or any value other than si, does not count as a match.
+   */
+  coincide?: unknown;
 };
 
+/** Only the token si, after trim, case, and accent folding. Anything else is not a match. */
+function lecturaCoincideSi(valor: unknown): boolean {
+  if (typeof valor !== "string") return false;
+  const limpio = valor.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return limpio === "si";
+}
+
 /**
- * Points to add to notaDeTrabajo. Zero unless HYTO_MILE_TECHO_80 is on, the
- * reading is a legible work photo with an empty missing-items list, and Laya
- * said the photo matches. Only the middle step (index 1) is lifted to full
+ * Points to add to notaDeTrabajo. Zero unless HYTO_MILE_TECHO_80 is on and the
+ * reading is a legible work photo with an empty missing-items list. The match
+ * can come from Laya (v1 es_lo_pedido) or from the reading's optional coincide
+ * field when it is si. Only the middle step (index 1) is lifted to full
  * credit. Index 0 stays a real miss. Caps still apply to the sum.
  */
 export function puntosTecho80(
@@ -243,7 +257,7 @@ export function puntosTecho80(
   if (!trabajo || !lectura) return 0;
   if (lectura.tipo !== "trabajo" || lectura.legible !== true) return 0;
   if (!Array.isArray(lectura.faltantes) || lectura.faltantes.length > 0) return 0;
-  if (trabajo.v1 !== "es_lo_pedido") return 0;
+  if (trabajo.v1 !== "es_lo_pedido" && !lecturaCoincideSi(lectura.coincide)) return 0;
   const peso = PESOS_PREGUNTAS.trabajo;
   let extra = 0;
   if (trabajo.v2 === 1) extra += peso.v2 / 2;
