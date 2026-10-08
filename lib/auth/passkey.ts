@@ -10,6 +10,7 @@ import {
   AVISO_PASSKEY_SIN_CONFIG,
   AVISO_PASSKEY_SIN_SOPORTE,
 } from "./avisosPasskey";
+import { leerWebAuthn, navegadorPuedeCrearPasskey } from "./soportePasskey";
 
 export {
   AVISO_PASSKEY_CANCELADA,
@@ -99,8 +100,9 @@ function limpio(texto: string): string {
 function dependenciasReales(): DependenciasPasskey {
   return {
     async soportado() {
-      const { PasskeyPrf } = await import("@cavos/kit");
-      return PasskeyPrf.isSupported();
+      // Not PasskeyPrf.isSupported(): that requires a platform authenticator and
+      // refuses Linux Chrome before enroll(), which does not require one.
+      return navegadorPuedeCrearPasskey(leerWebAuthn());
     },
     async conectar() {
       const auth = await crearAuth();

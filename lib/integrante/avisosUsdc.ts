@@ -8,3 +8,5 @@ export const AVISO_USDC_PENDIENTE = "The network hasn't confirmed the payout set
 export const AVISO_USDC_OTRA_CUENTA =
   "This sign-in opened a different payout account than the one Hyto has for you. Sign in again and retry.";
 export const AVISO_USDC_LENTO = "The confirmation took too long. Check your connection and try again.";
+/** The key is not in this browser. The Hyto session can still be open. */
+export const AVISO_COBRO_SIN_CONFIRMAR = "This sign-in can't confirm for this account. Sign in again.";

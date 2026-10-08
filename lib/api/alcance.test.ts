@@ -163,7 +163,8 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
     assert.equal((await evidenciaGet(pedir("http://local/api/evidencias/no-existe", "ana"), { params: Promise.resolve({ id: "no-existe" }) })).status, 404);
 
     const sinProyecto = await proyectosGet(pedir("http://local/api/proyectos", "ajeno"));
-    assert.equal(sinProyecto.status, 404);
+    assert.equal(sinProyecto.status, 200);
+    assert.deepEqual(((await sinProyecto.json()) as { proyectos: unknown[] }).proyectos, []);
   } finally {
     restaurar(anterior);
     if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;

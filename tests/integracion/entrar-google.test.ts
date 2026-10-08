@@ -251,3 +251,41 @@ test("un enlace de correo abierto en otra pestaña usa la intención y el retorn
     root.unmount();
   });
 });
+
+test("si la pantalla se va con la sesión ya guardada, no vuelve al ingreso", async () => {
+  reiniciar();
+  window.sessionStorage.setItem(CLAVE_INTENCION, "signup");
+  window.location.href = "http://localhost/?cavos_auth_code=codigo-queda";
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
+  try {
+    const { Entrar } = await import("../../components/admin/Entrar");
+    const { root } = montar();
+    await act(async () => {
+      root.render(createElement(Entrar));
+    });
+    await act(async () => {
+      root.unmount();
+    });
+    await act(async () => {
+      estado.resolverAuth({});
+      await vaciar();
+    });
+    await act(async () => {
+      estado.resolverGoogle({
+        aviso: "This sign-in can't confirm for this account. Sign in again.",
+        direccion: DIRECCION,
+        guardada: true,
+      });
+      await vaciar();
+    });
+    assert.equal(leerMemoriaAdmin().direccion, DIRECCION);
+    assert.equal(destinos.some((destino) => destino.includes("signin=1")), false);
+    assert.deepEqual(destinos, ["/eventos"]);
+  } finally {
+    window.location.assign = asignar;
+  }
+});

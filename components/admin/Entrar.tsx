@@ -38,6 +38,7 @@ import {
   textoEspera,
 } from "@/lib/auth/errores";
 import { acortarDireccion } from "@/lib/integrante/formato";
+import { claveAvisoAlta } from "@/lib/auth/avisoAlta";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
@@ -74,12 +75,14 @@ const CLAVE_AVISO_REGRESO = "hyto-aviso-regreso";
 
 /**
  * The return effect unmounted, and nothing newer is waiting on this code.
- * Navigate when the session is ready. Otherwise keep the notice and reopen sign-in,
- * so the person never lands back on a blank login.
+ * A saved session goes into the app, even when testnet setup is still pending.
+ * Otherwise keep the notice and reopen sign-in, so the person never lands on a blank login.
  */
-function finalizarSinPantalla(resultado: ResultadoIngreso) {
-  if (resultado.guardada && resultado.direccion && !resultado.pendiente) {
-    const destino = destinoTrasIngreso(leerRetorno(), "/");
+function finalizarSinPantalla(resultado: ResultadoIngreso, intencion: IntencionIngreso) {
+  // A saved session stays open. Sending it to ?signin=1 looks like the session closed,
+  // and the server then bounces a still-valid cookie straight into the app.
+  if (resultado.guardada && resultado.direccion) {
+    const destino = destinoTrasIngreso(leerRetorno(), intencion === "signup" ? DESTINO_ALTA : "/");
     olvidarRetorno();
     window.location.assign(destino);
     return;
@@ -284,7 +287,7 @@ export function Entrar({
       const ultimo = duenosGoogle.get(codigoGoogle) === ticket;
       const sigueAqui = new URLSearchParams(window.location.search).get("cavos_auth_code") === codigoGoogle;
       if (!vivo) {
-        if (ultimo && sigueAqui) finalizarSinPantalla(resultado);
+        if (ultimo && sigueAqui) finalizarSinPantalla(resultado, intencion);
         return;
       }
       setCanjeando(false);
@@ -707,33 +710,51 @@ export function Entrar({
   const alertaFormulario = Boolean(mensaje) && (correoInvalido || alertaRegreso) && !(mostrarEspera && espera > 0);
 
   if (direccion && !pedirIngreso) {
+    const claveAlta = altaPendiente ? claveAvisoAlta(altaPendiente) : null;
     return (
-      <div className="hyto-post-login">
-        <div className="flex items-center gap-3">
-          <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
-          <div>
-            <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
-            <details className="text-sm text-[var(--suave)]">
-              <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
-              <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
-            </details>
-          </div>
-        </div>
-        {altaPendiente ? (
-          <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
-            <p>
-              {claro(altaPendiente)} {t("entrar.altaPendiente")}
-            </p>
-            <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
-              {t("entrar.openEvents")}
-            </a>
-          </div>
-        ) : null}
-        <div className="hyto-welcome-step">
-          <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
-          <Link href={destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
-            {t("pago.preparePayout")}
-          </Link>
+      <div className="hyto-login" role="dialog" aria-modal="true" aria-label={t("entrar.signedIn")}>
+        <Escena />
+        <div className="hyto-login-marco">
+          <header className="hyto-login-top">
+            <span className="hyto-login-logo">
+              <Logo />
+            </span>
+            <SelectorIdiomaMenu className="hyto-login-idioma" />
+          </header>
+          <main className="hyto-login-grid">
+            <section className="hyto-login-tarjeta hyto-post-login" aria-label={t("entrar.signedIn")}>
+              <div className="flex items-center gap-3">
+                <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
+                <div>
+                  <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
+                  <details className="text-sm text-[var(--suave)]">
+                    <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
+                    <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+                  </details>
+                </div>
+              </div>
+              {altaPendiente ? (
+                <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
+                  <p>
+                    {claveAlta ? t(claveAlta) : (
+                      <>
+                        {claro(altaPendiente)} {t("entrar.altaPendiente")}
+                      </>
+                    )}
+                  </p>
+                  <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
+                    {t("entrar.openEvents")}
+                  </a>
+                </div>
+              ) : null}
+              <div className="hyto-welcome-step">
+                <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
+                <Link href={destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
+                  {t("pago.preparePayout")}
+                </Link>
+              </div>
+            </section>
+          </main>
         </div>
       </div>
     );

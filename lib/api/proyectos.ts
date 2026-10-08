@@ -93,7 +93,11 @@ export async function leerProyectoHttp(almacen: Almacen, visor: Visor, pedido?: 
     const proyectos = await proyectosVisibles(almacen, visor);
     const pedidoId = pedido?.id?.trim() || null;
     const proyecto = pedidoId ? (proyectos.find((item) => item.id === pedidoId) ?? null) : (proyectos[0] ?? null);
-    if (!proyecto) return json({ aviso: "There is no project yet." }, 404);
+    // A new account has no events. 404 here is the browser's failed-request noise, not a missing page.
+    if (!proyecto) {
+      if (!pedidoId) return json({ proyecto: null, proyectos: [], tareas: [], miembros: [] });
+      return json({ aviso: "There is no project yet." }, 404);
+    }
     const visibles = await tareasVisibles(almacen, visor);
     const tareas = visibles.filter((tarea) => tarea.proyectoId === proyecto.id);
     const miembros = visor.usuarioId ? await almacen.miembrosDeUsuario(visor.usuarioId) : [];
