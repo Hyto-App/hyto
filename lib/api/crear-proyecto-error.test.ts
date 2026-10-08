@@ -39,8 +39,13 @@ test("un fallo que no es de la base no se disfraza de base no lista, y el regist
   }
 });
 
-test("un corte de conexión sigue diciendo que la base no está lista", () => {
+test("un corte de conexión no se disfraza de migración faltante", () => {
   const error = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" });
-  assert.deepEqual(clasificarErrorCrear(error), { aviso: "The database is not ready.", status: 503 });
+  assert.deepEqual(clasificarErrorCrear(error), { aviso: "The database could not be reached.", status: 503 });
   assert.match(detalleErrorCrear(error), /ECONNREFUSED/);
+});
+
+test("crear un evento sin la columna de la migración lo dice así", () => {
+  const error = Object.assign(new Error('column "comunidad_id" of relation "proyectos" does not exist'), { code: "42703" });
+  assert.deepEqual(clasificarErrorCrear(error), { aviso: "The database is missing a migration.", status: 503 });
 });

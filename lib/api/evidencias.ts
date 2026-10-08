@@ -70,8 +70,8 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
     if (acceso === "entrar") return json({ aviso: "Sign in to continue." }, 401);
     if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     return json({ evidencia: evidenciaPublica(evidencia) });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -103,8 +103,8 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
         "x-content-type-options": "nosniff",
       },
     });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -129,8 +129,8 @@ export async function emitirTokenEvidenciaHttp(request: Request, deps: DepsEvide
     const token = emitirTokenEvidencia({ usuarioId: deps.actor.usuarioId, tareaId });
     if (!token) return json({ aviso: "Evidence checks are not configured." }, 503);
     return json({ token });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -297,8 +297,8 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
     return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, reintento ? 200 : 201);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
