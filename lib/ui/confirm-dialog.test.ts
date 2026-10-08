@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { act, createElement, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { bajarCapasParaCavos } from "@/lib/escrow/capaCavos";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 function Ejemplo({ onConfirmar }: { onConfirmar: (senal: AbortSignal) => Promise<void> }) {
@@ -51,15 +52,21 @@ test("the dialog opens, cancel does not call the action, confirm calls it once",
   await desmontar();
 });
 
-test("confirm leaves the top layer before the action so Cavos can paint in front", async () => {
-  let capa: string | undefined;
-  let abierto = false;
+test("while Cavos is signing the dialog and its cancel control are not in the page", async () => {
+  let durante = false;
   await montar(
     createElement(Ejemplo, {
       onConfirmar: async () => {
-        const dialogo = document.querySelector("dialog") as HTMLDialogElement;
-        capa = dialogo.dataset.capa;
-        abierto = dialogo.open;
+        const restaurar = bajarCapasParaCavos();
+        try {
+          await act(async () => {
+            await Promise.resolve();
+          });
+          durante = document.querySelector("dialog") === null && document.querySelector("[data-hyto-cancelar-firma]") === null;
+          assert.equal(document.documentElement.classList.contains("hyto-firmando"), true);
+        } finally {
+          restaurar();
+        }
       },
     }),
   );
@@ -68,8 +75,9 @@ test("confirm leaves the top layer before the action so Cavos can paint in front
   await act(async () => {
     await Promise.resolve();
   });
-  assert.equal(capa, "libre");
-  assert.equal(abierto, true);
+  assert.equal(durante, true);
+  assert.equal((document.querySelector("dialog") as HTMLDialogElement | null)?.open ?? false, false);
+  assert.equal(document.documentElement.classList.contains("hyto-firmando"), false);
   await desmontar();
 });
 
@@ -91,7 +99,7 @@ test("cancel stays available while the action is running and aborts it", async (
   });
   const cancelar = document.querySelector("dialog .hyto-btn-line") as HTMLButtonElement;
   assert.equal(cancelar.disabled, false);
-  assert.ok(document.querySelector("[data-hyto-cancelar-firma]"));
+  assert.equal(document.querySelector("[data-hyto-cancelar-firma]"), null);
   await pulsar("Cancel");
   await act(async () => {
     await Promise.resolve();
