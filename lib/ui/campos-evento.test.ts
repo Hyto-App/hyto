@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { contadorCerca, contextoAbierto } from "./campos-evento";
+import { contadorCerca, contextoAbierto, errorPortada } from "./campos-evento";
 import { en, es } from "./diccionario";
 
 const leer = (ruta: string) => readFileSync(new URL(ruta, import.meta.url), "utf8");
@@ -41,6 +41,20 @@ test("textareas do not resize by hand and previews use a 16:9 frame", () => {
   assert.match(css, /\.hyto-marco-16-9 \{[^}]*aspect-ratio:\s*16 \/ 9/);
   assert.match(css, /--contador-alto:\s*#ff4d8d/);
   assert.doesNotMatch(campos + form, /#[0-9a-fA-F]{6}/);
+});
+
+test("cover files are checked by type and size, on pick and on drop", () => {
+  assert.equal(errorPortada({ type: "image/png", size: 1024 }), null);
+  assert.equal(errorPortada({ type: "image/webp", size: 5 * 1024 * 1024 }), null);
+  assert.equal(errorPortada({ type: "image/svg+xml", size: 1024 }), "type");
+  assert.equal(errorPortada({ type: "image/png", size: 14 * 1024 * 1024 }), "size");
+  assert.match(campos, /function elegir[\s\S]{0,200}errorPortada/);
+  assert.match(campos, /onDrop=\{[\s\S]{0,200}elegir\(/);
+});
+
+test("the organizer's event page renders the cover and description card", () => {
+  const pagina = leer("../../app/(admin)/eventos/[id]/page.tsx");
+  assert.equal((pagina.match(/<ContextoEvento/g) ?? []).length, 2);
 });
 
 test("the new strings exist in English and Spanish", () => {

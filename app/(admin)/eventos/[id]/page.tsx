@@ -28,9 +28,18 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
     const personas = miembros
       .filter((miembro) => miembro.estado === "active")
       .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId));
+    const publicoOrganizador = datosPublicosDeEvento(proyecto);
     return (
       <>
         <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" />
+        <div className="hyto-page pb-0 pt-0">
+          <ContextoEvento
+            proyectoId={proyecto.id}
+            nombre={proyecto.nombre}
+            descripcion={publicoOrganizador.descripcion}
+            portada={publicoOrganizador.portada}
+          />
+        </div>
         <Bandeja proyectoId={proyecto.id} miembros={personas} />
       </>
     );
