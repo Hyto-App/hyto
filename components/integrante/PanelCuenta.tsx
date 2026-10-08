@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
+import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { acortarDireccion, formatearFecha, formatearMonto } from "@/lib/integrante/formato";
+import { acortarDireccion, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
 import type { Clave } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
@@ -99,7 +100,7 @@ export function PanelCuenta() {
           {vista.walletMuestra ? t("cuenta.demoNotaMuestra") : t("cuenta.demoNotaSesion")}
         </p>
       ) : null}
-      <Billetera vista={vista} />
+      <Billetera vista={vista} alListo={() => setIntento((valor) => valor + 1)} />
       <ComoCobrar />
       {vista.muestra ? null : <PasskeyCuenta />}
       <Ganancias orgullo={vista.orgullo} />
@@ -152,11 +153,12 @@ function PasaporteStellar() {
   );
 }
 
-function Billetera({ vista }: { vista: VistaCuenta }) {
+function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void }) {
   const t = useTexto();
   const idioma = useIdioma();
   const publica = direccionPublica(vista.wallet);
-  const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearMonto(vista.saldo, idioma) : "—";
+  const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
+  const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
   return (
     <section className="hyto-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -166,6 +168,7 @@ function Billetera({ vista }: { vista: VistaCuenta }) {
         {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
       <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
+      {sinCobro && !vista.demo && !vista.muestra ? <PrepararUsdc silencioPendiente onListo={alListo} /> : null}
       <details className="mt-6 text-sm">
         <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
         <div className="mt-4 grid gap-5">
@@ -237,7 +240,7 @@ function Direccion({ direccion }: { direccion: string }) {
 function textoSaldo(vista: VistaCuenta, t: (clave: Clave) => string): string {
   if (vista.saldoEstado === "ok" && vista.walletMuestra) return t("cuenta.sampleBalance");
   if (vista.saldoEstado === "ok") return t("cuenta.onWallet");
-  if (vista.saldoEstado === "ausente") return t("cuenta.ausente");
+  if (vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet") return t("cuenta.ausente");
   if (vista.saldoEstado === "error") return t("cuenta.noBalance");
   return t("cuenta.addWallet");
 }
@@ -250,15 +253,15 @@ function Ganancias({ orgullo }: { orgullo: Orgullo }) {
       <div className="hyto-kpis">
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.thisMonth")}</p>
-          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.esteMes, idioma)}</p>
+          <p className="hyto-amount mt-2 text-2xl">{formatearRecibido(orgullo.esteMes, idioma)}</p>
         </article>
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.lastMonth")}</p>
-          <p className="hyto-amount mt-2 text-2xl">{formatearMonto(orgullo.mesPasado, idioma)}</p>
+          <p className="hyto-amount mt-2 text-2xl">{formatearRecibido(orgullo.mesPasado, idioma)}</p>
         </article>
         <article>
           <p className="text-sm text-[var(--suave)]">{t("cuenta.allTime")}</p>
-          <p className="hyto-amount mt-2 text-2xl text-[var(--acento-texto)]">{formatearMonto(orgullo.total, idioma)}</p>
+          <p className="hyto-amount mt-2 text-2xl text-[var(--acento-texto)]">{formatearRecibido(orgullo.total, idioma)}</p>
         </article>
       </div>
       <div className="hyto-card p-5 sm:p-6">
@@ -286,9 +289,9 @@ function Grafico({ meses }: { meses: MesOrgullo[] }) {
         const corta = mesVisible(mes.clave, "short", idioma);
         const larga = mesVisible(mes.clave, "long", idioma);
         return (
-          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearMonto(mes.total, idioma) || "US$0"}`}>
+          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearRecibido(mes.total, idioma) || "US$0"}`}>
             <span className="hyto-mes-valor" aria-hidden="true">
-              {cifra > 0 ? mes.total : ""}
+              {cifra > 0 ? formatearRecibido(mes.total, idioma) : ""}
             </span>
             <span className="hyto-mes-pista" aria-hidden="true">
               <span className={altura === 0 ? "hyto-mes-col is-zero" : "hyto-mes-col"} style={{ height: `${altura}%` }} />
@@ -329,7 +332,7 @@ function OrgulloFila({ orgullo }: { orgullo: Orgullo }) {
     { etiqueta: t("cuenta.streak"), valor: racha, detalle: orgullo.racha > 0 ? t("cuenta.inARow") : t("cuenta.noPayoutMonth") },
     {
       etiqueta: t("cuenta.bestMonth"),
-      valor: orgullo.mejorMes ? formatearMonto(orgullo.mejorMes.total, idioma) : "—",
+      valor: orgullo.mejorMes ? formatearRecibido(orgullo.mejorMes.total, idioma) : "—",
       detalle: orgullo.mejorMes ? mesVisible(orgullo.mejorMes.clave, "long", idioma) : t("cuenta.bestLater"),
     },
   ];
@@ -389,7 +392,7 @@ function Recientes({ orgullo, muestra }: { orgullo: Orgullo; muestra: boolean })
                     {tarea.pagadoEn ? ` · ${formatearFecha(tarea.pagadoEn, idioma)}` : ""}
                   </p>
                 </div>
-                <p className="hyto-amount shrink-0">{tarea.monto ? formatearMonto(tarea.monto, idioma) : "—"}</p>
+                <p className="hyto-amount shrink-0">{tarea.monto ? formatearRecibido(tarea.monto, idioma) : "—"}</p>
               </>
             );
             if (muestra) {

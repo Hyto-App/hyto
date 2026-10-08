@@ -19,6 +19,23 @@ export function formatearMonto(monto: string, idioma: Idioma = "en"): string {
   })}`;
 }
 
+/**
+ * Net received, without rounding away the extra decimals.
+ * US$2 set aside arrives as US$1.994. A whole number stays whole.
+ */
+export function formatearRecibido(monto: string, idioma: Idioma = "en"): string {
+  const limpio = monto.trim().replace(/,/g, "");
+  if (!/^\d+(\.\d{1,7})?$/.test(limpio)) return formatearMonto(monto, idioma);
+  const [entera, fraccion = ""] = limpio.split(".");
+  const miles = idioma === "es" ? "." : ",";
+  const grupo = entera.replace(/\B(?=(\d{3})+(?!\d))/g, miles);
+  const recortada = fraccion.replace(/0+$/, "");
+  if (!recortada) return `US$${grupo}`;
+  const visible = recortada.length === 1 ? `${recortada}0` : recortada;
+  const separador = idioma === "es" ? "," : ".";
+  return `US$${grupo}${separador}${visible}`;
+}
+
 function fechaDeCalendario(anio: number, mes: number, dia: number, idioma: Idioma = "en"): string | null {
   if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
   const fecha = new Date(Date.UTC(anio, mes - 1, dia, 12));

@@ -60,4 +60,24 @@ test("crear un evento no pide el alta si el saldo no cubre el total más la rese
 test("Horizon 404 es una cuenta que no está en la red", async () => {
   const lectura = await leerSaldoUsdc("GABC", async () => new Response("missing", { status: 404 }));
   assert.equal(lectura.saldo, null);
+  assert.equal(lectura.puedeRecibir, false);
+});
+
+test("una cuenta en la red sin línea de cobro no puede recibir, aunque el saldo clásico diga 0", async () => {
+  const sinLinea = await leerSaldoUsdc("GABC", async () => Response.json({ balances: [{ balance: "10", asset_type: "native" }] }));
+  assert.equal(sinLinea.puedeRecibir, false);
+  assert.equal(sinLinea.saldo, "0");
+
+  const enCero = await leerSaldoUsdc(
+    "GABC",
+    async () =>
+      Response.json({
+        balances: [
+          { balance: "10", asset_type: "native" },
+          { balance: "0.0000000", asset_code: USDC.code, asset_issuer: USDC.issuer },
+        ],
+      }),
+  );
+  assert.equal(enCero.puedeRecibir, true);
+  assert.equal(enCero.saldo, "0.0000000");
 });

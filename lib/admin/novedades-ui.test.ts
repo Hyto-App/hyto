@@ -90,7 +90,7 @@ describe("pantalla en vivo", { concurrency: false }, () => {
       await esperar(() => texto().includes("Amount and date are visible.") && texto().includes("Updated just now"));
       assert.equal((document.querySelector("#monto-confirmado") as HTMLInputElement).value, "12");
       assert.equal(document.querySelector("details")?.open, true);
-      assert.equal(texto().includes("Loading…"), false);
+      assert.equal(document.querySelector(".hyto-photo [role=status]")?.textContent, "Loading…");
     } finally {
       globalThis.fetch = anterior;
       await desmontar();

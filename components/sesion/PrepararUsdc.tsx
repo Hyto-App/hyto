@@ -13,9 +13,17 @@ const CLASE = "hyto-btn mt-4 max-w-sm";
 type Props = {
   consultar?: () => Promise<boolean>;
   preparar?: () => Promise<UsdcListo>;
+  /** Settings already explains the account. Skip the extra pending line and keep the button. */
+  silencioPendiente?: boolean;
+  onListo?: () => void;
 };
 
-export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion() }: Props) {
+export function PrepararUsdc({
+  consultar = leerEstadoUsdc,
+  preparar = () => prepararUsdcDeSesion(),
+  silencioPendiente = false,
+  onListo,
+}: Props) {
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -50,6 +58,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       const listo = await preparar();
       setHash(listo.hash);
       setEstado("hecho");
+      onListo?.();
     } catch (error) {
       setEstado("error");
       setAviso(error instanceof Error && error.message ? error.message : "We couldn't get this account ready to receive payment. Try again.");
@@ -58,8 +67,10 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
 
   if (demo) return null;
 
-  const mensaje =
-    estado === "comprobando"
+  const callarPendiente = silencioPendiente && (estado === "comprobando" || estado === "pendiente");
+  const mensaje = callarPendiente
+    ? null
+    : estado === "comprobando"
       ? t("pago.checkingPayout")
       : estado === "listo"
         ? t("pago.payoutReady")

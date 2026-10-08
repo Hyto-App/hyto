@@ -3,6 +3,7 @@ import test from "node:test";
 import { leerCuentaHttp } from "@/lib/api/cuenta";
 import { crearMemoria } from "@/lib/db/memoria";
 import type { EvidenciaFila, Proyecto, SesionFila, TareaFila } from "@/lib/db/tipos";
+import { montoRecibido } from "@/lib/escrow/recibido";
 import type { LectorSaldo } from "@/lib/escrow/saldo";
 import { usuarioDemo } from "@/lib/sesion/demo";
 import { armarVistaCuenta } from "./panel-cuenta";
@@ -87,7 +88,7 @@ test("solo suma los hitos liberados de la persona que inició sesión", async ()
   assert.equal(vista.walletMuestra, false);
   assert.equal(vista.saldo, "18.5000000");
   assert.equal(vista.saldoEstado, "ok");
-  assert.equal(vista.orgullo.total, "20");
+  assert.equal(vista.orgullo.total, montoRecibido("20"));
   assert.equal(vista.orgullo.tareasCompletadas, 1);
   assert.equal(vista.orgullo.proyectosCompletados, 0);
   assert.equal(vista.orgullo.recientes[0]?.titulo, "Booth");
@@ -139,9 +140,11 @@ test("el reembolso usa el monto confirmado y no el tope", async () => {
 
   assert.equal(vista.saldoEstado, "sin-wallet");
   assert.equal(vista.wallet, null);
-  assert.equal(vista.orgullo.total, "12.40");
+  assert.equal(vista.orgullo.total, montoRecibido("12.40"));
+  assert.notEqual(vista.orgullo.total, "15");
+  assert.notEqual(vista.orgullo.total, "12.40");
   assert.equal(vista.orgullo.tareasCompletadas, 2);
-  assert.equal(vista.orgullo.mesPasado, "12.40");
+  assert.equal(vista.orgullo.mesPasado, montoRecibido("12.40"));
 });
 
 test("el demo sin pagos usa las tareas reales y no llama a Horizon sin billetera", async () => {
@@ -192,7 +195,7 @@ test("si Horizon falla, el panel igual devuelve lo ganado", async () => {
   });
   assert.equal(vista.saldoEstado, "error");
   assert.equal(vista.saldo, null);
-  assert.equal(vista.orgullo.total, "20");
+  assert.equal(vista.orgullo.total, montoRecibido("20"));
 
   const ausente = await armarVistaCuenta({
     almacen,
@@ -204,6 +207,68 @@ test("si Horizon falla, el panel igual devuelve lo ganado", async () => {
     leerSaldo: async () => ({ saldo: null }),
   });
   assert.equal(ausente.saldoEstado, "ausente");
+
+  const sinLinea = await armarVistaCuenta({
+    almacen,
+    usuarioId: "ana",
+    email: "ana@hyto.test",
+    wallet: WALLET,
+    demo: false,
+    ahora: AHORA,
+    leerSaldo: async () => ({ saldo: "0", puedeRecibir: false }),
+  });
+  assert.equal(sinLinea.saldoEstado, "ausente");
+  assert.equal(sinLinea.saldo, null);
+
+  const enCero = await armarVistaCuenta({
+    almacen,
+    usuarioId: "ana",
+    email: "ana@hyto.test",
+    wallet: WALLET,
+    demo: false,
+    ahora: AHORA,
+    leerSaldo: async () => ({ saldo: "0.0000000", puedeRecibir: true }),
+  });
+  assert.equal(enCero.saldoEstado, "ok");
+  assert.equal(enCero.saldo, "0.0000000");
+});
+
+test("Settings suma el neto recibido, no el monto apartado", async () => {
+  const almacen = crearMemoria();
+  await almacen.crearProyecto(proyecto("zeek", "ZEEK"), [
+    tarea({ id: "stand", proyectoId: "zeek", miembroId: "ana", titulo: "Booth", monto: "2", estado: "pagado", hashPago: "a".repeat(64) }),
+    tarea({
+      id: "comida",
+      proyectoId: "zeek",
+      miembroId: "ana",
+      titulo: "Meal",
+      tipo: "reembolso",
+      monto: "15",
+      tope: "15",
+      estado: "pagado",
+      hashPago: "b".repeat(64),
+    }),
+  ]);
+  await almacen.crearEvidencia(evidencia("stand", "2026-10-02T18:00:00.000Z"));
+  await almacen.crearEvidencia(evidencia("comida", "2026-10-03T18:00:00.000Z", "12.48"));
+
+  const vista = await armarVistaCuenta({
+    almacen,
+    usuarioId: "ana",
+    email: "ana@hyto.test",
+    wallet: WALLET,
+    demo: false,
+    ahora: AHORA,
+    leerSaldo: async () => ({ saldo: "14.43656", puedeRecibir: true }),
+  });
+
+  assert.equal(vista.saldo, "14.43656");
+  assert.equal(vista.orgullo.total, "14.43656");
+  assert.notEqual(vista.orgullo.total, "14.48");
+  assert.deepEqual(
+    vista.orgullo.recientes.map((item) => item.monto).sort(),
+    ["1.994", "12.44256"],
+  );
 });
 
 test("la ruta de cuenta es de solo lectura y no mezcla a otra persona", async () => {
@@ -219,7 +284,7 @@ test("la ruta de cuenta es de solo lectura y no mezcla a otra persona", async ()
   assert.equal(respuesta.status, 200);
   assert.equal(respuesta.headers.get("cache-control"), "no-store");
   const json = (await respuesta.json()) as { orgullo: { total: string }; wallet: string };
-  assert.equal(json.orgullo.total, "20");
+  assert.equal(json.orgullo.total, montoRecibido("20"));
   assert.equal(json.wallet, WALLET);
 
   const rota = await leerCuentaHttp(sesion(), {

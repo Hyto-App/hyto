@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
-import { acortarDireccion } from "@/lib/integrante/formato";
+import { acortarDireccion, formatearMonto } from "@/lib/integrante/formato";
 import { crearConfirmacion } from "@/lib/ui/confirmar";
 
 type Props = {
@@ -11,7 +11,7 @@ type Props = {
   /** Called on cancel, ✕, Esc, backdrop and after a successful confirm. */
   onCerrar: () => void;
   titulo: string;
-  /** Shown big, e.g. "20.00". The unit is added next to it. */
+  /** Raw amount, such as "20" or "12.48". Shown as US$ with the app's amount format. */
   monto?: string;
   destinatario?: { nombre?: string; direccion?: string };
   detalle?: string;
@@ -23,6 +23,7 @@ type Props = {
 
 export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
   const t = useTexto();
+  const idioma = useIdioma();
   const claro = useClaro();
   const dialogo = useRef<HTMLDialogElement>(null);
   const origen = useRef<HTMLElement | null>(null);
@@ -124,12 +125,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
         </button>
         <h2 id={idTitulo}>{titulo}</h2>
         <div id={idDetalle} className="grid gap-3">
-          {monto ? (
-            <p className="hyto-dialogo-monto">
-              {monto}
-              <small>USDC</small>
-            </p>
-          ) : null}
+          {monto ? <p className="hyto-dialogo-monto">{formatearMonto(monto, idioma)}</p> : null}
           {destinatario ? (
             <p className="hyto-dialogo-destino">
               {t("confirmar.to")} {destinatario.nombre ?? ""}
