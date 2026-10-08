@@ -1,7 +1,5 @@
-import { comunidadesActivas } from "@/lib/comunidades/bandera";
 import { distanciaHamming } from "@/lib/evidencia/huella";
 import { walletDeSesiones } from "@/lib/sesion/cobro";
-import { tablonActivo } from "@/lib/tablon/bandera";
 import type { Almacen } from "./almacen";
 import type {
   AvisoComunidad,
@@ -36,11 +34,6 @@ export function crearMemoria(): Almacen {
 
   function claveMiembro(proyectoId: string, usuarioId: string): string {
     return `${proyectoId}:${usuarioId}`;
-  }
-
-  function visible(proyecto: Proyecto): Proyecto {
-    if (comunidadesActivas() || proyecto.comunidadId == null) return proyecto;
-    return { ...proyecto, comunidadId: null };
   }
 
   function ponerMiembro(miembro: ProyectoMiembro): void {
@@ -99,19 +92,16 @@ export function crearMemoria(): Almacen {
       usuarios.set(usuario.id, guardado);
     },
     async leerProyecto(id) {
-      const fila = proyectos.get(id);
-      return fila ? visible(fila) : null;
+      return proyectos.get(id) ?? null;
     },
     async listarProyectos() {
-      return [...proyectos.values()].map(visible);
+      return [...proyectos.values()];
     },
     async ultimoProyecto() {
-      const ultimo = [...proyectos.values()].sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))[0] ?? null;
-      return ultimo ? visible(ultimo) : null;
+      return [...proyectos.values()].sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))[0] ?? null;
     },
     async crearProyecto(proyecto, filas) {
-      const guardado = visible(proyecto);
-      proyectos.set(guardado.id, guardado);
+      proyectos.set(proyecto.id, proyecto);
       for (const tarea of filas) tareas.set(tarea.id, tarea);
       if (proyecto.organizadorId) {
         ponerMiembro({
@@ -275,63 +265,49 @@ export function crearMemoria(): Almacen {
       return { ok: true, proyectoId: invitacion.proyectoId, rol };
     },
     async listarComunidades() {
-      if (!comunidadesActivas()) return [];
       return [...comunidades.values()];
     },
     async leerComunidad(id) {
-      if (!comunidadesActivas()) return null;
       return comunidades.get(id) ?? null;
     },
     async leerComunidadPorCodigo(codigo) {
-      if (!comunidadesActivas()) return null;
       return [...comunidades.values()].find((comunidad) => comunidad.codigo === codigo) ?? null;
     },
     async crearComunidad(comunidad) {
-      if (!comunidadesActivas()) return;
       comunidades.set(comunidad.id, comunidad);
     },
     async listarMiembrosComunidad(comunidadId) {
-      if (!comunidadesActivas()) return [];
       return [...miembrosComunidad.values()].filter((miembro) => miembro.comunidadId === comunidadId);
     },
     async comunidadesDeUsuario(usuarioId) {
-      if (!comunidadesActivas()) return [];
       return [...miembrosComunidad.values()].filter((miembro) => miembro.usuarioId === usuarioId);
     },
     async miembroComunidad(comunidadId, usuarioId) {
-      if (!comunidadesActivas()) return null;
       return miembrosComunidad.get(`${comunidadId}:${usuarioId}`) ?? null;
     },
     async guardarMiembroComunidad(miembro) {
-      if (!comunidadesActivas()) return;
       miembrosComunidad.set(`${miembro.comunidadId}:${miembro.usuarioId}`, miembro);
     },
     async listarSolicitudesComunidad(comunidadId) {
-      if (!comunidadesActivas()) return [];
       return [...solicitudesComunidad.values()].filter((solicitud) => solicitud.comunidadId === comunidadId);
     },
     async crearSolicitudComunidad(solicitud) {
-      if (!comunidadesActivas()) return;
       solicitudesComunidad.set(solicitud.id, solicitud);
     },
     async actualizarSolicitudComunidad(id, estado: EstadoSolicitudComunidad) {
-      if (!comunidadesActivas()) return;
       const actual = solicitudesComunidad.get(id);
       if (actual) solicitudesComunidad.set(id, { ...actual, estado });
     },
     async fijarComunidadProyecto(proyectoId, comunidadId) {
-      if (!comunidadesActivas()) return;
       const actual = proyectos.get(proyectoId);
       if (actual) proyectos.set(proyectoId, { ...actual, comunidadId });
     },
     async listarAvisosComunidad(comunidadId) {
-      if (!comunidadesActivas() || !tablonActivo()) return [];
       return [...avisosComunidad.values()]
         .filter((aviso) => aviso.comunidadId === comunidadId)
         .sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1));
     },
     async crearAvisoComunidad(aviso) {
-      if (!comunidadesActivas() || !tablonActivo()) return;
       avisosComunidad.set(aviso.id, aviso);
     },
     async tomarTarea(id, usuarioId) {

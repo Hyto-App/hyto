@@ -119,7 +119,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       fetchImpl,
       undefined,
       llamarLaya,
-      reglaDeEvento(contexto.evento),
+      reglaDeEvento(contexto.evento, tarea.tipo),
     );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
