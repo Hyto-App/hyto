@@ -32,9 +32,12 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "cedd8638cf390003f8329fa52e4b120da3fa3539f0d1afbbdb4dc01da02aab12",
+      "sha256": "62494890637fa23f1cf0c8ec450c944c5ac6c8a5f32d0468f7886f28b4631c5e",
       "detalle": {
         "exportacionesDeTabla": [
+          "comunidadMiembros",
+          "comunidadSolicitudes",
+          "comunidades",
           "evidencias",
           "proyectoInvitaciones",
           "proyectoMiembros",
@@ -79,7 +82,8 @@
           "drizzle/0005_evidencia_antifraude.sql",
           "drizzle/0006_prioridad_dificultad.sql",
           "drizzle/0007_requisitos_rechazo.sql",
-          "drizzle/0009_contexto_evento.sql"
+          "drizzle/0009_contexto_evento.sql",
+          "drizzle/0010_comunidades.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -198,6 +202,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "8601cca5ab858915825bf2c352ebba0c13df652762d58f25b6ebc012ca152e59",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0010_comunidades.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "317f040107e5993f17d75dedc064793c4119b40515d2c81083a099c6fa92c258",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -630,6 +646,58 @@
             "esCheckDeLaBase": false,
             "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
+        },
+        {
+          "nombre": "comunidad_id",
+          "nombreEnDrizzle": "comunidadId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "comunidad_id"
+            ],
+            "tabla": "comunidades",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "set null",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "set null",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "proyectos_comunidad_id_comunidades_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Proyecto",
+            "campo": "comunidadId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
         }
       ],
       "llavePrimaria": {
@@ -659,6 +727,26 @@
           "onUpdateEscritoEnSchemaTs": false,
           "nombreEnSql": null,
           "nombreGeneradoPorDrizzleOrm": "proyectos_organizador_id_usuarios_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        },
+        {
+          "columnas": [
+            "comunidad_id"
+          ],
+          "tabla": "comunidades",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "set null",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "set null",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "proyectos_comunidad_id_comunidades_id_fk",
           "nombreEscritoEnSchemaTs": false,
           "nombreEnNeon": "confirmar con Esteban"
         }
@@ -3302,6 +3390,854 @@
           "origen": "sql"
         }
       ]
+    },
+    {
+      "nombre": "comunidades",
+      "esquemaPostgres": null,
+      "archivoMigracion": "drizzle/0010_comunidades.sql",
+      "archivoOrm": "lib/db/schema.ts",
+      "exportDrizzle": "comunidades",
+      "ifNotExists": true,
+      "rlsEnDrizzle": false,
+      "columnas": [
+        {
+          "nombre": "id",
+          "nombreEnDrizzle": "id",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "id",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "nombre",
+          "nombreEnDrizzle": "nombre",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "nombre",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "descripcion",
+          "nombreEnDrizzle": "descripcion",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": "",
+          "defaultDeclaradoEnSql": true,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": "",
+          "defaultDeclaradoEnDrizzle": true,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "descripcion",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "foto_url",
+          "nombreEnDrizzle": "fotoUrl",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "fotoUrl",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "visibilidad",
+          "nombreEnDrizzle": "visibilidad",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": "publica",
+          "defaultDeclaradoEnSql": true,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": "publica",
+          "defaultDeclaradoEnDrizzle": true,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "visibilidad",
+            "tipoTs": "VisibilidadComunidad",
+            "literales": [
+              "publica",
+              "privada"
+            ],
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
+          }
+        },
+        {
+          "nombre": "codigo",
+          "nombreEnDrizzle": "codigo",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": true,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": "comunidades_codigo_unique",
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": "confirmar con Esteban",
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "codigo",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "creado_en",
+          "nombreEnDrizzle": "creadoEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "creadoEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "creador_id",
+          "nombreEnDrizzle": "creadorId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "creador_id"
+            ],
+            "tabla": "usuarios",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": null,
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "no action",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": false,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidades_creador_id_usuarios_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Comunidad",
+            "campo": "creadorId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        }
+      ],
+      "llavePrimaria": {
+        "columnas": [
+          "id"
+        ],
+        "nombreEnSql": null,
+        "nombreEnNeon": "confirmar con Esteban",
+        "createIndexEnLaMigracion": false
+      },
+      "unicos": [
+        {
+          "columnas": [
+            "codigo"
+          ],
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidades_codigo_unique",
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "creador_id"
+          ],
+          "tabla": "usuarios",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": null,
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "no action",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": false,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidades_creador_id_usuarios_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "indices": [],
+      "checks": []
+    },
+    {
+      "nombre": "comunidad_miembros",
+      "esquemaPostgres": null,
+      "archivoMigracion": "drizzle/0010_comunidades.sql",
+      "archivoOrm": "lib/db/schema.ts",
+      "exportDrizzle": "comunidadMiembros",
+      "ifNotExists": true,
+      "rlsEnDrizzle": false,
+      "columnas": [
+        {
+          "nombre": "comunidad_id",
+          "nombreEnDrizzle": "comunidadId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "comunidad_id"
+            ],
+            "tabla": "comunidades",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "cascade",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "cascade",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_miembros_comunidad_id_comunidades_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadMiembro",
+            "campo": "comunidadId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "usuario_id",
+          "nombreEnDrizzle": "usuarioId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "usuario_id"
+            ],
+            "tabla": "usuarios",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "cascade",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "cascade",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_miembros_usuario_id_usuarios_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadMiembro",
+            "campo": "usuarioId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "rol",
+          "nombreEnDrizzle": "rol",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadMiembro",
+            "campo": "rol",
+            "tipoTs": "RolComunidad",
+            "literales": [
+              "admin",
+              "miembro"
+            ],
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
+          }
+        },
+        {
+          "nombre": "creado_en",
+          "nombreEnDrizzle": "creadoEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadMiembro",
+            "campo": "creadoEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        }
+      ],
+      "llavePrimaria": {
+        "columnas": [
+          "comunidad_id",
+          "usuario_id"
+        ],
+        "nombreEnSql": null,
+        "nombreEnNeon": "confirmar con Esteban",
+        "createIndexEnLaMigracion": false
+      },
+      "unicos": [],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "comunidad_id"
+          ],
+          "tabla": "comunidades",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "cascade",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "cascade",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_miembros_comunidad_id_comunidades_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        },
+        {
+          "columnas": [
+            "usuario_id"
+          ],
+          "tabla": "usuarios",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "cascade",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "cascade",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_miembros_usuario_id_usuarios_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "indices": [],
+      "checks": []
+    },
+    {
+      "nombre": "comunidad_solicitudes",
+      "esquemaPostgres": null,
+      "archivoMigracion": "drizzle/0010_comunidades.sql",
+      "archivoOrm": "lib/db/schema.ts",
+      "exportDrizzle": "comunidadSolicitudes",
+      "ifNotExists": true,
+      "rlsEnDrizzle": false,
+      "columnas": [
+        {
+          "nombre": "id",
+          "nombreEnDrizzle": "id",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": true,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadSolicitud",
+            "campo": "id",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "comunidad_id",
+          "nombreEnDrizzle": "comunidadId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "comunidad_id"
+            ],
+            "tabla": "comunidades",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "cascade",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "cascade",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_solicitudes_comunidad_id_comunidades_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadSolicitud",
+            "campo": "comunidadId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "usuario_id",
+          "nombreEnDrizzle": "usuarioId",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": {
+            "columnas": [
+              "usuario_id"
+            ],
+            "tabla": "usuarios",
+            "columnasReferenciadas": [
+              "id"
+            ],
+            "esquemaDestino": null,
+            "onDeleteEnSql": "cascade",
+            "onUpdateEnSql": null,
+            "onDeleteEnDrizzle": "cascade",
+            "onUpdateEnDrizzle": "no action",
+            "onDeleteEscritoEnSchemaTs": true,
+            "onUpdateEscritoEnSchemaTs": false,
+            "nombreEnSql": null,
+            "nombreGeneradoPorDrizzleOrm": "comunidad_solicitudes_usuario_id_usuarios_id_fk",
+            "nombreEscritoEnSchemaTs": false,
+            "nombreEnNeon": "confirmar con Esteban"
+          },
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadSolicitud",
+            "campo": "usuarioId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "estado",
+          "nombreEnDrizzle": "estado",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": "pendiente",
+          "defaultDeclaradoEnSql": true,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": "pendiente",
+          "defaultDeclaradoEnDrizzle": true,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadSolicitud",
+            "campo": "estado",
+            "tipoTs": "EstadoSolicitudComunidad",
+            "literales": [
+              "pendiente",
+              "aprobada",
+              "rechazada"
+            ],
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "Unión de literales en TypeScript. La migración no declara CHECK ni enum de Postgres."
+          }
+        },
+        {
+          "nombre": "creado_en",
+          "nombreEnDrizzle": "creadoEn",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": false,
+          "aceptaNullEnDrizzle": false,
+          "notNullExplicitoEnSql": true,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "ComunidadSolicitud",
+            "campo": "creadoEn",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": false,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        }
+      ],
+      "llavePrimaria": {
+        "columnas": [
+          "id"
+        ],
+        "nombreEnSql": null,
+        "nombreEnNeon": "confirmar con Esteban",
+        "createIndexEnLaMigracion": false
+      },
+      "unicos": [],
+      "clavesForaneas": [
+        {
+          "columnas": [
+            "comunidad_id"
+          ],
+          "tabla": "comunidades",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "cascade",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "cascade",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_solicitudes_comunidad_id_comunidades_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        },
+        {
+          "columnas": [
+            "usuario_id"
+          ],
+          "tabla": "usuarios",
+          "columnasReferenciadas": [
+            "id"
+          ],
+          "esquemaDestino": null,
+          "onDeleteEnSql": "cascade",
+          "onUpdateEnSql": null,
+          "onDeleteEnDrizzle": "cascade",
+          "onUpdateEnDrizzle": "no action",
+          "onDeleteEscritoEnSchemaTs": true,
+          "onUpdateEscritoEnSchemaTs": false,
+          "nombreEnSql": null,
+          "nombreGeneradoPorDrizzleOrm": "comunidad_solicitudes_usuario_id_usuarios_id_fk",
+          "nombreEscritoEnSchemaTs": false,
+          "nombreEnNeon": "confirmar con Esteban"
+        }
+      ],
+      "indices": [],
+      "checks": []
     }
   ],
   "relaciones": [
@@ -3321,6 +4257,26 @@
       "declaradaEnSql": true,
       "declaradaEnDrizzle": true,
       "onDeleteEnSql": null,
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "proyectos",
+        "columnas": [
+          "comunidad_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "comunidades",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "set null",
       "onUpdateEnSql": null,
       "nombreEnSql": null,
       "nombreEnNeon": "confirmar con Esteban"
@@ -3464,6 +4420,106 @@
       "onUpdateEnSql": null,
       "nombreEnSql": null,
       "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidades",
+        "columnas": [
+          "creador_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "usuarios",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": null,
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_miembros",
+        "columnas": [
+          "comunidad_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "comunidades",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_miembros",
+        "columnas": [
+          "usuario_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "usuarios",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_solicitudes",
+        "columnas": [
+          "comunidad_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "comunidades",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
+    },
+    {
+      "desde": {
+        "tabla": "comunidad_solicitudes",
+        "columnas": [
+          "usuario_id"
+        ]
+      },
+      "hacia": {
+        "tabla": "usuarios",
+        "columnas": [
+          "id"
+        ]
+      },
+      "declaradaEnSql": true,
+      "declaradaEnDrizzle": true,
+      "onDeleteEnSql": "cascade",
+      "onUpdateEnSql": null,
+      "nombreEnSql": null,
+      "nombreEnNeon": "confirmar con Esteban"
     }
   ],
   "columnasIdSinFk": [
@@ -3504,7 +4560,7 @@
   "pendientesConEsteban": [
     "No está drizzle/meta/_journal.json. confirmar con Esteban",
     "El SQL no califica las tablas y pgTable no recibe esquema. Si en Neon no están en public, confirmar con Esteban",
-    "UNIQUE sin nombre en el SQL: usuarios(email), proyecto_invitaciones(secreto_hash). El nombre en Neon: confirmar con Esteban",
+    "UNIQUE sin nombre en el SQL: usuarios(email), proyecto_invitaciones(secreto_hash), comunidades(codigo). El nombre en Neon: confirmar con Esteban",
     "Las PRIMARY KEY no tienen nombre en el SQL. El nombre del índice en Neon: confirmar con Esteban",
     "Las REFERENCES no tienen nombre de restricción en el SQL. El nombre en Neon: confirmar con Esteban",
     "tareas.miembro_id: Termina en _id y no tiene REFERENCES. Ninguna tabla del esquema coincide con miembro. confirmar con Esteban",

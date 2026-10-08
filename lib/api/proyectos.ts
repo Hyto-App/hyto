@@ -1,4 +1,5 @@
 import { normalizarMonto } from "@/lib/admin/vista";
+import { comunidadDeAlta } from "@/lib/api/comunidades";
 import type { Almacen } from "@/lib/db/almacen";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
@@ -33,6 +34,8 @@ export async function crearProyectoHttp(
   }
   const proyecto = leerProyecto(body);
   if ("aviso" in proyecto) return json({ aviso: proyecto.aviso }, 400);
+  const comunidadPedida = await comunidadDeAlta(body);
+  if (comunidadPedida instanceof Response) return comunidadPedida;
   try {
     const asignadas = await asignarTareas(almacen, organizadorId, proyecto.tareas);
     if (asignadas instanceof Response) return asignadas;
@@ -43,7 +46,13 @@ export async function crearProyectoHttp(
       const rechazo = await rechazoSiFondos(fondos.wallet, suma!, fondos.leerSaldo);
       if (rechazo) return rechazo;
     }
-    const fila = { ...proyecto.proyecto, organizadorId };
+    if (comunidadPedida) {
+      const comunidad = await almacen.leerComunidad(comunidadPedida);
+      if (!comunidad) return json({ aviso: "We couldn't find that community." }, 404);
+      const miembro = await almacen.miembroComunidad(comunidadPedida, organizadorId);
+      if (!miembro) return json({ aviso: "Join that community before adding an event." }, 403);
+    }
+    const fila = { ...proyecto.proyecto, organizadorId, ...(comunidadPedida ? { comunidadId: comunidadPedida } : {}) };
     await almacen.crearProyecto(fila, asignadas);
     for (const tarea of asignadas) {
       if (!tarea.miembroId || tarea.miembroId === organizadorId) continue;

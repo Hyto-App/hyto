@@ -16,10 +16,10 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.deepEqual(inventario.comparacionSqlYDrizzle.diferencias, []);
   assert.deepEqual(
     inventario.tablas.map((tabla) => tabla.nombre),
-    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"],
+    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "comunidades", "comunidad_miembros", "comunidad_solicitudes"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 8);
+  assert.equal(inventario.relaciones.length, 14);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);

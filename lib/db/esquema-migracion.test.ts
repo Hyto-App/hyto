@@ -40,9 +40,22 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0006_prioridad_dificultad.sql",
     "0007_requisitos_rechazo.sql",
     "0009_contexto_evento.sql",
+    "0010_comunidades.sql",
   ]);
-  assert.deepEqual(esperado.tablas, ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones"]);
-  assert.equal(esperado.columnas.length, 74);
+  assert.deepEqual(esperado.tablas, [
+    "usuarios",
+    "proyectos",
+    "tareas",
+    "evidencias",
+    "veredictos",
+    "sesiones",
+    "proyecto_miembros",
+    "proyecto_invitaciones",
+    "comunidades",
+    "comunidad_miembros",
+    "comunidad_solicitudes",
+  ]);
+  assert.equal(esperado.columnas.length, 92);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -65,20 +78,33 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "proyecto_miembros.usuario_id→usuarios.id",
       "proyecto_invitaciones.proyecto_id→proyectos.id",
       "proyecto_invitaciones.creado_por→usuarios.id",
+      "comunidades.creador_id→usuarios.id",
+      "comunidad_miembros.comunidad_id→comunidades.id",
+      "comunidad_miembros.usuario_id→usuarios.id",
+      "comunidad_solicitudes.comunidad_id→comunidades.id",
+      "comunidad_solicitudes.usuario_id→usuarios.id",
+      "proyectos.comunidad_id→comunidades.id",
     ],
   );
   assert.equal(
-    esperado.fks.every((fk) => (fk.alBorrar === "c" && fk.alBorrarExplicito) || (fk.alBorrar === "a" && !fk.alBorrarExplicito)),
+    esperado.fks.every(
+      (fk) =>
+        (fk.alBorrar === "c" && fk.alBorrarExplicito) ||
+        (fk.alBorrar === "n" && fk.alBorrarExplicito) ||
+        (fk.alBorrar === "a" && !fk.alBorrarExplicito),
+    ),
     true,
   );
   assert.deepEqual(esperado.uniques, [
     { tabla: "usuarios", columnas: ["email"] },
     { tabla: "proyecto_invitaciones", columnas: ["secreto_hash"] },
+    { tabla: "comunidades", columnas: ["codigo"] },
   ]);
   assert.deepEqual(
     esperado.primaryKeys.map((grupo) => `${grupo.tabla}:${grupo.columnas.join(",")}`),
     [
       "proyecto_miembros:proyecto_id,usuario_id",
+      "comunidad_miembros:comunidad_id,usuario_id",
       "usuarios:id",
       "proyectos:id",
       "tareas:id",
@@ -86,6 +112,8 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "veredictos:id",
       "sesiones:token",
       "proyecto_invitaciones:id",
+      "comunidades:id",
+      "comunidad_solicitudes:id",
     ],
   );
   assert.deepEqual(esperado.indices, [
