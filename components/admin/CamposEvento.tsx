@@ -147,6 +147,7 @@ export function AreaTexto({
   max,
   filas,
   ayudaId,
+  placeholder,
   onCambio,
 }: {
   id: string;
@@ -154,6 +155,7 @@ export function AreaTexto({
   max: number;
   filas: number;
   ayudaId: string;
+  placeholder?: string;
   onCambio: (valor: string) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -176,6 +178,7 @@ export function AreaTexto({
       value={valor}
       maxLength={max}
       rows={filas}
+      placeholder={placeholder}
       aria-describedby={ayudaId}
       onChange={(evento) => onCambio(evento.target.value)}
       className="hyto-input hyto-area mt-2"

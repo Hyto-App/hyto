@@ -21,3 +21,13 @@ export function errorPortada(archivo: { type: string; size: number }): "type" | 
 export function contextoAbierto(texto: string, abiertoPorUsuario: boolean): boolean {
   return abiertoPorUsuario || texto.length > 0;
 }
+
+/** The receipts question only matters while at least one task is a reimbursement. Its text is kept when it is hidden. */
+export function mostrarRecibos(tipos: readonly string[]): boolean {
+  return tipos.some((tipo) => tipo === "reembolso");
+}
+
+/** The For Mile card stays open while any guided field has text. */
+export function hayTextoMile(campos: Readonly<Record<string, string>>): boolean {
+  return Object.values(campos).some((valor) => valor.length > 0);
+}
