@@ -173,8 +173,8 @@ function filaUsuario(usuario: Usuario) {
 
 /**
  * Drizzle's insert names every column on the table and fills omitted values with
- * DEFAULT. Migrations 0010–0013 add usuarios.tipo_cuenta / empresa_* / experiencia /
- * etiquetas and proyectos.comunidad_id, plus the community tables. With those
+ * DEFAULT. Migrations 0010–0013 add the account-type columns, the volunteer
+ * profile columns, and the community id on events, plus the community tables. With those
  * unapplied, naming a missing column fails even when the flags are off and the
  * values object leaves the key out. This statement lists only keys that are present.
  */
