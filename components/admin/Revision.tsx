@@ -30,7 +30,7 @@ import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow
 import { tareaEjemploDeDemo } from "@/lib/admin/ejemplo";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
-import { centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { avisoFaltaCobro, centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
 import { CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
@@ -472,9 +472,11 @@ export function Revision({
   const cifraBloqueo = montoDeVista(tarea);
   const faltaSaldo =
     real && cifraBloqueo !== null ? faltaParaBloquear(saldo, String(cifraBloqueo)) : null;
+  const faltaCobro = real && !modoDemo && !contrato ? avisoFaltaCobro(tarea, idioma) : null;
   const describeBloqueo = [
     esperaOtraFoto ? "bloqueo-foto" : "",
     esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
+    faltaCobro ? "bloqueo-cobro" : "",
     faltaSaldo ? "bloqueo-saldo" : "",
   ]
     .filter(Boolean)
@@ -779,6 +781,11 @@ export function Revision({
                     {t("revision.lockNeedsAmount")}
                   </p>
                 ) : null}
+                {faltaCobro ? (
+                  <p id="bloqueo-cobro" className="text-sm leading-6 text-[var(--suave)]">
+                    {faltaCobro}
+                  </p>
+                ) : null}
                 {faltaSaldo ? (
                   <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
                     {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
@@ -786,11 +793,11 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || Boolean(faltaSaldo)}
+                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || Boolean(faltaCobro) || Boolean(faltaSaldo)}
                   aria-busy={ocupado}
                   aria-describedby={describeBloqueo || undefined}
                   onClick={() => {
-                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || faltaSaldo) return;
+                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || faltaCobro || faltaSaldo) return;
                     setConfirmacion({ clave: "bloquear", abierto: true });
                   }}
                 >

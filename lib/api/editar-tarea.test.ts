@@ -98,6 +98,20 @@ test("sin evidencia el organizador puede editar título, condición, monto, tope
   assert.equal(comida?.miembroId, "");
 });
 
+test("cambiar a la persona asignada borra la cuenta de cobro de la anterior; mantenerla la conserva", async () => {
+  const almacen = await escenario();
+  const cuenta = "G" + "A".repeat(55);
+  await almacen.actualizarTarea("t1", { miembroId: "vol", walletCobro: cuenta });
+  const misma = await editarTareaHttp(pedido({ titulo: "Booth", miembroId: "vol" }), almacen, "t1", "org");
+  assert.equal(misma.status, 200);
+  assert.equal((await almacen.leerTarea("t1"))?.walletCobro, cuenta);
+  const otra = await editarTareaHttp(pedido({ miembroId: "team" }), almacen, "t1", "org");
+  assert.equal(otra.status, 200);
+  const fila = await almacen.leerTarea("t1");
+  assert.equal(fila?.miembroId, "team");
+  assert.equal(fila?.walletCobro, "");
+});
+
 test("con evidencia la edición y la asignación quedan bloqueadas", async () => {
   const almacen = await escenario();
   await almacen.crearEvidencia(evidencia("t1"));

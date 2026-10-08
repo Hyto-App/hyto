@@ -3,6 +3,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import { esBlobEjemplo } from "@/lib/db/semilla";
 import { enlacePago } from "@/lib/admin/vista";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
+import { faltaCobroDe } from "./cobro";
 import { contextoParaRevision } from "./contexto-evento";
 import { organizacionDeEvento } from "./tipo-cuenta";
 import { guardarRevision } from "./evidencias";
@@ -73,9 +74,10 @@ export async function leerRevisionHttp(
       actual = (await almacen.leerTarea(tareaId)) ?? actual;
     }
     const vista = await tareaAdmin(almacen, actual);
+    const faltaCobro = await faltaCobroDe(almacen, actual);
     const fila = evidencia ? await almacen.veredictoDe(evidencia.id) : null;
     return json({
-      tarea: vista,
+      tarea: faltaCobro ? { ...vista, faltaCobro } : vista,
       requisitos: leerRequisitos(actual.requisitos),
       rechazo: rechazoPublico(actual),
       revision: revisionPublica(actual, fila),
