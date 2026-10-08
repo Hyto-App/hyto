@@ -12,6 +12,7 @@ import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
+import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import {
@@ -39,7 +40,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, formatearFecha, formatearMonto, montoDeTarea } from "@/lib/integrante/formato";
+import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
@@ -172,7 +173,7 @@ export function Revision({
   tareaRef.current = tarea;
   const localRef = useRef(0);
 
-  const { reciente } = useNovedadesEvento({
+  const { reciente, sesionVencida } = useNovedadesEvento({
     proyectoId: real && eventoId ? eventoId : undefined,
     tareas: tarea
       ? [{ id: tarea.id, estado: tarea.estado, veredicto: tarea.veredicto, origen: tarea.origen }]
@@ -479,6 +480,7 @@ export function Revision({
           <p className="hyto-amount text-2xl">{montoDeTarea(tarea, idioma)}</p>
         </div>
       </header>
+      {sesionVencida ? <AvisoSesion /> : null}
       <div className="hyto-review">
         <figure className="hyto-photo">
           {foto && esTipoDocumento(tarea.tipoArchivo) ? (
@@ -728,7 +730,7 @@ export function Revision({
             {botones.pagar ? (
               <>
                 {fondeado === true ? (
-                  <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoDeTarea(tarea, idioma) })}</p>
+                  <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
                 ) : null}
                 <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
                   {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}

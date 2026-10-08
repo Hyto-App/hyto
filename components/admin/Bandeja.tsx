@@ -8,6 +8,7 @@ import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
+import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
 import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
@@ -67,7 +68,7 @@ export function Bandeja({
     if (fusion !== origen) setViva(fusion);
   }, []);
 
-  const { reciente } = useNovedadesEvento({
+  const { reciente, sesionVencida } = useNovedadesEvento({
     proyectoId: proyectoId && vista && !vista.ejemplo && !elegida ? proyectoId : undefined,
     tareas: (vista?.tareas ?? []).map((tarea) => ({
       id: tarea.id,
@@ -152,6 +153,7 @@ export function Bandeja({
 
   return (
     <main className="hyto-page">
+      {sesionVencida ? <AvisoSesion /> : null}
       {fallidas.map((item) => (
         <ReintentoFondo key={item.id} tareaId={item.id} onDetalle={aplicar} />
       ))}

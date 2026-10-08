@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, montoDeTarea } from "./formato";
+import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, montoAsegurado, montoDeTarea } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -24,6 +24,13 @@ test("montos y fechas del integrante", () => {
     "Up to US$15",
   );
   assert.equal(montoDeTarea({ tipo: "reembolso", monto: "", tope: null }), "");
+  assert.equal(
+    montoAsegurado({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }),
+    "US$12.48",
+  );
+  assert.equal(montoAsegurado({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }).includes("Up to"), false);
+  assert.equal(montoAsegurado({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: null }), "Up to US$15");
+  assert.equal(montoAsegurado({ tipo: "trabajo", monto: "20", tope: null }), "US$20");
   assert.equal(acortarDireccion("GABCDE1234567890WXYZ"), "GABCDE…WXYZ");
 });
 

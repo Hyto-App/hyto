@@ -12,7 +12,9 @@ import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
+import { montoUsdc } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
@@ -48,8 +50,15 @@ function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
   );
 }
 
-function suma(tareas: Tarea[], estado: EstadoTarea): number {
-  return tareas.filter((tarea) => tarea.estado === estado).reduce((total, tarea) => total + (Number(tarea.tope ?? tarea.monto) || 0), 0);
+function totalRecibido(tareas: readonly Tarea[]): string {
+  let total = 0n;
+  for (const tarea of tareas) {
+    if (tarea.estado !== "pagado") continue;
+    const plano = recibidoDeCampos(tarea);
+    const unidades = plano ? unidadesUsdc(plano) : null;
+    if (unidades !== null) total += unidades;
+  }
+  return presentarUsdc(total);
 }
 
 function cifra(valor: number, idioma: "en" | "es"): string {
@@ -62,6 +71,16 @@ function cifra(valor: number, idioma: "en" | "es"): string {
 function Monto({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
+  if (tarea.estado === "pagado") {
+    const recibido = montoUsdc(tarea);
+    if (!recibido) return null;
+    return (
+      <span className="hyto-monto">
+        {recibido}
+        <small>USDC</small>
+      </span>
+    );
+  }
   const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
   return (
     <span className="hyto-monto">
@@ -71,13 +90,12 @@ function Monto({ tarea }: { tarea: Tarea }) {
   );
 }
 
-function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: number; revision: number; pendientes: number; className?: string }) {
+function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: string; revision: number; pendientes: number; className?: string }) {
   const t = useTexto();
-  const idioma = useIdioma();
   return (
     <div className={`hyto-metricas ${className}`.trim()}>
       <div className="hyto-metrica-ganado">
-        <b>{cifra(ganado, idioma)}</b>
+        <b>{ganado}</b>
         <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
       </div>
       <div>
@@ -247,7 +265,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const mejores = idsMejorPagadas(tareas);
   const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
-  const ganado = suma(tareas, "pagado");
+  const ganado = totalRecibido(tareas);
   const enRevision = contarEnRevision(tareas);
   const idAbierta = porEvento.flatMap((grupo) => grupo.tareas).find((tarea) => tarea.estado === "pendiente")?.id ?? null;
   const eventosDeTareas = new Set(tareas.map((tarea) => tarea.proyectoId));
@@ -402,6 +420,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       const puntos = puntosDeCondicion(tarea.condicion).length;
                       const vence = tarea.venceEn ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
                       const reintento = reintentoEnLista(tarea, reloj, vistosRef.current.get(tarea.id));
+                      const recibido = tarea.estado === "pagado" ? montoUsdc(tarea) : "";
                       const documental = esMimeDocumental(tarea.tipoArchivo);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
@@ -459,10 +478,10 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               </p>
                             )
                           ) : null}
-                          {tarea.estado === "pagado" ? (
+                          {recibido ? (
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: `${cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma)} USDC` })}</span>
+                              <span>{t("tareas.paidNote", { amount: `${recibido} USDC` })}</span>
                             </p>
                           ) : null}
                           {tarea.estado === "pendiente" ? (

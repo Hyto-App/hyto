@@ -87,6 +87,8 @@ test("el voluntario recibe su porcentaje y no el texto interno", async () => {
     "intentos",
     "miembroId",
     "monto",
+    "montoConfirmado",
+    "montoPagado",
     "nota",
     "notas",
     "prioridad",
