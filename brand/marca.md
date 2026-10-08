@@ -7,7 +7,7 @@ fuente: Abdiel (carril de marca); PR #7
 
 **Eslogan:** "Show the spend. On the record."
 
-El Figma de Abdiel, página "Nuevo diseño", y los mockups del 30 de septiembre todavía dicen "Prove your worth. Get paid." Esa frase era el pitch de mercado de tareas. El 8 de octubre de 2026 Josué fijó otra historia: Hyto rinde cuentas del financiamiento de comunidades de Stellar en América Latina. Este archivo sigue esa decisión. Abdiel confirma el eslogan en Figma antes de tratarlo como marca cerrada.
+El Figma de Abdiel, página "Nuevo diseño", y los mockups del 30 de septiembre todavía dicen "Prove your worth. Get paid." Esa frase era el pitch de mercado de tareas. El 8 de octubre de 2026 Josué fijó otra historia: Hyto rinde cuentas del gasto de comunidades en Latinoamérica que reciben fondos desde lejos, a menudo con sede en el extranjero. Stellar es el riel del pago, no el público. Este archivo sigue esa decisión. Abdiel confirma el eslogan en Figma antes de tratarlo como marca cerrada.
 
 **Idioma de la app:** inglés (UI, errores y mensajes). El español vive en las traducciones que ya existen.
 

@@ -1,10 +1,10 @@
 # Stack
 
-Current as of `main` at `c17baf7` (8 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
+Current as of `main` at `c958992` (8 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
-Hyto is the accountability layer for Stellar communities in Latin America. One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Trustless Work is the base, not a product Hyto competes with. Evidence, the AI review, and the report stay off-chain. A receipt in colones is read from the photo and converted with a hand-updated rate. There is no mainnet payment and no recorded testnet hash yet.
+Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Trustless Work is the base, not a product Hyto competes with. Evidence, the AI review, and the report stay off-chain. A receipt in colones is read from the photo and converted with a hand-updated rate. There is no mainnet payment and no recorded testnet hash yet.
 
-Communities (`drizzle/0010` through `0013`) are the same story: a chapter, a bulletin, an account type, and a member profile. The flags `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO` stay off.
+Communities (`drizzle/0010` through `0013`) are the same story: a group, a bulletin, an account type, and a member profile. The flags `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO` stay off.
 
 ## Layers
 

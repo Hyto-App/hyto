@@ -5,7 +5,7 @@
 **Scope:** Research only. No integration, no secrets, no mainnet cutover.
 **Subject:** [Ramp Network](https://rampnetwork.com) (ramp.network), the crypto on/off-ramp. This is not [Ramp](https://ramp.com), the corporate card and spend product.
 
-On 2 October the brief’s line was “Ramp gave companies control of spend,” referring to the spend-control company. That line is retired. Hyto’s current story is accountability for Stellar communities, in [README.md](../../README.md) and [Hyto-informe.md](../../Hyto-informe.md). This report is still about Ramp Network, the widget that buys and sells crypto. Do not merge it into the product. Trustless Work remains the escrow base. Ramp Network is not a competitor Hyto is replacing, and it is not part of the demo.
+On 2 October the brief’s line was “Ramp gave companies control of spend,” referring to the spend-control company. That line is retired. Hyto’s current story is accountability for communities funded from afar in Latin America, in [README.md](../../README.md) and [Hyto-informe.md](../../Hyto-informe.md). Stellar is the settlement rail. This report is still about Ramp Network, the widget that buys and sells crypto. Do not merge it into the product. Trustless Work remains the escrow base. Ramp Network is not a competitor Hyto is replacing, and it is not part of the demo.
 
 Spoken name in the brief: “Ito” means Hyto. The app UI is English. The evidence reviewer shown in the UI is **Mile** (“Mile only suggests. You approve every payment.”). Mile does not sign or move money.
 

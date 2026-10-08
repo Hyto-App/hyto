@@ -4,11 +4,15 @@ Product behavior as of `main` at `c17baf7` is in [README.md](README.md) and [AGE
 
 ## Pitch
 
-**One line.** Hyto is the accountability layer for Stellar communities in Latin America: lock USDC per task, prove the spend with a photo, and a person releases the payment on a public trail.
+**One line.** Hyto is the accountability layer for communities funded from afar in Latin America: lock USDC per task, prove the spend with a photo, and a person releases the payment on a public Stellar trail.
 
-**Three sentences.** Stellar communities — ambassador programs, local chapters, and builder groups across Latin America — receive stipends, scholarships (becas), grants, and event sponsorship from abroad, and they have to show how that money was spent. Hyto is that record: the funder or organizer locks USDC in a Trustless Work escrow for each task, the member uploads an in-place photo or a receipt in colones, and Mile recommends a score without ever moving money. A person releases the payment on Stellar so the trail is public; today that trail is testnet only, sign-in is an email through Cavos, and there is no live payment yet.
+**Three sentences.** Multichain communities in Latin America, especially ones headquartered abroad or not physically present, receive stipends, scholarships (becas), and funds to run events, and they always have to prove how that money was spent. Today that proof is loose screenshots and spreadsheets nobody can verify. Hyto is the accountability layer: the funder locks USDC in a Trustless Work escrow per task, the member proves the work with an in-place photo and receipts in colones, Mile reviews the evidence and recommends but never moves money, and a person approves so the payment is released on Stellar with a public trail anyone can audit. Sign-in is email, with no wallet and no crypto app. That trail is testnet only. There is no live payment yet.
 
-Why USDC, and not SINPE or another local transfer: the money comes from abroad in dollars, and the funder demands proof of spending. Trustless Work is the escrow Hyto is built on. It is not the competition. Hyto is not a company spend card, not a microtask marketplace, and not an on-ramp.
+**Spoken pitch (Josué, Spanish).** The app UI uses tú. This line keeps the voseo he wrote:
+
+> Las comunidades multichain en Latinoamérica reciben stipends, becas y fondos para organizar eventos, y siempre les toca demostrar en qué se gastó esa plata. Hoy eso se hace con capturas sueltas y hojas de Excel que nadie puede verificar. Hyto es la capa de rendición de cuentas para esas comunidades. Quien financia bloquea USDC en un escrow de Trustless Work por cada tarea. El miembro hace el trabajo y lo prueba con una foto en el lugar y los recibos en colones. Mile, nuestra IA, revisa la evidencia y recomienda, pero nunca mueve la plata: una persona aprueba y el pago se libera en Stellar, con un rastro público que cualquiera puede auditar. Y todo se usa con un login de correo, sin wallet ni apps cripto. Hyto: mostrá el gasto, que quede registrado.
+
+Stellar is the settlement rail, not the audience. Why USDC, and not SINPE or another local transfer: the money comes from abroad in dollars, and the funder demands proof of spending. Trustless Work is the escrow Hyto is built on. It is not the competition. Hyto is not a company spend card, not a microtask marketplace, and not an on-ramp.
 
 Communities, the bulletin, account type, and the volunteer profile are part of this story. The flags `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO` stay off.
 
@@ -37,7 +41,7 @@ This is history, not a claim that a pilot shipped.
 
 ## Problem
 
-A Stellar community receives dollars from abroad and then has to show a sponsor, a foundation, or a program lead how the money was spent. Today that record is informal: a transfer, a chat message, a verbal reimbursement. At the end there is no public trail.
+A community in Latin America receives dollars from afar — often from a funder who is headquartered abroad or not physically there — and then has to show how the money was spent. Today that record is loose screenshots and a spreadsheet. At the end there is no public trail.
 
 - The organizer cannot see what was spent or whether the task was done.
 - The person who did the work has no committed payment.

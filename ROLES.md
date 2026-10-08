@@ -1,6 +1,6 @@
 # Roles
 
-Current as of `main` at `c17baf7` (8 October 2026). Hyto is for Stellar communities in Latin America — ambassador programs, local chapters, and builder groups — that receive funding and have to account for it. The funder or organizer locks USDC per task. A member proves the spend with a photo. Login does not assign a global product role. See [AGENTS.md](AGENTS.md).
+Current as of `main` at `c958992` (8 October 2026). Hyto is for communities in Latin America funded from afar, including ones headquartered abroad, that have to prove how stipends, scholarships, and event funds were spent. Stellar settles the payment. It is not the audience. The funder locks USDC per task. A member proves the spend with a photo. Login does not assign a global product role. See [AGENTS.md](AGENTS.md).
 
 ## In the product
 

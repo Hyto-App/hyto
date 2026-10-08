@@ -1,6 +1,6 @@
 # Plan
 
-Current as of `main` at `c17baf7` (8 October 2026). The product is one story: Hyto is the accountability layer for Stellar communities in Latin America that receive stipends, scholarships, grants, or event sponsorship and have to show how they spent it. Trustless Work escrow on testnet is the base. The 27–28 September kickoff (who codes first, "no backend", "login is broken", Fondear does not sign) described an older tree. It is not a task list. Behavior lives in [AGENTS.md](AGENTS.md) and [STACK.md](STACK.md). The pitch is in [Hyto-informe.md](Hyto-informe.md).
+Current as of `main` at `c958992` (8 October 2026). The product is one story: Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. Trustless Work escrow on testnet is the base. The 27–28 September kickoff (who codes first, "no backend", "login is broken", Fondear does not sign) described an older tree. It is not a task list. Behavior lives in [AGENTS.md](AGENTS.md) and [STACK.md](STACK.md). The pitch is in [Hyto-informe.md](Hyto-informe.md).
 
 ## Done in the repo
 

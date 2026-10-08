@@ -14,7 +14,7 @@ const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)
 const FRASES = [
   "Show the spend,",
   "on the record.",
-  "Communities that receive funding account for every spend.",
+  "Communities in Latin America funded from afar account for every spend.",
   "Practice network.",
   "no live payment is recorded yet",
   "Lock the funding",

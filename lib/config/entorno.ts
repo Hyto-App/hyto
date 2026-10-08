@@ -135,7 +135,7 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on turns on communities (a Stellar chapter that holds events). Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
+    para: "Exact value on turns on communities (a group in Latin America that holds events). Stellar is the settlement rail, not the audience. Unset or anything else keeps the app as it is. Do not turn this on until migration 0010 is applied.",
   },
   {
     nombre: "HYTO_TABLON",

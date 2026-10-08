@@ -4,7 +4,7 @@ Fuente de verdad de la identidad visual. Esta carpeta **no la sirve la app** (no
 
 Eslogan: **"Show the spend. On the record."** · Tipografía: **Poppins** (Regular 400 y Medium 500; 600 para cifras/títulos) · Detalle en [marca.md](marca.md).
 
-El eslogan anterior de los mockups, "Prove your worth. Get paid.", queda en el Figma y en la auditoría del 2 de octubre. Josué fijó el 8 de octubre de 2026 la historia del producto: Hyto es la capa de rendición de cuentas para comunidades de Stellar en América Latina. Abdiel confirma el eslogan en Figma. No se afirma un pago real ni un piloto.
+El eslogan anterior de los mockups, "Prove your worth. Get paid.", queda en el Figma y en la auditoría del 2 de octubre. Josué fijó el 8 de octubre de 2026 la historia del producto: Hyto es la capa de rendición de cuentas para comunidades en Latinoamérica que reciben fondos desde lejos. Stellar es el riel del pago, no el público. Abdiel confirma el eslogan en Figma. No se afirma un pago real ni un piloto.
 
 ## Paleta
 

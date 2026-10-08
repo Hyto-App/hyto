@@ -24,4 +24,4 @@ export const ESLOGAN_LINEA = "Show the spend.";
 export const ESLOGAN_ACENTO = "On the record.";
 export const ESLOGAN = `${ESLOGAN_LINEA} ${ESLOGAN_ACENTO}`;
 export const LINEA_OG =
-  "Communities account for funding with a photo. A person releases the payment in digital dollars (USDC).";
+  "Communities in Latin America funded from afar account for the spend with a photo. A person releases the payment in digital dollars (USDC).";
