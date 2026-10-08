@@ -25,6 +25,7 @@ import { notaDeTarea } from "@/lib/integrante/nota";
 import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, mostrarReintento, seguirConsultando, topeSeguimientoMs } from "@/lib/integrante/seguimiento";
+import { nombreDemoVisible } from "@/lib/sesion/demo";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ContextoEvento } from "./ContextoEvento";
 
@@ -70,6 +71,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const t = useTexto();
   const claro = useClaro();
   const idioma = useIdioma();
+  const nombrePersona = nombreDemoVisible(nombre, idioma);
 
   useEffect(() => {
     let activo = true;
@@ -632,15 +634,15 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               : avisoEnvio
                 ? t("evidencia.sentAction")
                 : insuficiente
-                  ? nombre
-                    ? t(documental ? "evidencia.notEnoughNameFile" : "evidencia.notEnoughName", { name: nombre })
+                  ? nombrePersona
+                    ? t(documental ? "evidencia.notEnoughNameFile" : "evidencia.notEnoughName", { name: nombrePersona })
                     : t(documental ? "evidencia.notEnoughFile" : "evidencia.notEnough")
                   : parcial
-                    ? nombre
-                      ? t("evidencia.partialName", { name: nombre })
+                    ? nombrePersona
+                      ? t("evidencia.partialName", { name: nombrePersona })
                       : t("evidencia.partial")
-                    : nombre
-                      ? t(documental ? "evidencia.greatJobNameFile" : "evidencia.greatJobName", { name: nombre })
+                    : nombrePersona
+                      ? t(documental ? "evidencia.greatJobNameFile" : "evidencia.greatJobName", { name: nombrePersona })
                       : t(documental ? "evidencia.greatJobFile" : "evidencia.greatJob")}
           </h1>
           {mileSinTerminar ? (

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { tareaConNota } from "../api/tareas";
+import { reintentoEnLista } from "../integrante/seguimiento";
 import { armarInforme } from "../api/informe";
 import { leerFotoHttp, tipoDeFoto } from "../api/evidencias";
 import { leerRevisionHttp } from "../api/revision";
 import type { Almacen } from "./almacen";
 import { crearMemoria } from "./memoria";
-import { asegurarSemilla, evidenciasSemilla, MARCA_EJEMPLO, tareasSemilla, veredictosSemilla } from "./semilla";
+import { asegurarSemilla, DESCRIPCION_DEMO, evidenciasSemilla, MARCA_EJEMPLO, PORTADA_DEMO, tareasSemilla, veredictosSemilla } from "./semilla";
 
 test("el tipo de la foto sigue los bytes cuando el almacén no dice image", () => {
   const jpeg = Uint8Array.from([0xff, 0xd8, 0xff, 0x00]);
@@ -159,6 +161,12 @@ test("la semilla no toca organizador_id de zeek y el demo es otro proyecto", asy
     assert.equal((await vacio.leerTarea("demo-bienvenida"))?.estado, "pendiente");
     assert.equal((await vacio.leerTarea("demo-stand"))?.estado, "en revisión");
     assert.equal((await vacio.veredictoDe("ejemplo-demo-stand"))?.veredicto, "cumplió");
+    assert.equal((await vacio.veredictoDe("ejemplo-demo-stand"))?.score, "100");
+    const demo = await vacio.leerProyecto("demo");
+    assert.equal(demo?.descripcion, DESCRIPCION_DEMO);
+    assert.equal(demo?.portada, PORTADA_DEMO);
+    assert.equal((await vacio.leerProyecto("zeek"))?.descripcion ?? null, null);
+    assert.equal((await vacio.leerProyecto("zeek"))?.portada ?? null, null);
   } finally {
     if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
     else process.env.HYTO_DEMO_LOGIN = anterior;
@@ -221,6 +229,40 @@ test("insertar dos veces la evidencia de ejemplo no la pisa", async () => {
     creadaEn: "2026-09-27T12:00:00.000Z",
   });
   assert.equal((await almacen.leerEvidencia("ejemplo-stand"))?.monto, "9");
+});
+
+test("la cabina demo queda revisada aunque el veredicto de ejemplo no tuviera nota", async () => {
+  const anterior = process.env.HYTO_DEMO_LOGIN;
+  process.env.HYTO_DEMO_LOGIN = "1";
+  try {
+    const almacen = crearMemoria();
+    await asegurarSemilla(almacen);
+    await almacen.guardarVeredicto({
+      id: "ejemplo-demo-stand",
+      evidenciaId: "ejemplo-demo-stand",
+      tareaId: "demo-stand",
+      veredicto: "cumplió",
+      frase: "The booth photo matches the task.",
+      textoScout: "The booth photo matches the task.",
+      choice: "stand",
+      noul: "si",
+      score: "sample",
+      origen: "guion",
+    });
+    await asegurarSemilla(almacen);
+    const fila = await almacen.veredictoDe("ejemplo-demo-stand");
+    assert.equal(fila?.score, "100");
+    assert.match(fila?.textoScout ?? "", /@@hyto-razones@@/);
+    const tarea = await almacen.leerTarea("demo-stand");
+    assert.ok(tarea);
+    const vista = await tareaConNota(almacen, tarea!);
+    assert.equal(vista.nota, 100);
+    assert.equal(vista.notas.length > 0, true);
+    assert.equal(reintentoEnLista(vista, Date.now(), undefined), false);
+  } finally {
+    if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+    else process.env.HYTO_DEMO_LOGIN = anterior;
+  }
 });
 
 test("un insert simultáneo de la evidencia de ejemplo no corta la semilla", async () => {

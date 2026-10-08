@@ -1,5 +1,8 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { Fotos } from "@/lib/blob/fotos";
 import type { Almacen } from "@/lib/db/almacen";
+import { PORTADA_DEMO } from "@/lib/db/semilla";
 import type { Proyecto } from "@/lib/db/tipos";
 import { tipoPorBytes } from "@/lib/evidencia/tipo";
 import type { ContextoEvento } from "@/lib/revision/contexto-evento";
@@ -92,11 +95,32 @@ export async function guardarPortadaHttp(
   }
 }
 
+/** The demo cover is an existing brand file. The seed stores only the marker. */
+export async function bytesPortadaDemo(): Promise<Uint8Array | null> {
+  try {
+    const bytes = await readFile(path.join(process.cwd(), "brand/banner-hyto.png"));
+    return new Uint8Array(bytes);
+  } catch {
+    return null;
+  }
+}
+
 export async function leerPortadaHttp(almacen: Almacen, fotos: Fotos | null, proyectoId: string, visor: Visor): Promise<Response> {
   try {
     const visibles = await proyectosVisibles(almacen, visor);
     const proyecto = visibles.find((item) => item.id === proyectoId);
     if (!proyecto?.portada) return json({ aviso: "We couldn't find that cover photo." }, 404);
+    if (proyecto.portada === PORTADA_DEMO) {
+      const bytes = await bytesPortadaDemo();
+      if (!bytes) return json({ aviso: "We couldn't find that cover photo." }, 404);
+      return new Response(Buffer.from(bytes), {
+        headers: {
+          "content-type": "image/png",
+          "cache-control": "private, no-store",
+          "x-content-type-options": "nosniff",
+        },
+      });
+    }
     if (!fotos) return sinFotos();
     const foto = await fotos.leer(proyecto.portada);
     if (!foto || !TIPOS_PORTADA.has(foto.tipo)) return json({ aviso: "We couldn't find that cover photo." }, 404);

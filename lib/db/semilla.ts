@@ -1,4 +1,5 @@
 import { tareasEjemploAdmin } from "@/lib/admin/ejemplo";
+import { notaDeTexto } from "@/lib/revision/pesos";
 import { snapshotEjemplo } from "@/lib/revision/razones-ejemplo";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -15,6 +16,13 @@ export const PROYECTO_ZEEK: Proyecto = {
 };
 
 export const ID_PROYECTO_DEMO = "demo";
+
+/** Shown to members. The screen translates this exact sentence. */
+export const DESCRIPCION_DEMO =
+  "A short demo event with a booth, a check-in, and a team meal. Nothing here moves money.";
+
+/** Marker read by the cover route. The bytes are brand/banner-hyto.png, not a generated image. */
+export const PORTADA_DEMO = "ejemplo/demo-portada";
 
 const CREADO_DEMO = "2026-09-27T12:00:00.000Z";
 
@@ -171,10 +179,13 @@ async function asegurarProyectoDemo(almacen: Almacen): Promise<void> {
         nombre: "Demo",
         creadoEn: CREADO_DEMO,
         organizadorId: usuarioDemo("organizador").id,
+        descripcion: DESCRIPCION_DEMO,
+        portada: PORTADA_DEMO,
       },
       tareasDemo(),
     );
   }
+  await asegurarContextoDemo(almacen);
   for (const evidencia of evidenciasDemo()) {
     if (await almacen.leerEvidencia(evidencia.id)) continue;
     try {
@@ -256,10 +267,27 @@ async function asegurarRevisionMet(almacen: Almacen, voluntarioId: string): Prom
     }
   }
   const guardado = await almacen.veredictoDe(plantillaVeredicto.evidenciaId);
-  if (!guardado || guardado.origen === "error" || guardado.veredicto !== "cumplió") {
+  if (!veredictoDemoListo(guardado)) {
     await almacen.guardarVeredicto(plantillaVeredicto);
   }
   await almacen.actualizarTarea(stand.id, { estado: "en revisión", miembroId: stand.miembroId.trim() || voluntarioId });
+}
+
+/** Fills an empty demo description or cover. It never writes another event. */
+async function asegurarContextoDemo(almacen: Almacen): Promise<void> {
+  const actual = await almacen.leerProyecto(ID_PROYECTO_DEMO);
+  if (!actual || actual.id !== ID_PROYECTO_DEMO) return;
+  const cambio: { descripcion?: string; portada?: string } = {};
+  if (!actual.descripcion?.trim()) cambio.descripcion = DESCRIPCION_DEMO;
+  if (!actual.portada?.trim()) cambio.portada = PORTADA_DEMO;
+  if (cambio.descripcion || cambio.portada) await almacen.actualizarProyecto(actual.id, cambio);
+}
+
+/** A finished sample review: a numeric score and the answer snapshot the notes are built from. */
+function veredictoDemoListo(fila: VeredictoFila | null): boolean {
+  if (!fila || fila.origen === "error" || fila.veredicto !== "cumplió") return false;
+  if (notaDeTexto(fila.score) === null) return false;
+  return fila.textoScout.includes("@@hyto-razones@@");
 }
 
 async function reponerPendientes(almacen: Almacen): Promise<void> {

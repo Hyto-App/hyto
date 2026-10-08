@@ -387,7 +387,7 @@ test("pay still says the payment failed when release does not go through", async
     await pulsar("Approve and pay");
     await confirmarDialogo();
     await esperar(() => texto().includes("Payment failed"));
-    assert.match(texto(), /No USDC left the escrow/);
+    assert.match(texto(), /No USDC was sent/);
     assert.match(texto(), /The milestone isn't ready/);
     assert.equal(texto().includes("Budget not locked"), false);
   } finally {

@@ -171,6 +171,7 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
   const t = useTexto();
   const idioma = useIdioma();
   const publica = direccionPublica(vista.wallet);
+  const muestra = vista.walletMuestra && vista.wallet?.trim() ? vista.wallet.trim() : null;
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
   return (
@@ -190,6 +191,11 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
             <div>
               <h3 className="text-sm font-medium">{t("cuenta.idSoporte")}</h3>
               <Direccion direccion={publica} />
+            </div>
+          ) : muestra ? (
+            <div>
+              <h3 className="text-sm font-medium">{t("cuenta.idSoporte")}</h3>
+              <p className="mt-2 font-mono text-xl tracking-tight">{muestra}</p>
             </div>
           ) : (
             <p className="max-w-prose text-sm leading-6">{t("cuenta.signInWallet")}</p>

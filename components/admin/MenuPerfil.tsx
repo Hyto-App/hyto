@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { nombreDemoVisible } from "@/lib/sesion/demo";
 import { iniciales } from "@/components/ui/Marca";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
@@ -20,10 +21,11 @@ type Props = {
 /** Account sheet from the sidebar avatar. Esc closes it and Tab stays inside. */
 export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Props) {
   const t = useTexto();
+  const idioma = useIdioma();
   const panel = useRef<HTMLDivElement>(null);
   const titulo = useId();
   const [saliendo, setSaliendo] = useState(false);
-  const nombre = usuario.nombre?.trim() || null;
+  const nombre = nombreDemoVisible(usuario.nombre, idioma);
   const rotulo = nombre ?? usuario.email;
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
       >
         <div className="hyto-perfil-cabeza">
           <span className="hyto-usuario-iniciales" aria-hidden="true">
-            {iniciales(usuario.nombre ?? "", usuario.email)}
+            {iniciales(nombre ?? "", usuario.email)}
           </span>
           <span className="hyto-usuario-datos">
             <strong id={titulo}>{rotulo}</strong>

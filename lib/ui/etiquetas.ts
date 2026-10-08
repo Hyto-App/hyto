@@ -57,6 +57,8 @@ const LEGADO: Record<string, string> = {
     "The list is incomplete: a few signatures show, and the back of the room is out of frame.",
   "Comprobante de la comida del equipo, con monto y fecha visibles.":
     "Team meal receipt, with the amount and date visible.",
+  "Un evento corto de demostración, con un stand, un registro y una comida del equipo. Aquí no se mueve dinero.":
+    "A short demo event with a booth, a check-in, and a team meal. Nothing here moves money.",
   "Mesa armada, banner de ZEEK de frente, tres cajas abiertas. No se ve el fondo del salón.":
     "Table set up, ZEEK banner facing forward, three open boxes. The back of the room is not visible.",
 };
@@ -111,11 +113,24 @@ export function etiquetaChoice(choice: string, idioma: Idioma = "en"): string {
   return clave ? texto(idioma, clave) : limpio;
 }
 
+/** Known seed sentences, including when one sits inside a longer description. */
+function fraseEnIdioma(base: string, idioma: Idioma): string {
+  const tabla = idioma === "es" ? INVERSO_LEGADO : LEGADO;
+  if (tabla[base]) return tabla[base];
+  const pares = Object.entries(tabla).sort((a, b) => b[0].length - a[0].length);
+  let salida = base;
+  for (const [desde, hacia] of pares) {
+    if (desde.length < 8 || !salida.includes(desde)) continue;
+    salida = salida.split(desde).join(hacia);
+  }
+  return salida;
+}
+
 export function textoVisible(valor: string | null | undefined, idioma: Idioma = "en"): string {
   if (!valor) return "";
   // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
   const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
-  const directo = idioma === "es" ? (INVERSO_LEGADO[base] ?? base) : (LEGADO[base] ?? base);
+  const directo = fraseEnIdioma(base, idioma);
   const frase = directo
     .replace(/ Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
       const met = condicion === "cumplida";

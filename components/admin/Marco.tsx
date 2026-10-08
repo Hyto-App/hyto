@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
 import { Icono, Logo, Tema, iniciales } from "@/components/ui/Marca";
-import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { nombreDemoVisible } from "@/lib/sesion/demo";
 import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
 import { useRolDemo } from "@/components/sesion/InsigniaDemo";
@@ -264,8 +265,10 @@ function BotonPerfil({
   onAbrir: (boton: HTMLElement) => void;
 }) {
   const t = useTexto();
-  const rotulo = usuario.nombre?.trim() || usuario.email;
-  const letras = iniciales(usuario.nombre ?? "", usuario.email);
+  const idioma = useIdioma();
+  const nombre = nombreDemoVisible(usuario.nombre, idioma);
+  const rotulo = nombre || usuario.email;
+  const letras = iniciales(nombre ?? "", usuario.email);
   return (
     <button
       type="button"
@@ -281,7 +284,7 @@ function BotonPerfil({
       </span>
       {compacto ? null : (
         <span className="hyto-usuario-datos">
-          {usuario.nombre ? <strong>{usuario.nombre}</strong> : null}
+          {nombre ? <strong>{nombre}</strong> : null}
           <span>{usuario.email}</span>
         </span>
       )}

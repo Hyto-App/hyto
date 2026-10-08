@@ -7,6 +7,7 @@ import { leerSaldoUsdc, type LectorSaldo } from "@/lib/escrow/saldo";
 import { centavos, normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import {
   armarOrgullo,
+  DIRECCION_MUESTRA,
   ZONA_MESES,
   type EstadoSaldo,
   type TareaCuenta,
@@ -58,6 +59,18 @@ export async function armarVistaCuenta(opciones: {
   const propias = await tareasDelUsuario(opciones.almacen, opciones.usuarioId);
   const orgullo = armarOrgullo(propias, ahora, ZONA_MESES, opciones.idioma ?? "en");
   const walletReal = esCuenta(opciones.wallet.trim()) ? opciones.wallet.trim() : null;
+  if (opciones.demo && !walletReal) {
+    return {
+      demo: true,
+      muestra: true,
+      email: opciones.email,
+      wallet: DIRECCION_MUESTRA,
+      walletMuestra: true,
+      saldo: "0",
+      saldoEstado: "ok",
+      orgullo,
+    };
+  }
   const saldo = await leerSaldoDe(walletReal, opciones.leerSaldo);
   return {
     demo: opciones.demo,

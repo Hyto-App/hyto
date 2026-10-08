@@ -159,6 +159,35 @@ test("una wallet ausente pide Get ready to be paid", async () => {
   }
 });
 
+test("el demo sin billetera muestra la dirección de ejemplo y US$0", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    responder({
+      demo: true,
+      muestra: true,
+      email: "demo-voluntario@hyto.demo",
+      wallet: "EJEMPLO-NO-ES-UNA-CUENTA",
+      walletMuestra: true,
+      saldo: "0",
+      saldoEstado: "ok",
+      orgullo: armarOrgullo([]),
+    })) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /EJEMPLO-NO-ES-UNA-CUENTA/);
+    assert.match(texto(), /US\$0/);
+    assert.equal(texto().includes("Sign in with a wallet"), false);
+    assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
 test("copiar la dirección pública confirma en el botón", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
