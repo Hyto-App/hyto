@@ -26,6 +26,7 @@ import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, mostrarReintento, seguirConsultando, topeSeguimientoMs } from "@/lib/integrante/seguimiento";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ContextoEvento } from "./ContextoEvento";
+import { MarcaEscrow } from "./MarcaEscrow";
 
 type ProyectoLista = { id: string; nombre: string; descripcion?: string | null; portada?: boolean };
 import { ErrorDeEnvio, ErrorDeSesion, leerTarea, pedirTokenEvidencia, subirEvidencia } from "@/lib/integrante/rutas";
@@ -466,7 +467,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const idRecibo = `${baseId}-recibo`;
   const idTarea = `${baseId}-tarea`;
   const idPanel = `${baseId}-panel`;
-  const envioBloqueado = archivoRechazado && coincide && fase === "inicio" && !foto;
+  const esperaPresupuesto = Boolean(tarea.escrowV2) && tarea.estado === "pendiente" && tarea.presupuestoBloqueado !== true;
+  const envioBloqueado = esperaPresupuesto || (archivoRechazado && coincide && fase === "inicio" && !foto);
   const accion =
     !coincide || envioBloqueado
       ? t("evidencia.send")
@@ -687,6 +689,14 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           </div>
           <p className="hyto-amount">{montoVisible}</p>
         </article>
+        {tarea.escrowV2 ? (
+          <MarcaEscrow
+            tareaId={tarea.id}
+            contrato={tarea.contratoEscrow ?? null}
+            evidenciaId={evidencia?.id ?? null}
+            pagada={false}
+          />
+        ) : null}
         <LineaRevision
           tarea={tarea}
           revisionCerrada={esperaAgotada || !!avisoEnvio}
@@ -734,6 +744,15 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         descripcion={contextoEvento.descripcion}
         portada={contextoEvento.portada}
       />
+      {tarea.escrowV2 ? (
+        <p className="hyto-callout" role="status">
+          {tarea.presupuestoBloqueado === true
+            ? t("evidencia.budgetLocked")
+            : tarea.presupuestoBloqueado === false
+              ? t("evidencia.budgetWaiting")
+              : t("evidencia.budgetUnknown")}
+        </p>
+      ) : null}
       <div className="hyto-tabs flex" role="tablist" aria-label={t("evidencia.tabs")}>
         <button
           type="button"

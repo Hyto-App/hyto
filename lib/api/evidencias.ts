@@ -10,7 +10,10 @@ import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
 import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
+import { escrowV2Activo } from "@/lib/escrow/bandera";
 import { esContrato } from "@/lib/escrow/cuerpos";
+import { leerEscrow } from "@/lib/escrow/modulo";
+import { AVISO_PRESUPUESTO_DESCONOCIDO, AVISO_PRESUPUESTO_VACIO, AVISO_SIN_PRESUPUESTO, balancePositivo } from "@/lib/escrow/reserva";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
@@ -170,6 +173,10 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     }
     // TODO(intentos): the attempt cap is not decided. Replace the photo until the task is paid.
     if (tareaCerrada(tarea)) return json({ aviso: "This task is already paid." }, 409);
+    if (escrowV2Activo() && !demo) {
+      const avisoPresupuesto = await avisoSinPresupuesto(tarea);
+      if (avisoPresupuesto) return json({ aviso: avisoPresupuesto }, 409);
+    }
 
     const bytes = new Uint8Array(await foto.arrayBuffer());
     // Same bytes are a duplicate before any image decode or AI review, so the 409 does not wait on Mile.
@@ -470,6 +477,18 @@ async function puedeSubir(almacen: Almacen, tarea: TareaFila, actor: ActorEviden
   if (puedeFijarWallet(tarea, actor)) return true;
   if (actor.demo !== true) return false;
   return esProyectoDemo(await almacen.leerProyecto(tarea.proyectoId));
+}
+
+async function avisoSinPresupuesto(tarea: TareaFila): Promise<string | null> {
+  if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow)) return AVISO_SIN_PRESUPUESTO;
+  try {
+    const saldo = balancePositivo(await leerEscrow(tarea.contratoEscrow));
+    if (saldo === null) return AVISO_PRESUPUESTO_DESCONOCIDO;
+    if (!saldo) return AVISO_PRESUPUESTO_VACIO;
+    return null;
+  } catch {
+    return AVISO_PRESUPUESTO_DESCONOCIDO;
+  }
 }
 
 function direccion(valor: string): string | null {

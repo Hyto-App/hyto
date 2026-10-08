@@ -1,4 +1,8 @@
 import type { Almacen } from "@/lib/db/almacen";
+import type { TareaFila } from "@/lib/db/tipos";
+import { escrowV2Activo } from "@/lib/escrow/bandera";
+import { esContrato, esCuenta } from "@/lib/escrow/cuerpos";
+import { montoAReservar, planReserva } from "@/lib/escrow/reserva";
 import { avisarAsignacion } from "@/lib/tablon/publicar";
 import { avisoBloqueo } from "./editar-tarea";
 import { esOrganizador } from "./invitaciones";
@@ -30,7 +34,42 @@ export async function asignarTareaHttp(request: Request, almacen: Almacen, tarea
   if (!miembro) return json({ aviso: "That person is not in this event." }, 400);
   await almacen.actualizarTarea(tarea.id, { miembroId: destino });
   await avisarAsignacion(almacen, tarea.id);
-  return json({ tareaId: tarea.id, miembroId: destino });
+  if (!escrowV2Activo()) return json({ tareaId: tarea.id, miembroId: destino });
+  const actual = (await almacen.leerTarea(tarea.id)) ?? { ...tarea, miembroId: destino };
+  const wallet = await almacen.walletDeUsuario(destino);
+  let cobro = actual.walletCobro;
+  if (wallet && esCuenta(wallet) && !esContrato(actual.contratoEscrow ?? "") && cobro !== wallet) {
+    await almacen.actualizarTarea(tarea.id, { walletCobro: wallet });
+    cobro = wallet;
+  }
+  const monto = montoAReservar(actual);
+  const plan = planReserva({
+    proteger: true,
+    walletCobro: cobro,
+    contrato: actual.contratoEscrow,
+    estado: actual.estado,
+    monto,
+  });
+  return json({
+    tareaId: tarea.id,
+    miembroId: destino,
+    escrowV2: true,
+    reservar: plan.reservar,
+    motivo: plan.motivo,
+    monto,
+    walletCobro: cobro,
+  });
+}
+
+export async function sincronizarCobroParaReserva(almacen: Almacen, tareas: TareaFila[]): Promise<void> {
+  if (!escrowV2Activo()) return;
+  for (const tarea of tareas) {
+    if (!tarea.miembroId || esContrato(tarea.contratoEscrow ?? "") || esCuenta(tarea.walletCobro)) continue;
+    const wallet = await almacen.walletDeUsuario(tarea.miembroId);
+    if (!wallet || !esCuenta(wallet)) continue;
+    await almacen.actualizarTarea(tarea.id, { walletCobro: wallet });
+    tarea.walletCobro = wallet;
+  }
 }
 
 function miembroDe(body: unknown): string | null {

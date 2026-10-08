@@ -69,6 +69,11 @@ export type Tarea = {
   enviadaEn?: string | null;
   /** MIME type of the latest file, when the task list sends it. */
   tipoArchivo?: string | null;
+  /** Present only when HYTO_ESCROW_V2 is on. */
+  escrowV2?: boolean;
+  /** True when the milestone balance is already locked. Null when the read failed. */
+  presupuestoBloqueado?: boolean | null;
+  contratoEscrow?: string | null;
 };
 
 export type Evidencia = {

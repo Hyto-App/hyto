@@ -152,6 +152,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Exact value on asks for an account type after sign-in. Unset or anything else keeps the app as it is. Do not turn this on until migration 0011 is applied.",
   },
   {
+    nombre: "HYTO_ESCROW_V2",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on funds each task before the work, makes the worker the milestone service provider, and pays with one approve-and-release signature. Unset keeps today's flow. Testnet only.",
+  },
+  {
     nombre: "HYTO_PERFIL_VOLUNTARIO",
     ambito: "servidor",
     requerida: false,

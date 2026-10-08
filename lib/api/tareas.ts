@@ -7,6 +7,10 @@ import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota } from "@/lib/revision/razones";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
+import { escrowV2Activo } from "@/lib/escrow/bandera";
+import { esContrato } from "@/lib/escrow/cuerpos";
+import { leerEscrow } from "@/lib/escrow/modulo";
+import { balancePositivo } from "@/lib/escrow/reserva";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 import { veredictoAlLeer } from "./revision-vencida";
@@ -91,7 +95,7 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?:
   const visible = notaPublica(fila);
   const rechazo = rechazoPublico(tarea);
   const linea = lineaDeEnvio(tarea, evidencia, fila);
-  return {
+  const publica = {
     ...tareaPublica(tarea),
     evento: nombres?.get(tarea.proyectoId) ?? null,
     nota: visible?.nota ?? null,
@@ -106,6 +110,17 @@ export async function tareaConNota(almacen: Almacen, tarea: TareaFila, nombres?:
     enviadaEn: linea.enviadaEn,
     tipoArchivo: evidencia?.tipoArchivo ?? null,
   };
+  if (!escrowV2Activo()) return publica;
+  return { ...publica, escrowV2: true as const, presupuestoBloqueado: await presupuestoBloqueadoDe(tarea) };
+}
+
+async function presupuestoBloqueadoDe(tarea: TareaFila): Promise<boolean | null> {
+  if (!tarea.contratoEscrow || !esContrato(tarea.contratoEscrow)) return false;
+  try {
+    return balancePositivo(await leerEscrow(tarea.contratoEscrow));
+  } catch {
+    return null;
+  }
 }
 
 export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: "evento" | "mias" = "evento"): Promise<Response> {

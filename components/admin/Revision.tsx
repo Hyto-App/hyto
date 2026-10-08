@@ -18,6 +18,7 @@ import {
   botonesRevision,
   cargarDetalleOrganizador,
   confirmarMonto,
+  leerEstadoEscrow,
   leerFondeo,
   montoDeVista,
   pagoPendiente,
@@ -29,13 +30,14 @@ import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
 import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
+import { puedeLiberarDirecto } from "@/lib/escrow/reserva";
 import {
   AVISO_FIRMA,
   AVISO_REINGRESO,
   ErrorFirmaCliente,
   firmarPasos,
   mensajeFirmaVisible,
-  pasosDesde,
+  pasosFirmaPago,
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
@@ -50,10 +52,12 @@ import type { TareaAdmin } from "@/lib/admin/tipos";
 export function Revision({
   tareaId,
   eventoId,
+  proteger = false,
   firmar,
 }: {
   tareaId: string;
   eventoId?: string;
+  proteger?: boolean;
   firmar?: (unsignedXdr: string) => Promise<string>;
 }) {
   const modoDemo = useModoDemo();
@@ -67,6 +71,7 @@ export function Revision({
   const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [contrato, setContrato] = useState<string | null>(null);
   const [fondeado, setFondeado] = useState<boolean | null>(null);
+  const [hitoMarcado, setHitoMarcado] = useState(false);
   const [reanudar, setReanudar] = useState<AccionCliente | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
@@ -102,6 +107,7 @@ export function Revision({
     setHashPaso(null);
     setContrato(null);
     setFondeado(null);
+    setHitoMarcado(false);
     setReanudar(null);
     fondeoForzado.current = null;
     setWallet(null);
@@ -133,7 +139,12 @@ export function Revision({
     let viva = true;
     setConsultaFondo("leyendo");
     void consultarHasta({
-      leer: () => leerFondeo(contrato),
+      leer: async () => {
+        if (!proteger) return leerFondeo(contrato);
+        const estado = await leerEstadoEscrow(contrato);
+        if (viva) setHitoMarcado(estado.hitoMarcado);
+        return estado.fondeado;
+      },
       listo: (valor) => valor !== null,
       vivo: () => viva && fondeoForzado.current !== contrato,
     }).then((resultado) => {
@@ -148,7 +159,7 @@ export function Revision({
     return () => {
       viva = false;
     };
-  }, [real, contrato, vueltaFondo]);
+  }, [real, contrato, vueltaFondo, proteger]);
 
   const claveMonto = tarea ? `${tarea.id}|${tarea.montoConfirmado ?? ""}|${tarea.montoRevisado ?? ""}` : "";
   const tareaMontoRef = useRef(tarea);
@@ -344,7 +355,7 @@ export function Revision({
       setHashPaso(pago.hash);
       if (pago.aviso) publicarAviso(mensajeClaro(pago.aviso));
     } catch (error) {
-      if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
+      if (actual === "marcar" || actual === "aprobar" || actual === "liberar" || actual === "aprobarLiberar") setReanudar(actual);
       if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
       const codigo = error instanceof ErrorFirmaCliente ? error.codigo : null;
       publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
@@ -364,7 +375,7 @@ export function Revision({
         setFoto(fresco.foto);
         setWallet(fresco.wallet ?? wallet);
         setReal(true);
-      } else if (pago?.hash && acciones.includes("liberar")) {
+      } else if (pago?.hash && (acciones.includes("liberar") || acciones.includes("aprobarLiberar"))) {
         const hashPago = pago.hash;
         setTarea((actualTarea) => {
           if (!actualTarea) return actualTarea;
@@ -412,7 +423,11 @@ export function Revision({
     );
   }
 
-  const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const pagoDirecto = puedeLiberarDirecto(
+    { tipo: tarea.tipo, monto: tarea.monto, tope: tarea.tope, montoConfirmado: tarea.montoConfirmado },
+    proteger,
+  );
+  const botones = botonesRevision(tarea, real, { contrato, fondeado }, { proteger, hitoMarcado, pagoDirecto });
   const esperaConfirmacion =
     real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const borradorNormal = normalizarMonto(borrador);
@@ -437,7 +452,7 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: () => correr(pasosDesde(reanudar)),
+        onConfirmar: () => correr(pasosFirmaPago(proteger, reanudar)),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
@@ -454,8 +469,10 @@ export function Revision({
         ? t("pago.locking")
         : accion === "marcar"
           ? t("pago.checking")
-          : accion === "aprobar"
-            ? t("pago.approving")
+        : accion === "aprobar"
+          ? t("pago.approving")
+          : accion === "disputar"
+            ? t("evidencia.dispute")
             : t("pago.paying");
 
   return (
@@ -710,13 +727,19 @@ export function Revision({
                 </BotonPrincipal>
               </>
             ) : null}
+            {proteger && fondeado === true && tarea.estado === "en revisión" && !hitoMarcado ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("pago.waitingMark")}</p>
+            ) : null}
+            {proteger && !pagoDirecto && tarea.estado !== "pagado" ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("pago.belowCap")}</p>
+            ) : null}
             {botones.pagar ? (
               <>
                 {fondeado === true ? (
                   <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoDeTarea(tarea, idioma) })}</p>
                 ) : null}
                 <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
-                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
+                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" || paso === "aprobarLiberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
                 </BotonPrincipal>
               </>
             ) : null}

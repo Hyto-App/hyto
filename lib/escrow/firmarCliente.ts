@@ -27,7 +27,13 @@ export function pasosDesde(fallo: AccionCliente | null): AccionCliente[] {
   return indice >= 0 ? PAGO.slice(indice) : [...PAGO];
 }
 
-export type AccionCliente = "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar";
+/** Protection on: the worker already marked the milestone, so pay is one signature. */
+export function pasosFirmaPago(proteger: boolean, fallo: AccionCliente | null = null): AccionCliente[] {
+  if (proteger) return ["aprobarLiberar"];
+  return pasosDesde(fallo);
+}
+
+export type AccionCliente = "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar" | "aprobarLiberar" | "disputar";
 
 export type ExtraFirma = {
   contrato?: string;
@@ -36,6 +42,7 @@ export type ExtraFirma = {
   indice?: number;
   estado?: string;
   evidencia?: string;
+  motivo?: string;
 };
 
 export type PagoFirmado = {
@@ -55,7 +62,7 @@ export type OpcionesFirma = {
   alEmpezar?: (accion: AccionCliente) => void;
 };
 
-const ACCIONES = new Set<AccionCliente>(["desplegar", "fondear", "marcar", "aprobar", "liberar"]);
+const ACCIONES = new Set<AccionCliente>(["desplegar", "fondear", "marcar", "aprobar", "liberar", "aprobarLiberar", "disputar"]);
 
 export class ErrorFirmaCliente extends Error {
   estado: number | null;
@@ -149,13 +156,17 @@ function cuerpoFirma(accion: AccionCliente, tareaId: string, extra: ExtraFirma):
   if (contrato) cuerpo.contrato = contrato;
   if (firmante) cuerpo.firmante = firmante;
   if (accion === "fondear" && typeof extra.monto === "number") cuerpo.monto = extra.monto;
-  if (accion === "marcar" || accion === "aprobar" || accion === "liberar") {
+  if (accion === "marcar" || accion === "aprobar" || accion === "liberar" || accion === "aprobarLiberar" || accion === "disputar") {
     cuerpo.indice = Number.isInteger(extra.indice) ? extra.indice : 0;
   }
   if (accion === "marcar") {
     cuerpo.estado = texto(extra.estado) ?? "completed";
     const evidencia = texto(extra.evidencia);
     if (evidencia) cuerpo.evidencia = evidencia;
+  }
+  if (accion === "disputar") {
+    const motivo = texto(extra.motivo);
+    if (motivo) cuerpo.motivo = motivo;
   }
   return cuerpo;
 }

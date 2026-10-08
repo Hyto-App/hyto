@@ -320,7 +320,7 @@ export function pasosDePago(
 }
 
 const PASOS_BLOQUEO = new Set(["desplegar", "fondear"]);
-const PASOS_PAGO = new Set(["marcar", "aprobar", "liberar"]);
+const PASOS_PAGO = new Set(["marcar", "aprobar", "liberar", "aprobarLiberar", "disputar"]);
 
 export type CajaFallo = "bloqueo" | "pago";
 
@@ -339,10 +339,14 @@ export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "e
   return caja === "bloqueo" ? aviso : texto(idioma, "pago.noUsdcLeft");
 }
 
-export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar", idioma: Idioma = "en"): string {
+export function frasePaso(
+  accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar" | "aprobarLiberar" | "disputar",
+  idioma: Idioma = "en",
+): string {
   if (accion === "desplegar") return texto(idioma, "pago.settingUpLong");
   if (accion === "fondear") return texto(idioma, "pago.lockingLong");
   if (accion === "marcar") return texto(idioma, "pago.recording");
   if (accion === "aprobar") return texto(idioma, "pago.approvingLong");
+  if (accion === "disputar") return texto(idioma, "pago.disputingLong");
   return texto(idioma, "pago.sending");
 }

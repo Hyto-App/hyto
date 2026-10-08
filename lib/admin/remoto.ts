@@ -1,5 +1,6 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import { cifraConfirmada } from "@/lib/escrow/monto";
+import { hitoMarcadoDe } from "@/lib/escrow/reserva";
 import type { IntentoAnterior, LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
@@ -29,6 +30,22 @@ export function escrowFondeado(json: unknown): boolean | null {
   return saldoPositivo(escrow.balance);
 }
 
+export async function leerEstadoEscrow(
+  contrato: string,
+  opciones: OpcionesRemoto = {},
+): Promise<{ fondeado: boolean | null; hitoMarcado: boolean }> {
+  const id = contrato.trim();
+  if (!id) return { fondeado: null, hitoMarcado: false };
+  try {
+    const respuesta = await pedir(opciones.fetch ?? fetch, `/api/escrow/${encodeURIComponent(id)}`);
+    if (!respuesta.ok) return { fondeado: null, hitoMarcado: false };
+    const json: unknown = await respuesta.json();
+    return { fondeado: escrowFondeado(json), hitoMarcado: hitoMarcadoDe(json) };
+  } catch {
+    return { fondeado: null, hitoMarcado: false };
+  }
+}
+
 export async function leerFondeo(contrato: string, opciones: OpcionesRemoto = {}): Promise<boolean | null> {
   const id = contrato.trim();
   if (!id) return null;
@@ -50,6 +67,7 @@ export function botonesRevision(
   tarea: TareaAdmin,
   real: boolean,
   escrow: { contrato: string | null; fondeado: boolean | null } = { contrato: null, fondeado: null },
+  extra: { proteger?: boolean; hitoMarcado?: boolean; pagoDirecto?: boolean } = {},
 ): {
   desplegar: boolean;
   fondear: boolean;
@@ -73,12 +91,14 @@ export function botonesRevision(
   // A release hash on an unpaid task means the release is on the ledger and the read model is behind.
   const abierto = tarea.estado !== "pagado" && !pagoPendiente(tarea);
   const conContrato = Boolean(escrow.contrato);
-  const bloqueado = tarea.tipo === "reembolso" && montoDeVista(tarea) === null;
+  const bloqueado = !extra.proteger && tarea.tipo === "reembolso" && montoDeVista(tarea) === null;
+  const pagarBase = !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true;
+  const pagoListo = !extra.proteger || (extra.hitoMarcado === true && extra.pagoDirecto !== false);
   return {
     desplegar: !bloqueado && abierto && !conContrato,
     fondear: !bloqueado && abierto && conContrato && escrow.fondeado === false,
     // A percentage never approves the payment. Pay follows the escrow balance.
-    pagar: !bloqueado && abierto && tarea.estado === "en revisión" && conContrato && escrow.fondeado === true,
+    pagar: pagarBase && pagoListo,
     // Unknown balance: funding again could lock the budget twice and paying could release from an empty escrow. Only re-read.
     verificarFondo: abierto && conContrato && escrow.fondeado === null,
     aprobarLocal: false,
