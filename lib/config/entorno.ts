@@ -123,6 +123,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
+    nombre: "HYTO_MILE_FALTANTES_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on takes \"is something missing?\" from Groq's faltantes list and tightens that list in the vision prompt: only what the task asks for, nothing already described as present, bokeh does not make the photo unreadable, and printed names are copied exactly. Unset or anything else keeps Laya's v4 and the current prompt.",
+  },
+  {
     nombre: "HYTO_MILE_INTENTOS",
     ambito: "servidor",
     requerida: false,
