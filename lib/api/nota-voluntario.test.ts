@@ -169,6 +169,7 @@ type Registro = {
   origen?: string;
   etapa?: string | null;
   enviadaEn?: string | null;
+  ultimaEvidenciaId?: string | null;
   evento?: string | null;
   notas?: unknown[];
 };
