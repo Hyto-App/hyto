@@ -20,6 +20,7 @@ import {
   olvidarRetorno,
   rutaRetornoSegura,
 } from "@/lib/sesion/retorno";
+import { guardarRetoCorreo, leerRetoCorreo, nonceDe, olvidarRetoCorreo, ponerNonce } from "@/lib/auth/retoCorreo";
 import {
   AVISO_CODIGO_INVALIDO,
   AVISO_CODIGO_VENCIDO,
@@ -125,12 +126,15 @@ export function Entrar({
   confirmarCodigo = entrarConCodigo as unknown as ConfirmarCodigo,
   esperaMinima = ENVIO_MINIMO_MS,
   abrirLogin = false,
+  tituloDocumento = false,
   atiendeUrl = true,
   politica: cargarPolitica = politicaDeCavos,
 }: {
   demoHabilitado?: boolean;
   /** Start on the email step instead of the sign up / sign in cards. */
   abrirLogin?: boolean;
+  /** The sign-in page owns the browser tab. Account embeds Entrar and must not rename it. */
+  tituloDocumento?: boolean;
   crear?: () => Promise<AuthMinimo | null>;
   confirmarCodigo?: ConfirmarCodigo;
   /** Shortest time the sending state stays on screen, so it never flashes. */
@@ -179,8 +183,14 @@ export function Entrar({
   const reducido = useMovimientoReducido();
 
   useEffect(() => {
+    if (!tituloDocumento) return;
+    document.title = t("entrar.tituloPestana");
+  }, [tituloDocumento, t]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ingreso = atiendeUrl && params.get("signin") === "1";
+    const reto = leerRetoCorreo();
     const desdeUrl = rutaRetornoSegura(params.get("next"));
     if (desdeUrl) {
       setRetorno(desdeUrl);
@@ -189,7 +199,20 @@ export function Entrar({
       // Google/Apple return lands on / with no next query; recover it from sessionStorage.
       setRetorno(leerRetorno());
     }
-    if (ingreso) {
+    let vivo = true;
+    if (reto) {
+      setCorreo(reto.email);
+      setPestana(reto.intencion);
+      setPedirIngreso(true);
+      setFase("codigo");
+      void crear()
+        .then((auth) => {
+          if (!vivo || !auth || authRef.current) return;
+          ponerNonce(auth, reto.nonce);
+          authRef.current = auth;
+        })
+        .catch(() => undefined);
+    } else if (ingreso) {
       setPedirIngreso(true);
       setPestana("signin");
       setFase("correo");
@@ -203,12 +226,18 @@ export function Entrar({
           setAlertaRegreso(true);
           setPedirIngreso(true);
           setFase("correo");
+          olvidarRetoCorreo();
         }
       } catch {
         // Leave the form as it is.
       }
     }
     setDireccion(leerMemoriaAdmin().direccion);
+    return () => {
+      vivo = false;
+    };
+    // crear is the auth factory from this render; a later one must not restart the restore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -240,7 +269,10 @@ export function Entrar({
     function tecla(evento: KeyboardEvent) {
       if (evento.key === "Escape") {
         // On success the session is open and the hand-off to tasks is running.
-        if (fase !== "exito") setFase("inicio");
+        if (fase !== "exito") {
+          if (fase === "codigo" || fase === "enlace") olvidarRetoCorreo();
+          setFase("inicio");
+        }
         return;
       }
       if (evento.key !== "Tab" || !nodo) return;
@@ -357,6 +389,7 @@ export function Entrar({
   }
 
   function volverAlCorreo() {
+    olvidarRetoCorreo();
     setAviso(null);
     setDigitos(CODIGO_VACIO);
     setFase("correo");
@@ -491,6 +524,8 @@ export function Entrar({
       }
       await Promise.all([auth.sendOtp(email), pausa(esperaMinima)]);
       authRef.current = auth;
+      const nonce = nonceDe(auth);
+      if (nonce) guardarRetoCorreo({ email, nonce, intencion: pestana });
       setCorreo(email);
       setDigitos(CODIGO_VACIO);
       setFase("codigo");
@@ -528,18 +563,30 @@ export function Entrar({
     void enviarCodigo();
   }
 
+  async function authDelCodigo(): Promise<AuthMinimo | null> {
+    if (authRef.current) return authRef.current;
+    const reto = leerRetoCorreo();
+    if (!reto) return null;
+    const auth = await crear();
+    if (!auth) return null;
+    ponerNonce(auth, reto.nonce);
+    authRef.current = auth;
+    return auth;
+  }
+
   async function confirmar(codigo = digitos.join("")) {
     if (enCurso.current) return;
-    const auth = authRef.current;
-    if (!auth) {
-      setFase("correo");
-      return;
-    }
     enCurso.current = true;
     setAviso(null);
     setOcupado("codigo");
     try {
+      const auth = await authDelCodigo();
+      if (!auth) {
+        setFase("correo");
+        return;
+      }
       const resultado = guardarEnNavegador(await confirmarCodigo(auth, correo, codigo.trim(), pestana));
+      if (resultado.guardada) olvidarRetoCorreo();
       if (!resultado.guardada || !resultado.direccion) {
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
@@ -834,7 +881,16 @@ export function Entrar({
       <Escena />
       <div className="hyto-login-marco">
         <header className="hyto-login-top">
-          <button type="button" className="hyto-login-logo" onClick={() => fase !== "exito" && setFase("inicio")} aria-label={t("entrar.close")}>
+          <button
+            type="button"
+            className="hyto-login-logo"
+            onClick={() => {
+              if (fase === "exito") return;
+              if (fase === "codigo" || fase === "enlace") olvidarRetoCorreo();
+              setFase("inicio");
+            }}
+            aria-label={t("entrar.close")}
+          >
             <Logo />
           </button>
           <SelectorIdiomaMenu className="hyto-login-idioma" />
