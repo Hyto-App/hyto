@@ -156,7 +156,7 @@ test("la tarjeta de Cuenta agrega la llave de acceso y dice cómo usarla en otro
   }
 });
 
-test("la tarjeta de Cuenta en español usa tuteo y el nombre del botón del navegador", async () => {
+test("la tarjeta de Cuenta en español usa usted y el nombre del botón del navegador", async () => {
   limpiarPantalla();
   try {
     await montar(

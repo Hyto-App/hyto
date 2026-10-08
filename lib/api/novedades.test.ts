@@ -81,6 +81,20 @@ describe("novedades del organizador", { concurrency: false }, () => {
     assert.equal(cuerpo.cambios.find((item) => item.tareaId === "stand")?.origen, "scout");
   });
 
+  test("cuando la persona abre la tarea y se guarda su cuenta, el cursor cambia sin mandar la dirección", async () => {
+    const almacen = crearMemoria();
+    await asegurarSemilla(almacen);
+    await almacen.asignarOrganizador("zeek", "organizador");
+    const antes = await leer(almacen);
+    const cuenta = "G" + "F".repeat(55);
+    await almacen.actualizarTarea("bienvenida", { walletCobro: cuenta });
+    const respuesta = await novedadesHttp(almacen, organizador(), "zeek", pedido("/api/eventos/zeek/novedades"));
+    const texto = await respuesta.text();
+    const cuerpo = JSON.parse(texto) as { cursor: string };
+    assert.notEqual(cuerpo.cursor, antes.cursor);
+    assert.equal(texto.includes(cuenta), false);
+  });
+
   test("el sondeo no reescribe el estado de una tarea de ejemplo", async () => {
     const almacen = crearMemoria();
     await asegurarSemilla(almacen);

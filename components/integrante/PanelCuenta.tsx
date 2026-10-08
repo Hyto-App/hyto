@@ -90,6 +90,8 @@ export function PanelCuenta() {
         </section>
         <ComoCobrar />
         <CostoDePagar />
+        {/* The access key is added in this browser through Cavos. It does not read /api/cuenta, so it stays when that read fails. */}
+        <PasskeyCuenta />
       </div>
     );
   }
