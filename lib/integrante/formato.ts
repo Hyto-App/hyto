@@ -1,4 +1,5 @@
-import { normalizarMonto } from "@/lib/admin/vista";
+import { detalleMonto, normalizarMonto } from "@/lib/admin/vista";
+import type { TareaAdmin } from "@/lib/admin/tipos";
 import { cifraConfirmada } from "@/lib/escrow/monto";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -90,4 +91,38 @@ export function montoAsegurado(
   }
   const normal = normalizarMonto(tarea.monto);
   return normal ? formatearMonto(normal, idioma) : "";
+}
+
+type MontoLista = {
+  estado?: string;
+  tipo: "trabajo" | "reembolso";
+  monto: string;
+  tope: string | null;
+  montoConfirmado?: string | null;
+  montoRevisado?: string | null;
+};
+
+/**
+ * Amount on an event task row. A paid task shows what was paid.
+ * A reimbursement that paid less than its cap also shows that cap.
+ */
+export function lineaMontoTarea(
+  tarea: MontoLista,
+  idioma: Idioma = "en",
+  etiquetaLimite?: (monto: string) => string,
+): string {
+  if (tarea.estado !== "pagado") return montoDeTarea(tarea, idioma);
+  const detalle = detalleMonto({
+    tipo: tarea.tipo,
+    monto: tarea.monto,
+    tope: tarea.tope,
+    estado: "pagado",
+    montoConfirmado: tarea.montoConfirmado ?? null,
+    montoRevisado: tarea.montoRevisado ?? null,
+  } as TareaAdmin);
+  const cifra = formatearMonto(detalle.cifra, idioma);
+  if (!cifra) return montoDeTarea(tarea, idioma);
+  const limite = detalle.tope && detalle.tope !== detalle.cifra ? formatearMonto(detalle.tope, idioma) : "";
+  if (limite && etiquetaLimite) return `${cifra} · ${etiquetaLimite(limite)}`;
+  return cifra;
 }

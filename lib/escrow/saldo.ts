@@ -65,6 +65,33 @@ export function conReserva(monto: string): string | null {
   return desdeUnidades(base + reserva);
 }
 
+/**
+ * The create-event button uses this before it asks the server.
+ * Null means the balance is unknown or already covers the tasks plus the reserve.
+ */
+export function faltaParaCrear(saldo: string | null, montoTareas: string): { necesario: string; reserva: string } | null {
+  if (saldo === null) return null;
+  const base = aUnidades(montoTareas);
+  if (base === null || base <= 0n) return null;
+  const necesario = conReserva(montoTareas);
+  if (!necesario || alcanza(saldo, necesario)) return null;
+  return { necesario, reserva: RESERVA_USDC };
+}
+
+/** Balance already on the ledger, or null when it cannot be read. Does not create anything. */
+export async function saldoCreacion(
+  wallet: string | null | undefined,
+  leer: LectorSaldo = leerSaldoUsdc,
+): Promise<string | null> {
+  const limpia = wallet?.trim() ?? "";
+  if (!/^G[A-Z2-7]{55}$/.test(limpia)) return null;
+  try {
+    return (await leer(limpia)).saldo;
+  } catch {
+    return null;
+  }
+}
+
 export function alcanza(saldo: string, necesario: string): boolean {
   const disponible = aUnidades(saldo);
   const pedido = aUnidades(necesario);
@@ -102,7 +129,7 @@ export async function rechazoSiFondos(wallet: string, monto: string, leer: Lecto
     if (lectura.saldo === null) return Response.json({ aviso: "This wallet is not on the network yet." }, { status: 400 });
     if (!alcanza(lectura.saldo, necesario)) {
       return Response.json(
-        { aviso: `Your USDC balance does not cover ${necesario} USDC (this amount plus a ${RESERVA_USDC} USDC reserve).` },
+        { aviso: `Your balance does not cover US$${necesario} (this amount plus a US$${RESERVA_USDC} reserve).` },
         { status: 400 },
       );
     }

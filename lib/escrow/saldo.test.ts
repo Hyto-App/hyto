@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { USDC } from "@/lib/integrante/identidades";
-import { alcanza, conReserva, leerSaldoUsdc, rechazoSiFondos, redStellar, saldoUsdcDe, sumarMontos, urlHorizon, usarLectorSaldo } from "./saldo";
+import { alcanza, conReserva, faltaParaCrear, leerSaldoUsdc, rechazoSiFondos, redStellar, saldoCreacion, saldoUsdcDe, sumarMontos, urlHorizon, usarLectorSaldo } from "./saldo";
 
 test("la red sigue en testnet salvo HYTO_STELLAR_NETWORK", () => {
   assert.equal(redStellar({ ...process.env, HYTO_STELLAR_NETWORK: "" }), "testnet");
@@ -25,7 +25,9 @@ test("rechazoSiFondos pide wallet, red y saldo", async () => {
   assert.equal((await rechazoSiFondos("G".padEnd(56, "A"), "1", async () => ({ saldo: null })))?.status, 400);
   const corto = await rechazoSiFondos("G".padEnd(56, "A"), "10", async () => ({ saldo: "10" }));
   assert.equal(corto?.status, 400);
-  assert.match(await corto!.json().then((cuerpo: { aviso: string }) => cuerpo.aviso), /11 USDC/);
+  const avisoCorto = await corto!.json().then((cuerpo: { aviso: string }) => cuerpo.aviso);
+  assert.match(avisoCorto, /US\$11/);
+  assert.equal(avisoCorto.includes("USDC"), false);
   assert.equal(await rechazoSiFondos("G".padEnd(56, "A"), "10", async () => ({ saldo: "11" })), null);
   usarLectorSaldo(async () => {
     throw new Error("red");
@@ -35,6 +37,24 @@ test("rechazoSiFondos pide wallet, red y saldo", async () => {
   } finally {
     usarLectorSaldo(null);
   }
+});
+
+test("crear un evento no pide el alta si el saldo no cubre el total más la reserva", async () => {
+  assert.equal(faltaParaCrear(null, "30"), null);
+  assert.equal(faltaParaCrear("0", "0"), null);
+  assert.deepEqual(faltaParaCrear("10", "30"), { necesario: "31", reserva: "1" });
+  assert.equal(faltaParaCrear("31", "30"), null);
+  assert.equal(faltaParaCrear("31.5", "30"), null);
+  const cuenta = "G".padEnd(56, "A");
+  assert.equal(await saldoCreacion("no-es-cuenta", async () => ({ saldo: "1" })), null);
+  assert.equal(await saldoCreacion(cuenta, async () => ({ saldo: "4" })), "4");
+  assert.equal(await saldoCreacion(cuenta, async () => ({ saldo: null })), null);
+  assert.equal(
+    await saldoCreacion(cuenta, async () => {
+      throw new Error("red");
+    }),
+    null,
+  );
 });
 
 test("Horizon 404 es una cuenta que no está en la red", async () => {

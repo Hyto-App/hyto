@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { montoDeTarea } from "@/lib/integrante/formato";
+import { lineaMontoTarea } from "@/lib/integrante/formato";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -22,6 +22,8 @@ export type FilaTareaEvento = {
   dificultad: DificultadTarea | null;
   bloqueo: string | null;
   tieneFoto: boolean;
+  montoConfirmado?: string | null;
+  montoRevisado?: string | null;
 };
 
 type Borrador = {
@@ -180,7 +182,7 @@ export function TareasEvento({
               <div className="min-w-0">
                 <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {montoDeTarea(tarea, idioma)}
+                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
                 </p>
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">

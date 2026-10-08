@@ -584,6 +584,7 @@ export const en = {
     retry: "Retry review",
     retrying: "Retrying…",
     retryFail: "The review could not be retried.",
+    paidList: "Paid tasks",
   },
   numeros: {
     budget: "Budget",
@@ -886,7 +887,7 @@ export const en = {
     pagosNoDisponibles: "Payments aren't available right now. Ask whoever runs Hyto.",
     yaPagada: "This task is already paid.",
     saldoInsuficiente: "There isn't enough money set aside yet. Finish locking the budget, then pay.",
-    saldoNoCubre: "Your USDC balance does not cover {n} USDC (this amount plus a {reserva} USDC reserve).",
+    saldoNoCubre: "Your balance does not cover US${n} (this amount plus a US${reserva} reserve).",
     codigoNo: "That code does not match. Check your email and try again.",
     codigoVencio: "That code expired. Request another one.",
     sinRed: "No connection. Check the network and try again.",
@@ -1730,6 +1731,7 @@ export const es: Rama<typeof en> = {
     retry: "Reintentar la revisión",
     retrying: "Reintentando…",
     retryFail: "No se pudo reintentar la revisión.",
+    paidList: "Tareas pagadas",
   },
   numeros: {
     budget: "Presupuesto",
@@ -2032,7 +2034,7 @@ export const es: Rama<typeof en> = {
     pagosNoDisponibles: "Los pagos no están disponibles ahora. Avísale a quien administra Hyto.",
     yaPagada: "Esta tarea ya está pagada.",
     saldoInsuficiente: "Todavía no hay suficiente dinero apartado. Termina de bloquear el presupuesto y después paga.",
-    saldoNoCubre: "Tu saldo de USDC no cubre {n} USDC (este monto más una reserva de {reserva} USDC).",
+    saldoNoCubre: "Tu saldo no cubre US${n} (este monto más una reserva de US${reserva}).",
     codigoNo: "Ese código no coincide. Revisa tu correo e intenta de nuevo.",
     codigoVencio: "Ese código venció. Pide otro.",
     sinRed: "No hay conexión. Revisa la red e intenta de nuevo.",

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, montoAsegurado, montoDeTarea } from "./formato";
+import { acortarDireccion, formatearFecha, formatearHora, formatearMonto, lineaMontoTarea, montoAsegurado, montoDeTarea } from "./formato";
 
 test("montos y fechas del integrante", () => {
   assert.equal(formatearMonto("20"), "US$20");
@@ -31,6 +31,36 @@ test("montos y fechas del integrante", () => {
   assert.equal(montoAsegurado({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }).includes("Up to"), false);
   assert.equal(montoAsegurado({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: null }), "Up to US$15");
   assert.equal(montoAsegurado({ tipo: "trabajo", monto: "20", tope: null }), "US$20");
+  const limite = (monto: string) => `Limit ${monto}`;
+  assert.equal(
+    lineaMontoTarea(
+      { estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48", montoRevisado: "12.48" },
+      "en",
+      limite,
+    ),
+    "US$12.48 · Limit US$15",
+  );
+  assert.equal(
+    lineaMontoTarea({ estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }, "en", limite).includes("Up to"),
+    false,
+  );
+  assert.equal(
+    lineaMontoTarea({ estado: "en revisión", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }, "en", limite),
+    "Up to US$15",
+  );
+  assert.equal(lineaMontoTarea({ estado: "pagado", tipo: "trabajo", monto: "20", tope: null }, "en", limite), "US$20");
+  assert.equal(
+    lineaMontoTarea({ estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "15" }, "en", limite),
+    "US$15",
+  );
+  assert.equal(
+    lineaMontoTarea(
+      { estado: "pagado", tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" },
+      "es",
+      (monto) => `Límite ${monto}`,
+    ),
+    "US$12,48 · Límite US$15",
+  );
   assert.equal(acortarDireccion("GABCDE1234567890WXYZ"), "GABCDE…WXYZ");
 });
 
