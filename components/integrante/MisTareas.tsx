@@ -7,6 +7,7 @@ import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { claseBoton } from "@/components/ui/Boton";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Icono } from "@/components/ui/Marca";
@@ -307,7 +308,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <MileAnimada estado="error-subida" tamano={96} />
           <h2>{claro(error)}</h2>
           <div className="hyto-estado-vacio-acciones">
-            <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
+            <button type="button" className={claseBoton("primario", true)} onClick={() => setIntento((actual) => actual + 1)}>
               {t("comunes.tryAgain")}
             </button>
           </div>
@@ -320,10 +321,10 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <h2>{t("tareas.emptyTitle")}</h2>
           <p>{t("tareas.emptyBody")}</p>
           <div className="hyto-estado-vacio-acciones">
-            <Link href="/join" className="hyto-btn hyto-btn-grande">
+            <Link href="/join" className={claseBoton("primario", true)}>
               {t("tareas.join")}
             </Link>
-            <Link href="/eventos" className="hyto-btn-line">
+            <Link href="/eventos" className={claseBoton("fantasma")}>
               {t("tareas.viewEvents")}
             </Link>
           </div>
@@ -486,7 +487,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <>
-                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn hyto-btn-grande">
+                              <Link href={`/tareas/${tarea.id}`} className={claseBoton("primario", true)}>
                                 <Icono nombre="camera" tamano={18} />
                                 {tarea.tipo === "reembolso" ? (
                                   <>
@@ -497,12 +498,12 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                                   t("tareas.takeAnotherPhoto")
                                 )}
                               </Link>
-                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line">
+                              <Link href={`/tareas/${tarea.id}`} className={claseBoton("secundario")}>
                                 {t("tareas.view")}
                               </Link>
                             </>
                           ) : tarea.estado === "pendiente" ? (
-                            <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className={abierta ? claseBoton("primario", true) : claseBoton("secundario")}>
                               {abierta ? (
                                 <>
                                   <Icono nombre="camera" tamano={18} />
@@ -513,7 +514,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               )}
                             </Link>
                           ) : (
-                            <Link href={`/tareas/${tarea.id}`} className={reintento ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className={reintento ? claseBoton("primario", true) : claseBoton("fantasma")}>
                               {reintento ? t("comunes.tryAgain") : t("tareas.view")}
                             </Link>
                           )}
