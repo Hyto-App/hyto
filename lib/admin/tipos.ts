@@ -15,6 +15,15 @@ export type LecturaVisible = {
   comercio: string | null;
 };
 
+/** Mile's explanation for a photo that is no longer the current one. */
+export type IntentoAnterior = {
+  /** 1 for the first photo sent. */
+  numero: number;
+  veredicto: Veredicto | null;
+  nota: number | null;
+  frase: string | null;
+};
+
 export type TareaAdmin = {
   id: string;
   titulo: string;
@@ -41,6 +50,8 @@ export type TareaAdmin = {
   lectura?: LecturaVisible | null;
   /** Self-written volunteer profile. Absent unless HYTO_PERFIL_VOLUNTARIO is on and the person filled it in. */
   perfilVoluntario?: { experiencia: string | null; etiquetas: string[] };
+  /** Earlier photos with a verdict, oldest first. Empty or missing when there is only one attempt. */
+  intentosAnteriores?: IntentoAnterior[];
 };
 
 export type TareaCreada = {

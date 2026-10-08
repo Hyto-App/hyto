@@ -6,7 +6,7 @@ import { ajustarParaVision } from "@/lib/evidencia/vision";
 import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
 import { armarVeredicto, cerrar, desdeFallo, stubLaya, type Descripcion, type ResultadoRevision } from "./armar";
-import type { ContextoEvento } from "./contexto-evento";
+import { condicionParaLaya, type ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
 import { preguntarLaya, type LlamadaLaya } from "./laya";
@@ -111,7 +111,14 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
         if (!(error instanceof FalloRevision)) throw error;
       }
     }
-    const senales = await preguntarLaya(contexto.layaUrl, paraLaya, tarea.condicion, fetchImpl, undefined, llamarLaya);
+    const senales = await preguntarLaya(
+      contexto.layaUrl,
+      paraLaya,
+      condicionParaLaya(tarea.condicion, contexto.evento),
+      fetchImpl,
+      undefined,
+      llamarLaya,
+    );
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senales, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;

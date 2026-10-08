@@ -1,6 +1,6 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import { cifraConfirmada } from "@/lib/escrow/monto";
-import type { LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
+import type { IntentoAnterior, LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota, SeveridadNota } from "@/lib/revision/razones";
@@ -291,6 +291,7 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     etiquetas: leerEtiquetas(datos.etiquetas),
     lectura: leerLectura(datos.lectura),
     ...perfilDe(datos.perfilVoluntario),
+    intentosAnteriores: leerIntentos(datos.intentosAnteriores),
   };
 }
 
@@ -306,6 +307,18 @@ function leerPerfilVoluntario(valor: unknown): { experiencia: string | null; eti
   const etiquetas = Array.isArray(datos.etiquetas) ? datos.etiquetas.filter((item): item is string => typeof item === "string") : [];
   if (!experiencia && etiquetas.length === 0) return null;
   return { experiencia, etiquetas };
+}
+
+function leerIntentos(valor: unknown): IntentoAnterior[] {
+  if (!Array.isArray(valor)) return [];
+  return valor.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const datos = item as Record<string, unknown>;
+    const numero = typeof datos.numero === "number" && Number.isInteger(datos.numero) && datos.numero > 0 ? datos.numero : null;
+    if (numero === null) return [];
+    const nota = notaDeTexto(datos.nota);
+    return [{ numero, veredicto: nota !== null ? etiquetaDesdeNota(nota) : veredictoDe(datos.veredicto), nota, frase: texto(datos.frase) }];
+  });
 }
 
 function leerLectura(valor: unknown): LecturaVisible | null {

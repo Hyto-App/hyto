@@ -69,6 +69,8 @@ export type Almacen = {
     cambio: Partial<Pick<EvidenciaFila, "monto" | "fecha" | "montoConfirmado" | "motivoCopia" | "creadaEn">>,
   ): Promise<void>;
   ultimaEvidencia(tareaId: string): Promise<EvidenciaFila | null>;
+  /** Every photo sent for the task, oldest first. */
+  listarEvidencias(tareaId: string): Promise<EvidenciaFila[]>;
   evidenciaPorSha256(sha256: string): Promise<EvidenciaFila | null>;
   evidenciasCercanas(
     phash: string,
