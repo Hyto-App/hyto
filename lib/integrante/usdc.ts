@@ -1,4 +1,8 @@
+import { bajarCapasParaCavos } from "@/lib/escrow/capaCavos";
+import { esperarCavos } from "@/lib/escrow/firmarCliente";
+import { AVISO_USDC_LENTO } from "./avisosUsdc";
 import { USDC } from "./identidades";
+import { TOPE_CAVOS_MS } from "./prepararUsdc";
 import type { BilleteraCobro, CuentaLista } from "./tipos";
 
 type Saldo = {
@@ -90,12 +94,20 @@ export async function asegurarCobroUsdc(
   }
 
   if (billetera.status === "undeployed") {
+    const restaurar = bajarCapasParaCavos();
     try {
       // La cuenta patrocinada nace con 0 XLM. Ese pago de 1 stroop a sí misma
       // puede fallar recién creada; la trustline no depende de él.
-      await billetera.execute(1n, billetera.address);
+      await esperarCavos(billetera.execute(1n, billetera.address), TOPE_CAVOS_MS);
     } catch (error) {
-      if (billetera.status === "undeployed") throw error;
+      if (billetera.status === "undeployed") {
+        if (error instanceof Error && (error.message === AVISO_USDC_LENTO || /cancelled the confirmation/i.test(error.message))) {
+          return { direccion: billetera.address, usdcListo: false, detalle: error.message };
+        }
+        throw error;
+      }
+    } finally {
+      restaurar();
     }
   }
 
@@ -103,6 +115,16 @@ export async function asegurarCobroUsdc(
     return { direccion: billetera.address, usdcListo: true, detalle: null };
   }
 
-  await billetera.addTrustline({ code: USDC.code, issuer: USDC.issuer });
-  return { direccion: billetera.address, usdcListo: true, detalle: null };
+  const restaurar = bajarCapasParaCavos();
+  try {
+    await esperarCavos(billetera.addTrustline({ code: USDC.code, issuer: USDC.issuer }), TOPE_CAVOS_MS);
+    return { direccion: billetera.address, usdcListo: true, detalle: null };
+  } catch (error) {
+    if (error instanceof Error && (error.message === AVISO_USDC_LENTO || /cancelled the confirmation/i.test(error.message))) {
+      return { direccion: billetera.address, usdcListo: false, detalle: error.message };
+    }
+    throw error;
+  } finally {
+    restaurar();
+  }
 }

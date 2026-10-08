@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
-import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "../escrow/monto";
+import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE } from "../escrow/monto";
 import { confirmarMontoHttp } from "./confirmar-monto";
 
 test("confirmar un reembolso guarda el monto aparte de la lectura", async () => {
@@ -14,10 +14,10 @@ test("confirmar un reembolso guarda el monto aparte de la lectura", async () => 
   assert.equal(vacio.status, 400);
   assert.equal(((await vacio.json()) as { aviso: string }).aviso, AVISO_MONTO_INVALIDO);
 
-  const alto = await confirmarMontoHttp(almacen, "comida", { monto: "16" });
-  assert.equal(alto.status, 400);
-  assert.equal(((await alto.json()) as { aviso: string }).aviso, AVISO_MONTO_TOPE);
-  assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.montoConfirmado, null);
+  const alto = await confirmarMontoHttp(almacen, "comida", { monto: "15.74" });
+  assert.equal(alto.status, 200);
+  assert.equal(((await alto.json()) as { montoConfirmado: string }).montoConfirmado, "15");
+  assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.montoConfirmado, "15");
   assert.equal((await almacen.leerEvidencia("ejemplo-comida"))?.monto, "20");
 
   const listo = await confirmarMontoHttp(almacen, "comida", { monto: "12,40" });

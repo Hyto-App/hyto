@@ -13,6 +13,7 @@ import {
   firmanteDe,
   traducirFirma,
 } from "@/lib/escrow/firmarCliente";
+import { bajarCapasParaCavos } from "@/lib/escrow/capaCavos";
 import { AVISO_USDC_LENTO, AVISO_USDC_OTRA_CUENTA, AVISO_USDC_SIN_XLM, CODIGO_USDC_SIN_XLM } from "./avisosUsdc";
 import { USDC } from "./identidades";
 
@@ -79,6 +80,7 @@ export async function prepararUsdcDeSesion(opciones: OpcionesUsdc = {}): Promise
 
 /** The Cavos relayer pays the reserve and the fee of a sponsored trustline, as it does at sign up. */
 async function patrocinar(billetera: BilleteraSesion, fetchImpl: typeof fetch, topeMs: number): Promise<UsdcListo> {
+  const restaurar = bajarCapasParaCavos();
   try {
     const hash = await conTope(billetera.addTrustline({ code: USDC.code, issuer: USDC.issuer }), topeMs);
     return { hash: texto(hash) };
@@ -90,14 +92,19 @@ async function patrocinar(billetera: BilleteraSesion, fetchImpl: typeof fetch, t
     }
     const visible = traducir(error);
     throw new Error(visible === AVISO_CONFIRMAR || visible === AVISO_XLM ? AVISO_USDC_SIN_XLM : visible);
+  } finally {
+    restaurar();
   }
 }
 
 async function enCavos<T>(paso: () => Promise<T>, topeMs: number): Promise<T> {
+  const restaurar = bajarCapasParaCavos();
   try {
     return await conTope(paso(), topeMs);
   } catch (error) {
     throw new Error(traducir(error));
+  } finally {
+    restaurar();
   }
 }
 
