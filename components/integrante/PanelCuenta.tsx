@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { acortarDireccion, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarNeto, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
 import type { Clave } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
@@ -392,7 +392,9 @@ function Recientes({ orgullo, muestra }: { orgullo: Orgullo; muestra: boolean })
                     {tarea.pagadoEn ? ` · ${formatearFecha(tarea.pagadoEn, idioma)}` : ""}
                   </p>
                 </div>
-                <p className="hyto-amount shrink-0">{tarea.monto ? formatearRecibido(tarea.monto, idioma) : "—"}</p>
+                <p className="hyto-amount max-w-[16rem] shrink text-right text-sm leading-5">
+                  {tarea.monto ? explicarNeto(tarea.monto, idioma) : "—"}
+                </p>
               </>
             );
             if (muestra) {

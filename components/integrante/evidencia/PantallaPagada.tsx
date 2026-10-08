@@ -5,19 +5,23 @@ import { useEffect, useState } from "react";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { MileAnimada } from "@/components/ui/MileAnimada";
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { enlacePago } from "@/lib/admin/vista";
-import { clavePagoVisto, montoUsdc } from "@/lib/integrante/revision";
+import { explicarPago } from "@/lib/integrante/formato";
+import { clavePagoVisto } from "@/lib/integrante/revision";
 import type { Tarea } from "@/lib/integrante/tipos";
 
 /**
  * Paid screen (spec §7.5). The first open is the hero. Later opens are the summary.
- * The figure is the amount released to the wallet. A fee breakdown stays out of this screen.
+ * The figure is what arrived. The line under it says the amount set aside and the fee.
  */
 export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string }) {
   const t = useTexto();
+  const idioma = useIdioma();
   const [visto, setVisto] = useState<boolean | null>(null);
-  const monto = montoUsdc(tarea);
+  const pago = explicarPago(tarea, idioma);
+  const monto = pago?.frase ?? "";
+  const corto = pago?.corto ?? "";
   const nombre = tarea.organizador?.nombre?.trim() || "";
   const comprobante = enlacePago(tarea.hashPago);
 
@@ -47,7 +51,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
           <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
         </header>
         <Recibo monto={monto} comprobante={comprobante} />
-        <LineaRevision tarea={tarea} revisionCerrada monto={`${monto} USDC`} />
+        <LineaRevision tarea={tarea} revisionCerrada monto={monto} />
         <ActividadTarea tarea={tarea} />
         <div className="hyto-enviada-acciones">
           <Link href="/configuracion" className="hyto-btn hyto-btn-grande">
@@ -74,7 +78,8 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
       </div>
       <p className="hyto-burbuja">{nombre ? t("evidencia.youDidIt", { name: nombre }) : t("evidencia.youDidItNoName")}</p>
       <p className="hyto-pagada-kicker">{t("evidencia.youGotPaid")}</p>
-      <p className="hyto-pagada-monto">+{monto} USDC</p>
+      <p className="hyto-pagada-monto">+{corto}</p>
+      {monto && monto !== corto ? <p className="hyto-tarea-meta">{monto}</p> : null}
       <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
       <Recibo monto={monto} comprobante={comprobante} />
       <ActividadTarea tarea={tarea} />
@@ -96,11 +101,11 @@ function Recibo({ monto, comprobante }: { monto: string; comprobante: string | n
     <section className="hyto-tarjeta hyto-recibo">
       <div>
         <span>{t("evidencia.taskPayment")}</span>
-        <strong>{monto} USDC</strong>
+        <strong>{monto}</strong>
       </div>
       <div>
         <span>{t("evidencia.youReceived")}</span>
-        <strong className="hyto-recibo-lima">{monto} USDC</strong>
+        <strong className="hyto-recibo-lima">{monto}</strong>
       </div>
       {comprobante ? (
         <a href={comprobante} target="_blank" rel="noreferrer">

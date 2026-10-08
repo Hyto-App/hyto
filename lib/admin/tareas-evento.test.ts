@@ -57,7 +57,7 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
         ],
       }),
     );
-    assert.match(texto(), /Paid · US\$12\.48 · Limit US\$15/);
+    assert.match(texto(), /Paid · US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\) · Limit US\$15/);
     assert.equal(texto().includes("Up to US$15"), false);
     assert.match(texto(), /Pending · US\$20/);
     const bloqueo = document.querySelector('a[href="/revision/stand"]');
