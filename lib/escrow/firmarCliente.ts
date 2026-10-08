@@ -1,6 +1,6 @@
 import { asegurarIdentidadCavos } from "@/lib/auth/cavosSesion";
 import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
-import { AVISO_SIN_RESPALDO, esMetodoRecuperacion, esSinRespaldo } from "@/lib/auth/errores";
+import { AVISO_ORIGEN_CAVOS, AVISO_SIN_RESPALDO, esMetodoRecuperacion, esOrigenCavos, esSinRespaldo } from "@/lib/auth/errores";
 import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
 import { bajarCapasParaCavos, soltarDialogosModales } from "./capaCavos";
@@ -12,6 +12,8 @@ export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
 export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
+export const AVISO_SIN_CUENTA_FIRMA =
+  "This sign-in has no account to sign with. Sign in again on this site to continue.";
 export const AVISO_DISPOSITIVO =
   "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
 export const AVISO_PASSKEY =
@@ -308,6 +310,7 @@ function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
 export function traducirFirma(error: unknown): ErrorFirmaCliente {
   if (error instanceof ErrorFirmaCliente) return error;
   const textoError = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  if (esOrigenCavos(textoError)) return new ErrorFirmaCliente(AVISO_ORIGEN_CAVOS);
   if (esRechazo(textoError)) return new ErrorFirmaCliente(AVISO_RECHAZO);
   if (esXlm(textoError)) return new ErrorFirmaCliente(AVISO_XLM);
   if (esSesionCavos(textoError)) return new ErrorFirmaCliente(AVISO_SESION_CAVOS);

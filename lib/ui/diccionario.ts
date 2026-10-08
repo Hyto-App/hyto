@@ -905,6 +905,9 @@ export const en = {
     sinRespaldo:
       "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here.",
     noEntrar: "Could not sign in. Try again.",
+    origenCavos:
+      "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.",
+    sinCuentaFirma: "This sign-in has no account to sign with. Sign in again on this site to continue.",
     sinCuenta: "No Hyto account for this sign-in. Sign up first.",
     montoInvalido: "Enter an amount greater than zero, with up to two decimals.",
     montoTope: "The amount cannot be higher than the limit.",
@@ -2056,6 +2059,9 @@ export const es: Rama<typeof en> = {
     sinRespaldo:
       "Todavía no se puede abrir esta cuenta en este navegador. Abre Hyto una vez en el navegador donde la creaste y luego vuelve a intentarlo aquí.",
     noEntrar: "No se pudo entrar. Intenta de nuevo.",
+    origenCavos:
+      "Este sitio todavía no puede abrir la ventana para firmar. Usa el sitio principal de Hyto, o pídele a quien administra Hyto que permita esta dirección.",
+    sinCuentaFirma: "Este ingreso no tiene una cuenta para firmar. Vuelve a entrar en este sitio para continuar.",
     sinCuenta: "No encontramos una cuenta de Hyto con este correo. Crea una primero.",
     montoInvalido: "Escribe un monto mayor que cero, con hasta dos decimales.",
     montoTope: "El monto no puede ser mayor que el límite.",

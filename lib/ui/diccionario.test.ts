@@ -6,7 +6,8 @@ import {
   AVISO_PASSKEY_SIN_CLAVE,
   AVISO_PASSKEY_SIN_SOPORTE,
 } from "@/lib/auth/avisosPasskey";
-import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_ORIGEN_CAVOS } from "@/lib/auth/errores";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import {
   AVISO_USDC_FIRMANTE,
@@ -45,6 +46,8 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("en", "errores.receptorNoListo"), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(texto("en", "errores.horizonReceptor"), AVISO_HORIZON_RECEPTOR);
   assert.equal(texto("en", "errores.reingreso"), AVISO_REINGRESO);
+  assert.equal(texto("en", "errores.origenCavos"), AVISO_ORIGEN_CAVOS);
+  assert.equal(texto("en", "errores.sinCuentaFirma"), AVISO_SIN_CUENTA_FIRMA);
   assert.equal(texto("en", "errores.dispositivo"), AVISO_DISPOSITIVO);
   assert.equal(texto("en", "errores.passkey"), AVISO_PASSKEY);
   assert.equal(texto("en", "errores.passkeySinSoporte"), AVISO_PASSKEY_SIN_SOPORTE);

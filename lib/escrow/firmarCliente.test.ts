@@ -446,6 +446,16 @@ test("una firma que no contesta corta Setting up y un aborto no envía", async (
   assert.equal(red.llamadas.length, 1);
 });
 
+test("el vault que rechaza este sitio no se traduce como sesión vencida", async () => {
+  const { AVISO_ORIGEN_CAVOS } = await import("@/lib/auth/errores");
+  const error = traducirFirma(
+    new Error("kit/vault: add https://preview.example to this app's allowed web origins in the Cavos dashboard"),
+  );
+  assert.equal(error.message, AVISO_ORIGEN_CAVOS);
+  assert.equal(error.message.includes("expired"), false);
+  assert.equal(error.message.includes("preview.example"), false);
+});
+
 test("con la recuperación de Cavos (enclave), un navegador sin la llave pide entrar otra vez", async () => {
   const { AVISO_SIN_RESPALDO } = await import("@/lib/auth/errores");
   assert.equal(
