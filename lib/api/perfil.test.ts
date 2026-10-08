@@ -20,8 +20,11 @@ function conInterruptor(valor: string | undefined, trabajo: () => Promise<void>)
 
 test("el perfil solo se enciende con on", () => {
   assert.equal(perfilVoluntarioActivo({}), false);
+  assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "" }), false);
   assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "off" }), false);
   assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "true" }), false);
+  assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "1" }), false);
+  assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "yes" }), false);
   assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: "ON" }), true);
   assert.equal(perfilVoluntarioActivo({ HYTO_PERFIL_VOLUNTARIO: " on " }), true);
 });

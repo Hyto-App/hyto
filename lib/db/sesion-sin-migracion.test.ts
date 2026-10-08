@@ -155,6 +155,41 @@ test("el alta y el ingreso crean la sesión sin las columnas de 0010–0013", as
   assert.match(sqlUsuarios, /on conflict \("email"\) do update set "nombre" = excluded\."nombre", "rol" = excluded\."rol"/i);
 });
 
+test("el alta no nombra el perfil aunque HYTO_PERFIL_VOLUNTARIO esté on", async () => {
+  process.env.HYTO_PERFIL_VOLUNTARIO = "on";
+  delete process.env.HYTO_TIPO_CUENTA;
+  delete process.env.HYTO_COMUNIDADES;
+  delete process.env.HYTO_TABLON;
+  try {
+    const { almacen, consultas, usuarios, sesiones } = ledgerSinMigrar();
+    const alta = await crearSesionHttp(pedido("nuevo-perfil@hyto.app", "signup"), almacen);
+    assert.equal(alta.status, 200, consultas.join("\n"));
+    const cuerpo = (await alta.json()) as { nuevo: boolean; rol: string };
+    assert.equal(cuerpo.nuevo, true);
+    assert.equal(cuerpo.rol, "voluntario");
+    assert.deepEqual(Object.keys(usuarios[0] ?? {}).sort(), ["email", "id", "nombre", "rol"]);
+
+    const ingreso = await crearSesionHttp(pedido("nuevo-perfil@hyto.app", "signin"), almacen);
+    assert.equal(ingreso.status, 200, consultas.join("\n"));
+    assert.equal(((await ingreso.json()) as { nuevo: boolean }).nuevo, false);
+    assert.equal(sesiones.length, 2);
+
+    await almacen.guardarUsuario({
+      id: "u-guarda",
+      email: "guarda-perfil@hyto.app",
+      nombre: "Guarda",
+      rol: "voluntario",
+      experiencia: "Cocina",
+      etiquetas: ["puntual"],
+    });
+    const sqlUsuarios = consultas.filter((consulta) => consulta.includes('"usuarios"')).join("\n");
+    assert.doesNotMatch(sqlUsuarios, COLUMNAS_NUEVAS);
+    assert.equal(usuarios.some((fila) => fila.email === "guarda-perfil@hyto.app" && fila.experiencia === undefined), true);
+  } finally {
+    delete process.env.HYTO_PERFIL_VOLUNTARIO;
+  }
+});
+
 test("el ingreso no nombra columnas de features aunque el interruptor esté encendido", async () => {
   process.env.HYTO_TIPO_CUENTA = "on";
   process.env.HYTO_PERFIL_VOLUNTARIO = "on";

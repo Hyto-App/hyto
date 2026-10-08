@@ -5,9 +5,18 @@ import { createElement } from "react";
 import { act } from "react";
 import { EditorPerfil } from "@/components/perfil/Editor";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
+import { es } from "@/lib/ui/diccionario";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 
 const original = globalThis.fetch;
+
+test("el perfil en español usa usted", () => {
+  assert.match(es.perfil.subtitulo, /elige/);
+  assert.equal(es.perfil.subtitulo.includes("eliges"), false);
+  assert.equal(es.perfil.experiencia, "Su experiencia (opcional)");
+  assert.match(es.perfil.noGuarda, /Inténtelo/);
+  assert.equal(es.perfil.experiencia.includes("Tu experiencia"), false);
+});
 
 test("la cuenta deja elegir etiquetas y la ficha las muestra sin puntaje", async () => {
   limpiarPantalla();
