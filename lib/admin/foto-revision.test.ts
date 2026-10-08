@@ -34,6 +34,27 @@ async function cargar(raiz: ParentNode = document) {
   });
 }
 
+function luminancia(hex: string): number {
+  const canales = [0, 2, 4].map((indice) => {
+    const s = parseInt(hex.slice(indice + 1, indice + 3), 16) / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * canales[0] + 0.7152 * canales[1] + 0.0722 * canales[2];
+}
+
+function contraste(a: string, b: string): number {
+  const [alta, baja] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
+  return (alta + 0.05) / (baja + 0.05);
+}
+
+function variable(css: string, bloque: string, nombre: string): string {
+  const inicio = css.indexOf(bloque);
+  const fin = css.indexOf("}", inicio);
+  const encontrado = css.slice(inicio, fin).match(new RegExp(`${nombre}:\\s*(#[0-9a-fA-F]{6})`));
+  if (!encontrado) throw new Error(`sin ${nombre}`);
+  return encontrado[1].toLowerCase();
+}
+
 test("the review frame keeps its size and the photo uses contain", () => {
   const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
   const marco = css.slice(css.indexOf(".hyto-photo {"), css.indexOf(".hyto-photo img,"));
@@ -41,6 +62,29 @@ test("the review frame keeps its size and the photo uses contain", () => {
   assert.match(marco, /aspect-ratio:\s*4\s*\/\s*3/);
   assert.match(marco, /overflow:\s*hidden/);
   assert.match(css, /\.hyto-photo img \{\s*object-fit:\s*contain;\s*\}/);
+});
+
+test("the photo focus ring sits outside the frame and clears 3:1 on light and dark", () => {
+  const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  const marco = css.slice(css.indexOf(".hyto-photo {"), css.indexOf(".hyto-photo img,"));
+  assert.match(marco, /max-height:\s*520px/);
+  assert.match(marco, /aspect-ratio:\s*4\s*\/\s*3/);
+  assert.match(marco, /overflow:\s*hidden/);
+  const anillo = css.slice(css.indexOf(".hyto-photo:has(.hyto-photo-abrir:focus-visible)"), css.indexOf(".hyto-photo-nota"));
+  assert.match(anillo, /outline:\s*3px solid var\(--foco-foto\)/);
+  assert.match(anillo, /outline-offset:\s*3px/);
+  assert.doesNotMatch(anillo, /outline-offset:\s*-/);
+  assert.equal(/\.hyto-photo-abrir:focus-visible\s*\{[^}]*outline:\s*2px/.test(css), false);
+  const claro = variable(css, ":root {", "--foco-foto");
+  const claroContra = variable(css, ":root {", "--foco-foto-contra");
+  const oscuro = variable(css, '[data-theme="dark"] {', "--foco-foto");
+  const oscuroContra = variable(css, '[data-theme="dark"] {', "--foco-foto-contra");
+  assert.ok(contraste(claro, claroContra) >= 3, `${claro} vs ${claroContra}`);
+  assert.ok(contraste(oscuro, oscuroContra) >= 3, `${oscuro} vs ${oscuroContra}`);
+  assert.ok(contraste(claro, "#f5f6fa") >= 3);
+  assert.ok(contraste(claro, "#ffffff") >= 3);
+  assert.ok(contraste(oscuro, "#0e1024") >= 3);
+  assert.ok(contraste(oscuro, "#14162b") >= 3);
 });
 
 test("the photo says Loading… until it loads, then opens larger from the keyboard", async () => {

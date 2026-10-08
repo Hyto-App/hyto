@@ -6,6 +6,7 @@ import { act } from "react";
 import { Informe } from "@/components/admin/Informe";
 import { Revision } from "@/components/admin/Revision";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, escribir, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 const MENSAJE = "AI review is not configured";
@@ -380,6 +381,7 @@ test("an error outside lock or pay does not use the payment box", async () => {
     await esperar(() => rotulo("Ask for another photo"));
     await confirmarPedir();
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
+    assert.equal(texto().includes("The request was sent"), false);
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("Budget not locked"), false);
     assert.equal(texto().includes("No USDC left the escrow."), false);
@@ -466,6 +468,74 @@ test("asking for another photo removes the old verdict pill", async () => {
     assert.equal(texto().includes("AI recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
     assert.match(texto(), /Pending/);
+    const aviso = [...document.querySelectorAll("[role=status]")].find((nodo) => nodo.classList.contains("hyto-pedir-listo"));
+    assert.equal(
+      aviso?.textContent,
+      "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.",
+    );
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("pedir otra foto confirma el envío en español", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (method === "POST" && url.endsWith("/pedir")) return json({ estado: "pendiente" });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({ origen: "scout", veredicto: "parcial", nota: 64, frase: "Half of the booth is set up." }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => rotulo("Pedir otra foto"));
+    await pulsar("Pedir otra foto");
+    await esperar(() => texto().includes("¿Qué falta?"));
+    const enviar = document.querySelector(".hyto-pedir button[type='submit']");
+    if (!enviar) throw new Error("No send-back confirm.");
+    await act(async () => {
+      enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await esperar(() => texto().includes("Pendiente"));
+    const aviso = document.querySelector(".hyto-pedir-listo");
+    assert.equal(aviso?.getAttribute("role"), "status");
+    assert.equal(aviso?.textContent, "Pediste otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("approve and pay shows US$2, the same amount as the rest of the screen", async () => {
+  const contrato = "CSTAND";
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/escrow/")) return json({ escrow: { balance: "2" } });
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({ tarea: tarea({ monto: "2" }), foto: null, contratoEscrow: contrato, wallet: "GORGANIZADOR" });
+    }
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(Revision, { tareaId: "stand" }));
+    await esperar(() => rotulo("Approve and pay"));
+    assert.match(texto(), /US\$2/);
+    await pulsar("Approve and pay");
+    const monto = document.querySelector(".hyto-dialogo-monto");
+    assert.equal(monto?.textContent, "US$2");
+    assert.equal(monto?.querySelector("small"), null);
+    assert.equal(document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn")?.textContent, "Pay US$2");
+    assert.equal(texto().includes("USDC"), false);
+    assert.equal(texto().includes("2.00"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
