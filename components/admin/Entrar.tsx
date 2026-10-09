@@ -13,6 +13,7 @@ import {
   tomarIntencionEnlace,
   type IntencionIngreso,
 } from "@/lib/auth/intencion";
+import { guardarAvisoAlta } from "@/lib/sesion/alta-aviso";
 import {
   destinoTrasIngreso,
   guardarRetorno,
@@ -80,9 +81,11 @@ const CLAVE_AVISO_REGRESO = "hyto-aviso-regreso";
  * Navigate when the session is ready. Otherwise keep the notice and reopen sign-in,
  * so the person never lands back on a blank login.
  */
-function finalizarSinPantalla(resultado: ResultadoIngreso) {
-  if (resultado.guardada && resultado.direccion && !resultado.pendiente) {
-    const destino = destinoTrasIngreso(leerRetorno(), "/");
+function finalizarSinPantalla(resultado: ResultadoIngreso, intencion: IntencionIngreso = "signin") {
+  const alta = intencion === "signup";
+  if (resultado.guardada && resultado.direccion && (!resultado.pendiente || alta)) {
+    if (resultado.pendiente) guardarAvisoAlta(resultado.pendiente);
+    const destino = destinoTrasIngreso(leerRetorno(), alta ? DESTINO_ALTA : "/");
     olvidarRetorno();
     window.location.assign(destino);
     return;
@@ -325,7 +328,7 @@ export function Entrar({
       const ultimo = duenosGoogle.get(codigoGoogle) === ticket;
       const sigueAqui = new URLSearchParams(window.location.search).get("cavos_auth_code") === codigoGoogle;
       if (!vivo) {
-        if (ultimo && sigueAqui) finalizarSinPantalla(resultado);
+        if (ultimo && sigueAqui) finalizarSinPantalla(resultado, intencion);
         return;
       }
       setCanjeando(false);
@@ -343,19 +346,27 @@ export function Entrar({
   }, []);
 
   /**
-   * Google leaves a one-time code in the URL, so a clean finish reloads `/`
-   * (the server sends a session to Events). Email code uses the same destination
-   * (safe `next` / return path, else `/` → Events), matching Google. A pending
-   * testnet setup never navigates, so the notice stays visible.
+   * Google leaves a one-time code in the URL. A new account goes to Events inside the shell.
+   * A pending testnet setup rides along as a one-time notice. Sign in still stays on the
+   * styled panel when setup did not finish, and otherwise follows the safe return path.
    */
   function entrarListo(direccionGuardada: string, pendiente: string | null, recargar: boolean, intencion: IntencionIngreso = pestana) {
     setDireccion(direccionGuardada);
-    setPedirIngreso(false);
     setAviso(null);
+    // A new account goes to Events inside the shell. A pending testnet setup rides along as a notice.
+    if (intencion === "signup" && (recargar || pendiente)) {
+      if (pendiente) guardarAvisoAlta(pendiente);
+      setPedirIngreso(true);
+      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), DESTINO_ALTA);
+      olvidarRetorno();
+      window.location.assign(destino);
+      return;
+    }
+    setPedirIngreso(false);
     setFase("inicio");
     setAltaPendiente(pendiente);
     if (recargar && !pendiente) {
-      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), intencion === "signup" ? DESTINO_ALTA : "/");
+      const destino = destinoTrasIngreso(retorno ?? leerRetorno(), "/");
       olvidarRetorno();
       window.location.assign(destino);
     }
@@ -600,7 +611,7 @@ export function Entrar({
         setAviso(resultado.aviso ?? AVISO_GENERICO);
         return;
       }
-      // A pending setup keeps today's notice and never navigates.
+      // Sign up with a pending testnet setup opens Events and keeps the notice for that page.
       if (resultado.pendiente) {
         entrarListo(resultado.direccion, resultado.pendiente, false);
         return;
@@ -763,33 +774,39 @@ export function Entrar({
   const alertaFormulario = Boolean(mensaje) && (correoInvalido || alertaRegreso) && !(mostrarEspera && espera > 0);
 
   if (direccion && !pedirIngreso) {
+    const destinoListo = destinoTrasIngreso(retorno, pestana === "signup" || altaPendiente ? DESTINO_ALTA : undefined);
     return (
-      <div className="hyto-post-login">
-        <div className="flex items-center gap-3">
-          <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
-          <div>
-            <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
-            <details className="text-sm text-[var(--suave)]">
-              <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
-              <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
-            </details>
+      <div className="hyto-login">
+        <Escena />
+        <div className="hyto-login-marco">
+          <div className="hyto-post-login">
+            <div className="flex items-center gap-3">
+              <span className="hyto-avatar">{direccion.slice(0, 2)}</span>
+              <div>
+                <p className="text-sm font-medium">{t("entrar.signedIn")}</p>
+                <details className="text-sm text-[var(--suave)]">
+                  <summary className="cursor-pointer">{t("entrar.accountDetails")}</summary>
+                  <p className="mt-1 font-mono">{acortarDireccion(direccion)}</p>
+                </details>
+              </div>
+            </div>
+            {altaPendiente ? (
+              <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
+                <p>
+                  {claro(altaPendiente)} {t("entrar.altaPendiente")}
+                </p>
+                <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
+                  {t("entrar.openEvents")}
+                </a>
+              </div>
+            ) : null}
+            <div className="hyto-welcome-step">
+              <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
+              <Link href={destinoListo} className="hyto-btn hyto-post-login-cta">
+                {t("pago.preparePayout")}
+              </Link>
+            </div>
           </div>
-        </div>
-        {altaPendiente ? (
-          <div role="status" className="grid gap-2 text-sm leading-6 text-[var(--suave)]">
-            <p>
-              {claro(altaPendiente)} {t("entrar.altaPendiente")}
-            </p>
-            <a href={DESTINO_ALTA_PENDIENTE} className="hyto-btn-line is-inline px-5">
-              {t("entrar.openEvents")}
-            </a>
-          </div>
-        ) : null}
-        <div className="hyto-welcome-step">
-          <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
-          <Link href={destinoTrasIngreso(retorno)} className="hyto-btn hyto-post-login-cta">
-            {t("pago.preparePayout")}
-          </Link>
         </div>
       </div>
     );

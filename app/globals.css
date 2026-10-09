@@ -1405,6 +1405,15 @@ a {
   justify-items: start;
 }
 
+.hyto-login .hyto-post-login {
+  width: min(28rem, calc(100% - 32px));
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--l-linea);
+  border-radius: 20px;
+  background: var(--l-sup);
+}
+
 .hyto-post-login .hyto-welcome-step {
   width: 100%;
   max-width: 100%;
@@ -4096,6 +4105,13 @@ html.hyto-firmando body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.hyto-perfil-menu .hyto-usuario-datos > * {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .hyto-idioma-marco .hyto-idioma-menu-boton {

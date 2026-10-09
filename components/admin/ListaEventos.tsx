@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bienvenida } from "@/components/sesion/Bienvenida";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { tomarAvisoAlta } from "@/lib/sesion/alta-aviso";
 import type { Clave } from "@/lib/ui/diccionario";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
@@ -59,6 +60,11 @@ export function ListaEventos() {
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [avisoAlta, setAvisoAlta] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAvisoAlta(tomarAvisoAlta());
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -102,6 +108,11 @@ export function ListaEventos() {
           </Link>
         </div>
       </header>
+      {avisoAlta ? (
+        <p role="status" className="hyto-card mt-6 px-6 py-4 text-sm leading-6">
+          {claro(avisoAlta)} {t("entrar.altaPendiente")}
+        </p>
+      ) : null}
       <BienvenidaColapsable />
       {!eventos ? (
         <div className="hyto-skel mt-6" aria-busy="true">

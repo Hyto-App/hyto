@@ -169,37 +169,42 @@ test("si crearAuth lanza, el canje termina con un aviso visible", async () => {
   }
 });
 
-test("si Friendbot falla después de guardar la wallet, la persona queda adentro con un aviso, el enlace a Events y la salida a Events (/) como Google", async () => {
+test("si Friendbot falla después de guardar la wallet, el alta abre Eventos y guarda el aviso", async () => {
   reiniciar();
   window.sessionStorage.setItem(CLAVE_INTENCION, "signup");
   window.location.href = "http://localhost/?cavos_auth_code=codigo-alta-blanda";
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
   const { Entrar } = await import("../../components/admin/Entrar");
   const { div, root } = montar();
-  await act(async () => {
-    root.render(createElement(Entrar));
-  });
-  await act(async () => {
-    estado.resolverAuth({});
-    await vaciar();
-  });
-  await act(async () => {
-    estado.resolverGoogle({ aviso: "We couldn't fund the testnet account.", direccion: DIRECCION, guardada: true });
-    await vaciar();
-  });
+  try {
+    await act(async () => {
+      root.render(createElement(Entrar));
+    });
+    await act(async () => {
+      estado.resolverAuth({});
+      await vaciar();
+    });
+    await act(async () => {
+      estado.resolverGoogle({ aviso: "We couldn't fund the testnet account.", direccion: DIRECCION, guardada: true });
+      await vaciar();
+    });
 
-  assert.equal(estado.llamadas[0]?.intencion, "signup");
-  assert.equal(leerMemoriaAdmin().direccion, DIRECCION);
-  assert.match(div.textContent ?? "", /Signed in/);
-  const aviso = div.querySelector('[role="status"]')?.textContent ?? "";
-  assert.match(aviso, /We couldn't fund the testnet account\./);
-  assert.match(aviso, /Get ready to be paid/);
-  assert.equal(div.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
-  assert.equal(div.querySelector("a.hyto-post-login-cta")?.getAttribute("href"), "/");
-  assert.match(window.location.href, /cavos_auth_code=codigo-alta-blanda/, "a soft failure must not navigate away from the notice");
-  assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
-  await act(async () => {
-    root.unmount();
-  });
+    assert.equal(estado.llamadas[0]?.intencion, "signup");
+    assert.equal(leerMemoriaAdmin().direccion, DIRECCION);
+    assert.doesNotMatch(div.textContent ?? "", /Signed in/);
+    assert.equal(window.sessionStorage.getItem("hyto-alta-aviso"), "We couldn't fund the testnet account.");
+    assert.deepEqual(destinos, ["/eventos"]);
+    assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
+  } finally {
+    window.location.assign = asignar;
+    await act(async () => {
+      root.unmount();
+    });
+  }
 });
 
 test("si la sesión no guardó la wallet, el navegador tampoco la guarda", async () => {

@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { Marco } from "@/components/admin/Marco";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
@@ -109,6 +110,31 @@ test("el organizador ve sus secciones arriba y Eventos va primero en el móvil",
     assert.equal(document.querySelector('a[href="/comunidades"]'), null);
     const letras = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.ok(letras.every((letra) => letra === "O"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("sin nombre el título es Su cuenta y el correo queda en la segunda línea", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(Marco, {
+          usuario: { nombre: null, email: "ana.larga@hyto.dev" },
+          children: createElement("p", null, "inicio"),
+        }),
+      }),
+      { ruta: "/eventos" },
+    );
+    const titulo = document.querySelector(".hyto-perfil-boton:not(.is-compacto) strong");
+    assert.equal(titulo?.textContent, "Su cuenta");
+    await pulsar("Su cuenta");
+    const delMenu = document.querySelector("#hyto-perfil strong");
+    assert.equal(delMenu?.textContent, "Su cuenta");
+    assert.match(document.querySelector("#hyto-perfil")?.textContent ?? "", /ana\.larga@hyto\.dev/);
   } finally {
     await desmontar();
     limpiarPantalla();

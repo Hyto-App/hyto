@@ -11,7 +11,6 @@ import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { AVISO_CUENTA_FAUCET } from "../integrante/friendbot";
 import type { Tarea } from "../integrante/tipos";
-import { mensajeClaro } from "../ui/claro";
 
 const DIRECCION = `G${"B".repeat(55)}`;
 const DESTINO = "/";
@@ -137,21 +136,22 @@ test("tras el código, una cuenta nueva abre Eventos y no Mis tareas", async () 
   }
 });
 
-test("si el alta de testnet falla después del código, queda adentro con el aviso, Open Events y la salida", async () => {
+test("si el alta de testnet falla después del código, abre Eventos y guarda el aviso", async () => {
   limpiarPantalla();
   window.history.replaceState(null, "", "/");
+  const destinos: string[] = [];
+  const asignar = window.location.assign.bind(window.location);
+  window.location.assign = ((url: string | URL) => {
+    destinos.push(String(url));
+  }) as Location["assign"];
   try {
     await llegarAlCodigo(async () => ({ aviso: AVISO_CUENTA_FAUCET, direccion: DIRECCION, guardada: true }));
-    assert.match(texto(), /Signed in/);
-    const aviso = document.querySelector('[role="status"]')?.textContent ?? "";
-    assert.ok(aviso.includes(mensajeClaro(AVISO_CUENTA_FAUCET)), aviso);
-    assert.match(aviso, /Open Events and tap Get ready to be paid/);
-    assert.equal(document.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
-    assert.equal(salida().getAttribute("href"), DESTINO);
-    assert.equal(document.querySelector('[role="dialog"]'), null);
-    assert.equal(window.location.pathname, "/");
+    assert.deepEqual(destinos, ["/eventos"]);
+    assert.equal(window.sessionStorage.getItem("hyto-alta-aviso"), AVISO_CUENTA_FAUCET);
+    assert.doesNotMatch(texto(), /Signed in/);
     assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);
   } finally {
+    window.location.assign = asignar;
     await desmontar();
     limpiarPantalla();
   }

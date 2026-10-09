@@ -264,8 +264,8 @@ function BotonPerfil({
   onAbrir: (boton: HTMLElement) => void;
 }) {
   const t = useTexto();
-  const rotulo = usuario.nombre?.trim() || usuario.email;
-  const letras = iniciales(usuario.nombre ?? "", usuario.email);
+  const nombre = usuario.nombre?.trim() || "";
+  const letras = iniciales(nombre, usuario.email);
   return (
     <button
       type="button"
@@ -281,7 +281,7 @@ function BotonPerfil({
       </span>
       {compacto ? null : (
         <span className="hyto-usuario-datos">
-          {usuario.nombre ? <strong>{usuario.nombre}</strong> : null}
+          <strong>{nombre || t("nav.profile")}</strong>
           <span>{usuario.email}</span>
         </span>
       )}

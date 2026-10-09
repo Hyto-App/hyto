@@ -145,3 +145,25 @@ test("eventos muestra la bienvenida y la cuenta ya no tiene el botón", async ()
     limpiarPantalla();
   }
 });
+
+test("eventos muestra una vez el aviso de un alta con la cuenta de testnet a medias", async () => {
+  limpiarPantalla();
+  window.sessionStorage.setItem("hyto-alta-aviso", "Friendbot couldn't fund this testnet account. Try again.");
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => json({ proyectos: [] })) as typeof fetch;
+  try {
+    await montar(createElement(ListaEventos));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const aviso = document.querySelector('[role="status"]')?.textContent ?? "";
+    assert.match(aviso, /test balance for the network fee/);
+    assert.match(aviso, /Open Events and tap Get ready to be paid/);
+    assert.equal(window.sessionStorage.getItem("hyto-alta-aviso"), null);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
