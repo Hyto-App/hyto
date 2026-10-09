@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
-import { Entrar } from "@/components/admin/Entrar";
+import { Landing } from "@/components/admin/Landing";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { faltaTipoCuenta } from "@/lib/api/tipo-cuenta";
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
@@ -48,5 +48,5 @@ export default async function PaginaInicio() {
     }
     redirect(destino);
   }
-  return <Entrar abrirLogin tituloDocumento demoHabilitado={demoHabilitado()} />;
+  return <Landing demoHabilitado={demoHabilitado()} />;
 }

@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Migas } from "@/components/landing/Migas";
 import { Logo } from "@/components/ui/Marca";
+import { discursoDe } from "@/lib/ui/discurso";
 import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
 import { privacidadDe } from "@/lib/ui/privacidad";
 
@@ -13,7 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PaginaPrivacidad() {
   const jar = await cookies();
-  const copia = privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
+  const idioma = idiomaDe(jar.get(COOKIE_IDIOMA)?.value);
+  const copia = privacidadDe(idioma);
+  const discurso = discursoDe(idioma);
   return (
     <div className="hyto-login hyto-privacidad">
       <div className="hyto-login-escena" aria-hidden="true">
@@ -37,6 +41,14 @@ export default async function PaginaPrivacidad() {
         </header>
         <main className="hyto-login-grid">
           <article className="hyto-login-tarjeta">
+            <Migas
+              ariaLabel={discurso.migasAria}
+              items={[
+                { href: "/", etiqueta: discurso.migasInicio },
+                { href: "/faq", etiqueta: discurso.migasFaq },
+                { etiqueta: discurso.migasPrivacidad },
+              ]}
+            />
             <p className="hyto-login-chip">
               <span aria-hidden="true" />
               {copia.kicker}
@@ -51,6 +63,10 @@ export default async function PaginaPrivacidad() {
             ))}
             <p className="hyto-login-legal">
               <Link href="/">{copia.inicio}</Link>
+              {" · "}
+              <Link href="/faq">{discurso.migasFaq}</Link>
+              {" · "}
+              <Link href="/?signin=1">{discurso.navApp}</Link>
             </p>
           </article>
         </main>
