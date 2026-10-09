@@ -10,9 +10,11 @@ import {
   discursoDe,
   discursoEs,
   pasosDiscurso,
+  preguntasDiscurso,
 } from "./discurso";
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
+const PROHIBIDO = /\bplata\b/i;
 const FRASES = [
   "Proof before",
   "payout.",
@@ -31,6 +33,12 @@ const FRASES = [
   "SINPE",
   "Try the demo",
   "Sign in",
+  "How much does Hyto cost?",
+  "Who approves a payment?",
+  "What happens if the work is not approved?",
+  "How do I convert digital dollars to colones?",
+  "Does Hyto keep the funds?",
+  "Josué confirma el tiempo",
 ];
 
 test("el discurso de la landing está en un solo mapa en inglés", () => {
@@ -39,6 +47,7 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
     assert.equal(typeof discurso[clave], "string");
     assert.ok(discurso[clave].trim().length > 0, clave);
     assert.equal(JERGA.test(discurso[clave]), false, `${clave}: ${discurso[clave]}`);
+    assert.equal(PROHIBIDO.test(discurso[clave]), false, `${clave}: ${discurso[clave]}`);
   }
   const unido = Object.values(discurso).join("\n");
   for (const frase of FRASES) assert.ok(unido.includes(frase), frase);
@@ -48,6 +57,7 @@ test("el discurso de la landing está en un solo mapa en inglés", () => {
   );
   assert.equal(audienciasDiscurso().length, 2);
   assert.equal(confianzaDiscurso().length, 3);
+  assert.ok(preguntasDiscurso().length >= 5);
 });
 
 test("el discurso en español usa las mismas claves", () => {
@@ -56,11 +66,23 @@ test("el discurso en español usa las mismas claves", () => {
     assert.ok(discursoEs[clave].trim().length > 0, clave);
     assert.notEqual(discursoEs[clave], discurso[clave], clave);
     assert.equal(JERGA.test(discursoEs[clave]), false, `${clave}: ${discursoEs[clave]}`);
+    assert.equal(PROHIBIDO.test(discursoEs[clave]), false, `${clave}: ${discursoEs[clave]}`);
   }
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Primero la prueba,", "Red de práctica.", "Aparte el financiamiento", "Conozca a Mile", "¿Necesito saber de criptomonedas?", "SINPE"]) {
+  for (const frase of [
+    "Primero la prueba,",
+    "Red de práctica.",
+    "Aparte el financiamiento",
+    "Conozca a Mile",
+    "¿Necesito saber de criptomonedas?",
+    "SINPE",
+    "¿Cuánto cuesta Hyto?",
+    "¿Quién aprueba un pago?",
+    "¿Hyto guarda los fondos?",
+    "Josué confirma el tiempo",
+  ]) {
     assert.ok(unido.includes(frase), frase);
   }
 });
