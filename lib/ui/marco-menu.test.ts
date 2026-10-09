@@ -33,7 +33,11 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
     assert.match(texto(), /Ask Mile/);
     assert.match(texto(), /Search the frequently asked questions\. This is not a chat\./);
     assert.match(texto(), /How do I get paid\?/);
+    assert.match(texto(), /How do I set money aside for a task\?/);
+    assert.match(texto(), /What does it cost to pay a task\?/);
+    assert.match(texto(), /How do I pay a reimbursement\?/);
     await pulsar("How do I get paid?");
+    assert.match(texto(), /cannot send that balance to a bank/);
     assert.doesNotMatch(texto(), /Mile does not sign/);
     assert.doesNotMatch(texto(), /escrow|testnet/i);
   } finally {

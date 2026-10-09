@@ -51,9 +51,13 @@ export const CLAVES_DISCURSO = [
 
 export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
 
+/** Meta, Open Graph, and Twitter description. The landing speech still names the asset; this line does not. */
+export const DESCRIPCION_PAGINA =
+  "Communities in Latin America funded from afar account for every spend. Lock digital dollars, send a photo of the work or the receipt, and a person releases the payment.";
+
 export const discurso: Record<ClaveDiscurso, string> = {
-  sloganLead: "Show the spend,",
-  sloganPay: "on the record.",
+  sloganLead: "Proof before",
+  sloganPay: "payout.",
   subheadline:
     "Communities in Latin America funded from afar account for every spend. Lock digital dollars (USDC), send a photo of the work or the receipt, and a person releases the payment.",
   networkLead: "Practice network.",
@@ -86,13 +90,13 @@ export const discurso: Record<ClaveDiscurso, string> = {
   trustAiBody: "Mile reads the photo and suggests a score. Mile cannot sign or move the money.",
   trustEscrowTitle: "The money is set aside first",
   trustEscrowBody: "The organizer sets the task amount aside before the work, so the payment is waiting when the proof is approved.",
-  legal: "Sign in with email through Cavos. An account is created to hold the payment. You do not need a separate crypto app.",
+  legal: "Sign in with email through Cavos. An account is created to hold the payment. You do not need a separate cryptocurrency app.",
   mileKicker: "Meet Mile",
   closeKicker: "Start",
-  closeTitle: "Ready to show the spend?",
+  closeTitle: "Ready to show the proof?",
   faqKicker: "Questions",
   faqTitle: "Before you start",
-  faqCryptoQuestion: "Do I need to know crypto?",
+  faqCryptoQuestion: "Do I need to know about cryptocurrency?",
   faqCryptoAnswer: "No. Sign in with your email, do the task, and send a photo.",
   faqDollarsQuestion: "Why digital dollars, and not a local transfer?",
   faqDollarsAnswer:
@@ -100,34 +104,34 @@ export const discurso: Record<ClaveDiscurso, string> = {
 };
 
 export const discursoEs: Record<ClaveDiscurso, string> = {
-  sloganLead: "Muestra el gasto,",
-  sloganPay: "que quede registrado.",
+  sloganLead: "Primero la prueba,",
+  sloganPay: "después el pago.",
   subheadline:
-    "Las comunidades en Latinoamérica que reciben fondos desde lejos rinden cuentas de cada gasto. Aparta dólares digitales (USDC), envía una foto del trabajo o del recibo, y una persona libera el pago.",
+    "Las comunidades en Latinoamérica que reciben fondos desde lejos rinden cuentas de cada gasto. Aparte dólares digitales (USDC), envíe una foto del trabajo o del recibo, y una persona libera el pago.",
   networkLead: "Red de práctica.",
   networkBody:
     "Los dólares digitales (USDC) aquí son para practicar. Nada en esta red es dinero real, y todavía no hay un pago en vivo registrado.",
   ctaSignIn: "Entrar",
   ctaDemo: "Probar el demo",
-  ctaDemoHelp: "No necesitas una cuenta. Abre una sesión de práctica como voluntario o como organizador.",
+  ctaDemoHelp: "No necesita una cuenta. Abra una sesión de práctica como voluntario o como organizador.",
   ctaDemoVolunteer: "Como voluntario",
   ctaDemoOrganizer: "Como organizador",
   ctaDemoBusy: "Abriendo…",
-  ctaDemoError: "No se pudo abrir el demo. Inténtalo de nuevo.",
+  ctaDemoError: "No se pudo abrir el demo. Inténtelo de nuevo.",
   stepsTitle: "Cómo funciona",
-  step1Title: "Aparta el financiamiento",
+  step1Title: "Aparte el financiamiento",
   step1Body:
     "Quien financia aparta el monto de cada tarea en dólares digitales (USDC) antes de que empiece el trabajo. Un estipendio, una beca o fondos para un evento, a menudo enviados por alguien que no está ahí.",
-  step2Title: "Envía una foto",
-  step2Body: "Fotografía el trabajo en el lugar, o el recibo, incluso si está en colones. Esa foto es la prueba del gasto.",
-  step3Title: "Libera el pago",
+  step2Title: "Envíe una foto",
+  step2Body: "Fotografíe el trabajo en el lugar, o el recibo, incluso si está en colones. Esa foto es la prueba del gasto.",
+  step3Title: "Libere el pago",
   step3Body: "Una persona revisa la foto y libera el pago. Mile solo recomienda.",
   audienceTitle: "Para quién es",
   workersTitle: "Miembros de la comunidad",
-  workersBody: "Únete al evento, haz la tarea que te asignaron y envía la foto que comprueba el gasto.",
+  workersBody: "Únase al evento, haga la tarea que le asignaron y envíe la foto que comprueba el gasto.",
   organizersTitle: "Quienes organizan y financian",
-  organizersBody: "Quien financia puede estar lejos. Aparta el financiamiento por tarea, revisa la prueba y libera cada pago. Ese registro reemplaza las capturas sueltas y la hoja de cálculo.",
-  trustTitle: "Por qué puedes confiar en un pago",
+  organizersBody: "Quien financia puede estar lejos. Aparte el financiamiento por tarea, revise la prueba y libere cada pago. Ese registro reemplaza las capturas sueltas y la hoja de cálculo.",
+  trustTitle: "Por qué puede confiar en un pago",
   trustApproveTitle: "Una persona libera cada pago",
   trustApproveBody: "Alguien revisa la foto y decide. Hyto no paga solo.",
   trustAiTitle: "Mile solo recomienda",
@@ -135,14 +139,14 @@ export const discursoEs: Record<ClaveDiscurso, string> = {
   trustEscrowTitle: "El dinero se aparta primero",
   trustEscrowBody:
     "Quien organiza aparta el monto de la tarea antes del trabajo, así el pago está esperando cuando se aprueba la prueba.",
-  legal: "Entras con tu correo por Cavos. Se crea una cuenta para guardar el pago. No necesitas otra app de cripto.",
-  mileKicker: "Conoce a Mile",
-  closeKicker: "Empieza",
-  closeTitle: "¿Listo para mostrar el gasto?",
+  legal: "Usted entra con su correo por Cavos. Se crea una cuenta para guardar el pago. No necesita otra aplicación de criptomonedas.",
+  mileKicker: "Conozca a Mile",
+  closeKicker: "Empiece",
+  closeTitle: "¿Listo para mostrar la prueba?",
   faqKicker: "Preguntas",
   faqTitle: "Antes de empezar",
-  faqCryptoQuestion: "¿Necesito saber de cripto?",
-  faqCryptoAnswer: "No. Entra con tu correo, haz la tarea y envía una foto.",
+  faqCryptoQuestion: "¿Necesito saber de criptomonedas?",
+  faqCryptoAnswer: "No. Entre con su correo, haga la tarea y envíe una foto.",
   faqDollarsQuestion: "¿Por qué dólares digitales y no una transferencia local?",
   faqDollarsAnswer:
     "El dinero llega del extranjero en dólares, y quien financia pide prueba del gasto. Las capturas sueltas, una hoja de cálculo o una transferencia local como SINPE no dejan un registro que cualquiera pueda revisar.",

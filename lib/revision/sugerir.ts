@@ -10,7 +10,7 @@ Reply with JSON only: {"requisitos":["..."]}.
 Write at most 3 short requirements a photo can show.
 Each item is one sentence, plain text, no HTML, no numbering.
 Use the language of the title and description.
-If the title is Spanish, use tú (not vos, not usted).
+If the title is Spanish, use usted (not tú, not vos). Formal, neutral Latin American Spanish.
 If you cannot tell, return {"requisitos":[]}.`;
 
 export function leerSugerencias(texto: string): string[] {

@@ -8,10 +8,13 @@ import {
   AVISO_GENERICO,
   AVISO_GOOGLE_BLOQUEADO,
   AVISO_GOOGLE_CERRADO,
+  AVISO_ORIGEN_CAVOS,
   AVISO_RED,
   avisoDeIngreso,
   correoValido,
   esCorreoDemo,
+  esperaDeRespuesta429,
+  segundosDeRetryAfter,
   textoEspera,
 } from "./errores";
 
@@ -65,6 +68,17 @@ test("red, ventana de Google y configuración", () => {
   assert.equal(avisoDeIngreso(new Error("Sign-in is waiting for the Cavos app id.")).texto, AVISO_CONFIG);
 });
 
+test("un origen que Cavos no permite no se dice como ingreso vencido ni filtra el host", () => {
+  const crudo = "kit/vault: add https://preview.example to this app's allowed web origins in the Cavos dashboard";
+  const aviso = avisoDeIngreso(new Error(crudo));
+  assert.equal(aviso.texto, AVISO_ORIGEN_CAVOS);
+  assert.equal(aviso.esperaSegundos, null);
+  assert.equal(aviso.texto.includes("preview.example"), false);
+  assert.equal(aviso.texto.includes("kit/vault"), false);
+  assert.equal(aviso.texto.includes("expired"), false);
+  assert.equal(avisoDeIngreso(new Error("kit/vault: https://vault.example did not load")).texto, AVISO_GENERICO);
+});
+
 test("un fallo desconocido no filtra el SDK", () => {
   const aviso = avisoDeIngreso(new Error("kit/auth: /api/oauth/firebase/otp/verify -> 500 {\"error\":\"internal\"}"));
   assert.equal(aviso.texto, AVISO_GENERICO);
@@ -76,6 +90,47 @@ test("un fallo desconocido no filtra el SDK", () => {
 test("el mensaje de espera no se confunde con un código inválido", () => {
   const aviso = avisoDeIngreso(new Error(CRUDO_429));
   assert.equal(aviso.texto, textoEspera(19));
+});
+
+test("un 429 con wait_seconds no es un fallo de red", () => {
+  const crudo =
+    'kit/auth: /api/oauth/firebase/otp/request -> 429 {"error":"rate_limited","message":"Please wait 53 seconds before requesting another code.","wait_seconds":53}';
+  const aviso = avisoDeIngreso(new Error(crudo));
+  assert.equal(aviso.esperaSegundos, 53);
+  assert.equal(aviso.texto, textoEspera(53));
+  assert.notEqual(aviso.texto, AVISO_RED);
+});
+
+test("Retry-After manda sobre el cuerpo, y una fecha HTTP también cuenta", async () => {
+  const ahora = Date.parse("2026-10-08T12:00:00.000Z");
+  assert.equal(segundosDeRetryAfter("19"), 19);
+  assert.equal(segundosDeRetryAfter("Thu, 08 Oct 2026 12:00:12 GMT", ahora), 12);
+  assert.equal(segundosDeRetryAfter("no-es-un-plazo"), null);
+  const conHeader = new Response(
+    JSON.stringify({ error: "rate_limited", message: "Please wait 53 seconds before requesting another code.", wait_seconds: 53 }),
+    { status: 429, headers: { "retry-after": "19", "content-type": "application/json" } },
+  );
+  assert.equal(await esperaDeRespuesta429(conHeader, ahora), 19);
+  const soloCuerpo = new Response(JSON.stringify({ error: "rate_limited", wait_seconds: 8 }), { status: 429 });
+  assert.equal(await esperaDeRespuesta429(soloCuerpo, ahora), 8);
+  const vacio = new Response("too many", { status: 429 });
+  assert.equal(await esperaDeRespuesta429(vacio, ahora), 20);
+  assert.equal(await esperaDeRespuesta429(new Response("no", { status: 500 }), ahora), null);
+});
+
+test("un 502 de la ruta propia sin red sigue siendo falta de conexión", () => {
+  const aviso = avisoDeIngreso('kit/auth: /api/ingreso/codigo -> 502 {"error":"upstream_unreachable"}');
+  assert.equal(aviso.texto, AVISO_RED);
+  assert.equal(aviso.esperaSegundos, null);
+});
+
+test("los segundos colgados del error ganan a un texto de red", () => {
+  const error = new TypeError("Failed to fetch") as TypeError & { esperaSegundos?: number };
+  error.esperaSegundos = 14;
+  const aviso = avisoDeIngreso(error);
+  assert.equal(aviso.esperaSegundos, 14);
+  assert.equal(aviso.texto, textoEspera(14));
+  assert.notEqual(aviso.texto, AVISO_RED);
 });
 
 test("valida el correo y marca el dominio de demo", () => {

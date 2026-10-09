@@ -12,6 +12,7 @@ import { conTarea } from "@/lib/admin/parche";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/lib/admin/vista";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
@@ -154,9 +155,9 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                     {pago || credencial ? (
                       <div className="mt-4 flex flex-wrap gap-3">
                         {pago ? (
-                          <a href={pago} className="hyto-btn-line is-inline px-5">
+                          <EnlaceExplorador href={pago} className="hyto-btn-line is-inline px-5">
                             {t("pago.viewChain")}
-                          </a>
+                          </EnlaceExplorador>
                         ) : null}
                         {credencial ? (
                           <a href={credencial} className="hyto-btn-line is-inline px-5">

@@ -200,7 +200,38 @@ function sqlInsertarUsuario(fila: Record<string, unknown>, actualizar: boolean) 
   const conflicto = actualizar
     ? sql`on conflict ("email") do update set "nombre" = excluded."nombre", "rol" = excluded."rol"`
     : sql`on conflict do nothing`;
-  return sqlInsertarFila(usuarios, fila, conflicto);
+  // Returning only the identity columns keeps sign-up off the feature columns.
+  return sql`${sqlInsertarFila(usuarios, fila, conflicto)} returning "id", "email", "nombre", "rol"`;
+}
+
+/** Login and sign-up read these columns only, even when a feature switch is on. */
+function columnasUsuarioBase() {
+  return {
+    id: usuarios.id,
+    email: usuarios.email,
+    nombre: usuarios.nombre,
+    rol: usuarios.rol,
+  };
+}
+
+function usuarioIdentidad(fila: { id: string; email: string; nombre: string; rol: string }): Usuario {
+  return {
+    id: fila.id,
+    email: fila.email,
+    nombre: fila.nombre,
+    rol: rolDe(fila.rol),
+  };
+}
+
+function identidadDeFila(crudo: Record<string, unknown> | undefined): Usuario | null {
+  if (!crudo) return null;
+  const id = typeof crudo.id === "string" ? crudo.id : null;
+  const email = typeof crudo.email === "string" ? crudo.email : null;
+  // An empty name is stored on purpose: it is not a piece of the email.
+  const nombre = typeof crudo.nombre === "string" ? crudo.nombre : null;
+  const rol = typeof crudo.rol === "string" ? crudo.rol : null;
+  if (!id || !email || nombre === null || !rol) return null;
+  return usuarioIdentidad({ id, email, nombre, rol });
 }
 
 function columnasTareaPrevias() {
@@ -276,18 +307,24 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     },
     async usuarioPorEmail(email) {
       const filas = await db
-        .select(columnasUsuarioVisibles())
+        .select(columnasUsuarioBase())
         .from(usuarios)
         .where(eq(usuarios.email, email.trim().toLowerCase()))
         .limit(1);
-      return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
+      return filas[0] ? usuarioIdentidad(filas[0]) : null;
     },
     async leerUsuario(id) {
       const filas = await db.select(columnasUsuarioVisibles()).from(usuarios).where(eq(usuarios.id, id)).limit(1);
       return filas[0] ? usuarioDesde(filas[0] as typeof usuarios.$inferSelect) : null;
     },
     async insertarUsuario(usuario) {
-      await db.execute(sqlInsertarUsuario(filaUsuario(usuario), false));
+      const pedido = { ...usuario, email: usuario.email.trim().toLowerCase() };
+      const resultado = await db.execute(sqlInsertarUsuario(filaUsuario(pedido), false));
+      const devuelto = identidadDeFila(filasDe(resultado)[0]);
+      if (devuelto) return devuelto;
+      const filas = await db.select(columnasUsuarioBase()).from(usuarios).where(eq(usuarios.email, pedido.email)).limit(1);
+      if (filas[0]) return usuarioIdentidad(filas[0]);
+      return usuarioIdentidad(pedido);
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();

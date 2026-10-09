@@ -14,19 +14,99 @@ import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
 import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
-import { vistaAdmin } from "@/lib/admin/vista";
-import { montoDeTarea } from "@/lib/integrante/formato";
-import { etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
+import { puedeApartarSinEntrega, vistaAdmin } from "@/lib/admin/vista";
+import { lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
+import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { iniciales } from "@/components/ui/Marca";
-import type { Veredicto, VistaAdmin } from "@/lib/admin/tipos";
+import type { TareaAdmin, Veredicto, VistaAdmin } from "@/lib/admin/tipos";
+import type { Idioma } from "@/lib/ui/idioma";
 
 const PROTECCION_REINTENTO_MS = 8_000;
 
-type Filtro = "all" | Veredicto;
+type Filtro = "all" | "pagado" | Veredicto;
+
+function PendientesSinFoto({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: Idioma }) {
+  const t = useTexto();
+  if (tareas.length === 0) return null;
+  return (
+    <section className="mt-8" aria-labelledby="sin-foto">
+      <h2 id="sin-foto" className="text-lg font-semibold">
+        {t("bandeja.noPhotoYet")}
+      </h2>
+      <p className="mt-1 text-sm leading-6 text-[var(--suave)]">{t("bandeja.lockBefore")}</p>
+      <ul className="mt-3 grid gap-2">
+        {tareas.map((tarea) => (
+          <li key={tarea.id} className="hyto-row flex items-center justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
+              <span className="text-sm text-[var(--suave)]">{vistaMonto(tarea, idioma).linea}</span>
+            </span>
+            <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
+              {t("pago.lockBudget")}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ListaRevision({ tareas, idioma }: { tareas: TareaAdmin[]; idioma: Idioma }) {
+  const t = useTexto();
+  if (tareas.length === 0) return null;
+  return (
+    <ul className="mt-6 grid gap-2">
+      {tareas.map((tarea) => (
+        <li key={tarea.id}>
+          <Link href={`/revision/${tarea.id}`} className="hyto-card block p-4">
+            <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
+            <span className="mt-1 block text-sm text-[var(--suave)]">{vistaMonto(tarea, idioma).linea}</span>
+            <span className="mt-2 inline-block text-sm font-medium">{t("bandeja.openReview")}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ListaPagadas({
+  tareas,
+  idioma,
+  titulo,
+  abrir,
+  limite,
+}: {
+  tareas: TareaAdmin[];
+  idioma: Idioma;
+  titulo: string;
+  abrir: string;
+  limite: (monto: string) => string;
+}) {
+  return (
+    <section className="mt-6" aria-labelledby="tareas-pagadas">
+      <h2 id="tareas-pagadas" className="text-base font-semibold">
+        {titulo}
+      </h2>
+      <ul className="mt-3 grid gap-2">
+        {tareas.map((tarea) => (
+          <li key={tarea.id}>
+            <Link href={`/revision/${tarea.id}`} className="hyto-card block p-4">
+              <span className="block font-semibold">{textoVisible(tarea.titulo, idioma)}</span>
+              <span className="mt-1 block text-sm text-[var(--suave)]">
+                {etiquetaEstado("pagado", idioma)} · {lineaMontoTarea(tarea, idioma, limite)}
+              </span>
+              <span className="mt-2 inline-block text-sm font-medium">{abrir}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 export function Bandeja({
   proyectoId,
@@ -143,14 +223,21 @@ export function Bandeja({
     );
   }
 
-  const visibles = filtro === "all" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
+  const pagadas = vista.tareas.filter((tarea) => tarea.estado === "pagado");
+  const sinFoto = vista.ejemplo ? [] : vista.tareas.filter(puedeApartarSinEntrega);
+  const sinEntrega = filtro === "all" ? sinFoto : [];
+  const cubiertas = new Set([...vista.bandeja.map((tarea) => tarea.id), ...pagadas.map((tarea) => tarea.id), ...sinFoto.map((tarea) => tarea.id)]);
+  const sueltas = vista.ejemplo ? [] : vista.tareas.filter((tarea) => !cubiertas.has(tarea.id));
+  const visibles = filtro === "all" || filtro === "pagado" ? vista.bandeja : vista.bandeja.filter((tarea) => tarea.veredicto === filtro);
   const seleccion = visibles.find((tarea) => tarea.id === selId) ?? visibles[0] ?? null;
   const fallidas = vista.ejemplo ? [] : vista.bandeja.filter((item) => item.origen === "error" && item.estado !== "pagado");
+  const limite = (amount: string) => t("eventos.limit", { amount });
   const filtros: { id: Filtro; etiqueta: string }[] = [
     { id: "all", etiqueta: t("comunes.all") },
     { id: "cumplió", etiqueta: etiquetaVeredicto("cumplió", idioma) },
     { id: "parcial", etiqueta: etiquetaVeredicto("parcial", idioma) },
     { id: "insuficiente", etiqueta: etiquetaVeredicto("insuficiente", idioma) },
+    { id: "pagado", etiqueta: t("bandeja.paidList") },
   ];
 
   return (
@@ -190,29 +277,41 @@ export function Bandeja({
           ))}
         </div>
 
-        {vista.bandeja.length === 0 ? (
-          <div className="hyto-card mt-4 px-6 py-10 text-center">
-            <p className="text-lg font-semibold">{t("bandeja.nothingApprove")}</p>
-            <p className="mt-2 text-[var(--suave)]">{t("bandeja.whenPhoto")}</p>
-            {proyectoId ? (
-              <button type="button" className="hyto-btn mx-auto mt-6 max-w-xs" onClick={() => document.getElementById("invitar")?.click()}>
-                {t("bandeja.invite")}
-              </button>
-            ) : (
-              <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
-                {t("bandeja.create")}
-              </Link>
-            )}
-          </div>
+        {filtro === "pagado" ? (
+          pagadas.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--suave)]">{t("bandeja.nothingView")}</p>
+          ) : (
+            <ListaPagadas tareas={pagadas} idioma={idioma} titulo={t("bandeja.paidList")} abrir={t("bandeja.openReview")} limite={limite} />
+          )
+        ) : vista.bandeja.length === 0 ? (
+          <>
+            <div className="hyto-card mt-4 px-6 py-10 text-center">
+              <p className="text-lg font-semibold">{t("bandeja.nothingApprove")}</p>
+              <p className="mt-2 text-[var(--suave)]">{t("bandeja.whenPhoto")}</p>
+              {proyectoId ? (
+                <button type="button" className="hyto-btn mx-auto mt-6 max-w-xs" onClick={() => document.getElementById("invitar")?.click()}>
+                  {t("bandeja.invite")}
+                </button>
+              ) : (
+                <Link href="/eventos/nuevo" className="hyto-btn mx-auto mt-6 max-w-xs">
+                  {t("bandeja.create")}
+                </Link>
+              )}
+            </div>
+            {filtro === "all" && pagadas.length > 0 ? (
+              <ListaPagadas tareas={pagadas} idioma={idioma} titulo={t("bandeja.paidList")} abrir={t("bandeja.openReview")} limite={limite} />
+            ) : null}
+          </>
         ) : (
+          <>
           <div className="hyto-inbox">
             <div className="grid gap-2">
               {visibles.length === 0 ? <p className="text-sm text-[var(--suave)]">{t("bandeja.nothingView")}</p> : null}
               {visibles.map((tarea) => {
                 const activo = seleccion?.id === tarea.id;
                 return (
+                  <div key={tarea.id} className="grid gap-1">
                   <button
-                    key={tarea.id}
                     type="button"
                     onClick={() => setSelId(tarea.id)}
                     className={`hyto-row ${activo ? "is-on bg-[var(--papel)]" : "hover:bg-[var(--papel)]"}`}
@@ -222,7 +321,7 @@ export function Bandeja({
                       <span className="min-w-0 flex-1">
                         <span className="flex items-start justify-between gap-3">
                           <span className="block font-semibold">{textoVisible(tarea.miembro, idioma)}</span>
-                          <span className="hyto-amount text-sm">{montoDeTarea(tarea, idioma)}</span>
+                          <span className="hyto-amount text-sm">{vistaMonto(tarea, idioma).linea}</span>
                         </span>
                         <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo, idioma)}</span>
                         <span className="mt-2 flex items-center justify-between gap-2">
@@ -233,6 +332,10 @@ export function Bandeja({
                       </span>
                     </div>
                   </button>
+                  <Link href={`/revision/${tarea.id}`} className="justify-self-end text-sm font-medium">
+                    {t("bandeja.openReview")}
+                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -242,7 +345,7 @@ export function Bandeja({
                 <div className="p-5">
                   <p className="text-sm text-[var(--suave)]">{etiquetaTipo(seleccion.tipo, idioma)} · {textoVisible(seleccion.miembro, idioma)}</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo, idioma)}</h3>
-                  <p className="hyto-amount mt-2 text-xl">{montoDeTarea(seleccion, idioma)}</p>
+                  <p className="hyto-amount mt-2 text-xl">{vistaMonto(seleccion, idioma).linea}</p>
                   {seleccion.frase ? <ResumenMile frase={seleccion.frase} lectura={seleccion.lectura} /> : null}
                   {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
                     <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />
@@ -334,8 +437,15 @@ export function Bandeja({
               <div />
             )}
           </div>
+          {filtro === "all" && pagadas.length > 0 ? (
+            <ListaPagadas tareas={pagadas} idioma={idioma} titulo={t("bandeja.paidList")} abrir={t("bandeja.openReview")} limite={limite} />
+          ) : null}
+          </>
         )}
       </section>
+
+      <PendientesSinFoto tareas={sinEntrega} idioma={idioma} />
+      <ListaRevision tareas={sueltas} idioma={idioma} />
 
       {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{claro(aviso)}</p> : null}
 
