@@ -7,7 +7,7 @@ import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { jpegDePrueba } from "../evidencia/muestras";
 import { tareasEjemplo } from "../integrante/ejemplos";
-import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 
 if (typeof URL.createObjectURL !== "function") {
   Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: () => "blob:foto" });
@@ -231,6 +231,7 @@ async function enviarCaptura(respuestas: Respuestas): Promise<string[]> {
   });
   await elegir(await jpegReciente());
   assert.ok(document.querySelector('img[alt="Evidence"]'));
+  await aceptarTerminos();
   await act(async () => {
     boton("Send evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });

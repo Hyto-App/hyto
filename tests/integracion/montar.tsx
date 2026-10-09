@@ -60,6 +60,15 @@ export async function escribir(selector: string, valor: string): Promise<void> {
   });
 }
 
+export async function aceptarTerminos(): Promise<void> {
+  const casilla = document.querySelector<HTMLInputElement>('input[name="acepto-legal"]');
+  if (!(casilla instanceof HTMLInputElement)) throw new Error("Sin la casilla de términos.");
+  if (casilla.checked) return;
+  await act(async () => {
+    casilla.click();
+  });
+}
+
 export async function pulsar(textoBoton: string): Promise<void> {
   const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes(textoBoton));
   if (!boton) throw new Error(`Sin botón ${textoBoton}.`);

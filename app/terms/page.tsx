@@ -2,11 +2,11 @@ import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { PaginaLegal } from "@/components/ui/PaginaLegal";
 import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
-import { privacidadDe } from "@/lib/ui/privacidad";
+import { terminosDe } from "@/lib/ui/legal";
 
 async function copia() {
   const jar = await cookies();
-  return privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
+  return terminosDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,6 +14,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: texto.titulo, description: texto.entrada };
 }
 
-export default async function PaginaPrivacidad() {
+export default async function PaginaTerminos() {
   return <PaginaLegal copia={await copia()} />;
 }

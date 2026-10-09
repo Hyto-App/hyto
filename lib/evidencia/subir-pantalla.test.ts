@@ -7,7 +7,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
-import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -77,6 +77,9 @@ test("las pestañas Recibo y Tarea muestran una sola carga", async () => {
     assert.equal(document.querySelectorAll('[role="tabpanel"]').length, 1);
     assert.equal(document.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby"), pestanas()[1]?.id);
     assert.match(texto(), /Open camera/);
+    assert.match(texto(), /I accept the/);
+    assert.match(texto(), /The organizer of the event can see the photos and receipts/);
+    assert.match(texto(), /Mile does not sign or move money/);
     assert.doesNotMatch(texto(), /Choose a PDF/);
     assert.doesNotMatch(texto(), /This task needs a camera photo/);
     assert.equal(entradaArchivo()?.accept.includes("pdf") ?? false, false);
@@ -200,6 +203,7 @@ async function subirConRespuesta(respuesta: () => Response): Promise<void> {
   await esperar();
   await elegirRecibo();
   assert.match(texto(), /Send/);
+  await aceptarTerminos();
   await pulsar("Send evidence");
   await esperar();
 }

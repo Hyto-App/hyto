@@ -11,6 +11,7 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
     PRIVACIDAD.kicker,
     PRIVACIDAD.titular,
     PRIVACIDAD.entrada,
+    PRIVACIDAD.borrador,
     PRIVACIDAD.inicio,
     ...PRIVACIDAD.secciones.flatMap((seccion) => [seccion.titulo, seccion.cuerpo]),
   ];
@@ -22,7 +23,15 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   for (const texto of textos) assert.ok(texto.trim().length > 0);
 
   const es = privacidadDe("es");
-  const textosEs = [es.titulo, es.kicker, es.titular, es.entrada, es.inicio, ...es.secciones.flatMap((seccion) => [seccion.titulo, seccion.cuerpo])];
+  const textosEs = [
+    es.titulo,
+    es.kicker,
+    es.titular,
+    es.entrada,
+    es.borrador,
+    es.inicio,
+    ...es.secciones.flatMap((seccion) => [seccion.titulo, seccion.cuerpo]),
+  ];
   const unidoEs = textosEs.join("\n");
   assert.equal(JERGA.test(unidoEs), false, unidoEs);
   assert.match(unidoEs, /Privacidad/);

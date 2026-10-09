@@ -1,10 +1,10 @@
 import { tituloDe } from "@/lib/ui/titulo";
-import Link from "next/link";
 import { Entrar } from "@/components/admin/Entrar";
 import { AnclaPasskey } from "@/components/integrante/AnclaPasskey";
 import { PanelCuenta } from "@/components/integrante/PanelCuenta";
 import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { Salir } from "@/components/sesion/Salir";
+import { EnlacesLegales } from "@/components/ui/EnlacesLegales";
 import { Texto } from "@/components/ui/Idioma";
 import { demoHabilitado } from "@/lib/sesion/demo";
 import { ANCLA_PASSKEY, PARAM_PASSKEY } from "@/lib/integrante/enlacePasskey";
@@ -41,11 +41,7 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
       <PanelCuenta />
       {tipoCuentaActivo() ? <TipoCuenta /> : null}
       {perfilVoluntarioActivo() ? <EditorPerfil /> : null}
-      <p className="mt-8 text-sm">
-        <Link href="/privacy" className="text-[var(--suave)] underline underline-offset-4">
-          <Texto clave="nav.privacy" />
-        </Link>
-      </p>
+      <EnlacesLegales className="hyto-cuenta-legal" />
       {demo ? (
         <div className="mt-8 max-w-sm">
           <Entrar demoHabilitado={demoHabilitado()} />

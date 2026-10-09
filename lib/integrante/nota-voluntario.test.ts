@@ -6,7 +6,7 @@ import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { jpegDePrueba } from "../evidencia/muestras";
-import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 import { FRASE_PAGO } from "./nota";
 import { leerTarea } from "./rutas";
 
@@ -251,6 +251,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     });
     const enviar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Send evidence");
     assert.ok(enviar instanceof HTMLButtonElement);
+    await aceptarTerminos();
     await act(async () => {
       enviar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

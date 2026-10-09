@@ -14,6 +14,7 @@ import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { AceptoLegal } from "@/components/ui/AceptoLegal";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
@@ -64,6 +65,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [archivoRechazado, setArchivoRechazado] = useState(false);
   const [reintentando, setReintentando] = useState(false);
   const [pestana, setPestana] = useState<PestanaEvidencia>("tarea");
+  const [acepta, setAcepta] = useState(false);
   const baseId = useId();
   const [rechazoVivo, setRechazoVivo] = useState<null | "camara" | "galeria">(null);
   const demo = useModoDemo();
@@ -351,6 +353,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   async function enviar() {
     if (!tarea || !foto || enviandoRef.current || !pestanaSirve()) return;
+    if (!acepta) {
+      setError(t("legal.falta"));
+      return;
+    }
     enviandoRef.current = true;
     setFase("enviando");
     setError(null);
@@ -835,6 +841,16 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <p role="alert" className="hyto-error-linea">
               {claro(error)}
             </p>
+          ) : null}
+          {fase === "inicio" || fase === "camara" || fase === "foto" ? (
+            <AceptoLegal
+              acepta={acepta}
+              alCambiar={(valor) => {
+                setAcepta(valor);
+                if (valor) setError(null);
+              }}
+              aviso={t("evidencia.avisoRevision")}
+            />
           ) : null}
           <div className="hyto-actions">
             <BotonPrincipal
