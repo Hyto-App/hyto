@@ -1659,7 +1659,7 @@ export const es: Rama<typeof en> = {
     chooseAnother: "Elegir otro archivo",
     takeAnother: "Tomar otra",
     sendAnother: "Enviar otro archivo",
-    sample: "Tarea de ejemplo, hasta que carguen las tuyas.",
+    sample: "Tarea de ejemplo, hasta que carguen las suyas.",
     noCameraShow: "No se pudo mostrar la cámara.",
     noCamera: "No se pudo abrir la cámara. Permita la cámara e intente de nuevo.",
     cameraNotReady: "La cámara todavía no está lista.",
@@ -1669,7 +1669,7 @@ export const es: Rama<typeof en> = {
     archivoVacio:
       "Este archivo está vacío (0 bytes), así que Enviar sigue apagado.\n1. Elija un JPEG, PNG, WebP, PDF o archivo de texto que tenga contenido.\n2. Si la descarga se cortó, descárguelo otra vez.\n3. Elija ese archivo. Enviar se activa cuando es una foto, un PDF o un texto de verdad.",
     archivoFalso:
-      "Este archivo no es un JPEG, PNG, WebP, PDF o texto de verdad, así que Enviar sigue apagado. Cambiarle el nombre a un texto para que diga .jpg no lo convierte en foto.\n1. Abra el archivo y comprueba que se ve la foto, las páginas del PDF o el texto.\n2. Expórtelo o guárdelo como JPEG, PNG, WebP, PDF, HTML o TXT.\n3. Elija el archivo nuevo.",
+      "Este archivo no es un JPEG, PNG, WebP, PDF o texto de verdad, así que Enviar sigue apagado. Cambiarle el nombre a un texto para que diga .jpg no lo convierte en foto.\n1. Abra el archivo y compruebe que se ve la foto, las páginas del PDF o el texto.\n2. Expórtelo o guárdelo como JPEG, PNG, WebP, PDF, HTML o TXT.\n3. Elija el archivo nuevo.",
     archivoPequena:
       "Esta imagen es demasiado pequeña para revisarla, así que Enviar sigue apagado. Tiene que medir al menos 8×8 píxeles (una imagen de 1×1 se rechaza).\n1. Tome o exporte una foto más grande.\n2. Elija ese archivo.\n3. Enviar se activa cuando la foto es lo bastante grande.",
     archivoGrande:
@@ -1684,7 +1684,7 @@ export const es: Rama<typeof en> = {
     mileCheck: "Antes de enviarla, yo reviso su foto",
     mileWhy: "Así llega completa al organizador y le pagan más rápido.",
     cameraOff: "Cámara apagada. Actívela para tomar la foto.",
-    galleryHint: "Tómala ahora con la cámara: no se aceptan fotos viejas de la galería.",
+    galleryHint: "Tómela ahora con la cámara: no se aceptan fotos viejas de la galería.",
     onePhoto: "1 foto",
     sendEvidence: "Enviar evidencia",
     takePhotoFirst: "Primero tome la foto",
@@ -1882,7 +1882,7 @@ export const es: Rama<typeof en> = {
     copy: "Copiar dirección",
     copied: "Copiado",
     viewTestnet: "Ver en el explorador",
-    copyHere: "Cópiala desde aquí. Esta es la dirección pública.",
+    copyHere: "Cópiela desde aquí. Esta es la dirección pública.",
     thisMonth: "Este mes",
     lastMonth: "Mes pasado",
     allTime: "Total",
@@ -2220,7 +2220,7 @@ export const es: Rama<typeof en> = {
   ayuda: {
     titulo: "Pregúntele a Mile",
     buscar: "Buscar",
-    placeholder: "Busca en las respuestas",
+    placeholder: "Busque en las respuestas",
     atajos: "Atajos",
     preguntas: "Preguntas",
     cerrar: "Cerrar",
@@ -2237,7 +2237,7 @@ export const es: Rama<typeof en> = {
       "Abra la revisión de esa tarea y toque Bloquear presupuesto. Eso aparta el monto de la tarea de su saldo en Hyto. Todavía no le paga a la persona. Paga desde esa misma revisión después de aprobar la foto. Su saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
     costosQ: "¿Cuánto cuesta pagar una tarea?",
     costosA:
-      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si apartas US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01). Si apartas US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
+      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si aparta US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01). Si aparta US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
     sinPagarQ: "¿Qué pasa si aparto el dinero y no pago?",
     sinPagarA:
       "No hay un botón que devuelva ese dinero a su saldo en Hyto. Después de apartar un monto, se queda en la tarea hasta que lo pague. Esta pantalla no lo envía a ningún otro lado.",
