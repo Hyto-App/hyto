@@ -106,7 +106,6 @@ export function PanelCuenta() {
       <ComoCobrar />
       <CostoDePagar />
       {vista.muestra ? null : <PasskeyCuenta />}
-      <PasaporteStellar />
       {vista.organiza && vista.orgullo.vacio ? null : (
         <>
           <Ganancias orgullo={vista.orgullo} />
