@@ -1,6 +1,7 @@
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
+import { layaPuedeTaparPorOtra } from "./otra-groq";
 import { condicionPideLugar } from "./lugar-pedido";
 import type { DetalleRazones } from "./snapshot-razones";
 
@@ -86,7 +87,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       ["c1"],
     ));
   }
-  if (trabajo?.v1 === "es_otra_cosa") {
+  if (trabajo?.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(entrada.lectura)) {
     etiquetas.push(etiqueta(
       "cap_no_coincide",
       "Serious issue: does not match the request",
