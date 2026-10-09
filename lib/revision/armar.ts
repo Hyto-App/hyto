@@ -3,7 +3,9 @@ import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
-import { calificar, motivosDeRegla, notaDeTexto, type MotivoTope } from "./pesos";
+import { calificar, motivosDeRegla, notaDeTexto, notaEntera, puntosTecho80, type MotivoTope } from "./pesos";
+import { leerSnapshot } from "./snapshot-razones";
+import type { EntornoTecho } from "./techo-bandera";
 
 export type Senales = {
   choice: string;
@@ -138,9 +140,13 @@ export function cerrar(
   descripcion: Descripcion,
   senales: Senales,
   origen: Exclude<OrigenRevision, "error">,
+  entorno: EntornoTecho = process.env,
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
+  const base = notaDeTexto(senales.score);
+  const trabajo = senales.detalle ? leerSnapshot(senales.detalle)?.trabajo : null;
+  const extra = tipo === "trabajo" && base !== null ? puntosTecho80(trabajo, descripcion.lectura, entorno) : 0;
   const armado = armarVeredicto({
     tipo,
     tope,
@@ -148,7 +154,7 @@ export function cerrar(
     fecha,
     montoSinUsd: montoSinUsd(descripcion.lectura),
     cumpleReglas: descripcion.lectura?.cumpleReglas,
-    score: senales.score,
+    score: extra === 0 || base === null ? senales.score : String(notaEntera(base + extra)),
     motivos: senales.motivos,
   });
   if (!armado) return null;

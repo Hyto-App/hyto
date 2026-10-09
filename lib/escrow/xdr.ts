@@ -21,8 +21,22 @@ export type InvocacionFirmada = {
   firmantes: string[];
 };
 
+export const FUNCION_LIBERACION = "release_funds";
+
 export function esAltaDeFabrica(invocacion: { contrato: string; funcion: string }): boolean {
   return invocacion.funcion === FUNCION_ALTA_ESCROW && invocacion.contrato === FABRICA_MULTI_RELEASE_TESTNET;
+}
+
+// release_funds(release_signer, trustless_work_address, ...). The contract pays the
+// 0.3% protocol fee to whatever address the releaser passes. Null when this XDR is
+// not that call shape, so other argument layouts are left to their own checks.
+export function direccionFeeDeLiberacion(crudo: string): string | null {
+  const llamada = leerLlamada(crudo);
+  if (!llamada || llamada.funcion !== FUNCION_LIBERACION || llamada.args.length < 2) return null;
+  const firmante = direccionScVal(llamada.args[0]);
+  const fee = direccionScVal(llamada.args[1]);
+  if (!firmante || !esCuenta(firmante) || !fee) return null;
+  return fee;
 }
 
 // El rótulo del cuerpo no dice quién firma. Esta lectura sale del XDR:
@@ -84,6 +98,14 @@ function leerLlamada(crudo: string): Llamada | null {
   if (!funcion) return null;
   const args = Array.isArray(llamada.args) ? llamada.args : [];
   return { tx, contrato, funcion, args, auth: op.auth ?? [] };
+}
+
+function direccionScVal(valor: xdr.ScVal): string | null {
+  try {
+    return Address.fromScVal(valor).toString();
+  } catch {
+    return null;
+  }
 }
 
 function abrir(crudo: string): Transaction | null {

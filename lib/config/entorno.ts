@@ -104,6 +104,12 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "Cuenta G admin del escrow v2. El contrato rechaza que coincida con cualquier otro rol, incluida la plataforma.",
   },
   {
+    nombre: "HYTO_TRUSTLESS_FEE",
+    ambito: "servidor",
+    requerida: false,
+    para: "Cuenta G que debe recibir el 0,3 % de Trustless Work al liberar. El servidor la fija; una liberación con otra dirección se rechaza. Sin ella, o sin trustline de USDC en testnet, liberar responde un error claro y el resto de los pagos sigue.",
+  },
+  {
     nombre: HOST_BASE_PRODUCCION,
     ambito: "servidor",
     requerida: false,
@@ -117,11 +123,11 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: `Confirmación explícita para migrar o sembrar cuando DATABASE_URL apunta a un host de ${HOST_BASE_PRODUCCION}. El único valor que habilita es ${CONFIRMACION_BASE_PRODUCCION}.`,
   },
   {
-    nombre: "HYTO_MILE_REQUISITOS",
+    nombre: "HYTO_MILE_FALTANTES_GROQ",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
+    para: "Exact value on takes \"is something missing?\" from Groq's faltantes list and tightens that list in the vision prompt: only what the task asks for, nothing already described as present, bokeh does not make the photo unreadable, and printed names are copied exactly. Unset or anything else keeps Laya's v4 and the current prompt.",
   },
   {
     nombre: "HYTO_MILE_INTENTOS",
@@ -131,11 +137,39 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     para: "How many photos Mile may review before the organizer decides. Unset means 3. Only read when HYTO_MILE_REQUISITOS is on.",
   },
   {
+    nombre: "HYTO_MILE_OTRA_CON_GROQ",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on asks Groq for a required coincide (si, parcial, or no). Only si withholds Laya's something-else cap and the grade of 0. parcial, no, and a missing field keep them. At most one extra Groq call per photo, and never after a 429 or a quota error. Unset or anything else keeps the current prompt and the current cap.",
+  },
+  {
     nombre: "HYTO_MILE_PREGUNTAS_EVENTO",
     ambito: "servidor",
     requerida: false,
     silenciosa: true,
-    para: "Exact value on adds event options to Mile's work questions: documenting an event, and a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+    para: "Exact value on adds Spanish event options to Mile's work questions: documentar_evento, and no_aplica for a scene that does not count as work that has not started. Unset or anything else keeps the current questions and scoring.",
+  },
+  {
+    nombre: "HYTO_MILE_REQUISITOS",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on evaluates each stored photo requirement. Unset or anything else keeps the current Laya questions on condicion.",
+  },
+  {
+    nombre: "HYTO_MILE_TECHO_80",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on lets a legible work photo with nothing missing reach Completed when the two how-much-is-shown answers sit on the middle step, or when the reading's coincide field is si. Absent, parcial, and no do not lift. Unset or anything else keeps the current grade. Does not move the 80 threshold.",
+  },
+  {
+    nombre: "HYTO_MILE_TIPO_POR_TAREA",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on picks Mile's work or receipt questions from the task type and Groq's evidence type. A close Laya c1 does not. Unset or anything else keeps today's path.",
   },
   {
     nombre: "HYTO_COMUNIDADES",
