@@ -718,7 +718,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </Link>
           ) : !cerrada ? (
             <button type="button" onClick={tomarOtra} className="hyto-btn-line">
-              {recibo ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
+              {recibo ? t("evidencia.sendAnother") : t("evidencia.takeAnotherSent")}
             </button>
           ) : null}
         </div>

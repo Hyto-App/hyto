@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
+import { AvisoCampo, propsError, useEnfocarError, type ErrorCampo } from "@/lib/ui/error-campo";
 import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
@@ -71,13 +73,21 @@ export function TareasEvento({
   const claro = useClaro();
   const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<{ tareaId: string; mensaje: string } | null>(null);
+  const [falla, setFalla] = useState<ErrorCampo | null>(null);
+  useEnfocarError(falla);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [guardando, setGuardando] = useState(false);
 
+  function marcar(id: string, mensaje: string) {
+    setAviso(null);
+    setFalla({ id, mensaje });
+  }
+
   async function asignar(tareaId: string, usuarioId: string) {
     setAviso(null);
+    setFalla(null);
     const respuesta = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/asignar`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -85,7 +95,12 @@ export function TareasEvento({
     });
     if (!respuesta.ok) {
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-      setAviso(cuerpo?.aviso ?? "Could not assign that task.");
+      const mensaje = cuerpo?.aviso ?? "Could not assign that task.";
+      if (respuesta.status === 409) {
+        setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, bloqueo: mensaje } : fila)));
+        return;
+      }
+      marcar(`asignar-${tareaId}`, claro(mensaje));
       return;
     }
     setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
@@ -93,6 +108,7 @@ export function TareasEvento({
 
   async function clasificar(tareaId: string, cambio: { prioridad?: PrioridadTarea; dificultad?: DificultadTarea | null }) {
     setAviso(null);
+    setFalla(null);
     const previa = filas.find((fila) => fila.id === tareaId);
     setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, ...cambio } : fila)));
     const respuesta = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/clasificar`, {
@@ -107,12 +123,14 @@ export function TareasEvento({
         );
       }
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-      setAviso(cuerpo?.aviso ?? t("clasificacion.saveFail"));
+      const mensaje = cuerpo?.aviso ?? t("clasificacion.saveFail");
+      marcar(cambio.prioridad ? `prioridad-${tareaId}` : `dificultad-${tareaId}`, claro(mensaje));
     }
   }
 
   function abrir(tarea: FilaTareaEvento) {
     setAviso(null);
+    setFalla(null);
     setEditandoId(tarea.id);
     setBorrador({
       titulo: tarea.titulo,
@@ -123,19 +141,47 @@ export function TareasEvento({
     });
   }
 
+  function campoDe(avisoTexto: string, tarea: FilaTareaEvento): string | null {
+    if (avisoTexto === "Enter a title." || avisoTexto === "Title is too long.") return `titulo-${tarea.id}`;
+    if (avisoTexto === "Enter what the photo must show." || avisoTexto === "That note is too long.") return `condicion-${tarea.id}`;
+    if (avisoTexto === AVISO_MONTO_INVALIDO || avisoTexto === "Every task needs an amount greater than zero.") return `monto-${tarea.id}`;
+    if (avisoTexto === "Work tasks don't have a cap.") return `tope-${tarea.id}`;
+    return null;
+  }
+
   async function guardar(tarea: FilaTareaEvento) {
     if (!borrador || guardando) return;
-    const montoMal = avisoMontoEntrada(borrador.monto) ?? (tarea.tipo === "reembolso" ? avisoMontoEntrada(borrador.tope) : null);
-    if (montoMal) {
-      setAviso(montoMal);
+    if (!borrador.titulo.trim()) {
+      marcar(`titulo-${tarea.id}`, t("eventos.needTitle"));
       return;
+    }
+    if (!borrador.monto.trim()) {
+      marcar(`monto-${tarea.id}`, t("avisos.montoTarea"));
+      return;
+    }
+    const montoVivo = avisoMontoEntrada(borrador.monto);
+    if (montoVivo) {
+      marcar(`monto-${tarea.id}`, claro(montoVivo));
+      return;
+    }
+    if (tarea.tipo === "reembolso") {
+      if (!borrador.tope.trim()) {
+        marcar(`tope-${tarea.id}`, t("avisos.montoTarea"));
+        return;
+      }
+      const topeVivo = avisoMontoEntrada(borrador.tope);
+      if (topeVivo) {
+        marcar(`tope-${tarea.id}`, claro(topeVivo));
+        return;
+      }
     }
     const falta = faltaDeBorrador(tarea, borrador, saldo);
     if (falta) {
-      setAviso(t("errores.saldoNoCubre", textosSaldo(falta, idioma)));
+      setAviso({ tareaId: tarea.id, mensaje: t("errores.saldoNoCubre", textosSaldo(falta, idioma)) });
       return;
     }
     setAviso(null);
+    setFalla(null);
     setGuardando(true);
     const cuerpo: Record<string, string> = {
       titulo: borrador.titulo,
@@ -155,12 +201,18 @@ export function TareasEvento({
     } | null;
     setGuardando(false);
     if (!respuesta.ok || !json?.tarea) {
-      setAviso(json?.aviso ?? "Could not save that task.");
+      const mensaje = json?.aviso ?? "Could not save that task.";
       if (respuesta.status === 409 && json?.aviso) {
-        setFilas((actuales) => actuales.map((fila) => (fila.id === tarea.id ? { ...fila, bloqueo: json.aviso ?? fila.bloqueo } : fila)));
+        setFilas((actuales) => actuales.map((fila) => (fila.id === tarea.id ? { ...fila, bloqueo: mensaje } : fila)));
         setEditandoId(null);
         setBorrador(null);
+        setFalla(null);
+        setAviso(null);
+        return;
       }
+      const campo = campoDe(mensaje, tarea);
+      if (campo) marcar(campo, claro(mensaje));
+      else setAviso({ tareaId: tarea.id, mensaje: claro(mensaje) });
       return;
     }
     setFilas((actuales) =>
@@ -235,18 +287,28 @@ export function TareasEvento({
                     <input
                       id={`titulo-${tarea.id}`}
                       value={borrador.titulo}
-                      onChange={(evento) => setBorrador({ ...borrador, titulo: evento.target.value })}
+                      onChange={(evento) => {
+                        setBorrador({ ...borrador, titulo: evento.target.value });
+                        if (falla?.id === `titulo-${tarea.id}`) setFalla(null);
+                      }}
+                      {...propsError(falla, `titulo-${tarea.id}`)}
                       className="hyto-input mt-2"
                     />
+                    <AvisoCampo id={`titulo-${tarea.id}-error`} mensaje={falla?.id === `titulo-${tarea.id}` ? falla.mensaje : null} />
                   </label>
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`condicion-${tarea.id}`}>
                     {t("eventos.photoMust")}
                     <input
                       id={`condicion-${tarea.id}`}
                       value={borrador.condicion}
-                      onChange={(evento) => setBorrador({ ...borrador, condicion: evento.target.value })}
+                      onChange={(evento) => {
+                        setBorrador({ ...borrador, condicion: evento.target.value });
+                        if (falla?.id === `condicion-${tarea.id}`) setFalla(null);
+                      }}
+                      {...propsError(falla, `condicion-${tarea.id}`)}
                       className="hyto-input mt-2"
                     />
+                    <AvisoCampo id={`condicion-${tarea.id}-error`} mensaje={falla?.id === `condicion-${tarea.id}` ? falla.mensaje : null} />
                   </label>
                   <label className="block text-sm text-[var(--suave)]" htmlFor={`monto-${tarea.id}`}>
                     {t("eventos.amount")}
@@ -254,15 +316,30 @@ export function TareasEvento({
                       id={`monto-${tarea.id}`}
                       inputMode="decimal"
                       value={borrador.monto}
-                      aria-invalid={avisoMontoEntrada(borrador.monto) ? true : undefined}
-                      onChange={(evento) => setBorrador({ ...borrador, monto: escribirMonto(evento.target.value) })}
+                      {...propsError(
+                        avisoMontoEntrada(borrador.monto)
+                          ? { id: `monto-${tarea.id}`, mensaje: claro(avisoMontoEntrada(borrador.monto) ?? "") }
+                          : falla?.id === `monto-${tarea.id}`
+                            ? falla
+                            : null,
+                        `monto-${tarea.id}`,
+                      )}
+                      onChange={(evento) => {
+                        setBorrador({ ...borrador, monto: escribirMonto(evento.target.value) });
+                        if (falla?.id === `monto-${tarea.id}`) setFalla(null);
+                      }}
                       className="hyto-input mt-2"
                     />
-                    {avisoMontoEntrada(borrador.monto) ? (
-                      <p role="alert" className="mt-2 text-sm text-[var(--peligro)]">
-                        {avisoMontoEntrada(borrador.monto)}
-                      </p>
-                    ) : null}
+                    <AvisoCampo
+                      id={`monto-${tarea.id}-error`}
+                      mensaje={
+                        avisoMontoEntrada(borrador.monto)
+                          ? claro(avisoMontoEntrada(borrador.monto) ?? "")
+                          : falla?.id === `monto-${tarea.id}`
+                            ? falla.mensaje
+                            : null
+                      }
+                    />
                   </label>
                   {tarea.tipo === "reembolso" ? (
                     <label className="block text-sm text-[var(--suave)]" htmlFor={`tope-${tarea.id}`}>
@@ -271,10 +348,33 @@ export function TareasEvento({
                         id={`tope-${tarea.id}`}
                         inputMode="decimal"
                         value={borrador.tope}
-                        aria-invalid={avisoMontoEntrada(borrador.tope) || faltaFila ? true : undefined}
-                        aria-describedby={faltaFila ? `saldo-${tarea.id}` : undefined}
-                        onChange={(evento) => setBorrador({ ...borrador, tope: escribirMonto(evento.target.value) })}
+                        {...propsError(
+                          avisoMontoEntrada(borrador.tope)
+                            ? { id: `tope-${tarea.id}`, mensaje: claro(avisoMontoEntrada(borrador.tope) ?? "") }
+                            : falla?.id === `tope-${tarea.id}`
+                              ? falla
+                              : null,
+                          `tope-${tarea.id}`,
+                          faltaFila ? `saldo-${tarea.id}` : undefined,
+                        )}
+                        aria-invalid={
+                          avisoMontoEntrada(borrador.tope) || falla?.id === `tope-${tarea.id}` || faltaFila ? true : undefined
+                        }
+                        onChange={(evento) => {
+                          setBorrador({ ...borrador, tope: escribirMonto(evento.target.value) });
+                          if (falla?.id === `tope-${tarea.id}`) setFalla(null);
+                        }}
                         className="hyto-input mt-2"
+                      />
+                      <AvisoCampo
+                        id={`tope-${tarea.id}-error`}
+                        mensaje={
+                          avisoMontoEntrada(borrador.tope)
+                            ? claro(avisoMontoEntrada(borrador.tope) ?? "")
+                            : falla?.id === `tope-${tarea.id}`
+                              ? falla.mensaje
+                              : null
+                        }
                       />
                     </label>
                   ) : null}
@@ -324,7 +424,7 @@ export function TareasEvento({
                       className="hyto-input mt-2"
                       value={tarea.miembroId}
                       disabled={Boolean(tarea.bloqueo)}
-                      aria-describedby={tarea.bloqueo ? `bloqueo-${tarea.id}` : undefined}
+                      {...propsError(falla, `asignar-${tarea.id}`, tarea.bloqueo ? `bloqueo-${tarea.id}` : undefined)}
                       onChange={(evento) => void asignar(tarea.id, evento.target.value)}
                     >
                       <option value="">{t("comunes.unassigned")}</option>
@@ -335,6 +435,7 @@ export function TareasEvento({
                       ))}
                     </select>
                   </label>
+                  <AvisoCampo id={`asignar-${tarea.id}-error`} mensaje={falla?.id === `asignar-${tarea.id}` ? falla.mensaje : null} />
                   <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
@@ -366,11 +467,13 @@ export function TareasEvento({
                     id={`prioridad-${tarea.id}`}
                     className="hyto-input mt-2"
                     value={tarea.prioridad}
+                    {...propsError(falla, `prioridad-${tarea.id}`)}
                     onChange={(evento) => void clasificar(tarea.id, { prioridad: evento.target.value as PrioridadTarea })}
                   >
                     <option value="normal">{t("clasificacion.normal")}</option>
                     <option value="high">{t("clasificacion.high")}</option>
                   </select>
+                  <AvisoCampo id={`prioridad-${tarea.id}-error`} mensaje={falla?.id === `prioridad-${tarea.id}` ? falla.mensaje : null} />
                 </label>
                 <label className="text-sm" htmlFor={`dificultad-${tarea.id}`}>
                   {t("clasificacion.difficulty")}
@@ -378,6 +481,7 @@ export function TareasEvento({
                     id={`dificultad-${tarea.id}`}
                     className="hyto-input mt-2"
                     value={tarea.dificultad ?? ""}
+                    {...propsError(falla, `dificultad-${tarea.id}`)}
                     onChange={(evento) =>
                       void clasificar(tarea.id, { dificultad: evento.target.value === "" ? null : (evento.target.value as DificultadTarea) })
                     }
@@ -387,17 +491,18 @@ export function TareasEvento({
                     <option value="medium">{t("clasificacion.medium")}</option>
                     <option value="hard">{t("clasificacion.hard")}</option>
                   </select>
+                  <AvisoCampo id={`dificultad-${tarea.id}-error`} mensaje={falla?.id === `dificultad-${tarea.id}` ? falla.mensaje : null} />
                 </label>
               </div>
+              {aviso?.tareaId === tarea.id ? (
+                <p role="alert" className="text-sm text-[var(--peligro)]">
+                  {aviso.mensaje}
+                </p>
+              ) : null}
             </li>
           );
         })}
       </ul>
-      {aviso ? (
-        <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {claro(aviso)}
-        </p>
-      ) : null}
     </main>
   );
 }
