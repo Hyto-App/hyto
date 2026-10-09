@@ -91,6 +91,11 @@ export function crearMemoria(): Almacen {
       }
       usuarios.set(usuario.id, guardado);
     },
+    async vaciarNombre(id) {
+      const actual = usuarios.get(id);
+      if (!actual) return;
+      usuarios.set(id, { ...actual, nombre: "" });
+    },
     async leerProyecto(id) {
       return proyectos.get(id) ?? null;
     },

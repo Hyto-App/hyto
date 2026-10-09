@@ -13,6 +13,18 @@ export function nombreVisible(nombre: string | null | undefined, email: string):
   return limpio;
 }
 
+/** True when the stored name is the whole email or only the part before @. A real name that contains @ stays. */
+export function nombreEsInicioDeCorreo(nombre: string | null | undefined, email: string): boolean {
+  const limpio = (nombre ?? "").trim();
+  if (!limpio) return false;
+  const correo = email.trim().toLowerCase();
+  if (!correo) return false;
+  if (limpio.toLowerCase() === correo) return true;
+  const corte = correo.indexOf("@");
+  const local = corte > 0 ? correo.slice(0, corte) : "";
+  return Boolean(local && limpio.toLowerCase() === local);
+}
+
 /** Name the payee can read. A real name wins. The event name is the backup. Null when neither is a name. */
 export function nombreOrganizadorVisible(
   nombre: string | null | undefined,
