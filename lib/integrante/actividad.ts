@@ -33,23 +33,26 @@ export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado:
 }
 
 /**
- * Each step and each event exists only after it happened.
+ * Payment steps once the task has left pending.
  * A pending task has no current send: a stored score, an old clock, or a sample etapa
  * does not become "you sent", "Mile reviewed", or "Approved".
+ * In review, the first step is the current one and the screen names it In review.
  */
 export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[] } {
   const marcas = marcasPago(tarea);
-  const pasos: PasoActividad[] = [];
-  if (marcas.aprobada) pasos.push({ id: "aprobada", estado: "hecho" });
-  if (marcas.enviado) pasos.push({ id: "enviado", estado: "hecho" });
-  if (marcas.pagado) pasos.push({ id: "pagado", estado: "hecho" });
-
   const pendienteSinPago = tarea.estado === "pendiente" && !marcas.enviado && !marcas.pagado;
-  if (pendienteSinPago) return { pasos, eventos: [] };
+  if (pendienteSinPago) return { pasos: [], eventos: [] };
+
+  const empezo = Boolean(instanteGuardado(tarea.enviadaEn) || tarea.etapa || tarea.estado !== "pendiente" || marcas.enviado);
+  const pasos: PasoActividad[] = [
+    { id: "aprobada", estado: marcas.aprobada ? "hecho" : empezo ? "ahora" : "despues" },
+    { id: "enviado", estado: marcas.enviado ? "hecho" : marcas.aprobada ? "ahora" : "despues" },
+    { id: "pagado", estado: marcas.pagado ? "hecho" : marcas.enviado ? "ahora" : "despues" },
+  ];
 
   const eventos: EventoActividad[] = [];
   const enviada = instanteGuardado(tarea.enviadaEn);
-  if (enviada) eventos.push({ id: "envio", en: enviada });
+  if (enviada || tarea.etapa) eventos.push({ id: "envio", en: enviada });
   const mileReviso =
     !tarea.revisionFallida &&
     (typeof tarea.nota === "number" || Boolean(tarea.veredicto) || tarea.etapa === "enviada_organizador" || marcas.aprobada);
