@@ -40,7 +40,7 @@ export async function existeCuentaHttp(request: Request, almacen: Almacen): Prom
   if (!CORREO.test(email)) return json({ aviso: "Enter a valid email." }, 400);
   try {
     return json({ existe: (await almacen.usuarioPorEmail(email)) !== null }, 200, { "cache-control": "private, no-store" });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

@@ -69,7 +69,7 @@ export function useNovedadesEvento(opciones: {
     };
 
     const alVista = () => {
-      if (!viva) return;
+      if (!viva || vencidaRef.current) return;
       if (ocultoRef.current()) {
         globalThis.clearTimeout(timer);
         return;
@@ -78,7 +78,7 @@ export function useNovedadesEvento(opciones: {
     };
 
     async function tick() {
-      if (!viva || ocultoRef.current() || ocupado) return;
+      if (!viva || ocultoRef.current() || ocupado || vencidaRef.current) return;
       ocupado = true;
       let falloRed = false;
       let abortado = false;
@@ -133,7 +133,10 @@ export function useNovedadesEvento(opciones: {
       } finally {
         ocupado = false;
       }
-      if (!viva || abortado || ocultoRef.current() || sesionCerrada) return;
+      if (!viva || abortado || ocultoRef.current() || sesionCerrada) {
+        if (sesionCerrada) globalThis.clearTimeout(timer);
+        return;
+      }
       if (falloRed) fallos += 1;
       const espera = esperaSondeo(fallos, false, intervalo);
       if (espera !== null) programar(espera);

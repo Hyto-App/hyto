@@ -49,7 +49,7 @@ export function Isotipo({ className, title = "Hyto" }: PropsMarca = {}) {
   );
 }
 
-/** The slogan, "on the record." in the accent. A heading on the landing, a paragraph inside the sign-in dialog. */
+/** The slogan, "payout." in the accent. A heading on the landing, a paragraph inside the sign-in dialog. */
 export function Eslogan({ como: Etiqueta = "p", className }: { como?: "h1" | "p"; className?: string }) {
   const t = useTexto();
   return (

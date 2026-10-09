@@ -2,14 +2,23 @@
 
 import Link from "next/link";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
-import { montoDeTarea } from "@/lib/integrante/formato";
+import { lineaMontoTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export function TareasMiembro({
   tareas,
 }: {
-  tareas: { id: string; titulo: string; estado: string; tipo: TipoTarea; monto: string; tope: string | null }[];
+  tareas: {
+    id: string;
+    titulo: string;
+    estado: string;
+    tipo: TipoTarea;
+    monto: string;
+    tope: string | null;
+    montoConfirmado?: string | null;
+    montoRevisado?: string | null;
+  }[];
 }) {
   const t = useTexto();
   const idioma = useIdioma();
@@ -31,7 +40,7 @@ export function TareasMiembro({
             <Link href={`/tareas/${tarea.id}`} className="hyto-card block p-5">
               <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
               <p className="mt-1 text-sm text-[var(--suave)]">
-                {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {montoDeTarea(tarea, idioma)}
+                {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
               </p>
             </Link>
           </li>
