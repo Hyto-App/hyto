@@ -521,7 +521,7 @@ export function Revision({
             : t("pago.paying");
 
   return (
-    <main className="hyto-page">
+    <main className="hyto-page hyto-revision">
       <p className="hyto-crumb print:hidden">
         <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"}>{t("nav.events")}</Link>
         <span aria-hidden="true">/</span>

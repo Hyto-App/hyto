@@ -1,0 +1,310 @@
+/*
+ * Mobile admin, 360–430px only.
+ * Inbox and evidence review. Desktop and the rest of the app stay as they are.
+ * Brand tokens only: lime accent, near-black on the accent, Poppins, existing surfaces.
+ */
+
+@media (max-width: 430px) {
+  .hyto-main:has(.hyto-bandeja),
+  .hyto-main:has(.hyto-revision) {
+    overflow-x: clip;
+  }
+
+  /* Organizer labels such as "Del evento" stay inside the 390px inbox. Other screens keep today's nav. */
+  .hyto-shell:has(.hyto-bandeja) .hyto-nav.hyto-nav-movil a,
+  .hyto-shell:has(.hyto-bandeja) .hyto-nav.hyto-nav-movil .hyto-mas summary {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 11px;
+  }
+
+  .hyto-bandeja,
+  .hyto-revision {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  /* Inbox: one column. Detail and recommendation stay on the review screen. */
+  .hyto-bandeja .hyto-inbox > :not(.grid) {
+    display: none;
+  }
+
+  .hyto-bandeja .hyto-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hyto-bandeja .hyto-kpis article {
+    min-width: 0;
+    padding: 12px 10px;
+  }
+
+  .hyto-bandeja .hyto-kpis article + article {
+    border-top: 0;
+    border-left: 1px solid var(--linea);
+  }
+
+  .hyto-bandeja .hyto-kpis .text-2xl {
+    font-size: 18px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-bandeja .hyto-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: hidden;
+    border-bottom: 0;
+    margin-bottom: 12px;
+  }
+
+  .hyto-bandeja .hyto-tabs button {
+    width: auto;
+    max-width: 100%;
+    min-height: 44px;
+    margin: 0;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .hyto-bandeja .hyto-tabs button[aria-selected="true"] {
+    border-color: transparent;
+    border-bottom-color: transparent;
+    background: var(--tinta);
+    color: var(--fondo);
+  }
+
+  .hyto-bandeja .hyto-inbox > .grid {
+    gap: 12px;
+  }
+
+  .hyto-bandeja .hyto-inbox .grid.gap-1 {
+    position: relative;
+    gap: 0;
+    border-radius: 16px;
+    background: var(--papel);
+    box-shadow: inset 0 0 0 1px var(--linea);
+  }
+
+  .hyto-bandeja .hyto-row {
+    min-width: 0;
+  }
+
+  .hyto-bandeja .hyto-row .flex,
+  .hyto-bandeja .hyto-row .min-w-0 {
+    min-width: 0;
+  }
+
+  .hyto-bandeja .hyto-amount,
+  .hyto-bandeja .hyto-title,
+  .hyto-bandeja .hyto-pill {
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-bandeja .hyto-inbox .mt-2.flex {
+    flex-wrap: wrap;
+  }
+
+  /* The row still selects on desktop. Here the link covers the card and opens the review. */
+  .hyto-bandeja .hyto-inbox .hyto-row {
+    pointer-events: none;
+  }
+
+  .hyto-bandeja .hyto-inbox a.justify-self-end {
+    position: static;
+    z-index: 1;
+    display: flex;
+    width: calc(100% - 16px);
+    min-height: 52px;
+    margin: 0 8px 8px;
+    align-items: center;
+    justify-content: center;
+    justify-self: stretch;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #c2f24d 0%, var(--acento) 100%);
+    padding: 12px 16px;
+    color: var(--sobre-acento);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: var(--sombra-boton);
+  }
+
+  .hyto-bandeja .hyto-inbox a.justify-self-end::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .hyto-bandeja .hyto-inbox a.justify-self-end:active {
+    transform: scale(0.97);
+  }
+
+  .hyto-bandeja section .hyto-row.flex {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .hyto-bandeja section .hyto-row.flex .hyto-btn,
+  .hyto-bandeja .hyto-card .hyto-btn {
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 52px;
+  }
+
+  /* Review: title, then the amount. The photo stays the first thing you see. */
+  .hyto-shell-foco .hyto-main:has(.hyto-revision) {
+    padding-top: calc(12px + env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: calc(200px + env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .hyto-revision .hyto-page-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .hyto-revision .hyto-page-head .text-right {
+    text-align: left;
+  }
+
+  .hyto-revision .hyto-title {
+    font-size: 26px;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-revision .hyto-crumb,
+  .hyto-revision .hyto-sub,
+  .hyto-revision .hyto-amount,
+  .hyto-revision .font-mono {
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-revision .hyto-review {
+    gap: 12px;
+  }
+
+  .hyto-revision .hyto-photo {
+    max-height: 240px;
+    border-radius: 16px;
+  }
+
+  .hyto-revision .hyto-panel {
+    padding: 16px;
+    padding-bottom: 8px;
+  }
+
+  .hyto-revision dl.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .hyto-revision .hyto-input,
+  .hyto-revision textarea {
+    font-size: 16px;
+  }
+
+  .hyto-revision form .hyto-btn-line {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .hyto-revision details summary {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .hyto-revision .hyto-actions {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 25;
+    display: flex;
+    width: auto;
+    max-height: min(72dvh, 560px);
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-top: 1px solid var(--linea);
+    border-radius: 20px 20px 0 0;
+    background: var(--papel);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 32px -20px rgba(8, 9, 12, 0.45);
+  }
+
+  .hyto-revision .hyto-actions:not(:has(button, a, p, form)) {
+    display: none;
+  }
+
+  .hyto-revision .hyto-actions > p,
+  .hyto-revision .hyto-actions .hyto-pedir,
+  .hyto-revision .hyto-actions .hyto-pedir-listo,
+  .hyto-revision .hyto-actions .hyto-callout {
+    order: 1;
+    margin: 0;
+  }
+
+  .hyto-revision .hyto-actions .hyto-btn-line {
+    order: 2;
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .hyto-revision .hyto-actions .hyto-btn {
+    order: 3;
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .hyto-revision .hyto-actions .hyto-btn:active,
+  .hyto-revision .hyto-actions .hyto-btn-line:active {
+    transform: scale(0.97);
+  }
+
+  .hyto-revision .hyto-pedir label {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .hyto-revision .hyto-pedir input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+
+  .hyto-revision .hyto-pedir-acciones {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hyto-revision .hyto-pedir-acciones .hyto-btn,
+  .hyto-revision .hyto-pedir-acciones .hyto-btn-line {
+    width: 100%;
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 430px) and (prefers-reduced-motion: reduce) {
+  .hyto-bandeja .hyto-inbox a.justify-self-end:active,
+  .hyto-revision .hyto-actions .hyto-btn:active,
+  .hyto-revision .hyto-actions .hyto-btn-line:active {
+    transform: none;
+  }
+}

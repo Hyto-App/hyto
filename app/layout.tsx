@@ -7,6 +7,7 @@ import { ESLOGAN } from "@/components/ui/marca/trazos";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
 import "./globals.css";
+import "./movil-admin.css";
 
 export const dynamic = "force-dynamic";
 
