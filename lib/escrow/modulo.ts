@@ -1,6 +1,8 @@
 import { claveDeTrustless } from "@/lib/config/entorno";
 import { AVISO_XLM_COMISION } from "./comision";
 import { baseDe, convieneFriendbot, esContrato, pedidoAccion, pedidoDespliegue } from "./cuerpos";
+import { falloSiFeeDeXdr, falloSiTrustlineFee } from "./fee";
+import { direccionFeeDeLiberacion } from "./xdr";
 import { revisarResolucion } from "./resolver";
 import type { AccionFirma, CuentasDespliegue, OpcionesRed, PagoEnviado, XdrListo } from "./tipos";
 
@@ -44,7 +46,17 @@ export async function preparar(accion: AccionFirma, opciones: OpcionesRed = {}):
   }
   const pedido = pedidoAccion(accion, red);
   if (typeof pedido === "string") throw new ErrorFirma(pedido, 400, null);
-  return leerXdr(await post(pedido.ruta, pedido.cuerpo, opciones));
+  const listo = leerXdr(await post(pedido.ruta, pedido.cuerpo, opciones));
+  if (accion.accion === "liberar") {
+    const distinto = falloSiFeeDeXdr(listo.xdr);
+    if (distinto) throw new ErrorFirma(distinto.aviso, distinto.estado, distinto.codigo);
+    const fee = direccionFeeDeLiberacion(listo.xdr);
+    if (fee) {
+      const trust = await falloSiTrustlineFee(fee, opciones.fetch ?? fetch);
+      if (trust) throw new ErrorFirma(trust.aviso, trust.estado, trust.codigo);
+    }
+  }
+  return listo;
 }
 
 export function respuestaDeLectura(error: unknown): Response {

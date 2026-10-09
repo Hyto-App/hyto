@@ -32,7 +32,7 @@ test("la bienvenida muestra el primer paso y cada estado del cobro", async () =>
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /You're in/);
+    assert.match(texto(), /You are signed in/);
     assert.match(texto(), /Take your first step/);
     assert.match(texto(), /Checking your payout account/);
     assert.equal(document.querySelector('[data-estado="comprobando"]') !== null, true);
@@ -108,7 +108,7 @@ test("en demo la bienvenida no pide el cobro", async () => {
     await act(async () => {
       await Promise.resolve();
     });
-    assert.match(texto(), /You're in/);
+    assert.match(texto(), /You are signed in/);
     assert.match(texto(), /Demo mode can't set up payouts/);
     assert.doesNotMatch(texto(), /Take your first step/);
     assert.doesNotMatch(texto(), /Get ready to be paid/);
@@ -134,7 +134,7 @@ test("eventos muestra la bienvenida y la cuenta ya no tiene el botón", async ()
       await Promise.resolve();
       await Promise.resolve();
     });
-    assert.match(texto(), /You're in/);
+    assert.match(texto(), /You are signed in/);
     assert.match(texto(), /Take your first step/);
     assert.match(texto(), /No events yet/);
     const cuenta = readFileSync(new URL("../../app/(integrante)/cuentas/page.tsx", import.meta.url), "utf8");

@@ -3,6 +3,7 @@ import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { nombreVisible } from "@/lib/sesion/nombre";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
 import { sesionEsDemo } from "@/lib/sesion/demo";
@@ -17,8 +18,8 @@ export async function leerSesionHttp(request: Request, almacen: Almacen): Promis
     const sesion = await almacen.leerSesion(token);
     if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
     return json({ ok: true, rol: sesion.rol, demo: sesionEsDemo(sesion) }, 200, PRIVADA);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -51,14 +52,12 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       if (intencion === "signin") {
         return json({ aviso: AVISO_SIN_CUENTA }, 404);
       }
-      const local = email.split("@")[0] ?? "";
-      await almacen.insertarUsuario({
+      usuario = await almacen.insertarUsuario({
         id: `u-${crypto.randomUUID()}`,
         email,
-        nombre: local || email,
+        nombre: "",
         rol: "voluntario",
       });
-      usuario = await almacen.usuarioPorEmail(email);
       nuevo = true;
     }
     if (!usuario) throw new Error("Could not register the user.");
@@ -77,12 +76,19 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     if (provisionar) cookies.push(encabezadoAlta(true));
     else if (intencion === "signin") cookies.push(encabezadoAlta(false));
     return jsonCookies(
-      { email: usuario.email, rol: usuario.rol, usuarioId: usuario.id, nombre: usuario.nombre, nuevo, provisionar },
+      {
+        email: usuario.email,
+        rol: usuario.rol,
+        usuarioId: usuario.id,
+        nombre: nombreVisible(usuario.nombre, usuario.email) ?? "",
+        nuevo,
+        provisionar,
+      },
       200,
       cookies,
     );
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 
@@ -130,7 +136,7 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
     }
     await almacen.guardarWallet(token, wallet);
     return json({ wallet }, 200);
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

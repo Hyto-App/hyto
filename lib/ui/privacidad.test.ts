@@ -37,11 +37,11 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   assert.match(unidoEs, /dólares digitales \(USDC\)/);
   assert.match(
     unidoEs,
-    /la dirección de la cuenta donde te llega lo que ganas, en Stellar, una red de pagos/,
+    /la dirección de la cuenta donde le llega lo que gana, en Stellar, una red de pagos/,
   );
   assert.match(
     unidoEs,
-    /Inicio de sesión con nuestro socio Cavos; los pagos usan Stellar, una red de pagos\./,
+    /El ingreso es con nuestro socio Cavos; los pagos usan Stellar, una red de pagos\./,
   );
   assert.doesNotMatch(unidoEs, /Las cuentas de pago viven en Stellar/);
   assert.doesNotMatch(unidoEs, /El ingreso lo maneja Cavos/);

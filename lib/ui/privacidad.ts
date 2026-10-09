@@ -41,30 +41,30 @@ const EN = {
 const ES = {
   titulo: "Privacidad",
   kicker: "Privacidad",
-  titular: "Cómo Hyto trata tu información",
+  titular: "Cómo Hyto trata su información",
   entrada:
-    "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Envías una foto, una persona la revisa y se puede liberar un pago en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
+    "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Usted envía una foto, una persona la revisa y se puede liberar un pago en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
   inicio: "Inicio",
   secciones: [
     {
       titulo: "Qué guardamos",
       cuerpo:
-        "Guardamos el correo con el que entras, una sesión para que sigas dentro y la dirección de la cuenta donde te llega lo que ganas, en Stellar, una red de pagos. Cuando subes una foto, guardamos ese archivo y las notas que se escriben sobre él. También guardamos los eventos a los que te unes, las invitaciones de esos eventos y el registro de un pago terminado.",
+        "Guardamos el correo con el que entra, una sesión para que siga dentro y la dirección de la cuenta donde le llega lo que gana, en Stellar, una red de pagos. Cuando sube una foto, guardamos ese archivo y las notas que se escriben sobre él. También guardamos los eventos a los que se une, las invitaciones de esos eventos y el registro de un pago terminado.",
     },
     {
       titulo: "Cómo lo usamos",
       cuerpo:
-        "Lo usamos para mostrar tus tareas, revisar la foto y pagar el monto que una persona aprueba. Mile puede leer la foto y sugerir una nota. Mile no firma ni mueve dinero. Una invitación llega al correo que escribe quien organiza.",
+        "Lo usamos para mostrar sus tareas, revisar la foto y pagar el monto que una persona aprueba. Mile puede leer la foto y sugerir una nota. Mile no firma ni mueve dinero. Una invitación llega al correo que escribe quien organiza.",
     },
     {
       titulo: "Quién puede verlo",
       cuerpo:
-        "Tú puedes ver tus tareas y tu cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. Inicio de sesión con nuestro socio Cavos; los pagos usan Stellar, una red de pagos. No vendemos tu información y no publicamos tu correo ni tus fotos.",
+        "Usted puede ver sus tareas y su cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. El ingreso es con nuestro socio Cavos; los pagos usan Stellar, una red de pagos. No vendemos su información y no publicamos su correo ni sus fotos.",
     },
     {
       titulo: "Cookies",
       cuerpo:
-        "Una cookie de ingreso te mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo.",
+        "Una cookie de ingreso lo mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo.",
     },
   ],
 } as const;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AvisoFirma, esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
 
@@ -13,9 +14,17 @@ const CLASE = "hyto-btn mt-4 max-w-sm";
 type Props = {
   consultar?: () => Promise<boolean>;
   preparar?: () => Promise<UsdcListo>;
+  /** Settings already explains the account. Skip the extra pending line and keep the button. */
+  silencioPendiente?: boolean;
+  onListo?: () => void;
 };
 
-export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion() }: Props) {
+export function PrepararUsdc({
+  consultar = leerEstadoUsdc,
+  preparar = () => prepararUsdcDeSesion(),
+  silencioPendiente = false,
+  onListo,
+}: Props) {
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -50,6 +59,7 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
       const listo = await preparar();
       setHash(listo.hash);
       setEstado("hecho");
+      onListo?.();
     } catch (error) {
       setEstado("error");
       setAviso(error instanceof Error && error.message ? error.message : "We couldn't get this account ready to receive payment. Try again.");
@@ -58,8 +68,10 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
 
   if (demo) return null;
 
-  const mensaje =
-    estado === "comprobando"
+  const callarPendiente = silencioPendiente && (estado === "comprobando" || estado === "pendiente");
+  const mensaje = callarPendiente
+    ? null
+    : estado === "comprobando"
       ? t("pago.checkingPayout")
       : estado === "listo"
         ? t("pago.payoutReady")
@@ -100,12 +112,12 @@ export function PrepararUsdc({ consultar = leerEstadoUsdc, preparar = () => prep
         </button>
       ) : null}
       {estado === "hecho" && hash ? (
-        <a
+        <EnlaceExplorador
           href={`https://stellar.expert/explorer/testnet/tx/${hash}`}
           className="hyto-btn-line is-inline mt-3 px-5"
         >
           {t("pago.viewChain")}
-        </a>
+        </EnlaceExplorador>
       ) : null}
       {estado === "hecho" ? (
         <p className="mt-3 text-sm leading-6 text-[var(--suave)]">

@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { montoDeTarea } from "@/lib/integrante/formato";
+import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
+import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
+import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
 import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
@@ -22,6 +25,8 @@ export type FilaTareaEvento = {
   dificultad: DificultadTarea | null;
   bloqueo: string | null;
   tieneFoto: boolean;
+  montoConfirmado?: string | null;
+  montoRevisado?: string | null;
 };
 
 type Borrador = {
@@ -31,6 +36,15 @@ type Borrador = {
   tope: string;
   miembroId: string;
 };
+
+function faltaDeBorrador(tarea: FilaTareaEvento, borrador: Borrador, saldo: string | null) {
+  const subida = montoBloqueable(tarea, {
+    monto: borrador.monto,
+    tope: tarea.tipo === "reembolso" ? borrador.tope : undefined,
+  });
+  if (!subida) return null;
+  return faltaParaBloquear(saldo, subida);
+}
 
 function FichaAsignada({
   miembros,
@@ -47,9 +61,11 @@ function FichaAsignada({
 export function TareasEvento({
   tareas,
   miembros,
+  saldo = null,
 }: {
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string; ficha?: Ficha }[];
+  saldo?: string | null;
 }) {
   const t = useTexto();
   const claro = useClaro();
@@ -114,6 +130,11 @@ export function TareasEvento({
       setAviso(montoMal);
       return;
     }
+    const falta = faltaDeBorrador(tarea, borrador, saldo);
+    if (falta) {
+      setAviso(t("errores.saldoNoCubre", textosSaldo(falta, idioma)));
+      return;
+    }
     setAviso(null);
     setGuardando(true);
     const cuerpo: Record<string, string> = {
@@ -175,12 +196,13 @@ export function TareasEvento({
           const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
           const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
+          const faltaFila = editando && borrador ? faltaDeBorrador(tarea, borrador, saldo) : null;
           return (
             <li key={tarea.id} className="hyto-card grid gap-4 p-5">
               <div className="min-w-0">
                 <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
                 <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {montoDeTarea(tarea, idioma)}
+                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
                 </p>
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -249,11 +271,17 @@ export function TareasEvento({
                         id={`tope-${tarea.id}`}
                         inputMode="decimal"
                         value={borrador.tope}
-                        aria-invalid={avisoMontoEntrada(borrador.tope) ? true : undefined}
+                        aria-invalid={avisoMontoEntrada(borrador.tope) || faltaFila ? true : undefined}
+                        aria-describedby={faltaFila ? `saldo-${tarea.id}` : undefined}
                         onChange={(evento) => setBorrador({ ...borrador, tope: escribirMonto(evento.target.value) })}
                         className="hyto-input mt-2"
                       />
                     </label>
+                  ) : null}
+                  {faltaFila ? (
+                    <p id={`saldo-${tarea.id}`} role="alert" className="text-sm leading-6 text-[var(--peligro)] sm:col-span-2">
+                      {t("errores.saldoNoCubre", textosSaldo(faltaFila, idioma))}
+                    </p>
                   ) : null}
                   <label className="block text-sm text-[var(--suave)] sm:col-span-2" htmlFor={`asignar-editar-${tarea.id}`}>
                     {t("eventos.assign")}
@@ -272,7 +300,7 @@ export function TareasEvento({
                     </select>
                   </label>
                   <div className="flex flex-wrap gap-2 sm:col-span-2">
-                    <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando}>
+                    <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando || Boolean(faltaFila)}>
                       {t("eventos.save")}
                     </button>
                     <button
@@ -312,11 +340,23 @@ export function TareasEvento({
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
                       {claro(tarea.bloqueo)}
                     </p>
-                  ) : (
-                    <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => abrir(tarea)}>
-                      {t("eventos.edit")}
-                    </button>
-                  )}
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {tarea.estado === "pendiente" && !tarea.tieneFoto && !tarea.bloqueo ? (
+                      <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
+                        {t("pago.lockBudget")}
+                      </Link>
+                    ) : (
+                      <Link href={`/revision/${tarea.id}`} className="hyto-btn-line is-inline px-5">
+                        {t("bandeja.openReview")}
+                      </Link>
+                    )}
+                    {tarea.bloqueo ? null : (
+                      <button type="button" className="hyto-btn-line is-inline px-5" onClick={() => abrir(tarea)}>
+                        {t("eventos.edit")}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
