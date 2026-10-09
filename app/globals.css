@@ -79,6 +79,8 @@
   --r-xl: 28px;
   --r-pill: 999px;
   --alto-nav: 82px;
+  /* One curve for press and for a view that settles. No bounce. */
+  --hyto-curva: cubic-bezier(0.23, 1, 0.32, 1);
 
   --texto-titulo: 30px;
   --texto-h2: 20px;
@@ -6188,4 +6190,170 @@ html.hyto-firmando body {
 
 .hyto-contador.is-alto {
   color: var(--contador-alto);
+}
+
+/* App micro-interactions. Login keeps its own motion. One curve, no bounce. */
+.hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger) {
+  transition:
+    transform 100ms var(--hyto-curva),
+    filter 100ms var(--hyto-curva),
+    background-color 100ms var(--hyto-curva),
+    opacity 100ms var(--hyto-curva),
+    color 100ms var(--hyto-curva);
+}
+
+.hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger):active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.98);
+}
+
+@keyframes hyto-asienta {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.hyto-shell .hyto-page {
+  animation: hyto-asienta 350ms var(--hyto-curva) backwards;
+}
+
+.hyto-shell .hyto-page.hyto-asentado {
+  animation: none;
+}
+
+.hyto-la-tengo {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hyto-la-tengo-monto {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.hyto-la-tengo-tope {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--tenue);
+}
+
+.hyto-la-tengo-frase {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--tenue);
+}
+
+.hyto-ver-mas {
+  width: 100%;
+  text-align: left;
+}
+
+.hyto-ver-mas summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.hyto-ver-mas-cuerpo {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.hyto-cierre {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hyto-cierre-monto {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--tinta);
+}
+
+.hyto-cierre-frase {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+.hyto-sin-camara {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--papel);
+}
+
+.hyto-sin-camara p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hyto-codigo-telefono strong {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+.hyto-requisito-angosto {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .hyto-requisito-angosto {
+    display: block;
+  }
+
+  .hyto-checklist-lado {
+    display: none;
+  }
+
+  .hyto-visor.is-apagada {
+    display: none;
+  }
+
+  .hyto-pista-despues {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-shell .hyto-page,
+  .hyto-shell .hyto-page.hyto-asentado {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger):active {
+    transform: none !important;
+    filter: brightness(0.92);
+  }
+
+  .hyto-shell :is(.hyto-tarjeta, .hyto-actions, .hyto-ver-mas, .hyto-btn, .hyto-btn-line, .hyto-btn-danger) {
+    animation-name: none !important;
+    transition-property: color, background-color, border-color, opacity, filter !important;
+    transition-duration: 150ms !important;
+  }
 }

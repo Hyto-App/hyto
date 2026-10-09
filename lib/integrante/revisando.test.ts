@@ -55,9 +55,15 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
     });
     assert.ok(lecturas >= 2);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
-    assert.match(texto(), /Your photo arrived/);
+    assert.match(texto(), /Your evidence is ready/);
+    assert.match(texto(), /Mile recommends\. A person approves\./);
+    assert.match(texto(), /US\$20/);
+    assert.match(texto(), /See more/);
     assert.match(texto(), /What happens now/);
     assert.match(texto(), /84% · Completed/);
+    assert.ok(document.querySelector('img[src="/mile/mile-la-tengo-dark.svg"]'));
+    assert.equal(document.querySelector("[data-mile-rig]"), null);
+    assert.doesNotMatch(texto(), /Well done/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

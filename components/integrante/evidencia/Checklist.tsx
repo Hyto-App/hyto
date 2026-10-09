@@ -12,19 +12,21 @@ export function Checklist({
   revisando = false,
   fallidos = null,
   titulo,
+  ancla = "hyto-checklist-titulo",
 }: {
   condicion: string;
   revisando?: boolean;
   fallidos?: number[] | null;
   titulo?: string;
+  ancla?: string;
 }) {
   const t = useTexto();
   const puntos = puntosDeCondicion(condicion);
   if (puntos.length === 0) return null;
   const marcado = fallidos !== null && fallidos.length > 0;
   return (
-    <section className="hyto-tarjeta hyto-checklist" aria-labelledby="hyto-checklist-titulo">
-      <h2 id="hyto-checklist-titulo">{titulo ?? t("evidencia.mustShow")}</h2>
+    <section className="hyto-tarjeta hyto-checklist" aria-labelledby={ancla}>
+      <h2 id={ancla}>{titulo ?? t("evidencia.mustShow")}</h2>
       <ol>
         {puntos.map((punto, indice) => {
           const falla = marcado && fallidos.includes(indice);
