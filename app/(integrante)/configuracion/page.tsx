@@ -24,7 +24,7 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
   const sesion = await exigirPagina(pide ? `/configuracion?${PARAM_PASSKEY}=${ANCLA_PASSKEY}` : undefined);
   const demo = await leerModoDemo();
   return (
-    <main className="hyto-page mx-auto max-w-3xl">
+    <main className="hyto-page hyto-config mx-auto max-w-3xl">
       <AnclaPasskey />
       <header className="hyto-page-head">
         <div>
@@ -32,10 +32,10 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
             <Texto as="h1" clave="cuenta.titulo" className="hyto-title" />
             <InsigniaDemo />
           </div>
-          <p className="hyto-sub">{sesion.email}</p>
+          <p className="hyto-sub hyto-config-correo">{sesion.email}</p>
         </div>
       </header>
-      <div className="mb-6 max-w-sm">
+      <div className="hyto-config-salir mb-6 max-w-sm">
         <Salir />
       </div>
       <PanelCuenta />

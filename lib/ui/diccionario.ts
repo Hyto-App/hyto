@@ -1048,7 +1048,7 @@ export const en = {
       "You send a photo of the work, or of a receipt in colones. Mile reads it and leaves a score. A person approves it and the dollars arrive in your Hyto balance, in Settings. The funding arrives from afar in dollars, so the record is that payment, not loose screenshots, a spreadsheet, or a local transfer such as SINPE. Hyto cannot send that balance to a bank or turn it into colones. This version uses practice money, so there is no bank payout, no fee for one, and no waiting time. A real payout is not in the app yet. When it is, this answer will say how long it takes and what it costs.",
     fondearQ: "How do I set money aside for a task?",
     fondearA:
-      "Open the review for that task and tap Lock budget. That sets the task amount aside from your Hyto balance. It does not pay the person yet. You pay from that same review after you approve the photo. Your balance has to cover the amount plus one extra US dollar. Hyto does not keep that extra dollar.",
+      "Open the review for that task and tap Lock budget. That sets the task amount aside from your Hyto balance. It does not pay the person yet. You pay from that same review after you approve the photo. Your balance has to cover the amount plus a US$1 reserve. Hyto does not keep that reserve.",
     costosQ: "What does it cost to pay a task?",
     costosA:
       "The payment processor charges a 0.3% fee, and that fee comes out of what the person who gets paid receives. If you set aside US$2, they receive US$1.99 (US$2 minus a US$0.01 fee). If you set aside US$12.48, they receive US$12.44 (US$12.48 minus a US$0.04 fee).",
@@ -1882,7 +1882,7 @@ export const es: Rama<typeof en> = {
     copy: "Copiar dirección",
     copied: "Copiado",
     viewTestnet: "Ver en el explorador",
-    copyHere: "Cópiala desde aquí. Esta es la dirección pública.",
+    copyHere: "Cópiela desde aquí. Esta es la dirección pública.",
     thisMonth: "Este mes",
     lastMonth: "Mes pasado",
     allTime: "Total",
@@ -1907,7 +1907,7 @@ export const es: Rama<typeof en> = {
     earned: "Ganado",
     locked: "Bloqueado",
     recent: "Tareas pagadas recientes",
-    nothingPaid: "Todavía no hay pagos. Termina una tarea y aparece aquí.",
+    nothingPaid: "Todavía no hay pagos. Termine una tarea y aparece aquí.",
     insigniaPrimera: "Primera tarea",
     insigniaPrimeraDetalle: "Una tarea pagada",
     insigniaCinco: "Cinco tareas",
@@ -1921,7 +1921,7 @@ export const es: Rama<typeof en> = {
     insigniaRacha: "Racha de tres meses",
     insigniaRachaDetalle: "Ingresos tres meses seguidos",
     confirmWindow: "Confirme en la ventana si se lo pide. Puede tardar un minuto.",
-    newAccount: "Si esta cuenta es nueva, primero la abrimos en la red de prueba. Confirma una vez para que pueda recibir el pago del evento.",
+    newAccount: "Si esta cuenta es nueva, primero la abrimos en la red de prueba. Confirme una vez para que pueda recibir el pago del evento.",
     pasaporteTitulo: "Stellar Passport",
     pasaporteDetalle: "Registra la participación y los logros en el ecosistema Stellar.",
     pasaporteAbrir: "Abrir Stellar Passport",
@@ -2220,7 +2220,7 @@ export const es: Rama<typeof en> = {
   ayuda: {
     titulo: "Pregúntele a Mile",
     buscar: "Buscar",
-    placeholder: "Busca en las respuestas",
+    placeholder: "Busque en las respuestas",
     atajos: "Atajos",
     preguntas: "Preguntas",
     cerrar: "Cerrar",
@@ -2234,10 +2234,10 @@ export const es: Rama<typeof en> = {
       "Usted envía una foto del trabajo, o de un recibo en colones. Mile la lee y deja una nota. Una persona la aprueba y los dólares llegan a su saldo en Hyto, en Configuración. El financiamiento llega desde lejos en dólares, así que el registro es ese pago, no capturas sueltas, una hoja de cálculo ni una transferencia local como SINPE. Hyto no puede enviar ese saldo a un banco ni pasarlo a colones. Esta versión usa dinero de práctica, así que no hay un pago al banco, no hay una tarifa por eso y no hay un tiempo de espera. Un retiro real todavía no está en la app. Cuando exista, esta respuesta va a decir cuánto tarda y cuánto cuesta.",
     fondearQ: "¿Cómo aparto el dinero de una tarea?",
     fondearA:
-      "Abra la revisión de esa tarea y toque Bloquear presupuesto. Eso aparta el monto de la tarea de su saldo en Hyto. Todavía no le paga a la persona. Paga desde esa misma revisión después de aprobar la foto. Su saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
+      "Abra la revisión de esa tarea y toque Bloquear presupuesto. Eso aparta el monto de la tarea de su saldo en Hyto. Todavía no le paga a la persona. Pague desde esa misma revisión después de aprobar la foto. Su saldo tiene que cubrir el monto más una reserva de US$1. Hyto no se queda con esa reserva.",
     costosQ: "¿Cuánto cuesta pagar una tarea?",
     costosA:
-      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si apartas US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01). Si apartas US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
+      "El procesador de pagos cobra una comisión del 0,3 %, y esa comisión se descuenta de lo que recibe quien cobra. Si aparta US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01). Si aparta US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
     sinPagarQ: "¿Qué pasa si aparto el dinero y no pago?",
     sinPagarA:
       "No hay un botón que devuelva ese dinero a su saldo en Hyto. Después de apartar un monto, se queda en la tarea hasta que lo pague. Esta pantalla no lo envía a ningún otro lado.",

@@ -53,7 +53,13 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
   assert.doesNotMatch(pago, /Mile does not sign/);
   assert.match(leerTexto("es", "ayuda.pagoA"), /no puede enviar ese saldo a un banco/);
   assert.match(leerTexto("en", "ayuda.fondearA"), /Lock budget/);
+  assert.match(leerTexto("en", "ayuda.fondearA"), /US\$1 reserve/);
   assert.match(leerTexto("es", "ayuda.fondearA"), /Bloquear presupuesto/);
+  assert.match(leerTexto("es", "ayuda.fondearA"), /reserva de US\$1/);
+  assert.match(leerTexto("es", "ayuda.costosA"), /Si aparta US\$2/);
+  assert.doesNotMatch(leerTexto("es", "ayuda.costosA"), /\bapartas\b/);
+  assert.equal(leerTexto("es", "ayuda.placeholder"), "Busque en las respuestas");
+  assert.equal(leerTexto("es", "cuenta.avanzado"), "Avanzado");
   const costosEn = leerTexto("en", "ayuda.costosA");
   const costosEs = leerTexto("es", "ayuda.costosA");
   assert.match(costosEn, /0\.3% fee/);
