@@ -31,6 +31,7 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
     });
     assert.match(texto(), /Ask Mile/);
+    assert.match(texto(), /Search the frequently asked questions\. This is not a chat\./);
     assert.match(texto(), /How do I get paid\?/);
     assert.match(texto(), /How do I set money aside for a task\?/);
     assert.match(texto(), /What does it cost to pay a task\?/);

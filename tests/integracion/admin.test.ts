@@ -123,7 +123,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
   test("aprobar deja la tarea pagada en la revisión y en la memoria", async () => {
     await montar(createElement(Revision, { tareaId: "stand" }));
     assert.match(texto(), /Approve/);
-    assert.match(texto(), /100% · Completed/);
+    assert.match(texto(), /Mile: 100% match/);
     await pulsar("Approve");
     const plano = texto();
     assert.match(plano, /Paid/);

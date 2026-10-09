@@ -5713,9 +5713,11 @@ html.hyto-firmando body {
 .hyto-ayuda {
   display: grid;
   align-content: start;
+  justify-self: center;
   gap: 12px;
   width: min(560px, 100%);
-  max-height: min(72dvh, 640px);
+  min-width: 0;
+  height: min(72dvh, 640px);
   overflow: auto;
   padding: 16px;
 }
@@ -5730,6 +5732,33 @@ html.hyto-firmando body {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.hyto-ayuda-intro,
+.hyto-mile-presentacion {
+  margin: 2px 0 0;
+  color: var(--suave);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+button.hyto-mile-mas,
+.hyto-mile-mas summary {
+  margin-top: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+details.hyto-mile-mas {
+  margin-top: 8px;
 }
 
 .hyto-ayuda-cerrar {

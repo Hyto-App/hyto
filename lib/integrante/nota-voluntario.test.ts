@@ -57,12 +57,12 @@ test("con nota real la pastilla muestra el porcentaje y aclara que el pago lo de
         ultimaEvidenciaId: "ev-1",
       }),
     );
-    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Mile: 64% match/);
     assert.equal(document.querySelector(".hyto-resumen-mini img")?.getAttribute("src"), "/api/evidencias/ev-1/foto");
     assert.match(texto(), /In review/);
     assert.equal(document.querySelector('.hyto-rastreo li[aria-current="step"]')?.textContent, "In review");
     assert.match(texto(), new RegExp(FRASE_PAGO));
-    assert.equal(document.querySelector(".hyto-pill-veredicto")?.getAttribute("aria-label"), "64% · Partially completed");
+    assert.equal(document.querySelector(".hyto-pill-veredicto")?.getAttribute("aria-label"), "Mile: 64% match");
     assert.match(document.querySelector(".hyto-pill-veredicto")?.className ?? "", /hyto-pill-mid/);
     assert.equal(document.querySelector(".hyto-pill-bar > span") instanceof HTMLElement, true);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
@@ -108,7 +108,7 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
 
     window.localStorage.setItem("hyto-pago-visto:stand", "1");
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
-    assert.match(texto(), /84% · Completed/);
+    assert.match(texto(), /Mile: 84% match/);
     assert.equal(texto().includes(FRASE_PAGO), false);
   } finally {
     window.localStorage.removeItem("hyto-pago-visto:stand");
@@ -176,7 +176,7 @@ test("con menos movimiento la pastilla del voluntario salta al porcentaje final"
     assert.ok(pill instanceof HTMLElement);
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "40");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "40");
-    assert.equal(pill.getAttribute("aria-label"), "40% · Insufficient");
+    assert.equal(pill.getAttribute("aria-label"), "Mile: 40% match");
     assert.match(texto(), new RegExp(FRASE_PAGO));
   } finally {
     restaurar();
@@ -260,7 +260,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /Great job/);
     assert.match(texto(), /Mile marked this as partially completed/);
-    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Mile: 64% match/);
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(texto().includes("SECRETO-LAYA"), false);
     assert.equal(lecturas >= 2, true);

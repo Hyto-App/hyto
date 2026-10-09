@@ -84,10 +84,14 @@ export function etiquetaVeredicto(veredicto: string, idioma: Idioma = "en"): str
   return limpio;
 }
 
-/** One string for the pill: "64% · Partially completed", or the label alone when there is no percentage. */
-export function textoNota(etiqueta: string, nota: number | null | undefined): string {
-  if (typeof nota !== "number") return etiqueta;
-  return `${nota}% · ${etiqueta}`;
+/**
+ * A percentage is Mile's match, never a payment.
+ * "Mile: 64% match" / "Mile: 64 % de coincidencia".
+ * Without a percentage, the stored band label stays (older rows).
+ */
+export function textoNota(etiqueta: string, nota: number | null | undefined, idioma: Idioma = "en"): string {
+  if (typeof nota !== "number" || !Number.isFinite(nota)) return etiqueta;
+  return texto(idioma, "mile.coincidencia", { n: Math.round(nota) });
 }
 
 export function etiquetaTipo(tipo: string, idioma: Idioma = "en"): string {

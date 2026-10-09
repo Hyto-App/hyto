@@ -57,7 +57,7 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.match(texto(), /Your photo arrived/);
     assert.match(texto(), /What happens now/);
-    assert.match(texto(), /84% · Completed/);
+    assert.match(texto(), /Mile: 84% match/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -246,7 +246,7 @@ test("una nota insuficiente no usa el texto de éxito", async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Ana, this photo did not pass Mile's review/);
-    assert.match(texto(), /40% · Insufficient/);
+    assert.match(texto(), /Mile: 40% match/);
     assert.match(texto(), /You can send another one/);
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /Great job/);

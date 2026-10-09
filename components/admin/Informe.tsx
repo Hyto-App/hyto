@@ -6,6 +6,7 @@ import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { ResumenMile } from "@/components/admin/ResumenMile";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { conTarea } from "@/lib/admin/parche";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/lib/admin/vista";
@@ -138,7 +139,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                         {textoVisible(tarea.frase, idioma)}
                       </p>
                     ) : tarea.frase ? (
-                      <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.frase, idioma)}</p>
+                      <ResumenMile frase={tarea.frase} lectura={tarea.lectura} />
                     ) : null}
                     {tarea.origen === "error" && tarea.estado !== "pagado" && !vista.ejemplo ? (
                       <AccionesRevisionFallida

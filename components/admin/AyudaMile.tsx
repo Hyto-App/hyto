@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
+import { PresentacionMile } from "@/components/admin/PresentacionMile";
 import { ATAJOS, PREGUNTAS, buscarPreguntas, type IdPregunta, type PreguntaVisible } from "@/lib/ui/ayuda";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -92,7 +93,11 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
       >
         <header className="hyto-ayuda-cabeza">
           <Mile estado="cara-feliz" tamano={40} />
-          <h2 id={titulo}>{t("ayuda.titulo")}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 id={titulo}>{t("ayuda.titulo")}</h2>
+            <p className="hyto-ayuda-intro">{t("ayuda.intro")}</p>
+            <PresentacionMile />
+          </div>
           <button type="button" className="hyto-ayuda-cerrar" onClick={alCerrar} aria-label={t("ayuda.cerrar")}>
             ×
           </button>

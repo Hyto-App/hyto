@@ -60,7 +60,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /AI recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
-    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Mile: 64% match/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -85,7 +85,7 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Sample recommendation/);
-    assert.match(texto(), /100% · Completed/);
+    assert.match(texto(), /Mile: 100% match/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
   } finally {
@@ -496,9 +496,9 @@ test("asking for another photo removes the old verdict pill", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => texto().includes("64% · Partially completed"));
+    await esperar(() => texto().includes("Mile: 64% match"));
     await confirmarPedir();
-    await esperar(() => !texto().includes("Partially completed"));
+    await esperar(() => !texto().includes("Mile: 64% match"));
     assert.equal(texto().includes("AI recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
     assert.match(texto(), /Pending/);
@@ -543,18 +543,18 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
     await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
-    assert.match(texto(), /78% · Partially completed/);
+    assert.match(texto(), /Mile: 78% match/);
     assert.match(texto(), /AI recommendation/);
     await confirmarPedir();
     await esperar(() => texto().includes("The request was sent"));
     const aviso = document.querySelector(".hyto-pedir-listo");
     assert.equal(aviso?.textContent, "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.");
     assert.equal(texto().includes("Waiting for a new photo"), false);
-    const monto = document.querySelector("dd.hyto-amount");
-    assert.equal(monto?.textContent, "₡6.900,00");
+    const montos = [...document.querySelectorAll("p.hyto-amount")].map((nodo) => nodo.textContent ?? "");
+    assert.equal(montos.some((linea) => linea.includes("₡6.900,00")), true);
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
-    assert.equal(texto().includes("78% · Partially completed"), false);
+    assert.equal(texto().includes("Mile: 78% match"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -589,10 +589,9 @@ test("al recargar, el monto del recibo sigue en colones después de pedir otra f
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
     await esperar(() => texto().includes("Monto en el comprobante"));
-    const monto = document.querySelector("dd.hyto-amount");
-    assert.equal(monto?.textContent, "₡6.900,00");
+    const montos = [...document.querySelectorAll("p.hyto-amount")].map((nodo) => nodo.textContent ?? "");
+    assert.equal(montos.some((linea) => linea.includes("₡6.900,00")), true);
     assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
-    assert.equal(texto().includes("US$13.66"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -656,11 +655,11 @@ test("pedir otra foto sin red muestra el error y no cambia la tarea", async () =
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => texto().includes("64% · Partially completed"));
+    await esperar(() => texto().includes("Mile: 64% match"));
     await confirmarPedir();
     await esperar(() => texto().includes("Could not send. Check your connection and try again."));
     assert.equal(document.querySelector("[role=alert]")?.textContent, "Could not send. Check your connection and try again.");
-    assert.match(texto(), /64% · Partially completed/);
+    assert.match(texto(), /Mile: 64% match/);
     assert.match(texto(), /Half of the booth is set up/);
     assert.equal(texto().includes("Asked for another photo. The request was sent"), false);
     assert.equal(texto().includes("What's missing?"), true);
@@ -702,7 +701,7 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
     });
     await esperar(() => texto().includes("No se pudo enviar. Revise su conexión e intente de nuevo."));
     assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revise su conexión e intente de nuevo.");
-    assert.match(texto(), /64% · Parcialmente completado/);
+    assert.match(texto(), /Mile: 64 % de coincidencia/);
     assert.equal(texto().includes("Pidió otra foto"), false);
     assert.equal(texto().includes("Pendiente"), false);
   } finally {
@@ -965,8 +964,8 @@ test("the review card shows the main reason next to the percentage and what the 
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => texto().includes("78% · Partially completed"));
-    const pill = document.querySelector('[aria-label="78% · Partially completed"]');
+    await esperar(() => texto().includes("Mile: 78% match"));
+    const pill = document.querySelector('[aria-label="Mile: 78% match"]');
     const motivo = document.querySelector("[data-motivo]");
     assert.ok(pill instanceof HTMLElement);
     assert.ok(motivo instanceof HTMLElement);
@@ -974,7 +973,12 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /₡6\.900,00 ≈ US\$13\.66/);
+    const detalles = document.querySelector("details.hyto-mile-mas");
+    assert.ok(detalles instanceof HTMLElement);
+    assert.equal(detalles.tagName, "DETAILS");
+    assert.equal(detalles.hasAttribute("open"), false);
+    assert.match(detalles.textContent ?? "", /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;

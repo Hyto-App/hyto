@@ -12,6 +12,8 @@ import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { PresentacionMile } from "@/components/admin/PresentacionMile";
+import { ResumenMile } from "@/components/admin/ResumenMile";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
 import { AvisoSesion } from "@/components/sesion/AvisoSesion";
@@ -53,6 +55,7 @@ import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { MontoMile } from "@/components/admin/MontoMile";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
 function frasePagada(tarea: TareaAdmin, idioma: "en" | "es"): string {
@@ -591,12 +594,13 @@ export function Revision({
             <p className="mt-5 text-sm leading-6 text-[var(--suave)]">{t("revision.sampleReview")}</p>
           )}
 
+          {tarea.veredicto ? <PresentacionMile /> : null}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
             {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} /> : null}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
-          <EtiquetasNota etiquetas={tarea.etiquetas} />
+          <EtiquetasNota etiquetas={tarea.etiquetas} ocultarMotivo />
           {notaManual(tarea.codigo) ? (
             <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
           ) : tarea.origen === "error" ? (
@@ -605,48 +609,25 @@ export function Revision({
           {notaCopia(tarea.motivoCopia) ? (
             <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "", idioma)}</p>
           ) : null}
+          {tarea.tipo === "reembolso" && tarea.origen !== "error" && (tarea.montoRevisado || tarea.fecha || tarea.lectura?.montoOriginal) ? (
+            <MontoMile
+              impreso={tarea.lectura?.montoOriginal}
+              moneda={tarea.lectura?.moneda}
+              montoUsd={tarea.montoRevisado}
+              tasa={tarea.lectura?.tasa}
+              fecha={tarea.fecha}
+              fechaImpresa={tarea.lectura?.fechaImpresa}
+            />
+          ) : null}
           {tarea.origen === "error" && tarea.frase ? (
             <p role="alert" className="mt-2 text-base leading-7">
               {textoVisible(tarea.frase, idioma)}
             </p>
           ) : tarea.frase ? (
-            <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase, idioma)}</p>
+            <ResumenMile frase={tarea.frase} lectura={tarea.lectura} />
           ) : null}
           {tarea.origen === "error" && real && tarea.estado !== "pagado" && !contrato ? (
             <AccionesRevisionFallida tareaId={tarea.id} onDetalle={aplicarDetalle} />
-          ) : null}
-
-          {tarea.tipo === "reembolso" && tarea.origen !== "error" && (tarea.montoRevisado || tarea.fecha || tarea.lectura?.montoOriginal) ? (
-            <dl className="mt-6 grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-sm text-[var(--suave)]">{t("revision.amountReceipt")}</dt>
-                <dd className="hyto-amount mt-1 text-xl">
-                  {tarea.lectura?.montoOriginal && tarea.lectura.moneda && tarea.lectura.moneda !== "USD"
-                    ? tarea.lectura.montoOriginal
-                    : tarea.montoRevisado
-                      ? formatearMonto(tarea.montoRevisado, idioma)
-                      : t("revision.notShown")}
-                </dd>
-                {tarea.lectura?.montoOriginal && tarea.lectura.moneda !== "USD" ? (
-                  <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">
-                    {tarea.montoRevisado && tarea.lectura.moneda && tarea.lectura.tasa
-                      ? t("revision.printedConverted", {
-                          monto: tarea.lectura.montoOriginal,
-                          tasa: String(tarea.lectura.tasa),
-                          moneda: tarea.lectura.moneda,
-                        })
-                      : t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
-                  </dd>
-                ) : null}
-              </div>
-              <div>
-                <dt className="text-sm text-[var(--suave)]">{t("comunes.date")}</dt>
-                <dd className="hyto-amount mt-1 text-xl">{tarea.fecha ? formatearFecha(tarea.fecha, idioma) : t("revision.notShown")}</dd>
-                {!tarea.fecha && tarea.lectura?.fechaImpresa ? (
-                  <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">{t("revision.printedDate", { fecha: tarea.lectura.fechaImpresa })}</dd>
-                ) : null}
-              </div>
-            </dl>
           ) : null}
 
           {esperaConfirmacion ? (

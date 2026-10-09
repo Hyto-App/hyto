@@ -6,6 +6,8 @@ import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { Numeros } from "@/components/admin/Numeros";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
+import { PresentacionMile } from "@/components/admin/PresentacionMile";
+import { ResumenMile } from "@/components/admin/ResumenMile";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
 import { AvisoSesion } from "@/components/sesion/AvisoSesion";
@@ -344,7 +346,7 @@ export function Bandeja({
                   <p className="text-sm text-[var(--suave)]">{etiquetaTipo(seleccion.tipo, idioma)} · {textoVisible(seleccion.miembro, idioma)}</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight">{textoVisible(seleccion.titulo, idioma)}</h3>
                   <p className="hyto-amount mt-2 text-xl">{vistaMonto(seleccion, idioma).linea}</p>
-                  {seleccion.frase ? <p className="mt-3 text-sm leading-6">{textoVisible(seleccion.frase, idioma)}</p> : null}
+                  {seleccion.frase ? <ResumenMile frase={seleccion.frase} lectura={seleccion.lectura} /> : null}
                   {seleccion.origen === "error" && seleccion.estado !== "pagado" && !vista.ejemplo ? (
                     <BotonReintentarRevision tareaId={seleccion.id} onDetalle={aplicar} />
                   ) : null}
@@ -386,6 +388,7 @@ export function Bandeja({
             {seleccion ? (
               <aside className="hyto-panel">
                 <p className="text-sm text-[var(--suave)]">{t("bandeja.recommendation")}</p>
+                {seleccion.veredicto ? <PresentacionMile /> : null}
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   {seleccion.veredicto ? (
                     <>
@@ -396,7 +399,7 @@ export function Bandeja({
                     <p className="text-sm text-[var(--suave)]">{t("bandeja.noRecommendation")}</p>
                   )}
                 </div>
-                <EtiquetasNota etiquetas={seleccion.etiquetas} />
+                <EtiquetasNota etiquetas={seleccion.etiquetas} ocultarMotivo />
                 {seleccion.condicion ? (
                   <>
                     <p className="mt-5 text-sm font-medium">{t("bandeja.photoMust")}</p>
@@ -415,9 +418,11 @@ export function Bandeja({
                             <span className="text-[var(--suave)]">{t("bandeja.attemptN", { n: intento.numero })}</span>
                             {intento.veredicto ? <PastillaVeredicto veredicto={intento.veredicto} nota={intento.nota} /> : null}
                           </div>
-                          <p className="mt-1 leading-6 text-[var(--suave)]">
-                            {intento.frase ? textoVisible(intento.frase, idioma) : t("bandeja.attemptNoNote")}
-                          </p>
+                          {intento.frase ? (
+                            <ResumenMile frase={intento.frase} />
+                          ) : (
+                            <p className="mt-1 leading-6 text-[var(--suave)]">{t("bandeja.attemptNoNote")}</p>
+                          )}
                         </li>
                       ))}
                     </ol>

@@ -26,14 +26,14 @@ test("los veredictos se muestran en inglés", () => {
   assert.equal(etiquetaVeredicto("cumplió"), "Completed");
   assert.equal(etiquetaVeredicto("parcial"), "Partially completed");
   assert.equal(etiquetaVeredicto("insuficiente"), "Insufficient");
-  assert.equal(textoNota(etiquetaVeredicto("parcial"), 64), "64% · Partially completed");
+  assert.equal(textoNota(etiquetaVeredicto("parcial"), 64), "Mile: 64% match");
 });
 
 test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(etiquetaVeredicto("insuficiente", "es"), "Insuficiente");
   assert.equal(etiquetaVeredicto("parcial", "es"), "Parcialmente completado");
   assert.equal(etiquetaVeredicto("cumplió", "es"), "Completado");
-  assert.equal(textoNota(etiquetaVeredicto("parcial", "es"), 64), "64% · Parcialmente completado");
+  assert.equal(textoNota(etiquetaVeredicto("parcial", "es"), 64, "es"), "Mile: 64 % de coincidencia");
   assert.equal(textoVisible("Set up the booth", "es"), "Montar el stand");
   assert.equal(textoVisible("Montar el stand", "es"), "Montar el stand");
 });

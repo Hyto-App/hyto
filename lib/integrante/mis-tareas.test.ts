@@ -248,7 +248,7 @@ test("una foto reciente en revisión dice que Mile sigue, y al llegar la nota la
       await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 400));
     });
     assert.ok(lecturas >= 2);
-    assert.match(texto(), /84% · Completed/);
+    assert.match(texto(), /Mile: 84% match/);
     assert.doesNotMatch(texto(), /Still reviewing/);
   } finally {
     globalThis.fetch = anterior;
