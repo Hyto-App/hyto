@@ -990,7 +990,7 @@ export function Entrar({
             ) : fase === "correo" ? (
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
-                <p className="hyto-login-lead">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
+                <p className="hyto-login-lead is-intro">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
                 {ofrece("google") ? (
                   <button
                     type="button"
@@ -1095,7 +1095,7 @@ export function Entrar({
                     <button
                       type="submit"
                       disabled={ocupado !== null || espera > 0 || demo}
-                      className={`hyto-login-btn is-primario${enviando ? " is-ocupado" : ""}`}
+                      className={`hyto-login-btn is-primario hyto-login-pie${enviando ? " is-ocupado" : ""}`}
                     >
                       <span key={enviando ? "envio" : "listo"} className="hyto-login-etiqueta-btn">
                         {enviando ? (
@@ -1134,6 +1134,10 @@ export function Entrar({
                   {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
                   <Link href="/privacy">{t("nav.privacy")}</Link>
                 </p>
+                <details className="hyto-login-avanzado">
+                  <summary>{t("cuenta.avanzado")}</summary>
+                  <p>{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
+                </details>
               </div>
             ) : null}
             {fase === "enlace" ? (
@@ -1150,7 +1154,7 @@ export function Entrar({
                 ) : null}
                 <button
                   type="button"
-                  className={`hyto-login-btn is-fantasma${espera > 0 ? " is-espera" : ""}`}
+                  className={`hyto-login-btn is-fantasma hyto-login-pie${espera > 0 ? " is-espera" : ""}`}
                   onClick={pedirOtroEnlace}
                   disabled={ocupado !== null}
                   aria-disabled={espera > 0 || undefined}
@@ -1237,7 +1241,7 @@ export function Entrar({
                 ) : null}
                 {codigoVencido ? (
                   <>
-                    <button type="button" className="hyto-login-btn is-primario" onClick={pedirOtroCodigo} disabled={ocupado !== null}>
+                    <button type="button" className="hyto-login-btn is-primario hyto-login-pie" onClick={pedirOtroCodigo} disabled={ocupado !== null}>
                       <span key="otro" className="hyto-login-etiqueta-btn">
                         <Icono nombre="otra" />
                         {enviando ? t("entrar.enviandoCodigo") : t("entrar.pedirOtro")}
@@ -1249,7 +1253,7 @@ export function Entrar({
                   </>
                 ) : codigoMal ? (
                   <>
-                    <button type="button" className="hyto-login-btn is-primario" onClick={otraVez} disabled={ocupado !== null}>
+                    <button type="button" className="hyto-login-btn is-primario hyto-login-pie" onClick={otraVez} disabled={ocupado !== null}>
                       <span key="otra" className="hyto-login-etiqueta-btn">
                         {t("entrar.probarOtraVez")}
                       </span>
@@ -1269,7 +1273,7 @@ export function Entrar({
                   <>
                     <button
                       type="button"
-                      className="hyto-login-btn is-primario"
+                      className="hyto-login-btn is-primario hyto-login-pie"
                       onClick={() => void confirmar()}
                       disabled={ocupado !== null || fase === "exito" || digitos.some((digito) => !digito)}
                     >
@@ -1323,7 +1327,7 @@ export function Entrar({
                 <div className="hyto-login-barra" aria-hidden="true">
                   <i />
                 </div>
-                <button type="button" className="hyto-login-btn is-fantasma" onClick={irATareas} data-foco="">
+                <button type="button" className="hyto-login-btn is-fantasma hyto-login-pie" onClick={irATareas} data-foco="">
                   {t("entrar.irTareas")}
                   <Icono nombre="flecha" />
                 </button>
