@@ -758,7 +758,7 @@ export function Revision({
               </form>
             ) : null}
 
-            {pidioOtra ? (
+            {esperaOtraFoto ? (
               <p id="bloqueo-foto" role="status" className="hyto-pedir-listo">
                 {t("revision.askedSent")}
               </p>
@@ -770,7 +770,7 @@ export function Revision({
                   {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
                 </p>
                 {esperaOtraFoto && !pidioOtra ? (
-                  <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">
+                  <p className="text-sm leading-6 text-[var(--suave)]">
                     {t("revision.lockWaitingPhoto")}
                   </p>
                 ) : null}

@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
+import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { jpegDePrueba } from "../evidencia/muestras";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
 import { FRASE_PAGO } from "./nota";
@@ -135,6 +136,10 @@ test("una tarea rechazada muestra el punto que falta y esconde la frase interna"
       }),
     );
     assert.match(texto(), /New photo requested/);
+    assert.match(texto(), /Photo sent/);
+    assert.equal(texto().includes("Payment sent"), false);
+    assert.equal(document.querySelector(".hyto-visor .hyto-visor-pill"), null);
+    assert.match(document.querySelector(".hyto-visor-pie")?.textContent ?? "", /Photo sent/);
     assert.equal(texto().includes("Task rejected"), false);
     assert.equal(texto().includes("Rejected"), false);
     assert.equal(document.querySelector(".hyto-visor img")?.getAttribute("src"), "/api/evidencias/ev-stand/foto");
@@ -144,6 +149,57 @@ test("una tarea rechazada muestra el punto que falta y esconde la frase interna"
     assert.match(texto(), /Organizer · organizer/);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
     assert.equal(texto().includes("NO"), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en español la otra foto pedida no mezcla inglés y la hora no tapa el comprobante", async () => {
+  limpiarPantalla();
+  const anterior = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      if (url.includes("/api/tareas")) {
+        return json({
+          tareas: [
+            tarea({
+              titulo: "Comida",
+              tipo: "reembolso",
+              estado: "pendiente",
+              etapa: "rechazada",
+              condicion: "Recibo completo",
+              rechazo: { nota: "Falta el total", fallidos: ["0"], origen: "organizador" },
+              organizador: { nombre: "Ana" },
+              ultimaEvidenciaId: "ev-comida",
+              enviadaEn: "2026-10-08T18:30:00.000Z",
+            }),
+          ],
+        });
+      }
+      if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "zeek", nombre: "ZEEK" }] });
+      return json({}, 404);
+    };
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(ProveedorModoDemo, { activo: false, children: createElement(SubirEvidencia, { tareaId: "stand" }) }),
+      }),
+    );
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /Otra foto pedida/);
+    assert.equal(texto().includes("New photo requested"), false);
+    assert.match(texto(), /Foto enviada/);
+    assert.equal(texto().includes("Payment sent"), false);
+    assert.equal(texto().includes("Pago enviado"), false);
+    const pie = document.querySelector(".hyto-visor-pie");
+    assert.match(pie?.textContent ?? "", /Foto enviada · /);
+    assert.equal(pie?.closest(".hyto-visor"), null);
+    assert.equal(document.querySelector(".hyto-visor .hyto-visor-pill"), null);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
