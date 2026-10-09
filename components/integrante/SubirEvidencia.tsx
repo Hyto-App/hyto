@@ -16,6 +16,7 @@ import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
 import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
@@ -435,27 +436,32 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   if (fase === "cargando") {
     return (
-      <main className="hyto-page">
+      <main className="hyto-page hyto-subir hyto-subir-carga" aria-busy="true" aria-live="polite">
         <p className="text-[var(--suave)]">{t("comunes.loading")}</p>
+        <Skeleton alto={28} ancho="46%" radio={8} />
+        <Skeleton alto={220} radio={20} />
+        <Skeleton alto={88} radio={20} />
       </main>
     );
   }
 
   if (fase === "faltante" || !tarea) {
     return (
-      <main className="hyto-page">
+      <main className="hyto-page hyto-subir hyto-subir-estado">
         <p className="text-lg" role="alert">
           {claro(cargaError ?? "We couldn't find that task.")}
         </p>
-        {cargaError ? (
-          <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
-            {t("comunes.tryAgain")}
-          </button>
-        ) : (
-          <Link href="/mis-tareas" className="hyto-btn-line is-inline mt-6 px-5">
-            {t("evidencia.back")}
-          </Link>
-        )}
+        <div className="hyto-subir-acciones">
+          {cargaError ? (
+            <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
+              {t("comunes.tryAgain")}
+            </button>
+          ) : (
+            <Link href="/mis-tareas" className="hyto-btn-line">
+              {t("evidencia.back")}
+            </Link>
+          )}
+        </div>
       </main>
     );
   }
@@ -535,7 +541,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   if (rechazoVivo && fase === "inicio") {
     return (
-      <main className="hyto-page hyto-tarea hyto-vivo" role="alert">
+      <main className="hyto-page hyto-tarea hyto-subir hyto-vivo" role="alert">
         <h1 className="hyto-vivo-titulo">{t("evidencia.liveTitle")}</h1>
         <p className="hyto-vivo-cuerpo">{t(rechazoVivo === "galeria" ? "evidencia.gallery" : "evidencia.useCamera")}</p>
         <p className="hyto-vivo-pista">{t("evidencia.galleryHint")}</p>
@@ -587,7 +593,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   if (revisando) {
     return (
-      <main className="hyto-page hyto-tarea">
+      <main className="hyto-page hyto-tarea hyto-subir">
         {cabecera}
         <section className="hyto-tarjeta hyto-revisando" aria-live="polite">
           <MileAnimada estado="buscando" tamano={140} />
@@ -617,7 +623,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   if (enviada) {
     return (
-      <main className="hyto-page hyto-tarea hyto-enviada">
+      <main className="hyto-page hyto-tarea hyto-subir hyto-enviada">
         <header className="hyto-enviada-cab">
           {mileSinTerminar || avisoEnvio ? (
             <div className="hyto-enviada-alerta" aria-hidden="true">
@@ -733,7 +739,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   }
 
   return (
-    <main className="hyto-page hyto-tarea">
+    <main className="hyto-page hyto-tarea hyto-subir">
       {cabecera}
       <ContextoEvento
         proyectoId={tarea.proyectoId}

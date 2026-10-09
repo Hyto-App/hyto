@@ -12,7 +12,7 @@ export function ReciboPago({ tarea }: { tarea: Tarea }) {
   const idioma = useIdioma();
   const datos = datosRecibo(tarea, idioma);
   const volver = (
-    <Link href={`/tareas/${encodeURIComponent(tarea.id)}`} className="hyto-btn-line is-inline px-5">
+    <Link href={`/tareas/${encodeURIComponent(tarea.id)}`} className="hyto-btn-line hyto-recibo-volver">
       {t("evidencia.receiptBack")}
     </Link>
   );
@@ -53,7 +53,7 @@ export function ReciboPago({ tarea }: { tarea: Tarea }) {
       <p className="text-sm text-[var(--suave)]">{t("evidencia.youReceived")}</p>
       <section className="hyto-tarjeta hyto-recibo">
         {filas.map((fila) => (
-          <div key={fila.etiqueta}>
+          <div className="hyto-recibo-fila" key={fila.etiqueta}>
             <span>{fila.etiqueta}</span>
             <strong className={fila.lima ? "hyto-recibo-lima" : undefined}>{fila.valor}</strong>
           </div>

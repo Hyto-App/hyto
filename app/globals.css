@@ -6189,3 +6189,296 @@ html.hyto-firmando body {
 .hyto-contador.is-alto {
   color: var(--contador-alto);
 }
+
+/*
+ * Phones 360–430px. Mis tareas, evidence upload, and the in-app receipt.
+ * One column, fewer notices, the primary action in the thumb zone.
+ * Desktop and the rest of the app stay as they are.
+ */
+@media (max-width: 430px) {
+  .hyto-mis-tareas,
+  .hyto-subir,
+  .hyto-recibo-pagina {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hyto-mis-tareas .hyto-saludo,
+  .hyto-mis-tareas .hyto-h1,
+  .hyto-mis-tareas .hyto-subtitulo,
+  .hyto-mis-tareas .hyto-subtitulo span,
+  .hyto-mis-tareas .hyto-tarea h3,
+  .hyto-mis-tareas .hyto-tarea-meta,
+  .hyto-mis-tareas .hyto-metricas b,
+  .hyto-mis-tareas .hyto-metricas span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-mis-tareas .hyto-h1 {
+    font-size: clamp(22px, 6.2vw, 28px);
+  }
+
+  /* The greeting already says who you are. The hero sentence repeated it. */
+  .hyto-mis-tareas .hyto-heroe-mile {
+    display: none;
+  }
+
+  .hyto-mis-tareas .hyto-heroe-movil {
+    padding: 0;
+  }
+
+  .hyto-mis-tareas .hyto-metricas > div,
+  .hyto-mis-tareas .hyto-segmentado button,
+  .hyto-mis-tareas .hyto-tarea-fila {
+    min-width: 0;
+  }
+
+  .hyto-mis-tareas .hyto-metricas b {
+    font-size: clamp(16px, 4.4vw, 20px);
+  }
+
+  .hyto-mis-tareas .hyto-segmentado button {
+    white-space: normal;
+  }
+
+  .hyto-mis-tareas .hyto-segmentado button span {
+    overflow-wrap: anywhere;
+  }
+
+  /* Priority, difficulty, and "best paid" sit under the status. They are not the task. */
+  .hyto-mis-tareas .hyto-aviso-extra {
+    display: none;
+  }
+
+  .hyto-mis-tareas .hyto-nota-mile {
+    align-items: flex-start;
+  }
+
+  .hyto-mis-tareas .hyto-nota-mile span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .hyto-mis-tareas .hyto-monto {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hyto-mis-tareas .hyto-ordenar-lista {
+    max-width: calc(100vw - 40px);
+  }
+
+  .hyto-mis-tareas:has(.hyto-tarjeta-abierta),
+  .hyto-mis-tareas:has(.hyto-estado-vacio .hyto-btn) {
+    padding-bottom: 76px;
+  }
+
+  .hyto-mis-tareas .hyto-tarjeta-abierta .hyto-btn,
+  .hyto-mis-tareas .hyto-estado-vacio-acciones .hyto-btn {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 8px);
+    left: max(16px, env(safe-area-inset-left));
+    z-index: 25;
+    width: auto;
+    margin-top: 0;
+  }
+
+  .hyto-mis-tareas .hyto-carga-tareas .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .hyto-subir .hyto-tarea-cab {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hyto-subir .hyto-tarea-cab > div,
+  .hyto-subir .hyto-tarea-titulo,
+  .hyto-subir .hyto-chip-monto,
+  .hyto-subir .hyto-tarea-cols,
+  .hyto-subir .hyto-tarea-col,
+  .hyto-subir .hyto-tabs,
+  .hyto-subir .hyto-panel-mile,
+  .hyto-subir .hyto-visor,
+  .hyto-subir .hyto-checklist,
+  .hyto-subir .hyto-actividad,
+  .hyto-subir .hyto-rastreo li {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hyto-subir .hyto-tarea-titulo {
+    font-size: clamp(20px, 5.6vw, 22px);
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-subir .hyto-chip-monto {
+    align-self: flex-start;
+    height: auto;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    text-align: left;
+  }
+
+  .hyto-subir .hyto-panel-mile {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .hyto-subir .hyto-panel-mile > :first-child,
+  .hyto-subir .hyto-panel-mile > :first-child [data-mile-rig],
+  .hyto-subir .hyto-revisando > :first-child,
+  .hyto-subir .hyto-revisando > :first-child [data-mile-rig] {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .hyto-subir .hyto-panel-mile p:not(.hyto-eyebrow) {
+    display: none;
+  }
+
+  .hyto-subir .hyto-panel-mile h2,
+  .hyto-subir .hyto-revisando h2 {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .hyto-subir .hyto-marco-16-9 {
+    max-height: 112px;
+  }
+
+  .hyto-subir .hyto-card p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .hyto-subir .hyto-visor {
+    aspect-ratio: 4 / 3;
+    max-height: min(42dvh, 280px);
+  }
+
+  .hyto-subir .hyto-actividad-vacio {
+    display: none;
+  }
+
+  .hyto-subir .hyto-dato-leido {
+    grid-template-columns: 1fr;
+  }
+
+  .hyto-subir .hyto-pista {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .hyto-shell-foco .hyto-subir .hyto-actions,
+  .hyto-shell-foco .hyto-subir .hyto-enviada-acciones,
+  .hyto-shell-foco .hyto-subir .hyto-subir-acciones {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(16px, env(safe-area-inset-left));
+    z-index: 25;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .hyto-shell-foco .hyto-subir .hyto-enviada-acciones,
+  .hyto-shell-foco .hyto-subir .hyto-subir-acciones {
+    border: 1px solid var(--linea);
+    border-radius: 20px;
+    background: var(--papel);
+    padding: 12px;
+  }
+
+  .hyto-shell-foco .hyto-subir.hyto-vivo .hyto-btn {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(16px, env(safe-area-inset-left));
+    z-index: 25;
+    width: auto;
+  }
+
+  .hyto-shell-foco .hyto-subir .hyto-actions .hyto-btn,
+  .hyto-shell-foco .hyto-subir .hyto-enviada-acciones .hyto-btn,
+  .hyto-shell-foco .hyto-subir .hyto-enviada-acciones .hyto-btn-line,
+  .hyto-shell-foco .hyto-subir .hyto-subir-acciones .hyto-btn,
+  .hyto-shell-foco .hyto-subir .hyto-subir-acciones .hyto-btn-line {
+    width: 100%;
+  }
+
+  .hyto-subir-carga,
+  .hyto-recibo-carga {
+    display: grid;
+    gap: 12px;
+  }
+
+  .hyto-recibo-pagina {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .hyto-recibo-pagina h1,
+  .hyto-recibo-neto,
+  .hyto-recibo-fila span,
+  .hyto-recibo-fila strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-recibo-neto {
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
+  }
+
+  .hyto-recibo-fila {
+    align-items: flex-start;
+  }
+
+  .hyto-recibo-fila strong {
+    max-width: 62%;
+    text-align: right;
+  }
+
+  .hyto-recibo-volver {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(16px, env(safe-area-inset-left));
+    z-index: 25;
+    display: flex;
+    width: auto;
+    max-width: none;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hyto-mis-tareas .hyto-btn:active,
+  .hyto-subir .hyto-btn:active,
+  .hyto-recibo-volver:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (max-width: 430px) and (prefers-reduced-motion: reduce) {
+  .hyto-mis-tareas .hyto-btn:active,
+  .hyto-subir .hyto-btn:active,
+  .hyto-recibo-volver:active {
+    transform: none;
+  }
+}
