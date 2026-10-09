@@ -110,7 +110,10 @@ test("con cámara en vivo no abre la galería", async () => {
   try {
     await montarTarea();
     assert.match(texto(), /Open camera/);
-    assert.match(texto(), /old gallery photos are not accepted/);
+    assert.equal([...document.querySelectorAll("button")].filter((item) => item.textContent === "Open camera").length, 1);
+    assert.match(texto(), /The photo is taken here/);
+    assert.match(texto(), /Photos from the gallery are not accepted/);
+    assert.match(texto(), /Your photo must show/);
     assert.doesNotMatch(texto(), /Choose photo/);
     assert.equal(document.querySelector('input[type="file"]'), null);
     await act(async () => {
