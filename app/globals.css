@@ -1706,6 +1706,7 @@ a {
   .hyto-shell {
     display: grid;
     grid-template-columns: 256px minmax(0, 1fr);
+    transition: grid-template-columns 200ms ease;
   }
 
   /* Compound selector: the later `.hyto-nav { display: flex }` must not bring the mobile nav back. */
@@ -6247,4 +6248,183 @@ html.hyto-firmando body {
 
 .hyto-contador.is-alto {
   color: var(--contador-alto);
+}
+
+/* Collapsible desktop rail. Mobile keeps the header and the bottom nav. */
+.hyto-barra-marca {
+  display: none;
+}
+
+.hyto-barra-toggle {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--suave);
+  cursor: pointer;
+}
+
+.hyto-barra-toggle:hover {
+  color: var(--tinta);
+  background: var(--superficie-2);
+}
+
+.hyto-foot .hyto-foot-acciones {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.hyto-foot .hyto-foot-acciones .hyto-idioma-menu {
+  display: flex;
+  align-items: center;
+}
+
+.hyto-foot .hyto-idioma-menu-boton,
+.hyto-foot .hyto-tema {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+}
+
+@media (min-width: 1024px) {
+  html[data-barra="colapsada"] .hyto-shell,
+  .hyto-shell.is-barra-colapsada {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  html[data-barra="colapsada"] .hyto-brand,
+  .hyto-shell.is-barra-colapsada .hyto-brand {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 8px 8px;
+  }
+
+  html[data-barra="colapsada"] .hyto-brand .hyto-logo,
+  .hyto-shell.is-barra-colapsada .hyto-brand .hyto-logo {
+    display: none;
+  }
+
+  html[data-barra="colapsada"] .hyto-barra-marca,
+  .hyto-shell.is-barra-colapsada .hyto-barra-marca {
+    display: block;
+    height: 26px;
+    width: auto;
+  }
+
+  html[data-barra="colapsada"] .hyto-nav-escritorio,
+  .hyto-shell.is-barra-colapsada .hyto-nav-escritorio {
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 8px;
+  }
+
+  html[data-barra="colapsada"] .hyto-nav-bloque,
+  .hyto-shell.is-barra-colapsada .hyto-nav-bloque {
+    justify-items: center;
+    width: 100%;
+  }
+
+  html[data-barra="colapsada"] .hyto-nav-escritorio a,
+  .hyto-shell.is-barra-colapsada .hyto-nav-escritorio a {
+    position: relative;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+
+  html[data-barra="colapsada"] .hyto-nav-escritorio a span,
+  .hyto-shell.is-barra-colapsada .hyto-nav-escritorio a span,
+  html[data-barra="colapsada"] .hyto-nav-grupo,
+  .hyto-shell.is-barra-colapsada .hyto-nav-grupo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  html[data-barra="colapsada"] .hyto-foot-escritorio,
+  .hyto-shell.is-barra-colapsada .hyto-foot-escritorio {
+    justify-items: center;
+    padding: 8px 8px 16px;
+  }
+
+  html[data-barra="colapsada"] .hyto-foot-acciones,
+  .hyto-shell.is-barra-colapsada .hyto-foot-acciones {
+    flex-direction: column;
+    align-items: center;
+    width: auto;
+  }
+
+  html[data-barra="colapsada"] .hyto-foot .hyto-preguntar,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-preguntar {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid var(--borde);
+    background: transparent;
+  }
+
+  html[data-barra="colapsada"] .hyto-foot .hyto-preguntar-texto,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-preguntar-texto,
+  html[data-barra="colapsada"] .hyto-foot .hyto-preguntar kbd,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-preguntar kbd,
+  html[data-barra="colapsada"] .hyto-foot .hyto-idioma-menu-boton span,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-idioma-menu-boton span,
+  html[data-barra="colapsada"] .hyto-foot .hyto-idioma-menu-boton svg:last-of-type,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-idioma-menu-boton svg:last-of-type,
+  html[data-barra="colapsada"] .hyto-foot .hyto-usuario-datos,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-usuario-datos,
+  html[data-barra="colapsada"] .hyto-foot .hyto-perfil-flecha,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-perfil-flecha {
+    display: none;
+  }
+
+  html[data-barra="colapsada"] .hyto-foot .hyto-idioma-menu-boton,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-idioma-menu-boton,
+  html[data-barra="colapsada"] .hyto-foot .hyto-perfil-boton,
+  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-perfil-boton {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: 999px;
+  }
+
+  html[data-barra="colapsada"] .hyto-perfil-menu,
+  .hyto-shell.is-barra-colapsada .hyto-perfil-menu {
+    left: 80px;
+    bottom: 16px;
+    width: min(280px, calc(100vw - 96px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-shell {
+    transition: none;
+  }
 }

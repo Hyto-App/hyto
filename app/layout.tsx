@@ -18,6 +18,7 @@ const poppins = Poppins({
 });
 
 const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0E1024":"#F5F6FA");}catch(e){}})();`;
+const BARRA_BOOT = `(function(){try{if(localStorage.getItem("hyto-barra")==="colapsada"){document.documentElement.setAttribute("data-barra","colapsada");}}catch(e){}})();`;
 
 const DESCRIPCION = DESCRIPCION_PAGINA;
 const TITULO = `Hyto · ${ESLOGAN}`;
@@ -59,6 +60,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={idioma} className={poppins.variable} data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: TEMA_BOOT }} />
+        <script dangerouslySetInnerHTML={{ __html: BARRA_BOOT }} />
       </head>
       <body className="min-h-dvh antialiased">
         <ProveedorIdioma idioma={idioma}>

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
-import { Icono, Logo, Tema, iniciales } from "@/components/ui/Marca";
+import { Icono, Isotipo, Logo, Tema, iniciales } from "@/components/ui/Marca";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
@@ -32,6 +32,24 @@ export function seccionDe(ruta: string): Seccion | null {
 }
 
 type EnlaceNavDato = { seccion: Seccion; href: string; clave: Clave; icono: IconoNav };
+
+const CLAVE_BARRA = "hyto-barra";
+
+/** useLayoutEffect on the client so the saved rail is applied before paint. The server has no window. */
+const usarLayout = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+function leerBarraColapsada(): boolean {
+  try {
+    return window.localStorage.getItem(CLAVE_BARRA) === "colapsada";
+  } catch {
+    return false;
+  }
+}
+
+function publicarBarra(colapsada: boolean) {
+  if (colapsada) document.documentElement.dataset.barra = "colapsada";
+  else delete document.documentElement.dataset.barra;
+}
 
 const MOVIL: readonly EnlaceNavDato[] = [
   { seccion: "tareas", href: "/mis-tareas", clave: "nav.myTasks", icono: "tasks" },
@@ -87,6 +105,7 @@ export function Marco({
   const volver = destinoVolver(ruta);
   const [menu, setMenu] = useState(false);
   const [ayuda, setAyuda] = useState(false);
+  const [colapsada, setColapsada] = useState(false);
   const abreMenu = useRef<HTMLElement | null>(null);
   const abreAyuda = useRef<HTMLElement | null>(null);
   const cerrarMenu = useCallback(() => setMenu(false), []);
@@ -115,11 +134,41 @@ export function Marco({
     return () => window.removeEventListener("keydown", tecla);
   }, []);
 
+  usarLayout(() => {
+    const guardada = leerBarraColapsada();
+    publicarBarra(guardada);
+    setColapsada(guardada);
+  }, []);
+
+  function alternarBarra() {
+    const siguiente = !colapsada;
+    try {
+      window.localStorage.setItem(CLAVE_BARRA, siguiente ? "colapsada" : "expandida");
+    } catch {
+      /* A private window can refuse storage. The rail still toggles for this view. */
+    }
+    publicarBarra(siguiente);
+    setColapsada(siguiente);
+  }
+
+  const etiquetaBarra = colapsada ? t("nav.expandSidebar") : t("nav.collapseSidebar");
+
   return (
-    <div className={`hyto-shell${foco ? " hyto-shell-foco" : ""}`}>
+    <div className={`hyto-shell${foco ? " hyto-shell-foco" : ""}${colapsada ? " is-barra-colapsada" : ""}`}>
       <aside className="hyto-side print:hidden">
         <div className="hyto-brand">
           <Logo />
+          <Isotipo className="hyto-barra-marca" />
+          <button
+            type="button"
+            className="hyto-barra-toggle hyto-solo-escritorio"
+            aria-pressed={colapsada}
+            aria-label={etiquetaBarra}
+            title={etiquetaBarra}
+            onClick={alternarBarra}
+          >
+            <Icono nombre={colapsada ? "chevronRight" : "panel"} tamano={18} />
+          </button>
           <div className="hyto-brand-acciones hyto-solo-movil">
             <button
               type="button"
@@ -147,7 +196,7 @@ export function Marco({
               </p>
               <div role="group" aria-labelledby="hyto-nav-organiza">
                 {propios.map((enlace) => (
-                  <EnlaceNav key={enlace.href} href={enlace.href} icono={enlace.icono} activo={actual === enlace.seccion} etiqueta={t(enlace.clave)} />
+                  <EnlaceNav key={enlace.href} href={enlace.href} icono={enlace.icono} activo={actual === enlace.seccion} etiqueta={t(enlace.clave)} colapsada={colapsada} />
                 ))}
               </div>
             </div>
@@ -164,6 +213,7 @@ export function Marco({
                   icono={enlace.icono}
                   activo={enlace.seccion === "eventos" ? eventoAbierto : actual === enlace.seccion}
                   etiqueta={t(enlace.clave)}
+                  colapsada={colapsada}
                 />
               ))}
             </div>
@@ -173,7 +223,7 @@ export function Marco({
               {t("nav.groupJoin")}
             </p>
             <div role="group" aria-labelledby="hyto-nav-unirme">
-              <EnlaceNav href="/join" icono="plus" activo={actual === "unirme"} etiqueta={t("nav.joinCode")} />
+              <EnlaceNav href="/join" icono="plus" activo={actual === "unirme"} etiqueta={t("nav.joinCode")} colapsada={colapsada} />
             </div>
           </div>
         </nav>
@@ -193,6 +243,8 @@ export function Marco({
           <button
             type="button"
             className="hyto-preguntar"
+            aria-label={t("nav.askMile")}
+            title={t("nav.askMile")}
             aria-keyshortcuts="Control+K Meta+K"
             aria-haspopup="dialog"
             aria-expanded={ayuda}
@@ -238,15 +290,23 @@ function EnlaceNav({
   activo,
   etiqueta,
   movil = false,
+  colapsada = false,
 }: {
   href: string;
   icono: IconoNav;
   activo: boolean;
   etiqueta: string;
   movil?: boolean;
+  colapsada?: boolean;
 }) {
   return (
-    <Link href={href} aria-current={activo ? "page" : undefined} className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}>
+    <Link
+      href={href}
+      aria-current={activo ? "page" : undefined}
+      aria-label={colapsada ? etiqueta : undefined}
+      title={colapsada ? etiqueta : undefined}
+      className={activo ? "font-semibold hyto-nav-on" : "text-[var(--suave)]"}
+    >
       <Icono nombre={icono} tamano={movil ? 22 : 18} lleno={movil && activo} />
       <span>{etiqueta}</span>
     </Link>
@@ -272,6 +332,7 @@ function BotonPerfil({
       type="button"
       className={`hyto-perfil-boton${compacto ? " is-compacto" : ""}`}
       aria-label={t("nav.profile")}
+      title={t("nav.profile")}
       aria-haspopup="dialog"
       aria-expanded={abierto}
       aria-controls="hyto-perfil"

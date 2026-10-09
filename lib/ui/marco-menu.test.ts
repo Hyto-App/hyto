@@ -1,5 +1,6 @@
 import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
@@ -141,4 +142,72 @@ test("el enlace de comunidades solo aparece con el interruptor encendido", async
     await desmontar();
     limpiarPantalla();
   }
+});
+
+test("la barra recuerda si está minimizada y Ctrl+K sigue abriendo a Mile", async () => {
+  limpiarPantalla();
+  try {
+    await montar(createElement(Marco, { usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" }, children: createElement("p", null, "inicio") }), {
+      ruta: "/mis-tareas",
+    });
+    const pie = document.querySelector(".hyto-foot-escritorio");
+    const piezas = [...(pie?.children ?? [])].map((nodo) => nodo.className);
+    assert.deepEqual(piezas, ["hyto-preguntar", "hyto-brand-acciones hyto-foot-acciones", "hyto-perfil-boton"]);
+    const acciones = [...(pie?.querySelectorAll(".hyto-foot-acciones > *") ?? [])].map((nodo) => nodo.className);
+    assert.deepEqual(acciones, ["hyto-idioma-menu hyto-idioma-marco", "hyto-tema"]);
+    assert.equal(pie?.querySelector('a[href="/privacy"]'), null);
+    const toggle = document.querySelector(".hyto-barra-toggle");
+    assert.equal(toggle?.classList.contains("hyto-solo-escritorio"), true);
+    assert.equal(toggle?.querySelector("svg")?.getAttribute("width"), "18");
+    assert.equal(toggle?.getAttribute("aria-label"), "Collapse the sidebar");
+    assert.equal(document.querySelector(".hyto-shell")?.classList.contains("is-barra-colapsada"), false);
+    const tareas = document.querySelector('.hyto-nav-escritorio a[href="/mis-tareas"]');
+    assert.equal(tareas?.getAttribute("aria-label"), null);
+
+    await act(async () => {
+      toggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.equal(window.localStorage.getItem("hyto-barra"), "colapsada");
+    assert.equal(document.documentElement.dataset.barra, "colapsada");
+    assert.equal(document.querySelector(".hyto-shell")?.classList.contains("is-barra-colapsada"), true);
+    assert.equal(document.querySelector(".hyto-barra-toggle")?.getAttribute("aria-label"), "Expand the sidebar");
+    assert.equal(document.querySelector('.hyto-nav-escritorio a[href="/mis-tareas"]')?.getAttribute("aria-label"), "My tasks");
+    assert.equal(document.querySelector('.hyto-nav-escritorio a[href="/mis-tareas"]')?.getAttribute("title"), "My tasks");
+    assert.equal(document.querySelector(".hyto-nav-movil a")?.getAttribute("aria-label"), null);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
+    });
+    assert.match(texto(), /How do I get paid\?/);
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    assert.doesNotMatch(texto(), /How do I get paid\?/);
+
+    await desmontar();
+    await montar(createElement(Marco, { usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" }, children: createElement("p", null, "inicio") }), {
+      ruta: "/eventos",
+    });
+    assert.equal(document.querySelector(".hyto-shell")?.classList.contains("is-barra-colapsada"), true);
+    assert.equal(document.querySelector(".hyto-barra-toggle")?.getAttribute("aria-pressed"), "true");
+    await act(async () => {
+      document.querySelector(".hyto-barra-toggle")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.equal(window.localStorage.getItem("hyto-barra"), "expandida");
+    assert.equal(document.documentElement.dataset.barra, undefined);
+    assert.equal(document.querySelector(".hyto-shell")?.classList.contains("is-barra-colapsada"), false);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el ancho de la barra dura 200 ms y se apaga si hay menos movimiento", () => {
+  const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /\.hyto-shell\s*\{[^}]*transition:\s*grid-template-columns\s+200ms\s+ease/);
+  assert.match(css, /@media \(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*\.hyto-shell\s*\{[^}]*transition:\s*none/);
+  const escritorio = css.lastIndexOf("@media (min-width: 1024px)");
+  assert.ok(escritorio > 0);
+  assert.equal(css.slice(0, escritorio).includes("data-barra"), false);
+  assert.match(css.slice(escritorio), /grid-template-columns:\s*72px/);
 });

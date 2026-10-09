@@ -159,6 +159,8 @@ const TRAZOS: Record<string, string> = {
   help: "M10 17.3h.01M7.4 7.5a2.6 2.6 0 1 1 4.1 2.1c-.8.5-1.2 1-1.2 1.9V12.6",
   shield: "M10 2.5 16.3 5v4.8c0 3.5-2.5 5.7-6.3 7.6-3.8-1.9-6.3-4.1-6.3-7.6V5L10 2.5Z",
   logout: "M8 4H5.2A1.2 1.2 0 0 0 4 5.2v9.6A1.2 1.2 0 0 0 5.2 16H8M10.4 10H17M14.2 7.2 17 10l-2.8 2.8",
+  panel: "M3.5 3.5h13v13h-13zM8 3.5v13",
+  chevronRight: "M7 4.5 13 10 7 15.5",
 };
 
 export function Icono({ nombre, tamano = 18, lleno = false }: { nombre: keyof typeof TRAZOS; tamano?: number; lleno?: boolean }) {
