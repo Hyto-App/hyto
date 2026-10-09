@@ -18,6 +18,10 @@ export type LineaEnvio = {
  * enviada_organizador — review stored, so the organizer has the photo
  * aprobada — the task is paid
  * rechazada — a rejection was stored on a pending task
+ *
+ * enviadaEn is the current send only. A pending task (nothing sent yet, or another photo was
+ * asked for) has no current send, so an older file's clock does not become "you sent this".
+ * An example photo is not a send either.
  */
 export function lineaDeEnvio(
   tarea: Pick<TareaFila, "estado" | "hashPago"> & { rechazo?: string | null },
@@ -32,7 +36,12 @@ export function lineaDeEnvio(
     rechazoExplicito: leerRechazo(tarea.rechazo ?? null) !== null,
   });
   const real = Boolean(evidencia && !esBlobEjemplo(evidencia.blobId));
-  const enviadaEn = (calculo.etapa || real) && evidencia?.creadaEn ? evidencia.creadaEn : null;
+  const ciclo =
+    calculo.pagoPendiente ||
+    calculo.etapa === "en_revision" ||
+    calculo.etapa === "enviada_organizador" ||
+    calculo.etapa === "aprobada";
+  const enviadaEn = real && ciclo && evidencia?.creadaEn ? evidencia.creadaEn : null;
   return { etapa: calculo.etapa, enviadaEn };
 }
 

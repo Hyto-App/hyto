@@ -32,8 +32,17 @@ export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado:
   return { aprobada, enviado, pagado };
 }
 
+/**
+ * Payment steps once the task has left pending.
+ * A pending task has no current send: a stored score, an old clock, or a sample etapa
+ * does not become "you sent", "Mile reviewed", or "Approved".
+ * In review, the first step is the current one and the screen names it In review.
+ */
 export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[] } {
   const marcas = marcasPago(tarea);
+  const pendienteSinPago = tarea.estado === "pendiente" && !marcas.enviado && !marcas.pagado;
+  if (pendienteSinPago) return { pasos: [], eventos: [] };
+
   const empezo = Boolean(instanteGuardado(tarea.enviadaEn) || tarea.etapa || tarea.estado !== "pendiente" || marcas.enviado);
   const pasos: PasoActividad[] = [
     { id: "aprobada", estado: marcas.aprobada ? "hecho" : empezo ? "ahora" : "despues" },
@@ -49,7 +58,7 @@ export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; 
     (typeof tarea.nota === "number" || Boolean(tarea.veredicto) || tarea.etapa === "enviada_organizador" || marcas.aprobada);
   if (mileReviso) eventos.push({ id: "mile", en: null });
   if (marcas.aprobada) eventos.push({ id: "aprobada", en: null });
-  if (marcas.enviado) eventos.push({ id: "camino", en: null });
+  if (marcas.enviado && !marcas.pagado) eventos.push({ id: "camino", en: null });
   if (marcas.pagado) eventos.push({ id: "pagado", en: null });
   return { pasos, eventos };
 }

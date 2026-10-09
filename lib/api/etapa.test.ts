@@ -19,12 +19,20 @@ test("la línea sale de la tarea, la foto y si ya hay revisión", () => {
   const fallo = lineaDeEnvio({ ...pendiente, estado: "en revisión" }, foto("blob/real"), veredicto("error"));
   assert.equal(fallo.etapa, "enviada_organizador");
 
-  const rechazada = lineaDeEnvio(pendiente, foto("blob/real"), veredicto());
-  assert.equal(rechazada.etapa, null);
-  assert.equal(rechazada.enviadaEn, ENVIADA);
+  const ejemplo = lineaDeEnvio({ ...pendiente, estado: "en revisión" }, foto("ejemplo/demo-registro"), veredicto());
+  assert.equal(ejemplo.etapa, "enviada_organizador");
+  assert.equal(ejemplo.enviadaEn, null);
+
+  const vieja = lineaDeEnvio(pendiente, foto("blob/real"), veredicto());
+  assert.equal(vieja.etapa, null);
+  assert.equal(vieja.enviadaEn, null);
+
+  const octubre = lineaDeEnvio(pendiente, { blobId: "blob/real", creadaEn: "2026-10-01T18:00:00.000Z" }, veredicto());
+  assert.equal(octubre.enviadaEn, null);
 
   const pagada = lineaDeEnvio({ ...pendiente, estado: "pagado" }, foto("blob/real"), veredicto());
   assert.equal(pagada.etapa, "aprobada");
+  assert.equal(pagada.enviadaEn, ENVIADA);
   const enVuelo = lineaDeEnvio({ ...pendiente, hashPago: "ab".repeat(32) }, foto("blob/real"), null);
   assert.notEqual(enVuelo.etapa, "aprobada");
   assert.equal(enVuelo.enviadaEn, ENVIADA);

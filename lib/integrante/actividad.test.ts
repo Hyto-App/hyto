@@ -15,12 +15,21 @@ const base: TareaActividad = {
 test("sin foto no hay eventos ni horas inventadas", () => {
   const vista = seguimientoDe(base);
   assert.deepEqual(vista.eventos, []);
-  assert.deepEqual(
-    vista.pasos.map((paso) => paso.estado),
-    ["despues", "despues", "despues"],
-  );
+  assert.deepEqual(vista.pasos, []);
   assert.equal(instanteGuardado("no-es-fecha"), null);
   assert.equal(instanteGuardado(null), null);
+});
+
+test("pendiente no arma Approved, el envío ni la revisión de Mile", () => {
+  const vista = seguimientoDe({
+    ...base,
+    etapa: "enviada_organizador",
+    enviadaEn: "2026-10-01T18:00:00.000Z",
+    nota: 65,
+    veredicto: "parcial",
+  });
+  assert.deepEqual(vista.eventos, []);
+  assert.deepEqual(vista.pasos, []);
 });
 
 test("la foto guarda su hora y Mile no tiene una", () => {
@@ -36,8 +45,10 @@ test("la foto guarda su hora y Mile no tiene una", () => {
     { id: "envio", en: "2026-10-06T15:04:00.000Z" },
     { id: "mile", en: null },
   ]);
-  assert.equal(vista.pasos[0]?.estado, "ahora");
-  assert.equal(vista.pasos[2]?.estado, "despues");
+  assert.deepEqual(
+    vista.pasos.map((paso) => paso.estado),
+    ["ahora", "despues", "despues"],
+  );
 });
 
 test("un hash sin pago no marca aprobada y deja el pago en camino, sin hora", () => {
@@ -59,6 +70,7 @@ test("un hash sin pago no marca aprobada y deja el pago en camino, sin hora", ()
     ["envio", "mile", "camino"],
   );
   assert.equal(vista.eventos.every((evento) => evento.id === "envio" || evento.en === null), true);
+  assert.equal(vista.eventos.some((evento) => evento.id === "aprobada"), false);
 });
 
 test("pagada con hash cierra los tres pasos y no inventa la hora del pago", () => {
@@ -70,6 +82,10 @@ test("pagada con hash cierra los tres pasos y no inventa la hora del pago", () =
     nota: 90,
     veredicto: "cumplió",
   });
+  assert.deepEqual(
+    vista.pasos.map((paso) => paso.id),
+    ["aprobada", "enviado", "pagado"],
+  );
   assert.deepEqual(
     vista.pasos.map((paso) => paso.estado),
     ["hecho", "hecho", "hecho"],

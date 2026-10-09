@@ -982,6 +982,124 @@ test("the review card shows the main reason next to the percentage and what the 
   }
 });
 
+test("el demo simula confirmar, reservar y pagar sin llamar rutas de firma", async () => {
+  const llamadas: string[] = [];
+  let firmas = 0;
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    llamadas.push(`${init?.method ?? "GET"} ${url}`);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "demo-comida", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/eventos/")) return json({ aviso: "no" }, 404);
+    return json({
+      tarea: tarea({
+        id: "demo-comida",
+        titulo: "Team meal",
+        tipo: "reembolso",
+        monto: "15",
+        tope: "15",
+        condicion: "Photo of the meal receipt",
+        origen: "guion",
+        veredicto: "cumplió",
+        nota: 90,
+        frase: "Team meal receipt.",
+        montoRevisado: "12.40",
+        montoConfirmado: null,
+        fecha: "2026-09-27",
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: null,
+    });
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "organizador",
+        children: createElement(Revision, {
+          tareaId: "demo-comida",
+          eventoId: "demo",
+          firmar: async () => {
+            firmas += 1;
+            return "SIGNED";
+          },
+        }),
+      }),
+    );
+    await esperar(() => texto().includes("No money moves in the demo."));
+    assert.equal(boton("Confirm amount").disabled, false);
+    assert.equal(boton("Lock budget").disabled, true);
+    await pulsar("Confirm amount");
+    await esperar(() => boton("Lock budget").disabled === false);
+    await pulsar("Lock budget");
+    await esperar(() => rotulo("Approve and pay"));
+    assert.match(texto(), /No money moves in the demo/);
+    await pulsar("Approve and pay");
+    await esperar(() => texto().includes("Paid ✓"));
+    assert.match(texto(), /No money moves in the demo/);
+    assert.equal(texto().includes("View on blockchain"), false);
+    assert.equal(firmas, 0);
+    assert.equal(llamadas.some((linea) => esRutaPago(linea)), false);
+    assert.equal(llamadas.some((linea) => linea.startsWith("POST")), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("el demo en español simula el mismo recorrido y una tarea de trabajo no pide monto", async () => {
+  const llamadas: string[] = [];
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    llamadas.push(`${init?.method ?? "GET"} ${url}`);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "demo-stand", hashPago: null, contratoEscrow: null }] });
+    if (url.startsWith("/api/eventos/")) return json({ aviso: "no" }, 404);
+    return json({
+      tarea: tarea({ id: "demo-stand", origen: "guion", veredicto: "cumplió", nota: 100, frase: "Booth ready." }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: null,
+    });
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(ProveedorModoDemo, {
+          activo: true,
+          rol: "organizador",
+          children: createElement(Revision, { tareaId: "demo-stand", firmar: async () => "SIGNED" }),
+        }),
+      }),
+    );
+    await esperar(() => texto().includes("En la demo no se mueve dinero."));
+    assert.equal(texto().includes("Confirmar monto"), false);
+    assert.equal(boton("Bloquear presupuesto").disabled, false);
+    await pulsar("Bloquear presupuesto");
+    await esperar(() => rotulo("Aprobar y pagar"));
+    await pulsar("Aprobar y pagar");
+    await esperar(() => texto().includes("Pagado ✓"));
+    assert.match(texto(), /En la demo no se mueve dinero/);
+    assert.equal(llamadas.some((linea) => esRutaPago(linea)), false);
+    assert.equal(llamadas.some((linea) => linea.startsWith("POST")), false);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+function esRutaPago(url: string): boolean {
+  return /\/api\/firma|\/api\/escrow|\/monto|stellar|trustless|soroban/i.test(url);
+}
+
+function boton(textoBoton: string): HTMLButtonElement {
+  const encontrado = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes(textoBoton));
+  if (!(encontrado instanceof HTMLButtonElement)) throw new Error(`Sin botón ${textoBoton}. Pantalla: ${texto()}`);
+  return encontrado;
+}
+
 function rotulo(textoBoton: string): boolean {
   return [...document.querySelectorAll("button")].some((item) => item.textContent?.trim() === textoBoton);
 }
