@@ -2,6 +2,7 @@ import type { Almacen } from "@/lib/db/almacen";
 import type { EvidenciaFila, TareaFila } from "@/lib/db/tipos";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { cifraConfirmada } from "@/lib/escrow/monto";
+import { montoRecibido } from "@/lib/escrow/recibido";
 import { leerSaldoUsdc, type LectorSaldo } from "@/lib/escrow/saldo";
 import { centavos, normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import {
@@ -19,8 +20,19 @@ export type { EstadoSaldo, VistaCuenta };
  * El esquema no guarda la fecha del pago. El mes sale de la evidencia más reciente
  * (`creada_en`), que es la marca que ya existe cuando el hito se libera.
  * El monto de un reembolso es `monto_confirmado`. No se inventa el tope.
+ * Lo que se muestra es el neto que recibe quien cobra, después de la comisión
+ * del 0,3 % del procesador de pagos.
  */
 export function montoLiberado(
+  tarea: Pick<TareaFila, "tipo" | "monto" | "tope">,
+  evidencia: Pick<EvidenciaFila, "montoConfirmado"> | null,
+): string | null {
+  const bruto = brutoLiberado(tarea, evidencia);
+  if (!bruto) return null;
+  return montoRecibido(bruto);
+}
+
+function brutoLiberado(
   tarea: Pick<TareaFila, "tipo" | "monto" | "tope">,
   evidencia: Pick<EvidenciaFila, "montoConfirmado"> | null,
 ): string | null {
@@ -105,7 +117,9 @@ async function leerSaldoDe(
   if (!wallet) return { saldo: null, estado: "sin-wallet" };
   try {
     const lectura = await leerSaldo(wallet);
-    if (lectura.saldo === null) return { saldo: null, estado: "ausente" };
+    // A balance of "0" is a real empty balance only when the account can already receive.
+    // Without that, Horizon still answers and the missing line used to look like US$0.
+    if (lectura.saldo === null || lectura.puedeRecibir === false) return { saldo: null, estado: "ausente" };
     return { saldo: lectura.saldo, estado: "ok" };
   } catch {
     return { saldo: null, estado: "error" };

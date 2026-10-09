@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
+import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
@@ -13,14 +14,15 @@ import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
+import { explicarPago } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
-import { montoUsdc } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, reintentoEnLista, seguirEnLista } from "@/lib/integrante/seguimiento";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
+import { nombreParaMostrar } from "@/lib/sesion/nombre";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
 import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
@@ -72,14 +74,9 @@ function Monto({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
-    const recibido = montoUsdc(tarea);
-    if (!recibido) return null;
-    return (
-      <span className="hyto-monto">
-        {recibido}
-        <small>USDC</small>
-      </span>
-    );
+    const pago = explicarPago(tarea, idioma);
+    if (!pago) return null;
+    return <span className="hyto-monto">{pago.corto}</span>;
   }
   const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
   return (
@@ -420,8 +417,9 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       const puntos = puntosDeCondicion(tarea.condicion).length;
                       const vence = tarea.venceEn ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
                       const reintento = reintentoEnLista(tarea, reloj, vistosRef.current.get(tarea.id));
-                      const recibido = tarea.estado === "pagado" ? montoUsdc(tarea) : "";
+                      const recibido = tarea.estado === "pagado" ? (explicarPago(tarea, idioma)?.frase ?? "") : "";
                       const documental = esMimeDocumental(tarea.tipoArchivo);
+                      const quienOrganiza = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
                           <div className="hyto-tarea-fila">
@@ -462,6 +460,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               <div className="mt-3">
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                                 <EtiquetasNota etiquetas={tarea.notas} />
+                                <NotaCobro tarea={tarea} />
                               </div>
                             ) : reintento ? (
                               <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
@@ -482,24 +481,45 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {recibido ? (
                             <p className="hyto-nota-mile hyto-nota-mile-ok">
                               <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: `${recibido} USDC` })}</span>
+                              <span>{t("tareas.paidNote", { amount: recibido })}</span>
                             </p>
                           ) : null}
-                          {tarea.estado === "pendiente" ? (
-                            <Link href={`/tareas/${tarea.id}`} className={abierta || tarea.rechazada ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
-                              {tarea.rechazada ? (
-                                <>
-                                  <Icono nombre="camera" tamano={18} />
-                                  {tarea.tipo === "reembolso" ? (
-                                    <>
-                                      <span className="hyto-solo-movil">{t("tareas.takeAnotherPhoto")}</span>
-                                      <span className="hyto-solo-escritorio">{t("tareas.chooseAnotherFile")}</span>
-                                    </>
-                                  ) : (
-                                    t("tareas.takeAnotherPhoto")
-                                  )}
-                                </>
-                              ) : abierta ? (
+                          {tarea.estado === "pendiente" && tarea.rechazada ? (
+                            <p className="hyto-nota-mile hyto-nota-mile-pend">
+                              <Mile estado="cara-neutra" tamano={28} />
+                              <span>
+                                {quienOrganiza
+                                  ? t("evidencia.organizerAskedName", { name: quienOrganiza })
+                                  : t("evidencia.organizerAsked")}
+                                {tarea.rechazo?.nota ? (
+                                  <>
+                                    {" "}
+                                    <q>{tarea.rechazo.nota}</q>
+                                  </>
+                                ) : null}
+                              </span>
+                            </p>
+                          ) : null}
+                          {tarea.estado === "pendiente" && tarea.rechazada ? (
+                            <>
+                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn hyto-btn-grande">
+                                <Icono nombre="camera" tamano={18} />
+                                {tarea.tipo === "reembolso" ? (
+                                  <>
+                                    <span className="hyto-solo-movil">{t("tareas.takeAnotherPhoto")}</span>
+                                    <span className="hyto-solo-escritorio">{t("tareas.chooseAnotherFile")}</span>
+                                  </>
+                                ) : (
+                                  t("tareas.takeAnotherPhoto")
+                                )}
+                              </Link>
+                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line">
+                                {t("tareas.view")}
+                              </Link>
+                            </>
+                          ) : tarea.estado === "pendiente" ? (
+                            <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                              {abierta ? (
                                 <>
                                   <Icono nombre="camera" tamano={18} />
                                   {t("tareas.uploadEvidence")}

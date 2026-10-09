@@ -23,10 +23,18 @@ test("sin texto no hay descripción", () => {
 
 test("el pedido apaga el razonamiento y sube el tope de tokens", async () => {
   let cuerpo: Record<string, unknown> = {};
-  const descripcion = await describirFoto(FOTO, "image/jpeg", "clave", async (_input, init) => {
-    cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
-    return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
-  });
+  const descripcion = await describirFoto(
+    FOTO,
+    "image/jpeg",
+    "clave",
+    async (_input, init) => {
+      cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
+    },
+    undefined,
+    {},
+    {},
+  );
   assert.equal(descripcion.texto, "Mesa");
   assert.equal(cuerpo.model, "qwen/qwen3.8-27b");
   assert.deepEqual(cuerpo.response_format, { type: "json_object" });
@@ -41,10 +49,18 @@ test("GROQ_VISION_MODEL cambia el modelo y si falta sigue el de siempre", async 
   process.env.GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
   try {
     let cuerpo: Record<string, unknown> = {};
-    await describirFoto(FOTO, "image/jpeg", "clave", async (_input, init) => {
-      cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
-      return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
-    });
+    await describirFoto(
+      FOTO,
+      "image/jpeg",
+      "clave",
+      async (_input, init) => {
+        cuerpo = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return Response.json({ choices: [{ message: { content: '{"texto":"Mesa","monto":null,"fecha":null}' } }] });
+      },
+      undefined,
+      {},
+      {},
+    );
     assert.equal(cuerpo.model, "meta-llama/llama-4-scout-17b-16e-instruct");
     assert.equal("reasoning_effort" in cuerpo, false);
     assert.equal("reasoning_format" in cuerpo, false);
@@ -135,7 +151,7 @@ test("un JSON cortado no se lee como descripción", async () => {
 
 async function falloDe(fetchImpl: typeof fetch, clave = "clave"): Promise<FalloRevision> {
   try {
-    await describirFoto(FOTO, "image/jpeg", clave, fetchImpl);
+    await describirFoto(FOTO, "image/jpeg", clave, fetchImpl, undefined, {}, {});
   } catch (error) {
     assert.ok(error instanceof FalloRevision);
     return error;

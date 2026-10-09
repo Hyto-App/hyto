@@ -16,8 +16,8 @@ export async function exigirSesion(request: Request): Promise<SesionFila | Respo
     const sesion = await almacen.leerSesion(token);
     if (!sesion || !vigente(sesion.expiraEn)) return json({ aviso: AVISO_ENTRAR }, 401, PRIVADA);
     return { ...sesion, wallet: sesion.wallet ?? "" };
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 

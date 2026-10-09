@@ -1,4 +1,5 @@
-import { centavos, textoMonto } from "@/lib/admin/vista";
+import { textoMonto } from "@/lib/admin/vista";
+import { textoDesdeUnidades } from "@/lib/escrow/recibido";
 import type { Idioma } from "@/lib/ui/idioma";
 
 /** Meses del panel. Costa Rica no cambia de hora, y es la zona que ya usa el formato de fechas. */
@@ -168,24 +169,27 @@ export function armarOrgullo(
   idioma: Idioma = "en",
 ): Orgullo {
   const pagadas = tareas.filter((tarea) => tarea.pagada);
-  const porMes = new Map<string, number>();
-  let totalCentavos = 0;
+  const porMes = new Map<string, bigint>();
+  let totalCentavos = 0n;
   let sinFecha = 0;
 
   for (const tarea of pagadas) {
-    const cifra = centavos(tarea.monto);
-    if (cifra <= 0) continue;
-    totalCentavos += cifra;
+    const cifra = unidadesDeMonto(tarea.monto);
+    if (cifra === null || cifra <= 0n) continue;
+    // Cada tarea ya se muestra redondeada al centavo. El total es la suma de
+    // esos centavos, así que sumar las tareas da la misma cifra.
+    const cents = centavosDeUnidades(cifra);
+    totalCentavos += cents;
     const clave = claveMesDe(tarea.pagadoEn, zona);
     if (!clave) {
       sinFecha += 1;
       continue;
     }
-    porMes.set(clave, (porMes.get(clave) ?? 0) + cifra);
+    porMes.set(clave, (porMes.get(clave) ?? 0n) + cents);
   }
 
   const actual = claveDeFecha(ahora, zona);
-  const hayMeses = [...porMes.values()].some((cifra) => cifra > 0);
+  const hayMeses = [...porMes.values()].some((cifra) => cifra > 0n);
   const meses = actual && hayMeses ? ventana(actual, porMes, idioma) : [];
   const conteo: ConteosOrgullo = {
     tareas: pagadas.length,
@@ -195,9 +199,9 @@ export function armarOrgullo(
 
   return {
     vacio: pagadas.length === 0,
-    esteMes: textoMonto(actual ? (porMes.get(actual) ?? 0) : 0),
-    mesPasado: textoMonto(actual ? (porMes.get(desplazarMes(actual, -1)) ?? 0) : 0),
-    total: textoMonto(totalCentavos),
+    esteMes: textoDeCentavos(actual ? (porMes.get(actual) ?? 0n) : 0n),
+    mesPasado: textoDeCentavos(actual ? (porMes.get(desplazarMes(actual, -1)) ?? 0n) : 0n),
+    total: textoDeCentavos(totalCentavos),
     meses,
     tareasCompletadas: conteo.tareas,
     proyectosCompletados: conteo.proyectos,
@@ -243,7 +247,7 @@ function isoEnMes(ahora: Date, delta: number): string {
   return new Date(Date.UTC(anio, mes - 1, 15, 18, 0, 0)).toISOString();
 }
 
-function ventana(actual: string, porMes: Map<string, number>, idioma: Idioma = "en"): MesOrgullo[] {
+function ventana(actual: string, porMes: Map<string, bigint>, idioma: Idioma = "en"): MesOrgullo[] {
   const inicio = desplazarMes(actual, -(VENTANA_MESES - 1));
   const meses: MesOrgullo[] = [];
   for (let indice = 0; indice < VENTANA_MESES; indice += 1) {
@@ -252,7 +256,7 @@ function ventana(actual: string, porMes: Map<string, number>, idioma: Idioma = "
       clave,
       etiqueta: etiqueta(clave, "short", idioma),
       etiquetaLarga: etiqueta(clave, "long", idioma),
-      total: textoMonto(porMes.get(clave) ?? 0),
+      total: textoDeCentavos(porMes.get(clave) ?? 0n),
     });
   }
   return meses;
@@ -267,7 +271,7 @@ function etiqueta(clave: string, mes: "short" | "long", idioma: Idioma = "en"): 
   }).format(new Date(Date.UTC(anio, numero - 1, 1)));
 }
 
-function rachaHasta(actual: string, porMes: Map<string, number>): number {
+function rachaHasta(actual: string, porMes: Map<string, bigint>): number {
   const previo = desplazarMes(actual, -1);
   let cursor: string | null = positivo(porMes, actual) ? actual : positivo(porMes, previo) ? previo : null;
   let racha = 0;
@@ -278,20 +282,20 @@ function rachaHasta(actual: string, porMes: Map<string, number>): number {
   return racha;
 }
 
-function positivo(porMes: Map<string, number>, clave: string): boolean {
-  return (porMes.get(clave) ?? 0) > 0;
+function positivo(porMes: Map<string, bigint>, clave: string): boolean {
+  return (porMes.get(clave) ?? 0n) > 0n;
 }
 
-function mejor(porMes: Map<string, number>): Orgullo["mejorMes"] {
-  let elegido: { clave: string; cifra: number } | null = null;
+function mejor(porMes: Map<string, bigint>): Orgullo["mejorMes"] {
+  let elegido: { clave: string; cifra: bigint } | null = null;
   for (const [clave, cifra] of porMes) {
-    if (cifra <= 0) continue;
+    if (cifra <= 0n) continue;
     if (!elegido || cifra > elegido.cifra || (cifra === elegido.cifra && clave > elegido.clave)) {
       elegido = { clave, cifra };
     }
   }
   if (!elegido) return null;
-  return { clave: elegido.clave, etiqueta: etiqueta(elegido.clave, "long"), total: textoMonto(elegido.cifra) };
+  return { clave: elegido.clave, etiqueta: etiqueta(elegido.clave, "long"), total: textoDeCentavos(elegido.cifra) };
 }
 
 function recientes(pagadas: TareaCuenta[]): TareaReciente[] {
@@ -303,13 +307,42 @@ function recientes(pagadas: TareaCuenta[]): TareaReciente[] {
       return a.titulo.localeCompare(b.titulo);
     })
     .slice(0, RECIENTES)
-    .map((tarea) => ({
-      id: tarea.id,
-      titulo: tarea.titulo,
-      proyecto: tarea.proyecto,
-      monto: centavos(tarea.monto) > 0 ? textoMonto(centavos(tarea.monto)) : "",
-      pagadoEn: tarea.pagadoEn,
-    }));
+    .map((tarea) => {
+      const unidades = unidadesDeMonto(tarea.monto);
+      return {
+        id: tarea.id,
+        titulo: tarea.titulo,
+        proyecto: tarea.proyecto,
+        monto: unidades !== null && unidades > 0n ? textoCifra(unidades) : "",
+        pagadoEn: tarea.pagadoEn,
+      };
+    });
+}
+
+const ESCALA_MONTO = 10_000_000n;
+const UNIDAD_CENTAVO = 100_000n;
+
+/** Up to 7 decimals, so a net such as 1.994 is not dropped the way a 2-decimal parser would. */
+function unidadesDeMonto(valor: string): bigint | null {
+  const limpio = valor.trim();
+  if (!/^\d+(\.\d{1,7})?$/.test(limpio)) return null;
+  const [entera, fraccion = ""] = limpio.split(".");
+  return BigInt(entera) * ESCALA_MONTO + BigInt(fraccion.padEnd(7, "0"));
+}
+
+function centavosDeUnidades(unidades: bigint): bigint {
+  return (unidades + UNIDAD_CENTAVO / 2n) / UNIDAD_CENTAVO;
+}
+
+function textoDeCentavos(centavos: bigint): string {
+  if (centavos <= 0n) return "0";
+  return textoMonto(Number(centavos));
+}
+
+function textoCifra(unidades: bigint): string {
+  if (unidades <= 0n) return "0";
+  if (unidades % UNIDAD_CENTAVO === 0n) return textoMonto(Number(unidades / UNIDAD_CENTAVO));
+  return textoDesdeUnidades(unidades);
 }
 
 function proyectosCompletados(tareas: TareaCuenta[]): number {

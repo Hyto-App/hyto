@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
+import { centavos, centavosGasto, detalleMonto, enBandeja, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, puedeApartarSinEntrega, resumir, sinVeredicto, textoMonto, vistaAdmin } from "./vista";
 import type { MemoriaAdmin } from "./tipos";
 
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
@@ -16,6 +16,16 @@ test("el origen de la revisión se lee como recomendación, muestra o fallo", ()
   assert.equal(notaManual("sin_clave"), null);
   assert.equal(notaCopia("  Same invoice.  "), "Same invoice.");
   assert.equal(notaCopia("   "), null);
+});
+
+test("solo una tarea pendiente sin entrega se puede apartar desde la lista", () => {
+  const base = { estado: "pendiente", hashPago: null, tipoArchivo: null, montoRevisado: null, fecha: null };
+  assert.equal(puedeApartarSinEntrega(base), true);
+  assert.equal(puedeApartarSinEntrega({ ...base, estado: "en revisión" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, tipoArchivo: "image/jpeg" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, montoRevisado: "0.22" }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, apartado: true }), false);
+  assert.equal(puedeApartarSinEntrega({ ...base, hashPago: "ab" }), false);
 });
 
 test("la bandeja y el contador usan la misma regla", () => {
@@ -53,6 +63,14 @@ test("asking for another photo drops the old AI result and leaves the inbox", ()
   const devuelta = sinVeredicto({ ...base, estado: "pendiente" });
   assert.equal(devuelta.veredicto, null);
   assert.equal(enBandeja(devuelta), false);
+
+  const comida = vista.tareas.find((tarea) => tarea.id === "comida");
+  assert.ok(comida);
+  const lectura = { moneda: "CRC" as const, montoOriginal: "₡6.900,00", tasa: 505, fechaImpresa: null, comercio: "Soda" };
+  const recibo = sinVeredicto({ ...comida, estado: "pendiente", lectura });
+  assert.equal(recibo.veredicto, null);
+  assert.equal(recibo.frase, null);
+  assert.deepEqual(recibo.lectura, lectura);
 });
 
 test("el ejemplo de ZEEK resume presupuesto, bandeja e informe", () => {
@@ -146,6 +164,11 @@ test("ver pago y la credencial solo aparecen con un enlace válido", () => {
   assert.equal(enlacePago(hash), `https://stellar.expert/explorer/testnet/tx/${hash}`);
   assert.equal(enlacePago("abc"), null);
   assert.equal(enlacePago("  "), null);
+  const contrato = `C${"A".repeat(55)}`;
+  assert.equal(enlaceContrato(contrato), `https://stellar.expert/explorer/testnet/contract/${contrato}`);
+  assert.equal(enlaceContrato("CSTAND"), null);
+  assert.equal(enlaceContrato(contrato)?.includes("/public/"), false);
+  assert.equal(enlaceContrato(contrato)?.includes("stellar.expert/explorer/testnet/"), true);
   assert.equal(enlaceCredencial(null), null);
   assert.equal(enlaceCredencial("javascript:alert(1)"), null);
   assert.equal(enlaceCredencial("https://dapp.acta.build/c/1"), "https://dapp.acta.build/c/1");

@@ -5,12 +5,15 @@ import { es, leerTexto } from "./diccionario";
 
 const JERGA = /escrow|testnet|trustline|xdr|soroban|friendbot|mainnet/i;
 
-test("la ayuda tiene atajos fijos y de 8 a 10 respuestas", () => {
+test("la ayuda tiene atajos fijos y las respuestas de quien organiza", () => {
   assert.deepEqual(
     ATAJOS.map((atajo) => atajo.id),
     ["tareas", "evidencia", "pago", "faq"],
   );
-  assert.ok(PREGUNTAS.length >= 8 && PREGUNTAS.length <= 10);
+  assert.ok(PREGUNTAS.length >= 8 && PREGUNTAS.length <= 20);
+  for (const id of ["pago", "fondear", "costos", "sinPagar", "orgReembolso"] as const) {
+    assert.equal(PREGUNTAS.includes(id), true);
+  }
   assert.equal(ATAJOS.find((atajo) => atajo.id === "tareas" && "href" in atajo && atajo.href === "/mis-tareas") !== undefined, true);
   assert.equal(ATAJOS.find((atajo) => atajo.id === "pago" && "faq" in atajo && atajo.faq === "pago") !== undefined, true);
 });
@@ -44,4 +47,26 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
     assert.equal(claves.includes(`${id}Q`), true);
     assert.equal(claves.includes(`${id}A`), true);
   }
+  const pago = leerTexto("en", "ayuda.pagoA");
+  assert.match(pago, /cannot send that balance to a bank/);
+  assert.match(pago, /colones/);
+  assert.doesNotMatch(pago, /Mile does not sign/);
+  assert.match(leerTexto("es", "ayuda.pagoA"), /no puede enviar ese saldo a un banco/);
+  assert.match(leerTexto("en", "ayuda.fondearA"), /Lock budget/);
+  assert.match(leerTexto("es", "ayuda.fondearA"), /Bloquear presupuesto/);
+  const costosEn = leerTexto("en", "ayuda.costosA");
+  const costosEs = leerTexto("es", "ayuda.costosA");
+  assert.match(costosEn, /0\.3% fee/);
+  assert.match(costosEn, /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+  assert.match(costosEn, /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
+  assert.match(costosEs, /0,3 %/);
+  assert.match(costosEs, /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
+  assert.match(costosEs, /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
+  assert.doesNotMatch(costosEn, /does not add a fee|hyto (does not|doesn't) (add|charge)|hyto charges/i);
+  assert.doesNotMatch(costosEs, /no agrega una tarifa|hyto no (agrega|cobra)|hyto cobra/i);
+  assert.doesNotMatch(`${costosEn} ${costosEs}`, /USDC|Stellar|\bwallet\b|escrow|billetera/i);
+  assert.doesNotMatch(leerTexto("en", "ayuda.cobrarA"), /USDC/);
+  assert.doesNotMatch(leerTexto("es", "ayuda.cobrarA"), /USDC/);
+  assert.match(leerTexto("en", "ayuda.sinPagarA"), /no button that returns/);
+  assert.match(leerTexto("en", "ayuda.orgReembolsoA"), /confirm the amount/);
 });

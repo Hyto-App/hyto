@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
@@ -25,14 +27,18 @@ import {
   type DetalleRevision,
 } from "@/lib/admin/remoto";
 import { consultarHasta, type EstadoConsulta } from "@/lib/admin/consulta-escrow";
+import { tareaEjemploDeDemo } from "@/lib/admin/ejemplo";
 import { mismaTareaAdmin } from "@/lib/admin/novedades";
 import { reintentoFondoEnCurso } from "@/lib/admin/reintento-fondo";
-import { centavos, detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { centavos, detalleMonto, enlaceContrato, enlaceCredencial, enlacePago, etiquetaOrigen, notaCopia, notaManual, normalizarMonto, sinVeredicto, vistaAdmin } from "@/lib/admin/vista";
+import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { esTipoDocumento } from "@/lib/evidencia/tipo";
+import { CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
   AVISO_REINGRESO,
+  AVISO_SIN_CUENTA_FIRMA,
   ErrorFirmaCliente,
   firmarPasos,
   mensajeFirmaVisible,
@@ -40,22 +46,39 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, formatearFecha, formatearMonto, montoAsegurado, montoDeTarea } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
+import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
+function frasePagada(tarea: TareaAdmin, idioma: "en" | "es"): string {
+  const detalle = detalleMonto(tarea);
+  const frase = explicarPago(
+    {
+      tipo: tarea.tipo,
+      monto: tarea.monto,
+      tope: tarea.tope,
+      montoConfirmado: tarea.tipo === "reembolso" ? detalle.cifra : null,
+    },
+    idioma,
+  )?.frase;
+  return frase || formatearMonto(detalle.cifra, idioma);
+}
+
 export function Revision({
   tareaId,
   eventoId,
   firmar,
+  saldo = null,
 }: {
   tareaId: string;
   eventoId?: string;
   firmar?: (unsignedXdr: string) => Promise<string>;
+  saldo?: string | null;
 }) {
   const modoDemo = useModoDemo();
   const t = useTexto();
@@ -72,6 +95,7 @@ export function Revision({
   const [wallet, setWallet] = useState<string | null>(null);
   const [aviso, escribirAviso] = useState<string | null>(null);
   const [hojaPedir, setHojaPedir] = useState(false);
+  const [pidioOtra, setPidioOtra] = useState(false);
   const [notaPedir, setNotaPedir] = useState("");
   const [fallidosPedir, setFallidosPedir] = useState<number[]>([]);
   const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
@@ -97,7 +121,8 @@ export function Revision({
 
   useEffect(() => {
     let viva = true;
-    setTarea(undefined);
+    const local = modoDemo ? tareaEjemploDeDemo(tareaId) : null;
+    setTarea(local ?? undefined);
     setFoto(null);
     setReal(false);
     setHashPaso(null);
@@ -110,6 +135,7 @@ export function Revision({
     void cargarDetalleOrganizador(tareaId).then((detalle) => {
       if (!viva) return;
       if (!detalle) {
+        if (local) return;
         setTarea(null);
         publicarAviso("Could not load this review.");
         return;
@@ -218,21 +244,28 @@ export function Revision({
     if (!real) {
       setHojaPedir(false);
       decidir("pendiente");
+      setPidioOtra(true);
       return;
     }
     publicarAviso(null);
-    const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(cuerpo),
-    });
-    const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-    if (!respuesta.ok) {
-      publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
-      return;
+    try {
+      const respuesta = await fetch(`/api/revision/${encodeURIComponent(tareaId)}/pedir`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpo),
+      });
+      const leido = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
+      if (!respuesta.ok) {
+        publicarAviso(leido?.aviso ?? "Could not ask for another photo.");
+        return;
+      }
+      setHojaPedir(false);
+      setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
+      setPidioOtra(true);
+    } catch {
+      // A dropped connection rejects the fetch. The task stays in review until the request lands.
+      publicarAviso(AVISO_ENVIO_FALLIDO);
     }
-    setHojaPedir(false);
-    setTarea((actual) => (actual ? sinVeredicto({ ...actual, estado: "pendiente" }) : actual));
   }
 
   function decidir(decision: "pagado" | "pendiente") {
@@ -308,7 +341,7 @@ export function Revision({
   async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal) {
     if (paso || !tarea) return;
     if (!wallet) {
-      publicarAviso(AVISO_REINGRESO);
+      publicarAviso(AVISO_SIN_CUENTA_FIRMA);
       return;
     }
     if (acciones[0] !== "desplegar" && !contrato) {
@@ -319,6 +352,7 @@ export function Revision({
     let actual: AccionCliente | null = null;
     let pago: PagoFirmado | null = null;
     let contratoParcial: string | null = null;
+    let yaEnRed = false;
     try {
       pago = await firmarPasos(acciones, tareaId, {
         ...(firmar ? { firmar } : {}),
@@ -344,21 +378,30 @@ export function Revision({
       setHashPaso(pago.hash);
       if (pago.aviso) publicarAviso(mensajeClaro(pago.aviso));
     } catch (error) {
-      if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
-      if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
       const codigo = error instanceof ErrorFirmaCliente ? error.codigo : null;
-      publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
-        paso: actual,
-        codigo,
-      });
+      if (codigo === CODIGO_YA_FONDEADO) {
+        // The network already holds the budget. Offering Finish locking again would lock it twice.
+        yaEnRed = true;
+        if (contrato) fondeoForzado.current = contrato;
+        setFondeado(true);
+        setReanudar(null);
+        publicarAviso(null);
+      } else {
+        if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
+        if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
+        publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
+          paso: actual,
+          codigo,
+        });
+      }
     } finally {
       setPaso(null);
-      if (!pago && contratoParcial) setContrato(contratoParcial);
-      if (!pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
+      if (!yaEnRed && !pago && contratoParcial) setContrato(contratoParcial);
+      if (!yaEnRed && !pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
       const fresco = await cargarDetalleOrganizador(tareaId);
       const contratoConocido = fresco?.contratoEscrow ?? pago?.contrato ?? contratoParcial;
       if (contratoConocido) setContrato(contratoConocido);
-      if (!pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
+      if (!yaEnRed && !pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
       if (fresco) {
         setTarea(fresco.tarea);
         setFoto(fresco.foto);
@@ -420,17 +463,34 @@ export function Revision({
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
   const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
+  // A real file on a pending task means the last photo was sent back. Lock stays off until a new one arrives.
+  const esperaOtraFoto =
+    real &&
+    tarea.estado === "pendiente" &&
+    tarea.veredicto === null &&
+    (pidioOtra || Boolean(foto) || (tarea.intentosAnteriores?.length ?? 0) > 0);
+  const cifraBloqueo = montoDeVista(tarea);
+  const faltaSaldo =
+    real && cifraBloqueo !== null ? faltaParaBloquear(saldo, String(cifraBloqueo)) : null;
+  const describeBloqueo = [
+    esperaOtraFoto ? "bloqueo-foto" : "",
+    esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
+    faltaSaldo ? "bloqueo-saldo" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   const origen = etiquetaOrigen(tarea.origen, idioma);
   const pago = enlacePago(tarea.hashPago);
   const pendiente = pagoPendiente(tarea);
   const transaccion = hashPaso && hashPaso !== tarea.hashPago ? enlacePago(hashPaso) : null;
+  const cadenaBloqueo = real && tarea.estado !== "pagado" && !pendiente ? enlaceContrato(contrato) : null;
   const credencial = enlaceCredencial(tarea.credencialUrl);
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
   const avisoVisible = aviso ? claro(aviso) : null;
   const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
     const cifra = montoDeVista(tarea);
-    const monto = cifra === null ? undefined : cifra.toFixed(2);
+    const monto = cifra === null ? undefined : formatearMonto(cifra.toString(), idioma);
     if (clave === "pagar")
       return {
         titulo: t("confirmar.payTitle"),
@@ -477,7 +537,7 @@ export function Revision({
           <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
         </div>
         <div className="text-right">
-          <p className="hyto-amount text-2xl">{montoDeTarea(tarea, idioma)}</p>
+          <MontoCabecera tarea={tarea} />
         </div>
       </header>
       {sesionVencida ? <AvisoSesion /> : null}
@@ -700,22 +760,41 @@ export function Revision({
               </form>
             ) : null}
 
+            {pidioOtra ? (
+              <p id="bloqueo-foto" role="status" className="hyto-pedir-listo">
+                {t("revision.askedSent")}
+              </p>
+            ) : null}
+
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {t("revision.setsAside", { monto: montoDeTarea(tarea, idioma) })}
+                  {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
                 </p>
+                {esperaOtraFoto && !pidioOtra ? (
+                  <p id="bloqueo-foto" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("revision.lockWaitingPhoto")}
+                  </p>
+                ) : null}
                 {esperaConfirmacion && !puedeDesplegar ? (
                   <p id="bloqueo-monto" className="text-sm leading-6 text-[var(--suave)]">
                     {t("revision.lockNeedsAmount")}
                   </p>
                 ) : null}
+                {faltaSaldo ? (
+                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
+                  </p>
+                ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo}
+                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || Boolean(faltaSaldo)}
                   aria-busy={ocupado}
-                  aria-describedby={esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : undefined}
-                  onClick={() => setConfirmacion({ clave: "bloquear", abierto: true })}
+                  aria-describedby={describeBloqueo || undefined}
+                  onClick={() => {
+                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || faltaSaldo) return;
+                    setConfirmacion({ clave: "bloquear", abierto: true });
+                  }}
                 >
                   {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
                 </BotonPrincipal>
@@ -724,7 +803,21 @@ export function Revision({
             {botones.fondear ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
-                <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "fondear", abierto: true })}>
+                {faltaSaldo ? (
+                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
+                  </p>
+                ) : null}
+                <BotonPrincipal
+                  type="button"
+                  disabled={ocupado || modoDemo || Boolean(faltaSaldo)}
+                  aria-busy={ocupado}
+                  aria-describedby={faltaSaldo ? "bloqueo-saldo" : undefined}
+                  onClick={() => {
+                    if (ocupado || modoDemo || faltaSaldo) return;
+                    setConfirmacion({ clave: "fondear", abierto: true });
+                  }}
+                >
                   {paso === "fondear" ? etiquetaPaso("fondear") : t("pago.finishLocking")}
                 </BotonPrincipal>
               </>
@@ -755,16 +848,20 @@ export function Revision({
             </p>
           ) : null}
 
-          {avisoVisible ? <AvisoFirma mensaje={aviso ?? ""} className="mt-4 text-sm leading-6 text-[var(--suave)]" /> : null}
+          {avisoVisible ? (
+            <div role={aviso === AVISO_ENVIO_FALLIDO ? "alert" : undefined}>
+              <AvisoFirma mensaje={aviso ?? ""} className="mt-4 text-sm leading-6 text-[var(--suave)]" />
+            </div>
+          ) : null}
 
           {real && pendiente ? (
             <div className="mt-4" aria-live="polite">
               <p className="text-sm leading-6 text-[var(--suave)]">
                 {consultaPago === "agotada" ? t("revision.paymentStillPending") : t("revision.paymentSent")}{" "}
                 {pago ? (
-                  <a href={pago} className="font-semibold underline-offset-4 hover:underline">
+                  <EnlaceExplorador href={pago} className="font-semibold underline-offset-4 hover:underline">
                     {t("pago.viewChain")}
-                  </a>
+                  </EnlaceExplorador>
                 ) : null}
               </p>
               {consultaPago === "agotada" ? (
@@ -780,33 +877,37 @@ export function Revision({
               </p>
               {consultaFondo === "agotada" ? (
                 <button type="button" className="hyto-btn-line is-inline mt-3 px-5" onClick={() => setVueltaFondo((actual) => actual + 1)}>
-                  {t("pago.checkAgain")}
+                  {t("comunes.tryAgain")}
                 </button>
               ) : null}
             </div>
           ) : null}
 
-          {transaccion ? (
-            <a href={transaccion} className="hyto-btn-line is-inline mt-4 px-5">
+          {cadenaBloqueo || transaccion ? (
+            <EnlaceExplorador href={cadenaBloqueo ?? transaccion ?? ""} className="hyto-btn-line is-inline mt-4 px-5">
               {t("pago.viewChain")}
-            </a>
+            </EnlaceExplorador>
           ) : null}
 
           {real && (wallet || contrato) ? (
             <details className="mt-6 text-sm text-[var(--suave)]">
               <summary className="cursor-pointer">{t("revision.technical")}</summary>
               {wallet ? <p className="mt-2 font-mono">{t("revision.yourAccount", { direccion: acortarDireccion(wallet) })}</p> : null}
-              {contrato ? <p className="mt-2 font-mono">{t("revision.budgetRef", { direccion: acortarDireccion(contrato) })}</p> : null}
+              {contrato ? (
+                <p className="mt-2 font-mono">{t("revision.budgetRef", { direccion: acortarDireccion(contrato) })}</p>
+              ) : (
+                <p className="mt-2 max-w-prose leading-6">{t("revision.refPendiente")}</p>
+              )}
             </details>
           ) : null}
 
           {tarea.estado === "pagado" ? (
             <div className="mt-8 space-y-3">
-              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: formatearMonto(detalleMonto(tarea).cifra, idioma) })}</p>
+              <p className="text-lg font-medium">{t("revision.paidAmount", { monto: frasePagada(tarea, idioma) })}</p>
               {pago ? (
-                <a href={pago} className="hyto-btn-line is-inline px-5">
+                <EnlaceExplorador href={pago} className="hyto-btn-line is-inline px-5">
                   {t("pago.viewChain")}
-                </a>
+                </EnlaceExplorador>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
                   {real ? t("revision.paidWait") : t("revision.samplePay")}
@@ -825,19 +926,74 @@ export function Revision({
   );
 }
 
-function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
+function sincronizarImagen(nodo: HTMLImageElement | null, alCargar: () => void, alFallar: () => void): () => void {
+  if (!nodo) return () => undefined;
+  let viva = true;
+  if (nodo.complete && nodo.naturalWidth > 0) alCargar();
+  else if (nodo.complete) {
+    // A 404 that finished before hydration never fires onError. decode() rejects that case.
+    nodo.decode().then(
+      () => {
+        if (viva && nodo.naturalWidth > 0) alCargar();
+      },
+      () => {
+        if (viva) alFallar();
+      },
+    );
+  }
+  return () => {
+    viva = false;
+  };
+}
+
+export function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
   const t = useTexto();
+  const abrir = useRef<HTMLButtonElement>(null);
+  const imagen = useRef<HTMLImageElement>(null);
+  const fallo = useRef(false);
   const [lista, setLista] = useState(false);
   const [rota, setRota] = useState(false);
+  const [ampliada, setAmpliada] = useState(false);
+  const [srcActiva, setSrcActiva] = useState(src);
 
-  useEffect(() => {
+  if (src !== srcActiva) {
+    setSrcActiva(src);
+    fallo.current = false;
     setLista(false);
     setRota(false);
-  }, [src]);
+    setAmpliada(false);
+  }
+
+  useEffect(
+    () =>
+      sincronizarImagen(
+        imagen.current,
+        () => setLista(true),
+        () => {
+          fallo.current = true;
+          setRota(true);
+        },
+      ),
+    [src],
+  );
+
+  useEffect(() => {
+    if (lista || rota) return;
+    const reloj = window.setTimeout(() => {
+      fallo.current = true;
+      setRota(true);
+    }, 8000);
+    return () => window.clearTimeout(reloj);
+  }, [src, lista, rota]);
+
+  function cerrar() {
+    setAmpliada(false);
+    abrir.current?.focus();
+  }
 
   if (rota) {
     return (
-      <div className="hyto-photo-nota">
+      <div className="hyto-photo-nota" role="alert">
         <p>{t("revision.photoBroken")}</p>
       </div>
     );
@@ -848,16 +1004,150 @@ function FotoEvidencia({ src, alt }: { src: string; alt: string }) {
       {lista ? null : (
         <div className="hyto-photo-nota" role="status">
           <span className="hyto-spinner" aria-hidden="true" />
-          <span className="sr-only">{t("revision.loadingPhoto")}</span>
+          <span>{t("revision.loadingPhoto")}</span>
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        onLoad={() => setLista(true)}
-        onError={() => setRota(true)}
-        style={lista ? undefined : { opacity: 0 }}
-      />
+      <button
+        ref={abrir}
+        type="button"
+        className="hyto-photo-abrir"
+        aria-label={t("revision.viewLarger", { titulo: alt })}
+        aria-haspopup="dialog"
+        aria-expanded={ampliada}
+        aria-disabled={lista ? undefined : true}
+        tabIndex={lista ? 0 : -1}
+        onClick={() => {
+          if (lista) setAmpliada(true);
+        }}
+      >
+        <img
+          ref={imagen}
+          src={src}
+          alt=""
+          onLoad={() => setLista(true)}
+          onError={() => {
+            fallo.current = true;
+            setRota(true);
+          }}
+          style={lista ? undefined : { opacity: 0 }}
+        />
+      </button>
+      {ampliada
+        ? createPortal(
+            <FotoAmpliada src={src} alt={alt} onCerrar={cerrar} />,
+            document.body,
+          )
+        : null}
     </>
+  );
+}
+
+function FotoAmpliada({ src, alt, onCerrar }: { src: string; alt: string; onCerrar: () => void }) {
+  const t = useTexto();
+  const titulo = useId();
+  const cerrar = useRef<HTMLButtonElement>(null);
+  const imagen = useRef<HTMLImageElement>(null);
+  const fallo = useRef(false);
+  const alCerrar = useRef(onCerrar);
+  const [lista, setLista] = useState(false);
+  const [rota, setRota] = useState(false);
+  alCerrar.current = onCerrar;
+
+  useEffect(
+    () =>
+      sincronizarImagen(
+        imagen.current,
+        () => setLista(true),
+        () => {
+          fallo.current = true;
+          setRota(true);
+        },
+      ),
+    [src],
+  );
+
+  useEffect(() => {
+    cerrar.current?.focus();
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function tecla(evento: KeyboardEvent) {
+      if (evento.key === "Escape") {
+        evento.preventDefault();
+        alCerrar.current();
+        return;
+      }
+      if (evento.key !== "Tab") return;
+      evento.preventDefault();
+      cerrar.current?.focus();
+    }
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("keydown", tecla);
+      document.body.style.overflow = anterior;
+    };
+  }, []);
+
+  return (
+    <div className="hyto-photo-amplia" role="dialog" aria-modal="true" aria-labelledby={titulo} onClick={() => alCerrar.current()}>
+      <div className="hyto-photo-amplia-columna" onClick={(evento) => evento.stopPropagation()}>
+        <h2 id={titulo} className="sr-only">
+          {t("revision.viewLarger", { titulo: alt })}
+        </h2>
+        <button ref={cerrar} type="button" className="hyto-btn-line is-inline" onClick={() => alCerrar.current()}>
+          {t("revision.closePhoto")}
+        </button>
+        <div className="hyto-photo-amplia-marco">
+          {rota ? (
+            <p className="hyto-photo-nota" role="alert">
+              {t("revision.photoBroken")}
+            </p>
+          ) : (
+            <>
+              {lista ? null : (
+                <p className="hyto-photo-nota" role="status">
+                  <span className="hyto-spinner" aria-hidden="true" />
+                  <span>{t("revision.loadingPhoto")}</span>
+                </p>
+              )}
+              <img
+                ref={imagen}
+                src={src}
+                alt={alt}
+                onLoad={() => setLista(true)}
+                onError={() => {
+                  fallo.current = true;
+                  setRota(true);
+                }}
+                style={lista ? undefined : { opacity: 0 }}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MontoCabecera({
+  tarea,
+}: {
+  tarea: Pick<TareaAdmin, "tipo" | "monto" | "tope" | "montoConfirmado" | "montoRevisado">;
+}) {
+  const t = useTexto();
+  const idioma = useIdioma();
+  const vista = vistaMonto(tarea, idioma);
+  if (vista.pago && vista.tope) {
+    return (
+      <>
+        <p className="text-sm text-[var(--suave)]">{t("revision.amountToPay")}</p>
+        <p className="hyto-amount text-2xl">{vista.pago}</p>
+        <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: vista.tope })}</p>
+      </>
+    );
+  }
+  return (
+    <p className="hyto-amount text-2xl">
+      {vista.tope ? t("eventos.limit", { amount: vista.tope }) : vista.linea}
+    </p>
   );
 }

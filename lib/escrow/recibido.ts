@@ -53,6 +53,62 @@ export function montoRecibido(bruto: string, comisionPlataformaBps = BPS_PLATAFO
   return textoDesdeUnidades(neto);
 }
 
+const CENTAVO = 100_000n;
+
+function textoCentavos(centavos: bigint): string {
+  if (centavos <= 0n) return centavos === 0n ? "0" : "";
+  const entero = centavos / 100n;
+  const fraccion = centavos % 100n;
+  if (fraccion === 0n) return entero.toString();
+  return `${entero.toString()}.${fraccion.toString().padStart(2, "0")}`;
+}
+
+export type NetoEnCentavos = {
+  bruto: string;
+  comision: string;
+  neto: string;
+};
+
+/**
+ * Gross, the protocol fee, and the net, each in cents, and they add up.
+ * The fee is the gap between the rounded figures, so US$12.44 + US$0.04 is US$12.48.
+ */
+export function netoEnCentavos(bruto: string): NetoEnCentavos | null {
+  const neto = montoRecibido(bruto);
+  if (!neto) return null;
+  const unidadesBruto = unidadesUsdc(bruto);
+  const unidadesNeto = unidadesUsdc(neto);
+  if (unidadesBruto === null || unidadesNeto === null) return null;
+  const centsBruto = (unidadesBruto + CENTAVO / 2n) / CENTAVO;
+  const centsNeto = (unidadesNeto + CENTAVO / 2n) / CENTAVO;
+  const centsComision = centsBruto - centsNeto;
+  if (centsBruto <= 0n || centsNeto <= 0n || centsComision < 0n) return null;
+  return {
+    bruto: textoCentavos(centsBruto),
+    comision: textoCentavos(centsComision),
+    neto: textoCentavos(centsNeto),
+  };
+}
+
+/**
+ * Cent amount that was funded, recovered from the net the payee stored.
+ * Task amounts are whole cents, so a nearby cent is enough. Null when none matches.
+ */
+export function brutoDeNeto(neto: string): string | null {
+  const unidades = unidadesUsdc(neto);
+  if (unidades === null) return null;
+  const objetivo = textoDesdeUnidades(unidades);
+  const estimado = (unidades * 10_000n + 9_969n) / 9_970n;
+  const centro = (estimado + CENTAVO / 2n) / CENTAVO;
+  for (let delta = -4n; delta <= 4n; delta += 1n) {
+    const cents = centro + delta;
+    if (cents <= 0n) continue;
+    const candidato = textoCentavos(cents);
+    if (montoRecibido(candidato) === objetivo) return candidato;
+  }
+  return null;
+}
+
 /**
  * Amount that was funded. A reimbursement uses the confirmed amount, never the cap.
  * A work task uses its milestone amount.

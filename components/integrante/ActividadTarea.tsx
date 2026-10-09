@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
-import { seguimientoDe } from "@/lib/integrante/actividad";
+import { seguimientoDe, type PasoActividad } from "@/lib/integrante/actividad";
 import { ZONA_HORA } from "@/lib/integrante/formato";
 import type { Tarea } from "@/lib/integrante/tipos";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -33,6 +33,14 @@ function etiquetaHora(iso: string, idioma: "en" | "es"): string {
   }).format(new Date(iso));
 }
 
+/** The first step is named Approved only once the task is paid. Until then it shows the real status. */
+function etiquetaPaso(paso: PasoActividad, tarea: Tarea): Clave {
+  if (paso.id !== "aprobada" || paso.estado === "hecho") return PASO[paso.id];
+  if (tarea.rechazada || tarea.etapa === "rechazada") return "tareas.badgeNewPhoto";
+  if (tarea.estado === "en revisión") return "actividad.enRevision";
+  return PASO[paso.id];
+}
+
 /** Three payment steps and the events we can actually date. */
 export function ActividadTarea({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
@@ -46,7 +54,7 @@ export function ActividadTarea({ tarea }: { tarea: Tarea }) {
       <ol className="hyto-rastreo" aria-label={t("actividad.rastreo")}>
         {pasos.map((paso) => (
           <li key={paso.id} data-estado={paso.estado} aria-current={paso.estado === "ahora" ? "step" : undefined}>
-            {t(PASO[paso.id])}
+            {t(etiquetaPaso(paso, tarea))}
           </li>
         ))}
       </ol>
