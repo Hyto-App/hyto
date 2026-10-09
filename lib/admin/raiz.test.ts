@@ -5,7 +5,7 @@ import test from "node:test";
 
 test("la raíz manda a eventos a quien organiza y a mis tareas al resto", () => {
   const pagina = readFileSync(new URL("../../app/(admin)/page.tsx", import.meta.url), "utf8");
-  assert.match(pagina, /destinoInicio\(sesion, organiza\)/);
+  assert.match(pagina, /destinoDeInicio\(sesion, organiza, jar\.get\(COOKIE_ALTA\)\?\.value === "1"\)/);
   assert.match(pagina, /eventosOrganizados\(sesion\.usuarioId\)/);
   assert.match(pagina, /<Entrar abrirLogin/);
   assert.match(pagina, /tituloDocumento/);

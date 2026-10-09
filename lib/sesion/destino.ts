@@ -13,3 +13,13 @@ export function destinoInicio(
   if (sesionEsDemo(sesion) && sesion.rol === "organizador") return "/eventos";
   return "/mis-tareas";
 }
+
+/** A new account opens Events, where Create event lives, even before it organizes one. */
+export function destinoDeInicio(
+  sesion: Pick<SesionFila, "email" | "usuarioId" | "rol">,
+  organiza: boolean,
+  alta: boolean,
+): "/eventos" | "/mis-tareas" {
+  if (alta) return "/eventos";
+  return destinoInicio(sesion, organiza);
+}

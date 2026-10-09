@@ -5,7 +5,8 @@ import { demoHabilitado } from "@/lib/sesion/demo";
 import { faltaTipoCuenta } from "@/lib/api/tipo-cuenta";
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { almacenNeon } from "@/lib/db/neon";
-import { destinoInicio } from "@/lib/sesion/destino";
+import { COOKIE_ALTA } from "@/lib/sesion/cookie";
+import { destinoDeInicio } from "@/lib/sesion/destino";
 import { sesionEsDemo } from "@/lib/sesion/demo";
 import { eventosOrganizados } from "@/lib/sesion/organiza";
 import { leerSesionActual } from "@/lib/sesion/vista";
@@ -40,8 +41,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PaginaInicio() {
   const sesion = await leerSesionActual();
   if (sesion) {
+    const jar = await cookies();
     const organiza = (await eventosOrganizados(sesion.usuarioId)).length > 0;
-    const destino = destinoInicio(sesion, organiza);
+    const destino = destinoDeInicio(sesion, organiza, jar.get(COOKIE_ALTA)?.value === "1");
     if (tipoCuentaActivo() && !sesionEsDemo(sesion)) {
       const almacen = await almacenNeon();
       if (almacen && (await faltaTipoCuenta(almacen, sesion.usuarioId))) redirect("/configuracion/tipo");

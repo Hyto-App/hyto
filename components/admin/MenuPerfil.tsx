@@ -24,7 +24,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
   const titulo = useId();
   const [saliendo, setSaliendo] = useState(false);
   const nombre = usuario.nombre?.trim() || null;
-  const rotulo = nombre ?? usuario.email;
+  const rotulo = nombre ?? t("nav.profile");
 
   useEffect(() => {
     if (!abierto) return;
@@ -67,7 +67,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
           </span>
           <span className="hyto-usuario-datos">
             <strong id={titulo}>{rotulo}</strong>
-            {nombre ? <span>{usuario.email}</span> : null}
+            <span>{usuario.email}</span>
           </span>
         </div>
         <Link href="/configuracion" className="hyto-perfil-item" onClick={alCerrar}>
