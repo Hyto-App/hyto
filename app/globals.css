@@ -6298,6 +6298,12 @@ html.hyto-firmando body {
 }
 
 @media (min-width: 1024px) {
+  .hyto-nav.hyto-nav-escritorio {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   html[data-barra="colapsada"] .hyto-shell,
   .hyto-shell.is-barra-colapsada {
     grid-template-columns: 72px minmax(0, 1fr);
@@ -6426,5 +6432,11 @@ html.hyto-firmando body {
 @media (prefers-reduced-motion: reduce) {
   .hyto-shell {
     transition: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .hyto-barra-toggle.hyto-solo-escritorio {
+    display: none;
   }
 }
