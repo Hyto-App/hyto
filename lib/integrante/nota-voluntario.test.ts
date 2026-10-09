@@ -54,10 +54,13 @@ test("con nota real la pastilla muestra el porcentaje y aclara que el pago lo de
         etiquetas: ["antifraude"],
         origen: "scout",
         textoScout: "SECRETO-LAYA",
+        ultimaEvidenciaId: "ev-1",
       }),
     );
     assert.match(texto(), /64% · Partially completed/);
+    assert.equal(document.querySelector(".hyto-resumen-mini img")?.getAttribute("src"), "/api/evidencias/ev-1/foto");
     assert.match(texto(), /In review/);
+    assert.equal(document.querySelector('.hyto-rastreo li[aria-current="step"]')?.textContent, "In review");
     assert.match(texto(), new RegExp(FRASE_PAGO));
     assert.equal(document.querySelector(".hyto-pill-veredicto")?.getAttribute("aria-label"), "64% · Partially completed");
     assert.match(document.querySelector(".hyto-pill-veredicto")?.className ?? "", /hyto-pill-mid/);
@@ -96,9 +99,10 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
-    assert.match(texto(), /You got paid/);
-    // 20 USDC funded, minus the 0.3% protocol fee.
+    assert.match(texto(), /You were paid/);
+    // US$20 funded, minus the 0.3% protocol fee, shown in cents.
     assert.match(texto(), /\+US\$19\.94/);
+    assert.match(texto(), /US\$19\.94 \(US\$20 minus a US\$0\.06 fee\)/);
     assert.equal(texto().includes(FRASE_PAGO), false);
     assert.equal(texto().includes("84%"), false);
 
@@ -125,11 +129,15 @@ test("una tarea rechazada muestra el punto que falta y esconde la frase interna"
         condicion: "Wristband visible; Table in frame",
         rechazo: { nota: "Cropped", fallidos: ["0"], origen: "organizador" },
         organizador: { nombre: "Organizer" },
+        ultimaEvidenciaId: "ev-stand",
         frase: "SECRETO-LAYA",
         contratoEscrow: "NO",
       }),
     );
-    assert.match(texto(), /Task rejected/);
+    assert.match(texto(), /New photo requested/);
+    assert.equal(texto().includes("Task rejected"), false);
+    assert.equal(texto().includes("Rejected"), false);
+    assert.equal(document.querySelector(".hyto-visor img")?.getAttribute("src"), "/api/evidencias/ev-stand/foto");
     assert.match(texto(), /Missing: Wristband visible/);
     assert.match(texto(), /Not in the photo/);
     assert.match(texto(), /Take another photo/);

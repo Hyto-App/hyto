@@ -36,11 +36,15 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
   try {
     await montar(createElement(PantallaPagada, { tarea, titulo: "Team meal" }));
     await esperar(() => texto().includes("You received"));
-    assert.match(texto(), /\+US\$12\.44256/);
+    assert.match(texto(), /\+US\$12\.44/);
     assert.match(texto(), /You received/);
-    assert.match(texto(), /US\$12\.44256/);
-    assert.equal(texto().includes("USDC"), false);
-    assert.equal(texto().includes("15"), false);
+    assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
+    assert.equal(texto().includes("US$15"), false);
+    assert.equal(texto().includes("12.44256"), false);
+    const recibo = document.querySelector('a[href="/tareas/comida/recibo"]');
+    assert.equal(recibo?.textContent, "View receipt");
+    assert.equal(recibo?.getAttribute("target"), null);
+    assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
   } finally {
     await desmontar();
   }
@@ -85,10 +89,9 @@ test("después de fondear, el texto dice el monto bloqueado y no el tope", async
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida", eventoId: "evt" }));
-    await esperar(() => texto().includes("US$12.48 is reserved for this payment."));
+    await esperar(() => texto().includes("The payment sends US$12.48"));
     assert.match(texto(), /they receive US\$12\.44256/);
-    assert.equal(texto().includes("Up to"), false);
-    assert.equal(texto().includes("The payment sends"), false);
+    assert.equal(texto().includes("The payment sends Up to"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

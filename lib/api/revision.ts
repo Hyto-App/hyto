@@ -85,7 +85,7 @@ export async function leerRevisionHttp(
       walletCobro: actual.walletCobro,
       wallet,
     });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

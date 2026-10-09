@@ -3,26 +3,46 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { act, createElement, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { bajarCapasParaCavos } from "@/lib/escrow/capaCavos";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
-function Ejemplo({ onConfirmar }: { onConfirmar: (senal: AbortSignal) => Promise<void> }) {
+function Ejemplo({
+  onConfirmar,
+  idioma = "en",
+  monto = "20.00",
+}: {
+  onConfirmar: (senal: AbortSignal) => Promise<void>;
+  idioma?: "en" | "es";
+  monto?: string;
+}) {
   const [abierto, setAbierto] = useState(false);
-  return createElement(
-    "div",
-    null,
-    createElement("button", { type: "button", id: "abrir", onClick: () => setAbierto(true) }, "Open it"),
-    createElement(ConfirmDialog, {
-      abierto,
-      onCerrar: () => setAbierto(false),
-      titulo: "Lock the budget",
-      monto: "20.00",
-      irreversible: true,
-      confirmar: "Lock 20 USDC",
-      onConfirmar,
-    }),
-  );
+  return createElement(ProveedorIdioma, {
+    idioma,
+    children: createElement(
+      "div",
+      null,
+      createElement("button", { type: "button", id: "abrir", onClick: () => setAbierto(true) }, "Open it"),
+      createElement(ConfirmDialog, {
+        abierto,
+        onCerrar: () => setAbierto(false),
+        titulo: "Lock the budget",
+        monto,
+        irreversible: true,
+        confirmar: "Lock US$20",
+        onConfirmar,
+      }),
+    ),
+  });
 }
+
+test("a decimal amount uses the same US$ format in Spanish", async () => {
+  await montar(createElement(Ejemplo, { onConfirmar: async () => undefined, idioma: "es", monto: "12.48" }));
+  await pulsar("Open it");
+  assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$12,48");
+  assert.equal(texto().includes("USDC"), false);
+  await desmontar();
+});
 
 test("the dialog opens, cancel does not call the action, confirm calls it once", async () => {
   let llamadas = 0;
@@ -37,14 +57,17 @@ test("the dialog opens, cancel does not call the action, confirm calls it once",
   assert.equal(dialogo().open, false);
   await pulsar("Open it");
   assert.equal(dialogo().open, true);
-  assert.match(texto(), /US\$20\.00/);
-  assert.equal(texto().includes("20.00USDC"), false);
+  const monto = document.querySelector(".hyto-dialogo-monto");
+  assert.equal(monto?.textContent, "US$20");
+  assert.equal(monto?.querySelector("small"), null);
+  assert.equal(texto().includes("USDC"), false);
+  assert.equal(texto().includes("20.00"), false);
   assert.match(texto(), /This can't be undone\./);
   await pulsar("Cancel");
   assert.equal(llamadas, 0);
   assert.equal(dialogo().open, false);
   await pulsar("Open it");
-  await pulsar("Lock 20 USDC");
+  await pulsar("Lock US$20");
   await act(async () => {
     await Promise.resolve();
   });
@@ -72,7 +95,7 @@ test("while Cavos is signing the dialog and its cancel control are not in the pa
     }),
   );
   await pulsar("Open it");
-  await pulsar("Lock 20 USDC");
+  await pulsar("Lock US$20");
   await act(async () => {
     await Promise.resolve();
   });
@@ -94,7 +117,7 @@ test("cancel stays available while the action is running and aborts it", async (
     }),
   );
   await pulsar("Open it");
-  await pulsar("Lock 20 USDC");
+  await pulsar("Lock US$20");
   await act(async () => {
     await Promise.resolve();
   });
@@ -119,7 +142,7 @@ test("a failed action stays open and shows the error", async () => {
     }),
   );
   await pulsar("Open it");
-  await pulsar("Lock 20 USDC");
+  await pulsar("Lock US$20");
   await act(async () => {
     await Promise.resolve();
   });

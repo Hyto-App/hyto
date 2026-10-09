@@ -2,6 +2,8 @@ import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen, CambioTarea } from "@/lib/db/almacen";
 import type { TareaFila } from "@/lib/db/tipos";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
+import { lectorSaldoVigente, rechazoSiFondos, type LectorSaldo } from "@/lib/escrow/saldo";
+import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
@@ -23,7 +25,18 @@ export function avisoBloqueo(tarea: Pick<TareaFila, "estado" | "hashPago" | "con
   return null;
 }
 
-export async function editarTareaHttp(request: Request, almacen: Almacen, tareaId: string, usuarioId: string): Promise<Response> {
+export type OpcionesEditar = {
+  wallet?: string | null;
+  leerSaldo?: LectorSaldo;
+};
+
+export async function editarTareaHttp(
+  request: Request,
+  almacen: Almacen,
+  tareaId: string,
+  usuarioId: string,
+  opciones: OpcionesEditar = {},
+): Promise<Response> {
   const tarea = await almacen.leerTarea(tareaId);
   if (!tarea) return json({ aviso: "We couldn't find that task." }, 404);
   if (!(await esOrganizador(almacen, tarea.proyectoId, usuarioId))) {
@@ -46,6 +59,12 @@ export async function editarTareaHttp(request: Request, almacen: Almacen, tareaI
   if (!fresco) return json({ aviso: "We couldn't find that task." }, 404);
   const bloqueo = avisoBloqueo(fresco, Boolean(await almacen.ultimaEvidencia(fresco.id)));
   if (bloqueo) return json({ aviso: bloqueo }, 409);
+  const subida = montoBloqueable(fresco, leido.cambio);
+  const wallet = opciones.wallet?.trim() ?? "";
+  if (subida && /^G[A-Z2-7]{55}$/.test(wallet)) {
+    const fondos = await rechazoSiFondos(wallet, subida, opciones.leerSaldo ?? lectorSaldoVigente());
+    if (fondos) return fondos;
+  }
   await almacen.actualizarTarea(fresco.id, leido.cambio);
   const guardada = await almacen.leerTarea(fresco.id);
   return json({ tarea: tareaPublica(guardada ?? { ...fresco, ...leido.cambio }) });

@@ -7,10 +7,11 @@ import { useTexto } from "@/components/ui/Idioma";
 import { notaDeTarea } from "@/lib/integrante/nota";
 import { abreviarNota, estaRechazada } from "@/lib/integrante/revision";
 import type { Tarea } from "@/lib/integrante/tipos";
+import { nombreParaMostrar } from "@/lib/sesion/nombre";
 
 type Paso = "hecho" | "ahora" | "despues";
 
-type TareaLinea = Pick<Tarea, "estado" | "nota" | "veredicto" | "rechazada" | "rechazo" | "intentos" | "organizador">;
+type TareaLinea = Pick<Tarea, "estado" | "nota" | "veredicto" | "rechazada" | "rechazo" | "intentos" | "organizador" | "evento">;
 
 /**
  * "What happens now". Only the volunteer's own data decides each step.
@@ -35,7 +36,7 @@ export function LineaRevision({
   const pagado = tarea.estado === "pagado";
   const rechazada = estaRechazada(tarea);
   const revisada = !mileSinTerminar && (calificacion !== null || revisionCerrada || pagado || rechazada);
-  const nombre = tarea.organizador?.nombre?.trim() || "";
+  const nombre = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento) || "";
   const intento = (tarea.intentos ?? 0) > 1 ? t("evidencia.attempt", { n: tarea.intentos ?? 0 }) : null;
   const notaCorta = tarea.rechazo?.nota ? abreviarNota(tarea.rechazo.nota) : null;
 

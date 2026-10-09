@@ -68,7 +68,7 @@ test("solo no_cumple rechaza, parcial sigue, y el tope deja la foto al organizad
   assert.equal(parcial?.accion, "seguir");
   assert.equal(parcial?.puntaje, 75);
   assert.equal(parcial?.resultados[1]?.estado, "parcial");
-  assert.equal(parcial?.resultados[1]?.observacion, "Esto está solo en parte en tu foto.");
+  assert.equal(parcial?.resultados[1]?.observacion, "Esto está solo en parte en su foto.");
   assert.match(parcial?.notaMile ?? "", /organizador decide/);
 
   const rechazo = decidirRequisitos({ requisitos, niveles: [2, 0], idioma: "es", intento: 1, maxIntentos: 3 });
@@ -76,8 +76,8 @@ test("solo no_cumple rechaza, parcial sigue, y el tope deja la foto al organizad
   assert.deepEqual(rechazo?.fallidos, ["mesa"]);
   assert.equal(rechazo?.puntaje, 50);
   assert.equal(rechazo?.resultados[1]?.estado, "no_cumple");
-  assert.equal(rechazo?.resultados[1]?.observacion, "Esto no aparece en tu foto.");
-  assert.match(rechazo?.notaMile ?? "", /Toma otra foto/);
+  assert.equal(rechazo?.resultados[1]?.observacion, "Esto no aparece en su foto.");
+  assert.match(rechazo?.notaMile ?? "", /Tome otra foto/);
 
   const tope = decidirRequisitos({ requisitos, niveles: [0, 0], idioma: "en", intento: 3, maxIntentos: 3 });
   assert.equal(tope?.accion, "seguir");
@@ -185,8 +185,8 @@ test("con la bandera encendida Mile rechaza el requisito que no cumple", async (
   assert.equal(resultado.mile?.accion, "rechazar");
   assert.equal(resultado.mile?.puntaje, 50);
   assert.equal(resultado.mile?.resultados[1]?.estado, "no_cumple");
-  assert.equal(resultado.mile?.resultados[1]?.observacion, "Esto no aparece en tu foto.");
-  assert.match(resultado.frase, /Toma otra foto/);
+  assert.equal(resultado.mile?.resultados[1]?.observacion, "Esto no aparece en su foto.");
+  assert.match(resultado.frase, /Tome otra foto/);
   const rechazo = leerRechazo(resultado.mile?.rechazoJson);
   assert.equal(rechazo?.origen, "mile");
   assert.deepEqual(rechazo?.fallidos, ["mesa"]);
