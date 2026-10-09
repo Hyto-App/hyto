@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { cerrar } from "./armar";
 import { CRC_POR_USD, convertirAUsd } from "./divisas";
-import { contextoParaLaya, leerLectura, montoSinUsd, type LecturaEvidencia } from "./lectura";
+import { colonJunto, contextoParaLaya, escribirLectura, leerLectura, leerLecturaGuardada, montoSinUsd, type LecturaEvidencia } from "./lectura";
 import { etiquetasDe } from "./razones";
 import { describirFoto, leerDescripcion, pedidoVision } from "./scout";
 import { MARCA_LECTURA, MARCA_RAZONES, separarDescripcion, unirDescripcion } from "./snapshot-razones";
@@ -51,6 +52,26 @@ test("un recibo tico en colones queda con monto en dólares y la fecha día prim
   assert.deepEqual(leida.articulos, ["Pepperoni pizza", "Soda"]);
   assert.equal(leida.legible, true);
   assert.equal(montoSinUsd(leida), false);
+});
+
+test("un total en colones se muestra ₡750 y no C 750", () => {
+  assert.equal(colonJunto("C 750", "CRC"), "₡750");
+  assert.equal(colonJunto("₡ 750", "CRC"), "₡750");
+  assert.equal(colonJunto("C7.950,00", "CRC"), "₡7.950,00");
+  assert.equal(colonJunto("CRC 750", "CRC"), "CRC 750");
+  assert.equal(colonJunto("C 750", "USD"), "C 750");
+  assert.equal(lectura({ moneda: "CRC", monto_original: "C 750" }).montoOriginal, "₡750");
+  assert.equal(lectura({ moneda: "CRC", monto_original: "C 750" }).montoUsd, "1.49");
+  const guardada = leerLecturaGuardada(
+    escribirLectura({ ...lectura({ monto_original: "₡7.350,00" }), montoOriginal: "C 750" }),
+    "A receipt.",
+  );
+  assert.equal(guardada?.montoOriginal, "₡750");
+  const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /font-family:\s*"Hyto Colon"/);
+  assert.match(css, /unicode-range:\s*U\+20A1/);
+  assert.match(css, /\/fonts\/colon\.ttf/);
+  assert.ok(readFileSync(new URL("../../public/fonts/colon.ttf", import.meta.url)).byteLength > 0);
 });
 
 test("el símbolo impreso manda sobre el código del modelo", () => {

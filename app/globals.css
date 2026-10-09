@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
+/* Poppins latin has no U+20A1. This face only supplies the colón sign. */
+@font-face {
+  font-family: "Hyto Colon";
+  src: url("/fonts/colon.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+20A1;
+}
+
 @theme {
-  --font-sans: var(--font-poppins), Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Hyto Colon", var(--font-poppins), Poppins, ui-sans-serif, system-ui, sans-serif;
 }
 
 /*
