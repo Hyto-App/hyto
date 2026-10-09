@@ -177,7 +177,7 @@ export function TareasEvento({
     }
     const falta = faltaDeBorrador(tarea, borrador, saldo);
     if (falta) {
-      setAviso(t("errores.saldoNoCubre", textosSaldo(falta, idioma)));
+      setAviso({ tareaId: tarea.id, mensaje: t("errores.saldoNoCubre", textosSaldo(falta, idioma)) });
       return;
     }
     setAviso(null);
