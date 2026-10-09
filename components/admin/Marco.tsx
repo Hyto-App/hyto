@@ -83,7 +83,8 @@ export function Marco({
   const movil = enlaceComunidades ? [...movilBase, enlaceComunidades] : movilBase;
   const actual = seccionDe(ruta);
   const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento";
-  const foco = ruta.startsWith("/revision") || ruta.startsWith("/tareas");
+  // Review stays focused. The evidence upload keeps the bottom nav at phone width.
+  const foco = ruta.startsWith("/revision");
   const volver = destinoVolver(ruta);
   const [menu, setMenu] = useState(false);
   const [ayuda, setAyuda] = useState(false);

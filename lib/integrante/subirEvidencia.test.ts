@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { SubirEvidencia } from "../../components/integrante/SubirEvidencia";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
+import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { jpegDePrueba } from "../evidencia/muestras";
 import { tareasEjemplo } from "../integrante/ejemplos";
 import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integracion/montar";
@@ -58,10 +59,40 @@ function inputArchivo(): HTMLInputElement {
   return input;
 }
 
+function botones(etiqueta: string): HTMLButtonElement[] {
+  return [...document.querySelectorAll("button")].filter(
+    (item): item is HTMLButtonElement => item instanceof HTMLButtonElement && item.textContent === etiqueta,
+  );
+}
+
 function boton(etiqueta: string): HTMLButtonElement {
-  const encontrado = [...document.querySelectorAll("button")].find((item) => item.textContent === etiqueta);
-  if (!(encontrado instanceof HTMLButtonElement)) throw new Error(`Sin botón ${etiqueta}.`);
+  const encontrado = botones(etiqueta)[0];
+  if (!encontrado) throw new Error(`Sin botón ${etiqueta}.`);
   return encontrado;
+}
+
+function ponerDispositivos(lista: { kind: string }[]): void {
+  const media = navigator.mediaDevices as unknown as { enumerateDevices: () => Promise<{ kind: string }[]> };
+  media.enumerateDevices = async () => lista;
+}
+
+function punteroFino(fino: boolean): () => void {
+  const anterior = window.matchMedia.bind(window);
+  window.matchMedia = ((consulta: string) => ({
+    matches: fino && consulta.includes("hover") && consulta.includes("pointer"),
+    media: consulta,
+    onchange: null,
+    addListener() {},
+    removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() {
+      return false;
+    },
+  })) as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = anterior;
+  };
 }
 
 async function elegir(archivo: File) {
@@ -110,6 +141,9 @@ test("con cámara en vivo no abre la galería", async () => {
   try {
     await montarTarea();
     assert.match(texto(), /Open camera/);
+    assert.equal(botones("Open camera").length, 1);
+    assert.match(texto(), /Your photo must show/);
+    assert.ok(document.querySelector(".hyto-tarea-subir"));
     assert.match(texto(), /old gallery photos are not accepted/);
     assert.doesNotMatch(texto(), /Choose photo/);
     assert.equal(document.querySelector('input[type="file"]'), null);
@@ -365,6 +399,131 @@ test("una foto de cámara con 201 limpio dice Your photo arrived y manda el toke
     sinRevisionLocal();
   } finally {
     globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en un escritorio sin cámara el QR abre esta tarea y no hay galería", async () => {
+  limpiarPantalla();
+  const restaurar = punteroFino(true);
+  definirCamara(async () => {
+    throw Object.assign(new Error("no camera"), { name: "NotFoundError" });
+  });
+  ponerDispositivos([]);
+  try {
+    await montarTarea();
+    assert.match(texto(), /This computer has no camera/);
+    assert.match(texto(), /taken at the moment/);
+    assert.match(texto(), /Old gallery photos are not accepted/);
+    assert.equal(botones("Open camera").length, 0);
+    assert.equal(document.querySelector('input[type="file"]'), null);
+    assert.doesNotMatch(texto(), /Choose photo/);
+    const codigo = document.querySelector(".hyto-qr");
+    assert.equal(codigo?.getAttribute("role"), "img");
+    assert.match(codigo?.innerHTML ?? "", /<svg/);
+    assert.doesNotMatch(codigo?.innerHTML ?? "", /<script/);
+    const enlace = document.querySelector(".hyto-sin-camara a");
+    assert.equal(enlace?.getAttribute("href"), "http://localhost/tareas/stand");
+    assert.match(texto(), /Your photo must show/);
+  } finally {
+    restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en un escritorio sin cámara el texto en español dice lo mismo", async () => {
+  limpiarPantalla();
+  const restaurar = punteroFino(true);
+  definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as MediaStream);
+  ponerDispositivos([]);
+  const fetchPrevio = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/tareas")) {
+      const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+      return new Response(JSON.stringify({ tareas: stand ? [stand] : [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    throw new Error("offline");
+  };
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(ProveedorModoDemo, {
+          activo: true,
+          rol: "voluntario",
+          children: createElement(SubirEvidencia, { tareaId: "stand" }),
+        }),
+      }),
+    );
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    assert.match(texto(), /Esta computadora no tiene cámara/);
+    assert.match(texto(), /se toma en el momento/);
+    assert.match(texto(), /fotos viejas de la galería/);
+    assert.match(texto(), /celular/);
+    assert.equal(botones("Abrir cámara").length, 0);
+    assert.equal(document.querySelector(".hyto-sin-camara a")?.getAttribute("href"), "http://localhost/tareas/stand");
+    assert.equal(document.querySelector('input[type="file"]'), null);
+  } finally {
+    globalThis.fetch = fetchPrevio;
+    restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si la cámara existe y el permiso se niega, no aparece el QR ni la galería", async () => {
+  limpiarPantalla();
+  const restaurar = punteroFino(true);
+  let clicks = 0;
+  const clickPrevio = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function click() {
+    clicks += 1;
+    return clickPrevio.apply(this);
+  };
+  definirCamara(async () => {
+    throw Object.assign(new Error("denied"), { name: "NotAllowedError" });
+  });
+  ponerDispositivos([{ kind: "videoinput" }]);
+  try {
+    await montarTarea();
+    assert.equal(botones("Open camera").length, 1);
+    assert.doesNotMatch(texto(), /This computer has no camera/);
+    await act(async () => {
+      boton("Open camera").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.equal(clicks, 0);
+    assert.equal(document.querySelector('input[type="file"]'), null);
+    assert.equal(document.querySelector(".hyto-qr"), null);
+    assert.match(texto(), /Allow the camera and try again/);
+  } finally {
+    HTMLInputElement.prototype.click = clickPrevio;
+    restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en el teléfono una lista de cámaras vacía no cambia a QR", async () => {
+  limpiarPantalla();
+  const restaurar = punteroFino(false);
+  definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as MediaStream);
+  ponerDispositivos([]);
+  try {
+    await montarTarea();
+    assert.equal(botones("Open camera").length, 1);
+    assert.doesNotMatch(texto(), /This computer has no camera/);
+    assert.equal(document.querySelector(".hyto-qr"), null);
+    assert.match(texto(), /old gallery photos are not accepted/);
+  } finally {
+    restaurar();
     await desmontar();
     limpiarPantalla();
   }

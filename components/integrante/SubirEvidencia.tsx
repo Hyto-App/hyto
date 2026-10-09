@@ -12,12 +12,14 @@ import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
+import { SeguirEnCelular } from "@/components/integrante/evidencia/SeguirEnCelular";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
+import { camaraAusente, detectarEscritorio, errorSinCamara } from "@/lib/integrante/sinCamara";
 import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
 import { formatearFecha, formatearHora, formatearMonto, montoDeTarea, montosDeCobro, vistaMonto } from "@/lib/integrante/formato";
@@ -52,6 +54,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [error, setError] = useState<string | null>(null);
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
   const [conCaptura, setConCaptura] = useState(false);
+  const [sinCamara, setSinCamara] = useState(false);
   const [capturadaEn, setCapturadaEn] = useState<string | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const [cargaError, setCargaError] = useState<string | null>(null);
@@ -128,8 +131,21 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   useEffect(() => {
     montadoRef.current = true;
-    if (!navigator.mediaDevices?.getUserMedia) setConCaptura(true);
+    let vivo = true;
+    const media = navigator.mediaDevices;
+    if (!media?.getUserMedia) setConCaptura(true);
+    else if (detectarEscritorio()) {
+      const listar = media.enumerateDevices?.bind(media);
+      if (listar) {
+        void listar()
+          .then((lista) => {
+            if (vivo && camaraAusente(lista)) setSinCamara(true);
+          })
+          .catch(() => undefined);
+      }
+    }
     return () => {
+      vivo = false;
       montadoRef.current = false;
       streamRef.current?.getTracks().forEach((pista) => pista.stop());
       streamRef.current = null;
@@ -223,8 +239,13 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       }
       streamRef.current = stream;
       setFase("camara");
-    } catch {
-      setError("Could not open the camera. Allow the camera and try again.");
+    } catch (err) {
+      if (detectarEscritorio() && errorSinCamara(err)) {
+        setSinCamara(true);
+        setError(null);
+        return;
+      }
+      setError(t("evidencia.noCamera"));
     }
   }
 
@@ -481,6 +502,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               ? t("evidencia.chooseFile")
               : t("evidencia.openCamera");
   const pista = coincide && fase === "inicio" && !envioBloqueado ? (recibo ? t("evidencia.chooseFirst") : t("evidencia.takePhotoFirst")) : null;
+  const sinSalidaDeCamara = sinCamara && coincide && !recibo && fase === "inicio";
 
   const cerrada = tarea.estado === "pagado" || tarea.etapa === "aprobada" || Boolean(tarea.hashPago?.trim());
   const enviada = fase === "lista" || cerrada;
@@ -733,7 +755,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   }
 
   return (
-    <main className="hyto-page hyto-tarea">
+    <main className="hyto-page hyto-tarea hyto-tarea-subir">
       {cabecera}
       <ContextoEvento
         proyectoId={tarea.proyectoId}
@@ -770,6 +792,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <div className="hyto-tarea-cols" role="tabpanel" id={idPanel} aria-labelledby={recibo ? idRecibo : idTarea}>
         <div className="hyto-tarea-col">
           <PanelMile />
+          {sinSalidaDeCamara ? (
+            <SeguirEnCelular tareaId={tarea.id} />
+          ) : (
           <div className="hyto-visor">
             {!coincide ? (
               <div className="hyto-visor-vacio">
@@ -787,11 +812,6 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             ) : (
               <div className="hyto-visor-vacio">
                 <p>{recibo ? t("evidencia.receiptPlaceholder") : t("evidencia.cameraOff")}</p>
-                {!recibo ? (
-                  <button type="button" className="hyto-btn-line" onClick={() => void abrirCamara()}>
-                    {t("evidencia.openCamera")}
-                  </button>
-                ) : null}
               </div>
             )}
             {coincide && fase === "foto" ? (
@@ -803,6 +823,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               </>
             ) : null}
           </div>
+          )}
           {coincide && recibo && (fase === "inicio" || fase === "foto") ? (
             <button
               type="button"
@@ -814,7 +835,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {t("evidencia.choosePdf")}
             </button>
           ) : null}
-          {coincide && !recibo && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
+          {coincide && !recibo && fase === "inicio" && !sinSalidaDeCamara ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
         </div>
         <div className="hyto-tarea-col">
           <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
@@ -836,6 +857,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {claro(error)}
             </p>
           ) : null}
+          {sinSalidaDeCamara ? null : (
           <div className="hyto-actions">
             <BotonPrincipal
               type="button"
@@ -853,6 +875,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </BotonPrincipal>
             {pista ? <p className="hyto-pista">{pista}</p> : null}
           </div>
+          )}
           {ejemplo ? <p className="hyto-tarea-meta">{t("evidencia.sample")}</p> : null}
         </div>
       </div>
@@ -867,7 +890,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           className="sr-only"
           onChange={elegirArchivo}
         />
-      ) : coincide && conCaptura ? (
+      ) : coincide && conCaptura && !sinCamara ? (
         <input
           ref={capturaRef}
           type="file"

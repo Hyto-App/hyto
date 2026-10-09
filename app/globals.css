@@ -5179,6 +5179,74 @@ html.hyto-firmando body {
   gap: 8px;
 }
 
+/* Phone width: the requirement sits above the camera block. Desktop columns stay put.
+   Abdiel: confirm this order against the Figma page "Nuevo diseño". */
+@media (max-width: 1023px) {
+  .hyto-tarea-subir .hyto-tarea-col {
+    display: contents;
+  }
+
+  .hyto-tarea-subir .hyto-checklist {
+    order: -1;
+  }
+}
+
+.hyto-sin-camara {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--papel);
+  padding: 16px;
+  text-align: center;
+}
+
+.hyto-sin-camara h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.hyto-sin-camara p {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.hyto-sin-camara a {
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-qr {
+  width: 180px;
+  height: 180px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.hyto-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hyto-sin-camara-url {
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-all;
+  color: var(--tenue);
+}
+
 @media (min-width: 1024px) {
   .hyto-tarea-cab {
     align-items: center;
