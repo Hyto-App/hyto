@@ -77,7 +77,11 @@ export function EditorPerfil() {
           );
         })}
       </fieldset>
-      {aviso ? <p className="text-sm">{aviso}</p> : null}
+      {aviso ? (
+        <p className="text-sm" role="alert">
+          {aviso}
+        </p>
+      ) : null}
       {listo ? <p className="text-sm">{t("perfil.guardado")}</p> : null}
       <button type="submit" className="hyto-btn">
         {t("perfil.guardar")}
