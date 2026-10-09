@@ -105,13 +105,25 @@ const NOMBRE_MONEDA: Record<string, string> = {
   USD: "US dollars",
 };
 
+const SIGNO_COLON = "\u20a1";
+
+/**
+ * A CRC total is shown as ₡750. A reading that stored "C 750" or "₡ 750" uses the sign with no space.
+ * "CRC" is left alone.
+ */
+export function colonJunto(monto: string | null, moneda: string | null): string | null {
+  if (!monto || moneda !== "CRC") return monto;
+  return monto.replace(/(^|[^A-Za-z0-9])C(?=\s*\d)/g, `$1${SIGNO_COLON}`).replace(/\u20a1[\s\u00a0\u202f]+/g, SIGNO_COLON);
+}
+
 /** Null when the reply is not the structured shape (no texto_completo). */
 export function leerLectura(crudo: Record<string, unknown>, contexto: { pedido?: string | null } = {}): LecturaEvidencia | null {
   const textoCompleto = recortar(cadena(crudo.texto_completo), MAX_TEXTO);
   if (!textoCompleto) return null;
   const pais = paisDe(crudo.pais);
-  const montoOriginal = recortar(textoDe(crudo.monto_original), MAX_CAMPO);
-  const moneda = monedaDe(crudo.moneda, montoOriginal, textoCompleto, pais);
+  const montoCrudo = recortar(textoDe(crudo.monto_original), MAX_CAMPO);
+  const moneda = monedaDe(crudo.moneda, montoCrudo, textoCompleto, pais);
+  const montoOriginal = colonJunto(montoCrudo, moneda);
   const usd = usdDe(montoOriginal, moneda, crudo.monto_usd);
   const fechaImpresa = recortar(textoDe(crudo.fecha), MAX_CAMPO);
   return {
@@ -195,7 +207,7 @@ export function leerLecturaGuardada(crudo: string, textoCompleto: string): Lectu
     tipo: tipoDe(valor.tipo),
     pais: paisDe(valor.pais),
     moneda: codigoMoneda(valor.moneda),
-    montoOriginal: recortar(textoDe(valor.monto_original), MAX_CAMPO),
+    montoOriginal: colonJunto(recortar(textoDe(valor.monto_original), MAX_CAMPO), codigoMoneda(valor.moneda)),
     montoUsd: typeof valor.monto_usd === "string" ? normalizarMonto(valor.monto_usd) : null,
     tasa,
     fecha: typeof valor.fecha === "string" && /^\d{4}-\d{2}-\d{2}$/.test(valor.fecha) ? valor.fecha : null,
