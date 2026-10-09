@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
-import { iniciales } from "@/components/ui/Marca";
+import { Icono, iniciales } from "@/components/ui/Marca";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
 
@@ -71,6 +71,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
           </span>
         </div>
         <Link href="/configuracion" className="hyto-perfil-item" onClick={alCerrar}>
+          <Icono nombre="gear" />
           {t("nav.settings")}
         </Link>
         <button
@@ -81,12 +82,15 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
             alAyuda();
           }}
         >
+          <Icono nombre="help" />
           {t("nav.helpFaq")}
         </button>
         <Link href="/privacy" className="hyto-perfil-item" onClick={alCerrar}>
+          <Icono nombre="shield" />
           {t("nav.privacy")}
         </Link>
         <button type="button" className="hyto-perfil-item hyto-perfil-salir" disabled={saliendo} onClick={() => void salir()}>
+          <Icono nombre="logout" />
           {saliendo ? t("cuenta.signingOut") : t("cuenta.signOut")}
         </button>
       </div>

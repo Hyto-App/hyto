@@ -14,9 +14,16 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
       ruta: "/mis-tareas",
     });
     assert.equal(document.querySelector('a[href="/configuracion"]'), null);
+    assert.equal(document.querySelector('a[href="/privacy"]'), null);
+    assert.equal(document.querySelector(".hyto-foot-privacidad"), null);
+    assert.equal(document.querySelectorAll(".hyto-preguntar-mile").length, 2);
+    assert.equal(document.querySelectorAll(".hyto-perfil-flecha").length, 1);
     await pulsar("Ana Solís");
     assert.ok(document.querySelector('a[href="/configuracion"]'));
     assert.ok(document.querySelector('a[href="/privacy"]'));
+    const opciones = [...document.querySelectorAll("#hyto-perfil .hyto-perfil-item")];
+    assert.equal(opciones.length, 4);
+    assert.ok(opciones.every((opcion) => opcion.querySelector("svg")));
     assert.match(texto(), /Sign out/);
     assert.match(texto(), /Help and frequently asked questions/);
     const dialogo = document.querySelector("#hyto-perfil");

@@ -130,7 +130,9 @@ export function Marco({
               aria-expanded={ayuda}
               onClick={(evento) => abrirAyuda(evento.currentTarget)}
             >
-              <Mile estado="cara-feliz" tamano={28} />
+              <span className="hyto-preguntar-mile">
+                <Mile estado="cara-feliz" tamano={18} />
+              </span>
             </button>
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
@@ -196,13 +198,12 @@ export function Marco({
             aria-expanded={ayuda}
             onClick={(evento) => abrirAyuda(evento.currentTarget)}
           >
-            <Mile estado="cara-feliz" tamano={28} />
-            <span>{t("nav.askMile")}</span>
+            <span className="hyto-preguntar-mile">
+              <Mile estado="cara-feliz" tamano={18} />
+            </span>
+            <span className="hyto-preguntar-texto">{t("nav.askMile")}</span>
             <kbd>Ctrl+K</kbd>
           </button>
-          <Link href="/privacy" className="hyto-foot-privacidad">
-            {t("nav.privacy")}
-          </Link>
           <div className="hyto-brand-acciones hyto-foot-acciones">
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
@@ -280,10 +281,15 @@ function BotonPerfil({
         {letras}
       </span>
       {compacto ? null : (
-        <span className="hyto-usuario-datos">
-          {usuario.nombre ? <strong>{usuario.nombre}</strong> : null}
-          <span>{usuario.email}</span>
-        </span>
+        <>
+          <span className="hyto-usuario-datos">
+            {usuario.nombre ? <strong>{usuario.nombre}</strong> : null}
+            <span>{usuario.email}</span>
+          </span>
+          <svg className="hyto-perfil-flecha" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m2 3.5 3 3 3-3" />
+          </svg>
+        </>
       )}
     </button>
   );

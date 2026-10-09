@@ -155,6 +155,10 @@ const TRAZOS: Record<string, string> = {
   calendar: "M4 5.5h12V16H4zM4 9h12M7.5 3.5v3M12.5 3.5v3",
   clock: "M10 4.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM10 7v3.2l2 1.3",
   camera: "M3.5 7h2.6l1.2-1.8h5.4L13.9 7h2.6v8.5h-13zM10 8.6a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Z",
+  gear: "M10 7.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 1 0 0-5.6M10 2.4v1.7M10 15.9v1.7M2.4 10h1.7M15.9 10h1.7M4.6 4.6l1.2 1.2M14.2 14.2l1.2 1.2M15.4 4.6l-1.2 1.2M5.8 14.2l-1.2 1.2",
+  help: "M10 17.3h.01M7.4 7.5a2.6 2.6 0 1 1 4.1 2.1c-.8.5-1.2 1-1.2 1.9V12.6",
+  shield: "M10 2.5 16.3 5v4.8c0 3.5-2.5 5.7-6.3 7.6-3.8-1.9-6.3-4.1-6.3-7.6V5L10 2.5Z",
+  logout: "M8 4H5.2A1.2 1.2 0 0 0 4 5.2v9.6A1.2 1.2 0 0 0 5.2 16H8M10.4 10H17M14.2 7.2 17 10l-2.8 2.8",
 };
 
 export function Icono({ nombre, tamano = 18, lleno = false }: { nombre: keyof typeof TRAZOS; tamano?: number; lleno?: boolean }) {

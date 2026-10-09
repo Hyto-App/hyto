@@ -4118,21 +4118,19 @@ html.hyto-firmando body {
 }
 
 .hyto-foot-acciones {
-  justify-content: space-between;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
-.hyto-foot-privacidad {
-  justify-self: start;
-  width: max-content;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--suave);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.hyto-foot-privacidad:hover {
-  color: var(--tinta);
+.hyto-idioma-marco .hyto-idioma-menu-boton,
+.hyto-brand-acciones .hyto-tema,
+.hyto-brand-acciones .hyto-perfil-boton.is-compacto,
+.hyto-brand-acciones .hyto-preguntar-icono {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
 }
 
 .hyto-foot .hyto-idioma-menu-lista {
@@ -5597,7 +5595,9 @@ html.hyto-firmando body {
   display: flex;
   align-items: center;
   gap: 8px;
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   min-height: 44px;
   padding: 8px 10px;
   border-radius: 14px;
@@ -5607,6 +5607,32 @@ html.hyto-firmando body {
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
+}
+
+.hyto-preguntar-mile {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hyto-preguntar-mile .hyto-mile,
+.hyto-preguntar-mile .hyto-mile img {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.hyto-preguntar-mile .hyto-mile {
+  transform: scale(1.55);
+}
+
+.hyto-preguntar-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hyto-preguntar kbd {
@@ -5651,6 +5677,34 @@ html.hyto-firmando body {
   min-height: 40px;
   justify-content: center;
   padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+}
+
+.hyto-foot .hyto-perfil-boton:not(.is-compacto) {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 10px 0 4px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+}
+
+.hyto-foot .hyto-perfil-boton .hyto-usuario-iniciales {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+}
+
+.hyto-foot .hyto-perfil-boton .hyto-usuario-datos {
+  flex: 1;
+  min-width: 0;
+}
+
+.hyto-perfil-flecha {
+  margin-left: auto;
+  flex: none;
+  color: var(--suave);
 }
 
 .hyto-capa {
@@ -5697,6 +5751,7 @@ html.hyto-firmando body {
 .hyto-perfil-item {
   display: flex;
   align-items: center;
+  gap: 10px;
   width: 100%;
   min-height: 44px;
   padding: 8px 12px;
@@ -5704,6 +5759,10 @@ html.hyto-firmando body {
   text-align: left;
   text-decoration: none;
   font-weight: 500;
+}
+
+.hyto-perfil-item svg {
+  flex: none;
 }
 
 .hyto-perfil-salir {
@@ -5890,7 +5949,7 @@ html.hyto-firmando body {
   .hyto-perfil-menu {
     top: auto;
     right: auto;
-    bottom: 96px;
+    bottom: 72px;
     left: 16px;
     width: 224px;
   }
