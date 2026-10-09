@@ -23,7 +23,7 @@ export async function leerCuentaHttp(
       idioma: opciones.idioma,
     });
     return json(vista, 200, { "cache-control": "no-store" });
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }

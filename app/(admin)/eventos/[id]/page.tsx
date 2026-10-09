@@ -44,7 +44,22 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
       </>
     );
   }
-  const tareas = (await tareasVisibles(almacen, visorDeSesion(sesion))).filter((tarea) => tarea.proyectoId === id);
+  const visibles = (await tareasVisibles(almacen, visorDeSesion(sesion))).filter((tarea) => tarea.proyectoId === id);
+  const tareas = await Promise.all(
+    visibles.map(async (tarea) => {
+      const evidencia = await almacen.ultimaEvidencia(tarea.id);
+      return {
+        id: tarea.id,
+        titulo: tarea.titulo,
+        estado: tarea.estado,
+        tipo: tarea.tipo,
+        monto: tarea.monto,
+        tope: tarea.tope,
+        montoConfirmado: evidencia?.montoConfirmado ?? null,
+        montoRevisado: evidencia?.monto ?? null,
+      };
+    }),
+  );
   const publico = datosPublicosDeEvento(proyecto);
   return (
     <>
@@ -52,16 +67,7 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
       <div className="hyto-page pb-0 pt-0">
         <ContextoEvento proyectoId={proyecto.id} nombre={proyecto.nombre} descripcion={publico.descripcion} portada={publico.portada} />
       </div>
-      <TareasMiembro
-        tareas={tareas.map((tarea) => ({
-          id: tarea.id,
-          titulo: tarea.titulo,
-          estado: tarea.estado,
-          tipo: tarea.tipo,
-          monto: tarea.monto,
-          tope: tarea.tope,
-        }))}
-      />
+      <TareasMiembro tareas={tareas} />
     </>
   );
 }

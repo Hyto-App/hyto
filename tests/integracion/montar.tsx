@@ -71,4 +71,5 @@ export async function pulsar(textoBoton: string): Promise<void> {
 export function limpiarPantalla(): void {
   document.body.replaceChildren();
   window.localStorage.clear();
+  window.sessionStorage.clear();
 }

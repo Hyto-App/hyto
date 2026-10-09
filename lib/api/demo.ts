@@ -54,8 +54,8 @@ export async function crearDemoHttp(
       200,
       { "set-cookie": encabezadoCookie(sesion, SESION_SIN_EXP_SEGUNDOS) },
     );
-  } catch {
-    return baseNoLista();
+  } catch (error) {
+    return baseNoLista(error);
   }
 }
 

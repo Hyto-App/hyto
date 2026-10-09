@@ -31,7 +31,7 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
     explicacion: "La descripción dice que la foto está borrosa, oscura o es difícil de leer.",
   },
   selfie_or_empty: {
-    texto: "Parece un selfie / no se ve el trabajo ni un recibo",
+    texto: "Parece una foto de la persona / no se ve el trabajo ni un recibo",
     explicacion: "La foto se clasificó como algo distinto del trabajo pedido o de un recibo.",
   },
   unclear_match: {
@@ -61,6 +61,14 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   over_cap: {
     texto: "Monto sobre el límite",
     explicacion: "El monto supera el límite de la tarea, así que la nota no puede llegar a completada. Se puede pagar hasta el límite.",
+  },
+  amount_missing: {
+    texto: "Falta el monto del recibo",
+    explicacion: "Las respuestas del recibo no dan un monto.",
+  },
+  date_missing: {
+    texto: "Falta la fecha del recibo",
+    explicacion: "Las respuestas del recibo no dan una fecha.",
   },
   low_detail: {
     texto: "Poco detalle",
