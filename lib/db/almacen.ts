@@ -40,7 +40,7 @@ export type Almacen = {
   listarUsuarios(): Promise<Usuario[]>;
   usuarioPorEmail(email: string): Promise<Usuario | null>;
   leerUsuario(id: string): Promise<Usuario | null>;
-  insertarUsuario(usuario: Usuario): Promise<void>;
+  insertarUsuario(usuario: Usuario): Promise<Usuario>;
   guardarUsuario(usuario: Usuario): Promise<void>;
   guardarTipoCuenta(
     id: string,

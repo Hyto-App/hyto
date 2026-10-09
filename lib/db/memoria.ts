@@ -77,8 +77,11 @@ export function crearMemoria(): Almacen {
     },
     async insertarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();
-      if ([...usuarios.values()].some((actual) => actual.email.trim().toLowerCase() === email)) return;
-      usuarios.set(usuario.id, { ...usuario, email });
+      const existente = [...usuarios.values()].find((actual) => actual.email.trim().toLowerCase() === email);
+      if (existente) return existente;
+      const guardado = { ...usuario, email };
+      usuarios.set(usuario.id, guardado);
+      return guardado;
     },
     async guardarUsuario(usuario) {
       const email = usuario.email.trim().toLowerCase();

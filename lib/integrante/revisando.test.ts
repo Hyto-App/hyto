@@ -87,7 +87,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 300));
     });
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.match(texto(), /Send the photo again/);
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /Mile checks your photo/);
@@ -97,7 +97,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
       reintentar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Open camera/);
-    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.doesNotMatch(texto(), /Mile could not finish/);
   } finally {
     Date.now = ahoraPrevio;
     globalThis.fetch = anterior;
@@ -124,7 +124,7 @@ test("una revisión guardada como error ofrece reenviar sin esperar el plazo", a
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.match(texto(), /Send the photo again/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     assert.doesNotMatch(texto(), /Your photo arrived/);
@@ -152,7 +152,7 @@ test("una foto ya más vieja que el plazo, sin nota, ofrece reenviar al abrir", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Mile couldn't finish — retry/);
+    assert.match(texto(), /Mile could not finish. Try again./);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
     const reintentar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Try again");
     assert.ok(reintentar instanceof HTMLButtonElement);
@@ -180,7 +180,7 @@ test("una foto recién enviada y sin nota sigue en Checking", async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Mile is checking your photo/);
-    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.doesNotMatch(texto(), /Mile could not finish/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -213,7 +213,7 @@ test("un reembolso fallido vuelve al selector de archivo", async () => {
     });
     assert.ok(document.querySelector('input[type="file"]') instanceof HTMLInputElement);
     assert.match(texto(), /Choose a file/);
-    assert.doesNotMatch(texto(), /Mile couldn't finish/);
+    assert.doesNotMatch(texto(), /Mile could not finish/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
   } finally {
     globalThis.fetch = anterior;
@@ -245,7 +245,7 @@ test("una nota insuficiente no usa el texto de éxito", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Ana, this photo didn't pass Mile's check/);
+    assert.match(texto(), /Ana, this photo did not pass Mile's review/);
     assert.match(texto(), /40% · Insufficient/);
     assert.match(texto(), /You can send another one/);
     assert.doesNotMatch(texto(), /Your photo arrived/);

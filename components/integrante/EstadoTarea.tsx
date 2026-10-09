@@ -27,10 +27,10 @@ const BADGE: Record<EstadoTarea, { clase: string; clave: Clave }> = {
   pagado: { clase: "hyto-badge-ok", clave: "tareas.badgePaid" },
 };
 
-/** Badge of the volunteer's task card: Pending / Sent / Paid / Rejected. */
+/** Badge of the volunteer's task card: Pending / Sent / Paid, or a request for another photo. */
 export function BadgeTarea({ estado, rechazada = false }: { estado: EstadoTarea; rechazada?: boolean }) {
   const t = useTexto();
-  if (rechazada) return <span className="hyto-badge hyto-badge-rej">{t("tareas.badgeRejected")}</span>;
+  if (rechazada) return <span className="hyto-badge hyto-badge-pend">{t("tareas.badgeNewPhoto")}</span>;
   const { clase, clave } = BADGE[estado];
   return <span className={`hyto-badge ${clase}`}>{t(clave)}</span>;
 }

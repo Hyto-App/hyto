@@ -4,7 +4,7 @@ import {
   AVISO_PASSKEY_SIN_CLAVE,
   AVISO_PASSKEY_SIN_SOPORTE,
 } from "@/lib/auth/avisosPasskey";
-import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/lib/escrow/firmarCliente";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -16,15 +16,24 @@ import {
   CODIGO_USDC_SIN_XLM,
 } from "@/lib/integrante/avisosUsdc";
 import {
+  AVISO_FEE_AUSENTE,
+  AVISO_FEE_DISTINTA,
+  AVISO_FEE_HORIZON,
+  AVISO_FEE_ILEGIBLE,
+  AVISO_FEE_SIN_TRUSTLINE,
+} from "@/lib/escrow/fee";
+import {
   AVISO_HORIZON_RECEPTOR,
   AVISO_RECEPTOR_NO_LISTO,
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
-import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED } from "@/lib/auth/errores";
+import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_ORIGEN_CAVOS, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED, esOrigenCavos } from "@/lib/auth/errores";
+import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
+import { formatearCentavos } from "@/lib/integrante/formato";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -70,6 +79,7 @@ const EXACTO: Record<string, Clave> = {
   "This task has no escrow yet. Deploy and fund it first.": "errores.bloquearAntes",
   "The transaction does not deploy the escrow.": "errores.presupuestoNoBloqueado",
   "This task already has an escrow.": "errores.yaBloqueado",
+  [AVISO_YA_FONDEADO]: "errores.yaEnRed",
   "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
   "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
   "Review pending": "errores.esperaRevision",
@@ -81,6 +91,8 @@ const EXACTO: Record<string, Clave> = {
   "Your Cavos session expired.": "errores.reingreso",
   "Your Cavos session closed. Sign in again to sign.": "errores.reingreso",
   [AVISO_REINGRESO]: "errores.reingreso",
+  [AVISO_SIN_CUENTA_FIRMA]: "errores.sinCuentaFirma",
+  [AVISO_ORIGEN_CAVOS]: "errores.origenCavos",
   "Cavos is not configured for sign-in.": "errores.sinConfig",
   "Cavos is not configured.": "errores.sinConfig",
   "Accounts are waiting for the Cavos app id.": "errores.cuentasNo",
@@ -210,6 +222,9 @@ const EXACTO: Record<string, Clave> = {
   "This task has a fixed amount.": "avisos.montoFijo",
   "Submit a receipt before confirming the amount.": "avisos.reciboAntes",
   "The database is not ready.": "avisos.baseNoLista",
+  "The database is missing a migration.": "avisos.baseEsquema",
+  "The database could not be reached.": "avisos.baseConexion",
+  "The database returned an error.": "avisos.baseError",
   "The database is not configured.": "avisos.baseNo",
   "Photo storage is not configured.": "avisos.fotosNo",
   "The event is missing.": "avisos.faltaEvento",
@@ -255,10 +270,15 @@ const EXACTO: Record<string, Clave> = {
   "The submit does not match this task's escrow, so it was not marked paid.": "avisos.noContratoPago",
   "The submit was not confirmed, so it was not marked paid.": "avisos.noConfirmado",
   "The submit succeeded and there is no hash to save the payment.": "avisos.sinHash",
+  [AVISO_FEE_AUSENTE]: "errores.feeSinConfig",
+  [AVISO_FEE_DISTINTA]: "errores.feeDistinta",
+  [AVISO_FEE_SIN_TRUSTLINE]: "errores.feeSinTrustline",
+  [AVISO_FEE_HORIZON]: "errores.feeHorizon",
+  [AVISO_FEE_ILEGIBLE]: "errores.feeIlegible",
 };
 
 const PATRONES: readonly (readonly [RegExp, Clave])[] = [
-  [/HYTO_ESCROW_|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
+  [/HYTO_ESCROW_|HYTO_TRUSTLESS_FEE|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
   [/Trustless Work did not authorize/i, "errores.pagosNoDisponibles"],
   [/already released|already paid/i, "errores.yaPagada"],
   [/trustline|receiver/i, "errores.listoCobro"],
@@ -276,15 +296,23 @@ for (const clave of CLAVES_CONOCIDAS) {
 }
 
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
-const SALDO_NO_CUBRE = /^Your USDC balance does not cover ([\d.]+) USDC \(this amount plus a ([\d.]+) USDC reserve\)\.$/;
+const SALDO_NO_CUBRE =
+  /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\. You are short US\$([\d.]+)\.$/;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
   if (!limpio) return limpio;
+  if (esOrigenCavos(limpio)) return texto(idioma, "errores.origenCavos");
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
   const saldo = SALDO_NO_CUBRE.exec(limpio);
-  if (saldo) return texto(idioma, "errores.saldoNoCubre", { n: saldo[1], reserva: saldo[2] });
+  if (saldo) {
+    return texto(idioma, "errores.saldoNoCubre", {
+      n: formatearCentavos(saldo[1] ?? "", idioma),
+      reserva: formatearCentavos(saldo[2] ?? "", idioma),
+      falta: formatearCentavos(saldo[3] ?? "", idioma),
+    });
+  }
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
   const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);
@@ -330,6 +358,7 @@ const PASOS_PAGO = new Set(["marcar", "aprobar", "liberar"]);
 export type CajaFallo = "bloqueo" | "pago";
 
 export function cajaDeFallo(entrada: { paso: string | null; codigo: string | null }): CajaFallo | null {
+  if (entrada.codigo === CODIGO_YA_FONDEADO) return null;
   if (entrada.paso && PASOS_BLOQUEO.has(entrada.paso)) return "bloqueo";
   if (entrada.paso && PASOS_PAGO.has(entrada.paso)) return "pago";
   if (entrada.codigo === CODIGO_RECEPTOR_NO_LISTO || entrada.codigo === CODIGO_HORIZON_RECEPTOR) return "bloqueo";
@@ -340,9 +369,21 @@ export function tituloFallo(caja: CajaFallo, idioma: Idioma = "en"): string {
   return texto(idioma, caja === "bloqueo" ? "pago.budgetNotLocked" : "pago.paymentFailed");
 }
 
+const DETALLE_PROPIO: Clave[] = [
+  "errores.saldoRed",
+  "errores.feeSinConfig",
+  "errores.feeDistinta",
+  "errores.feeSinTrustline",
+  "errores.feeHorizon",
+  "errores.feeIlegible",
+];
+
 export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  // A pay step with no escrow balance uses the generic line. A missing network fee is a different problem.
-  if (caja === "pago" && aviso !== texto(idioma, "errores.saldoRed")) return texto(idioma, "pago.noUsdcLeft");
+  // A pay step with no escrow balance uses the generic line. A missing network fee, or the
+  // protocol-fee account, is a different problem and keeps its own words.
+  if (caja === "pago" && !DETALLE_PROPIO.some((clave) => aviso === texto(idioma, clave))) {
+    return texto(idioma, "pago.noUsdcLeft");
+  }
   return aviso;
 }
 

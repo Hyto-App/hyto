@@ -47,9 +47,9 @@ test("en español la pendiente queda vacía y el envío real sí aparece", async
   try {
     const vacia = texto();
     assert.equal(vacia.includes("Aprobada"), false);
-    assert.equal(vacia.includes("Enviaste tu evidencia"), false);
+    assert.equal(vacia.includes("Envió su evidencia"), false);
     assert.equal(vacia.includes("Mile revisó"), false);
-    assert.match(vacia, /Cuando envíes la foto, el recorrido aparece aquí/);
+    assert.match(vacia, /Cuando envíe la foto, el recorrido aparece aquí/);
   } finally {
     await desmontar();
   }
@@ -71,8 +71,8 @@ test("en español la pendiente queda vacía y el envío real sí aparece", async
   );
   try {
     const enviada = texto();
-    assert.match(enviada, /Enviaste tu evidencia/);
-    assert.match(enviada, /Mile revisó tu evidencia/);
+    assert.match(enviada, /Envió su evidencia/);
+    assert.match(enviada, /Mile revisó su evidencia/);
     assert.equal(enviada.includes("Aprobada"), false);
     assert.equal(enviada.includes("Cuando envíes la foto"), false);
   } finally {

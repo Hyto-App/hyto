@@ -292,6 +292,7 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     lectura: leerLectura(datos.lectura),
     ...perfilDe(datos.perfilVoluntario),
     intentosAnteriores: leerIntentos(datos.intentosAnteriores),
+    ...(datos.apartado === true ? { apartado: true } : {}),
   };
 }
 

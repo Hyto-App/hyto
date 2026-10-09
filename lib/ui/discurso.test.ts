@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LINEA_OG } from "@/components/ui/marca/trazos";
 import {
   CLAVES_DISCURSO,
+  DESCRIPCION_PAGINA,
   audienciasDiscurso,
   confianzaDiscurso,
   discurso,
@@ -12,8 +14,8 @@ import {
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
 const FRASES = [
-  "Show the spend,",
-  "on the record.",
+  "Proof before",
+  "payout.",
   "Communities in Latin America funded from afar account for every spend.",
   "Practice network.",
   "no live payment is recorded yet",
@@ -58,7 +60,14 @@ test("el discurso en español usa las mismas claves", () => {
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Muestra el gasto,", "Red de práctica.", "Aparta el financiamiento", "Conoce a Mile", "¿Necesito saber de cripto?", "SINPE"]) {
+  for (const frase of ["Primero la prueba,", "Red de práctica.", "Aparte el financiamiento", "Conozca a Mile", "¿Necesito saber de criptomonedas?", "SINPE"]) {
     assert.ok(unido.includes(frase), frase);
   }
+});
+
+test("la descripción de la página no nombra el activo", () => {
+  assert.equal(DESCRIPCION_PAGINA.includes("USDC"), false);
+  assert.match(DESCRIPCION_PAGINA, /digital dollars/);
+  assert.equal(LINEA_OG.includes("USDC"), false);
+  assert.match(discurso.subheadline, /\(USDC\)/);
 });
