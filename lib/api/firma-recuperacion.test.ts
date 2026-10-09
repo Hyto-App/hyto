@@ -184,7 +184,7 @@ test("deploy submit throws and the escrow read lags: the contract is still saved
     opciones,
   );
   assert.equal(respuesta.status, 200);
-  assert.match(((await respuesta.json()) as { aviso: string }).aviso, /Do not lock it again/);
+  assert.match(((await respuesta.json()) as { aviso: string }).aviso, /Do not start over/);
   assert.equal((await almacen.leerTarea("registro"))?.contratoEscrow, CONTRATO_XDR);
 });
 
@@ -352,7 +352,7 @@ test("release submit throws, landed, and the read lags: the hash is kept and a l
     opciones,
   );
   assert.equal(respuesta.status, 200);
-  assert.match(((await respuesta.json()) as { aviso: string }).aviso, /Do not pay again/);
+  assert.match(((await respuesta.json()) as { aviso: string }).aviso, /pay again/);
   const pendiente = await almacen.leerTarea("stand");
   assert.equal(pendiente?.hashPago, huellaDeXdr(pago));
   assert.notEqual(pendiente?.estado, "pagado");

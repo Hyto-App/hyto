@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bienvenida } from "@/components/sesion/Bienvenida";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { Clave } from "@/lib/ui/diccionario";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
@@ -55,7 +56,6 @@ function BienvenidaColapsable() {
 
 export function ListaEventos() {
   const t = useTexto();
-  const claro = useClaro();
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
@@ -116,7 +116,7 @@ export function ListaEventos() {
           {error ? (
             <div className="hyto-card mt-6 px-6 py-10">
               <p role="alert" className="text-lg font-semibold">
-                {claro(error)}
+                <TextoClaro mensaje={error} />
               </p>
               <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
                 {t("comunes.tryAgain")}

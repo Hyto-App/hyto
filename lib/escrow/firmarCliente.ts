@@ -4,19 +4,22 @@ import { crearAuth, conectarStellar } from "@/lib/auth/cliente";
 import { AVISO_ORIGEN_CAVOS, AVISO_SIN_RESPALDO, esMetodoRecuperacion, esOrigenCavos, esSinRespaldo } from "@/lib/auth/errores";
 import { AVISO_USDC_LENTO } from "@/lib/integrante/avisosUsdc";
 import type { EstadoCuenta } from "@/lib/integrante/tipos";
+import { AVISO_MUCHOS_INTENTOS } from "./limite";
 import { bajarCapasParaCavos, soltarDialogosModales } from "./capaCavos";
 
 export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with your email to continue.";
-export const AVISO_XLM = "This account needs a little test balance for the network fee. Add some and try again.";
+export const AVISO_XLM =
+  "We could not cover the cost of sending this. Try again in 5 minutes. If it keeps happening, [[ayuda]].";
 export const AVISO_RECHAZO = "You cancelled the confirmation. Nothing was sent.";
 export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
-export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
+export const AVISO_SIN_CONTRATO =
+  "The money was sent, but we could not confirm it yet. Check again in 30 seconds. Do not set it aside or pay again.";
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_SIN_CUENTA_FIRMA =
   "This sign-in has no account to sign with. Sign in again on this site to continue.";
 export const AVISO_DISPOSITIVO =
-  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey. If you no longer have that browser, [[ayuda]].";
 export const AVISO_PASSKEY =
   "Confirm with your passkey to use your account in this browser. Try again and choose Use passkey when it asks.";
 
@@ -375,6 +378,7 @@ function errorHttp(estado: number, json: unknown): ErrorFirmaCliente {
   const codigo = texto(datos.codigo);
   const junto = `${aviso} ${codigo ?? ""}`;
   if (estado === 403 && /demo/i.test(junto)) return new ErrorFirmaCliente(AVISO_DEMO_FIRMA, 403, null, codigo);
+  if (estado === 429) return new ErrorFirmaCliente(aviso || AVISO_MUCHOS_INTENTOS, 429, null, codigo);
   if (esXlm(junto)) return new ErrorFirmaCliente(AVISO_XLM, estado, null, codigo);
   if (aviso) return new ErrorFirmaCliente(aviso, estado, null, codigo);
   if (estado === 403) return new ErrorFirmaCliente("Only the organizer can lock the budget and pay.", 403, null, codigo);

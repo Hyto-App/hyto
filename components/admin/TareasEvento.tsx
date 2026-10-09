@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
-import { estadoConFoto, etiquetaDificultad, etiquetaEstado, etiquetaPrioridad, textoVisible } from "@/lib/ui/etiquetas";
-import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { estadoConFoto, etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
+import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type FilaTareaEvento = {
   id: string;
@@ -21,8 +22,6 @@ export type FilaTareaEvento = {
   condicion: string;
   estado: string;
   miembroId: string;
-  prioridad: PrioridadTarea;
-  dificultad: DificultadTarea | null;
   bloqueo: string | null;
   tieneFoto: boolean;
   montoConfirmado?: string | null;
@@ -50,12 +49,12 @@ function FichaAsignada({
   miembros,
   miembroId,
 }: {
-  miembros: { usuarioId: string; ficha?: Ficha }[];
+  miembros: { usuarioId: string; email?: string; ficha?: Ficha }[];
   miembroId: string;
 }) {
-  const ficha = miembros.find((persona) => persona.usuarioId === miembroId)?.ficha;
-  if (!ficha) return null;
-  return <FichaVoluntario ficha={ficha} />;
+  const persona = miembros.find((item) => item.usuarioId === miembroId);
+  if (!persona?.ficha) return null;
+  return <FichaVoluntario ficha={persona.ficha} nombre={persona.email} />;
 }
 
 export function TareasEvento({
@@ -68,7 +67,6 @@ export function TareasEvento({
   saldo?: string | null;
 }) {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -89,26 +87,6 @@ export function TareasEvento({
       return;
     }
     setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
-  }
-
-  async function clasificar(tareaId: string, cambio: { prioridad?: PrioridadTarea; dificultad?: DificultadTarea | null }) {
-    setAviso(null);
-    const previa = filas.find((fila) => fila.id === tareaId);
-    setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, ...cambio } : fila)));
-    const respuesta = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/clasificar`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(cambio),
-    });
-    if (!respuesta.ok) {
-      if (previa) {
-        setFilas((actuales) =>
-          actuales.map((fila) => (fila.id === tareaId ? { ...fila, prioridad: previa.prioridad, dificultad: previa.dificultad } : fila)),
-        );
-      }
-      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
-      setAviso(cuerpo?.aviso ?? t("clasificacion.saveFail"));
-    }
   }
 
   function abrir(tarea: FilaTareaEvento) {
@@ -193,8 +171,6 @@ export function TareasEvento({
     <main className="hyto-page">
       <ul className="grid gap-3">
         {filas.map((tarea) => {
-          const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
-          const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
           const faltaFila = editando && borrador ? faltaDeBorrador(tarea, borrador, saldo) : null;
           return (
@@ -204,22 +180,6 @@ export function TareasEvento({
                 <p className="mt-1 text-sm text-[var(--suave)]">
                   {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
                 </p>
-                {prioridad || dificultad ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {prioridad ? (
-                      <span className="hyto-pill hyto-pill-ok">
-                        <i className="hyto-dot" aria-hidden="true" />
-                        {prioridad}
-                      </span>
-                    ) : null}
-                    {dificultad ? (
-                      <span className="hyto-pill hyto-pill-muted">
-                        <i className="hyto-dot" aria-hidden="true" />
-                        {dificultad}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
                 {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
               </div>
               {editando && borrador ? (
@@ -338,7 +298,7 @@ export function TareasEvento({
                   <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
-                      {claro(tarea.bloqueo)}
+                      <TextoClaro mensaje={tarea.bloqueo} />
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -359,43 +319,13 @@ export function TareasEvento({
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="text-sm" htmlFor={`prioridad-${tarea.id}`}>
-                  {t("clasificacion.priority")}
-                  <select
-                    id={`prioridad-${tarea.id}`}
-                    className="hyto-input mt-2"
-                    value={tarea.prioridad}
-                    onChange={(evento) => void clasificar(tarea.id, { prioridad: evento.target.value as PrioridadTarea })}
-                  >
-                    <option value="normal">{t("clasificacion.normal")}</option>
-                    <option value="high">{t("clasificacion.high")}</option>
-                  </select>
-                </label>
-                <label className="text-sm" htmlFor={`dificultad-${tarea.id}`}>
-                  {t("clasificacion.difficulty")}
-                  <select
-                    id={`dificultad-${tarea.id}`}
-                    className="hyto-input mt-2"
-                    value={tarea.dificultad ?? ""}
-                    onChange={(evento) =>
-                      void clasificar(tarea.id, { dificultad: evento.target.value === "" ? null : (evento.target.value as DificultadTarea) })
-                    }
-                  >
-                    <option value="">{t("clasificacion.notSet")}</option>
-                    <option value="easy">{t("clasificacion.easy")}</option>
-                    <option value="medium">{t("clasificacion.medium")}</option>
-                    <option value="hard">{t("clasificacion.hard")}</option>
-                  </select>
-                </label>
-              </div>
             </li>
           );
         })}
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {claro(aviso)}
+          <TextoClaro mensaje={aviso} />
         </p>
       ) : null}
     </main>

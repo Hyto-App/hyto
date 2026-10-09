@@ -43,14 +43,12 @@ export function clienteDe(request: Request): string {
   return ip || "local";
 }
 
+export const AVISO_MUCHOS_INTENTOS = "Too many attempts. Wait 1 minute and try again.";
+
 export function respuestaSiExcedido(request: Request, cubo: "firma" | "lectura" = "firma"): Response | null {
   const tope = cubo === "lectura" ? TOPE_LECTURA : TOPE;
   if (!excedido(`${cubo}:${clienteDe(request)}`, Date.now(), tope)) return null;
-  const aviso =
-    cubo === "lectura"
-      ? "Too many escrow reads. Wait a moment."
-      : "Too many signature requests. Wait a moment.";
-  return Response.json({ aviso }, { status: 429 });
+  return Response.json({ aviso: AVISO_MUCHOS_INTENTOS }, { status: 429 });
 }
 
 export function respuestaSiCuerpoGrande(request: Request): Response | null {

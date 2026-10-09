@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 
 export function Unirse({ secretoInicial = "" }: { secretoInicial?: string }) {
   const t = useTexto();
-  const claro = useClaro();
   const router = useRouter();
   const [secreto, setSecreto] = useState(secretoInicial);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function Unirse({ secretoInicial = "" }: { secretoInicial?: string }) {
       </div>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {claro(aviso)}
+          <TextoClaro mensaje={aviso} />
         </p>
       ) : null}
     </main>

@@ -7,7 +7,8 @@ import { InsigniaDemo } from "@/components/sesion/InsigniaDemo";
 import { crearAuth, fijarWallet, publicarSesion } from "@/lib/auth/cliente";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { acortarDireccion } from "@/lib/integrante/formato";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
 import { appIdPublico, IDENTIDADES } from "@/lib/integrante/identidades";
@@ -26,7 +27,6 @@ function filasIniciales(): CuentaPreparada[] {
 
 export function CuentasDemo() {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const [cuentas, setCuentas] = useState<CuentaPreparada[]>(filasIniciales);
   const [preparando, setPreparando] = useState(false);
@@ -156,7 +156,7 @@ export function CuentasDemo() {
                 <i className="hyto-dot" aria-hidden="true" />
                 {cuenta.usdcListo ? t("eventos.readyReceive") : t("eventos.notReadyReceive")}
               </p>
-              {cuenta.detalle ? <p className="w-full text-sm text-[var(--suave)]">{claro(cuenta.detalle)}</p> : null}
+              {cuenta.detalle ? <p className="w-full text-sm text-[var(--suave)]"><TextoClaro mensaje={cuenta.detalle} /></p> : null}
             </article>
           );
         })}
@@ -184,7 +184,7 @@ export function CuentasDemo() {
 
       {aviso ? (
         <p role="alert" className="mt-4 text-sm leading-6 text-[var(--suave)]">
-          {claro(aviso)}
+          <TextoClaro mensaje={aviso} />
         </p>
       ) : null}
     </main>

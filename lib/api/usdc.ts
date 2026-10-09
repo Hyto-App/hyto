@@ -18,7 +18,7 @@ import { json } from "./json";
 export const AVISO_USDC_DEMO = "Demo mode can't set up payouts. Sign in with your email to continue.";
 export const AVISO_USDC_SIN_WALLET = "Sign in again before setting up payouts.";
 export const AVISO_USDC_SIN_CUENTA = "We couldn't open this payout account on the test network. Try again.";
-export const AVISO_USDC_SOLO_TESTNET = "Payout accounts are only opened on the test network.";
+export const AVISO_USDC_SOLO_TESTNET = "This step cannot run in this setup. If it keeps happening, [[ayuda]].";
 export const AVISO_USDC_XDR = "That confirmation doesn't match this account. Try again.";
 export const AVISO_USDC_ENVIO = "We couldn't finish setting up payouts. Try again.";
 export const AVISO_USDC_LECTURA = "We couldn't check the payout account. Try again.";

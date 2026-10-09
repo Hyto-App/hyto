@@ -58,7 +58,7 @@ describe("reintento en segundo plano", { concurrency: false }, () => {
       const segundo = await correrReintento("stand", "manual", fetchImpl);
       assert.equal(posts, 1);
       assert.equal(segundo?.ok, false);
-      if (segundo && !segundo.ok) assert.match(segundo.aviso, /Wait a moment/);
+      if (segundo && !segundo.ok) assert.match(segundo.aviso, /30 seconds/);
       pendiente.soltar?.();
       assert.equal((await primero)?.ok, false);
       for (let i = 0; i < MAX_INTENTOS_FONDO + 1; i += 1) await correrReintento("stand", "fondo", fetchImpl);

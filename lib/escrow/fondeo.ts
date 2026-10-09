@@ -5,8 +5,7 @@
  */
 
 export const CODIGO_YA_FONDEADO = "ya_fondeado";
-export const AVISO_YA_FONDEADO =
-  "This budget is already locked on the network. Refresh this page. Do not lock it again.";
+export const AVISO_YA_FONDEADO = "The money is already set aside. Nothing else is needed.";
 
 export function balanceNumerico(valor: unknown): number | null {
   const numero = typeof valor === "number" ? valor : typeof valor === "string" && valor.trim() ? Number(valor) : Number.NaN;

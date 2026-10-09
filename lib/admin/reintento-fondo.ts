@@ -82,7 +82,7 @@ export async function correrReintento(
   const limpio = id.trim();
   if (!limpio) return { ok: false, aviso: "The review could not be retried." };
   if (memoriaGlobal.enCurso.has(limpio)) {
-    return modo === "manual" ? { ok: false, aviso: "Wait a moment before reviewing again." } : null;
+    return modo === "manual" ? { ok: false, aviso: "Wait 30 seconds before reviewing again." } : null;
   }
   if (modo === "fondo" && (memoriaGlobal.intentos.get(limpio) ?? 0) >= MAX_INTENTOS_FONDO) return null;
   memoriaGlobal.enCurso.add(limpio);

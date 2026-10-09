@@ -229,7 +229,8 @@ test("sin la clave, la tarjeta de Cuenta guía paso a paso al navegador donde se
     assert.match(texto(), /localhost\/account/);
     assert.match(texto(), /Tap Add a passkey, then Create passkey/);
     assert.match(texto(), /Use a phone or tablet/);
-    assert.match(texto(), /open Events and tap Get ready to be paid/);
+    assert.match(texto(), /Settings/);
+    assert.match(texto(), /Get ready to be paid/);
     assert.match(texto(), /Don't remember where you signed up\?/);
     assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);
     const botones = [...document.querySelectorAll("button")].map((boton) => boton.textContent);

@@ -12,13 +12,13 @@ import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/li
 import type { VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { iniciales } from "@/components/ui/Marca";
 
 export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const estado = useVistaAdmin(proyectoId);
   const cargada = estado.vista;
@@ -32,7 +32,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
   if (estado.error) {
     return (
       <main className="hyto-page">
-        <p role="alert">{claro(estado.error)}</p>
+        <p role="alert"><TextoClaro mensaje={estado.error} /></p>
         <button type="button" className="hyto-btn mt-4 max-w-xs" onClick={estado.reintentar}>
           {t("comunes.tryAgain")}
         </button>

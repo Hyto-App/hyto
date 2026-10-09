@@ -11,8 +11,6 @@ import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { AVISO_CUENTA_FAUCET } from "../integrante/friendbot";
 import type { Tarea } from "../integrante/tipos";
-import { mensajeClaro } from "../ui/claro";
-
 const DIRECCION = `G${"B".repeat(55)}`;
 const DESTINO = "/";
 
@@ -144,10 +142,10 @@ test("si el alta de testnet falla después del código, queda adentro con el avi
     await llegarAlCodigo(async () => ({ aviso: AVISO_CUENTA_FAUCET, direccion: DIRECCION, guardada: true }));
     assert.match(texto(), /Signed in/);
     const aviso = document.querySelector('[role="status"]')?.textContent ?? "";
-    assert.ok(aviso.includes(mensajeClaro(AVISO_CUENTA_FAUCET)), aviso);
-    assert.match(aviso, /Open Events and tap Get ready to be paid/);
-    assert.equal(document.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
-    assert.equal(salida().getAttribute("href"), DESTINO);
+    assert.match(aviso, /We could not open this account/);
+    assert.match(aviso, /Get ready to be paid/);
+    assert.equal(document.querySelector('[role="status"] a[href="/configuracion#preparar-cobro"]')?.textContent, "Settings");
+    assert.equal(salida().getAttribute("href"), "/configuracion#preparar-cobro");
     assert.equal(document.querySelector('[role="dialog"]'), null);
     assert.equal(window.location.pathname, "/");
     assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);

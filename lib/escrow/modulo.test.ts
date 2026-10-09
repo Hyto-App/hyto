@@ -477,7 +477,7 @@ test("leer el escrow no gasta el cupo de la firma", async () => {
   for (let i = 0; i < 30; i += 1) assert.equal(respuestaSiExcedido(firma), null);
   const bloqueada = respuestaSiExcedido(firma);
   assert.equal(bloqueada?.status, 429);
-  assert.match(await bloqueada!.json().then((json: { aviso: string }) => json.aviso), /signature/);
+  assert.match(await bloqueada!.json().then((json: { aviso: string }) => json.aviso), /1 minute/);
   assert.equal(respuestaSiExcedido(lectura, "lectura"), null);
   reiniciarLimite();
 });

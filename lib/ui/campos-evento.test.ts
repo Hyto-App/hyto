@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { contadorCerca, contextoAbierto, errorPortada } from "./campos-evento";
+import { contadorCerca, contextoAbierto, errorPortada, hayTextoMile, mostrarRecibos } from "./campos-evento";
 import { en, es } from "./diccionario";
 
 const leer = (ruta: string) => readFileSync(new URL(ruta, import.meta.url), "utf8");
@@ -57,9 +57,30 @@ test("the organizer's event page renders the cover and description card", () => 
   assert.equal((pagina.match(/<ContextoEvento/g) ?? []).length, 2);
 });
 
+test("receipts question shows only while a task is a reimbursement", () => {
+  assert.equal(mostrarRecibos([]), false);
+  assert.equal(mostrarRecibos(["trabajo", "trabajo"]), false);
+  assert.equal(mostrarRecibos(["trabajo", "reembolso"]), true);
+});
+
+test("the For Mile card stays open while any field has text", () => {
+  assert.equal(hayTextoMile({ lugar: "", recibos: "" }), false);
+  assert.equal(hayTextoMile({ lugar: "", recibos: "x" }), true);
+});
+
+test("the guided For Mile strings exist in English and Spanish with the same keys", () => {
+  assert.deepEqual(Object.keys(en.eventos.mileCampos), Object.keys(es.eventos.mileCampos));
+  for (const [clave, valor] of Object.entries(en.eventos.mileCampos)) {
+    assert.ok(valor && (es.eventos.mileCampos as Record<string, string>)[clave], clave);
+  }
+  for (const clave of ["mileAbout", "mileAboutHelp", "mileRules", "mileRulesHelp"] as const) {
+    assert.ok(en.eventos[clave] && es.eventos[clave], clave);
+  }
+});
+
 test("the new strings exist in English and Spanish", () => {
   for (const clave of ["detailsTitle", "coverDrop","coverReplace", "coverRemove", "coverPreviewAlt", "mileTitle", "mileLock", "mileAdd", "mileHide", "counterNear"]) {
-    assert.ok((en.eventos as Record<string, string>)[clave], `en ${clave}`);
-    assert.ok((es.eventos as Record<string, string>)[clave], `es ${clave}`);
+    assert.ok((en.eventos as unknown as Record<string, unknown>)[clave], `en ${clave}`);
+    assert.ok((es.eventos as unknown as Record<string, unknown>)[clave], `es ${clave}`);
   }
 });

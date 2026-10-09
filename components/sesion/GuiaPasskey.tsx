@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
+import { TextoRico } from "@/components/ui/TextoClaro";
 import { enlacePasskey, enlacePasskeyVisible } from "@/lib/integrante/enlacePasskey";
 
 type Copia = "nada" | "copiado" | "fallo";
@@ -73,7 +74,9 @@ export function GuiaPasskey({ alReintentar, reintentando = false, className, var
       <p id={`${id}-titulo`} className="hyto-guia-titulo">
         {t("guiaPasskey.titulo")}
       </p>
-      <p className="hyto-guia-intro">{variante === "cuenta" ? t("guiaPasskey.introCuenta") : t("guiaPasskey.intro")}</p>
+      <p className="hyto-guia-intro">
+        <TextoRico mensaje={variante === "cuenta" ? t("guiaPasskey.introCuenta") : t("guiaPasskey.intro")} />
+      </p>
       <ol className="hyto-guia-pasos">
         {pasos.map((paso, indice) => (
           <li key={paso.titulo} className="hyto-guia-paso">
@@ -82,7 +85,9 @@ export function GuiaPasskey({ alReintentar, reintentando = false, className, var
             </span>
             <div className="min-w-0">
               <p className="hyto-guia-paso-titulo">{paso.titulo}</p>
-              <p className="hyto-guia-paso-texto">{paso.texto}</p>
+              <p className="hyto-guia-paso-texto">
+                <TextoRico mensaje={paso.texto} />
+              </p>
               {paso.enlace ? (
                 <>
                   {/* Plain text on purpose: the link is for the other computer, not this phone. */}
@@ -122,7 +127,9 @@ export function GuiaPasskey({ alReintentar, reintentando = false, className, var
       <details className="hyto-guia-ayuda">
         <summary>{t("guiaPasskey.ayudaTitulo")}</summary>
         <p>{t("guiaPasskey.ayuda1")}</p>
-        <p>{t("guiaPasskey.ayuda2")}</p>
+        <p>
+          <TextoRico mensaje={t("guiaPasskey.ayuda2")} />
+        </p>
       </details>
     </section>
   );

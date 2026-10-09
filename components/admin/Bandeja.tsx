@@ -17,9 +17,11 @@ import { lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { claseBoton } from "@/components/ui/Boton";
+import { Identidad } from "@/components/ui/Identidad";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { iniciales } from "@/components/ui/Marca";
 import type { TareaAdmin, Veredicto, VistaAdmin } from "@/lib/admin/tipos";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -114,7 +116,6 @@ export function Bandeja({
   miembros?: { usuarioId: string; email: string; ficha?: Ficha }[];
 }) {
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
   const estado = useVistaAdmin(proyectoId);
   const base = estado.vista;
@@ -194,7 +195,7 @@ export function Bandeja({
   if (estado.error) {
     return (
       <main className="hyto-page">
-        <p role="alert">{claro(estado.error)}</p>
+        <p role="alert"><TextoClaro mensaje={estado.error} /></p>
         <button type="button" className="hyto-btn mt-4 max-w-xs" onClick={estado.reintentar}>
           {t("comunes.tryAgain")}
         </button>
@@ -314,21 +315,20 @@ export function Bandeja({
                     onClick={() => setSelId(tarea.id)}
                     className={`hyto-row ${activo ? "is-on bg-[var(--papel)]" : "hover:bg-[var(--papel)]"}`}
                   >
-                    <div className="flex items-start gap-3">
-                      <span className="hyto-avatar">{iniciales(textoVisible(tarea.miembro, idioma))}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-start justify-between gap-3">
-                          <span className="block font-semibold">{textoVisible(tarea.miembro, idioma)}</span>
-                          <span className="hyto-amount text-sm">{vistaMonto(tarea, idioma).linea}</span>
-                        </span>
-                        <span className="mt-1 block text-sm text-[var(--suave)]">{textoVisible(tarea.titulo, idioma)}</span>
-                        <span className="mt-2 flex items-center justify-between gap-2">
-                          <span className="text-xs text-[var(--suave)]">{etiquetaTipo(tarea.tipo, idioma)}</span>
-                          {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : null}
-                        </span>
-                        <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
+                    <Identidad
+                      enLinea
+                      plana
+                      nombre={textoVisible(tarea.miembro, idioma)}
+                      rol={etiquetaTipo(tarea.tipo, idioma)}
+                      detalle={textoVisible(tarea.titulo, idioma)}
+                      extra={<span className="hyto-amount text-sm">{vistaMonto(tarea, idioma).linea}</span>}
+                    />
+                    {tarea.veredicto ? (
+                      <span className="mt-2 flex">
+                        <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
                       </span>
-                    </div>
+                    ) : null}
+                    <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
                   </button>
                   <Link href={`/revision/${tarea.id}`} className="justify-self-end text-sm font-medium">
                     {t("bandeja.openReview")}
@@ -373,8 +373,13 @@ export function Bandeja({
                       </select>
                     </label>
                   ) : null}
-                  {seleccion ? <FichaVoluntario ficha={miembros.find((persona) => persona.usuarioId === seleccion.miembroId)?.ficha ?? { experiencia: null, etiquetas: [] }} /> : null}
-                  <Link href={`/revision/${seleccion.id}`} className="hyto-btn mt-5">
+                  {seleccion ? (
+                    <FichaVoluntario
+                      ficha={miembros.find((persona) => persona.usuarioId === seleccion.miembroId)?.ficha ?? { experiencia: null, etiquetas: [] }}
+                      nombre={textoVisible(seleccion.miembro, idioma)}
+                    />
+                  ) : null}
+                  <Link href={`/revision/${seleccion.id}`} className={`${claseBoton("primario")} mt-5`}>
                     {t("bandeja.review")}
                   </Link>
                 </div>
@@ -424,7 +429,7 @@ export function Bandeja({
                   </details>
                 ) : null}
                 <p className="mt-6 text-sm leading-6 text-[var(--suave)]">{t("bandeja.mileSuggests")}</p>
-                <Link href={`/revision/${seleccion.id}`} className="hyto-btn-line mt-4">
+                <Link href={`/revision/${seleccion.id}`} className={`${claseBoton("fantasma")} mt-4`}>
                   {t("bandeja.openReview")}
                 </Link>
               </aside>
@@ -442,7 +447,7 @@ export function Bandeja({
       <PendientesSinFoto tareas={sinEntrega} idioma={idioma} />
       <ListaRevision tareas={sueltas} idioma={idioma} />
 
-      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{claro(aviso)}</p> : null}
+      {aviso ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]"><TextoClaro mensaje={aviso} /></p> : null}
 
       {vista.ejemplo ? <p className="mt-8 text-sm leading-6 text-[var(--suave)]">{t("bandeja.sample")}</p> : null}
     </main>

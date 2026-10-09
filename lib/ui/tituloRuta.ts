@@ -12,6 +12,7 @@ const EXACTAS: Record<string, ClaveTitulo> = {
   "/cuentas/preparar": "titulos.setupUsdc",
   "/informe": "titulos.report",
   "/join": "titulos.joinEvent",
+  "/ayuda": "titulos.help",
 };
 
 /** Tab title key for an in-app route. The sign-in screen sets its own title. */

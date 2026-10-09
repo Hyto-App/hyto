@@ -28,7 +28,7 @@ export function clienteEstable(request: Request): string {
  */
 export async function existeCuentaHttp(request: Request, almacen: Almacen): Promise<Response> {
   if (excedido(`existe:${clienteEstable(request)}`, Date.now(), TOPE_POR_MINUTO)) {
-    return json({ aviso: "Too many attempts. Wait a moment." }, 429);
+    return json({ aviso: "Too many attempts. Wait 1 minute and try again." }, 429);
   }
   let body: unknown;
   try {

@@ -9,6 +9,7 @@ import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, ty
 import { brutoFondado, montoRecibido } from "@/lib/escrow/recibido";
 import { nombreOrganizadorVisible } from "@/lib/sesion/nombre";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
+import { guardarCobroPropio } from "./cobro";
 import { lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 import { veredictoAlLeer } from "./revision-vencida";
@@ -125,8 +126,12 @@ export async function tareaConNota(
 
 export async function listarTareasHttp(almacen: Almacen, visor: Visor, alcance: "evento" | "mias" = "evento"): Promise<Response> {
   try {
-    const tareas = alcance === "mias" ? await tareasPropias(almacen, visor) : await tareasVisibles(almacen, visor);
-    if (alcance !== "mias") return json({ tareas: tareas.map(tareaPublica) }, 200, PRIVADA);
+    if (alcance !== "mias") return json({ tareas: (await tareasVisibles(almacen, visor)).map(tareaPublica) }, 200, PRIVADA);
+    const propias = await tareasPropias(almacen, visor);
+    const tareas =
+      visor.usuarioId && !visor.demo && visor.wallet
+        ? await guardarCobroPropio(almacen, propias, visor.usuarioId, visor.wallet)
+        : propias;
     const [proyectos, usuarios] = await Promise.all([almacen.listarProyectos(), almacen.listarUsuarios()]);
     const nombres = new Map(proyectos.map((proyecto) => [proyecto.id, proyecto.nombre]));
     const porUsuario = new Map(usuarios.map((usuario) => [usuario.id, usuario]));

@@ -1,4 +1,5 @@
 import type { Veredicto } from "@/lib/admin/tipos";
+import { AVISO_MUCHOS_INTENTOS } from "@/lib/escrow/limite";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import { leerCamposRevision } from "./revision";
 import type { EstadoTarea, Evidencia, Tarea, TipoTarea } from "./tipos";
@@ -221,6 +222,9 @@ export async function listarTareas(filtro: FiltroTareas, opciones: OpcionesRuta 
         { method: "GET", cache: "no-store" },
         fetchImpl,
       );
+      if (respuesta.status === 429) {
+        return { tareas: [], ejemplo: false, error: AVISO_MUCHOS_INTENTOS };
+      }
       if (!respuesta.ok) throw new Error(String(respuesta.status));
       const tareas = listaDesdeJson(await leerJson(respuesta));
       if (!tareas) throw new Error("forma");
@@ -261,7 +265,8 @@ export async function pedirTokenEvidencia(tareaId: string, opciones: OpcionesRut
   }
   if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
   if (!respuesta.ok) {
-    throw new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+    const porDefecto = respuesta.status === 429 ? AVISO_MUCHOS_INTENTOS : AVISO_ENVIO_FALLIDO;
+    throw new ErrorDeEnvio(await avisoDeRespuesta(respuesta, porDefecto), respuesta.status);
   }
   let json: { token?: unknown } | null;
   try {
@@ -298,7 +303,8 @@ export async function subirEvidencia(
   }
   if (respuesta.status === 401 || respuesta.status === 403) throw new ErrorDeSesion(await avisoDeAuth(respuesta));
   if (!respuesta.ok) {
-    const error = new ErrorDeEnvio(await avisoDeRespuesta(respuesta, AVISO_ENVIO_FALLIDO), respuesta.status);
+    const porDefecto = respuesta.status === 429 ? AVISO_MUCHOS_INTENTOS : AVISO_ENVIO_FALLIDO;
+    const error = new ErrorDeEnvio(await avisoDeRespuesta(respuesta, porDefecto), respuesta.status);
     // A 409 can be this same file from an attempt whose answer was lost. A 5xx can come after the file was stored.
     if (respuesta.status === 409 || respuesta.status >= 500) return confirmarOFallar(tarea, opciones, error);
     throw error;

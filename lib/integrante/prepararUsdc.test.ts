@@ -408,7 +408,8 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
     assert.ok(!botones.includes("Get ready to be paid"));
 
     await fallarCon(AVISO_USDC_SIN_XLM);
-    assert.match(texto(), /no test XLM for the network fee/);
+    assert.match(texto(), /5 minutes/);
+    assert.match(texto(), /write to us/);
     assert.doesNotMatch(texto(), /Add some and try again/);
 
     await fallarCon(AVISO_USDC_OTRA_CUENTA);

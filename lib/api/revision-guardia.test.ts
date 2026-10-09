@@ -187,7 +187,7 @@ describe("reintentar la revisión", { concurrency: false }, () => {
       await adentro;
       const segundo = await leerRevisionHttp(almacen, fotos, "stand", true);
       assert.equal(segundo.status, 429);
-      assert.match(((await segundo.json()) as { aviso: string }).aviso, /Wait a moment/);
+      assert.match(((await segundo.json()) as { aviso: string }).aviso, /30 seconds/);
       soltar();
       assert.equal((await primero).status, 200);
       const tercero = await leerRevisionHttp(almacen, fotos, "stand", true);

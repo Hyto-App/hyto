@@ -28,6 +28,7 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
+import { AVISO_SIN_ASIGNAR, AVISO_SIN_COBRO } from "@/lib/escrow/cobroAvisos";
 import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_ORIGEN_CAVOS, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED, esOrigenCavos } from "@/lib/auth/errores";
 import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
@@ -81,7 +82,8 @@ const EXACTO: Record<string, Clave> = {
   "This task already has an escrow.": "errores.yaBloqueado",
   [AVISO_YA_FONDEADO]: "errores.yaEnRed",
   "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
-  "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
+  [AVISO_SIN_COBRO]: "errores.sinWalletVoluntario",
+  [AVISO_SIN_ASIGNAR]: "revision.lockNeedsAssignee",
   "Review pending": "errores.esperaRevision",
   "The milestone amount has to be greater than zero.": "errores.montoCero",
   "Only the organizer prepares the payment.": "errores.soloOrganizador",
@@ -187,7 +189,7 @@ const EXACTO: Record<string, Clave> = {
   "The amount is already locked in the payment, so this task can't be edited.": "eventos.editLocked",
   "Enter a title.": "eventos.needTitle",
   "Title is too long.": "eventos.titleLong",
-  "Enter what the photo must show.": "eventos.needPhoto",
+  "Enter what the evidence must show.": "eventos.needPhoto",
   "That note is too long.": "eventos.noteLong",
   "Work tasks don't have a cap.": "eventos.noCap",
   "Choose a person in this event.": "eventos.choosePerson",
@@ -281,13 +283,58 @@ const PATRONES: readonly (readonly [RegExp, Clave])[] = [
   [/HYTO_ESCROW_|HYTO_TRUSTLESS_FEE|three different accounts|platform account cannot|resolver cannot|admin account cannot/i, "errores.servidorIncompleto"],
   [/Trustless Work did not authorize/i, "errores.pagosNoDisponibles"],
   [/already released|already paid/i, "errores.yaPagada"],
-  [/trustline|receiver/i, "errores.listoCobro"],
+  [/ESCROW_RECEIVER_TRUSTLINE_MISSING/i, "errores.listoCobro"],
   [/insufficient balance|not enough usdc|balance must be equal/i, "errores.saldoInsuficiente"],
   [/fee-bump|friendbot|not enough xlm|\bxlm\b/i, "errores.saldoRed"],
   [/xdr|escrow|signer|contract id|soroban|stellar/i, "errores.paso"],
 ];
 
-const CLAVES_CONOCIDAS = [...new Set([...Object.values(EXACTO), ...PATRONES.map((fila) => fila[1])])];
+/**
+ * Strings that used to fall into a generic pattern. Kept apart from EXACTO so a
+ * parallel copy pass can add raw English there without mixing these routes.
+ */
+const CASOS: Record<string, Clave> = {
+  "Add a Stellar wallet before locking this payment.": "errores.prepararCobro",
+  "Too many escrow reads. Wait a moment.": "errores.muchosIntentos",
+  "Too many signature requests. Wait a moment.": "errores.muchosIntentos",
+  "Too many attempts. Wait a moment.": "errores.muchosIntentos",
+  "We couldn't finish Stellar testnet setup.": "errores.altaIncompleta",
+  "We couldn't fund the testnet account.": "errores.altaIncompleta",
+  "We couldn't add the USDC trustline on Stellar testnet.": "errores.cuentaAMedias",
+  "Stellar setup stays on testnet.": "errores.soloTestnet",
+  "The organizer and the receiver have to be different accounts.": "errores.cuentasDistintas",
+  "This budget is already locked on the network. Refresh this page. Do not lock it again.": "errores.yaEnRed",
+  "The budget was sent, but we couldn't confirm it yet. Refresh and try again.": "errores.enviadoSinContrato",
+  "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.": "errores.enviadoSinContrato",
+  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.":
+    "errores.esperaApartar",
+  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.":
+    "errores.esperaPagar",
+  "This account needs a little test balance for the network fee. Add some and try again.": "errores.saldoRed",
+  "We couldn't check the testnet account. Try again.": "errores.noCuentaPago",
+  "We couldn't open this payout account on the test network. Try again.": "errores.faucetTestnet",
+  "Friendbot couldn't fund this testnet account. Try again.": "errores.faucetTestnet",
+  "Friendbot replied, but the testnet account is not visible yet. Try again.": "errores.faucetTestnet",
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.":
+    "errores.dispositivo",
+  "This account can't be opened in this browser yet. Open Hyto once in the browser where you signed up, then try again here.":
+    "errores.sinRespaldo",
+  "This browser doesn't have your account key, so it can't add a passkey. Open Hyto in the browser where you signed up and add it there.":
+    "errores.passkeySinClave",
+  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.":
+    "errores.origenCavos",
+  "No connection. Check the network and try again.": "errores.sinRed",
+  "This payout account has no test XLM for the network fee. Try again in a few minutes, or ask whoever runs Hyto.": "errores.cobroSinXlm",
+  "The network hasn't confirmed the payout setup yet. Wait a moment and try again.": "errores.cobroPendiente",
+  "The volunteer's payout account isn't ready yet. Ask them to open Events in Hyto and tap Get ready to be paid.":
+    "errores.receptorNoListo",
+  "Payment setup isn't complete on the server. Ask whoever runs Hyto.": "errores.servidorIncompleto",
+  "Payments aren't available right now. Ask whoever runs Hyto.": "errores.pagosNoDisponibles",
+};
+
+const CLAVES_CONOCIDAS = [
+  ...new Set([...Object.values(EXACTO), ...Object.values(CASOS), ...PATRONES.map((fila) => fila[1])]),
+];
 const SALIDA_EN = new Map<string, Clave>();
 const SALIDA_ES = new Set<string>();
 for (const clave of CLAVES_CONOCIDAS) {
@@ -298,6 +345,7 @@ for (const clave of CLAVES_CONOCIDAS) {
 const ESPERA = /^Wait (\d+) s before requesting another code$/;
 const SALDO_NO_CUBRE =
   /^Your balance does not cover US\$([\d.]+) \(this amount plus a US\$([\d.]+) reserve\)\. You are short US\$([\d.]+)\.$/;
+const MUCHOS = /\b429\b|too many (attempts|requests|escrow reads|signature requests)|rate[_\s-]?limit/i;
 
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
@@ -314,8 +362,9 @@ export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
     });
   }
   if (idioma === "es" && SALIDA_ES.has(limpio)) return limpio;
-  const clave = EXACTO[limpio] ?? SALIDA_EN.get(limpio);
+  const clave = EXACTO[limpio] ?? CASOS[limpio] ?? SALIDA_EN.get(limpio);
   if (clave) return texto(idioma, clave);
+  if (MUCHOS.test(limpio)) return texto(idioma, "errores.muchosIntentos");
   for (const [patron, destino] of PATRONES) {
     if (patron.test(limpio)) return texto(idioma, destino);
   }
@@ -379,9 +428,10 @@ const DETALLE_PROPIO: Clave[] = [
 ];
 
 export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  // A pay step with no escrow balance uses the generic line. A missing network fee, or the
-  // protocol-fee account, is a different problem and keeps its own words.
+  // A pay step with no escrow balance uses the generic line. A missing network fee, the
+  // protocol-fee account, or a notice that already says how long to wait, stays as it is.
   if (caja === "pago" && !DETALLE_PROPIO.some((clave) => aviso === texto(idioma, clave))) {
+    if (/wait|espere|minute|minuto|second|segundo/i.test(aviso)) return aviso;
     return texto(idioma, "pago.noUsdcLeft");
   }
   return aviso;

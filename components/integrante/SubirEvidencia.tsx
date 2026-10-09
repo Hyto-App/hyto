@@ -14,7 +14,8 @@ import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
-import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { TextoClaro } from "@/components/ui/TextoClaro";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
 import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
@@ -68,7 +69,6 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [rechazoVivo, setRechazoVivo] = useState<null | "camara" | "galeria">(null);
   const demo = useModoDemo();
   const t = useTexto();
-  const claro = useClaro();
   const idioma = useIdioma();
 
   useEffect(() => {
@@ -445,7 +445,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     return (
       <main className="hyto-page">
         <p className="text-lg" role="alert">
-          {claro(cargaError ?? "We couldn't find that task.")}
+          <TextoClaro mensaje={cargaError ?? "We couldn't find that task."} />
         </p>
         {cargaError ? (
           <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
@@ -649,7 +649,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </p>
           ) : avisoEnvio ? (
             <p role="alert" className="hyto-enviada-aviso">
-              {claro(avisoEnvio)}
+              <TextoClaro mensaje={avisoEnvio} />
               {t("evidencia.fixSuffix")}
             </p>
           ) : (
@@ -724,7 +724,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         </div>
         {error ? (
           <p role="alert" className="hyto-error-linea">
-            {claro(error)}
+            <TextoClaro mensaje={error} />
           </p>
         ) : null}
         {ejemplo ? <p className="hyto-tarea-meta">{t("evidencia.sample")}</p> : null}
@@ -833,7 +833,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           ) : null}
           {error ? (
             <p role="alert" className="hyto-error-linea">
-              {claro(error)}
+              <TextoClaro mensaje={error} />
             </p>
           ) : null}
           <div className="hyto-actions">

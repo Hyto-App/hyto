@@ -3,6 +3,7 @@ import type { Marca } from "@/lib/admin/novedades";
 import type { Almacen } from "@/lib/db/almacen";
 import { esProyectoDemo } from "@/lib/db/semilla";
 import type { SesionFila, TareaFila } from "@/lib/db/tipos";
+import { esCuenta } from "@/lib/escrow/cuerpos";
 import { demoHabilitado, sesionEsDemo } from "@/lib/sesion/demo";
 import { leerVeredictoVigente } from "./informe";
 import { esOrganizador } from "./invitaciones";
@@ -66,6 +67,7 @@ async function marcaDe(almacen: Almacen, tarea: TareaFila): Promise<Marca> {
         tarea.id,
         tarea.estado,
         tarea.miembroId,
+        esCuenta(tarea.walletCobro.trim()) ? "cobro" : "",
         tarea.hashPago ?? "",
         tarea.contratoEscrow ?? "",
         evidencia?.id ?? "",
