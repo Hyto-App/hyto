@@ -272,6 +272,8 @@ export const en = {
     creatingAccount: "Creating account…",
     settingUp: "Setting up your account… this can take up to a minute.",
     altaPendiente: "Open Events and tap Get ready to be paid to finish setting up your account.",
+    altaSinConfirmar:
+      "You are signed in. This browser can't confirm payouts yet. Open Events and finish that from your account.",
     openEvents: "Open Events",
     emailCode: "We'll email you a code. You don't need a separate app.",
     email: "Email",
@@ -1458,6 +1460,8 @@ export const es: Rama<typeof en> = {
     creatingAccount: "Creando cuenta…",
     settingUp: "Preparando su cuenta…",
     altaPendiente: "Abra Eventos y toque Preparar el cobro para terminar de preparar su cuenta.",
+    altaSinConfirmar:
+      "Ya ingresó. Este navegador todavía no puede confirmar los cobros. Abra Eventos y termínelo desde su cuenta.",
     openEvents: "Abrir Eventos",
     emailCode: "Le enviamos un código por correo. No necesita otra aplicación.",
     email: "Correo",

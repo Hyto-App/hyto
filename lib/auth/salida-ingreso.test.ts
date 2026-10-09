@@ -9,6 +9,7 @@ import { Marco } from "../../components/admin/Marco";
 import { MisTareas } from "../../components/integrante/MisTareas";
 import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { AVISO_ALTA_SIN_CONFIRMAR } from "./avisoAlta";
 import { AVISO_CUENTA_FAUCET } from "../integrante/friendbot";
 import type { Tarea } from "../integrante/tipos";
 import { mensajeClaro } from "../ui/claro";
@@ -148,8 +149,41 @@ test("si el alta de testnet falla después del código, queda adentro con el avi
     assert.match(aviso, /Open Events and tap Get ready to be paid/);
     assert.equal(document.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
     assert.equal(salida().getAttribute("href"), DESTINO);
-    assert.equal(document.querySelector('[role="dialog"]'), null);
+    assert.equal(document.querySelector(".hyto-login")?.getAttribute("role"), "dialog");
     assert.equal(window.location.pathname, "/");
+    assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si el alta menciona la trustline, quien acaba de registrarse ve su aviso dentro del ingreso", async () => {
+  limpiarPantalla();
+  try {
+    await llegarAlCodigo(async () => ({
+      aviso: "We couldn't add the USDC trustline on Stellar testnet.",
+      direccion: DIRECCION,
+      guardada: true,
+    }));
+    assert.match(texto(), /Signed in/);
+    assert.match(texto(), /Open Events and tap Get ready to be paid to finish setting up your account/);
+    assert.doesNotMatch(texto(), /person who gets paid/i);
+    assert.equal(document.querySelector(".hyto-login")?.getAttribute("role"), "dialog");
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("si este navegador no puede confirmar el cobro, la sesión sigue y no pide entrar otra vez", async () => {
+  limpiarPantalla();
+  try {
+    await llegarAlCodigo(async () => ({ aviso: AVISO_ALTA_SIN_CONFIRMAR, direccion: DIRECCION, guardada: true }));
+    assert.match(texto(), /You are signed in/);
+    assert.match(texto(), /Open Events and finish that from your account/);
+    assert.doesNotMatch(texto(), /Sign in again/);
+    assert.equal(document.querySelector(".hyto-login")?.getAttribute("role"), "dialog");
     assert.equal(JSON.parse(window.localStorage.getItem("hyto-admin") ?? "{}").direccion, DIRECCION);
   } finally {
     await desmontar();

@@ -1,6 +1,6 @@
 import { bajarCapasParaCavos } from "@/lib/escrow/capaCavos";
 import { esperarCavos } from "@/lib/escrow/firmarCliente";
-import { AVISO_USDC_LENTO } from "./avisosUsdc";
+import { AVISO_COBRO_SIN_CONFIRMAR, AVISO_USDC_LENTO } from "./avisosUsdc";
 import { USDC } from "./identidades";
 import { TOPE_CAVOS_MS } from "./prepararUsdc";
 import type { BilleteraCobro, CuentaLista } from "./tipos";
@@ -89,7 +89,7 @@ export async function asegurarCobroUsdc(
     return {
       direccion: billetera.address,
       usdcListo: false,
-      detalle: "This sign-in can't confirm for this account. Sign in again.",
+      detalle: AVISO_COBRO_SIN_CONFIRMAR,
     };
   }
 
