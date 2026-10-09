@@ -14,6 +14,7 @@ import { formatearMonto, textosSaldo } from "@/lib/integrante/formato";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { AVISO_PROYECTO_DEMO } from "@/lib/sesion/demo";
 import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
+import { fraseComisionEvento } from "@/lib/ui/comision-evento";
 import { AreaTexto, Contador, IconoCandado, ZonaPortada } from "./CamposEvento";
 
 type Fila = {
@@ -167,9 +168,10 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
   const { trabajo, reembolso } = sumarCentavos(filas);
   const total = ((trabajo + reembolso) / 100).toString();
   const falta = faltaParaCrear(saldo, textoMonto(trabajo + reembolso));
+  const comision = fraseComisionEvento(total, idioma);
 
   return (
-    <main className="hyto-page">
+    <main className="hyto-page hyto-crear">
       <p className="hyto-crumb">
         <Link href="/eventos">{t("eventos.title")}</Link>
         <span aria-hidden="true">/</span>
@@ -305,34 +307,6 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
-                    {t("clasificacion.priority")}
-                    <select
-                      id={`prioridad-${fila.clave}`}
-                      value={fila.prioridad}
-                      onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="normal">{t("clasificacion.normal")}</option>
-                      <option value="high">{t("clasificacion.high")}</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
-                    {t("clasificacion.difficulty")}
-                    <select
-                      id={`dificultad-${fila.clave}`}
-                      value={fila.dificultad}
-                      onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="">{t("clasificacion.notSet")}</option>
-                      <option value="easy">{t("clasificacion.easy")}</option>
-                      <option value="medium">{t("clasificacion.medium")}</option>
-                      <option value="hard">{t("clasificacion.hard")}</option>
-                    </select>
-                  </label>
-                </div>
                 <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`condicion-${fila.clave}`}>
                   {t("eventos.photoMust")}
                 </label>
@@ -342,16 +316,50 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
                   onChange={(evento) => cambiar(fila.clave, { condicion: evento.target.value })}
                   className="hyto-input mt-2"
                 />
-                <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`asignado-${fila.clave}`}>
-                  {t("eventos.assignee")}
-                </label>
-                <input
-                  id={`asignado-${fila.clave}`}
-                  type="email"
-                  value={fila.asignado}
-                  onChange={(evento) => cambiar(fila.clave, { asignado: evento.target.value })}
-                  className="hyto-input mt-2"
-                />
+                <details className="hyto-avanzado">
+                  <summary>
+                    {t("eventos.advanced")}
+                    <span>{t("eventos.advancedHint")}</span>
+                  </summary>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
+                      {t("clasificacion.priority")}
+                      <select
+                        id={`prioridad-${fila.clave}`}
+                        value={fila.prioridad}
+                        onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
+                        className="hyto-input mt-2"
+                      >
+                        <option value="normal">{t("clasificacion.normal")}</option>
+                        <option value="high">{t("clasificacion.high")}</option>
+                      </select>
+                    </label>
+                    <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
+                      {t("clasificacion.difficulty")}
+                      <select
+                        id={`dificultad-${fila.clave}`}
+                        value={fila.dificultad}
+                        onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
+                        className="hyto-input mt-2"
+                      >
+                        <option value="">{t("clasificacion.notSet")}</option>
+                        <option value="easy">{t("clasificacion.easy")}</option>
+                        <option value="medium">{t("clasificacion.medium")}</option>
+                        <option value="hard">{t("clasificacion.hard")}</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`asignado-${fila.clave}`}>
+                    {t("eventos.assignee")}
+                  </label>
+                  <input
+                    id={`asignado-${fila.clave}`}
+                    type="email"
+                    value={fila.asignado}
+                    onChange={(evento) => cambiar(fila.clave, { asignado: evento.target.value })}
+                    className="hyto-input mt-2"
+                  />
+                </details>
                 {filas.length > 1 ? (
                   <button
                     type="button"
@@ -370,7 +378,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
           </button>
         </div>
 
-        <aside className="hyto-panel lg:sticky lg:top-6">
+        <aside className="hyto-panel hyto-presupuesto lg:sticky lg:top-6">
           <h2 className="text-base font-semibold">{t("eventos.budget")}</h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3">
@@ -386,7 +394,8 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               <dd className="hyto-amount">{formatearMonto(total, idioma)}</dd>
             </div>
           </dl>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          {comision ? <p className="hyto-comision">{comision}</p> : null}
+          <div className="hyto-pulgar mt-5">
             <BotonPrincipal
               type="button"
               onClick={() => void fondear()}

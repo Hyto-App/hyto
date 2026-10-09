@@ -6,6 +6,8 @@ import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
+import { fraseComisionEvento } from "@/lib/ui/comision-evento";
+import { Mile } from "@/components/ui/Mile";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
@@ -183,20 +185,27 @@ export function TareasEvento({
 
   if (filas.length === 0) {
     return (
-      <main className="hyto-page">
-        <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
+      <main className="hyto-page hyto-tareas-lista">
+        <div className="hyto-card hyto-estado-vacio">
+          <Mile estado="icono" tamano={72} />
+          <h2>{t("eventos.noTasks")}</h2>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="hyto-page">
+    <main className="hyto-page hyto-tareas-lista">
       <ul className="grid gap-3">
         {filas.map((tarea) => {
           const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
           const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
           const faltaFila = editando && borrador ? faltaDeBorrador(tarea, borrador, saldo) : null;
+          const comision =
+            tarea.estado === "pagado"
+              ? null
+              : fraseComisionEvento(tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto, idioma);
           return (
             <li key={tarea.id} className="hyto-card grid gap-4 p-5">
               <div className="min-w-0">
@@ -221,6 +230,7 @@ export function TareasEvento({
                   </div>
                 ) : null}
                 {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
+                {!editando && comision ? <p className="hyto-comision">{comision}</p> : null}
               </div>
               {editando && borrador ? (
                 <form
@@ -299,13 +309,13 @@ export function TareasEvento({
                       ))}
                     </select>
                   </label>
-                  <div className="flex flex-wrap gap-2 sm:col-span-2">
-                    <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando || Boolean(faltaFila)}>
+                  <div className="hyto-pulgar sm:col-span-2">
+                    <button type="submit" className="hyto-btn" disabled={guardando || Boolean(faltaFila)}>
                       {t("eventos.save")}
                     </button>
                     <button
                       type="button"
-                      className="hyto-btn-line is-inline px-5"
+                      className="hyto-btn-line"
                       onClick={() => {
                         setEditandoId(null);
                         setBorrador(null);
@@ -341,25 +351,30 @@ export function TareasEvento({
                       {claro(tarea.bloqueo)}
                     </p>
                   ) : null}
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="hyto-pulgar mt-3">
                     {tarea.estado === "pendiente" && !tarea.tieneFoto && !tarea.bloqueo ? (
-                      <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
-                        {t("pago.lockBudget")}
+                      <Link href={`/revision/${tarea.id}`} className="hyto-btn">
+                        {t("eventos.reserve")}
                       </Link>
                     ) : (
-                      <Link href={`/revision/${tarea.id}`} className="hyto-btn-line is-inline px-5">
+                      <Link href={`/revision/${tarea.id}`} className="hyto-btn-line">
                         {t("bandeja.openReview")}
                       </Link>
                     )}
                     {tarea.bloqueo ? null : (
-                      <button type="button" className="hyto-btn-line is-inline px-5" onClick={() => abrir(tarea)}>
+                      <button type="button" className="hyto-btn-line" onClick={() => abrir(tarea)}>
                         {t("eventos.edit")}
                       </button>
                     )}
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <details className="hyto-avanzado">
+                <summary>
+                  {t("eventos.advanced")}
+                  <span>{t("eventos.advancedHint")}</span>
+                </summary>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm" htmlFor={`prioridad-${tarea.id}`}>
                   {t("clasificacion.priority")}
                   <select
@@ -389,6 +404,7 @@ export function TareasEvento({
                   </select>
                 </label>
               </div>
+              </details>
             </li>
           );
         })}
