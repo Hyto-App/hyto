@@ -42,6 +42,8 @@ export type Almacen = {
   leerUsuario(id: string): Promise<Usuario | null>;
   insertarUsuario(usuario: Usuario): Promise<Usuario>;
   guardarUsuario(usuario: Usuario): Promise<void>;
+  /** Sets nombre to empty. Login uses this so a feature flag cannot add columns to that write. */
+  vaciarNombre(id: string): Promise<void>;
   guardarTipoCuenta(
     id: string,
     cambio: {

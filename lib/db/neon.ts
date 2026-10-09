@@ -330,6 +330,9 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       const email = usuario.email.trim().toLowerCase();
       await db.execute(sqlInsertarUsuario({ ...filaUsuario(usuario), email }, true));
     },
+    async vaciarNombre(id) {
+      await db.update(usuarios).set({ nombre: "" }).where(eq(usuarios.id, id));
+    },
     async guardarTipoCuenta(id, cambio) {
       if (!tipoCuentaActivo()) return;
       await db.update(usuarios).set(cambio).where(eq(usuarios.id, id));
