@@ -6,7 +6,7 @@ import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { destinoTrasTipo } from "@/lib/sesion/retorno";
 
-export const metadata: Metadata = { title: "Account type" };
+export const metadata: Metadata = { title: "Account type", robots: { index: false, follow: false } };
 
 export default async function PaginaTipoCuenta({
   searchParams,

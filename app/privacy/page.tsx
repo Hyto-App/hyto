@@ -1,14 +1,23 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd } from "@/components/ui/JsonLd";
 import { Logo } from "@/components/ui/Marca";
-import { COOKIE_IDIOMA, idiomaDe } from "@/lib/ui/idioma";
+import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
+import { jsonLdOrganization, metaPublica } from "@/lib/ui/seo";
 import { privacidadDe } from "@/lib/ui/privacidad";
 
 export async function generateMetadata(): Promise<Metadata> {
   const jar = await cookies();
-  const copia = privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
-  return { title: copia.titulo, description: copia.entrada };
+  const guardado = jar.get(COOKIE_IDIOMA)?.value;
+  const idioma = guardado ? idiomaDe(guardado) : idiomaDeNavegador((await headers()).get("accept-language"));
+  const copia = privacidadDe(idioma);
+  return metaPublica({
+    idioma,
+    title: copia.titulo,
+    description: copia.entrada,
+    path: "/privacy",
+  });
 }
 
 export default async function PaginaPrivacidad() {
@@ -16,6 +25,7 @@ export default async function PaginaPrivacidad() {
   const copia = privacidadDe(idiomaDe(jar.get(COOKIE_IDIOMA)?.value));
   return (
     <div className="hyto-login hyto-privacidad">
+      <JsonLd datos={jsonLdOrganization()} />
       <div className="hyto-login-escena" aria-hidden="true">
         <div className="hyto-login-vineta" />
         <div className="hyto-login-lineas">
@@ -31,7 +41,7 @@ export default async function PaginaPrivacidad() {
       </div>
       <div className="hyto-login-marco">
         <header className="hyto-login-top">
-          <Link href="/" className="hyto-login-logo">
+          <Link href="/" className="hyto-login-logo" aria-label="Hyto">
             <Logo />
           </Link>
         </header>
