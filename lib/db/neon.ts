@@ -127,7 +127,11 @@ function esColumnaAusente(error: unknown): boolean {
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
 }
 
-/** Each switch hides its own columns, so a migration that has not run yet is not selected. */
+/**
+ * Each switch hides its own columns, so a migration that has not run yet is not selected.
+ * Account type and the volunteer profile are separate spreads: adding one group
+ * does not select the other while its switch is off.
+ */
 function columnasUsuarioVisibles() {
   const todas = getTableColumns(usuarios);
   const {
@@ -142,11 +146,26 @@ function columnasUsuarioVisibles() {
   } = todas;
   return {
     ...base,
-    ...(tipoCuentaActivo() ? { tipoCuenta, empresaNombre, empresaActividad, empresaDescripcion, empresaFoto } : {}),
-    ...(perfilVoluntarioActivo() ? { experiencia, etiquetas } : {}),
+    ...columnasTipoCuenta({ tipoCuenta, empresaNombre, empresaActividad, empresaDescripcion, empresaFoto }),
+    ...columnasPerfilVoluntario({ experiencia, etiquetas }),
   };
 }
 
+function columnasTipoCuenta<T extends Record<string, unknown>>(grupo: T): T | Record<string, never> {
+  if (!tipoCuentaActivo()) return {};
+  return grupo;
+}
+
+function columnasPerfilVoluntario<T extends Record<string, unknown>>(grupo: T): T | Record<string, never> {
+  if (!perfilVoluntarioActivo()) return {};
+  return grupo;
+}
+
+/**
+ * Sign-up, sign-in, and guardarUsuario never name the volunteer-profile columns,
+ * even when that switch is on. guardarPerfilVoluntario is the only writer.
+ * The account-type group stays its own spread.
+ */
 function filaUsuario(usuario: Usuario) {
   return {
     id: usuario.id,
@@ -160,12 +179,6 @@ function filaUsuario(usuario: Usuario) {
           empresaActividad: usuario.empresaActividad ?? null,
           empresaDescripcion: usuario.empresaDescripcion ?? null,
           empresaFoto: usuario.empresaFoto ?? null,
-        }
-      : {}),
-    ...(perfilVoluntarioActivo()
-      ? {
-          experiencia: usuario.experiencia ?? null,
-          etiquetas: usuario.etiquetas && usuario.etiquetas.length > 0 ? JSON.stringify(usuario.etiquetas) : null,
         }
       : {}),
   };

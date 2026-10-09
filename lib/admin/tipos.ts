@@ -54,6 +54,8 @@ export type TareaAdmin = {
   intentosAnteriores?: IntentoAnterior[];
   /** True when the task already has an escrow contract, so the budget is set aside. */
   apartado?: boolean;
+  /** Set only when Lock budget has nobody to pay: no one assigned, or no account known for that person. */
+  faltaCobro?: "asignar" | "cuenta";
 };
 
 export type TareaCreada = {
