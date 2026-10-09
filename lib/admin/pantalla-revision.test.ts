@@ -737,7 +737,9 @@ test("lock budget stays off while a pending task waits for another photo", async
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-foto");
-    assert.match(texto(), /Waiting for a new photo\. This stays off until it arrives\./);
+    assert.match(texto(), /Asked for another photo/);
+    assert.match(texto(), /You can reserve it when the new photo arrives\./);
+    assert.equal(texto().includes("Waiting for a new photo"), false);
     assert.match(texto(), /Pending/);
     await pulsar("Lock budget");
     assert.equal(document.querySelector("dialog"), null);
@@ -765,7 +767,10 @@ test("bloquear presupuesto queda apagado en español mientras espera la foto nue
     const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Bloquear presupuesto");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
-    assert.match(texto(), /Esperando una foto nueva\. Esto queda apagado hasta que llegue\./);
+    assert.match(texto(), /Pidió otra foto/);
+    assert.match(texto(), /Va a poder reservar cuando llegue la foto nueva\./);
+    assert.equal(texto().includes("Esperando una foto nueva"), false);
+    assert.equal(texto().includes("plata"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
