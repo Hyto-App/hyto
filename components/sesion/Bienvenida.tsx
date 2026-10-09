@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
-import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc, prepararUsdcDeSesion, type UsdcListo } from "@/lib/integrante/prepararUsdc";
 
@@ -11,11 +11,24 @@ type Props = {
   preparar?: () => Promise<UsdcListo>;
   /** Optional control shown inside the card, on the kicker row (the "Hide" button on Events). */
   accion?: ReactNode;
+  /**
+   * True when this person organizes an event. Null while that is still loading.
+   * Organizers do not see the volunteer payout step.
+   */
+  organiza?: boolean | null;
 };
 
-export function Bienvenida({ consultar = leerEstadoUsdc, preparar = () => prepararUsdcDeSesion(), accion }: Props) {
+export function Bienvenida({
+  consultar = leerEstadoUsdc,
+  preparar = () => prepararUsdcDeSesion(),
+  accion,
+  organiza = false,
+}: Props) {
   const demo = useModoDemo();
+  const rolDemo = useRolDemo();
   const t = useTexto();
+  const organizaVista = rolDemo === "organizador" || organiza === true;
+  const cargandoRol = !demo && organiza === null;
 
   return (
     <section className="hyto-welcome" aria-labelledby="hyto-welcome-title">
@@ -27,12 +40,12 @@ export function Bienvenida({ consultar = leerEstadoUsdc, preparar = () => prepar
         <p id="hyto-welcome-title" className="hyto-title">
           {t("bienvenida.title")}
         </p>
-        <p className="hyto-sub">{t("bienvenida.body")}</p>
+        {cargandoRol ? null : <p className="hyto-sub">{t(organizaVista ? "bienvenida.bodyOrganizer" : "bienvenida.body")}</p>}
         {demo ? (
           <p className="hyto-welcome-note" role="note">
-            {t("errores.demoCobro")}
+            {t(organizaVista ? "bienvenida.demoOrganizer" : "bienvenida.demoVolunteer")}
           </p>
-        ) : (
+        ) : cargandoRol || organizaVista ? null : (
           <div className="hyto-welcome-step">
             <p className="hyto-welcome-step-title">{t("bienvenida.step")}</p>
             <PrepararUsdc consultar={consultar} preparar={preparar} />

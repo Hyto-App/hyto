@@ -72,6 +72,8 @@ export type EstadoSaldo = "ok" | "ausente" | "error" | "sin-wallet";
 
 export type VistaCuenta = {
   demo: boolean;
+  /** This person organizes at least one event. Earnings stay hidden when they have none. */
+  organiza: boolean;
   muestra: boolean;
   email: string;
   wallet: string | null;

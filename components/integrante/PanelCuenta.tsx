@@ -106,10 +106,14 @@ export function PanelCuenta() {
       <ComoCobrar />
       <CostoDePagar />
       {vista.muestra ? null : <PasskeyCuenta />}
-      <Ganancias orgullo={vista.orgullo} />
-      <OrgulloFila orgullo={vista.orgullo} />
-      <Insignias insignias={vista.orgullo.insignias} />
-      <Recientes orgullo={vista.orgullo} muestra={vista.muestra} />
+      {vista.organiza && vista.orgullo.vacio ? null : (
+        <>
+          <Ganancias orgullo={vista.orgullo} />
+          <OrgulloFila orgullo={vista.orgullo} />
+          <Insignias insignias={vista.orgullo.insignias} />
+          <Recientes orgullo={vista.orgullo} muestra={vista.muestra} />
+        </>
+      )}
     </div>
   );
 }

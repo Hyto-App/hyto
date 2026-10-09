@@ -32,7 +32,7 @@ export const TOPE_CAVOS_MS = 60_000;
 
 const AVISO_LISTO = "We couldn't get this account ready to receive payment. Try again.";
 const AVISO_CONFIRMAR = "We couldn't confirm the payout setup. Try again.";
-const AVISO_DEMO_COBRO = "Demo mode can't set up payouts. Sign in with your email to continue.";
+const AVISO_DEMO_COBRO = "Payout setup stays off in this practice session. You can still look around. No money moves in the demo.";
 
 type Respuesta = { ok: boolean; cuerpo: Record<string, unknown> };
 

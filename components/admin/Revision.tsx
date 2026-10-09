@@ -730,7 +730,9 @@ export function Revision({
               >
                 <h2>{t("revision.whatsMissing")}</h2>
                 <ul>
-                  {puntosDeCondicion(tarea.condicion).map((punto, indice) => (
+                  {puntosDeCondicion(textoVisible(tarea.condicion, idioma))
+                    .map((punto) => textoVisible(punto, idioma))
+                    .map((punto, indice) => (
                     <li key={`${indice}-${punto}`}>
                       <label>
                         <input

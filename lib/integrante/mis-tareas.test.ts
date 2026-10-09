@@ -118,6 +118,7 @@ test("Mis tareas marca el mejor pago y ordena sin perder el filtro", async () =>
     assert.equal(document.querySelector("[aria-label='Sort tasks']"), null);
     assert.deepEqual(titulos(), ["Booth", "Meal", "Check-in", "Blank"]);
     assert.deepEqual(insignias().sort(), ["Booth", "Meal"]);
+    assert.match(texto(), /Highest amount in this list/);
     for (const insignia of document.querySelectorAll("article .hyto-pill-ok")) {
       if (!insignia.textContent?.includes("Best paid")) continue;
       assert.match(insignia.className, /hyto-pill /);

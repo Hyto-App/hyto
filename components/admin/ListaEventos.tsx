@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bienvenida } from "@/components/sesion/Bienvenida";
+import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import type { Clave } from "@/lib/ui/diccionario";
 
@@ -18,7 +19,7 @@ const ROL: Record<Exclude<Rol, null>, Clave> = {
 const CLAVE_BIENVENIDA = "hyto-bienvenida-oculta";
 
 /** The welcome card goes after the page head and can be hidden. The choice is kept in this browser only. */
-function BienvenidaColapsable() {
+function BienvenidaColapsable({ organiza }: { organiza: boolean | null }) {
   const t = useTexto();
   const [oculta, setOculta] = useState(false);
 
@@ -43,6 +44,7 @@ function BienvenidaColapsable() {
   return (
     <div className="mt-6">
       <Bienvenida
+        organiza={organiza}
         accion={
           <button type="button" onClick={ocultar}>
             {t("tareas.hideWelcome")}
@@ -56,6 +58,7 @@ function BienvenidaColapsable() {
 export function ListaEventos() {
   const t = useTexto();
   const claro = useClaro();
+  const rolDemo = useRolDemo();
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
@@ -94,15 +97,21 @@ export function ListaEventos() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="hyto-h1">{t("eventos.title")}</h1>
         <div className="flex flex-wrap gap-2">
-          <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-            {t("eventos.create")}
-          </Link>
+          {rolDemo === "voluntario" ? null : (
+            <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+              {t("eventos.create")}
+            </Link>
+          )}
           <Link href="/join" className="hyto-btn-line is-inline px-5">
             {t("eventos.joinCode")}
           </Link>
         </div>
       </header>
-      <BienvenidaColapsable />
+      <BienvenidaColapsable
+        organiza={
+          eventos === null ? null : rolDemo === "organizador" || eventos.some((evento) => evento.rol === "organizer")
+        }
+      />
       {!eventos ? (
         <div className="hyto-skel mt-6" aria-busy="true">
           <i />

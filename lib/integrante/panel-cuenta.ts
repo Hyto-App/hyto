@@ -61,6 +61,7 @@ export async function armarVistaCuenta(opciones: {
   const saldo = await leerSaldoDe(walletReal, opciones.leerSaldo);
   return {
     demo: opciones.demo,
+    organiza: await organizaAlgunEvento(opciones.almacen, opciones.usuarioId),
     muestra: false,
     email: opciones.email,
     wallet: walletReal,
@@ -69,6 +70,11 @@ export async function armarVistaCuenta(opciones: {
     saldoEstado: saldo.estado,
     orgullo,
   };
+}
+
+async function organizaAlgunEvento(almacen: Almacen, usuarioId: string): Promise<boolean> {
+  const miembros = await almacen.miembrosDeUsuario(usuarioId);
+  return miembros.some((miembro) => miembro.estado === "active" && miembro.rol === "organizer");
 }
 
 async function tareasDelUsuario(almacen: Almacen, usuarioId: string): Promise<TareaCuenta[]> {

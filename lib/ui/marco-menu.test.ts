@@ -102,13 +102,42 @@ test("el organizador ve sus secciones arriba y Eventos va primero en el móvil",
     ]);
     assert.match(texto(), /Your event/);
     assert.match(texto(), /Inbox/);
-    assert.match(texto(), /Event tasks/);
+    const tareas = document.querySelector('.hyto-nav-escritorio a[href="/eventos/demo/tareas"]');
+    assert.equal(tareas?.textContent?.trim(), "Tasks");
+    assert.doesNotMatch(texto(), /Event tasks/);
     const movil = [...(document.querySelector(".hyto-nav-movil")?.querySelectorAll("a") ?? [])].map((enlace) => enlace.getAttribute("href"));
     assert.equal(movil[0], "/eventos");
     assert.deepEqual(movil, escritorio);
     assert.equal(document.querySelector('a[href="/comunidades"]'), null);
     const letras = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.ok(letras.every((letra) => letra === "O"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en la página del evento el sidebar no repite Inbox ni Report", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "organizador",
+        children: createElement(Marco, {
+          usuario: { nombre: "Organizer (demo)", email: "org@hyto.demo" },
+          children: createElement("p", null, "inicio"),
+        }),
+      }),
+      { ruta: "/eventos/demo" },
+    );
+    const escritorio = [...(document.querySelector(".hyto-nav-escritorio")?.querySelectorAll("a") ?? [])].map((enlace) =>
+      enlace.getAttribute("href"),
+    );
+    assert.deepEqual(escritorio, ["/eventos", "/eventos/demo/tareas", "/mis-tareas", "/join"]);
+    assert.equal(document.querySelector('a[href="/eventos/demo"]'), null);
+    assert.equal(document.querySelector('a[href="/eventos/demo/informe"]'), null);
+    assert.equal(document.querySelector('.hyto-nav-escritorio a[href="/eventos/demo/tareas"]')?.textContent?.trim(), "Tasks");
   } finally {
     await desmontar();
     limpiarPantalla();
