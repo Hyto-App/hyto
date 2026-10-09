@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { listarTareas } from "./rutas";
-import { cuerpoPedirOtra, leerCamposRevision, montoUsdc, plazoVencido, puntosFallidos, sanearNota } from "./revision";
+import { cuerpoPedirOtra, leerCamposRevision, plazoVencido, puntosFallidos, sanearNota } from "./revision";
 
 const base = {
   id: "t1",
@@ -169,7 +169,4 @@ test("lo recibido es el neto liberado, no el tope del reembolso", () => {
   );
   assert.equal(campos.montoConfirmado, "12.48");
   assert.equal(campos.montoPagado, "12.44256");
-  assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15", montoPagado: "12.44256", montoConfirmado: "12.48" }), "12.44256");
-  assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }), "12.44256");
-  assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15" }), "");
 });

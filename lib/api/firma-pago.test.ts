@@ -11,6 +11,7 @@ import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeAlta, xdrDeInvocacion } from "../escro
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
 import { leerRevisionHttp } from "./revision";
+import { listarTareasHttp } from "./tareas";
 
 const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
 let secretoPrevio: string | undefined;
@@ -751,7 +752,7 @@ test("un XDR que el servidor no preparó no se envía", async () => {
   }
 });
 
-test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", async () => {
+test("desplegar toma la cuenta de la persona asignada, con foto o todavía sin foto", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -799,9 +800,10 @@ test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", 
     assert.equal(sinCuenta.status, 400);
     assert.equal(
       ((await sinCuenta.json()) as { aviso: string }).aviso,
-      "The task has no payout wallet. Ask the volunteer to sign in and open the task.",
+      "You can't reserve the money yet: the volunteer has to sign in to Hyto and open the task once.",
     );
     assert.equal((await almacen.leerTarea("registro"))?.walletCobro, "");
+    assert.equal(visto.receptor, null);
 
     await almacen.crearSesion({
       token: "ajena",
@@ -831,9 +833,11 @@ test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", 
       expiraEn: "2026-10-03T00:00:00.000Z",
       wallet: "G" + "F".repeat(55),
     });
+    assert.equal(await almacen.ultimaEvidencia("bienvenida"), null);
     const sinEvidencia = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
-    assert.equal(sinEvidencia.status, 400);
-    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, "");
+    assert.equal(sinEvidencia.status, 200);
+    assert.equal(visto.receptor, "G" + "F".repeat(55));
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, "G" + "F".repeat(55));
 
     await almacen.crearSesion({
       token: "vieja",
@@ -863,6 +867,131 @@ test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", 
     restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
     reiniciarLimite();
   }
+});
+
+async function conEscrowDePrueba(cuerpo: (visto: { receptores: string[] }) => Promise<void>): Promise<void> {
+  reiniciarLimite();
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const visto = { receptores: [] as string[] };
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      const pedido = JSON.parse(String(init?.body)) as { milestones?: { receiver?: string }[] };
+      visto.receptores.push(pedido.milestones?.[0]?.receiver ?? "");
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    await cuerpo(visto);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+}
+
+async function faltaCobroEnRevision(almacen: ReturnType<typeof crearMemoria>, tareaId: string): Promise<string | null> {
+  const respuesta = await leerRevisionHttp(almacen, null, tareaId);
+  assert.equal(respuesta.status, 200);
+  const cuerpo = (await respuesta.json()) as { tarea: { faltaCobro?: string } };
+  return cuerpo.tarea.faltaCobro ?? null;
+}
+
+test("quien ya cobró y cerró sesión: bloquear sin foto usa la cuenta de sus tareas pagadas", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("stand", {
+    estado: "pagado",
+    hashPago: "ab".repeat(32),
+    contratoEscrow: CONTRATO,
+    walletCobro: RECEPTOR,
+  });
+  await almacen.actualizarTarea("bienvenida", { miembroId: "voluntario-1" });
+  assert.equal(await almacen.walletDeUsuario("voluntario-1"), null);
+  assert.equal(await almacen.ultimaEvidencia("bienvenida"), null);
+
+  await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
+    const listo = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(listo.status, 200);
+    assert.deepEqual(visto.receptores, [RECEPTOR]);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, RECEPTOR);
+  });
+});
+
+test("abrir la tarea una vez guarda la cuenta y el bloqueo sigue aunque la persona cierre sesión", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const cuenta = "G" + "F".repeat(55);
+
+  await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), "cuenta");
+    const antes = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(antes.status, 400);
+    assert.deepEqual(visto.receptores, []);
+
+    await almacen.crearSesion({
+      token: "voluntaria",
+      email: "voluntario3@demo.hyto",
+      usuarioId: "voluntario-3",
+      rol: "voluntario",
+      expiraEn: new Date(Date.now() + 60_000).toISOString(),
+      wallet: cuenta,
+    });
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
+    const abiertas = await listarTareasHttp(almacen, { usuarioId: "voluntario-3", demo: false, wallet: cuenta }, "mias");
+    assert.equal(abiertas.status, 200);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, cuenta);
+    await almacen.borrarSesion("voluntaria");
+    assert.equal(await almacen.walletDeUsuario("voluntario-3"), null);
+
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), null);
+    const despues = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(despues.status, 200);
+    assert.deepEqual(visto.receptores, [cuenta]);
+  });
+});
+
+test("una tarea sin persona asignada no se bloquea y pide asignarla primero", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  await almacen.actualizarTarea("bienvenida", { miembroId: "" });
+
+  await conEscrowDePrueba(async (visto) => {
+    assert.equal(await faltaCobroEnRevision(almacen, "bienvenida"), "asignar");
+    const respuesta = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(respuesta.status, 400);
+    assert.equal(
+      ((await respuesta.json()) as { aviso: string }).aviso,
+      "You can't reserve the money yet: assign the task to someone first.",
+    );
+    assert.deepEqual(visto.receptores, []);
+  });
 });
 
 test("desplegar no llama a Trustless si el receptor no está en testnet o Horizon no responde", async () => {

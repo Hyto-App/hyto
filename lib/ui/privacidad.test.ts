@@ -17,7 +17,9 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   const unido = textos.join("\n");
   assert.equal(JERGA.test(unido), false, unido);
   assert.match(unido, /Privacy/);
-  assert.match(unido, /digital dollars \(USDC\)/);
+  assert.match(unido, /digital dollars/);
+  assert.equal(unido.includes("USDC"), false);
+  assert.equal(unido.includes("Stellar"), false);
   assert.ok(PRIVACIDAD.secciones.length >= 3);
   for (const texto of textos) assert.ok(texto.trim().length > 0);
 
@@ -26,5 +28,7 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   const unidoEs = textosEs.join("\n");
   assert.equal(JERGA.test(unidoEs), false, unidoEs);
   assert.match(unidoEs, /Privacidad/);
-  assert.match(unidoEs, /dólares digitales \(USDC\)/);
+  assert.match(unidoEs, /dólares digitales/);
+  assert.equal(unidoEs.includes("USDC"), false);
+  assert.equal(unidoEs.includes("Stellar"), false);
 });

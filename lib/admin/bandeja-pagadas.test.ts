@@ -172,7 +172,7 @@ test("una tarea pendiente sin foto ofrece bloquear el presupuesto", async () => 
     await esperar(() => texto().includes("No photo yet"));
     assert.match(texto(), /You can set this amount aside before a photo arrives/);
     const enlace = document.querySelector('a[href="/revision/stand"]');
-    assert.equal(enlace?.textContent, "Lock budget");
+    assert.equal(enlace?.textContent, "Reserve");
     const comida = document.querySelector('a[href="/revision/comida"]');
     assert.equal(comida?.getAttribute("href"), "/revision/comida");
     assert.match(comida?.textContent ?? "", /Open review/);

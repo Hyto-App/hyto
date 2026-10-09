@@ -1,77 +1,92 @@
-# Hyto
+![Hyto. Proof before payout. Funds remain locked until an on-site photo is submitted and a person approves.](docs/banner.svg)
 
-Hyto is the accountability layer for communities funded from afar in Latin America: lock USDC per task, prove the spend with a photo, and a person releases the payment on a public Stellar trail.
+**Hyto: proof before payout.** Funders lock USDC for each task on Stellar. The person who completes the work submits a photo taken on site with the application camera, together with receipts. Mile, the AI assistant, compares that evidence and recommends. A person approves, and only then is the payment released. Sign-in is by email through Cavos, without a separate wallet application or a seed phrase to store. This is a prototype built for Find Your Way. There are no pilots yet.
 
-Communities in Latin America, including multichain ones headquartered abroad or not physically present, receive stipends, scholarships (becas), and funds to run events, and they have to prove how that money was spent. Today that proof is loose screenshots and spreadsheets nobody can verify. The funder locks USDC in a Trustless Work escrow for each task. The member does the work and uploads an in-place photo and receipts in colones. Mile reviews the evidence and recommends, and never moves money. A person approves, and the payment is released on Stellar with a public trail anyone can audit. Sign-in is an email through Cavos. There is no wallet to install and no crypto app.
+**En español.** Primero la prueba, después el pago. Quien aporta el dinero lo reserva para cada tarea, en dólares digitales, en la red Stellar. Quien realiza el trabajo envía una foto tomada en el lugar, con la cámara de la aplicación, y los recibos. Mile compara esa información y recomienda. Una persona aprueba, y solo entonces sale el pago. El texto completo, en la forma de usted, está en [README.es.md](README.es.md).
 
-Stellar is the settlement rail, not the audience. Why USDC, and not a local transfer such as SINPE: the money arrives from abroad in dollars, and the funder wants proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor, and Hyto is not an on-ramp.
+## Who it is for
 
-Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
-
-This file is the short map. Agents and contributors should read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md). The pitch the team can reuse is in [Hyto-informe.md](Hyto-informe.md).
-
-## Testnet proof
-
-TODO: paste the hash of the first successful testnet USDC payment here, as `https://stellar.expert/explorer/testnet/tx/<hash>`.
-
-No hash is in this repo yet. The pay button prepares a testnet transaction. It does not invent a payment. Amounts in the ZEEK sample (three US$20 work tasks and a meal cap of US$15) are examples in the seed. They are not real money and not real wallets. There is no pilot and no mainnet payment.
-
-## What it does
-
-Login does not pick a global role, and it does not ask for a wallet. A signed-in user who can cover the budget plus a 1 USDC reserve creates an event and becomes that event's organizer. Other people join with a direct invite or a code `HYTO-` plus 12 characters. Invites expire in 7 days. Members see the tasks assigned to them. The organizer sees every task and assigns them at `/eventos/[id]/tareas`.
-
-The shell is Events, Tasks, and Account (light and dark). Evidence is a photo of the work in place, or a receipt. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
-
-Communities, the bulletin, account type, and the volunteer profile are the same story: a group that holds events, notices when a task moves, and a profile a member writes for themselves. They stay behind `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO`. Those flags stay off until their migrations are applied and someone sets the value to `on`.
+Communities in Latin America, including groups that operate on any chain and groups that are not physically present. They receive stipends, grants, and event funds from a distance, and they must show how those funds were spent. Stellar is the settlement network.
 
 ## Screens
 
-Demo organizer on Events, the review screen (money controls stay off in the demo), and the account with nothing paid yet.
+The images below show demo mode at a mobile width. The sample event comes from local seed data. In demo mode, creating an event and signing a payment require an email session.
 
-![Organizer events](docs/capturas/eventos-organizador.png)
+![Events, with the demo event and one task in review](docs/screenshots/eventos.png)
 
-![Demo review](docs/capturas/revision-demo.png)
+![Assigned tasks. Mile reviews the photo before the submission continues.](docs/screenshots/tareas.png)
 
-![Demo account](docs/capturas/cuenta-demo.png)
+![Evidence review for a work photo. Reserve remains unavailable in demo mode.](docs/screenshots/revision.png)
 
-## Run it
+## How it works
+
+1. **Lock.** The organizer reserves USDC for one task. Hyto opens one [Trustless Work](https://www.trustlesswork.com) v2 multi-release contract per task and funds it. The platform fee in Hyto is 0. Creating an event requires the session wallet to hold the task amounts plus a 1 USDC reserve.
+2. **Prove.** A work task requires a new photo from the camera in the application, taken where the work took place. Gallery photos are rejected for that task. A reimbursement also requires the receipt. The organizer confirms the amount before that task can be locked.
+3. **Recommend.** Mile compares the photo and the receipts with the task requirements and recommends. Mile does not approve the payment and does not move funds.
+4. **Release.** A person approves. Hyto marks the milestone, approves it, and releases the payment on Stellar. The link opens on stellar.expert when the transaction hash is available.
+
+Payments in this repository settle on Stellar testnet. A classic USDC balance requires a trustline before the account can hold the asset. The application can prepare that trustline for the session wallet.
+
+## Tech stack
+
+| Layer | What the application uses |
+|---|---|
+| App | Next.js 16.3.6, React 19.1.1, TypeScript, Tailwind 4. One App Router shell: Events, Tasks, Account. English by default; Spanish from the `hyto_idioma` cookie. |
+| Host | Vercel. Production is [hyto.vercel.app](https://hyto.vercel.app). A push to `main` deploys production. Each pull request receives a preview. |
+| Data | Neon Postgres through Drizzle. Migrations are in `drizzle/`. |
+| Photos | Private Vercel Blob. The database stores the identifier. The screen loads the photo through the application. |
+| Sign-in | Cavos email (`@cavos/kit` 0.2.5) on Stellar testnet. Sign-in does not require a separate wallet application. |
+| Chain | Stellar and Soroban. The server builds the unsigned transaction with `@stellar/stellar-sdk`. The browser signs it with Cavos. |
+| Payment | Trustless Work v2, `https://beta.api.trustlesswork.com`. One contract per task. The server prepares the transaction. The browser only signs it. |
+| USDC | Testnet USDC. The issuer in the code is `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5`. |
+| Mile | Groq vision describes the photo (`qwen/qwen3.8-27b`, or `GROQ_VISION_MODEL`). Gemini describes it only if the Groq call fails and `GEMINI_API_KEY` is set. Laya scores the description when `LAYA_URL` is set. The grade is 0–100. |
+
+## Running locally
 
 ```bash
 npm ci
+npm run db:local
 npm run dev
+```
+
+`npm run db:local` expects Postgres at `127.0.0.1:5432` (`postgres://hyto:hyto@127.0.0.1:5432/hyto`). If nothing is listening, it starts the Postgres service in `docker-compose.yml`, applies `drizzle/*.sql`, and loads the ZEEK sample. Copy [.env.example](.env.example) to `.env.local` and set only the variables required for the local run. Secrets stay out of the repository.
+
+Demo login is `HYTO_DEMO_LOGIN=1`. The sign-in screen then offers an organizer account and a volunteer account. Those sessions cannot create events or sign a payment.
+
+```bash
 npm test
 npx tsc --noEmit
 npm run build
 ```
 
-`npm test` runs the `*.test.ts` files under `lib/`, `scripts/backend-traspaso`, and two files in `tests/integracion`, with `tsx`. There is no ESLint and no `npm run lint`. `npm run test:integracion` talks to Postgres and is separate.
+`npm test` runs the `*.test.ts` files under `lib/`, `scripts/backend-traspaso`, and two files in `tests/integracion`, with `tsx`. `npm run test:integracion` connects to Postgres and runs separately. A production database is migrated or seeded only when the database owner sets `HYTO_CONFIRMAR_BASE_PRODUCCION=si`.
 
-```bash
-npm run db:local
-npm run db:migrar
-npm run db:semilla
-npm run verificar:entorno
-npm run hito
-```
+Contributors should read [AGENTS.md](AGENTS.md) before changing the code. Further stack detail is in [STACK.md](STACK.md).
 
-`db:migrar` applies `drizzle/*.sql` in filename order. `db:semilla` loads the ZEEK sample. Do not migrate or seed production without the database owner's go-ahead (`HYTO_CONFIRMAR_BASE_PRODUCCION=si` only when that is intended). `npm run hito` is a standalone escrow script; without `TRUSTLESS_API_KEY` it does not pay.
+## Testnet proof
 
-## Deploy
+The first recorded end-to-end testnet payment is this `release_funds` transaction from 8 October 2026. Horizon reports it as successful. The invoked function is `release_funds`, and the transaction envelope includes USDC. It was submitted the same morning as the deploy fix in [#219](https://github.com/Hyto-App/hyto/pull/219).
 
-Vercel. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only, never in the repo. The only `NEXT_PUBLIC_` variable is `NEXT_PUBLIC_CAVOS_APP_ID`.
+[stellar.expert/explorer/testnet/tx/efb5826e291cae2540e3def1857d7d27d591a40fdbffd1afeb7ab96ba9b5b33c](https://stellar.expert/explorer/testnet/tx/efb5826e291cae2540e3def1857d7d27d591a40fdbffd1afeb7ab96ba9b5b33c)
 
-## Environment
+`efb5826e291cae2540e3def1857d7d27d591a40fdbffd1afeb7ab96ba9b5b33c`
 
-Names only. The full list, taken from `process.env` reads in the app, is in [AGENTS.md](AGENTS.md) and [.env.example](.env.example).
+The transaction is on testnet. The funds are test funds. The ZEEK amounts in the seed (three US$20 work tasks and a meal cap of US$15) are examples. They are separate from this transaction.
 
-## Docs
+## Team
 
-| File | What it is |
+Names and areas of focus, as already listed in [ROLES.md](ROLES.md):
+
+| Person | Focus |
 |---|---|
-| [AGENTS.md](AGENTS.md) | Current product, code map, open issues. Read this first. |
-| [STACK.md](STACK.md) | Stack and how a payment moves. |
-| [ROLES.md](ROLES.md) | Event membership and how the team splits work. |
-| [PLAN.md](PLAN.md) | What is left. The September kickoff plan is retired. |
-| [CHANGELOG.md](CHANGELOG.md) | What landed. |
-| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note for `2b9fad4`. |
-| [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md) | Research on Ramp Network, the crypto on/off-ramp (not the Ramp spend card). Not part of the demo; testnet only. Lands with [#109](https://github.com/Hyto-App/hyto/pull/109). |
+| Abdiel Cole | UX, the Figma file, Laya |
+| Esteban | API, Neon, Blob, review pipeline |
+| Sebas | Payments, Cavos, a real testnet payment |
+| Josué | Application shell, admin flows, documentation |
+| Raúl | Member tasks, evidence upload, accounts |
+
+## Links
+
+- Application: https://hyto.vercel.app
+- Landing page: https://tryhyto.com
+- This repository does not yet include a license file.

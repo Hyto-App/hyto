@@ -12,7 +12,7 @@ const EN = {
   kicker: "Privacy",
   titular: "How Hyto handles your information",
   entrada:
-    "Hyto helps communities funded from afar account for the spend. You send a photo, a person reviews it, and a payment can be released in digital dollars (USDC). This page says what the app keeps and who can see it.",
+    "Hyto helps communities funded from afar account for the spend. You send a photo, a person reviews it, and a payment can be released in digital dollars. This page says what the app keeps and who can see it.",
   inicio: "Home",
   secciones: [
     {
@@ -28,7 +28,7 @@ const EN = {
     {
       titulo: "Who can see it",
       cuerpo:
-        "You can see your own tasks and account. The organizer of an event can see the tasks, photos, and reviews for that event. Sign-in is handled by Cavos. Payment accounts live on Stellar. We do not sell your information, and we do not publish your email or photos.",
+        "You can see your own tasks and account. The organizer of an event can see the tasks, photos, and reviews for that event. Sign-in is handled by Cavos. Payments use digital dollars. We do not sell your information, and we do not publish your email or photos.",
     },
     {
       titulo: "Cookies",
@@ -43,7 +43,7 @@ const ES = {
   kicker: "Privacidad",
   titular: "Cómo Hyto trata su información",
   entrada:
-    "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Usted envía una foto, una persona la revisa y se puede liberar un pago en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
+    "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Usted envía una foto, una persona la revisa y se puede liberar un pago en dólares digitales. Esta página dice qué guarda la app y quién puede verlo.",
   inicio: "Inicio",
   secciones: [
     {
@@ -59,7 +59,7 @@ const ES = {
     {
       titulo: "Quién puede verlo",
       cuerpo:
-        "Usted puede ver sus tareas y su cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. El ingreso lo maneja Cavos. Las cuentas de pago viven en Stellar. No vendemos su información y no publicamos su correo ni sus fotos.",
+        "Usted puede ver sus tareas y su cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. El ingreso lo maneja Cavos. Los pagos usan dólares digitales. No vendemos su información y no publicamos su correo ni sus fotos.",
     },
     {
       titulo: "Cookies",

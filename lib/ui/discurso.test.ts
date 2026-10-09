@@ -69,5 +69,8 @@ test("la descripción de la página no nombra el activo", () => {
   assert.equal(DESCRIPCION_PAGINA.includes("USDC"), false);
   assert.match(DESCRIPCION_PAGINA, /digital dollars/);
   assert.equal(LINEA_OG.includes("USDC"), false);
-  assert.match(discurso.subheadline, /\(USDC\)/);
+  assert.equal(discurso.subheadline.includes("USDC"), false);
+  assert.equal(discurso.networkBody.includes("USDC"), false);
+  assert.equal(discurso.step1Body.includes("USDC"), false);
+  assert.equal(discursoEs.subheadline.includes("USDC"), false);
 });

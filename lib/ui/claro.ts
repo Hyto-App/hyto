@@ -28,6 +28,7 @@ import {
   CODIGO_HORIZON_RECEPTOR,
   CODIGO_RECEPTOR_NO_LISTO,
 } from "@/lib/escrow/receptorAvisos";
+import { AVISO_SIN_ASIGNAR, AVISO_SIN_COBRO } from "@/lib/escrow/cobroAvisos";
 import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RECUPERACION, AVISO_ORIGEN_CAVOS, AVISO_SIN_CUENTA, AVISO_SIN_RESPALDO, AVISO_SPAM, AVISO_SPAM_ENLACE, AVISO_CODIGO_INVALIDO, AVISO_CODIGO_VENCIDO, AVISO_GOOGLE_BLOQUEADO, AVISO_GOOGLE_CERRADO, AVISO_RED, esOrigenCavos } from "@/lib/auth/errores";
 import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
@@ -81,7 +82,8 @@ const EXACTO: Record<string, Clave> = {
   "This task already has an escrow.": "errores.yaBloqueado",
   [AVISO_YA_FONDEADO]: "errores.yaEnRed",
   "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
-  "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
+  [AVISO_SIN_COBRO]: "errores.sinWalletVoluntario",
+  [AVISO_SIN_ASIGNAR]: "revision.lockNeedsAssignee",
   "Review pending": "errores.esperaRevision",
   "The milestone amount has to be greater than zero.": "errores.montoCero",
   "Only the organizer prepares the payment.": "errores.soloOrganizador",
@@ -187,7 +189,7 @@ const EXACTO: Record<string, Clave> = {
   "The amount is already locked in the payment, so this task can't be edited.": "eventos.editLocked",
   "Enter a title.": "eventos.needTitle",
   "Title is too long.": "eventos.titleLong",
-  "Enter what the photo must show.": "eventos.needPhoto",
+  "Enter what the evidence must show.": "eventos.needPhoto",
   "That note is too long.": "eventos.noteLong",
   "Work tasks don't have a cap.": "eventos.noCap",
   "Choose a person in this event.": "eventos.choosePerson",
@@ -270,6 +272,27 @@ const EXACTO: Record<string, Clave> = {
   "The submit does not match this task's escrow, so it was not marked paid.": "avisos.noContratoPago",
   "The submit was not confirmed, so it was not marked paid.": "avisos.noConfirmado",
   "The submit succeeded and there is no hash to save the payment.": "avisos.sinHash",
+  "Could not read the USDC balance.": "errores.saldoNoLeido",
+  "This wallet is not on the network yet.": "errores.cuentaFueraDeRed",
+  "The budget is on the network and saved to this task. Trustless Work is still indexing it. Wait a few seconds, then finish locking it. Do not lock it again.":
+    "errores.indexandoApartado",
+  "The payment was sent. Trustless Work has not shown the milestone as released yet. This task will be marked paid once it does. Do not pay again.":
+    "errores.pagoAunNoVisible",
+  "Confirm an amount within the limit before deploying.": "errores.confirmarAntesApartar",
+  "Confirm an amount within the limit before funding.": "errores.confirmarAntesTerminar",
+  "Could not reach Trustless Work.": "errores.servicioPagos",
+  "The payment contract is not valid.": "errores.referenciaInvalida",
+  "This sign-in has no payout account. Sign in again and open the task so we know where to pay.": "errores.sinCuentaRecibir",
+  "The budget for this task is already locked to another payout account. Sign in with that wallet to submit evidence.":
+    "errores.cobroYaFijado",
+  "Sign in again before setting up payouts.": "errores.entrarAntesCobro",
+  "We couldn't open this payout account on the test network. Try again.": "errores.abrirCuentaRecibir",
+  "We couldn't check the testnet account. Try again.": "errores.lecturaCuentaPractica",
+  "Testnet setup runs only when you sign up.": "errores.altaSoloAlCrear",
+  "We couldn't fund the testnet account.": "errores.altaSinDineroPractica",
+  "Could not save this session's wallet.": "errores.sesionSinGuardarCuenta",
+  "This account needs a little test balance for the network fee. Add some and try again.": "errores.comisionAgregar",
+  "The budget was sent, but we couldn't confirm it yet. Refresh and try again.": "errores.enviadoSinContrato",
   [AVISO_FEE_AUSENTE]: "errores.feeSinConfig",
   [AVISO_FEE_DISTINTA]: "errores.feeDistinta",
   [AVISO_FEE_SIN_TRUSTLINE]: "errores.feeSinTrustline",

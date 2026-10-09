@@ -334,7 +334,7 @@ test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
     await enviarCaptura({ subida: () => json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" }, aviso }, 201) });
     assert.match(texto(), /Evidence sent, action needed/);
     assert.doesNotMatch(texto(), /Your photo arrived/);
-    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("account for receiving payments"));
     sinRevisionLocal();
   } finally {
     globalThis.fetch = original;

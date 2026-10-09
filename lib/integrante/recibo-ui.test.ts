@@ -40,7 +40,7 @@ test("el comprobante en español deja la red como enlace secundario", async () =
     );
     assert.match(texto(), /Comprobante/);
     assert.match(texto(), /Recibió/);
-    assert.match(texto(), /Apartado/);
+    assert.match(texto(), /Reservado/);
     assert.match(texto(), /Comisión/);
     assert.match(texto(), /Fecha/);
     assert.match(texto(), /Tarea/);
@@ -51,9 +51,9 @@ test("el comprobante en español deja la red como enlace secundario", async () =
     assert.match(texto(), /5 oct 2026/);
     assert.match(texto(), /Comida del equipo/);
     assert.match(texto(), /ZEEK/);
-    assert.match(texto(), /red de prueba/);
+    assert.match(texto(), /dinero de práctica/);
     const red = document.querySelector("a[href*='stellar.expert']");
-    assert.equal(red?.textContent, "Ver en la cadena");
+    assert.equal(red?.textContent, "Ver comprobante público");
     assert.equal(red?.getAttribute("target"), "_blank");
     assert.equal(red?.getAttribute("rel"), "noopener noreferrer");
     assert.equal(red?.getAttribute("href"), `https://stellar.expert/explorer/testnet/tx/${HASH}`);

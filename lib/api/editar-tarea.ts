@@ -4,6 +4,7 @@ import type { TareaFila } from "@/lib/db/tipos";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { lectorSaldoVigente, rechazoSiFondos, type LectorSaldo } from "@/lib/escrow/saldo";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
+import { cambioDeMiembro } from "./cobro";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
@@ -65,9 +66,11 @@ export async function editarTareaHttp(
     const fondos = await rechazoSiFondos(wallet, subida, opciones.leerSaldo ?? lectorSaldoVigente());
     if (fondos) return fondos;
   }
-  await almacen.actualizarTarea(fresco.id, leido.cambio);
+  const cambio =
+    leido.cambio.miembroId === undefined ? leido.cambio : { ...leido.cambio, ...cambioDeMiembro(fresco, leido.cambio.miembroId) };
+  await almacen.actualizarTarea(fresco.id, cambio);
   const guardada = await almacen.leerTarea(fresco.id);
-  return json({ tarea: tareaPublica(guardada ?? { ...fresco, ...leido.cambio }) });
+  return json({ tarea: tareaPublica(guardada ?? { ...fresco, ...cambio }) });
 }
 
 function leerCambio(body: unknown, tarea: TareaFila): { cambio: CambioTarea } | { aviso: string } {
@@ -81,7 +84,7 @@ function leerCambio(body: unknown, tarea: TareaFila): { cambio: CambioTarea } | 
     cambio.titulo = titulo;
   }
   if ("condicion" in crudo) {
-    if (typeof crudo.condicion !== "string") return { aviso: "Enter what the photo must show." };
+    if (typeof crudo.condicion !== "string") return { aviso: "Enter what the evidence must show." };
     const condicion = crudo.condicion.trim();
     if (condicion.length > CONDICION_MAX) return { aviso: "That note is too long." };
     cambio.condicion = condicion;

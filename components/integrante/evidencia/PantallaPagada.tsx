@@ -13,7 +13,7 @@ import type { Tarea } from "@/lib/integrante/tipos";
 
 /**
  * Paid screen (spec §7.5). The first open is the hero. Later opens are the summary.
- * The figure is what arrived. The line under it says the amount set aside and the fee.
+ * The figure is what arrived. The line under it says the amount reserved and the fee.
  */
 export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string }) {
   const t = useTexto();

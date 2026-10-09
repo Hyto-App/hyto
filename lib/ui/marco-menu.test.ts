@@ -32,7 +32,7 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
     });
     assert.match(texto(), /Ask Mile/);
     assert.match(texto(), /How do I get paid\?/);
-    assert.match(texto(), /How do I set money aside for a task\?/);
+    assert.match(texto(), /How do I reserve money for a task\?/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /How do I pay a reimbursement\?/);
     await pulsar("How do I get paid?");

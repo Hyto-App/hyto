@@ -34,7 +34,7 @@ test("la bienvenida muestra el primer paso y cada estado del cobro", async () =>
     });
     assert.match(texto(), /You are signed in/);
     assert.match(texto(), /Take your first step/);
-    assert.match(texto(), /Checking your payout account/);
+    assert.match(texto(), /Checking your account for receiving payments/);
     assert.equal(document.querySelector('[data-estado="comprobando"]') !== null, true);
 
     await act(async () => {
@@ -64,9 +64,9 @@ test("la bienvenida muestra el primer paso y cada estado del cobro", async () =>
     await act(async () => {
       resolver({ hash: "abc" });
     });
-    assert.match(texto(), /Payout account ready/);
+    assert.match(texto(), /Ready to receive payments/);
     assert.equal(document.querySelector(".hyto-payout.is-done") !== null, true);
-    assert.match(texto(), /View on blockchain/);
+    assert.match(texto(), /See public record/);
 
     await montar(
       createElement(Bienvenida, {
@@ -80,7 +80,7 @@ test("la bienvenida muestra el primer paso y cada estado del cobro", async () =>
       await Promise.resolve();
     });
     await pulsar("Get ready to be paid");
-    assert.match(texto(), /couldn't finish setting up payouts/);
+    assert.match(texto(), /getting this account ready to receive payments/);
     assert.match(texto(), /Get ready to be paid/);
     assert.equal(document.querySelector('[data-estado="error"]') !== null, true);
   } finally {

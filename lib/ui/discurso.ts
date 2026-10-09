@@ -59,10 +59,10 @@ export const discurso: Record<ClaveDiscurso, string> = {
   sloganLead: "Proof before",
   sloganPay: "payout.",
   subheadline:
-    "Communities in Latin America funded from afar account for every spend. Lock digital dollars (USDC), send a photo of the work or the receipt, and a person releases the payment.",
+    "Communities in Latin America funded from afar account for every spend. Lock digital dollars, send a photo of the work or the receipt, and a person releases the payment.",
   networkLead: "Practice network.",
   networkBody:
-    "Digital dollars (USDC) here are for practice. Nothing on this network is real cash, and no live payment is recorded yet.",
+    "Digital dollars here are for practice. Nothing on this network is real cash, and no live payment is recorded yet.",
   ctaSignIn: "Sign in",
   ctaDemo: "Try the demo",
   ctaDemoHelp: "No account needed. Open a practice session as a volunteer or as an organizer.",
@@ -73,7 +73,7 @@ export const discurso: Record<ClaveDiscurso, string> = {
   stepsTitle: "How it works",
   step1Title: "Lock the funding",
   step1Body:
-    "The funder sets each task amount aside in digital dollars (USDC) before the work starts. A stipend, a scholarship, or money to run an event, often sent by someone who is not there.",
+    "The funder sets each task amount aside in digital dollars before the work starts. A stipend, a scholarship, or money to run an event, often sent by someone who is not there.",
   step2Title: "Send a photo",
   step2Body: "Photograph the work where it happened, or the receipt, including one in colones. That photo is the proof of the spend.",
   step3Title: "Release the payment",
@@ -107,10 +107,10 @@ export const discursoEs: Record<ClaveDiscurso, string> = {
   sloganLead: "Primero la prueba,",
   sloganPay: "después el pago.",
   subheadline:
-    "Las comunidades en Latinoamérica que reciben fondos desde lejos rinden cuentas de cada gasto. Aparte dólares digitales (USDC), envíe una foto del trabajo o del recibo, y una persona libera el pago.",
+    "Las comunidades en Latinoamérica que reciben fondos desde lejos rinden cuentas de cada gasto. Aparte dólares digitales, envíe una foto del trabajo o del recibo, y una persona libera el pago.",
   networkLead: "Red de práctica.",
   networkBody:
-    "Los dólares digitales (USDC) aquí son para practicar. Nada en esta red es dinero real, y todavía no hay un pago en vivo registrado.",
+    "Los dólares digitales aquí son para practicar. Nada en esta red es dinero real, y todavía no hay un pago en vivo registrado.",
   ctaSignIn: "Entrar",
   ctaDemo: "Probar el demo",
   ctaDemoHelp: "No necesita una cuenta. Abra una sesión de práctica como voluntario o como organizador.",
@@ -121,7 +121,7 @@ export const discursoEs: Record<ClaveDiscurso, string> = {
   stepsTitle: "Cómo funciona",
   step1Title: "Aparte el financiamiento",
   step1Body:
-    "Quien financia aparta el monto de cada tarea en dólares digitales (USDC) antes de que empiece el trabajo. Un estipendio, una beca o fondos para un evento, a menudo enviados por alguien que no está ahí.",
+    "Quien financia aparta el monto de cada tarea en dólares digitales antes de que empiece el trabajo. Un estipendio, una beca o fondos para un evento, a menudo enviados por alguien que no está ahí.",
   step2Title: "Envíe una foto",
   step2Body: "Fotografíe el trabajo en el lugar, o el recibo, incluso si está en colones. Esa foto es la prueba del gasto.",
   step3Title: "Libere el pago",

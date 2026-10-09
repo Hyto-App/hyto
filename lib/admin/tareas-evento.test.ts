@@ -2,20 +2,8 @@ import "../../tests/integracion/dom-global";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
-import { act } from "react";
 import { TareasEvento } from "../../components/admin/TareasEvento";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
-
-async function elegir(selector: string, valor: string): Promise<void> {
-  const nodo = document.querySelector(selector);
-  if (!(nodo instanceof HTMLSelectElement)) throw new Error(`No está ${selector}.`);
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-  await act(async () => {
-    setter?.call(nodo, valor);
-    nodo.dispatchEvent(new Event("change", { bubbles: true }));
-    await Promise.resolve();
-  });
-}
 
 test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera el pago", async () => {
   limpiarPantalla();
@@ -33,8 +21,6 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
             estado: "pagado",
             miembroId: "",
             condicion: "Receipt",
-            prioridad: "normal",
-            dificultad: null,
             bloqueo: null,
             tieneFoto: true,
             montoConfirmado: "12.48",
@@ -49,8 +35,6 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
             estado: "pendiente",
             miembroId: "",
             condicion: "",
-            prioridad: "normal",
-            dificultad: null,
             bloqueo: null,
             tieneFoto: false,
           },
@@ -61,7 +45,7 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
     assert.equal(texto().includes("Up to US$15"), false);
     assert.match(texto(), /Pending · US\$20/);
     const bloqueo = document.querySelector('a[href="/revision/stand"]');
-    assert.equal(bloqueo?.textContent, "Lock budget");
+    assert.equal(bloqueo?.textContent, "Reserve");
     const comida = document.querySelector('a[href="/revision/comida"]');
     assert.equal(comida?.textContent, "Open review");
   } finally {
@@ -96,8 +80,6 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
             estado: "pendiente",
             miembroId: "",
             condicion: "Receipt",
-            prioridad: "normal",
-            dificultad: null,
             bloqueo: null,
             tieneFoto: false,
           },
@@ -108,7 +90,7 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
     await escribir("#tope-comida", "50");
     const aviso = document.querySelector("#saldo-comida");
     assert.match(aviso?.textContent ?? "", /US\$51\.00/);
-    assert.match(aviso?.textContent ?? "", /US\$1\.00 reserve/);
+    assert.match(aviso?.textContent ?? "", /always stays in your account/);
     assert.match(aviso?.textContent ?? "", /You are short US\$49\.70/);
     assert.equal(/US\$51(?!\.00)/.test(aviso?.textContent ?? ""), false);
     assert.equal(/US\$49\.7(?!0)/.test(aviso?.textContent ?? ""), false);
@@ -123,7 +105,7 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
   }
 });
 
-test("asignar una tarea también deja elegir prioridad y dificultad", async () => {
+test("las tareas del evento ya no muestran ni editan prioridad y dificultad", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;
   const llamadas: { url: string; body: unknown }[] = [];
@@ -148,43 +130,24 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
             estado: "pendiente",
             miembroId: "",
             condicion: "Cajas cerradas",
-            prioridad: "normal",
-            dificultad: null,
             bloqueo: null,
             tieneFoto: false,
           },
         ],
       }),
     );
-    const rejilla = document.querySelector(".sm\\:grid-cols-2");
-    assert.ok(rejilla);
-    assert.match(rejilla.className, /grid-cols-1/);
     assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Edit"), true);
-    assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "normal");
-    assert.equal((document.querySelector("#dificultad-t1") as HTMLSelectElement).value, "");
-    assert.equal(texto().includes("High priority"), false);
-
-    await elegir("#prioridad-t1", "high");
-    await elegir("#dificultad-t1", "easy");
-    assert.deepEqual(llamadas, [
-      { url: "/api/tareas/t1/clasificar", body: { prioridad: "high" } },
-      { url: "/api/tareas/t1/clasificar", body: { dificultad: "easy" } },
-    ]);
-    assert.match(texto(), /High priority/);
-    assert.match(texto(), /Easy/);
-    const alta = document.querySelector(".hyto-pill-ok");
-    const suave = [...document.querySelectorAll(".hyto-pill-muted")].find((nodo) => nodo.textContent?.includes("Easy"));
-    assert.match(alta?.className ?? "", /hyto-pill /);
-    assert.equal(alta?.className.includes("hyto-pill-bad"), false);
-    assert.match(suave?.className ?? "", /hyto-pill-muted/);
+    assert.equal(document.querySelector("#prioridad-t1"), null);
+    assert.equal(document.querySelector("#dificultad-t1"), null);
+    assert.equal(llamadas.length, 0);
 
     await pulsar("Edit");
+    assert.match(texto(), /Evidence must show/);
     await escribir("#titulo-t1", "Cajas nuevas");
     await pulsar("Save");
     assert.equal(llamadas.at(-1)?.url, "/api/tareas/t1");
-    assert.equal((llamadas.at(-1)?.body as { titulo?: string; prioridad?: string }).titulo, "Cajas nuevas");
-    assert.equal((llamadas.at(-1)?.body as { prioridad?: string }).prioridad, undefined);
-    assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "high");
+    assert.equal((llamadas.at(-1)?.body as { titulo?: string }).titulo, "Cajas nuevas");
+    assert.equal(llamadas.some((llamada) => llamada.url.endsWith("/clasificar")), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
