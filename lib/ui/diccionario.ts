@@ -934,6 +934,16 @@ export const en = {
     faucetTestnet: "We could not open this account. Open [[configuracion]] and tap Get ready to be paid.",
     soloTestnet: "This step cannot run in this setup. If it keeps happening, [[ayuda]].",
     servidorIncompleto: "Payment setup is not complete. Try again in 1 minute. If it keeps happening, [[ayuda]].",
+    feeSinConfig:
+      "HYTO_TRUSTLESS_FEE is missing or is not a Stellar account. Set it on the server to the Trustless Work testnet fee account before releasing a milestone.",
+    feeDistinta:
+      "This release would send the 0.3% fee to a different account. The server only accepts the account in HYTO_TRUSTLESS_FEE.",
+    feeSinTrustline:
+      "The account in HYTO_TRUSTLESS_FEE has no USDC trustline on Stellar testnet. A release would fail with contract error 13. Open that trustline, then try again.",
+    feeHorizon:
+      "Could not check the USDC trustline of HYTO_TRUSTLESS_FEE on Stellar testnet. The release was not sent. Try again in a moment.",
+    feeIlegible:
+      "The release transaction does not name the fee account from HYTO_TRUSTLESS_FEE, so it was not returned for signing.",
     pagosNoDisponibles: "Payments are not available right now. Try again in 1 minute. If it keeps happening, [[ayuda]].",
     yaPagada: "This task is already paid.",
     saldoInsuficiente: "There isn't enough money set aside yet. Finish locking the budget, then pay.",
@@ -2143,6 +2153,16 @@ export const es: Rama<typeof en> = {
     faucetTestnet: "No pudimos abrir esta cuenta. Entre a [[configuracion]] y toque Preparar el cobro.",
     soloTestnet: "Este paso no se puede hacer con esta configuración. Si sigue, [[ayuda]].",
     servidorIncompleto: "La preparación de pagos no está completa. Intente otra vez en 1 minuto. Si sigue, [[ayuda]].",
+    feeSinConfig:
+      "Falta HYTO_TRUSTLESS_FEE o no es una cuenta de Stellar. Quien administra Hyto tiene que poner ahí la cuenta de la comisión de Trustless Work en testnet antes de liberar un hito.",
+    feeDistinta:
+      "Esta liberación mandaría el 0,3 % de comisión a otra cuenta. El servidor solo acepta la cuenta de HYTO_TRUSTLESS_FEE.",
+    feeSinTrustline:
+      "La cuenta de HYTO_TRUSTLESS_FEE no tiene trustline de USDC en Stellar testnet. La liberación fallaría con el error 13 del contrato. Abra esa trustline y vuelva a intentar.",
+    feeHorizon:
+      "No pudimos revisar la trustline de USDC de HYTO_TRUSTLESS_FEE en Stellar testnet. No se envió la liberación. Intente de nuevo en un momento.",
+    feeIlegible:
+      "La transacción de liberación no nombra la cuenta de comisión de HYTO_TRUSTLESS_FEE, así que no se devolvió para firmar.",
     pagosNoDisponibles: "Los pagos no están disponibles ahora. Intente otra vez en 1 minuto. Si sigue, [[ayuda]].",
     yaPagada: "Esta tarea ya está pagada.",
     saldoInsuficiente: "Todavía no hay suficiente dinero apartado. Termina de bloquear el presupuesto y después paga.",

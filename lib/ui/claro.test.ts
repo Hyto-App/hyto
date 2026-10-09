@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "@/lib/escrow/comision";
+import { AVISO_FEE_DISTINTA, AVISO_FEE_SIN_TRUSTLINE } from "@/lib/escrow/fee";
 import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import { AVISO_SIN_ASIGNAR, AVISO_SIN_COBRO } from "@/lib/escrow/cobroAvisos";
@@ -124,6 +125,10 @@ test("the failure box follows the step, not words in the message", () => {
   assert.match(mensajeClaro(CODIGO_XLM_COMISION), /5 minutes/);
   assert.match(mensajeClaro(AVISO_XLM_COMISION, "es"), /5 minutos/);
   assert.match(detalleFallo("pago", "Check again in 30 seconds. Do not pay again."), /30 seconds/);
+  assert.match(mensajeClaro(AVISO_FEE_DISTINTA), /0\.3%/);
+  assert.match(mensajeClaro(AVISO_FEE_DISTINTA, "es"), /0,3 %/);
+  assert.match(mensajeClaro(AVISO_FEE_SIN_TRUSTLINE), /error 13/);
+  assert.equal(detalleFallo("pago", mensajeClaro(AVISO_FEE_SIN_TRUSTLINE)), mensajeClaro(AVISO_FEE_SIN_TRUSTLINE));
 });
 
 test("each swallowed error keeps its own next step", () => {
