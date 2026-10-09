@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
 import { act, createElement } from "react";
 import { PasskeyCuenta } from "../../components/integrante/PasskeyCuenta";
+import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { AVISO_REINGRESO } from "../escrow/firmarCliente";
 import { mensajeClaro } from "../ui/claro";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
@@ -149,6 +150,37 @@ test("la tarjeta de Cuenta agrega la llave de acceso y dice cómo usarla en otro
     assert.equal(llamadas, 1);
     assert.match(texto(), /Passkey added\. On another device, sign in to Hyto and choose Use passkey/);
     assert.equal(document.querySelector("button"), null);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("la tarjeta de Cuenta en español usa tuteo y el nombre del botón del navegador", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(PasskeyCuenta, {
+          agregar: async () => {
+            throw new Error(AVISO_PASSKEY_SIN_CLAVE);
+          },
+        }),
+      }),
+    );
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
+    assert.match(texto(), /Usar un teléfono o una tablet/);
+    assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|\bpasskey\b/i);
+    await pulsar("Agregar llave de acceso");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assert.match(texto(), /Crear llave de acceso/);
+    assert.match(texto(), /Usar un teléfono o una tablet/);
+    assert.match(texto(), /computadora portátil/);
+    assert.match(texto(), /Usar llave de acceso/);
+    assert.doesNotMatch(texto(), /Create passkey|Use passkey|Use a phone or tablet|\blaptop\b|\bpasskey\b/i);
   } finally {
     await desmontar();
     limpiarPantalla();

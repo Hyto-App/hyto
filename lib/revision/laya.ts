@@ -1,4 +1,5 @@
 import { claveDeLaya } from "@/lib/config/entorno";
+import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Senales } from "./armar";
 import { falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { condicionParaLaya } from "./contexto-evento";
@@ -11,9 +12,12 @@ import {
   type Pregunta,
 } from "./laya-preguntas";
 import { noulCerca, probabilidadesCerca } from "./margen";
+import { layaPuedeTaparPorOtra, type CoincideGroq, type EntornoOtraGroq } from "./otra-groq";
+import { preguntasEventoActivas } from "./preguntas-evento-bandera";
 import { motivosDeRegla, motivosFactura, motivosTrabajo, notaDeFactura, notaDeTrabajo, type MotivoTope } from "./pesos";
 import { escribirSnapshot } from "./snapshot-razones";
 import { fechaCoincideConPedido, fechaEscrita, montoEscrito } from "./texto-estructurado";
+import { claseConTipoDeTarea, tipoPorTareaActivo } from "./tipo-por-tarea";
 
 export { cuerpoLaya, preguntasClasificacion, preguntasFactura, preguntasTrabajo } from "./laya-preguntas";
 
@@ -26,8 +30,10 @@ export function urlLaya(base: string): string {
 const CLASE = ["trabajo", "factura", "otra"] as const;
 const LUGAR = ["pared_o_superficie", "stand_o_mesa", "espacio_abierto", "no_claro"] as const;
 const V1 = ["es_lo_pedido", "es_otra_cosa", "no_se_puede_saber"] as const;
-const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "otra_o_no_claro"] as const;
-const T6 = ["terminado", "a_medias", "sin_empezar", "no_claro"] as const;
+// documentar_evento and no_aplica are read even when the flag is off, so a stored answer still parses.
+// Laya is offered them only when HYTO_MILE_PREGUNTAS_EVENTO is on.
+const T5 = ["pintar", "limpiar", "armar_o_montar", "vender_o_atender", "transportar", "documentar_evento", "otra_o_no_claro"] as const;
+const T6 = ["terminado", "a_medias", "sin_empezar", "no_aplica", "no_claro"] as const;
 const F1 = ["coincide_con_lo_pedido", "otro_gasto", "no_se_ve"] as const;
 const G1 = ["transporte", "comida_o_bebida", "materiales", "impresion_o_papeleria", "otro_o_no_claro"] as const;
 
@@ -98,9 +104,17 @@ export function leerFactura(json: unknown): RespuestasFactura | null {
 }
 
 // The grade is the weighted sum in pesos.ts. A single yes does not raise it past that sum.
-export function senalesDeTrabajo(respuestas: RespuestasTrabajo, condicion = ""): Senales {
+export function senalesDeTrabajo(
+  respuestas: RespuestasTrabajo,
+  condicion = "",
+  lectura?: { coincide?: CoincideGroq | null } | null,
+  env?: EntornoOtraGroq,
+): Senales {
   const nota = notaDeTrabajo(respuestas, condicion);
-  const motivos = motivosTrabajo(respuestas);
+  // v1 es_otra_cosa still costs its weight. The 49 cap is separate, and only coincide "si" can withhold it.
+  const motivos = motivosTrabajo(respuestas).filter(
+    (motivo) => motivo !== "no_coincide" || layaPuedeTaparPorOtra(lectura, env),
+  );
   return {
     choice: "trabajo",
     noul: nota === 100,
@@ -174,6 +188,20 @@ export async function preguntarLaya(
   signal?: AbortSignal,
   llamar: LlamadaLaya = (paso) => paso(signal),
   regla?: string | null,
+  /**
+   * The only argument added after regla. Sibling switches put their own
+   * optional fields here (lectura, env) instead of another positional parameter.
+   */
+  opciones?: {
+    /** Ignored unless HYTO_MILE_TIPO_POR_TAREA is on. */
+    tipoTarea?: TipoTarea | null;
+    /** Overrides HYTO_MILE_TIPO_POR_TAREA. Unset reads the environment. */
+    tipoPorTarea?: boolean;
+    /** Groq reading used by HYTO_MILE_OTRA_CON_GROQ. Only coincide "si" withholds the cap. */
+    lectura?: { coincide?: CoincideGroq | null } | null;
+    /** Overrides HYTO_MILE_OTRA_CON_GROQ. Unset reads the environment. */
+    env?: EntornoOtraGroq;
+  },
 ): Promise<Senales> {
   const clave = claveDeLaya();
   if (!base.trim()) throw new FalloRevision("sin_clave", { fuente: "laya", providerMessage: "LAYA_URL" });
@@ -185,17 +213,33 @@ export async function preguntarLaya(
   const claseJson = await preguntar(preguntasClasificacion(pedidoConRegla));
   const leida = leerClase(claseJson);
   if (!leida) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "c1", secreto: clave });
-  const clase = leida === "trabajo" && esReciboEscrito(texto) ? "factura" : leida;
+  const desdeLlamada = llamar as LlamadaLaya & {
+    tipoTarea?: TipoTarea | null;
+    tipoPorTarea?: boolean;
+  };
+  const tipoExplicito = opciones != null && "tipoTarea" in opciones;
+  const banderaExplicita = opciones != null && "tipoPorTarea" in opciones;
+  const seguirTarea = (banderaExplicita ? opciones?.tipoPorTarea : desdeLlamada.tipoPorTarea) ?? tipoPorTareaActivo();
+  const clase = seguirTarea
+    ? claseConTipoDeTarea(leida, {
+        tipoTarea: (tipoExplicito ? opciones?.tipoTarea : desdeLlamada.tipoTarea) ?? null,
+        texto,
+        c1Cerca: idsCerca(claseJson, ["c1"]).includes("c1"),
+      })
+    : leida === "trabajo" && esReciboEscrito(texto)
+      ? "factura"
+      : leida;
   const cercaClase = idsCerca(claseJson, ["c1"]);
   if (clase === "otra" || clase === "trabajo") {
-    const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla), reglaLimpia));
+    const json = await preguntar(conRegla(preguntasTrabajo(pedidoConRegla, preguntasEventoActivas()), reglaLimpia));
     const respuestas = leerTrabajo(json);
     if (!respuestas) throw new FalloRevision("respuesta", { fuente: "laya", providerMessage: "trabajo", secreto: clave });
     const cerca = [...cercaClase, ...idsCerca(json, IDS_TRABAJO)];
     const cumple = leerRegla(json, reglaLimpia);
     // "otra" used to force 0% before asking whether the photo matches the request.
     // Attendance / scene evidence often lands in "otra"; only force 0 when it also fails the match.
-    if (clase === "otra" && respuestas.v1 === "es_otra_cosa") {
+    // With HYTO_MILE_OTRA_CON_GROQ=on, only Groq's coincide "si" withholds that 0.
+    if (clase === "otra" && respuestas.v1 === "es_otra_cosa" && layaPuedeTaparPorOtra(opciones?.lectura, opciones?.env)) {
       return {
         choice: "otra",
         noul: false,
@@ -205,7 +249,7 @@ export async function preguntarLaya(
       };
     }
     return {
-      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido), cumple),
+      ...conMotivoRegla(senalesDeTrabajo(respuestas, pedido, opciones?.lectura, opciones?.env), cumple),
       detalle: escribirSnapshot({
         clase: "trabajo",
         trabajo: respuestas,

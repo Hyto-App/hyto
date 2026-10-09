@@ -9,14 +9,14 @@ test("un aviso de trustline en el alta es para quien acaba de entrar, no para qu
   assert.equal(claveAvisoAlta("ESCROW_RECEIVER_TRUSTLINE_MISSING"), "entrar.altaPendiente");
   assert.equal(texto("en", "entrar.altaPendiente"), AVISO_ALTA_PERSONA);
   assert.doesNotMatch(texto("en", "entrar.altaPendiente"), /person who gets paid/i);
-  assert.match(texto("es", "entrar.altaPendiente"), /Abre Eventos/);
+  assert.match(texto("es", "entrar.altaPendiente"), /Abra Eventos/);
 });
 
 test("sin permiso de firma el alta no pide volver a entrar", () => {
   assert.equal(claveAvisoAlta(AVISO_COBRO_SIN_CONFIRMAR), "entrar.altaSinConfirmar");
   assert.equal(claveAvisoAlta(AVISO_ALTA_SIN_CONFIRMAR), "entrar.altaSinConfirmar");
   assert.doesNotMatch(texto("en", "entrar.altaSinConfirmar"), /Sign in again/i);
-  assert.match(texto("es", "entrar.altaSinConfirmar"), /Ya entraste/);
+  assert.match(texto("es", "entrar.altaSinConfirmar"), /Ya ingresó/);
 });
 
 test("un fallo de Friendbot conserva su aviso", () => {

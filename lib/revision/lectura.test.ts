@@ -142,13 +142,13 @@ test("leerDescripcion lee la forma estructurada y deja la vieja como estaba", ()
 });
 
 test("el pedido a Qwen lleva la condición, las once claves y prohíbe adivinar dólares", async () => {
-  const pedido = pedidoVision({ condicion: "Photo of the meal receipt", tipoTarea: "reembolso" });
+  const pedido = pedidoVision({ condicion: "Photo of the meal receipt", tipoTarea: "reembolso" }, {});
   assert.match(pedido, /The organizer asked for: "Photo of the meal receipt"\./);
   assert.match(pedido, /reimbursement task/);
   assert.match(pedido, /tipo, pais, moneda, monto_original, monto_usd, fecha, comercio, articulos, texto_completo, legible, faltantes/);
   assert.match(pedido, /Never guess USD/);
   assert.match(pedido, /DD\/MM\/YYYY/);
-  const enEspanol = pedidoVision({ condicion: "Foto del recibo de la comida", tipoTarea: "reembolso", idioma: "es" });
+  const enEspanol = pedidoVision({ condicion: "Foto del recibo de la comida", tipoTarea: "reembolso", idioma: "es" }, {});
   assert.match(enEspanol, /texto_completo: a detailed description in Spanish only/);
   assert.match(enEspanol, /faltantes: a list of short phrases in Spanish only/);
   assert.match(pedido, /texto_completo: a detailed description in English only/);
@@ -172,6 +172,7 @@ test("el pedido a Qwen lleva la condición, las once claves y prohíbe adivinar 
     },
     undefined,
     { condicion: "Photo of the meal receipt", tipoTarea: "reembolso" },
+    {},
   );
   assert.match(texto, /Photo of the meal receipt/);
   assert.equal(tokens, 2048);

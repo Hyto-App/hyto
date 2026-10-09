@@ -1,6 +1,8 @@
 import type { AuthProvider, Identity } from "@cavos/kit";
 import { olvidarDireccionAdmin } from "@/lib/admin/memoria";
 import { borrarCavosLocal, recordarTokenCavos, userIdCavosGuardado } from "@/lib/auth/cavosSesion";
+import { avisoDeIngreso } from "@/lib/auth/errores";
+import { conNonce } from "@/lib/auth/retoCorreo";
 import { leerPoliticaRecuperacion, opcionesRecuperacion } from "@/lib/auth/enclave";
 import { debeProvisionar, type IntencionIngreso } from "@/lib/auth/intencion";
 import { completarAltaTestnet } from "@/lib/integrante/alta";
@@ -108,7 +110,7 @@ export async function entrarConCodigo(
   codigo: string,
   intencion: IntencionIngreso = "signin",
 ): Promise<IngresoCerrado & { identity: Identity }> {
-  const identity = await authComo(auth).verifyOtp(email, codigo);
+  const identity = await conNonce(auth, () => authComo(auth).verifyOtp(email, codigo));
   recordarTokenCavos(auth.getAuthToken?.() ?? null);
   const sesion = await publicarSesion(identity.email ?? email, auth.getAuthToken?.() ?? null, intencion);
   if (!sesion.ok) return { identity, aviso: sesion.aviso, direccion: null, guardada: false };
@@ -178,23 +180,64 @@ export async function entrarConGoogle(
   return cerrarConWallet(auth, sesion, intencion);
 }
 
+type CuentaConectada = { address: string; billetera: BilleteraCobro };
+
+/**
+ * The Hyto cookie is written before the Cavos vault opens. If that vault refuses
+ * this site, or never returns an address, the cookie would still look signed in
+ * and Lock budget would have nothing to sign with. Drop that session.
+ */
+export async function cuentaTrasConexion(
+  conectar: () => Promise<CuentaConectada | null>,
+  continuar: (cuenta: CuentaConectada) => Promise<IngresoCerrado>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<IngresoCerrado> {
+  let cuenta: CuentaConectada | null;
+  try {
+    cuenta = await conectar();
+  } catch (error) {
+    await abandonarIngresoSinCuenta(fetchImpl);
+    return { aviso: avisoDeIngreso(error).texto, direccion: null, guardada: false };
+  }
+  if (!cuenta?.address.trim()) {
+    await abandonarIngresoSinCuenta(fetchImpl);
+    return { aviso: "Could not sign in.", direccion: null, guardada: false };
+  }
+  const cerrado = await continuar(cuenta);
+  if (!cerrado.guardada) await abandonarIngresoSinCuenta(fetchImpl);
+  return cerrado;
+}
+
+async function abandonarIngresoSinCuenta(fetchImpl: typeof fetch): Promise<void> {
+  try {
+    await fetchImpl("/api/sesion", { method: "DELETE" });
+  } catch {
+    // The notice still says the account was not attached.
+  }
+}
+
 async function cerrarConWallet(
   auth: AuthProvider,
   sesion: { provisionar: boolean },
   intencion: IntencionIngreso,
 ): Promise<IngresoCerrado> {
-  const conectada = await conectarStellar(auth);
-  const billetera = conectada.wallet("stellar");
-  if (billetera.chain !== "stellar" || !billetera.address) {
-    return { aviso: "Could not sign in.", direccion: null, guardada: false };
-  }
-  const guardada = await fijarWallet(billetera.address);
-  if (!guardada.ok) return { aviso: guardada.aviso, direccion: billetera.address, guardada: false };
-  if (debeProvisionar(intencion, sesion.provisionar)) {
-    const alta = await completarAltaTestnet(billetera as BilleteraCobro);
-    if (!alta.ok) return { aviso: alta.aviso, direccion: billetera.address, guardada: true };
-  }
-  return { aviso: null, direccion: billetera.address, guardada: true };
+  return cuentaTrasConexion(
+    async () => {
+      const conectada = await conectarStellar(auth);
+      const billetera = conectada.wallet("stellar");
+      if (billetera.chain !== "stellar" || !billetera.address.trim()) return null;
+      return { address: billetera.address.trim(), billetera: billetera as BilleteraCobro };
+    },
+    async (cuenta) => {
+      const guardada = await fijarWallet(cuenta.address);
+      if (!guardada.ok) return { aviso: guardada.aviso, direccion: cuenta.address, guardada: false };
+      if (debeProvisionar(intencion, sesion.provisionar)) {
+        const alta = await completarAltaTestnet(cuenta.billetera);
+        if (!alta.ok) return { aviso: alta.aviso, direccion: cuenta.address, guardada: true };
+      }
+      return { aviso: null, direccion: cuenta.address, guardada: true };
+    },
+  );
 }
 
 export function redirectLimpio(): string {

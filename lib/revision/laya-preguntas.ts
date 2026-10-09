@@ -45,6 +45,49 @@ export type PreguntasFactura = {
   g5: PreguntaScore;
 };
 
+function criteriosAccion(evento: boolean): Record<string, string> {
+  if (!evento) {
+    return {
+      pintar: "Something was painted or drawn.",
+      limpiar: "An area was cleaned or cleared of trash.",
+      armar_o_montar: "Something was built, set up, or assembled, such as a stand or a booth.",
+      vender_o_atender: "People were selling, serving, or attending visitors.",
+      transportar: "Items or people were moved from one place to another.",
+      otra_o_no_claro: "Something else, or the description does not say.",
+    };
+  }
+  return {
+    pintar: "Se pintó o se dibujó una superficie, como un mural en una pared. Un letrero impreso, una diapositiva, un logo o una taza no es pintar.",
+    limpiar: "Se limpió o se despejó un área.",
+    armar_o_montar: "Se armó, se montó o se ensambló algo, como un stand o un puesto.",
+    vender_o_atender: "Había personas vendiendo, sirviendo o atendiendo visitantes.",
+    transportar: "Se movieron cosas o personas de un lugar a otro.",
+    documentar_evento:
+      "Documentar un evento o una actividad, no pintar ni construir. Ejemplo: el letrero de la entrada, la charla con el expositor, el stand con banners, la foto de grupo o la taza con el logo.",
+    otra_o_no_claro: "Otra cosa, o la descripción no lo dice.",
+  };
+}
+
+function criteriosEstado(evento: boolean): Record<string, string> {
+  if (!evento) {
+    return {
+      terminado: "The description says the work is finished or complete.",
+      a_medias: "The description says part of the work is done and part is missing or still in progress.",
+      sin_empezar: "The description shows no work done, such as an empty wall or an empty room.",
+      no_claro: "The description does not say.",
+    };
+  }
+  return {
+    terminado: "La descripción dice que el trabajo está terminado o completo.",
+    a_medias: "La descripción dice que una parte está hecha y otra falta o sigue en curso.",
+    sin_empezar:
+      "El trabajo no empezó. Ejemplo: la pared vacía que había que pintar, o la sala vacía sin la actividad pedida. No lo elija si ya se ve el grupo, la charla, el letrero o el stand.",
+    no_aplica:
+      "No aplica: es una escena o un evento, no una obra sin empezar. Ejemplo: la foto de grupo con los banners, o el expositor en el escenario. Elija esto cuando lo pedido se ve, aunque nadie esté pintando.",
+    no_claro: "La descripción no lo dice.",
+  };
+}
+
 function choice(instructions: string, criteria: Record<string, string>): PreguntaChoice {
   return { type: "choice", instructions, criteria };
 }
@@ -83,7 +126,11 @@ export function preguntasClasificacion(condicion: string): PreguntasClasificacio
   };
 }
 
-export function preguntasTrabajo(condicion: string): PreguntasTrabajo {
+/**
+ * `evento` is true only when HYTO_MILE_PREGUNTAS_EVENTO is on.
+ * False keeps the current work questions, including t5 and t6.
+ */
+export function preguntasTrabajo(condicion: string, evento = false): PreguntasTrabajo {
   const pedido = condicion.trim();
   return {
     lugar: choice("Which place does the written description show? Pick one label. Use only what the description states.", {
@@ -104,20 +151,18 @@ export function preguntasTrabajo(condicion: string): PreguntasTrabajo {
     ]),
     v3: siNo(conPedido("The organizer asked for: {pedido}. Does the written description name a place, an object, or an action that proves it?", pedido)),
     v4: siNo(conPedido("The organizer asked for: {pedido}. Does the written description say that something the organizer asked for is missing or not shown?", pedido)),
-    t5: choice("What was done, according to the written description? Pick one label. Use only what the description states.", {
-      pintar: "Something was painted or drawn.",
-      limpiar: "An area was cleaned or cleared of trash.",
-      armar_o_montar: "Something was built, set up, or assembled, such as a stand or a booth.",
-      vender_o_atender: "People were selling, serving, or attending visitors.",
-      transportar: "Items or people were moved from one place to another.",
-      otra_o_no_claro: "Something else, or the description does not say.",
-    }),
-    t6: choice("In what condition is the finished work, according to the written description? Pick one label. Use only what the description states.", {
-      terminado: "The description says the work is finished or complete.",
-      a_medias: "The description says part of the work is done and part is missing or still in progress.",
-      sin_empezar: "The description shows no work done, such as an empty wall or an empty room.",
-      no_claro: "The description does not say.",
-    }),
+    t5: choice(
+      evento
+        ? "¿Qué se hizo, según la descripción escrita? Elija una etiqueta. Use solo lo que dice la descripción. Si la foto documenta un evento, elija documentar_evento y no pintar. Ejemplo: un letrero, una charla, un stand, una foto de grupo o una taza con logo."
+        : "What was done, according to the written description? Pick one label. Use only what the description states.",
+      criteriosAccion(evento),
+    ),
+    t6: choice(
+      evento
+        ? "¿En qué estado está el trabajo, según la descripción escrita? Elija una etiqueta. Use solo lo que dice la descripción. Si es una escena o un evento, y no una obra que empieza y termina, elija no_aplica. No elija sin_empezar cuando lo pedido ya se ve. Ejemplo: la foto de grupo con los banners, o el expositor en el escenario."
+        : "In what condition is the finished work, according to the written description? Pick one label. Use only what the description states.",
+      criteriosEstado(evento),
+    ),
     t7: siNo("Does the written description name the tools or materials used, such as brushes, paint, trash bags, tables, or a vehicle?"),
     t8: siNo("Does the written description say that the work was done in the place the organizer asked for?"),
     t9: siNo("Does the written description say that any part of the work is unfinished, damaged, or not visible?"),
