@@ -6267,7 +6267,11 @@ html.hyto-firmando body {
   color: var(--suave);
 }
 
-.hyto-ver-mas-cuerpo {
+.hyto-ver-mas:not([open]) > .hyto-ver-mas-cuerpo {
+  display: none;
+}
+
+.hyto-ver-mas[open] > .hyto-ver-mas-cuerpo {
   display: grid;
   gap: 12px;
   padding-top: 8px;
@@ -6317,6 +6321,10 @@ html.hyto-firmando body {
   letter-spacing: 0.08em;
 }
 
+.hyto-visor.is-sin-camara {
+  display: none;
+}
+
 .hyto-requisito-angosto {
   display: none;
 }
@@ -6330,7 +6338,8 @@ html.hyto-firmando body {
     display: none;
   }
 
-  .hyto-visor.is-apagada {
+  .hyto-visor.is-apagada,
+  .hyto-visor.is-sin-camara {
     display: none;
   }
 

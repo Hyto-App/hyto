@@ -9,6 +9,15 @@ import { desmontar, limpiarPantalla, montar, texto } from "../../tests/integraci
 import { errorSinCamara, listaSinCamara } from "./camaraDispositivo";
 import { codigoTelefono } from "./codigoTelefono";
 
+function prototipoCon(nombre: string): object {
+  let actual: object | null = document;
+  while (actual) {
+    if (Object.prototype.hasOwnProperty.call(actual, nombre)) return actual;
+    actual = Object.getPrototypeOf(actual);
+  }
+  throw new Error(`Sin ${nombre}`);
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
@@ -122,8 +131,9 @@ test("si la cámara no existe al abrirla, el aviso pasa al teléfono", async () 
 test("si la persona no mira, la tengo queda asentada y no repite el gesto", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;
-  const previo = Object.getOwnPropertyDescriptor(Document.prototype, "hidden");
-  Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: () => true });
+  const prototipo = prototipoCon("hidden");
+  const previo = Object.getOwnPropertyDescriptor(prototipo, "hidden");
+  Object.defineProperty(prototipo, "hidden", { configurable: true, get: () => true });
   try {
     await abrir(tarea({ estado: "en revisión", nota: 90, veredicto: "cumplió" }));
     const raiz = document.querySelector(".hyto-la-tengo");
@@ -132,7 +142,7 @@ test("si la persona no mira, la tengo queda asentada y no repite el gesto", asyn
     assert.match(texto(), /Your evidence is ready/);
     assert.equal(window.sessionStorage.getItem("hyto-la-tengo:stand"), "1");
   } finally {
-    if (previo) Object.defineProperty(Document.prototype, "hidden", previo);
+    if (previo) Object.defineProperty(prototipo, "hidden", previo);
     globalThis.fetch = anterior;
     await desmontar();
     limpiarPantalla();

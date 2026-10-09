@@ -17,6 +17,8 @@ test("el gesto de la app usa una curva, hunde el botón y asienta 8 px", () => {
   assert.match(bloque, /animation: none !important/);
   assert.match(bloque, /transform: none !important/);
   assert.match(bloque, /filter: brightness\(0\.92\)/);
+  assert.match(bloque, /\.hyto-ver-mas:not\(\[open\]\) > \.hyto-ver-mas-cuerpo \{\s*display: none;/);
+  assert.match(bloque, /\.hyto-visor\.is-sin-camara \{\s*display: none;/);
   assert.match(bloque, /transition-duration: 150ms !important/);
   assert.match(bloque, /transition-property: color, background-color, border-color, opacity, filter !important/);
 });

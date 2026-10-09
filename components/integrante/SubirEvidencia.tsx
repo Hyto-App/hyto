@@ -860,7 +860,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </div>
           ) : null}
           <PanelMile />
-          <div className={`hyto-visor${fase === "inicio" && !fotoUrl && !recibo ? " is-apagada" : ""}`}>
+          <div
+            className={`hyto-visor${fase === "inicio" && !fotoUrl && !recibo ? " is-apagada" : ""}${seguirTelefono ? " is-sin-camara" : ""}`}
+          >
             {!coincide ? (
               <div className="hyto-visor-vacio">
                 <p role="status">{recibo ? t("evidencia.mismatchReceipt") : t("evidencia.mismatchTask")}</p>
@@ -876,13 +878,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               <video ref={videoRef} playsInline muted aria-label={t("evidencia.camera")} />
             ) : (
               <div className="hyto-visor-vacio">
-                <p>
-                  {recibo
-                    ? t("evidencia.receiptPlaceholder")
-                    : seguirTelefono
-                      ? t("evidencia.noCameraDevice")
-                      : t("evidencia.cameraOff")}
-                </p>
+                <p>{recibo ? t("evidencia.receiptPlaceholder") : t("evidencia.cameraOff")}</p>
               </div>
             )}
             {coincide && fase === "foto" ? (
