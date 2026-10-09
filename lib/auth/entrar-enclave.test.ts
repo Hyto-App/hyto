@@ -7,7 +7,7 @@ import { Entrar } from "../../components/admin/Entrar";
 import { POLITICA_INACTIVA, type PoliticaRecuperacion } from "./enclave";
 import { AVISO_METODO_RECUPERACION } from "./errores";
 import { CLAVE_INTENCION_ENLACE } from "./intencion";
-import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 async function abrirIngreso(politica: PoliticaRecuperacion, extra: Record<string, unknown> = {}) {
   await montar(createElement(Entrar, { politica: async () => politica, esperaMinima: 0, ...extra }));
@@ -96,6 +96,7 @@ test("con la recuperación en correo, el correo manda un enlace (no un código) 
     assert.doesNotMatch(pantalla, /Continue with Apple/);
     assert.match(pantalla, /sign-in link/);
     await pulsar("Create account");
+    await aceptarTerminos();
     await escribir('input[type="email"]', "Ana@Example.com");
     await pulsar("Continue with email");
 

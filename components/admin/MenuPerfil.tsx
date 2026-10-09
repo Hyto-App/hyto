@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import { EnlacesLegales } from "@/components/ui/EnlacesLegales";
 import { useTexto } from "@/components/ui/Idioma";
 import { iniciales } from "@/components/ui/Marca";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
@@ -83,9 +84,9 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
         >
           {t("nav.helpFaq")}
         </button>
-        <Link href="/privacy" className="hyto-perfil-item" onClick={alCerrar}>
-          {t("nav.privacy")}
-        </Link>
+        <div onClick={alCerrar}>
+          <EnlacesLegales className="hyto-perfil-legal" enlaceClass="hyto-perfil-item" />
+        </div>
         <button type="button" className="hyto-perfil-item hyto-perfil-salir" disabled={saliendo} onClick={() => void salir()}>
           {saliendo ? t("cuenta.signingOut") : t("cuenta.signOut")}
         </button>

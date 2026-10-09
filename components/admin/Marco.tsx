@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
 import { Icono, Logo, Tema, iniciales } from "@/components/ui/Marca";
+import { EnlacesLegales } from "@/components/ui/EnlacesLegales";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
@@ -200,9 +201,7 @@ export function Marco({
             <span>{t("nav.askMile")}</span>
             <kbd>Ctrl+K</kbd>
           </button>
-          <Link href="/privacy" className="hyto-foot-privacidad">
-            {t("nav.privacy")}
-          </Link>
+          <EnlacesLegales className="hyto-foot-legal" />
           <div className="hyto-brand-acciones hyto-foot-acciones">
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />

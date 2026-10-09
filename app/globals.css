@@ -5520,6 +5520,107 @@ html.hyto-firmando body {
   color: var(--l-tinta);
 }
 
+.hyto-legal-borrador {
+  margin-top: 10px;
+  color: var(--l-suave);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hyto-legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.hyto-legal-nav a {
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-login .hyto-legal-nav a,
+.hyto-privacidad .hyto-legal-nav a {
+  color: var(--l-acento);
+}
+
+.hyto-login-legal .hyto-legal-nav,
+.hyto-entry-legal {
+  margin-top: 8px;
+}
+
+.hyto-entry-legal {
+  padding-top: 4px;
+}
+
+.hyto-foot-legal {
+  justify-self: start;
+}
+
+.hyto-cuenta-legal {
+  margin-top: 32px;
+}
+
+.hyto-perfil-legal {
+  display: grid;
+}
+
+.hyto-perfil-legal a {
+  text-decoration: none;
+}
+
+.hyto-legal-acepto {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.hyto-legal-acepto input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: #b7ee34;
+}
+
+.hyto-legal-linea,
+.hyto-legal-nota {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hyto-legal-linea {
+  color: var(--tinta);
+}
+
+.hyto-login .hyto-legal-linea {
+  color: var(--l-tinta);
+}
+
+.hyto-legal-linea a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-login .hyto-legal-linea a {
+  color: var(--l-acento);
+}
+
+.hyto-legal-nota {
+  margin-top: 6px;
+  color: var(--suave);
+}
+
+.hyto-login .hyto-legal-nota {
+  color: var(--l-suave);
+}
+
 @media (min-width: 1024px) {
   .hyto-privacidad .hyto-login-grid {
     display: block;

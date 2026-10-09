@@ -31,6 +31,17 @@ export const en = {
     eventTasks: "Event tasks",
     communities: "Communities",
     privacy: "Privacy",
+    terms: "Terms",
+    cookies: "Cookies",
+    refunds: "Refunds and fees",
+  },
+  legal: {
+    nav: "Legal",
+    acceptBefore: "I accept the",
+    terms: "Terms",
+    and: "and the",
+    privacy: "Privacy Policy",
+    falta: "Accept the Terms and the Privacy Policy to continue.",
   },
   titulos: {
     task: "Task",
@@ -444,6 +455,8 @@ export const en = {
     backToReceipt: "Go back to Receipt",
     receiptHelp: "Upload the receipt or invoice as a PDF, a text file, or an image. The organizer checks it and sends the payment.",
     photoHelp: "Photograph the finished work with the camera. The organizer checks it and sends the payment.",
+    avisoRevision:
+      "The organizer of the event can see the photos and receipts. An AI assistant (Mile) reviews them and recommends. Mile does not sign or move money.",
     fileSent: "File sent",
     photoSent: "Photo sent",
     uploaded: "Photo uploaded successfully",
@@ -1218,6 +1231,17 @@ export const es: Rama<typeof en> = {
     eventTasks: "Tareas del evento",
     communities: "Comunidades",
     privacy: "Privacidad",
+    terms: "Términos",
+    cookies: "Cookies",
+    refunds: "Reembolsos y comisiones",
+  },
+  legal: {
+    nav: "Aviso legal",
+    acceptBefore: "Acepto los",
+    terms: "Términos",
+    and: "y la",
+    privacy: "Privacidad",
+    falta: "Acepte los Términos y la Privacidad para continuar.",
   },
   titulos: {
     task: "Tarea",
@@ -1630,6 +1654,8 @@ export const es: Rama<typeof en> = {
     backToReceipt: "Volver a Recibo",
     receiptHelp: "Suba el comprobante o la factura en PDF, en texto o en imagen. Quien organiza lo revisa y envía el pago.",
     photoHelp: "Tome la foto del trabajo terminado con la cámara. Quien organiza lo revisa y envía el pago.",
+    avisoRevision:
+      "Quien organiza el evento puede ver las fotos y los recibos. Una inteligencia artificial (Mile) los revisa y recomienda. Mile no firma ni mueve dinero.",
     fileSent: "Archivo enviado",
     photoSent: "Foto enviada",
     uploaded: "Foto subida correctamente",

@@ -13,6 +13,7 @@ const EN = {
   titular: "How Hyto handles your information",
   entrada:
     "Hyto helps communities funded from afar account for the spend. You send a photo, a person reviews it, and a payment can be released in digital dollars (USDC). This page says what the app keeps and who can see it.",
+  borrador: "Draft of 9 October 2026, for review. This is not legal advice.",
   inicio: "Home",
   secciones: [
     {
@@ -33,7 +34,12 @@ const EN = {
     {
       titulo: "Cookies",
       cuerpo:
-        "A sign-in cookie keeps you signed in for up to a day. A language cookie remembers English or Spanish on this device.",
+        "A sign-in cookie keeps you signed in for up to a day. A language cookie remembers English or Spanish on this device. The cookie policy lists each one. Hyto does not use analytics cookies, so there is no cookie banner.",
+    },
+    {
+      titulo: "Practice money",
+      cuerpo:
+        "This version uses practice money. It does not move real money. The page on refunds and fees says how a payment is set aside and what fee applies.",
     },
   ],
 } as const;
@@ -44,6 +50,7 @@ const ES = {
   titular: "Cómo Hyto trata su información",
   entrada:
     "Hyto ayuda a las comunidades que reciben fondos desde lejos a rendir cuentas del gasto. Usted envía una foto, una persona la revisa y se puede liberar un pago en dólares digitales (USDC). Esta página dice qué guarda la app y quién puede verlo.",
+  borrador: "Borrador del 9 de octubre de 2026, para revisión. Esto no es asesoría legal.",
   inicio: "Inicio",
   secciones: [
     {
@@ -64,7 +71,12 @@ const ES = {
     {
       titulo: "Cookies",
       cuerpo:
-        "Una cookie de ingreso lo mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo.",
+        "Una cookie de ingreso lo mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo. La política de cookies enumera cada una. Hyto no usa cookies de analítica, así que no hay un aviso de cookies.",
+    },
+    {
+      titulo: "Dinero de práctica",
+      cuerpo:
+        "Esta versión usa dinero de práctica. No mueve dinero real. La página de reembolsos y comisiones dice cómo se aparta un pago y qué comisión aplica.",
     },
   ],
 } as const;

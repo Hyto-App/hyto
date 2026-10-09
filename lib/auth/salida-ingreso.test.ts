@@ -8,7 +8,7 @@ import { Entrar } from "../../components/admin/Entrar";
 import { Marco } from "../../components/admin/Marco";
 import { MisTareas } from "../../components/integrante/MisTareas";
 import { ProveedorIdioma } from "../../components/ui/Idioma";
-import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { AVISO_CUENTA_FAUCET } from "../integrante/friendbot";
 import type { Tarea } from "../integrante/tipos";
 import { mensajeClaro } from "../ui/claro";
@@ -56,6 +56,7 @@ async function llegarAlCodigo(
     await Promise.resolve();
   });
   await pulsar("Sign up");
+  await aceptarTerminos();
   await escribir('input[type="email"]', "ana@example.com");
   await pulsar("Continue with email");
   // The sixth digit sends the code on its own.

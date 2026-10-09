@@ -42,6 +42,8 @@ import { pedirOtp } from "@/lib/auth/pedidoOtp";
 import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
+import { AceptoLegal } from "@/components/ui/AceptoLegal";
+import { EnlacesLegales } from "@/components/ui/EnlacesLegales";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
@@ -176,6 +178,7 @@ export function Entrar({
   const [verCheck, setVerCheck] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   const [recuperacion, setRecuperacion] = useState<PoliticaRecuperacion>(POLITICA_INACTIVA);
+  const [acepta, setAcepta] = useState(false);
   const authRef = useRef<AuthMinimo | null>(null);
   const dialogoRef = useRef<HTMLDivElement>(null);
   const filaRef = useRef<HTMLDivElement>(null);
@@ -488,8 +491,15 @@ export function Entrar({
     void enviarCodigo();
   }
 
+  function faltaAceptar(intencion: IntencionIngreso): boolean {
+    if (intencion !== "signup" || acepta) return false;
+    setAviso(t("legal.falta"));
+    return true;
+  }
+
   async function enviarCodigo() {
     if (enCurso.current) return;
+    if (faltaAceptar(pestana)) return;
     if (esperaRef.current > 0) {
       setMostrarEspera(true);
       return;
@@ -663,6 +673,7 @@ export function Entrar({
 
   async function google(intencion: IntencionIngreso, proveedor: "google" | "apple" = "google") {
     if (enCurso.current) return;
+    if (faltaAceptar(intencion)) return;
     enCurso.current = true;
     setAviso(null);
     setOcupado(proveedor);
@@ -832,6 +843,7 @@ export function Entrar({
             {claro(mensaje)}
           </p>
         ) : null}
+        <EnlacesLegales className="hyto-entry-legal" />
       </div>
     );
   }
@@ -991,6 +1003,15 @@ export function Entrar({
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
                 <p className="hyto-login-lead">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
+                {alta ? (
+                  <AceptoLegal
+                    acepta={acepta}
+                    alCambiar={(valor) => {
+                      setAcepta(valor);
+                      if (valor) setAviso(null);
+                    }}
+                  />
+                ) : null}
                 {ofrece("google") ? (
                   <button
                     type="button"
@@ -1130,10 +1151,10 @@ export function Entrar({
                 {demoHabilitado && verDemo ? (
                   <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
-                <p className="hyto-login-legal">
-                  {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
-                  <Link href="/privacy">{t("nav.privacy")}</Link>
-                </p>
+                <div className="hyto-login-legal">
+                  <p>{t(alta ? "entrar.legalSignUp" : "entrar.legal")}</p>
+                  <EnlacesLegales />
+                </div>
               </div>
             ) : null}
             {fase === "enlace" ? (

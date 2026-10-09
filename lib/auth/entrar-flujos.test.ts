@@ -6,7 +6,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { Entrar } from "../../components/admin/Entrar";
 import { CLAVE_INTENCION } from "./intencion";
-import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { aceptarTerminos, desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 const JERGA = /\b(trustline|friendbot|soroban|xdr|wallet|stellar)\b/i;
 
@@ -46,6 +46,11 @@ test("Sign in y Crear cuenta ofrecen Google y correo, sin jerga, en pestañas", 
     assert.match(alta, /Continue with Google/);
     assert.match(alta, /Continue with Apple/);
     assert.match(alta, /Continue with email/);
+    assert.match(alta, /I accept the/);
+    assert.match(alta, /Terms/);
+    assert.match(alta, /Privacy Policy/);
+    assert.match(alta, /Cookies/);
+    assert.match(alta, /Refunds and fees/);
     assert.doesNotMatch(alta, JERGA);
     const ids = [...document.querySelectorAll("[id]")].map((nodo) => nodo.id);
     assert.equal(new Set(ids).size, ids.length, "duplicate ids");
@@ -78,7 +83,10 @@ test("el código de Sign in viaja con la intención signin y el de Crear cuenta 
         }),
       );
       await pulsar(boton);
-      if (pestana) await pulsar(pestana);
+      if (pestana) {
+        await pulsar(pestana);
+        await aceptarTerminos();
+      }
       await escribir('input[type="email"]', "ana@example.com");
       await pulsar("Continue with email");
       await escribir('input[autocomplete="one-time-code"]', "123456");
@@ -105,7 +113,10 @@ test("Continue with Google guarda signin en Sign in y signup en Crear cuenta", a
       window.sessionStorage.clear();
       await montar(createElement(Entrar));
       await pulsar("Sign in");
-      if (pestana) await pulsar(pestana);
+      if (pestana) {
+        await pulsar(pestana);
+        await aceptarTerminos();
+      }
       await pulsar("Continue with Google");
       intenciones.push(window.sessionStorage.getItem(CLAVE_INTENCION));
       assert.match(document.querySelector('[role="status"]')?.textContent ?? "", /isn't set up yet/);
@@ -133,7 +144,10 @@ test("Continue with Apple guarda signin en Sign in y signup en Crear cuenta", as
       window.sessionStorage.clear();
       await montar(createElement(Entrar));
       await pulsar("Sign in");
-      if (pestana) await pulsar(pestana);
+      if (pestana) {
+        await pulsar(pestana);
+        await aceptarTerminos();
+      }
       await pulsar("Continue with Apple");
       intenciones.push(window.sessionStorage.getItem(CLAVE_INTENCION));
       assert.match(document.querySelector('[role="status"]')?.textContent ?? "", /isn't set up yet/);
@@ -142,6 +156,40 @@ test("Continue with Apple guarda signin en Sign in y signup en Crear cuenta", as
   } finally {
     console.error = error;
     if (previo !== undefined) process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
+    window.sessionStorage.clear();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("Crear cuenta no sigue si no se aceptan los Términos y la Privacidad", async () => {
+  const previo = process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+  process.env.NEXT_PUBLIC_CAVOS_APP_ID = "app-prueba";
+  let envios = 0;
+  try {
+    limpiarPantalla();
+    window.sessionStorage.clear();
+    await montar(
+      createElement(Entrar, {
+        crear: async () => ({
+          sendOtp: async () => {
+            envios += 1;
+          },
+        }),
+        politica: async () => POLITICA_INACTIVA,
+        esperaMinima: 0,
+      }),
+    );
+    await pulsar("Sign in");
+    await pulsar("Create account");
+    await escribir('input[type="email"]', "ana@example.com");
+    await pulsar("Continue with email");
+    assert.equal(envios, 0);
+    assert.match(texto(), /Accept the Terms and the Privacy Policy to continue/);
+    assert.equal(window.sessionStorage.getItem(CLAVE_INTENCION), null);
+  } finally {
+    if (previo === undefined) delete process.env.NEXT_PUBLIC_CAVOS_APP_ID;
+    else process.env.NEXT_PUBLIC_CAVOS_APP_ID = previo;
     window.sessionStorage.clear();
     await desmontar();
     limpiarPantalla();
