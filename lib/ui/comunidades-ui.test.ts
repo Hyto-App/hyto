@@ -57,7 +57,14 @@ test("una comunidad privada ofrece solicitar y una pública muestra a los miembr
       });
     }
     return Response.json({
-      comunidad: { id: "publica", nombre: "Norte", descripcion: "Calle", fotoUrl: null, visibilidad: "publica", codigo: "ABC" },
+      comunidad: {
+        id: "publica",
+        nombre: "Norte",
+        descripcion: "Calle",
+        fotoUrl: "https://example.com/norte.jpg",
+        visibilidad: "publica",
+        codigo: "ABC",
+      },
       membresia: { rol: "admin" },
       miembros: [{ usuarioId: "ana", nombre: "Ana", rol: "admin" }],
       solicitudes: [{ id: "s1", usuarioId: "leo", nombre: "Leo" }],
@@ -79,6 +86,7 @@ test("una comunidad privada ofrece solicitar y una pública muestra a los miembr
     assert.match(texto(), /Ana/);
     assert.match(texto(), /Approve/);
     assert.match(texto(), /ABC/);
+    assert.equal(document.querySelector("img")?.getAttribute("alt"), "Norte");
     await desmontar();
     await montar(createElement(UnirseCodigo), { push: () => undefined });
     assert.ok(document.querySelector("#codigo-comunidad"));

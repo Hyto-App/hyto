@@ -36,20 +36,36 @@ export function Unirse({ secretoInicial = "" }: { secretoInicial?: string }) {
   return (
     <main className="hyto-page mx-auto max-w-lg">
       <h1 className="hyto-title">{t("eventos.joinTitle")}</h1>
-      <label className="mt-6 block text-sm text-[var(--suave)]" htmlFor="codigo-join">
-        {t("eventos.code")}
-      </label>
-      <input id="codigo-join" className="hyto-input mt-2" value={secreto} onChange={(evento) => setSecreto(evento.target.value)} />
-      <div className="mt-4">
-        <BotonPrincipal type="button" disabled={ocupado || !secreto.trim()} onClick={() => void enviar()}>
-          {t("eventos.join")}
-        </BotonPrincipal>
-      </div>
-      {aviso ? (
-        <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">
-          {claro(aviso)}
-        </p>
-      ) : null}
+      <form
+        className="mt-6"
+        onSubmit={(evento) => {
+          evento.preventDefault();
+          void enviar();
+        }}
+      >
+        <label className="block text-sm text-[var(--suave)]" htmlFor="codigo-join">
+          {t("eventos.code")}
+        </label>
+        <input
+          id="codigo-join"
+          className="hyto-input mt-2"
+          value={secreto}
+          autoComplete="off"
+          aria-invalid={aviso ? true : undefined}
+          aria-describedby={aviso ? "codigo-join-aviso" : undefined}
+          onChange={(evento) => setSecreto(evento.target.value)}
+        />
+        <div className="mt-4">
+          <BotonPrincipal type="submit" disabled={ocupado || !secreto.trim()}>
+            {t("eventos.join")}
+          </BotonPrincipal>
+        </div>
+        {aviso ? (
+          <p id="codigo-join-aviso" role="alert" className="mt-4 text-sm text-[var(--peligro)]">
+            {claro(aviso)}
+          </p>
+        ) : null}
+      </form>
     </main>
   );
 }

@@ -276,7 +276,7 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
       {detalle.comunidad.fotoUrl ? (
         // The URL was stored only after an https check.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={detalle.comunidad.fotoUrl} alt="" className="mt-4 max-h-48 rounded-2xl object-cover" />
+        <img src={detalle.comunidad.fotoUrl} alt={detalle.comunidad.nombre} className="mt-4 max-h-48 rounded-2xl object-cover" />
       ) : null}
       <p className="mt-4">{detalle.comunidad.descripcion || t("comunidades.sinDescripcion")}</p>
       {admin && detalle.comunidad.codigo ? (
@@ -284,7 +284,11 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
           {t("comunidades.codigo")}: <strong>{detalle.comunidad.codigo}</strong>
         </p>
       ) : null}
-      {aviso ? <p className="mt-4 text-sm">{aviso}</p> : null}
+      {aviso ? (
+        <p className="mt-4 text-sm" role="alert">
+          {aviso}
+        </p>
+      ) : null}
       {!detalle.membresia ? (
         <button type="button" className="hyto-btn mt-6" onClick={() => void unirse()}>
           {detalle.comunidad.visibilidad === "publica" ? t("comunidades.unirse") : t("comunidades.solicitar")}
@@ -474,7 +478,11 @@ export function UnirseCodigo() {
           {t("comunidades.codigo")}
           <input id="codigo-comunidad" className="hyto-input mt-2 w-full" value={codigo} onChange={(evento) => setCodigo(evento.target.value)} autoComplete="off" />
         </label>
-        {aviso ? <p className="text-sm">{aviso}</p> : null}
+        {aviso ? (
+          <p className="text-sm" role="alert">
+            {aviso}
+          </p>
+        ) : null}
         <button type="submit" className="hyto-btn">
           {t("comunidades.unirse")}
         </button>

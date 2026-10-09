@@ -5,6 +5,7 @@ import { esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { aplicarCopia, MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { evaluarFrescura, fechaExif } from "@/lib/evidencia/frescura";
+import { sinMetadatos } from "@/lib/evidencia/metadatos";
 import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
@@ -95,11 +96,14 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     if (!fotos) return sinFotos();
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
-    return new Response(Buffer.from(foto.bytes), {
+    const declarado = tipoDeFoto(foto.tipo, foto.bytes);
+    // Files saved before this check can still carry a location. The reply does not.
+    const servida = esImagen(declarado) ? await sinMetadatos(foto.bytes, declarado) : { bytes: foto.bytes, tipo: declarado };
+    return new Response(Buffer.from(servida.bytes), {
       headers: {
-        "content-type": tipoDeFoto(foto.tipo, foto.bytes),
+        "content-type": servida.tipo,
         "cache-control": "private, max-age=3600",
-        "content-disposition": disposicionDe(foto.tipo, foto.bytes),
+        "content-disposition": disposicionDe(servida.tipo, servida.bytes),
         "x-content-type-options": "nosniff",
       },
     });
@@ -236,7 +240,10 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
         }
       }
 
-      const archivo = new Blob([bytes], { type: tipo });
+      // sha256 above is the original file, so the same upload is still a duplicate.
+      // The saved file drops location and the other camera notes Hyto does not use.
+      const paraGuardar = esImagen(tipo) ? await sinMetadatos(bytes, tipo) : { bytes, tipo };
+      const archivo = new Blob([Uint8Array.from(paraGuardar.bytes)], { type: paraGuardar.tipo });
       let blobId: string;
       try {
         blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);

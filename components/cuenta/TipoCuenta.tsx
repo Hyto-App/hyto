@@ -94,7 +94,11 @@ export function TipoCuenta({ siguiente }: { siguiente?: string }) {
           </label>
         </div>
       ) : null}
-      {aviso ? <p className="text-sm">{aviso}</p> : null}
+      {aviso ? (
+        <p className="text-sm" role="alert">
+          {aviso}
+        </p>
+      ) : null}
       {listo && !siguiente ? <p className="text-sm">{t("tipoCuenta.guardado")}</p> : null}
       <button type="submit" className="hyto-btn" disabled={!tipo}>
         {t("tipoCuenta.guardar")}
