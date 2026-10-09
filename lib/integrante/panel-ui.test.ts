@@ -50,7 +50,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.ok(preparar instanceof HTMLButtonElement);
     assert.equal(preparar.disabled, false);
     assert.equal(texto().includes("Open Events and tap Get ready to be paid"), false);
-    assert.match(texto(), /How you get your money/);
+    assert.match(texto(), /How to receive your money/);
     assert.match(texto(), /practice money/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /The payment processor charges a 0\.3% fee/);
@@ -100,7 +100,7 @@ test("configuración en español muestra el costo y la llave en tuteo", async ()
     assert.match(texto(), /comisión del 0,3 %/);
     assert.match(texto(), /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
     assert.match(texto(), /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
-    assert.match(texto(), /Agrega una llave de acceso para no perder tu cuenta/);
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b/i);
   } finally {

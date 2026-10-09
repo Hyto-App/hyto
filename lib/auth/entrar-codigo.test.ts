@@ -80,7 +80,7 @@ test("un 429 al pedir el código dice cuántos segundos faltan, en los dos idiom
     await entrar("es", authNuevo(1));
     await escribir('input[type="email"]', "ana@example.com");
     await pulsar("Continuar con correo");
-    assert.match(texto(), /Espera 19 s antes de pedir otro código/);
+    assert.match(texto(), /Espere 19 s antes de pedir otro código/);
     assert.equal(texto().includes("No hay conexión"), false);
     assert.equal(window.sessionStorage.getItem(CLAVE_RETO_CORREO), null);
 
@@ -310,11 +310,11 @@ test("si cambiar el correo da 429, «ya tengo un código» vuelve al paso del c�
     assert.equal(window.sessionStorage.getItem(CLAVE_RETO_CORREO), null);
     await avanzar(20);
     await pulsar("Continuar con correo");
-    assert.match(texto(), /Espera 19 s antes de pedir otro código/);
+    assert.match(texto(), /Espere 19 s antes de pedir otro código/);
     assert.equal(texto().includes("No hay conexión"), false);
     assert.ok(document.querySelector('input[type="email"]'));
     await pulsar("Ya tengo un código");
-    assert.match(texto(), /Revisa tu correo/);
+    assert.match(texto(), /Revise su correo/);
     assert.equal(document.querySelector('input[type="email"]'), null);
     await escribir('input[autocomplete="one-time-code"]', "123456");
     assert.deepEqual(nonces, ["nonce-1"]);
@@ -356,7 +356,7 @@ test("sin red, reenviar conserva los dígitos y dice que no hay conexión", asyn
       celdas.map((celda) => (celda instanceof HTMLInputElement ? celda.value : "")),
       ["1", "2", "3", "", "", ""],
     );
-    assert.match(texto(), /No hay conexión\. Revisa la red e intenta de nuevo\./);
+    assert.match(texto(), /No hay conexión\. Revise la red e intente de nuevo\./);
     assert.equal(texto().includes("Espera"), false);
     assert.equal(auth.envios, 2);
   } finally {

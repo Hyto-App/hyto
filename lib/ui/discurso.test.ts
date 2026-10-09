@@ -14,8 +14,8 @@ import {
 
 const JERGA = /\b(trustline|escrow|soroban|xdr|testnet|mainnet|friendbot|wallet)\b/i;
 const FRASES = [
-  "Show the spend,",
-  "on the record.",
+  "Proof before",
+  "payout.",
   "Communities in Latin America funded from afar account for every spend.",
   "Practice network.",
   "no live payment is recorded yet",
@@ -60,7 +60,7 @@ test("el discurso en español usa las mismas claves", () => {
   assert.equal(discursoDe("en"), discurso);
   assert.equal(discursoDe("es"), discursoEs);
   const unido = Object.values(discursoEs).join("\n");
-  for (const frase of ["Muestra el gasto,", "Red de práctica.", "Aparta el financiamiento", "Conoce a Mile", "¿Necesito saber de cripto?", "SINPE"]) {
+  for (const frase of ["Primero la prueba,", "Red de práctica.", "Aparte el financiamiento", "Conozca a Mile", "¿Necesito saber de criptomonedas?", "SINPE"]) {
     assert.ok(unido.includes(frase), frase);
   }
 });
