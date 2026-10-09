@@ -36,7 +36,7 @@ test("un pago enviado que el indexador no muestra no ofrece fondear, pagar ni de
   }
 });
 
-test("la revisión muestra la etiqueta y sigue ofreciendo Lock budget", async () => {
+test("la revisión muestra la etiqueta y sigue ofreciendo Bloquear presupuesto", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);

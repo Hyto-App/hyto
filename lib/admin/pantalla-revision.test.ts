@@ -542,7 +542,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
+    await esperar(() => texto().includes("Hyto's rate, set on Oct 4, 2026: 505 CRC per US dollar"));
     assert.match(texto(), /78% · Partially completed/);
     assert.match(texto(), /AI recommendation/);
     await confirmarPedir();
@@ -553,7 +553,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
     assert.match(texto(), /Amount on the receipt/);
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Hyto's rate, set on Oct 4, 2026: 505 CRC per US dollar/);
     assert.equal(texto().includes("78% · Partially completed"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -591,7 +591,7 @@ test("al recargar, el monto del recibo sigue en colones después de pedir otra f
     await esperar(() => texto().includes("Monto en el comprobante"));
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
-    assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
+    assert.match(texto(), /Tasa de Hyto, fijada el 4 oct 2026: 505 CRC por dólar estadounidense/);
     assert.equal(texto().includes("US$13.66"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -974,7 +974,13 @@ test("the review card shows the main reason next to the percentage and what the 
     assert.equal(motivo.textContent, "Receipt date missing");
     assert.equal(motivo.title, "The saved receipt has no date, so the grade cannot reach Completed.");
     assert.equal(motivo.parentElement, pill.closest("div"));
-    assert.match(texto(), /Printed ₡6\.900,00, converted at 505 CRC per US dollar\./);
+    assert.match(texto(), /Hyto's rate, set on Oct 4, 2026: 505 CRC per US dollar/);
+    assert.match(texto(), /the organizer absorbs the difference/);
+    assert.match(
+      texto(),
+      /The volunteer spent ₡6\.900,00 \(about US\$13\.66\)\. We reserve the cap \(US\$15\) and pay only US\$13\.66\./,
+    );
+    assert.equal(texto().includes("converted at 505"), false);
     assert.match(texto(), /Not shown/);
   } finally {
     globalThis.fetch = anterior;

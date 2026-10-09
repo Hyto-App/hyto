@@ -45,6 +45,20 @@ function montoLocal(monto: string, idioma: Idioma, centavosFijos: number | null)
 }
 
 /**
+ * US$ prefix, keeping the decimals the ledger uses (up to 7).
+ * `formatearMonto` rounds to cents and would hide a net such as 12.44256.
+ */
+export function formatearDolaresTexto(valor: string, idioma: Idioma = "en"): string {
+  const limpio = valor.trim().replace(/,/g, "");
+  if (!/^\d+(\.\d+)?$/.test(limpio)) return limpio ? `US$${valor.trim()}` : "";
+  const [entera, fraccion = ""] = limpio.split(".");
+  const grupo = Number(entera).toLocaleString(localeDe(idioma));
+  const decimales = fraccion.replace(/0+$/, "");
+  if (!decimales) return `US$${grupo}`;
+  return `US$${grupo}${idioma === "es" ? "," : "."}${decimales}`;
+}
+
+/**
  * Net received, without rounding away the extra decimals.
  * US$2 set aside arrives as US$1.994. A whole number stays whole.
  */

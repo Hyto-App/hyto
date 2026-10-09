@@ -90,6 +90,7 @@ test("después de fondear, el texto dice el monto bloqueado y no el tope", async
   try {
     await montar(createElement(Revision, { tareaId: "comida", eventoId: "evt" }));
     await esperar(() => texto().includes("The payment sends US$12.48"));
+    assert.match(texto(), /they receive US\$12\.44256/);
     assert.equal(texto().includes("The payment sends Up to"), false);
   } finally {
     globalThis.fetch = anterior;

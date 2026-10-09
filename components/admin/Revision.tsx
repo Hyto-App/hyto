@@ -52,6 +52,7 @@ import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
+import { brutoVisible, fraseComision, fraseTasa, fraseTresMontos } from "@/lib/ui/plata";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 
@@ -488,6 +489,13 @@ export function Revision({
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
   const avisoVisible = aviso ? claro(aviso) : null;
+  const tresMontos = fraseTresMontos(tarea, idioma);
+  const tasa = fraseTasa(tarea.lectura, idioma);
+  const comision = fraseComision(brutoVisible(tarea), idioma);
+  const montoReserva =
+    tarea.tipo === "reembolso"
+      ? formatearMonto(tarea.montoConfirmado || tarea.tope || tarea.monto, idioma)
+      : formatearMonto(tarea.monto, idioma);
   const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
     const cifra = montoDeVista(tarea);
     const monto = cifra === null ? undefined : formatearMonto(cifra.toString(), idioma);
@@ -496,7 +504,7 @@ export function Revision({
         titulo: t("confirmar.payTitle"),
         monto,
         destinatario: tarea.miembro ? { nombre: tarea.miembro } : undefined,
-        detalle: t("confirmar.payDetail"),
+        detalle: [t("confirmar.payDetail"), comision].filter(Boolean).join(" "),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
         onConfirmar: (senal: AbortSignal) => correr(pasosDesde(reanudar), senal),
@@ -504,8 +512,8 @@ export function Revision({
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
       monto,
-      detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
-      confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
+      detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail", { monto: monto ?? montoReserva }),
+      confirmar: t("confirmar.lockAction", { monto: monto ?? montoReserva }),
       onConfirmar: (senal: AbortSignal) => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };
   };
@@ -629,13 +637,7 @@ export function Revision({
                 </dd>
                 {tarea.lectura?.montoOriginal && tarea.lectura.moneda !== "USD" ? (
                   <dd className="mt-1 text-sm leading-6 text-[var(--suave)]">
-                    {tarea.montoRevisado && tarea.lectura.moneda && tarea.lectura.tasa
-                      ? t("revision.printedConverted", {
-                          monto: tarea.lectura.montoOriginal,
-                          tasa: String(tarea.lectura.tasa),
-                          moneda: tarea.lectura.moneda,
-                        })
-                      : t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
+                    {tasa ?? t("revision.printedNotConverted", { monto: tarea.lectura.montoOriginal })}
                   </dd>
                 ) : null}
               </div>
@@ -647,6 +649,11 @@ export function Revision({
                 ) : null}
               </div>
             </dl>
+          ) : null}
+
+          {tresMontos ? <p className="mt-6 text-sm leading-6 text-[var(--suave)]">{tresMontos}</p> : null}
+          {tasa && !(tarea.lectura?.montoOriginal && tarea.lectura.moneda !== "USD") ? (
+            <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{tasa}</p>
           ) : null}
 
           {esperaConfirmacion ? (
@@ -705,6 +712,7 @@ export function Revision({
           ) : null}
 
           <div className="hyto-actions">
+            {comision ? <p className="text-sm leading-6 text-[var(--suave)]">{comision}</p> : null}
             {modoDemo && (esperaConfirmacion || puedeDesplegar || botones.fondear || botones.pagar) ? (
               <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNoMoney")}</p>
             ) : null}
