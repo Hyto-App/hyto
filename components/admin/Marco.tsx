@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
-import { Icono, Logo, Tema, iniciales } from "@/components/ui/Marca";
+import { Icono, Isotipo, Logo, Tema, iniciales } from "@/components/ui/Marca";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
-import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
 import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -115,6 +114,15 @@ export function Marco({
     return () => window.removeEventListener("keydown", tecla);
   }, []);
 
+  useEffect(() => {
+    const raiz = document.documentElement;
+    if (ayuda) raiz.dataset.ayudaMile = "abierta";
+    else delete raiz.dataset.ayudaMile;
+    return () => {
+      delete raiz.dataset.ayudaMile;
+    };
+  }, [ayuda]);
+
   return (
     <div className={`hyto-shell${foco ? " hyto-shell-foco" : ""}`}>
       <aside className="hyto-side print:hidden">
@@ -130,7 +138,7 @@ export function Marco({
               aria-expanded={ayuda}
               onClick={(evento) => abrirAyuda(evento.currentTarget)}
             >
-              <Mile estado="cara-feliz" tamano={28} />
+              <SelloPregunta />
             </button>
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
@@ -196,7 +204,7 @@ export function Marco({
             aria-expanded={ayuda}
             onClick={(evento) => abrirAyuda(evento.currentTarget)}
           >
-            <Mile estado="cara-feliz" tamano={28} />
+            <SelloPregunta />
             <span>{t("nav.askMile")}</span>
             <kbd>Ctrl+K</kbd>
           </button>
@@ -229,6 +237,11 @@ export function Marco({
       <AyudaMile abierto={ayuda} alCerrar={cerrarAyuda} devolver={abreAyuda.current} />
     </div>
   );
+}
+
+/** Small static brand on the bar. The panel is the only place that draws Mile. */
+function SelloPregunta() {
+  return <Isotipo decorativo className="hyto-preguntar-sello" />;
 }
 
 function EnlaceNav({

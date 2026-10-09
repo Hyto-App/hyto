@@ -242,6 +242,8 @@ test("una foto reciente en revisión dice que Mile sigue, y al llegar la nota la
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Still reviewing"));
     assert.match(texto(), /Mile is checking your photo/);
+    assert.match(texto(), /See more/);
+    assert.equal(document.querySelector(".hyto-nota-mile .hyto-mile"), null);
     assert.doesNotMatch(texto(), /Mile could not finish/);
     assert.equal(document.querySelector('a[href="/tareas/stand"]')?.textContent, "View task");
     await act(async () => {
@@ -489,6 +491,42 @@ function tarjetaDe(titulo: string): HTMLElement {
   if (!(tarjeta instanceof HTMLElement)) throw new Error(`No card ${titulo}`);
   return tarjeta;
 }
+
+test("el vacío de tareas es una invitación con un solo cofre en reposo", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) return json({ tareas: [] });
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Aún no tiene tareas."));
+    assert.match(texto(), /Únase a su evento con el código que le dio quien organiza/);
+    assert.match(texto(), /Entre con el código que le dio quien organiza/);
+    assert.match(texto(), /Tome una foto con la cámara/);
+    assert.match(texto(), /Mile recomienda/);
+    assert.match(texto(), /dólares digitales/);
+    assert.doesNotMatch(texto(), /\bplata\b/i);
+    assert.doesNotMatch(texto(), /yo reviso/);
+    const acciones = [...document.querySelectorAll(".hyto-estado-vacio-acciones a")];
+    assert.equal(acciones.length, 2);
+    assert.match(acciones[0]?.className ?? "", /\bhyto-btn\b/);
+    assert.doesNotMatch(acciones[0]?.className ?? "", /hyto-btn-line/);
+    assert.match(acciones[0]?.textContent ?? "", /Unirme con código/);
+    assert.match(acciones[1]?.className ?? "", /hyto-btn-line/);
+    assert.match(acciones[1]?.textContent ?? "", /Ver eventos/);
+    const millas = [...document.querySelectorAll(".hyto-mile")];
+    assert.equal(millas.length, 1);
+    assert.match(millas[0]?.className ?? "", /hyto-mile-descansando/);
+    assert.match(millas[0]?.className ?? "", /hyto-cofre-vacio/);
+    assert.equal(document.querySelector(".hyto-saludo .hyto-mile"), null);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
 
 async function esperar(listo: () => boolean): Promise<void> {
   for (let i = 0; i < 25; i += 1) {

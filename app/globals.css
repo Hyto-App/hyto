@@ -4477,13 +4477,39 @@ html.hyto-firmando body {
 
 .hyto-nota-mile {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
   margin-top: 12px;
-  border-radius: var(--r-md);
+  min-width: 0;
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 13.5px;
   line-height: 1.4;
+}
+
+.hyto-nota-mile-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyto-nota-mile.is-abierta .hyto-nota-mile-texto {
+  overflow: visible;
+  white-space: normal;
+}
+
+.hyto-nota-mile-mas {
+  flex: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--tinta);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .hyto-nota-mile-pend {
@@ -4535,10 +4561,15 @@ html.hyto-firmando body {
 
 .hyto-estado-vacio-acciones {
   display: grid;
+  justify-self: center;
+  width: min(100%, 16rem);
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.hyto-estado-vacio-acciones > .hyto-btn,
+.hyto-estado-vacio-acciones > .hyto-btn-line {
   width: 100%;
-  max-width: 20rem;
-  gap: 8px;
-  margin-top: 6px;
 }
 
 .hyto-como {
@@ -4872,6 +4903,25 @@ html.hyto-firmando body {
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--suave);
+}
+
+.hyto-panel-mile-nota {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hyto-panel-mile-nota p {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyto-panel-mile-nota p.is-abierta {
+  overflow: visible;
+  white-space: normal;
 }
 
 .hyto-revisando {
@@ -5667,6 +5717,16 @@ html.hyto-firmando body {
   background: rgba(8, 9, 12, 0.48);
 }
 
+.hyto-preguntar-sello {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
+  opacity: 0.32;
+}
+
 .hyto-perfil-menu,
 .hyto-ayuda {
   border: 1px solid var(--linea);
@@ -5714,10 +5774,48 @@ html.hyto-firmando body {
   display: grid;
   align-content: start;
   gap: 12px;
+  box-sizing: border-box;
   width: min(560px, 100%);
+  min-width: 0;
   max-height: min(72dvh, 640px);
+  justify-self: center;
   overflow: auto;
   padding: 16px;
+}
+
+.hyto-ayuda > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hyto-ayuda-respuesta p {
+  overflow-wrap: anywhere;
+}
+
+/* Desktop: the dialog stays in the content column, clear of the sidebar. */
+@media (min-width: 1024px) {
+  .hyto-capa-ayuda {
+    left: 256px;
+    right: 0;
+  }
+}
+
+/* Phone: a sheet from the bottom. No motion. */
+@media (max-width: 1023px) {
+  .hyto-capa-ayuda {
+    align-items: end;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .hyto-capa-ayuda .hyto-ayuda {
+    width: 100%;
+    max-width: none;
+    max-height: min(78dvh, 720px);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
 }
 
 .hyto-ayuda-cabeza {
