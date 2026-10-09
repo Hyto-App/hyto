@@ -46,7 +46,7 @@ test("sin fecha guardada el comprobante no inventa una, y un hash corto no abre 
     "en",
   );
   assert.equal(datos?.neto, "US$19.94");
-  assert.equal(datos?.bruto, "US$20");
+  assert.equal(datos?.bruto, "US$20.00");
   assert.equal(datos?.comision, "US$0.06");
   assert.equal(datos?.fecha, null);
   assert.equal(datos?.evento, null);

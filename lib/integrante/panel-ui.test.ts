@@ -54,7 +54,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
     assert.match(texto(), /practice money/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /The payment processor charges a 0\.3% fee/);
-    assert.match(texto(), /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+    assert.match(texto(), /US\$1\.99 \(US\$2\.00 minus a US\$0\.01 fee\)/);
     assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
     assert.match(texto(), /Your sign-in is saved only on this device/);
     assert.doesNotMatch(texto(), /account key lives only in this browser/);
@@ -98,7 +98,7 @@ test("configuración en español muestra el costo y la llave en tuteo", async ()
     await asentar();
     assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
     assert.match(texto(), /comisión del 0,3 %/);
-    assert.match(texto(), /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
+    assert.match(texto(), /US\$1,99 \(US\$2,00 menos comisión de US\$0,01\)/);
     assert.match(texto(), /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
     assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
@@ -249,13 +249,14 @@ test("el panel muestra el neto recibido al lado del saldo, no el monto apartado"
   try {
     await montar(createElement(PanelCuenta));
     await asentar();
-    assert.match(texto(), /Your Hyto balance: US\$14\.43656/);
+    assert.match(texto(), /Your Hyto balance: US\$14\.43/);
+    assert.equal(texto().includes("14.43656"), false);
     assert.deepEqual(
       [...document.querySelectorAll(".hyto-kpis .hyto-amount")].map((nodo) => nodo.textContent),
-      ["US$14.43", "US$0", "US$14.43"],
+      ["US$14.43", "US$0.00", "US$14.43"],
     );
     assert.match(texto(), /All time/);
-    assert.match(texto(), /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+    assert.match(texto(), /US\$1\.99 \(US\$2\.00 minus a US\$0\.01 fee\)/);
     assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
     assert.equal(texto().includes("US$1.994"), false);
     assert.equal(texto().includes("US$12.44256"), false);

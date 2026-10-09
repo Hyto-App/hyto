@@ -57,10 +57,10 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
   const costosEn = leerTexto("en", "ayuda.costosA");
   const costosEs = leerTexto("es", "ayuda.costosA");
   assert.match(costosEn, /0\.3% fee/);
-  assert.match(costosEn, /US\$1\.99 \(US\$2 minus a US\$0\.01 fee\)/);
+  assert.match(costosEn, /US\$1\.99 \(US\$2\.00 minus a US\$0\.01 fee\)/);
   assert.match(costosEn, /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
   assert.match(costosEs, /0,3 %/);
-  assert.match(costosEs, /US\$1,99 \(US\$2 menos comisión de US\$0,01\)/);
+  assert.match(costosEs, /US\$1,99 \(US\$2,00 menos comisión de US\$0,01\)/);
   assert.match(costosEs, /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
   assert.doesNotMatch(costosEn, /does not add a fee|hyto (does not|doesn't) (add|charge)|hyto charges/i);
   assert.doesNotMatch(costosEs, /no agrega una tarifa|hyto no (agrega|cobra)|hyto cobra/i);

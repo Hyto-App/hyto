@@ -1,7 +1,7 @@
-import { detalleMonto, normalizarMonto } from "@/lib/admin/vista";
+import { centavos, detalleMonto, normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import type { TareaAdmin } from "@/lib/admin/tipos";
 import { cifraConfirmada, montoDentroDelTope } from "@/lib/escrow/monto";
-import { brutoDeNeto, brutoFondado, netoEnCentavos } from "@/lib/escrow/recibido";
+import { brutoDeNeto, brutoFondado, netoEnCentavos, type NetoEnCentavos } from "@/lib/escrow/recibido";
 import { texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -9,16 +9,14 @@ function localeDe(idioma: Idioma): string {
   return idioma === "es" ? "es-CR" : "en-US";
 }
 
+/** What people see: always two decimals (`US$50.00`, `US$2,00`). Display only. */
 export function formatearMonto(monto: string, idioma: Idioma = "en"): string {
-  return montoLocal(monto, idioma, null);
+  return montoLocal(monto, idioma);
 }
 
-/**
- * Balance notices always show cents (`US$1.00`, `US$6,00`).
- * `formatearMonto` drops the cents of a whole dollar, which those sentences do not.
- */
+/** Same two decimals as `formatearMonto`. Balance notices already called this. */
 export function formatearCentavos(monto: string, idioma: Idioma = "en"): string {
-  return montoLocal(monto, idioma, 2);
+  return formatearMonto(monto, idioma);
 }
 
 export function textosSaldo(
@@ -32,33 +30,47 @@ export function textosSaldo(
   };
 }
 
-function montoLocal(monto: string, idioma: Idioma, centavosFijos: number | null): string {
+function montoLocal(monto: string, idioma: Idioma): string {
   const limpio = monto.trim();
   if (!limpio) return "";
   const valor = Number(limpio);
   if (!Number.isFinite(valor)) return monto;
-  const decimales = centavosFijos ?? (Number.isInteger(valor) ? 0 : 2);
-  return `US$${valor.toLocaleString(localeDe(idioma), {
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: centavosFijos ?? 2,
-  })}`;
+  return `US$${cifraLocal(valor, idioma, 2)}`;
 }
 
 /**
- * Net received, without rounding away the extra decimals.
- * US$2 set aside arrives as US$1.994. A whole number stays whole.
+ * Costa Rica groups thousands with a dot and uses a decimal comma.
+ * English uses a comma and a decimal point. Two fixed decimals when `decimales` is 2.
+ */
+function cifraLocal(valor: number, idioma: Idioma, decimales: number): string {
+  const signo = valor < 0 ? "-" : "";
+  const fijo = Math.abs(valor).toFixed(decimales);
+  const [entera, fraccion = ""] = fijo.split(".");
+  const miles = idioma === "es" ? "." : ",";
+  const grupo = entera.replace(/\B(?=(\d{3})+(?!\d))/g, miles);
+  if (!fraccion) return `${signo}${grupo}`;
+  const separador = idioma === "es" ? "," : ".";
+  return `${signo}${grupo}${separador}${fraccion}`;
+}
+
+/**
+ * A network amount has up to 7 decimals. People see it floored to the cent,
+ * so 16.43056 is US$16.43 and 14.43656 is US$14.43, never US$14.44.
+ * This does not change the figure that is signed or sent to escrow.
  */
 export function formatearRecibido(monto: string, idioma: Idioma = "en"): string {
   const limpio = monto.trim().replace(/,/g, "");
   if (!/^\d+(\.\d{1,7})?$/.test(limpio)) return formatearMonto(monto, idioma);
   const [entera, fraccion = ""] = limpio.split(".");
-  const miles = idioma === "es" ? "." : ",";
-  const grupo = entera.replace(/\B(?=(\d{3})+(?!\d))/g, miles);
-  const recortada = fraccion.replace(/0+$/, "");
-  if (!recortada) return `US$${grupo}`;
-  const visible = recortada.length === 1 ? `${recortada}0` : recortada;
-  const separador = idioma === "es" ? "," : ".";
-  return `US$${grupo}${separador}${visible}`;
+  const centavos = (fraccion + "00").slice(0, 2);
+  return formatearMonto(`${entera}.${centavos}`, idioma);
+}
+
+/** Colones with the ₡ sign and the session's separators. 505 is ₡505, not "505 CRC". */
+export function formatearColones(valor: number, idioma: Idioma = "en"): string {
+  if (!Number.isFinite(valor)) return "";
+  const decimales = Number.isInteger(valor) ? 0 : 2;
+  return `₡${cifraLocal(valor, idioma, decimales)}`;
 }
 
 function fechaDeCalendario(anio: number, mes: number, dia: number, idioma: Idioma = "en"): string | null {
@@ -192,12 +204,15 @@ type PagoVisible = {
   montoPagado?: string | null;
 };
 
-/** Rounded net, and the same net with the fee written out when it changes the cents. */
-export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto: string; frase: string } | null {
+function partesDePago(tarea: PagoVisible): NetoEnCentavos | null {
   const bruto =
     brutoFondado(tarea, tarea.montoConfirmado) ?? (tarea.montoPagado ? brutoDeNeto(tarea.montoPagado) : null);
-  if (!bruto) return null;
-  const partes = netoEnCentavos(bruto);
+  return bruto ? netoEnCentavos(bruto) : null;
+}
+
+/** Rounded net, and the same net with the fee written out when it changes the cents. */
+export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto: string; frase: string } | null {
+  const partes = partesDePago(tarea);
   if (!partes) return null;
   const corto = formatearMonto(partes.neto, idioma);
   if (!corto) return null;
@@ -210,6 +225,20 @@ export function explicarPago(tarea: PagoVisible, idioma: Idioma = "en"): { corto
       comision: formatearMonto(partes.comision, idioma),
     }),
   };
+}
+
+/**
+ * Paid total for the My tasks header. Adds the cent net each paid card shows, like the account
+ * total (`armarOrgullo`): nets of 12.44256, 1.994 and 1.994 add up to US$16.42, not US$16.43.
+ */
+export function totalGanado(tareas: readonly (PagoVisible & { estado: string })[], idioma: Idioma = "en"): string {
+  let total = 0;
+  for (const tarea of tareas) {
+    if (tarea.estado !== "pagado") continue;
+    const partes = partesDePago(tarea);
+    if (partes) total += centavos(partes.neto);
+  }
+  return formatearMonto(textoMonto(total), idioma);
 }
 
 /** A stored net such as 12.44256, explained from the cent amount that was funded. */
@@ -235,10 +264,12 @@ export type VistaMonto = {
   tope: string | null;
   /** One line for a list or a chip. */
   linea: string;
+  /** `linea` split at " · ", for a layout that may only wrap there. */
+  partes: string[];
 };
 
 /**
- * A reimbursement can show a cap ("Up to US$50") and a smaller amount to pay.
+ * A reimbursement can show a cap ("Up to US$50.00") and a smaller amount to pay.
  * When both exist and they differ, the line names each one.
  */
 export function vistaMonto(
@@ -247,19 +278,18 @@ export function vistaMonto(
   etiquetaLimite?: (monto: string) => string,
 ): VistaMonto {
   if (tarea.tipo !== "reembolso") {
-    return { pago: null, tope: null, linea: formatearMonto(tarea.monto, idioma) };
+    const linea = formatearMonto(tarea.monto, idioma);
+    return { pago: null, tope: null, linea, partes: [linea] };
   }
   const tope = formatearMonto(tarea.tope ?? tarea.monto, idioma);
   const pago = pagoDistintoDelTope(tarea, idioma, tope);
   if (pago && tope) {
     const limite = etiquetaLimite ? etiquetaLimite(tope) : texto(idioma, "eventos.limit", { amount: tope });
-    return {
-      pago,
-      tope,
-      linea: `${texto(idioma, "revision.amountToPay")} ${pago} · ${limite}`,
-    };
+    const partes = [`${texto(idioma, "revision.amountToPay")} ${pago}`, limite];
+    return { pago, tope, linea: partes.join(" · "), partes };
   }
-  return { pago: null, tope: tope || null, linea: montoDeTarea(tarea, idioma) };
+  const linea = montoDeTarea(tarea, idioma);
+  return { pago: null, tope: tope || null, linea, partes: [linea] };
 }
 
 function pagoDistintoDelTope(tarea: MontoLista, idioma: Idioma, tope: string): string | null {

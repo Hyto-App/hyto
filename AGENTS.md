@@ -157,6 +157,7 @@ Names only. No values in the repo. `.env.example` lists the same reads.
 | `GROQ_VISION_MODEL` | Optional Groq vision model. Unset uses `qwen/qwen3.8-27b`, the only vision model Groq listed on 2026-10-05. Reasoning parameters are sent only to `qwen/qwen3…` ids. |
 | `LAYA_URL` | Laya base URL. Without it, the stub scores the description. |
 | `LAYA_API_KEY` | Optional Bearer token for Laya. |
+| `HYTO_MILE_PREGUNTAS_EVENTO` | Server. Exact value `on` adds event options to Mile's work questions (t5 documenting an event; t6 `no_aplica` for a scene or an event, which does not use the not-started cap). Unset or anything else keeps the current questions and scoring. Off by default. |
 | `CAVOS_JWKS_URL` | JWKS for the Cavos JWT. |
 | `CAVOS_JWT_ISSUER` | Allowed `iss` values, comma-separated. Empty: issuer is not checked. |
 | `CAVOS_JWT_AUDIENCE` | When set, `aud` must match. Empty: audience is not checked. |
