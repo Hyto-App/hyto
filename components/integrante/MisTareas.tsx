@@ -35,7 +35,7 @@ function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
   const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
   if (!prioridad && !dificultad) return null;
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="hyto-aviso-extra mt-2 flex flex-wrap items-center gap-2">
       {prioridad ? (
         <span className="hyto-pill hyto-pill-ok">
           <i className="hyto-dot" aria-hidden="true" />
@@ -152,7 +152,7 @@ function Saludo({ nombre }: { nombre: string | null }) {
 function Cargando() {
   const t = useTexto();
   return (
-    <div aria-busy="true" aria-live="polite">
+    <div className="hyto-carga-tareas" aria-busy="true" aria-live="polite">
       <div className="hyto-tarjeta flex items-center gap-3 p-4">
         <MileAnimada estado="buscando" tamano={56} />
         <p className="text-sm text-[var(--suave)]">{t("tareas.loadingMile")}</p>
@@ -304,7 +304,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   }
 
   return (
-    <main className="hyto-page">
+    <main className="hyto-page hyto-mis-tareas">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Saludo nombre={nombre} />
@@ -438,7 +438,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           </div>
                           <InsigniasClasificacion tarea={tarea} />
                           {mejores.has(tarea.id) ? (
-                            <p className="mt-2">
+                            <p className="hyto-aviso-extra mt-2">
                               <span className="hyto-pill hyto-pill-ok">
                                 <i className="hyto-dot" aria-hidden="true" />
                                 {t("tareas.bestPaid")}
