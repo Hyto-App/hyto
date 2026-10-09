@@ -31,11 +31,24 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
     });
     assert.match(texto(), /Ask Mile/);
+    assert.equal(document.documentElement.getAttribute("data-ayuda-mile"), "abierta");
+    const capa = document.querySelector(".hyto-capa-ayuda");
+    assert.equal(capa?.parentElement, document.body);
+    assert.equal(capa?.closest(".hyto-shell"), null);
+    const preguntas = [...document.querySelectorAll(".hyto-preguntar")];
+    assert.ok(preguntas.length >= 1);
+    for (const boton of preguntas) {
+      assert.equal(boton.querySelector(".hyto-mile"), null);
+      assert.ok(boton.querySelector(".hyto-isotipo"));
+    }
+    const panel = document.querySelector(".hyto-ayuda");
     assert.match(texto(), /How do I get paid\?/);
     assert.match(texto(), /How do I set money aside for a task\?/);
     assert.match(texto(), /What does it cost to pay a task\?/);
     assert.match(texto(), /How do I pay a reimbursement\?/);
     await pulsar("How do I get paid?");
+    assert.equal(document.querySelector(".hyto-ayuda"), panel);
+    assert.equal(panel?.parentElement, capa);
     assert.match(texto(), /cannot send that balance to a bank/);
     assert.doesNotMatch(texto(), /Mile does not sign/);
     assert.doesNotMatch(texto(), /escrow|testnet/i);

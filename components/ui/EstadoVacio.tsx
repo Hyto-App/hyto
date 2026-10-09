@@ -1,14 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { MileAnimada } from "@/components/ui/MileAnimada";
 
 type Accion = { texto: string; href?: string; onClick?: () => void };
 
-/** Mile `icono` 56px + title + text + one button. Reused by Events and the organizer screens. */
+/** Title + text + one button. The screen's greeting already draws Mile, so this state does not. */
 export function EstadoVacio({ titulo, texto, accion, children }: { titulo: string; texto?: string; accion?: Accion; children?: ReactNode }) {
   return (
     <div className="hyto-tarjeta hyto-estado-vacio">
-      <MileAnimada estado="vacio" tamano={56} />
       <h2>{titulo}</h2>
       {texto ? <p>{texto}</p> : null}
       {accion ? (
