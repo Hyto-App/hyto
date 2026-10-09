@@ -3933,15 +3933,36 @@ html.hyto-firmando body {
 }
 
 .hyto-ausente {
+  position: relative;
   box-sizing: border-box;
   display: flex;
   min-height: 100dvh;
   flex-direction: column;
   gap: 32px;
   padding: 24px var(--margen-lateral);
+  overflow: hidden;
+  background: var(--fondo, #0e1024);
+  color: var(--tinta);
+}
+
+.hyto-ausente-escena {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 80% at 100% 0%, #14162b 0%, transparent 55%),
+    radial-gradient(70% 60% at 0% 100%, color-mix(in srgb, #b7ee34 12%, transparent) 0%, transparent 50%);
+}
+
+.hyto-ausente-vineta {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% 40%, transparent 40%, color-mix(in srgb, #08090c 55%, transparent) 100%);
 }
 
 .hyto-ausente-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3961,10 +3982,79 @@ html.hyto-firmando body {
 }
 
 .hyto-ausente-cuerpo {
+  position: relative;
+  z-index: 1;
   display: grid;
   align-content: start;
   gap: 8px;
   max-width: 36rem;
+}
+
+.hyto-ausente-codigo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--acento, #b7ee34);
+}
+
+.hyto-ausente-mile {
+  width: 140px;
+  margin: 8px 0 4px;
+}
+
+.hyto-ausente-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.hyto-ausente-enlace {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--suave);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hyto-ausente-enlace:hover {
+  color: var(--tinta);
+}
+
+.hyto-login-faq {
+  margin-top: 14px;
+  max-width: 44ch;
+}
+
+.hyto-login-faq-titulo {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--l-tinta, var(--tinta));
+}
+
+.hyto-login-faq dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.hyto-login-faq dt {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--l-tinta, var(--tinta));
+}
+
+.hyto-login-faq dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--l-suave, var(--suave));
 }
 
 .hyto-en-revision {

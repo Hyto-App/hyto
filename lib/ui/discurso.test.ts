@@ -4,6 +4,7 @@ import { LINEA_OG } from "@/components/ui/marca/trazos";
 import {
   CLAVES_DISCURSO,
   DESCRIPCION_PAGINA,
+  DESCRIPCION_PAGINA_ES,
   audienciasDiscurso,
   confianzaDiscurso,
   discurso,
@@ -68,6 +69,8 @@ test("el discurso en español usa las mismas claves", () => {
 test("la descripción de la página no nombra el activo", () => {
   assert.equal(DESCRIPCION_PAGINA.includes("USDC"), false);
   assert.match(DESCRIPCION_PAGINA, /digital dollars/);
+  assert.equal(DESCRIPCION_PAGINA_ES.includes("USDC"), false);
+  assert.match(DESCRIPCION_PAGINA_ES, /dólares digitales/);
   assert.equal(LINEA_OG.includes("USDC"), false);
   assert.match(discurso.subheadline, /\(USDC\)/);
 });

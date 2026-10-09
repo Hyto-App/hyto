@@ -42,7 +42,8 @@ import { pedirOtp } from "@/lib/auth/pedidoOtp";
 import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useClaro, useDiscurso, useTexto } from "@/components/ui/Idioma";
+import { preguntasDiscurso } from "@/lib/ui/discurso";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -157,6 +158,8 @@ export function Entrar({
   const rolActual = useRolDemo();
   const t = useTexto();
   const claro = useClaro();
+  const discurso = useDiscurso();
+  const faq = preguntasDiscurso(discurso);
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
   const [retorno, setRetorno] = useState<string | null>(null);
@@ -921,6 +924,21 @@ export function Entrar({
                     <li key={linea}>{linea}</li>
                   ))}
               </ol>
+              {faq.length > 0 ? (
+                <section className="hyto-login-faq" aria-labelledby={`${ids}-faq`}>
+                  <h2 id={`${ids}-faq`} className="hyto-login-faq-titulo">
+                    {discurso.faqTitle}
+                  </h2>
+                  <dl>
+                    {faq.map((item) => (
+                      <div key={item.titulo}>
+                        <dt>{item.titulo}</dt>
+                        <dd>{item.cuerpo}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ) : null}
             </div>
             <Mile pose={pose} />
           </div>
@@ -1067,7 +1085,7 @@ export function Entrar({
                     </div>
                     {enviando ? (
                       <p className="hyto-login-estado" aria-live="polite">
-                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} />
+                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} aria-hidden="true" />
                         {t("entrar.mile.dive")}
                       </p>
                     ) : (

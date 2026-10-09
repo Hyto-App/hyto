@@ -5,7 +5,7 @@ import { comunidadesActivas } from "@/lib/comunidades/bandera";
 import { exigirPagina } from "@/lib/sesion/puerta";
 import { tablonActivo } from "@/lib/tablon/bandera";
 
-export const metadata: Metadata = { title: "Community" };
+export const metadata: Metadata = { title: "Community", robots: { index: false, follow: false } };
 
 export default async function PaginaDeComunidad({ params }: { params: Promise<{ id: string }> }) {
   if (!comunidadesActivas()) notFound();

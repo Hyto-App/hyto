@@ -110,8 +110,8 @@ export const en = {
   },
   ausente: {
     titulo: "Page not found",
-    cuerpo: "That page is not in Hyto.",
-    inicio: "Home",
+    cuerpo: "That address is not a page in Hyto. Check the link, or go back home.",
+    inicio: "Back to home",
   },
   eventos: {
     title: "Events",
@@ -1297,8 +1297,8 @@ export const es: Rama<typeof en> = {
   },
   ausente: {
     titulo: "Página no encontrada",
-    cuerpo: "Esa página no está en Hyto.",
-    inicio: "Inicio",
+    cuerpo: "Esa dirección no es una página de Hyto. Revise el enlace o vuelva al inicio.",
+    inicio: "Volver al inicio",
   },
   eventos: {
     title: "Eventos",
