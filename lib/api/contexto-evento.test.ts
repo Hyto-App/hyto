@@ -53,9 +53,9 @@ test("crear un evento con descripción y contexto para la IA los guarda recortad
 test("la descripción y el contexto respetan 1000 y 2000 caracteres", async () => {
   const largaDescripcion = await nuevoEvento({ descripcion: "a".repeat(1001) });
   assert.equal(largaDescripcion.respuesta.status, 400);
-  const largoContexto = await nuevoEvento({ contextoIa: "a".repeat(2001) });
+  const largoContexto = await nuevoEvento({ contextoIa: "a".repeat(3001) });
   assert.equal(largoContexto.respuesta.status, 400);
-  const justo = await nuevoEvento({ descripcion: "a".repeat(1000), contextoIa: "a".repeat(2000) });
+  const justo = await nuevoEvento({ descripcion: "a".repeat(1000), contextoIa: "a".repeat(3000) });
   assert.equal(justo.respuesta.status, 201);
 });
 
@@ -68,6 +68,42 @@ test("el contexto para la IA no sale en ninguna respuesta para un voluntario ni 
   assert.ok(texto.includes("Street fair"));
   assert.ok(!texto.includes(SECRETO_IA));
   assert.ok(!/contextoIa|contexto_ia/i.test(texto));
+  assert.ok(!creacion.includes(SECRETO_IA));
+});
+
+test("contextoMile se guarda como JSON versionado solo con los campos con texto", async () => {
+  const { almacen, respuesta, id } = await nuevoEvento({ contextoMile: { lugar: "  Central park  ", debeVerse: "The stand", noCuenta: "   " } });
+  assert.equal(respuesta.status, 201);
+  const proyecto = await almacen.leerProyecto(id);
+  assert.deepEqual(JSON.parse(proyecto?.contextoIa ?? "null"), { v: 1, lugar: "Central park", debeVerse: "The stand" });
+});
+
+test("contextoMile vacío se guarda como null y el texto viejo contextoIa sigue valiendo", async () => {
+  const vacio = await nuevoEvento({ contextoMile: { lugar: " ", notas: "" } });
+  assert.equal(vacio.respuesta.status, 201);
+  assert.equal((await vacio.almacen.leerProyecto(vacio.id))?.contextoIa ?? null, null);
+  const viejo = await nuevoEvento({ contextoIa: SECRETO_IA, contextoMile: {} });
+  assert.equal((await viejo.almacen.leerProyecto(viejo.id))?.contextoIa, SECRETO_IA);
+});
+
+test("cada campo de contextoMile respeta su límite con un aviso claro", async () => {
+  const limites = { lugar: 200, trata: 300, cuando: 120, senales: 300, debeVerse: 250, noCuenta: 250, recibos: 250, notas: 600 };
+  for (const [clave, max] of Object.entries(limites)) {
+    const justo = await nuevoEvento({ contextoMile: { [clave]: "a".repeat(max) } });
+    assert.equal(justo.respuesta.status, 201, clave);
+    const largo = await nuevoEvento({ contextoMile: { [clave]: "a".repeat(max + 1) } });
+    assert.equal(largo.respuesta.status, 400, clave);
+    assert.match(largo.datos.aviso ?? "", new RegExp(`up to ${max} characters`));
+  }
+  const noTexto = await nuevoEvento({ contextoMile: { lugar: 5 } });
+  assert.equal(noTexto.respuesta.status, 400);
+});
+
+test("el JSON de contextoMile no sale para un voluntario", async () => {
+  const { almacen, id, texto: creacion } = await nuevoEvento({ contextoMile: { debeVerse: SECRETO_IA } });
+  await almacen.guardarMiembro({ proyectoId: id, usuarioId: "vol", rol: "volunteer", estado: "active", creadoEn: "2026-10-07T00:00:00.000Z" });
+  const texto = await (await leerProyectoHttp(almacen, visorSesion("vol"), { id })).text();
+  assert.ok(!texto.includes(SECRETO_IA));
   assert.ok(!creacion.includes(SECRETO_IA));
 });
 

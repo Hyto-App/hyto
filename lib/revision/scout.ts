@@ -1,9 +1,9 @@
 import { normalizarMonto } from "@/lib/admin/vista";
+import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
 import { ajustarParaVision } from "@/lib/evidencia/vision";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { Descripcion } from "./armar";
 import { bloqueContextoEvento, reglaDeEvento, type ContextoEvento } from "./contexto-evento";
-import { bloqueOrganizacion } from "./organizacion";
 import { bloqueFaltantesGroq, type EntornoFaltantesGroq } from "./faltantes-groq";
 import { esCupo, falloDeExcepcion, falloHttp, FalloRevision } from "./fallo";
 import { CLAVES_LECTURA, coincideMencionado, leerLectura } from "./lectura";
@@ -34,7 +34,10 @@ export type ContextoPedido = {
   idioma?: "en" | "es";
   /** Background about the event. Empty leaves the prompt as it was. */
   evento?: ContextoEvento | null;
-  /** The community description. Empty, or the switch off, leaves the prompt as it was. */
+  /**
+   * Company description. With HYTO_TIPO_CUENTA on it is placed inside <event_context>.
+   * Empty, or the switch off, leaves the prompt as it was.
+   */
   organizacion?: string | null;
 };
 
@@ -55,15 +58,15 @@ export function pedidoVision(contexto: ContextoPedido = {}, env: EntornoPedidoVi
         ? "This is a work task, so the photo should show the place, the people, the objects, the food, or the result the organizer asked for."
         : "";
   const espanol = contexto.idioma === "es";
-  const regla = reglaDeEvento(contexto.evento);
+  const tipoRegla = contexto.tipoTarea ?? "trabajo";
+  const regla = reglaDeEvento(contexto.evento, tipoRegla);
   const claves = regla ? [...CLAVES_LECTURA, "cumple_reglas"] : [...CLAVES_LECTURA];
   if (mileOtraConGroqActivo(env)) claves.push("coincide");
   return [
     "You read a photo that a volunteer sent as evidence for a task.",
     condicion ? `The organizer asked for: "${condicion}".` : "",
     tarea,
-    bloqueContextoEvento(contexto.evento),
-    bloqueOrganizacion(contexto.organizacion),
+    bloqueContextoEvento(contexto.evento, tipoRegla, tipoCuentaActivo() ? contexto.organizacion : null),
     "Describe only what is visible. Never invent a detail, an amount, a date, or a currency.",
     `Reply with JSON only, using exactly these keys: ${claves.join(", ")}.`,
     regla
@@ -360,7 +363,7 @@ export async function describirFoto(
   const imagen = await ajustarParaVision(bytes, tipo || "image/jpeg");
   const modelo = modeloVision();
   const activo = mileOtraConGroqActivo(env);
-  const formato = formatoRespuestaVision(modelo, env, Boolean(reglaDeEvento(contexto.evento)));
+  const formato = formatoRespuestaVision(modelo, env, Boolean(reglaDeEvento(contexto.evento, contexto.tipoTarea ?? "trabajo")));
   const mensajes: MensajeGroq[] = [
     {
       role: "user",
