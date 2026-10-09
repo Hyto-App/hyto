@@ -239,7 +239,7 @@ export function Bandeja({
   ];
 
   return (
-    <main className="hyto-page">
+    <main className="hyto-page hyto-bandeja">
       {sesionVencida ? <AvisoSesion /> : null}
       {fallidas.map((item) => (
         <ReintentoFondo key={item.id} tareaId={item.id} onDetalle={aplicar} />
