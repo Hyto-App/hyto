@@ -12,3 +12,6 @@ pruebas-mile/resultados/
 # Esto cubre una copia que caiga dentro del árbol.
 hyto-*.dump
 hyto-*.sql
+
+# Skills de diseño locales (Taste, Impeccable, Emil). No forman parte de la app.
+.cursor/skills/
