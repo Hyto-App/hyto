@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { usuarioDemo } from "./demo";
-import { nombreEnIdioma, nombreOrganizadorVisible, nombreParaMostrar, nombreVisible } from "./nombre";
+import { nombreEnIdioma, nombreEsInicioDeCorreo, nombreOrganizadorVisible, nombreParaMostrar, nombreVisible } from "./nombre";
 import { primerNombre } from "@/lib/ui/saludo";
 import { texto } from "@/lib/ui/diccionario";
 
@@ -15,6 +15,16 @@ test("un nombre real se muestra y un pedazo del correo no", () => {
   assert.equal(nombreVisible("Ana @ Norte", CORREO), null);
   assert.equal(nombreVisible("  ", CORREO), null);
   assert.equal(nombreVisible(null, CORREO), null);
+});
+
+test("solo el inicio del correo cuenta como nombre para limpiar", () => {
+  assert.equal(nombreEsInicioDeCorreo("ana", CORREO), true);
+  assert.equal(nombreEsInicioDeCorreo("ANA", CORREO), true);
+  assert.equal(nombreEsInicioDeCorreo(CORREO, CORREO), true);
+  assert.equal(nombreEsInicioDeCorreo("Ana Rojas", CORREO), false);
+  assert.equal(nombreEsInicioDeCorreo("Ana @ Norte", CORREO), false);
+  assert.equal(nombreEsInicioDeCorreo("", CORREO), false);
+  assert.equal(nombreEsInicioDeCorreo("ana", ""), false);
 });
 
 test("quien organiza sin nombre usa el evento y, si no hay, nada", () => {

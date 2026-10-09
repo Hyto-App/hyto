@@ -3,6 +3,7 @@ import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { olvidarNombreDeCorreo } from "@/lib/sesion/limpiar-nombre";
 import { nombreVisible } from "@/lib/sesion/nombre";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
 import { correoDelToken, walletDelToken } from "@/lib/sesion/correo";
@@ -61,6 +62,7 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
       nuevo = true;
     }
     if (!usuario) throw new Error("Could not register the user.");
+    usuario = await olvidarNombreDeCorreo(almacen, usuario);
     const segundos = segundosDeSesion(correo.exp);
     const sesion = tokenSesion();
     await almacen.crearSesion({
