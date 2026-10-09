@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
@@ -174,16 +174,17 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
   return (
-    <section className="hyto-card p-5 sm:p-6">
+    <section className="hyto-card hyto-saldo p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-medium text-[var(--suave)]">
-          {t("cuenta.saldoHyto")}: <span className="hyto-amount text-3xl text-[var(--tinta)]">{monto}</span>
+        <p className="hyto-saldo-linea text-sm font-medium text-[var(--suave)]">
+          <span className="hyto-saldo-etiqueta">{t("cuenta.saldoHyto")}: </span>
+          <span className="hyto-amount hyto-saldo-cifra text-3xl text-[var(--tinta)]">{monto}</span>
         </p>
         {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
-      <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
+      <p className="hyto-saldo-estado mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
       {sinCobro && !vista.demo && !vista.muestra ? <PrepararUsdc silencioPendiente onListo={alListo} /> : null}
-      <details className="mt-6 text-sm">
+      <details className="hyto-avanzado mt-6 text-sm">
         <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
         <div className="mt-4 grid gap-5">
           {publica ? (
@@ -228,7 +229,7 @@ function Direccion({ direccion }: { direccion: string }) {
         {acortarDireccion(direccion)}
         <span className="sr-only">{direccion}</span>
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="hyto-direccion-acciones mt-3 flex flex-wrap gap-2">
         <button type="button" className="hyto-btn-line is-inline px-5" aria-live="polite" onClick={() => void copiar()}>
           {copiado ? t("cuenta.copied") : t("cuenta.copy")}
         </button>
@@ -303,7 +304,10 @@ function Grafico({ meses }: { meses: MesOrgullo[] }) {
               {cifra > 0 ? formatearRecibido(mes.total, idioma) : ""}
             </span>
             <span className="hyto-mes-pista" aria-hidden="true">
-              <span className={altura === 0 ? "hyto-mes-col is-zero" : "hyto-mes-col"} style={{ height: `${altura}%` }} />
+              <span
+                className={altura === 0 ? "hyto-mes-col is-zero" : "hyto-mes-col"}
+                style={{ "--hyto-mes": `${altura}%` } as CSSProperties}
+              />
             </span>
             <span className="hyto-mes-nombre" aria-hidden="true">
               {corta}
@@ -346,7 +350,7 @@ function OrgulloFila({ orgullo }: { orgullo: Orgullo }) {
     },
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="hyto-orgullo grid grid-cols-2 gap-3 sm:grid-cols-4">
       {filas.map((fila) => (
         <article key={fila.etiqueta} className="hyto-card p-4">
           <p className="text-sm text-[var(--suave)]">{fila.etiqueta}</p>
@@ -401,21 +405,21 @@ function Recientes({ orgullo, muestra }: { orgullo: Orgullo; muestra: boolean })
                     {tarea.pagadoEn ? ` · ${formatearFecha(tarea.pagadoEn, idioma)}` : ""}
                   </p>
                 </div>
-                <p className="hyto-amount max-w-[16rem] shrink text-right text-sm leading-5">
+                <p className="hyto-amount hyto-reciente-neto max-w-[16rem] shrink text-right text-sm leading-5">
                   {tarea.monto ? explicarNeto(tarea.monto, idioma) : "—"}
                 </p>
               </>
             );
             if (muestra) {
               return (
-                <li key={tarea.id} className="flex items-center justify-between gap-3 border-t border-[var(--linea)] py-3 first:border-t-0">
+                <li key={tarea.id} className="hyto-reciente flex items-center justify-between gap-3 border-t border-[var(--linea)] py-3 first:border-t-0">
                   {cuerpo}
                 </li>
               );
             }
             return (
               <li key={tarea.id} className="border-t border-[var(--linea)] first:border-t-0">
-                <Link href={`/tareas/${tarea.id}`} className="flex items-center justify-between gap-3 py-3 text-inherit no-underline">
+                <Link href={`/tareas/${tarea.id}`} className="hyto-reciente flex items-center justify-between gap-3 py-3 text-inherit no-underline">
                   {cuerpo}
                 </Link>
               </li>

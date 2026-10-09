@@ -1827,6 +1827,7 @@ a {
 
 .hyto-mes-col {
   width: 100%;
+  height: var(--hyto-mes, 0%);
   border-radius: 8px 8px 3px 3px;
   background: var(--acento);
 }
@@ -5727,18 +5728,34 @@ html.hyto-firmando body {
 }
 
 .hyto-ayuda-cabeza h2 {
+  min-width: 0;
+  flex: 1;
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .hyto-ayuda-cerrar {
   margin-left: auto;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  flex: none;
   border-radius: 999px;
   font-size: 22px;
   line-height: 1;
+}
+
+.hyto-ayuda-cerrar:focus-visible,
+.hyto-ayuda-atajo:focus-visible,
+.hyto-ayuda-lista button:focus-visible,
+.hyto-ayuda-buscar input:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.hyto-ayuda-cuerpo {
+  min-width: 0;
 }
 
 .hyto-ayuda-buscar input {
@@ -6188,4 +6205,229 @@ html.hyto-firmando body {
 
 .hyto-contador.is-alto {
   color: var(--contador-alto);
+}
+
+/* Settings and Ask Mile, 360–430px. Desktop layout stays as it is. */
+@media (max-width: 430px) {
+  .hyto-config .hyto-title {
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -0.4px;
+  }
+
+  .hyto-config .hyto-config-correo {
+    overflow-wrap: anywhere;
+  }
+
+  .hyto-config .hyto-config-salir {
+    max-width: none;
+  }
+
+  .hyto-config .hyto-config-salir .hyto-btn-danger {
+    width: 100%;
+  }
+
+  .hyto-config .hyto-card {
+    padding: 16px;
+  }
+
+  .hyto-config .hyto-saldo-linea {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .hyto-config .hyto-saldo-etiqueta {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .hyto-config .hyto-saldo-cifra {
+    font-size: 34px;
+    line-height: 1.05;
+  }
+
+  .hyto-config .hyto-avanzado > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    list-style: none;
+  }
+
+  .hyto-config .hyto-avanzado > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .hyto-config .hyto-avanzado > summary::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+
+  .hyto-config .hyto-avanzado[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
+  }
+
+  .hyto-config .hyto-avanzado > summary:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: 2px;
+  }
+
+  .hyto-config .hyto-direccion-acciones {
+    display: grid;
+  }
+
+  .hyto-config .hyto-btn.is-inline,
+  .hyto-config .hyto-btn-line.is-inline {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hyto-config .hyto-meses {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .hyto-config .hyto-mes {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+    grid-template-rows: 28px;
+    align-items: center;
+    height: auto;
+    gap: 8px;
+  }
+
+  .hyto-config .hyto-mes-nombre {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: left;
+  }
+
+  .hyto-config .hyto-mes-pista {
+    grid-column: 2;
+    grid-row: 1;
+    height: 10px;
+    max-width: none;
+    flex: none;
+  }
+
+  .hyto-config .hyto-mes-col {
+    width: var(--hyto-mes, 0%);
+    height: 100%;
+    min-height: 8px;
+    border-radius: 3px 8px 8px 3px;
+  }
+
+  .hyto-config .hyto-mes-col.is-zero {
+    width: 8px;
+    height: 100%;
+  }
+
+  .hyto-config .hyto-mes-valor {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 0;
+    font-size: 13px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .hyto-config .hyto-orgullo {
+    gap: 8px;
+  }
+
+  .hyto-config .hyto-orgullo .hyto-card {
+    padding: 12px;
+  }
+
+  .hyto-config .hyto-reciente {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .hyto-config .hyto-reciente-neto {
+    max-width: none;
+    text-align: left;
+  }
+
+  .hyto-capa-ayuda {
+    align-items: end;
+    padding: 0;
+  }
+
+  .hyto-ayuda {
+    width: 100%;
+    height: min(92dvh, var(--hyto-ayuda-alto, 92dvh));
+    max-height: min(92dvh, var(--hyto-ayuda-alto, 92dvh));
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    align-content: stretch;
+    gap: 10px;
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 16px max(16px, env(safe-area-inset-bottom));
+    animation: hyto-ayuda-sube 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .hyto-ayuda-cuerpo {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .hyto-ayuda-atajos {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin-inline: -4px;
+    padding: 0 20px 2px 0;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+
+  .hyto-ayuda-atajos::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hyto-ayuda-atajo {
+    flex: none;
+    min-height: 44px;
+  }
+
+  .hyto-ayuda-buscar input {
+    font-size: 16px;
+  }
+
+  .hyto-ayuda-lista button {
+    min-height: 48px;
+    line-height: 1.35;
+  }
+
+  .hyto-ayuda-respuesta .hyto-btn-line {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+  }
+}
+
+@keyframes hyto-ayuda-sube {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-ayuda {
+    animation: none;
+  }
 }

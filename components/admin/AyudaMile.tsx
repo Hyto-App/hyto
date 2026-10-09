@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
+import { MileAnimada } from "@/components/ui/MileAnimada";
 import { ATAJOS, PREGUNTAS, buscarPreguntas, type IdPregunta, type PreguntaVisible } from "@/lib/ui/ayuda";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -29,6 +30,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
   const titulo = useId();
   const [consulta, setConsulta] = useState("");
   const [abierta, setAbierta] = useState<IdPregunta | null>(null);
+  const [quieto, setQuieto] = useState(false);
 
   const preguntas = useMemo<PreguntaVisible[]>(
     () =>
@@ -53,16 +55,36 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
     const raiz = panel.current;
     if (!raiz) return;
     campo.current?.focus();
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const vista = window.visualViewport;
+    const ajustar = () => {
+      if (!vista) return;
+      raiz.style.setProperty("--hyto-ayuda-alto", `${Math.round(vista.height)}px`);
+    };
+    ajustar();
+    vista?.addEventListener("resize", ajustar);
     function tecla(evento: KeyboardEvent) {
       if (!panel.current) return;
       teclaDialogo(evento, panel.current, alCerrar);
     }
     document.addEventListener("keydown", tecla);
     return () => {
+      document.body.style.overflow = previo;
+      vista?.removeEventListener("resize", ajustar);
       document.removeEventListener("keydown", tecla);
       devolver?.focus();
     };
   }, [abierto, alCerrar, devolver]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const aplicar = () => setQuieto(media.matches);
+    aplicar();
+    media.addEventListener("change", aplicar);
+    return () => media.removeEventListener("change", aplicar);
+  }, []);
 
   if (!abierto) return null;
 
@@ -91,7 +113,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
         onMouseDown={(evento) => evento.stopPropagation()}
       >
         <header className="hyto-ayuda-cabeza">
-          <Mile estado="cara-feliz" tamano={40} />
+          {quieto ? <Mile estado="cara-feliz" tamano={40} /> : <MileAnimada estado="saludo" tamano={40} />}
           <h2 id={titulo}>{t("ayuda.titulo")}</h2>
           <button type="button" className="hyto-ayuda-cerrar" onClick={alCerrar} aria-label={t("ayuda.cerrar")}>
             ×
@@ -123,26 +145,28 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
             ),
           )}
         </div>
-        {elegida ? (
-          <article className="hyto-ayuda-respuesta" aria-live="polite">
-            <h3>{elegida.pregunta}</h3>
-            <p>{elegida.respuesta}</p>
-            <button type="button" className="hyto-btn-line" onClick={() => setAbierta(null)}>
-              {t("ayuda.preguntas")}
-            </button>
-          </article>
-        ) : (
-          <ul className="hyto-ayuda-lista">
-            {visibles.length === 0 ? <li className="hyto-ayuda-vacio">{t("ayuda.vacio")}</li> : null}
-            {visibles.map((item) => (
-              <li key={item.id}>
-                <button type="button" onClick={() => setAbierta(item.id)}>
-                  {item.pregunta}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="hyto-ayuda-cuerpo">
+          {elegida ? (
+            <article className="hyto-ayuda-respuesta" aria-live="polite">
+              <h3>{elegida.pregunta}</h3>
+              <p>{elegida.respuesta}</p>
+              <button type="button" className="hyto-btn-line" onClick={() => setAbierta(null)}>
+                {t("ayuda.preguntas")}
+              </button>
+            </article>
+          ) : (
+            <ul className="hyto-ayuda-lista">
+              {visibles.length === 0 ? <li className="hyto-ayuda-vacio">{t("ayuda.vacio")}</li> : null}
+              {visibles.map((item) => (
+                <li key={item.id}>
+                  <button type="button" onClick={() => setAbierta(item.id)}>
+                    {item.pregunta}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
