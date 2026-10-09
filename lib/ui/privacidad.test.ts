@@ -18,6 +18,8 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   assert.equal(JERGA.test(unido), false, unido);
   assert.match(unido, /Privacy/);
   assert.match(unido, /digital dollars \(USDC\)/);
+  assert.match(unido, /Vercel Web Analytics/);
+  assert.match(unido, /no cookie banner/i);
   assert.ok(PRIVACIDAD.secciones.length >= 3);
   for (const texto of textos) assert.ok(texto.trim().length > 0);
 
@@ -27,4 +29,6 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   assert.equal(JERGA.test(unidoEs), false, unidoEs);
   assert.match(unidoEs, /Privacidad/);
   assert.match(unidoEs, /dólares digitales \(USDC\)/);
+  assert.match(unidoEs, /Vercel Web Analytics/);
+  assert.match(unidoEs, /no hay un aviso de cookies/i);
 });

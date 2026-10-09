@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { cookies, headers } from "next/headers";
+import { Analitica } from "@/components/ui/Analitica";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { TituloDocumento } from "@/components/ui/TituloDocumento";
 import { ESLOGAN } from "@/components/ui/marca/trazos";
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <ProveedorIdioma idioma={idioma}>
           {children}
           <TituloDocumento />
+          <Analitica />
         </ProveedorIdioma>
       </body>
     </html>

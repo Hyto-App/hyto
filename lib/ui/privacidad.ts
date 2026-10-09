@@ -35,6 +35,11 @@ const EN = {
       cuerpo:
         "A sign-in cookie keeps you signed in for up to a day. A language cookie remembers English or Spanish on this device.",
     },
+    {
+      titulo: "Analytics",
+      cuerpo:
+        "Hyto measures page visits with Vercel Web Analytics. That tool does not use cookies or advertising identifiers, so there is no cookie banner. It records anonymous, aggregated visits only.",
+    },
   ],
 } as const;
 
@@ -65,6 +70,11 @@ const ES = {
       titulo: "Cookies",
       cuerpo:
         "Una cookie de ingreso lo mantiene dentro hasta un día. Una cookie de idioma recuerda inglés o español en este dispositivo.",
+    },
+    {
+      titulo: "Analítica",
+      cuerpo:
+        "Hyto mide las visitas a las páginas con Vercel Web Analytics. Esa herramienta no usa cookies ni identificadores de publicidad, así que no hay un aviso de cookies. Solo registra visitas anónimas y agregadas.",
     },
   ],
 } as const;
