@@ -47,18 +47,20 @@ export function CabeceraEvento({
   }
 
   return (
-    <div className="hyto-page pb-0">
+    <div className="hyto-page pb-0 hyto-evento-cabecera">
       <p className="hyto-crumb">
         <Link href="/eventos">{t("eventos.title")}</Link>
         <span aria-hidden="true">/</span>
         <span>{nombre}</span>
       </p>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="hyto-eventos-cabeza">
         <h1 className="hyto-title">{nombre}</h1>
         {organiza ? (
-          <button id="invitar" type="button" className="hyto-btn is-inline px-6" onClick={() => setAbierto((actual) => !actual)}>
-            {t("eventos.invite")}
-          </button>
+          <div className="hyto-pulgar">
+            <button id="invitar" type="button" className="hyto-btn" onClick={() => setAbierto((actual) => !actual)}>
+              {t("eventos.invite")}
+            </button>
+          </div>
         ) : null}
       </div>
       {organiza && abierto ? (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bienvenida } from "@/components/sesion/Bienvenida";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { Mile } from "@/components/ui/Mile";
 import type { Clave } from "@/lib/ui/diccionario";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
@@ -90,60 +91,59 @@ export function ListaEventos() {
   }, [intento]);
 
   return (
-    <main className="hyto-page">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="hyto-h1">{t("eventos.title")}</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+    <main className="hyto-page hyto-movil-eventos">
+      <header className="hyto-eventos-cabeza">
+        <div>
+          <h1 className="hyto-h1">{t("eventos.title")}</h1>
+          {eventos && eventos.length > 0 ? <p className="hyto-sub">{t("eventos.count", { n: eventos.length })}</p> : null}
+        </div>
+        <div className="hyto-pulgar">
+          <Link href="/eventos/nuevo" className="hyto-btn">
             {t("eventos.create")}
           </Link>
-          <Link href="/join" className="hyto-btn-line is-inline px-5">
+          <Link href="/join" className="hyto-btn-line">
             {t("eventos.joinCode")}
           </Link>
         </div>
       </header>
       <BienvenidaColapsable />
       {!eventos ? (
-        <div className="hyto-skel mt-6" aria-busy="true">
-          <i />
-          <span>
-            <i />
-            <i />
-          </span>
+        <div className="hyto-carga-eventos" aria-busy="true">
+          <p className="sr-only">{t("eventos.loading")}</p>
+          <span className="hyto-bloque" />
+          <span className="hyto-bloque" />
+        </div>
+      ) : error ? (
+        <div className="hyto-card hyto-estado-vacio hyto-aparecer" role="alert">
+          <Mile estado="rechazado" tamano={72} />
+          <h2>{claro(error)}</h2>
+          <div className="hyto-pulgar">
+            <button type="button" className="hyto-btn" onClick={() => setIntento((actual) => actual + 1)}>
+              {t("comunes.tryAgain")}
+            </button>
+          </div>
+        </div>
+      ) : eventos.length === 0 ? (
+        <div className="hyto-card hyto-estado-vacio hyto-aparecer">
+          <Mile estado="icono" tamano={72} />
+          <h2>{t("eventos.empty")}</h2>
+          <p>{t("eventos.emptyHelp")}</p>
         </div>
       ) : (
-        <>
-          {error ? (
-            <div className="hyto-card mt-6 px-6 py-10">
-              <p role="alert" className="text-lg font-semibold">
-                {claro(error)}
-              </p>
-              <button type="button" className="hyto-btn mt-6 max-w-xs" onClick={() => setIntento((actual) => actual + 1)}>
-                {t("comunes.tryAgain")}
-              </button>
-            </div>
-          ) : eventos.length === 0 ? (
-            <div className="hyto-card mt-6 px-6 py-10">
-              <p className="text-lg font-semibold">{t("eventos.empty")}</p>
-              <p className="mt-2 text-sm text-[var(--suave)]">{t("eventos.emptyHelp")}</p>
-            </div>
-          ) : (
-            <ul className="mt-6 grid gap-3">
-              {eventos.map((evento) => (
-                <li key={evento.id}>
-                  <Link href={`/eventos/${evento.id}`} className="hyto-card block p-5">
-                    <p className="text-lg font-semibold">{evento.nombre}</p>
-                    <p className="mt-1 text-sm text-[var(--suave)]">
-                      {evento.rol ? t(ROL[evento.rol]) : t("eventos.member")}
-                      {" · "}
-                      {t(evento.rol === "organizer" ? "eventos.toReview" : "eventos.inReview", { n: evento.pendientes ?? 0 })}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        <ul className="hyto-lista-eventos">
+          {eventos.map((evento) => (
+            <li key={evento.id}>
+              <Link href={`/eventos/${evento.id}`} className="hyto-card hyto-evento-fila hyto-aparecer">
+                <span className="hyto-evento-nombre">{evento.nombre}</span>
+                <span className="hyto-evento-meta">
+                  {evento.rol ? t(ROL[evento.rol]) : t("eventos.member")}
+                  {" · "}
+                  {t(evento.rol === "organizer" ? "eventos.toReview" : "eventos.inReview", { n: evento.pendientes ?? 0 })}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </main>
   );
