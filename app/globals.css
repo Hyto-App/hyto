@@ -5646,6 +5646,24 @@ html.hyto-firmando body {
   color: var(--tenue);
 }
 
+/* The shortcut stays on the button for the keyboard and the tooltip. It does not take a column, so "Pregúntele a Mile" fits the 256 px rail. */
+.hyto-foot-escritorio .hyto-preguntar {
+  position: relative;
+}
+
+.hyto-foot-escritorio .hyto-preguntar kbd {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .hyto-preguntar-icono {
   width: 40px;
   height: 40px;

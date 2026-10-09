@@ -156,6 +156,10 @@ test("la barra recuerda si está minimizada y Ctrl+K sigue abriendo a Mile", asy
     const acciones = [...(pie?.querySelectorAll(".hyto-foot-acciones > *") ?? [])].map((nodo) => nodo.className);
     assert.deepEqual(acciones, ["hyto-idioma-menu hyto-idioma-marco", "hyto-tema"]);
     assert.equal(pie?.querySelector('a[href="/privacy"]'), null);
+    const preguntar = pie?.querySelector(".hyto-preguntar");
+    assert.equal(preguntar?.querySelector(".hyto-preguntar-texto")?.textContent, "Ask Mile");
+    assert.equal(preguntar?.getAttribute("title"), "Ask Mile (Ctrl+K)");
+    assert.equal(preguntar?.querySelector("kbd")?.textContent, "Ctrl+K");
     const toggle = document.querySelector(".hyto-barra-toggle");
     assert.equal(toggle?.classList.contains("hyto-solo-escritorio"), true);
     assert.equal(toggle?.querySelector("svg")?.getAttribute("width"), "18");

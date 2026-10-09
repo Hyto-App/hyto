@@ -244,7 +244,7 @@ export function Marco({
             type="button"
             className="hyto-preguntar"
             aria-label={t("nav.askMile")}
-            title={t("nav.askMile")}
+            title={`${t("nav.askMile")} (Ctrl+K)`}
             aria-keyshortcuts="Control+K Meta+K"
             aria-haspopup="dialog"
             aria-expanded={ayuda}
