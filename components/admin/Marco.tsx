@@ -7,7 +7,6 @@ import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
 import { Icono, Isotipo, Logo, Tema, iniciales } from "@/components/ui/Marca";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
-import { Mile } from "@/components/ui/Mile";
 import { Volver } from "@/components/ui/Volver";
 import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -134,6 +133,15 @@ export function Marco({
     return () => window.removeEventListener("keydown", tecla);
   }, []);
 
+  useEffect(() => {
+    const raiz = document.documentElement;
+    if (ayuda) raiz.dataset.ayudaMile = "abierta";
+    else delete raiz.dataset.ayudaMile;
+    return () => {
+      delete raiz.dataset.ayudaMile;
+    };
+  }, [ayuda]);
+
   usarLayout(() => {
     const guardada = leerBarraColapsada();
     publicarBarra(guardada);
@@ -179,9 +187,7 @@ export function Marco({
               aria-expanded={ayuda}
               onClick={(evento) => abrirAyuda(evento.currentTarget)}
             >
-              <span className="hyto-preguntar-mile">
-                <Mile estado="cara-feliz" tamano={18} />
-              </span>
+              <SelloPregunta />
             </button>
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
@@ -250,9 +256,7 @@ export function Marco({
             aria-expanded={ayuda}
             onClick={(evento) => abrirAyuda(evento.currentTarget)}
           >
-            <span className="hyto-preguntar-mile">
-              <Mile estado="cara-feliz" tamano={18} />
-            </span>
+            <SelloPregunta />
             <span className="hyto-preguntar-texto">{t("nav.askMile")}</span>
             <kbd>Ctrl+K</kbd>
           </button>
@@ -282,6 +286,13 @@ export function Marco({
       <AyudaMile abierto={ayuda} alCerrar={cerrarAyuda} devolver={abreAyuda.current} />
     </div>
   );
+}
+
+/** Small static brand on the bar. The panel is the only place that draws Mile. */
+function SelloPregunta() {
+  return <span className="hyto-preguntar-mile">
+      <Isotipo decorativo className="hyto-preguntar-sello" />
+    </span>;
 }
 
 function EnlaceNav({

@@ -32,16 +32,15 @@ export function Logo({ className, title = "Hyto" }: PropsMarca = {}) {
   );
 }
 
-/** Isotipo alone, for the mobile header, a collapsed sidebar, and icons. */
-export function Isotipo({ className, title = "Hyto" }: PropsMarca = {}) {
+/** Isotipo alone, for the mobile header, a collapsed sidebar, and icons. `decorativo` hides it from the accessibility tree when a button already names the action. */
+export function Isotipo({ className, title = "Hyto", decorativo = false }: PropsMarca & { decorativo?: boolean } = {}) {
   return (
     <svg
       className={["hyto-isotipo", className].filter(Boolean).join(" ")}
       viewBox={VIEWBOX_ISOTIPO}
-      role="img"
-      aria-label={title}
+      {...(decorativo ? { "aria-hidden": true as const } : { role: "img" as const, "aria-label": title })}
     >
-      <title>{title}</title>
+      {decorativo ? null : <title>{title}</title>}
       <g transform={TRANSFORM_MARCA}>
         <path d={TRAZO_ISOTIPO} />
       </g>
