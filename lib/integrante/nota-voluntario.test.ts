@@ -99,10 +99,16 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
-    assert.match(texto(), /You were paid/);
-    // US$20 funded, minus the 0.3% protocol fee, shown in cents.
-    assert.match(texto(), /\+US\$19\.94/);
+    assert.match(texto(), /A person from the event approved it/);
+    assert.match(texto(), /It's already in your balance/);
+    assert.doesNotMatch(texto(), /You were paid|You did it|Keep going/);
+    // US$20 funded, minus the 0.3% protocol fee, shown in cents. No celebratory plus.
+    assert.equal(texto().includes("+US$"), false);
     assert.match(texto(), /US\$19\.94 \(US\$20 minus a US\$0\.06 fee\)/);
+    assert.equal(document.querySelectorAll("a.hyto-btn").length, 1);
+    assert.equal(document.querySelector("a.hyto-btn")?.textContent, "Back to my tasks");
+    assert.ok(document.querySelector('img[src="/mile/mile-descansando-dark.svg"]'));
+    assert.equal(document.querySelector("[data-mile-rig]"), null);
     assert.equal(texto().includes(FRASE_PAGO), false);
     assert.equal(texto().includes("84%"), false);
 

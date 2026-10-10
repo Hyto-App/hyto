@@ -37,8 +37,10 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
   try {
     await montar(createElement(PantallaPagada, { tarea, titulo: "Team meal" }));
     await esperar(() => texto().includes("You received"));
-    assert.match(texto(), /\+US\$12\.44/);
+    assert.equal(texto().includes("+US$"), false);
+    assert.match(texto(), /US\$12\.44/);
     assert.match(texto(), /You received/);
+    assert.match(texto(), /A person from the event approved it/);
     assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
     assert.equal(texto().includes("US$15"), false);
     assert.equal(texto().includes("12.44256"), false);
@@ -75,7 +77,7 @@ test("en demo la pantalla pagada marca la red de práctica y el pago simulado", 
         children: createElement(PantallaPagada, { tarea, titulo: "Set up the booth" }),
       }),
     );
-    await esperar(() => texto().includes("You were paid"));
+    await esperar(() => texto().includes("A person from the event approved it"));
     assert.match(texto(), /No real money moves on this practice network/);
     assert.match(texto(), /Demo payment\. No money moved/);
     assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
