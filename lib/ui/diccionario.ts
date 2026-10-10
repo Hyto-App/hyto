@@ -243,6 +243,8 @@ export const en = {
     startDemo: "Start the demo",
     demo: "Demo: practice payment, no real money moves.",
     cobro: "Before your first payment",
+    testnet: "Testnet",
+    testnetDemo: "Testnet demo",
   },
   landing: {
     esloganAntes: "Proof before",
@@ -1467,6 +1469,8 @@ export const es: Rama<typeof en> = {
     startDemo: "Empezar el demo",
     demo: "Demo: pago de práctica, no se mueve dinero real.",
     cobro: "Antes de su primer pago",
+    testnet: "Testnet",
+    testnetDemo: "Demo en testnet",
   },
   landing: {
     esloganAntes: "Primero la prueba,",
