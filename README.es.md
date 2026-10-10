@@ -6,7 +6,7 @@ Si prefiere leer en inglés, abra la versión principal en [README.md](README.md
 
 ## A quién se dirige
 
-A comunidades de América Latina, también si usan otra red o si no están en el lugar. Reciben estipendios, subvenciones y fondos para eventos desde la distancia, y tienen que mostrar en qué se usó ese dinero. El pago sale por la red Stellar.
+A comunidades de cualquier lugar del mundo, también si usan otra red o si no están en el lugar. Reciben estipendios, subvenciones y fondos para eventos desde la distancia, y tienen que mostrar en qué se usó ese dinero. El pago sale por la red Stellar.
 
 ## Pantallas
 

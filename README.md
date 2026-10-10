@@ -6,7 +6,7 @@
 
 ## Who it is for
 
-Communities in Latin America, including groups that operate on any chain and groups that are not physically present. They receive stipends, grants, and event funds from a distance, and they must show how those funds were spent. Stellar is the settlement network.
+Communities anywhere in the world, including groups that operate on any chain and groups that are not physically present. They receive stipends, grants, and event funds from a distance, and they must show how those funds were spent. Stellar is the settlement network.
 
 ## Screens
 
