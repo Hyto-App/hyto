@@ -53,8 +53,16 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
     assert.match(texto(), /How do I get paid\?/);
     assert.match(texto(), /How do I set money aside for a task\?/);
     assert.match(texto(), /What does it cost to pay a task\?/);
+    await pulsar("Frequently asked questions");
     assert.match(texto(), /How do I pay a reimbursement\?/);
-    await pulsar("How do I get paid?");
+    // Reduced motion: Mile's bubbles arrive at once.
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((consulta: string) => ({ matches: consulta.includes("prefers-reduced-motion"), media: consulta })) as typeof window.matchMedia;
+    try {
+      await pulsar("How do I get paid?");
+    } finally {
+      window.matchMedia = matchMedia;
+    }
     assert.equal(document.querySelector(".hyto-ayuda"), panel);
     assert.equal(panel?.parentElement, capa);
     assert.match(texto(), /cannot send that balance to a bank/);
