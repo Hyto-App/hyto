@@ -252,7 +252,7 @@ test("el camino del demo en español no mezcla el tuteo con el usted", () => {
       assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
     }
   }
-  assert.equal(texto("es", "evidencia.galleryHint"), "Tómela ahora con la cámara: no se aceptan fotos viejas de la galería.");
+  assert.equal(texto("es", "evidencia.galleryHint"), "La foto se toma aquí. No se aceptan fotos de la galería.");
   assert.equal(texto("es", "evidencia.sample"), "Tarea de ejemplo, hasta que carguen las suyas.");
   assert.match(texto("es", "evidencia.archivoFalso"), /Abra el archivo y compruebe que se ve la foto/);
   assert.equal(texto("es", "ayuda.placeholder"), "Busque en las respuestas");

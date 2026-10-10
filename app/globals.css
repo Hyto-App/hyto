@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-poppins), Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    var(--font-poppins), Poppins, ui-sans-serif, system-ui, sans-serif;
 }
 
 /*
@@ -25,7 +26,8 @@
   --superficie-3: #e3e6ef;
   --card-bg: #ffffff;
   --card-line: rgba(20, 22, 43, 0.08);
-  --sombra-tarjeta: 0 14px 30px -20px rgba(20, 22, 43, 0.28), 0 0 0 1px var(--card-line);
+  --sombra-tarjeta:
+    0 14px 30px -20px rgba(20, 22, 43, 0.28), 0 0 0 1px var(--card-line);
   --tinta: #14162b;
   --suave: #474b63;
   --tenue: #676b82;
@@ -79,6 +81,8 @@
   --r-xl: 28px;
   --r-pill: 999px;
   --alto-nav: 82px;
+  /* One curve for press and for a view that settles. No bounce. */
+  --hyto-curva: cubic-bezier(0.23, 1, 0.32, 1);
 
   --texto-titulo: 30px;
   --texto-h2: 20px;
@@ -99,7 +103,8 @@
   --superficie-3: #252949;
   --card-bg: linear-gradient(180deg, #171a34 0%, #121429 100%);
   --card-line: rgba(255, 255, 255, 0.07);
-  --sombra-tarjeta: 0 24px 48px -28px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--card-line);
+  --sombra-tarjeta:
+    0 24px 48px -28px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--card-line);
   --tinta: #f2f3f7;
   --suave: #b0b3c6;
   --tenue: #8d90a8;
@@ -181,7 +186,13 @@ a {
 
 .hyto-shell {
   min-height: 100dvh;
-  background: radial-gradient(ellipse 80% 40% at 50% -8%, var(--brillo-fondo) 0%, transparent 70%), var(--fondo);
+  background:
+    radial-gradient(
+      ellipse 80% 40% at 50% -8%,
+      var(--brillo-fondo) 0%,
+      transparent 70%
+    ),
+    var(--fondo);
 }
 
 .hyto-logo {
@@ -1335,7 +1346,11 @@ a {
 .hyto-mile-card {
   margin-top: 0;
   background:
-    radial-gradient(80% 120% at 100% 0%, color-mix(in srgb, var(--acento) 16%, transparent), transparent 58%),
+    radial-gradient(
+      80% 120% at 100% 0%,
+      color-mix(in srgb, var(--acento) 16%, transparent),
+      transparent 58%
+    ),
     var(--papel);
 }
 
@@ -1366,7 +1381,11 @@ a {
 .hyto-welcome-card {
   padding: var(--e-4);
   background:
-    radial-gradient(80% 100% at 100% 0%, color-mix(in srgb, var(--acento) 18%, transparent), transparent 58%),
+    radial-gradient(
+      80% 100% at 100% 0%,
+      color-mix(in srgb, var(--acento) 18%, transparent),
+      transparent 58%
+    ),
     var(--papel);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 28%, transparent);
 }
@@ -1651,7 +1670,8 @@ a {
   }
 
   .hyto-main {
-    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    padding: var(--e-1) var(--margen-lateral)
+      calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
   }
 
   .hyto-btn,
@@ -1776,7 +1796,10 @@ a {
 
   .hyto-inbox {
     display: grid;
-    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(240px, 320px);
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(
+        240px,
+        320px
+      );
     gap: 20px;
     align-items: start;
   }
@@ -2038,7 +2061,14 @@ html.hyto-firmando body {
   overflow: hidden;
   pointer-events: none;
   isolation: isolate;
-  background: radial-gradient(ellipse 90% 40% at 50% 20%, var(--l-centro) 0%, rgba(20, 22, 43, 0.5) 50%, transparent 85%), var(--l-fondo);
+  background:
+    radial-gradient(
+      ellipse 90% 40% at 50% 20%,
+      var(--l-centro) 0%,
+      rgba(20, 22, 43, 0.5) 50%,
+      transparent 85%
+    ),
+    var(--l-fondo);
 }
 
 .hyto-login-remolino {
@@ -2049,8 +2079,16 @@ html.hyto-firmando body {
   height: 820px;
   margin: -410px 0 0 -410px;
   z-index: -3;
-  -webkit-mask-image: radial-gradient(circle 380px at 50% 50%, #000 30%, transparent 85%);
-  mask-image: radial-gradient(circle 380px at 50% 50%, #000 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(
+    circle 380px at 50% 50%,
+    #000 30%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    circle 380px at 50% 50%,
+    #000 30%,
+    transparent 85%
+  );
   animation: hyto-login-aparece 1.2s ease both;
 }
 
@@ -2103,7 +2141,13 @@ html.hyto-firmando body {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: linear-gradient(to bottom, var(--l-fondo) 0, transparent 8%, transparent 40%, var(--l-fondo) 70%);
+  background: linear-gradient(
+    to bottom,
+    var(--l-fondo) 0,
+    transparent 8%,
+    transparent 40%,
+    var(--l-fondo) 70%
+  );
 }
 
 .hyto-login-lineas {
@@ -2122,8 +2166,20 @@ html.hyto-firmando body {
   bottom: 0;
   width: 1px;
   transform-origin: top;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 85%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 85%, transparent);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 10%,
+    #000 85%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 10%,
+    #000 85%,
+    transparent
+  );
 }
 
 .hyto-login-lineas i.is-h {
@@ -2131,8 +2187,20 @@ html.hyto-firmando body {
   right: 0;
   height: 1px;
   transform-origin: left;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 10%,
+    #000 90%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 10%,
+    #000 90%,
+    transparent
+  );
 }
 
 .hyto-login-lineas .is-l {
@@ -2456,15 +2524,27 @@ html.hyto-firmando body {
   height: 100px;
   margin: -50px 0 0 -80px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(183, 238, 52, 0.2), transparent);
+  background: radial-gradient(
+    closest-side,
+    rgba(183, 238, 52, 0.2),
+    transparent
+  );
 }
 
 .hyto-login-mile.is-worry .hyto-login-aura {
-  background: radial-gradient(closest-side, rgba(250, 5, 96, 0.14), transparent);
+  background: radial-gradient(
+    closest-side,
+    rgba(250, 5, 96, 0.14),
+    transparent
+  );
 }
 
 .hyto-login-mile.is-win .hyto-login-aura {
-  background: radial-gradient(closest-side, rgba(183, 238, 52, 0.38), transparent);
+  background: radial-gradient(
+    closest-side,
+    rgba(183, 238, 52, 0.38),
+    transparent
+  );
   transform: scale(1.3);
 }
 
@@ -2552,7 +2632,11 @@ html.hyto-firmando body {
   display: flex;
   flex-direction: column;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(23, 26, 52, 0.94) 0%, rgba(14, 16, 34, 0.96) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(23, 26, 52, 0.94) 0%,
+    rgba(14, 16, 34, 0.96) 100%
+  );
   box-shadow:
     0 40px 80px -30px rgba(0, 0, 0, 0.75),
     0 0 0 1px rgba(255, 255, 255, 0.07);
@@ -2566,7 +2650,13 @@ html.hyto-firmando body {
   border-radius: inherit;
   padding: 1px;
   pointer-events: none;
-  background: linear-gradient(160deg, rgba(183, 238, 52, 0.35), transparent 30%, transparent 70%, rgba(108, 117, 232, 0.25));
+  background: linear-gradient(
+    160deg,
+    rgba(183, 238, 52, 0.35),
+    transparent 30%,
+    transparent 70%,
+    rgba(108, 117, 232, 0.25)
+  );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -2575,7 +2665,13 @@ html.hyto-firmando body {
 }
 
 .hyto-login.is-error .hyto-login-tarjeta::before {
-  background: linear-gradient(160deg, rgba(255, 77, 141, 0.45), transparent 35%, transparent 70%, rgba(108, 117, 232, 0.2));
+  background: linear-gradient(
+    160deg,
+    rgba(255, 77, 141, 0.45),
+    transparent 35%,
+    transparent 70%,
+    rgba(108, 117, 232, 0.2)
+  );
 }
 
 .hyto-login-tarjeta h2 {
@@ -2695,7 +2791,12 @@ html.hyto-firmando body {
   position: absolute;
   inset: 0;
   width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
   animation: hyto-login-brillo 1.1s linear infinite;
 }
 
@@ -3222,11 +3323,25 @@ html.hyto-firmando body {
   }
 
   .hyto-login-escena {
-    background: radial-gradient(ellipse 70% 60% at 32% 46%, var(--l-centro) 0%, rgba(20, 22, 43, 0.55) 45%, transparent 78%), var(--l-fondo);
+    background:
+      radial-gradient(
+        ellipse 70% 60% at 32% 46%,
+        var(--l-centro) 0%,
+        rgba(20, 22, 43, 0.55) 45%,
+        transparent 78%
+      ),
+      var(--l-fondo);
   }
 
   .hyto-login.is-exito .hyto-login-escena {
-    background: radial-gradient(ellipse 60% 55% at 32% 50%, #24304a 0%, rgba(20, 22, 43, 0.5) 48%, transparent 78%), var(--l-fondo);
+    background:
+      radial-gradient(
+        ellipse 60% 55% at 32% 50%,
+        #24304a 0%,
+        rgba(20, 22, 43, 0.5) 48%,
+        transparent 78%
+      ),
+      var(--l-fondo);
   }
 
   .hyto-login-remolino {
@@ -3235,14 +3350,32 @@ html.hyto-firmando body {
     width: 1240px;
     height: 1240px;
     margin: -620px 0 0 -620px;
-    -webkit-mask-image: radial-gradient(circle 600px at 50% 50%, #000 30%, transparent 85%);
-    mask-image: radial-gradient(circle 600px at 50% 50%, #000 30%, transparent 85%);
+    -webkit-mask-image: radial-gradient(
+      circle 600px at 50% 50%,
+      #000 30%,
+      transparent 85%
+    );
+    mask-image: radial-gradient(
+      circle 600px at 50% 50%,
+      #000 30%,
+      transparent 85%
+    );
   }
 
   .hyto-login-vineta {
     background:
-      radial-gradient(ellipse 85% 70% at 38% 48%, transparent 62%, var(--l-fondo) 100%),
-      linear-gradient(to bottom, var(--l-fondo) 0, transparent 12%, transparent 82%, var(--l-fondo) 100%);
+      radial-gradient(
+        ellipse 85% 70% at 38% 48%,
+        transparent 62%,
+        var(--l-fondo) 100%
+      ),
+      linear-gradient(
+        to bottom,
+        var(--l-fondo) 0,
+        transparent 12%,
+        transparent 82%,
+        var(--l-fondo) 100%
+      );
   }
 
   .hyto-login-lineas .is-b,
@@ -3666,7 +3799,6 @@ html.hyto-firmando body {
   }
 }
 
-
 /* Phone login: explanation, 52px demo, and a hero the language menu can push. */
 @media (max-width: 1023px) {
   .hyto-login-izq {
@@ -3880,7 +4012,14 @@ html.hyto-firmando body {
 
 [data-theme="light"] .hyto-login-escena,
 [data-theme="light"] .hyto-login.is-exito .hyto-login-escena {
-  background: radial-gradient(ellipse 90% 40% at 50% 20%, #ffffff 0%, rgba(245, 246, 250, 0.65) 50%, transparent 85%), var(--l-fondo);
+  background:
+    radial-gradient(
+      ellipse 90% 40% at 50% 20%,
+      #ffffff 0%,
+      rgba(245, 246, 250, 0.65) 50%,
+      transparent 85%
+    ),
+    var(--l-fondo);
 }
 
 [data-theme="light"] .hyto-login-tarjeta {
@@ -4161,7 +4300,11 @@ html.hyto-firmando body {
   position: absolute;
   inset: -6%;
   border-radius: 999px;
-  background: radial-gradient(closest-side, var(--halo, var(--halo-lima)), transparent 72%);
+  background: radial-gradient(
+    closest-side,
+    var(--halo, var(--halo-lima)),
+    transparent 72%
+  );
 }
 
 .hyto-mile-buscando {
@@ -4203,11 +4346,15 @@ html.hyto-firmando body {
 .hyto-tarjeta-heroe {
   position: relative;
   border: 1px solid transparent;
-  background: var(--card-bg) padding-box, linear-gradient(135deg, var(--acento), #a9a4ff) border-box;
+  background:
+    var(--card-bg) padding-box,
+    linear-gradient(135deg, var(--acento), #a9a4ff) border-box;
 }
 
 .hyto-tarjeta-abierta {
-  box-shadow: 0 0 0 1px rgba(183, 238, 52, 0.28), var(--sombra-tarjeta);
+  box-shadow:
+    0 0 0 1px rgba(183, 238, 52, 0.28),
+    var(--sombra-tarjeta);
 }
 
 .hyto-badge {
@@ -4924,7 +5071,9 @@ html.hyto-firmando body {
 }
 
 .hyto-revisando {
-  box-shadow: 0 0 0 1px rgba(140, 150, 255, 0.3), var(--sombra-tarjeta);
+  box-shadow:
+    0 0 0 1px rgba(140, 150, 255, 0.3),
+    var(--sombra-tarjeta);
 }
 
 .hyto-visor {
@@ -5256,7 +5405,9 @@ html.hyto-firmando body {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  box-shadow: 0 0 0 1px rgba(255, 92, 150, 0.4), var(--sombra-tarjeta);
+  box-shadow:
+    0 0 0 1px rgba(255, 92, 150, 0.4),
+    var(--sombra-tarjeta);
 }
 
 .hyto-mile-rechazo h2 {
@@ -6366,6 +6517,165 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   color: var(--contador-alto);
 }
 
+/* App micro-interactions. Login keeps its own motion. One curve, no bounce. */
+.hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger) {
+  transition:
+    transform 100ms var(--hyto-curva),
+    filter 100ms var(--hyto-curva),
+    background-color 100ms var(--hyto-curva),
+    opacity 100ms var(--hyto-curva),
+    color 100ms var(--hyto-curva);
+}
+
+.hyto-shell
+  :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger):active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  transform: scale(0.98);
+}
+
+@keyframes hyto-asienta {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.hyto-shell .hyto-page {
+  animation: hyto-asienta 350ms var(--hyto-curva) backwards;
+}
+
+.hyto-shell .hyto-page.hyto-asentado {
+  animation: none;
+}
+
+.hyto-la-tengo {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hyto-la-tengo-monto {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.hyto-la-tengo-tope {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--tenue);
+}
+
+.hyto-la-tengo-frase {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--tenue);
+}
+
+.hyto-ver-mas {
+  width: 100%;
+  text-align: left;
+}
+
+.hyto-ver-mas summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--suave);
+}
+
+.hyto-ver-mas:not([open]) > .hyto-ver-mas-cuerpo {
+  display: none;
+}
+
+.hyto-ver-mas[open] > .hyto-ver-mas-cuerpo {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.hyto-cierre {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.hyto-cierre-monto {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--tinta);
+}
+
+.hyto-cierre-frase {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+.hyto-sin-camara {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--papel);
+}
+
+.hyto-sin-camara p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hyto-codigo-telefono strong {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+.hyto-visor.is-sin-camara {
+  display: none;
+}
+
+.hyto-requisito-angosto {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .hyto-requisito-angosto {
+    display: block;
+  }
+
+  .hyto-checklist-lado {
+    display: none;
+  }
+
+  .hyto-visor.is-apagada,
+  .hyto-visor.is-sin-camara {
+    display: none;
+  }
+
+  .hyto-pista-despues {
+    display: none;
+  }
+}
+
 /* Collapsible desktop rail. Mobile keeps the header and the bottom nav. */
 .hyto-barra-marca {
   display: none;
@@ -6515,8 +6825,14 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   .hyto-shell.is-barra-colapsada .hyto-foot .hyto-preguntar kbd,
   html[data-barra="colapsada"] .hyto-foot .hyto-idioma-menu-boton span,
   .hyto-shell.is-barra-colapsada .hyto-foot .hyto-idioma-menu-boton span,
-  html[data-barra="colapsada"] .hyto-foot .hyto-idioma-menu-boton svg:last-of-type,
-  .hyto-shell.is-barra-colapsada .hyto-foot .hyto-idioma-menu-boton svg:last-of-type,
+  html[data-barra="colapsada"]
+    .hyto-foot
+    .hyto-idioma-menu-boton
+    svg:last-of-type,
+  .hyto-shell.is-barra-colapsada
+    .hyto-foot
+    .hyto-idioma-menu-boton
+    svg:last-of-type,
   html[data-barra="colapsada"] .hyto-foot .hyto-usuario-datos,
   .hyto-shell.is-barra-colapsada .hyto-foot .hyto-usuario-datos,
   html[data-barra="colapsada"] .hyto-foot .hyto-perfil-flecha,
@@ -6548,6 +6864,32 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 @media (prefers-reduced-motion: reduce) {
   .hyto-shell {
     transition: none;
+  }
+
+  .hyto-shell .hyto-page,
+  .hyto-shell .hyto-page.hyto-asentado {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger):active {
+    transform: none !important;
+    filter: brightness(0.92);
+  }
+
+  .hyto-shell
+    :is(
+      .hyto-tarjeta,
+      .hyto-actions,
+      .hyto-ver-mas,
+      .hyto-btn,
+      .hyto-btn-line,
+      .hyto-btn-danger
+    ) {
+    animation-name: none !important;
+    transition-property:
+      color, background-color, border-color, opacity, filter !important;
+    transition-duration: 150ms !important;
   }
 }
 
