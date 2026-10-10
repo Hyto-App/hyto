@@ -1,10 +1,10 @@
 # Hyto
 
-Hyto is the accountability layer for communities funded from afar in Latin America: lock USDC per task, prove the spend with a photo, and a person releases the payment on a public Stellar trail.
+Hyto is the accountability layer for community funds: lock USDC per task, prove the spend with evidence, and a person releases the payment on a public Stellar trail.
 
 Communities anywhere in the world, including ones whose funders are far away or not physically present, receive stipends, scholarships, and funds to run events, and they have to prove how that money was spent. Today that proof is loose screenshots and spreadsheets nobody can verify. The funder locks USDC in a Trustless Work escrow for each task. The member does the work and uploads evidence: a live photo of the work or a receipt in any currency. Mile reviews the evidence and recommends, and never moves money. A person approves, and the payment is released on Stellar with a public trail anyone can audit. Sign-in is an email through Cavos. There is no wallet to install and no crypto app.
 
-Stellar is the settlement rail, not the audience. Why USDC, and not a local transfer such as SINPE: the money arrives from abroad in dollars, and the funder wants proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor, and Hyto is not an on-ramp.
+Stellar is the settlement rail, not the audience. Why USDC, and not a local transfer such as a local bank transfer: the money arrives from abroad in dollars, and the funder wants proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor, and Hyto is not an on-ramp.
 
 Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
 
