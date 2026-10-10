@@ -18,7 +18,7 @@ type Props = {
   extra?: ReactNode;
 };
 
-/** Person or community card: avatar, name, role, tags, and an empty line. */
+/** Person card: avatar, name, role, tags, and an empty line. */
 export function Identidad({ nombre, rol, detalle, etiquetas = [], vacio, foto, href, plana = false, enLinea = false, extra }: Props) {
   const limpio = nombre.trim();
   const marcas = etiquetas.map((etiqueta) => etiqueta.trim()).filter(Boolean);
@@ -30,7 +30,7 @@ export function Identidad({ nombre, rol, detalle, etiquetas = [], vacio, foto, h
   const cuerpo = (
     <>
       {foto ? (
-        // Stored community photos are https URLs checked before they are saved.
+        // Stored photos are https URLs checked before they are saved.
         // eslint-disable-next-line @next/next/no-img-element
         <img className="hyto-identidad-foto" src={foto} alt="" />
       ) : (

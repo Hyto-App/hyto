@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { claseBoton } from "@/components/ui/Boton";
-import { Identidad } from "@/components/ui/Identidad";
 import { useTexto } from "@/components/ui/Idioma";
 
 type Resumen = {
@@ -113,13 +112,11 @@ export function ListaComunidades() {
 function Tarjeta({ comunidad }: { comunidad: Resumen }) {
   const t = useTexto();
   return (
-    <Identidad
-      href={`/comunidades/${comunidad.id}`}
-      nombre={comunidad.nombre}
-      detalle={comunidad.descripcion || t("comunidades.sinDescripcion")}
-      etiquetas={[comunidad.visibilidad === "privada" ? t("comunidades.privada") : t("comunidades.publica")]}
-      foto={comunidad.fotoUrl}
-    />
+    <Link href={`/comunidades/${comunidad.id}`} className="hyto-card block">
+      <strong>{comunidad.nombre}</strong>
+      <p className="mt-1 text-sm text-[var(--suave)]">{comunidad.descripcion || t("comunidades.sinDescripcion")}</p>
+      <p className="mt-2 text-xs">{comunidad.visibilidad === "privada" ? t("comunidades.privada") : t("comunidades.publica")}</p>
+    </Link>
   );
 }
 
@@ -271,12 +268,18 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
   const admin = detalle.membresia?.rol === "admin";
   return (
     <main className="hyto-page mx-auto max-w-3xl">
-      <Identidad
-        nombre={detalle.comunidad.nombre}
-        detalle={detalle.comunidad.descripcion || t("comunidades.sinDescripcion")}
-        etiquetas={[detalle.comunidad.visibilidad === "privada" ? t("comunidades.privada") : t("comunidades.publica")]}
-        foto={detalle.comunidad.fotoUrl}
-      />
+      <header className="hyto-page-head">
+        <div>
+          <h1 className="hyto-title">{detalle.comunidad.nombre}</h1>
+          <p className="hyto-sub">{detalle.comunidad.visibilidad === "privada" ? t("comunidades.privada") : t("comunidades.publica")}</p>
+        </div>
+      </header>
+      {detalle.comunidad.fotoUrl ? (
+        // The URL was stored only after an https check.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={detalle.comunidad.fotoUrl} alt="" className="mt-4 max-h-48 rounded-2xl object-cover" />
+      ) : null}
+      <p className="mt-4">{detalle.comunidad.descripcion || t("comunidades.sinDescripcion")}</p>
       {admin && detalle.comunidad.codigo ? (
         <p className="mt-4 text-sm">
           {t("comunidades.codigo")}: <strong>{detalle.comunidad.codigo}</strong>
@@ -294,11 +297,8 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
       <h2 className="mt-8 text-lg font-medium">{t("comunidades.miembros")}</h2>
       <ul className="mt-3 grid gap-2">
         {detalle.miembros.map((miembro) => (
-          <li key={miembro.usuarioId}>
-            <Identidad
-              nombre={miembro.nombre || miembro.usuarioId}
-              rol={miembro.rol === "admin" ? t("comunidades.admin") : t("comunidades.miembro")}
-            />
+          <li key={miembro.usuarioId} className="hyto-card">
+            {miembro.nombre || miembro.usuarioId} · {miembro.rol === "admin" ? t("comunidades.admin") : t("comunidades.miembro")}
           </li>
         ))}
       </ul>
@@ -308,20 +308,16 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
           {detalle.solicitudes.length === 0 ? <p className="mt-3 text-sm text-[var(--suave)]">{t("comunidades.sinSolicitudes")}</p> : null}
           <ul className="mt-3 grid gap-2">
             {detalle.solicitudes.map((solicitud) => (
-              <li key={solicitud.id}>
-                <Identidad
-                  nombre={solicitud.nombre || solicitud.usuarioId}
-                  extra={
-                    <span className="flex flex-wrap gap-2">
-                      <button type="button" className={`${claseBoton("primario")} is-inline`} onClick={() => void decidir(solicitud.id, "aprobada")}>
-                        {t("comunidades.aprobar")}
-                      </button>
-                      <button type="button" className={`${claseBoton("peligro")} is-inline`} onClick={() => void decidir(solicitud.id, "rechazada")}>
-                        {t("comunidades.rechazar")}
-                      </button>
-                    </span>
-                  }
-                />
+              <li key={solicitud.id} className="hyto-card flex flex-wrap items-center justify-between gap-3">
+                <span>{solicitud.nombre || solicitud.usuarioId}</span>
+                <span className="flex gap-2">
+                  <button type="button" className={`${claseBoton("primario")} is-inline`} onClick={() => void decidir(solicitud.id, "aprobada")}>
+                    {t("comunidades.aprobar")}
+                  </button>
+                  <button type="button" className={`${claseBoton("peligro")} is-inline`} onClick={() => void decidir(solicitud.id, "rechazada")}>
+                    {t("comunidades.rechazar")}
+                  </button>
+                </span>
               </li>
             ))}
           </ul>

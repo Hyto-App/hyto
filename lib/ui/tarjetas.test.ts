@@ -14,23 +14,23 @@ test("la tarjeta muestra avatar, nombre, rol, etiquetas y el vacío", async () =
       "div",
       null,
       createElement(Identidad, {
-        nombre: "North crew",
-        rol: "Community",
-        detalle: "The people who set up the booth.",
-        etiquetas: ["Public"],
-        href: "/comunidades/norte",
+        nombre: "Luis Mora",
+        rol: "Volunteer",
+        detalle: "Sets up the booth.",
+        etiquetas: ["Punctual"],
       }),
       createElement(Identidad, { nombre: "", vacio: "No tags yet." }),
       createElement(FichaVoluntario, { ficha: { experiencia: null, etiquetas: [] }, nombre: "Ana" }),
     ),
   );
-  assert.match(texto(), /North crew/);
-  assert.match(texto(), /Community/);
-  assert.match(texto(), /The people who set up the booth/);
-  assert.match(texto(), /Public/);
-  assert.match(texto(), /NC/);
+  assert.match(texto(), /Luis Mora/);
+  assert.match(texto(), /Volunteer/);
+  assert.match(texto(), /Sets up the booth/);
+  assert.match(texto(), /Punctual/);
+  assert.match(texto(), /LM/);
   assert.match(texto(), /No tags yet/);
-  assert.equal(document.querySelectorAll("a.hyto-identidad").length, 1);
+  assert.equal(document.querySelectorAll("a.hyto-identidad").length, 0);
+  assert.equal(document.querySelectorAll(".hyto-identidad").length, 1);
   assert.equal(document.querySelectorAll(".hyto-identidad-vacio").length, 1);
   assert.doesNotMatch(texto(), /Ana/);
   await desmontar();
