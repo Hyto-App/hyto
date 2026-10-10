@@ -1,22 +1,21 @@
 import type { Idioma } from "@/lib/ui/idioma";
+import { texto } from "@/lib/ui/diccionario";
 
 /**
- * The demo users are stored with English names (`lib/sesion/demo.ts`), and the sample tasks name
- * their organizer "Organizer" (`lib/integrante/ejemplos.ts`). The screens show them in the session
- * language. Stored data does not change.
+ * The demo users are stored with English names (`lib/sesion/demo.ts`), the seeded event names its
+ * people "Volunteer 1" or "Organizer", and the sample tasks name their organizer "Organizer". Those
+ * role-only names are shown in the session language, with the role words from the dictionary
+ * (`eventos.volunteer`, `eventos.organizer`). Any trailing number and "(demo)" stay. Stored data does not change.
  */
-const NOMBRES_DEMO: Record<string, Record<Idioma, string>> = {
-  organizer: { en: "Organizer", es: "Organizador" },
-  organizador: { en: "Organizer", es: "Organizador" },
-  "organizer (demo)": { en: "Organizer (demo)", es: "Organizador (demo)" },
-  "organizador (demo)": { en: "Organizer (demo)", es: "Organizador (demo)" },
-  "volunteer (demo)": { en: "Volunteer (demo)", es: "Voluntario (demo)" },
-  "voluntario (demo)": { en: "Volunteer (demo)", es: "Voluntario (demo)" },
-};
+const NOMBRE_DE_ROL = /^(volunteer|voluntario|organizer|organizador)(\s+\d+)?(\s+\(demo\))?$/i;
 
-/** A demo user's name in the screen language. Any other name comes back unchanged. */
+/** A role-only name (demo or seeded) in the screen language. Any other name comes back unchanged. */
 export function nombreEnIdioma(nombre: string, idioma: Idioma): string {
-  return NOMBRES_DEMO[nombre.trim().toLowerCase()]?.[idioma] ?? nombre;
+  const limpio = nombre.trim();
+  const rol = NOMBRE_DE_ROL.exec(limpio);
+  if (!rol) return nombre;
+  const palabra = /^vol/i.test(rol[1] ?? "") ? texto(idioma, "eventos.volunteer") : texto(idioma, "eventos.organizer");
+  return `${palabra}${rol[2] ?? ""}${rol[3] ? " (demo)" : ""}`;
 }
 
 /**
