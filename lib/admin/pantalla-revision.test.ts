@@ -1284,6 +1284,71 @@ test("si la red confirma el presupuesto en un reintento, la pantalla se actualiz
   }
 });
 
+test("en demo, bloquear y aprobar marcan Pagado sin firmar ni llamar a la red", async () => {
+  const anterior = globalThis.fetch;
+  let contrato: string | null = null;
+  let estado = "en revisión";
+  let firmas = 0;
+  const pedidos: string[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    pedidos.push(`${method} ${url}`);
+    if (url.includes("/api/firma") || url.includes("/api/escrow")) throw new Error("stellar");
+    if (method === "POST" && url.endsWith("/demo")) {
+      const body = JSON.parse(String(init?.body)) as { accion?: string };
+      if (body.accion === "bloquear") {
+        contrato = "demo-lock-stand";
+        return json({ estado, contrato, demo: true });
+      }
+      estado = "pagado";
+      return json({ estado: "pagado", contrato, demo: true });
+    }
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: contrato }] });
+    if (url.startsWith("/api/revision/")) {
+      return json({
+        tarea: tarea({ estado, veredicto: "cumplió", origen: "scout", nota: 90, frase: "Booth ready." }),
+        foto: null,
+        contratoEscrow: contrato,
+        wallet: null,
+      });
+    }
+    if (url.startsWith("/api/eventos/")) return json({ cursor: "a".repeat(32), cambios: [] });
+    return json({}, 404);
+  }) as typeof fetch;
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "organizador",
+        children: createElement(Revision, {
+          tareaId: "stand",
+          firmar: async () => {
+            firmas += 1;
+            return "SIGNED";
+          },
+        }),
+      }),
+    );
+    await esperar(() => rotulo("Lock budget") && texto().includes("no wallet signs"));
+    const bloquear = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock budget");
+    assert.equal(bloquear instanceof HTMLButtonElement && bloquear.disabled, false);
+    await pulsar("Lock budget");
+    await confirmarDialogo();
+    await esperar(() => rotulo("Approve and pay"));
+    await pulsar("Approve and pay");
+    await confirmarDialogo();
+    await esperar(() => texto().includes("Paid") && texto().includes("practice network"));
+    assert.equal(rotulo("Approve and pay"), false);
+    assert.equal(firmas, 0);
+    assert.equal(pedidos.some((pedido) => pedido.includes("/api/firma") || pedido.includes("/api/escrow")), false);
+    assert.ok(pedidos.includes("POST /api/revision/stand/demo"));
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 function tarea(parcial: Record<string, unknown>) {
   return {
     id: "stand",

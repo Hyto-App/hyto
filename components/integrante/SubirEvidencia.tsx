@@ -17,8 +17,8 @@ import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { leerMemoria } from "@/lib/integrante/almacen";
-import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
-import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
+import { ACCEPT_GALERIA, AVISO_GALERIA_TIPO, ORIGEN_GALERIA, archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
+import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esImagen, esMimeDocumental } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
 import { formatearFecha, formatearHora, formatearMonto, montoDeTarea, montosDeCobro, vistaMonto } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
@@ -40,6 +40,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const streamRef = useRef<MediaStream | null>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
   const capturaRef = useRef<HTMLInputElement>(null);
+  const galeriaRef = useRef<HTMLInputElement>(null);
   const fotoUrlRef = useRef<string | null>(null);
   const montadoRef = useRef(true);
   const enviandoRef = useRef(false);
@@ -66,6 +67,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [pestana, setPestana] = useState<PestanaEvidencia>("tarea");
   const baseId = useId();
   const [rechazoVivo, setRechazoVivo] = useState<null | "camara" | "galeria">(null);
+  const [desdeGaleria, setDesdeGaleria] = useState(false);
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -185,7 +187,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     };
   }, [vigilar, tareaId, demo, esperaLocal, tarea?.enviadaEn]);
 
-  function usarFoto(blob: Blob, nombre: string | null, captura: string | null) {
+  function usarFoto(blob: Blob, nombre: string | null, captura: string | null, galeria = false) {
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     const url = URL.createObjectURL(blob);
     fotoUrlRef.current = url;
@@ -193,6 +195,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFoto(blob);
     setNombreArchivo(nombre);
     setCapturadaEn(captura);
+    setDesdeGaleria(galeria);
     setError(null);
     setArchivoRechazado(false);
     streamRef.current?.getTracks().forEach((pista) => pista.stop());
@@ -270,6 +273,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFoto(null);
     setNombreArchivo(null);
     setCapturadaEn(null);
+    setDesdeGaleria(false);
   }
 
   function rechazarSeleccion(aviso: string, bloquearEnvio: boolean) {
@@ -319,7 +323,33 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     void aceptarCaptura(archivo);
   }
 
+  function elegirGaleria(evento: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = "";
+    if (!archivo || tarea?.tipo !== "trabajo" || !demo) return;
+    void aceptarGaleria(archivo);
+  }
+
+  async function aceptarGaleria(archivo: File) {
+    setRechazoVivo(null);
+    prepararRevision(false);
+    const validado = await evaluarArchivo(archivo);
+    if (!validado.ok || !esImagen(validado.tipo)) {
+      rechazarSeleccion(
+        !validado.ok && validado.motivo !== "falso" && validado.motivo !== "tipo" ? avisoArchivo(validado.motivo) : AVISO_GALERIA_TIPO,
+        false,
+      );
+      return;
+    }
+    usarFoto(archivo, archivo.name || null, null, true);
+  }
+
   async function aceptarCaptura(archivo: File) {
+    // A desktop can ignore `capture` and open the file picker. In demo mode that file is a gallery pick.
+    if (demo && (!esFotoDeCamara(archivo) || !archivoDeCamaraReciente(archivo))) {
+      await aceptarGaleria(archivo);
+      return;
+    }
     if (!esFotoDeCamara(archivo)) {
       setRechazoVivo("camara");
       rechazarSeleccion(t("evidencia.useCamera"), false);
@@ -355,11 +385,13 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFase("enviando");
     setError(null);
     try {
-      const token = pestana === "tarea" && tarea.tipo === "trabajo" ? await pedirTokenEvidencia(tarea.id) : undefined;
+      const galeria = desdeGaleria && demo && tarea.tipo === "trabajo";
+      const token = pestana === "tarea" && tarea.tipo === "trabajo" && !galeria ? await pedirTokenEvidencia(tarea.id) : undefined;
       const resultado = await subirEvidencia(tarea, foto, {
         token,
         capturadaEn: capturadaEn ?? undefined,
         nombre: nombreArchivo ?? undefined,
+        origen: galeria ? ORIGEN_GALERIA : undefined,
       });
       const fresco = await leerTarea(tarea.id, { miembroId: "" }, { muestra: demo });
       if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
@@ -395,6 +427,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setEnviadaEn(null);
     setArchivoRechazado(false);
     setRechazoVivo(null);
+    setDesdeGaleria(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -411,6 +444,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setError(null);
     setArchivoRechazado(false);
     setRechazoVivo(null);
+    setDesdeGaleria(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -814,7 +848,14 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {t("evidencia.choosePdf")}
             </button>
           ) : null}
-          {coincide && !recibo && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
+          {coincide && !recibo && fase === "inicio" && demo ? (
+            <button type="button" onClick={() => galeriaRef.current?.click()} className="hyto-btn-line is-dashed">
+              {t("evidencia.chooseGallery")}
+            </button>
+          ) : null}
+          {coincide && !recibo && fase === "inicio" ? (
+            <p className="hyto-pista">{t(demo ? "evidencia.galleryDemoHint" : "evidencia.galleryHint")}</p>
+          ) : null}
         </div>
         <div className="hyto-tarea-col">
           <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
@@ -877,6 +918,17 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           aria-hidden="true"
           className="sr-only"
           onChange={elegirCaptura}
+        />
+      ) : null}
+      {!reembolso && demo ? (
+        <input
+          ref={galeriaRef}
+          type="file"
+          accept={ACCEPT_GALERIA}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={elegirGaleria}
         />
       ) : null}
     </main>

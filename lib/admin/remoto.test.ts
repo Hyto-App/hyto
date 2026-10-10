@@ -3,6 +3,8 @@ import test from "node:test";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
 import { consultarHasta } from "./consulta-escrow";
 import {
+  accionDemo,
+  botonesDemo,
   botonesRevision,
   cargarDetalleOrganizador,
   cargarVistaOrganizador,
@@ -349,4 +351,33 @@ test("reintentar revisión hace POST a la tarea", async () => {
   assert.equal(detalle?.tarea.origen, "scout");
   assert.equal(detalle?.tarea.frase, "Banner de ZEEK.");
   assert.equal(await reintentarRevision("  ", { fetch: fetchImpl }), null);
+});
+
+test("demo sin wallet", async (t) => {
+  await t.test("bloquear aparece sin presupuesto y pagar solo con el bloqueo demo y la foto en revisión", () => {
+    assert.deepEqual(botonesDemo({ estado: "pendiente" }, null), { bloquear: true, pagar: false });
+    assert.deepEqual(botonesDemo({ estado: "en revisión" }, null), { bloquear: true, pagar: false });
+    assert.deepEqual(botonesDemo({ estado: "en revisión" }, "demo-lock-demo-stand"), { bloquear: false, pagar: true });
+    assert.deepEqual(botonesDemo({ estado: "pendiente" }, "demo-lock-demo-stand"), { bloquear: false, pagar: false });
+    assert.deepEqual(botonesDemo({ estado: "en revisión" }, `C${"A".repeat(55)}`), { bloquear: false, pagar: false });
+    assert.deepEqual(botonesDemo({ estado: "pagado" }, "demo-lock-demo-stand"), { bloquear: false, pagar: false });
+  });
+
+  await t.test("accionDemo manda la acción y devuelve el aviso del servidor", async () => {
+    const pedidos: { url: string; body: unknown }[] = [];
+    const ok = (async (url: string, init?: RequestInit) => {
+      pedidos.push({ url, body: JSON.parse(String(init?.body)) });
+      return Response.json({ estado: "en revisión", contrato: "demo-lock-demo-stand", demo: true });
+    }) as typeof fetch;
+    assert.deepEqual(await accionDemo("demo-stand", "bloquear", { fetch: ok }), { ok: true, contrato: "demo-lock-demo-stand" });
+    assert.deepEqual(pedidos, [{ url: "/api/revision/demo-stand/demo", body: { accion: "bloquear" } }]);
+
+    const no = (async () => Response.json({ aviso: "Lock the budget before you pay." }, { status: 409 })) as typeof fetch;
+    assert.deepEqual(await accionDemo("demo-stand", "pagar", { fetch: no }), { ok: false, aviso: "Lock the budget before you pay." });
+    const caido = (async () => {
+      throw new Error("red");
+    }) as typeof fetch;
+    assert.equal((await accionDemo("demo-stand", "pagar", { fetch: caido })).ok, false);
+    assert.equal((await accionDemo(" ", "pagar", { fetch: ok })).ok, false);
+  });
 });

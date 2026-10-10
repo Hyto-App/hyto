@@ -23,7 +23,7 @@ function definirCamara(getUserMedia: ((restricciones?: unknown) => Promise<Media
   });
 }
 
-async function montarTarea() {
+async function montarTarea({ demo = false }: { demo?: boolean } = {}) {
   const fetchPrevio = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = String(input);
@@ -39,8 +39,8 @@ async function montarTarea() {
   try {
     await montar(
       createElement(ProveedorModoDemo, {
-        activo: true,
-        rol: "voluntario",
+        activo: demo,
+        rol: demo ? "voluntario" : null,
         children: createElement(SubirEvidencia, { tareaId: "stand" }),
       }),
     );
@@ -363,6 +363,116 @@ test("una foto de cámara con 201 limpio dice Your photo arrived y manda el toke
     assert.match(texto(), /as soon as the organizer approves it/);
     assert.match(texto(), /What happens now/);
     sinRevisionLocal();
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+function inputGaleria(): HTMLInputElement {
+  const input = document.querySelector('input[type="file"]:not([capture])');
+  if (!(input instanceof HTMLInputElement)) throw new Error("Sin input de galería.");
+  return input;
+}
+
+async function elegirEnGaleria(archivo: File) {
+  const input = inputGaleria();
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: { 0: archivo, length: 1, item: () => archivo },
+  });
+  await act(async () => {
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((resolver) => setTimeout(resolver, 40));
+  });
+}
+
+test("en modo demo se puede elegir una foto vieja de la galería", async () => {
+  limpiarPantalla();
+  let clicks = 0;
+  const clickPrevio = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function click() {
+    clicks += 1;
+  };
+  definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as unknown as MediaStream);
+  try {
+    await montarTarea({ demo: true });
+    assert.match(texto(), /Open camera/);
+    assert.match(texto(), /pick one from your gallery/);
+    assert.doesNotMatch(texto(), /old gallery photos are not accepted/);
+    const input = inputGaleria();
+    assert.equal(input.getAttribute("capture"), null);
+    assert.equal(input.getAttribute("accept"), "image/jpeg,image/png,image/webp");
+    await act(async () => {
+      boton("Choose from gallery").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.equal(clicks, 1);
+    const vieja = new File([await jpegDePrueba()], "vieja.jpg", { type: "image/jpeg", lastModified: Date.now() - 24 * 60 * 60 * 1000 });
+    await elegirEnGaleria(vieja);
+    assert.ok(document.querySelector('img[alt="Evidence"]'));
+    assert.equal(boton("Send evidence").textContent, "Send evidence");
+  } finally {
+    HTMLInputElement.prototype.click = clickPrevio;
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en modo demo un archivo que no es foto no pasa por la galería", async () => {
+  limpiarPantalla();
+  definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as unknown as MediaStream);
+  try {
+    await montarTarea({ demo: true });
+    await elegirEnGaleria(new File([Uint8Array.from([1, 2, 3])], "nota.png", { type: "image/png", lastModified: Date.now() }));
+    assert.match(texto(), /Choose a JPEG, PNG, or WebP photo/);
+    assert.equal(document.querySelector('img[alt="Evidence"]'), null);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en modo demo la foto de galería se envía sin token de cámara y marcada como galería", async () => {
+  limpiarPantalla();
+  definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as unknown as MediaStream);
+  const original = globalThis.fetch;
+  const pedidos: string[] = [];
+  let cuerpo: FormData | null = null;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    pedidos.push(`${init?.method ?? "GET"} ${url}`);
+    if (url.includes("/api/tareas")) {
+      const stand = tareasEjemplo().find((tarea) => tarea.id === "stand");
+      return json({ tareas: stand ? [stand] : [] });
+    }
+    if (url.includes("/api/proyectos")) return json({ proyectos: [{ id: "demo", nombre: "Demo" }] });
+    if (url.endsWith("/api/evidencias") && init?.method === "POST") {
+      cuerpo = init.body instanceof FormData ? init.body : null;
+      return json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" } }, 201);
+    }
+    return json({}, 404);
+  };
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, { activo: true, rol: "voluntario", children: createElement(SubirEvidencia, { tareaId: "stand" }) }),
+    );
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    await elegirEnGaleria(new File([await jpegDePrueba()], "vieja.jpg", { type: "image/jpeg", lastModified: Date.now() - 24 * 60 * 60 * 1000 }));
+    await act(async () => {
+      boton("Send evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 30));
+    });
+    const enviado = cuerpo as FormData | null;
+    assert.ok(pedidos.includes("POST /api/evidencias"));
+    assert.ok(!pedidos.some((pedido) => pedido.includes("/api/evidencias/token")));
+    assert.equal(enviado?.get("origen"), "galeria");
+    assert.equal(enviado?.get("token"), null);
+    assert.equal(enviado?.get("capturadaEn"), null);
   } finally {
     globalThis.fetch = original;
     await desmontar();
