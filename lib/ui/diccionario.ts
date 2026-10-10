@@ -1081,10 +1081,10 @@ export const en = {
     atajoFaq: "Frequently asked questions",
     pagoQ: "How do I get paid?",
     pagoA:
-      "You upload the evidence of the work and the invoice.\nMile reviews them in seconds.\nA person from the event approves them and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank yet.",
+      "You upload the evidence of the work and the invoice.\nMile reviews them.\nA person from the event approves them and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank yet.",
     tardaQ: "How long does it take?",
     tardaA:
-      "Mile reviews your evidence in seconds.\nThen the organizer approves it. That part depends on them.\nOnce they pay, the money shows up in your balance.",
+      "Mile reviews your evidence.\nThen the organizer approves it. That part depends on them.\nOnce they pay, the money shows up in your balance.",
     fondearQ: "How do I set money aside for a task?",
     fondearA:
       "Open the review for that task and tap Lock budget.\nThat sets the amount aside from your balance. Nobody is paid yet.\nAfter you approve the evidence, you pay from that same review.\nYour balance has to cover the amount plus one extra dollar. Hyto does not keep that dollar.",
@@ -2306,10 +2306,10 @@ export const es: Rama<typeof en> = {
     atajoFaq: "Preguntas frecuentes",
     pagoQ: "¿Cómo me pagan?",
     pagoA:
-      "Usted sube la evidencia del trabajo y la factura.\nMile las revisa en segundos.\nUna persona del evento las aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco.",
+      "Usted sube la evidencia del trabajo y la factura.\nMile las revisa.\nUna persona del evento las aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco.",
     tardaQ: "¿Cuánto tarda?",
     tardaA:
-      "Mile revisa su evidencia en segundos.\nDespués, quien organiza la aprueba. Esa parte depende de esa persona.\nCuando le paga, el dinero aparece en su saldo.",
+      "Mile revisa su evidencia.\nDespués, quien organiza la aprueba. Esa parte depende de esa persona.\nCuando le paga, el dinero aparece en su saldo.",
     fondearQ: "¿Cómo aparto el dinero de una tarea?",
     fondearA:
       "Abra la revisión de esa tarea y toque Bloquear presupuesto.\nEso aparta el monto de su saldo. Todavía no se le paga a nadie.\nDespués de aprobar la evidencia, paga desde esa misma revisión.\nSu saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
