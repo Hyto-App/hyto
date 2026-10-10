@@ -54,7 +54,7 @@ test("la bienvenida dice qué es Hyto y ofrece un solo paso", async () => {
   try {
     await montar(createElement(Bienvenida, { paso: { tipo: "unirse", puedeCrear: false } }));
     assert.match(texto(), /Welcome to Hyto/);
-    assert.match(texto(), /Hyto pays for event tasks when there is proof: you upload a photo, Mile reviews it, and a person approves the payment\./);
+    assert.match(texto(), /Hyto pays for event tasks when there is proof: you upload the evidence and the invoice, Mile reviews them, and a person approves the payment\./);
     assert.deepEqual(
       enlaces().map((enlace) => [enlace.getAttribute("href"), enlace.textContent]),
       [["/join", "Join with a code"]],
@@ -74,6 +74,7 @@ test("la bienvenida dice qué es Hyto y ofrece un solo paso", async () => {
       [["/eventos/zeek", "Open ZEEK"]],
     );
     assert.doesNotMatch(texto(), /Demo/);
+    assert.equal(document.querySelector(".hyto-red-etiqueta")?.textContent, "Testnet");
   } finally {
     await desmontar();
     limpiarPantalla();
@@ -90,7 +91,9 @@ test("en demo la bienvenida ofrece empezar y no dice que no puede cobrar", async
       enlaces().map((enlace) => [enlace.getAttribute("href"), enlace.textContent]),
       [["/mis-tareas", "Start the demo"]],
     );
-    assert.doesNotMatch(texto(), /can't set up payouts|Get ready to be paid|wallet|testnet|network/i);
+    assert.equal(document.querySelector(".hyto-red-etiqueta")?.textContent, "Testnet demo");
+    // Only the small label names the test network; the rest of the card does not.
+    assert.doesNotMatch(texto().replace("Testnet demo", ""), /can't set up payouts|Get ready to be paid|wallet|testnet|network/i);
 
     await montar(
       createElement(ProveedorIdioma, {
@@ -101,7 +104,8 @@ test("en demo la bienvenida ofrece empezar y no dice que no puede cobrar", async
     assert.match(texto(), /Bienvenido a Hyto/);
     assert.match(texto(), /Demo: pago de práctica, no se mueve dinero real\./);
     assert.match(texto(), /Empezar el demo/);
-    assert.doesNotMatch(texto(), /es c[oó]mo|no puede preparar cobros|billetera|testnet|red de prueba/i);
+    assert.equal(document.querySelector(".hyto-red-etiqueta")?.textContent, "Demo en testnet");
+    assert.doesNotMatch(texto().replace("Demo en testnet", ""), /es c[oó]mo|no puede preparar cobros|billetera|testnet|red de prueba/i);
   } finally {
     await desmontar();
     limpiarPantalla();

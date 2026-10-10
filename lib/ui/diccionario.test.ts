@@ -307,7 +307,12 @@ test("los diálogos de revisión y de recibo tratan de usted, no de tú", () => 
 });
 
 test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del demo", () => {
-  const bienvenida = [...textosDe(es.bienvenida), ...textosDe(en.bienvenida)];
+  // The testnet pill is the one place the welcome names the test network.
+  const sinEtiqueta = <T extends Record<string, unknown>>(rama: T) => {
+    const { testnet: _t, testnetDemo: _d, ...resto } = rama as T & { testnet?: unknown; testnetDemo?: unknown };
+    return resto;
+  };
+  const bienvenida = [...textosDe(sinEtiqueta(es.bienvenida)), ...textosDe(sinEtiqueta(en.bienvenida))];
   for (const valor of bienvenida) {
     assert.doesNotMatch(valor, /\bes c[oó]mo\b|\bis like\b/i, valor);
     assert.doesNotMatch(valor, /no puede preparar cobros|can't set up payouts/i, valor);
@@ -324,11 +329,14 @@ test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del 
   assert.equal(texto("es", "bienvenida.title"), "Bienvenido a Hyto");
   assert.equal(
     texto("es", "bienvenida.body"),
-    "Hyto paga tareas de eventos cuando hay prueba: usted sube una foto, Mile la revisa y una persona aprueba el pago.",
+    "Hyto paga tareas de eventos cuando hay prueba: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
   );
   assert.equal(texto("es", "bienvenida.open", { name: "ZEEK" }), "Abrir ZEEK");
   assert.equal(texto("es", "bienvenida.join"), "Unirme con código");
   assert.equal(texto("es", "bienvenida.startDemo"), "Empezar el demo");
+  assert.equal(texto("es", "bienvenida.testnet"), "Testnet");
+  assert.equal(texto("es", "bienvenida.testnetDemo"), "Demo en testnet");
+  assert.equal(texto("en", "bienvenida.testnetDemo"), "Testnet demo");
   assert.equal(texto("en", "bienvenida.title"), "Welcome to Hyto");
   assert.equal(texto("en", "bienvenida.open", { name: "ZEEK" }), "Open ZEEK");
   for (const valor of textosDe(es)) {
