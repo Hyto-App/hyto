@@ -235,7 +235,7 @@ export const en = {
   },
   bienvenida: {
     title: "Welcome to Hyto",
-    body: "Hyto pays for event tasks when there is proof: you upload a photo, Mile reviews it, and a person approves the payment.",
+    body: "Hyto pays for event tasks when there is proof: you upload the evidence and the invoice, Mile reviews them, and a person approves the payment.",
     step: "Take your first step",
     join: "Join with a code",
     create: "Create event",
@@ -1459,7 +1459,7 @@ export const es: Rama<typeof en> = {
   },
   bienvenida: {
     title: "Bienvenido a Hyto",
-    body: "Hyto paga tareas de eventos cuando hay prueba: usted sube una foto, Mile la revisa y una persona aprueba el pago.",
+    body: "Hyto paga tareas de eventos cuando hay prueba: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
     step: "Dé su primer paso",
     join: "Unirme con código",
     create: "Crear evento",
