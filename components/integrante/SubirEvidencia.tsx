@@ -567,6 +567,8 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const calificacion = notaDeTarea(tarea);
   const insuficiente = calificacion?.veredicto === "insuficiente";
   const parcial = calificacion?.veredicto === "parcial";
+  /** Only when another photo can really be sent: the task is not paid or approved yet. */
+  const mejorable = !cerrada && (insuficiente || parcial || tarea.etapa === "enviada_organizador");
   const mileSinTerminar = reintentoMile;
   const titulo = textoVisible(tarea.titulo, idioma);
   const esDocumento = foto ? esDocumentoDeclarado(foto.type, nombreArchivo ?? "") : false;
@@ -768,13 +770,12 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                   {t("evidencia.mileYaMiro")}
                 </p>
               ) : null}
-              {insuficiente ? (
-                <p className="hyto-tarea-meta">{t("evidencia.notEnoughSub")}</p>
-              ) : tarea.etapa === "enviada_organizador" ? (
-                <p className="hyto-tarea-meta">{t("evidencia.reachedOrganizer")}</p>
-              ) : (
-                <p className="hyto-tarea-meta">{t(parcial ? "evidencia.partialSub" : "evidencia.greatJobSub")}</p>
-              )}
+              {tarea.etapa === "enviada_organizador" ? <p className="hyto-tarea-meta">{t("evidencia.reachedOrganizer")}.</p> : null}
+              {mejorable ? (
+                <p className="hyto-tarea-meta">{t(documental ? "evidencia.betterFile" : "evidencia.betterPhoto")}</p>
+              ) : tarea.etapa !== "enviada_organizador" ? (
+                <p className="hyto-tarea-meta">{t("evidencia.greatJobSub")}</p>
+              ) : null}
             </>
           )}
         </header>
@@ -797,7 +798,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                 <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
                 <EtiquetasNota etiquetas={tarea.notas} />
                 <NotaCobro tarea={tarea} />
-                <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
+                {mejorable ? null : <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>}
               </div>
             ) : null}
           </div>

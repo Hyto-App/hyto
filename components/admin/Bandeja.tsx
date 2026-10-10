@@ -396,7 +396,7 @@ export function Bandeja({
                     <p className="text-sm text-[var(--suave)]">{t("bandeja.noRecommendation")}</p>
                   )}
                 </div>
-                <EtiquetasNota etiquetas={seleccion.etiquetas} />
+                <EtiquetasNota etiquetas={seleccion.etiquetas} conMotivo={Boolean(seleccion.veredicto)} />
                 {seleccion.condicion ? (
                   <>
                     <p className="mt-5 text-sm font-medium">{t("bandeja.photoMust")}</p>

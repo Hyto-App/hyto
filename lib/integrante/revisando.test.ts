@@ -253,7 +253,7 @@ test("una nota insuficiente no usa el texto de éxito", async () => {
     });
     assert.match(texto(), /Ana, this photo did not pass Mile's review/);
     assert.match(texto(), /40% · Insufficient/);
-    assert.match(texto(), /You can send another one/);
+    assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /Great job/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);

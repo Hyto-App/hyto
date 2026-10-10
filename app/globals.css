@@ -4677,12 +4677,44 @@ html.hyto-firmando body {
   }
 }
 
-/* Welcome card that can be hidden: the Hide button sits inside the card, on the kicker row. */
+/* Welcome card that can be hidden: the Hide button sits inside the card, on the title row. */
 .hyto-welcome-cabeza {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hyto-welcome-cabeza .hyto-title {
+  margin-top: 0;
+}
+
+/* One main next step, with an optional secondary one beside it. */
+.hyto-welcome-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--e-3);
+}
+
+@media (max-width: 480px) {
+  .hyto-welcome-acciones > .hyto-btn,
+  .hyto-welcome-acciones > .hyto-btn-line {
+    width: 100%;
+  }
+}
+
+@keyframes hyto-welcome-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hyto-welcome-card {
+    animation: hyto-welcome-entra 240ms ease-out both;
+  }
 }
 
 .hyto-welcome-ocultar {

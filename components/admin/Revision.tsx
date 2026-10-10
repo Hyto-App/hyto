@@ -644,7 +644,7 @@ export function Revision({
             {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} /> : null}
             {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
           </div>
-          <EtiquetasNota etiquetas={tarea.etiquetas} />
+          <EtiquetasNota etiquetas={tarea.etiquetas} conMotivo={Boolean(tarea.veredicto)} />
           {notaManual(tarea.codigo) ? (
             <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
           ) : tarea.origen === "error" ? (

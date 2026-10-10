@@ -55,7 +55,6 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
 
 function Recibo({ monto, tareaId }: { monto: string; tareaId: string }) {
   const t = useTexto();
-  const demo = useModoDemo();
   return (
     <section className="hyto-tarjeta hyto-recibo">
       <div>
@@ -66,7 +65,6 @@ function Recibo({ monto, tareaId }: { monto: string; tareaId: string }) {
         <span>{t("evidencia.youReceived")}</span>
         <strong>{monto}</strong>
       </div>
-      {demo ? <p className="hyto-tarea-meta">{t("evidencia.demoPaid")}</p> : null}
       <Link className="hyto-recibo-abrir" href={`/tareas/${encodeURIComponent(tareaId)}/recibo`}>
         {t("evidencia.viewReceipt")}
       </Link>

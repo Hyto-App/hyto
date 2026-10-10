@@ -48,7 +48,7 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
     assert.equal(recibo?.textContent, "View receipt");
     assert.equal(recibo?.getAttribute("target"), null);
     assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
-    assert.equal(texto().includes("practice network"), false);
+    assert.equal(texto().includes("practice payment"), false);
   } finally {
     await desmontar();
   }
@@ -78,8 +78,8 @@ test("en demo la pantalla pagada marca la red de práctica y el pago simulado", 
       }),
     );
     await esperar(() => texto().includes("A person from the event approved it"));
-    assert.match(texto(), /No real money moves on this practice network/);
-    assert.match(texto(), /Demo payment\. No money moved/);
+    // The demo sentence shows once, not twice.
+    assert.equal((texto().match(/Demo: practice payment, no real money moves\./g) ?? []).length, 1);
     assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
   } finally {
     await desmontar();

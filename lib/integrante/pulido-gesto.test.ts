@@ -172,7 +172,7 @@ test("en la red de práctica el cierre no dice que el dinero ya está en el sald
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pagado", nota: 90, veredicto: "cumplió" }), true);
-    assert.match(texto(), /No real money moves on this practice network/);
+    assert.match(texto(), /Demo: practice payment, no real money moves\./);
     assert.equal(texto().includes("It's already in your balance"), false);
     assert.equal(document.querySelectorAll("a.hyto-btn").length, 1);
     assert.doesNotMatch(texto(), /You did it|Well done|confetti/i);
