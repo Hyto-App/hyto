@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bienvenida } from "@/components/sesion/Bienvenida";
+import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import type { Clave } from "@/lib/ui/diccionario";
+import { muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
 type Evento = { id: string; nombre: string; rol?: Rol; pendientes?: number };
@@ -59,6 +61,9 @@ export function ListaEventos() {
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const demoOrganizador = useRolDemo() === "organizador";
+  const organizados = (eventos ?? []).filter((evento) => evento.rol === "organizer").map((evento) => evento.id);
+  const puedeCrear = muestraNavOrganizador(organizados, demoOrganizador);
 
   useEffect(() => {
     let vivo = true;
@@ -95,9 +100,11 @@ export function ListaEventos() {
         <h1 className="hyto-h1">{t("eventos.title")}</h1>
         {eventos && eventos.length === 0 && !error ? null : (
           <div className="flex flex-wrap gap-2">
-            <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-              {t("eventos.create")}
-            </Link>
+            {puedeCrear ? (
+              <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+                {t("eventos.create")}
+              </Link>
+            ) : null}
             <Link href="/join" className="hyto-btn-line is-inline px-5">
               {t("eventos.joinCode")}
             </Link>

@@ -8,13 +8,10 @@ import { MenuPerfil } from "@/components/admin/MenuPerfil";
 import { Icono, Isotipo, Logo, Tema, iniciales } from "@/components/ui/Marca";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Volver } from "@/components/ui/Volver";
-import { useRolDemo } from "@/components/sesion/InsigniaDemo";
-import type { Clave } from "@/lib/ui/diccionario";
-import { idNavOrganizador, muestraNavOrganizador } from "@/lib/ui/nav-organizador";
+import { enlacesBarra, type EnlaceBarra } from "@/lib/ui/nav-organizador";
 import { destinoVolver } from "@/lib/ui/volver";
 
 type Seccion = "tareas" | "eventos" | "bandeja" | "informe" | "tareasEvento" | "unirme" | "cuenta" | "comunidades";
-type IconoNav = "tasks" | "projects" | "plus" | "inbox" | "report";
 
 /** Which section the route belongs to (`/join*` is Join, not Account). */
 export function seccionDe(ruta: string): Seccion | null {
@@ -29,8 +26,6 @@ export function seccionDe(ruta: string): Seccion | null {
   if (ruta.startsWith("/eventos") || ruta.startsWith("/proyectos")) return "eventos";
   return null;
 }
-
-type EnlaceNavDato = { seccion: Seccion; href: string; clave: Clave; icono: IconoNav };
 
 const CLAVE_BARRA = "hyto-barra";
 
@@ -50,56 +45,26 @@ function publicarBarra(colapsada: boolean) {
   else delete document.documentElement.dataset.barra;
 }
 
-const MOVIL: readonly EnlaceNavDato[] = [
-  { seccion: "tareas", href: "/mis-tareas", clave: "nav.myTasks", icono: "tasks" },
-  { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" },
-  { seccion: "unirme", href: "/join", clave: "nav.join", icono: "plus" },
-];
-
-const TRABAJO: readonly EnlaceNavDato[] = [
-  { seccion: "tareas", href: "/mis-tareas", clave: "nav.myTasks", icono: "tasks" },
-  { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" },
-];
-
-function enlacesOrganizador(eventoId: string): EnlaceNavDato[] {
-  return [
-    { seccion: "eventos", href: "/eventos", clave: "nav.events", icono: "projects" },
-    { seccion: "bandeja", href: `/eventos/${eventoId}`, clave: "eventos.inbox", icono: "inbox" },
-    { seccion: "informe", href: `/eventos/${eventoId}/informe`, clave: "eventos.report", icono: "report" },
-    { seccion: "tareasEvento", href: `/eventos/${eventoId}/tareas`, clave: "nav.eventTasks", icono: "tasks" },
-  ];
-}
-
 export type UsuarioMarco = { nombre: string | null; email: string };
 
 export function Marco({
   children,
   usuario,
-  eventosOrganizados = [],
   mostrarComunidades = false,
 }: {
   children: ReactNode;
   demoHabilitado?: boolean;
   usuario?: UsuarioMarco | null;
+  /** Still passed by the layouts. The bar no longer links into one event, so it does not read it. */
   eventosOrganizados?: readonly string[];
   mostrarComunidades?: boolean;
 }) {
   const t = useTexto();
   const ruta = usePathname();
-  const rolDemo = useRolDemo();
-  const demoOrganizador = rolDemo === "organizador";
-  const organiza = muestraNavOrganizador(eventosOrganizados, demoOrganizador);
-  const eventoId = idNavOrganizador(ruta, eventosOrganizados, demoOrganizador);
-  const propios = organiza && eventoId ? enlacesOrganizador(eventoId) : [];
-  const enlaceComunidades: EnlaceNavDato | null = mostrarComunidades
-    ? { seccion: "comunidades", href: "/comunidades", clave: "nav.communities", icono: "projects" }
-    : null;
-  const trabajoBase = organiza ? TRABAJO.filter((enlace) => enlace.seccion !== "eventos") : TRABAJO;
-  const movilBase = propios.length > 0 ? [...propios, ...MOVIL.filter((enlace) => enlace.seccion !== "eventos")] : MOVIL;
-  const trabajo = enlaceComunidades ? [...trabajoBase, enlaceComunidades] : trabajoBase;
-  const movil = enlaceComunidades ? [...movilBase, enlaceComunidades] : movilBase;
+  const enlaces = enlacesBarra(mostrarComunidades);
   const actual = seccionDe(ruta);
-  const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento";
+  const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento" || actual === "unirme";
+  const activo = (enlace: EnlaceBarra) => (enlace.seccion === "eventos" ? eventoAbierto : actual === enlace.seccion);
   const foco = ruta.startsWith("/revision") || ruta.startsWith("/tareas");
   const volver = destinoVolver(ruta);
   const [menu, setMenu] = useState(false);
@@ -195,54 +160,13 @@ export function Marco({
           </div>
         </div>
         <nav className="hyto-nav hyto-nav-escritorio" aria-label={t("nav.main")}>
-          {propios.length > 0 ? (
-            <div className="hyto-nav-bloque">
-              <p id="hyto-nav-organiza" className="hyto-nav-grupo">
-                {t("nav.groupOrganize")}
-              </p>
-              <div role="group" aria-labelledby="hyto-nav-organiza">
-                {propios.map((enlace) => (
-                  <EnlaceNav key={enlace.href} href={enlace.href} icono={enlace.icono} activo={actual === enlace.seccion} etiqueta={t(enlace.clave)} colapsada={colapsada} />
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className="hyto-nav-bloque">
-            <p id="hyto-nav-trabajo" className="hyto-nav-grupo">
-              {t("nav.groupWork")}
-            </p>
-            <div role="group" aria-labelledby="hyto-nav-trabajo">
-              {trabajo.map((enlace) => (
-                <EnlaceNav
-                  key={enlace.href}
-                  href={enlace.href}
-                  icono={enlace.icono}
-                  activo={enlace.seccion === "eventos" ? eventoAbierto : actual === enlace.seccion}
-                  etiqueta={t(enlace.clave)}
-                  colapsada={colapsada}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="hyto-nav-bloque">
-            <p id="hyto-nav-unirme" className="hyto-nav-grupo">
-              {t("nav.groupJoin")}
-            </p>
-            <div role="group" aria-labelledby="hyto-nav-unirme">
-              <EnlaceNav href="/join" icono="plus" activo={actual === "unirme"} etiqueta={t("nav.joinCode")} colapsada={colapsada} />
-            </div>
-          </div>
+          {enlaces.map((enlace) => (
+            <EnlaceNav key={enlace.href} href={enlace.href} icono={enlace.icono} activo={activo(enlace)} etiqueta={t(enlace.clave)} colapsada={colapsada} />
+          ))}
         </nav>
-        <nav className={`hyto-nav hyto-nav-movil${propios.length > 0 ? " is-organiza" : ""}`} aria-label={t("nav.main")}>
-          {movil.map((enlace) => (
-            <EnlaceNav
-              key={enlace.href}
-              href={enlace.href}
-              icono={enlace.icono}
-              activo={enlace.seccion === "eventos" && propios.length === 0 ? eventoAbierto : actual === enlace.seccion}
-              etiqueta={t(enlace.clave)}
-              movil
-            />
+        <nav className="hyto-nav hyto-nav-movil" aria-label={t("nav.main")}>
+          {enlaces.map((enlace) => (
+            <EnlaceNav key={enlace.href} href={enlace.href} icono={enlace.icono} activo={activo(enlace)} etiqueta={t(enlace.clave)} movil />
           ))}
         </nav>
         <div className="hyto-foot hyto-foot-escritorio">
@@ -304,7 +228,7 @@ function EnlaceNav({
   colapsada = false,
 }: {
   href: string;
-  icono: IconoNav;
+  icono: EnlaceBarra["icono"];
   activo: boolean;
   etiqueta: string;
   movil?: boolean;
@@ -336,7 +260,6 @@ function BotonPerfil({
   onAbrir: (boton: HTMLElement) => void;
 }) {
   const t = useTexto();
-  const rotulo = usuario.nombre?.trim() || usuario.email;
   const letras = iniciales(usuario.nombre ?? "", usuario.email);
   return (
     <button
@@ -354,9 +277,8 @@ function BotonPerfil({
       </span>
       {compacto ? null : (
         <>
-          <span className="hyto-usuario-datos">
-            {usuario.nombre ? <strong>{usuario.nombre}</strong> : null}
-            <span>{usuario.email}</span>
+          <span className="hyto-usuario-datos" title={usuario.email}>
+            {usuario.nombre?.trim() ? <strong>{usuario.nombre.trim()}</strong> : <span>{usuario.email}</span>}
           </span>
           <svg className="hyto-perfil-flecha" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m2 3.5 3 3 3-3" />
