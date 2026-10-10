@@ -316,7 +316,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
             <Link href="/join" className={claseBoton("primario", true)}>
               {t("tareas.join")}
             </Link>
-            <Link href="/eventos" className={claseBoton("fantasma")}>
+            <Link href="/eventos" className={claseBoton("secundario")}>
               {t("tareas.viewEvents")}
             </Link>
           </div>

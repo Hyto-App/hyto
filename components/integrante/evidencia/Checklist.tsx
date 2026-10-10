@@ -4,7 +4,7 @@ import { useTexto } from "@/components/ui/Idioma";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 
 /**
- * "Your photo must show": numbered points.
+ * "Your evidence must show": numbered points.
  * `fallidos` marks the organizer's send-back (spec §7.3). Empty or omitted stays neutral.
  */
 export function Checklist({
