@@ -31,6 +31,8 @@ export const en = {
     eventTasks: "Event tasks",
     communities: "Communities",
     privacy: "Privacy",
+    collapseSidebar: "Collapse the sidebar",
+    expandSidebar: "Expand the sidebar",
   },
   titulos: {
     task: "Task",
@@ -1218,6 +1220,8 @@ export const es: Rama<typeof en> = {
     eventTasks: "Tareas del evento",
     communities: "Comunidades",
     privacy: "Privacidad",
+    collapseSidebar: "Minimice la barra",
+    expandSidebar: "Expanda la barra",
   },
   titulos: {
     task: "Tarea",
