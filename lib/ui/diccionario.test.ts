@@ -203,3 +203,63 @@ test("configuración en español usa usted y no deja la llave de acceso en ingl�
     }
   }
 });
+
+const TUTEO = [
+  "tú",
+  "tuyo",
+  "tuya",
+  "tuyos",
+  "tuyas",
+  "únete",
+  "tómala",
+  "cópiala",
+  "comprueba",
+  "apartas",
+  "puedes",
+  "tienes",
+  "haces",
+  "subes",
+  "estás",
+  "quieres",
+  "debes",
+  "necesitas",
+];
+
+test("el camino del demo en español no mezcla el tuteo con el usted", () => {
+  const camino = [
+    ...textosDe(es.tareas),
+    ...textosDe(es.evidencia),
+    ...textosDe(es.mile),
+    ...textosDe(es.ayuda),
+    ...textosDe(es.actividad),
+    es.eventos.joinTitle,
+    es.eventos.joinCode,
+    es.eventos.code,
+    es.eventos.join,
+    es.eventos.joinInvalid,
+    es.nav.askMile,
+    es.nav.join,
+    es.nav.joinCode,
+    es.nav.myTasks,
+    es.revision.demoNoMoney,
+    es.cuenta.copyHere,
+  ];
+  const clitico = /(^|[^a-záéíóúüñ])(tú|tu|tus|te|ti)([^a-záéíóúüñ]|$)/i;
+  for (const valor of camino) {
+    assert.equal(clitico.test(valor), false, valor);
+    for (const verbo of TUTEO) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
+  assert.equal(texto("es", "evidencia.galleryHint"), "Tómela ahora con la cámara: no se aceptan fotos viejas de la galería.");
+  assert.equal(texto("es", "evidencia.sample"), "Tarea de ejemplo, hasta que carguen las suyas.");
+  assert.match(texto("es", "evidencia.archivoFalso"), /Abra el archivo y compruebe que se ve la foto/);
+  assert.equal(texto("es", "ayuda.placeholder"), "Busque en las respuestas");
+  assert.match(texto("es", "ayuda.costosA"), /Si aparta US\$2/);
+  assert.doesNotMatch(texto("es", "ayuda.costosA"), /apartas/);
+  assert.equal(texto("es", "cuenta.copyHere"), "Cópiela desde aquí. Esta es la dirección pública.");
+  assert.match(texto("es", "tareas.emptyBody"), /Únase/);
+  assert.doesNotMatch(texto("es", "tareas.step1"), /Únete|Te unes/);
+  assert.doesNotMatch(texto("es", "tareas.step2"), /Haces|subes/);
+});
