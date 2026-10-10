@@ -52,7 +52,7 @@ test("con movimiento reducido la respuesta entra de una, como charla, y ofrece l
     assert.equal(document.querySelector(".hyto-ayuda-escribiendo"), null);
     const partes = burbujasMile();
     assert.equal(partes.length, 4);
-    assert.match(partes[1], /Mile reviews them in seconds/);
+    assert.match(partes[1], /^Mile reviews them\.$/);
     assert.deepEqual(chips(), ["How long does it take?", "What if my evidence is rejected?", "What does it cost to pay a task?"]);
     await escribir(".hyto-ayuda-buscar input", "reimbursement");
     assert.deepEqual(chips(), ["How do I pay a reimbursement?", "What do I send?", "How does a reimbursement work?"]);

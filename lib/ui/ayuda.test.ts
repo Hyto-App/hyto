@@ -96,7 +96,7 @@ test("cada respuesta entra en 2 a 4 burbujas cortas", () => {
   }
   assert.deepEqual(partesRespuesta(leerTexto("es", "ayuda.pagoA")).slice(0, 2), [
     "Usted sube la evidencia del trabajo y la factura.",
-    "Mile las revisa en segundos.",
+    "Mile las revisa.",
   ]);
 });
 
@@ -134,5 +134,13 @@ test("cada burbuja espera a Mile escribiendo, salvo con movimiento reducido", ()
   for (let indice = 1; indice < tiempos.length; indice += 1) {
     const espera = tiempos[indice] - tiempos[indice - 1] - ENTRADA_MS;
     assert.ok(espera >= 500 && espera <= 700, String(espera));
+  }
+});
+
+test("Mile no promete tiempos: ninguna respuesta dice «en segundos» ni \"in seconds\"", () => {
+  for (const idioma of ["es", "en"] as const) {
+    for (const id of PREGUNTAS) {
+      assert.doesNotMatch(leerTexto(idioma, `ayuda.${id}A`), /en segundos|in seconds/i, `${idioma} ${id}`);
+    }
   }
 });
