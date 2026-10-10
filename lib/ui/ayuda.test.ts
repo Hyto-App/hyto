@@ -61,7 +61,8 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
   }
   const pago = leerTexto("en", "ayuda.pagoA");
   assert.match(pago, /cannot send that balance to a bank/);
-  assert.match(pago, /colones/);
+  assert.doesNotMatch(pago, /colones|SINPE/i);
+  assert.doesNotMatch(leerTexto("es", "ayuda.pagoA"), /colones|SINPE/i);
   assert.doesNotMatch(pago, /Mile does not sign/);
   assert.match(leerTexto("es", "ayuda.pagoA"), /no puede enviar ese saldo a un banco/);
   assert.match(leerTexto("en", "ayuda.fondearA"), /Lock budget/);
@@ -94,8 +95,8 @@ test("cada respuesta entra en 2 a 4 burbujas cortas", () => {
     }
   }
   assert.deepEqual(partesRespuesta(leerTexto("es", "ayuda.pagoA")).slice(0, 2), [
-    "Usted sube la foto del trabajo, o del recibo en colones.",
-    "Mile la revisa en segundos.",
+    "Usted sube la evidencia del trabajo y la factura.",
+    "Mile las revisa en segundos.",
   ]);
 });
 
@@ -120,7 +121,7 @@ test("Mile ofrece 2 o 3 preguntas siguientes y nunca la misma", () => {
   }
   for (const id of INICIO) assert.equal(PREGUNTAS.includes(id), true);
   assert.equal(leerTexto("es", "ayuda.tardaQ"), "¿Cuánto tarda?");
-  assert.equal(leerTexto("es", "ayuda.otraQ"), "¿Y si me rechazan la foto?");
+  assert.equal(leerTexto("es", "ayuda.otraQ"), "¿Y si me rechazan la evidencia?");
   assert.deepEqual(SIGUIENTES.pago.slice(0, 2), ["tarda", "otra"]);
 });
 

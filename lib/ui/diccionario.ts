@@ -314,7 +314,7 @@ export const en = {
     couldNotSignIn: "Could not sign in.",
     leaveDemoFail: "Could not leave demo mode.",
     demoOpenFail: "Could not open the demo. Try again.",
-    sub: "Communities in Latin America get funding from afar and have to show how it was spent. Lock digital dollars, send a photo of the work or a receipt in colones, and a person releases the payment. Mile only recommends.",
+    sub: "Communities in Latin America get funding from afar and have to show how it was spent. Lock digital dollars, send the evidence of the work and the invoice, and a person releases the payment. Mile only recommends.",
     chipEnviando: "Mile is searching…",
     chipCodigo: "Your code is on its way",
     chipCodigoLlego: "Your code has arrived",
@@ -715,9 +715,9 @@ export const en = {
     idSoporte: "Payment account ID (for support)",
     cobroTitulo: "How to receive your money",
     cobroCuerpo:
-      "Hyto pays you in US dollars inside the app. You cannot send that money to a bank or turn it into colones from here. The balance on this version is practice money.",
+      "Hyto pays you in US dollars inside the app. You cannot send that money to a bank from here. The balance on this version is practice money.",
     cobroDespues:
-      "A payout to your bank, or into colones, is not in Hyto yet. There is no fee and no waiting time to quote, because that step does not exist. When it does, this page will say how long it takes and what it costs.",
+      "A payout to your bank is not in Hyto yet. There is no fee and no waiting time to quote, because that step does not exist. When it does, this page will say how long it takes and what it costs.",
     testnetUsdc: "USDC",
     sampleBalance: "Sample balance",
     onWallet: "Available now",
@@ -1081,13 +1081,13 @@ export const en = {
     atajoFaq: "Frequently asked questions",
     pagoQ: "How do I get paid?",
     pagoA:
-      "You upload a photo of the work, or of a receipt in colones.\nMile reviews it in seconds.\nA person from the event approves it and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank or turn it into colones yet.",
+      "You upload the evidence of the work and the invoice.\nMile reviews them in seconds.\nA person from the event approves them and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank yet.",
     tardaQ: "How long does it take?",
     tardaA:
-      "Mile reviews your photo in seconds.\nThen the organizer approves it. That part depends on them.\nOnce they pay, the money shows up in your balance.",
+      "Mile reviews your evidence in seconds.\nThen the organizer approves it. That part depends on them.\nOnce they pay, the money shows up in your balance.",
     fondearQ: "How do I set money aside for a task?",
     fondearA:
-      "Open the review for that task and tap Lock budget.\nThat sets the amount aside from your balance. Nobody is paid yet.\nAfter you approve the photo, you pay from that same review.\nYour balance has to cover the amount plus one extra dollar. Hyto does not keep that dollar.",
+      "Open the review for that task and tap Lock budget.\nThat sets the amount aside from your balance. Nobody is paid yet.\nAfter you approve the evidence, you pay from that same review.\nYour balance has to cover the amount plus one extra dollar. Hyto does not keep that dollar.",
     costosQ: "What does it cost to pay a task?",
     costosA:
       "The payment processor charges a 0.3% fee, taken from what the person who gets paid receives.\nIf you set aside US$2, they receive US$1.99 (US$2 minus a US$0.01 fee).\nIf you set aside US$12.48, they receive US$12.44 (US$12.48 minus a US$0.04 fee).",
@@ -1096,25 +1096,25 @@ export const en = {
       "There is no button that returns that money to your balance.\nOnce it is set aside, it stays with the task until you pay it.\nThis screen does not send it anywhere else.",
     orgReembolsoQ: "How do I pay a reimbursement?",
     orgReembolsoA:
-      "The person sends you a photo of the receipt.\nOn the review, you confirm the amount before the payment is prepared.\nYou cannot go over the task limit, and only the amount you confirm is paid.",
+      "The person sends you the invoice.\nOn the review, you confirm the amount before the payment is prepared.\nYou cannot go over the task limit, and only the amount you confirm is paid.",
     evidenciaQ: "What do I send?",
     evidenciaA:
-      "A photo taken where the work happened.\nFor a reimbursement, photograph the receipt, even one in colones.\nHyto does not ask for another kind of evidence.",
-    mileQ: "What does Mile do with my photo?",
+      "A photo taken where the work happened: that is your evidence.\nFor a reimbursement, upload the invoice too.\nHyto does not ask for another kind of evidence.",
+    mileQ: "What does Mile do with my evidence?",
     mileA:
-      "Mile describes your photo and suggests a score from 0 to 100.\nUnder 50 is insufficient, 50 to 79 is partial, and 80 to 100 is completed.\nThe score is a recommendation. The organizer decides whether to pay.",
+      "Mile describes your evidence and suggests a score from 0 to 100.\nUnder 50 is insufficient, 50 to 79 is partial, and 80 to 100 is completed.\nThe score is a recommendation. The organizer decides whether to pay.",
     unirseQ: "How do I join an event?",
     unirseA:
       "With an email invite, one use only.\nOr with a code that starts with HYTO- followed by 12 characters.\nBoth expire after 7 days. After several wrong tries in a row, Hyto asks you to wait.",
-    verQ: "Who can see my tasks and photos?",
+    verQ: "Who can see my tasks and evidence?",
     verA:
-      "You see the tasks assigned to you.\nThe organizer of the event sees your tasks, your photos, and the review.\nOther people in the event do not see your tasks.",
-    otraQ: "What if my photo is rejected?",
+      "You see the tasks assigned to you.\nThe organizer of the event sees your tasks, your evidence, and the review.\nOther people in the event do not see your tasks.",
+    otraQ: "What if my evidence is rejected?",
     otraA:
-      "The organizer asks you for another photo and the task goes back to pending.\nOpen it, take another photo, and send it.\nThe old score stays hidden, and Mile reviews the new photo.",
+      "The organizer asks you for new evidence and the task goes back to pending.\nOpen it, take another photo, and send it.\nThe old score stays hidden, and Mile reviews the new evidence.",
     reembolsoQ: "How does a reimbursement work?",
     reembolsoA:
-      "You send a photo of the receipt.\nThe organizer confirms the amount before the payment is prepared.\nThat amount cannot go over the task limit, and it is what gets paid.",
+      "You send the invoice.\nThe organizer confirms the amount before the payment is prepared.\nThat amount cannot go over the task limit, and it is what gets paid.",
     cobrarQ: "How do I get my account ready to be paid?",
     cobrarA:
       "Open Settings and tap Get ready to be paid.\nA payment cannot reach this account before that.\nIf it was only half set up, you can run it again.",
@@ -1123,7 +1123,7 @@ export const en = {
       "Tap your name at the bottom of the bar and choose Sign out.\nIt is also in Settings.\nA session on this browser lasts up to a day.",
     datosQ: "What does Hyto keep?",
     datosA:
-      "We keep your sign-in email, the session, the payout address, and the photos you send.\nWe also keep the record of each finished payment. We do not sell your information.\nThe details are on the Privacy page.",
+      "We keep your sign-in email, the session, the payout address, and the evidence and invoices you send.\nWe also keep the record of each finished payment. We do not sell your information.\nThe details are on the Privacy page.",
   },
   actividad: {
     titulo: "Activity",
@@ -1539,7 +1539,7 @@ export const es: Rama<typeof en> = {
     couldNotSignIn: "No se pudo entrar.",
     leaveDemoFail: "No se pudo salir del demo.",
     demoOpenFail: "No se pudo abrir el demo. Inténtelo de nuevo.",
-    sub: "Las comunidades en Latinoamérica reciben fondos desde lejos y tienen que mostrar en qué se gastaron. Aparte dólares digitales, envíe una foto del trabajo o un recibo en colones, y una persona libera el pago. Mile solo recomienda.",
+    sub: "Las comunidades en Latinoamérica reciben fondos desde lejos y tienen que mostrar en qué se gastaron. Aparte dólares digitales, envíe la evidencia del trabajo y la factura, y una persona libera el pago. Mile solo recomienda.",
     chipEnviando: "Mile está buscando…",
     chipCodigo: "Su código va en camino",
     chipCodigoLlego: "Su código llegó",
@@ -1940,9 +1940,9 @@ export const es: Rama<typeof en> = {
     idSoporte: "ID de su cuenta de pagos (para soporte)",
     cobroTitulo: "Cómo recibir su dinero",
     cobroCuerpo:
-      "Hyto le paga en dólares dentro de la app. Desde aquí no puede enviar ese dinero a un banco ni pasarlo a colones. El saldo de esta versión es dinero de práctica.",
+      "Hyto le paga en dólares dentro de la app. Desde aquí no puede enviar ese dinero a un banco. El saldo de esta versión es dinero de práctica.",
     cobroDespues:
-      "Un pago a su banco, o en colones, todavía no está en Hyto. No hay una tarifa ni un tiempo de espera que citar, porque ese paso no existe. Cuando exista, esta página va a decir cuánto tarda y cuánto cuesta.",
+      "Un pago a su banco todavía no está en Hyto. No hay una tarifa ni un tiempo de espera que citar, porque ese paso no existe. Cuando exista, esta página va a decir cuánto tarda y cuánto cuesta.",
     testnetUsdc: "USDC",
     sampleBalance: "Saldo de ejemplo",
     onWallet: "Disponible ahora",
@@ -2306,13 +2306,13 @@ export const es: Rama<typeof en> = {
     atajoFaq: "Preguntas frecuentes",
     pagoQ: "¿Cómo me pagan?",
     pagoA:
-      "Usted sube la foto del trabajo, o del recibo en colones.\nMile la revisa en segundos.\nUna persona del evento la aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco ni pasarlo a colones.",
+      "Usted sube la evidencia del trabajo y la factura.\nMile las revisa en segundos.\nUna persona del evento las aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco.",
     tardaQ: "¿Cuánto tarda?",
     tardaA:
-      "Mile revisa su foto en segundos.\nDespués, quien organiza la aprueba. Esa parte depende de esa persona.\nCuando le paga, el dinero aparece en su saldo.",
+      "Mile revisa su evidencia en segundos.\nDespués, quien organiza la aprueba. Esa parte depende de esa persona.\nCuando le paga, el dinero aparece en su saldo.",
     fondearQ: "¿Cómo aparto el dinero de una tarea?",
     fondearA:
-      "Abra la revisión de esa tarea y toque Bloquear presupuesto.\nEso aparta el monto de su saldo. Todavía no se le paga a nadie.\nDespués de aprobar la foto, paga desde esa misma revisión.\nSu saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
+      "Abra la revisión de esa tarea y toque Bloquear presupuesto.\nEso aparta el monto de su saldo. Todavía no se le paga a nadie.\nDespués de aprobar la evidencia, paga desde esa misma revisión.\nSu saldo tiene que cubrir el monto más un dólar extra. Hyto no se queda con ese dólar.",
     costosQ: "¿Cuánto cuesta pagar una tarea?",
     costosA:
       "El procesador de pagos cobra una comisión del 0,3 %, que se descuenta de lo que recibe quien cobra.\nSi aparta US$2, esa persona recibe US$1,99 (US$2 menos comisión de US$0,01).\nSi aparta US$12,48, recibe US$12,44 (US$12,48 menos comisión de US$0,04).",
@@ -2321,25 +2321,25 @@ export const es: Rama<typeof en> = {
       "No hay un botón que devuelva ese dinero a su saldo.\nUna vez apartado, se queda en la tarea hasta que usted lo pague.\nEsta pantalla no lo envía a ningún otro lado.",
     orgReembolsoQ: "¿Cómo pago un reembolso?",
     orgReembolsoA:
-      "La persona le envía una foto del recibo.\nEn la revisión, usted confirma el monto antes de preparar el pago.\nNo puede pasar del límite de la tarea, y solo se paga el monto que confirma.",
+      "La persona le envía la factura.\nEn la revisión, usted confirma el monto antes de preparar el pago.\nNo puede pasar del límite de la tarea, y solo se paga el monto que confirma.",
     evidenciaQ: "¿Qué tengo que enviar?",
     evidenciaA:
-      "Una foto tomada donde pasó el trabajo.\nSi es un reembolso, fotografíe el recibo, aunque esté en colones.\nHyto no pide otro tipo de evidencia.",
-    mileQ: "¿Qué hace Mile con mi foto?",
+      "Una foto tomada donde pasó el trabajo: esa es su evidencia.\nSi es un reembolso, suba también la factura.\nHyto no pide otro tipo de evidencia.",
+    mileQ: "¿Qué hace Mile con mi evidencia?",
     mileA:
-      "Mile describe su foto y propone una nota del 0 al 100.\nMenos de 50 es insuficiente, de 50 a 79 es parcial y de 80 a 100 es completada.\nLa nota es una recomendación. Quien organiza decide si paga.",
+      "Mile describe su evidencia y propone una nota del 0 al 100.\nMenos de 50 es insuficiente, de 50 a 79 es parcial y de 80 a 100 es completada.\nLa nota es una recomendación. Quien organiza decide si paga.",
     unirseQ: "¿Cómo me uno a un evento?",
     unirseA:
       "Con una invitación a su correo, de un solo uso.\nO con un código que empieza por HYTO- seguido de 12 caracteres.\nLas dos vencen a los 7 días. Si falla varias veces seguidas, Hyto le pide esperar.",
-    verQ: "¿Quién ve mis tareas y mis fotos?",
+    verQ: "¿Quién ve mis tareas y mi evidencia?",
     verA:
-      "Usted ve las tareas que le asignaron.\nQuien organiza el evento ve sus tareas, sus fotos y la revisión.\nEl resto de la gente del evento no ve sus tareas.",
-    otraQ: "¿Y si me rechazan la foto?",
+      "Usted ve las tareas que le asignaron.\nQuien organiza el evento ve sus tareas, su evidencia y la revisión.\nEl resto de la gente del evento no ve sus tareas.",
+    otraQ: "¿Y si me rechazan la evidencia?",
     otraA:
-      "Quien organiza le pide otra foto y la tarea vuelve a pendiente.\nÁbrala, tome otra foto y envíela.\nLa nota anterior se oculta y Mile revisa la foto nueva.",
+      "Quien organiza le pide otra evidencia y la tarea vuelve a pendiente.\nÁbrala, tome otra foto y envíela.\nLa nota anterior se oculta y Mile revisa la evidencia nueva.",
     reembolsoQ: "¿Cómo funciona un reembolso?",
     reembolsoA:
-      "Usted envía la foto del recibo.\nQuien organiza confirma el monto antes de preparar el pago.\nEse monto no puede pasar del límite de la tarea, y es lo que se paga.",
+      "Usted envía la factura.\nQuien organiza confirma el monto antes de preparar el pago.\nEse monto no puede pasar del límite de la tarea, y es lo que se paga.",
     cobrarQ: "¿Cómo dejo lista mi cuenta para cobrar?",
     cobrarA:
       "Entre a Configuración y toque Preparar el cobro.\nAntes de eso, el pago no puede llegar a esta cuenta.\nSi quedó a medias, puede prepararla otra vez.",
@@ -2348,7 +2348,7 @@ export const es: Rama<typeof en> = {
       "Toque su nombre al pie de la barra y elija Cerrar sesión.\nTambién está en Configuración.\nLa sesión dura hasta un día en este navegador.",
     datosQ: "¿Qué datos guarda Hyto?",
     datosA:
-      "Guardamos el correo con el que entra, la sesión, la dirección de cobro y las fotos que envía.\nTambién el registro de cada pago terminado. No vendemos sus datos.\nEl detalle está en Privacidad.",
+      "Guardamos el correo con el que entra, la sesión, la dirección de cobro y la evidencia y las facturas que envía.\nTambién el registro de cada pago terminado. No vendemos sus datos.\nEl detalle está en Privacidad.",
   },
   actividad: {
     titulo: "Actividad",
