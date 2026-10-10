@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Icono, iniciales } from "@/components/ui/Marca";
 import { elementosFoco, teclaDialogo } from "@/lib/ui/dialogo";
 import { cerrarSesionEnCliente } from "@/lib/auth/cliente";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
 
 type UsuarioMenu = { nombre: string | null; email: string };
 
@@ -23,7 +24,8 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
   const panel = useRef<HTMLDivElement>(null);
   const titulo = useId();
   const [saliendo, setSaliendo] = useState(false);
-  const nombre = usuario.nombre?.trim() || null;
+  const idioma = useIdioma();
+  const nombre = usuario.nombre?.trim() ? nombreEnIdioma(usuario.nombre.trim(), idioma) : null;
   const rotulo = nombre ?? usuario.email;
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
       >
         <div className="hyto-perfil-cabeza">
           <span className="hyto-usuario-iniciales" aria-hidden="true">
-            {iniciales(usuario.nombre ?? "", usuario.email)}
+            {iniciales(nombre ?? "", usuario.email)}
           </span>
           <span className="hyto-usuario-datos">
             <strong id={titulo}>{rotulo}</strong>

@@ -57,9 +57,11 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
         ],
       }),
     );
-    assert.match(texto(), /Paid · US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\) · Limit US\$15/);
+    // The net is the figure; the gross and the fee are a separate detail.
+    assert.match(texto(), /Paid · US\$12\.44 · Limit US\$15\.00/);
+    assert.match(texto(), /US\$12\.48 minus a US\$0\.04 fee/);
     assert.equal(texto().includes("Up to US$15"), false);
-    assert.match(texto(), /Pending · US\$20/);
+    assert.match(texto(), /Pending · US\$20\.00/);
     const bloqueo = document.querySelector('a[href="/revision/stand"]');
     assert.equal(bloqueo?.textContent, "Lock budget");
     const comida = document.querySelector('a[href="/revision/comida"]');

@@ -6,8 +6,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { AyudaMile } from "@/components/admin/AyudaMile";
 import { MenuPerfil } from "@/components/admin/MenuPerfil";
 import { Icono, Isotipo, Logo, Tema, iniciales } from "@/components/ui/Marca";
-import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Volver } from "@/components/ui/Volver";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
 import { enlacesBarra, type EnlaceBarra } from "@/lib/ui/nav-organizador";
 import { destinoVolver } from "@/lib/ui/volver";
 
@@ -65,7 +66,8 @@ export function Marco({
   const actual = seccionDe(ruta);
   const eventoAbierto = actual === "eventos" || actual === "bandeja" || actual === "informe" || actual === "tareasEvento" || actual === "unirme";
   const activo = (enlace: EnlaceBarra) => (enlace.seccion === "eventos" ? eventoAbierto : actual === enlace.seccion);
-  const foco = ruta.startsWith("/revision") || ruta.startsWith("/tareas");
+  // A task detail keeps the same top bar and bottom nav as the rest of the app. Only the review screen hides them.
+  const foco = ruta.startsWith("/revision");
   const volver = destinoVolver(ruta);
   const [menu, setMenu] = useState(false);
   const [ayuda, setAyuda] = useState(false);
@@ -260,7 +262,9 @@ function BotonPerfil({
   onAbrir: (boton: HTMLElement) => void;
 }) {
   const t = useTexto();
-  const letras = iniciales(usuario.nombre ?? "", usuario.email);
+  const idioma = useIdioma();
+  const nombre = usuario.nombre?.trim() ? nombreEnIdioma(usuario.nombre.trim(), idioma) : "";
+  const letras = iniciales(nombre, usuario.email);
   return (
     <button
       type="button"
@@ -278,7 +282,7 @@ function BotonPerfil({
       {compacto ? null : (
         <>
           <span className="hyto-usuario-datos" title={usuario.email}>
-            {usuario.nombre?.trim() ? <strong>{usuario.nombre.trim()}</strong> : <span>{usuario.email}</span>}
+            {nombre ? <strong>{nombre}</strong> : <span>{usuario.email}</span>}
           </span>
           <svg className="hyto-perfil-flecha" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m2 3.5 3 3 3-3" />

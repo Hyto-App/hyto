@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { Mile } from "@/components/ui/Mile";
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { notaDeTarea } from "@/lib/integrante/nota";
 import { abreviarNota, estaRechazada } from "@/lib/integrante/revision";
 import type { Tarea } from "@/lib/integrante/tipos";
@@ -32,11 +32,12 @@ export function LineaRevision({
   archivo?: boolean;
 }) {
   const t = useTexto();
+  const idioma = useIdioma();
   const calificacion = notaDeTarea(tarea);
   const pagado = tarea.estado === "pagado";
   const rechazada = estaRechazada(tarea);
   const revisada = !mileSinTerminar && (calificacion !== null || revisionCerrada || pagado || rechazada);
-  const nombre = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento) || "";
+  const nombre = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento, idioma) || "";
   const intento = (tarea.intentos ?? 0) > 1 ? t("evidencia.attempt", { n: tarea.intentos ?? 0 }) : null;
   const notaCorta = tarea.rechazo?.nota ? abreviarNota(tarea.rechazo.nota) : null;
 

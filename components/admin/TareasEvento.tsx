@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
+import { detalleMontoTarea, lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
@@ -204,6 +204,7 @@ export function TareasEvento({
                 <p className="mt-1 text-sm text-[var(--suave)]">
                   {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
                 </p>
+                {detalleMontoTarea(tarea, idioma) ? <p className="mt-0.5 text-xs text-[var(--suave)]">{detalleMontoTarea(tarea, idioma)}</p> : null}
                 {prioridad || dificultad ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     {prioridad ? (

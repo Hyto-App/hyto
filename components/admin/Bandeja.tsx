@@ -13,7 +13,7 @@ import { volverAlEjemplo } from "@/lib/admin/memoria";
 import { fusionarVista } from "@/lib/admin/novedades";
 import { cargarDetalleOrganizador, type DetalleRevision } from "@/lib/admin/remoto";
 import { puedeApartarSinEntrega, vistaAdmin } from "@/lib/admin/vista";
-import { lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
+import { detalleMontoTarea, lineaMontoTarea, vistaMonto } from "@/lib/integrante/formato";
 import { etiquetaEstado, etiquetaTipo, etiquetaVeredicto, textoVisible } from "@/lib/ui/etiquetas";
 import { useVistaAdmin } from "@/components/admin/usarVista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
@@ -97,6 +97,9 @@ function ListaPagadas({
               <span className="mt-1 block text-sm text-[var(--suave)]">
                 {etiquetaEstado("pagado", idioma)} · {lineaMontoTarea(tarea, idioma, limite)}
               </span>
+              {detalleMontoTarea(tarea, idioma) ? (
+                <span className="mt-0.5 block text-xs text-[var(--suave)]">{detalleMontoTarea(tarea, idioma)}</span>
+              ) : null}
               <span className="mt-2 inline-block text-sm font-medium">{abrir}</span>
             </Link>
           </li>

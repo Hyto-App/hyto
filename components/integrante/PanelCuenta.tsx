@@ -6,7 +6,7 @@ import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { acortarDireccion, explicarNeto, formatearFecha, formatearRecibido } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarNeto, formatearFecha, formatearMonto, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
 import type { Clave } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
@@ -298,7 +298,7 @@ function Grafico({ meses }: { meses: MesOrgullo[] }) {
         const corta = mesVisible(mes.clave, "short", idioma);
         const larga = mesVisible(mes.clave, "long", idioma);
         return (
-          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearRecibido(mes.total, idioma) || "US$0"}`}>
+          <li key={mes.clave} className="hyto-mes" aria-label={`${larga}, ${formatearRecibido(mes.total, idioma) || formatearMonto("0", idioma)}`}>
             <span className="hyto-mes-valor" aria-hidden="true">
               {cifra > 0 ? formatearRecibido(mes.total, idioma) : ""}
             </span>

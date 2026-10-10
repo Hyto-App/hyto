@@ -122,7 +122,7 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
     return {
       ...etiqueta,
       texto: `Sin tasa para ${moneda[1]}`,
-      explicacion: `El total del recibo ${impreso} está en ${moneda[1]} y Hyto no tiene una tasa para esa moneda, así que no se pasó a dólares. La nota no puede llegar a completada. Revisa el monto antes de confirmarlo.`,
+      explicacion: `El total del recibo ${impreso} está en ${moneda[1]} y Hyto no tiene una tasa para esa moneda, así que no se pasó a dólares. La nota no puede llegar a completada. Revise el monto antes de confirmarlo.`,
     };
   }
   if (etiqueta.id === "currency_unknown" && etiqueta.texto === "Currency not shown") {
@@ -130,7 +130,7 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
     return {
       ...etiqueta,
       texto: "No se ve la moneda",
-      explicacion: `El total del recibo ${impreso} no muestra la moneda, así que Hyto no supuso dólares ni lo convirtió. La nota no puede llegar a completada. Revisa el monto antes de confirmarlo.`,
+      explicacion: `El total del recibo ${impreso} no muestra la moneda, así que Hyto no supuso dólares ni lo convirtió. La nota no puede llegar a completada. Revise el monto antes de confirmarlo.`,
     };
   }
   const impresa = /^The printed date (.+) could not be read as a calendar date/.exec(etiqueta.explicacion);

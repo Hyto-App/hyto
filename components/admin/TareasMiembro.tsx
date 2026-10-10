@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
-import { lineaMontoTarea } from "@/lib/integrante/formato";
+import { detalleMontoTarea, lineaMontoTarea } from "@/lib/integrante/formato";
 import { etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 
@@ -42,6 +42,7 @@ export function TareasMiembro({
               <p className="mt-1 text-sm text-[var(--suave)]">
                 {etiquetaEstado(tarea.estado as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
               </p>
+              {detalleMontoTarea(tarea, idioma) ? <p className="mt-0.5 text-xs text-[var(--suave)]">{detalleMontoTarea(tarea, idioma)}</p> : null}
             </Link>
           </li>
         ))}
