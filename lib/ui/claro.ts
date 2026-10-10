@@ -32,6 +32,7 @@ import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RE
 import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import { AVISO_GALERIA_TIPO } from "@/lib/integrante/fotoEnVivo";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
 import { formatearCentavos } from "@/lib/integrante/formato";
 import { type Clave, texto } from "@/lib/ui/diccionario";
@@ -160,6 +161,12 @@ const EXACTO: Record<string, Clave> = {
   [texto("en", "evidencia.archivoPequena")]: "evidencia.archivoPequena",
   [texto("en", "evidencia.archivoGrande")]: "evidencia.archivoGrande",
   "Take the photo with the camera.": "evidencia.useCamera",
+  [AVISO_GALERIA_TIPO]: "evidencia.galleryType",
+  "There is no photo to pay for yet.": "revision.demoNoPhoto",
+  "Lock the budget before you pay.": "revision.demoLockFirst",
+  "This task already has a real budget.": "revision.demoRealBudget",
+  "That demo action is not allowed.": "revision.demoBadAction",
+  "The demo step did not go through. Try again.": "revision.demoStepFail",
   "Take the photo now. Photos from the gallery are not accepted.": "evidencia.gallery",
   "Could not send. Try again.": "evidencia.noSend",
   [AVISO_ENVIO_FALLIDO]: "evidencia.sendFailed",

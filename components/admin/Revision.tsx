@@ -18,6 +18,8 @@ import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
 import {
+  accionDemo,
+  botonesDemo,
   botonesRevision,
   cargarDetalleOrganizador,
   confirmarMonto,
@@ -53,7 +55,12 @@ import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { esContratoDemo } from "@/lib/sesion/demo";
 import type { TareaAdmin } from "@/lib/admin/tipos";
+
+function pausaPasoDemo(): number {
+  return typeof process !== "undefined" && process.env.NODE_TEST_CONTEXT ? 0 : 900;
+}
 
 function frasePagada(tarea: TareaAdmin, idioma: "en" | "es"): string {
   const detalle = detalleMonto(tarea);
@@ -153,7 +160,8 @@ export function Revision({
 
   useEffect(() => {
     if (!real || !contrato) return;
-    if (fondeoForzado.current === contrato) {
+    // A demo lock has no contract on the network: there is no balance to read.
+    if (fondeoForzado.current === contrato || esContratoDemo(contrato)) {
       setFondeado(true);
       return;
     }
@@ -338,6 +346,39 @@ export function Revision({
     }
   }
 
+  /** Demo mode walks the same steps as the real flow, with no wallet and no signature. */
+  async function correrDemo(accion: "bloquear" | "pagar", senal: AbortSignal) {
+    if (paso || !tarea) return;
+    publicarAviso(null);
+    const pasos: AccionCliente[] = accion === "bloquear" ? ["desplegar", "fondear"] : ["marcar", "aprobar", "liberar"];
+    let resultado: Awaited<ReturnType<typeof accionDemo>> | null = null;
+    try {
+      for (const actual of pasos) {
+        if (senal.aborted) return;
+        setPaso(actual);
+        await new Promise((listo) => setTimeout(listo, pausaPasoDemo()));
+      }
+      if (senal.aborted) return;
+      resultado = await accionDemo(tareaId, accion);
+      if (!resultado.ok) {
+        publicarAviso(resultado.aviso);
+        return;
+      }
+      if (resultado.contrato) {
+        fondeoForzado.current = resultado.contrato;
+        setContrato(resultado.contrato);
+        setFondeado(true);
+      }
+    } finally {
+      setPaso(null);
+      if (resultado?.ok) {
+        const fresco = await cargarDetalleOrganizador(tareaId);
+        if (fresco) aplicarDetalle(fresco);
+        else if (accion === "pagar") setTarea((actual) => (actual ? { ...actual, estado: "pagado" } : actual));
+      }
+    }
+  }
+
   async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal) {
     if (paso || !tarea) return;
     if (!wallet) {
@@ -455,14 +496,20 @@ export function Revision({
     );
   }
 
-  const botones = botonesRevision(tarea, real, { contrato, fondeado });
+  const demoReal = real && modoDemo;
+  const botonesBase = botonesRevision(tarea, real, { contrato, fondeado });
+  const demo = botonesDemo(tarea, contrato);
+  const botones = demoReal
+    ? { ...botonesBase, desplegar: demo.bloquear, fondear: false, pagar: demo.pagar, verificarFondo: false }
+    : botonesBase;
   const esperaConfirmacion =
-    real && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
+    real && !demoReal && tarea.tipo === "reembolso" && !contrato && tarea.estado !== "pagado" && montoDeVista(tarea) === null;
   const topePago = normalizarMonto(tarea.tope ?? "") ?? normalizarMonto(tarea.monto);
   const sobreTope = Boolean(topePago && tarea.montoRevisado && centavos(tarea.montoRevisado) > centavos(topePago));
   const borradorNormal = normalizarMonto(borrador);
   const coincide = Boolean(tarea.montoConfirmado && borradorNormal && tarea.montoConfirmado === borradorNormal);
-  const puedeDesplegar = botones.desplegar && (tarea.tipo !== "reembolso" || coincide);
+  // In demo the server confirms a reimbursement amount within the cap, so lock does not wait for the form.
+  const puedeDesplegar = botones.desplegar && (demoReal || tarea.tipo !== "reembolso" || coincide);
   // A real file on a pending task means the last photo was sent back. Lock stays off until a new one arrives.
   const esperaOtraFoto =
     real &&
@@ -471,7 +518,7 @@ export function Revision({
     (pidioOtra || Boolean(foto) || (tarea.intentosAnteriores?.length ?? 0) > 0);
   const cifraBloqueo = montoDeVista(tarea);
   const faltaSaldo =
-    real && cifraBloqueo !== null ? faltaParaBloquear(saldo, String(cifraBloqueo)) : null;
+    real && !demoReal && cifraBloqueo !== null ? faltaParaBloquear(saldo, String(cifraBloqueo)) : null;
   const describeBloqueo = [
     esperaOtraFoto ? "bloqueo-foto" : "",
     esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
@@ -499,14 +546,15 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
-        onConfirmar: (senal: AbortSignal) => correr(pasosDesde(reanudar), senal),
+        onConfirmar: (senal: AbortSignal) => (demoReal ? correrDemo("pagar", senal) : correr(pasosDesde(reanudar), senal)),
       };
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
       monto,
       detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
       confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
-      onConfirmar: (senal: AbortSignal) => correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
+      onConfirmar: (senal: AbortSignal) =>
+        demoReal && clave === "bloquear" ? correrDemo("bloquear", senal) : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };
   };
   const etiquetaPaso = (accion: AccionCliente) =>
@@ -705,8 +753,8 @@ export function Revision({
           ) : null}
 
           <div className="hyto-actions">
-            {modoDemo && (esperaConfirmacion || puedeDesplegar || botones.fondear || botones.pagar) ? (
-              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNoMoney")}</p>
+            {demoReal && (botones.desplegar || botones.pagar) ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNote")}</p>
             ) : null}
             {botones.aprobarLocal ? (
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
@@ -786,11 +834,11 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || Boolean(faltaSaldo)}
+                  disabled={ocupado || !puedeDesplegar || esperaOtraFoto || Boolean(faltaSaldo)}
                   aria-busy={ocupado}
                   aria-describedby={describeBloqueo || undefined}
                   onClick={() => {
-                    if (ocupado || !puedeDesplegar || modoDemo || esperaOtraFoto || faltaSaldo) return;
+                    if (ocupado || !puedeDesplegar || esperaOtraFoto || faltaSaldo) return;
                     setConfirmacion({ clave: "bloquear", abierto: true });
                   }}
                 >
@@ -808,11 +856,11 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || modoDemo || Boolean(faltaSaldo)}
+                  disabled={ocupado || Boolean(faltaSaldo)}
                   aria-busy={ocupado}
                   aria-describedby={faltaSaldo ? "bloqueo-saldo" : undefined}
                   onClick={() => {
-                    if (ocupado || modoDemo || faltaSaldo) return;
+                    if (ocupado || faltaSaldo) return;
                     setConfirmacion({ clave: "fondear", abierto: true });
                   }}
                 >
@@ -825,7 +873,7 @@ export function Revision({
                 {fondeado === true ? (
                   <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
                 ) : null}
-                <BotonPrincipal type="button" disabled={ocupado || modoDemo} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
+                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
                   {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
                 </BotonPrincipal>
               </>
@@ -887,7 +935,7 @@ export function Revision({
             </EnlaceExplorador>
           ) : null}
 
-          {real && (wallet || contrato) ? (
+          {real && !demoReal && (wallet || contrato) ? (
             <details className="mt-6 text-sm text-[var(--suave)]">
               <summary className="cursor-pointer">{t("revision.technical")}</summary>
               {wallet ? <p className="mt-2 font-mono">{t("revision.yourAccount", { direccion: acortarDireccion(wallet) })}</p> : null}
@@ -908,7 +956,7 @@ export function Revision({
                 </EnlaceExplorador>
               ) : (
                 <p className="text-sm leading-6 text-[var(--suave)]">
-                  {real ? t("revision.paidWait") : t("revision.samplePay")}
+                  {demoReal ? t("evidencia.practiceNetwork") : real ? t("revision.paidWait") : t("revision.samplePay")}
                 </p>
               )}
               {credencial ? (

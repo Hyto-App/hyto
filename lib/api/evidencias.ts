@@ -11,6 +11,7 @@ import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/to
 import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
+import { AVISO_GALERIA_TIPO, ORIGEN_GALERIA } from "@/lib/integrante/fotoEnVivo";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
@@ -182,8 +183,12 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
     if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
 
+    // Live-capture rules stay for real events. The seeded demo event also takes a gallery photo.
+    const galeria = tarea.tipo === "trabajo" && demo && texto(form.get("origen")) === ORIGEN_GALERIA;
     const validado = validarBytes(bytes, { tipo: foto.type, nombre: nombreDeArchivo(foto) });
+    if (galeria && validado.ok && !esImagen(validado.tipo)) return json({ aviso: AVISO_GALERIA_TIPO }, 400);
     if (!validado.ok) {
+      if (galeria && (validado.motivo === "falso" || validado.motivo === "tipo")) return json({ aviso: AVISO_GALERIA_TIPO }, 400);
       const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
       if (camara) return json({ aviso: "Take the photo with the camera." }, 400);
       return json({ aviso: avisoArchivo(validado.motivo) }, validado.motivo === "grande" ? 413 : 400);
@@ -193,7 +198,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const ahora = Date.now();
     let capturadaEn: string | null = null;
     let frescura: EvidenciaFila["frescura"] = null;
-    if (tarea.tipo === "trabajo") {
+    if (tarea.tipo === "trabajo" && !galeria) {
       if (tipo !== "image/jpeg") return json({ aviso: "Take the photo with the camera." }, 400);
       const token = texto(form.get("token"));
       if (!token) return json({ aviso: "Take the photo with the camera." }, 400);

@@ -1,5 +1,6 @@
 import { bandejaDe, normalizarMonto, porPersona, resumir } from "@/lib/admin/vista";
 import { cifraConfirmada } from "@/lib/escrow/monto";
+import { esContratoDemo } from "@/lib/sesion/demo";
 import type { IntentoAnterior, LecturaVisible, TareaAdmin, VistaAdmin } from "@/lib/admin/tipos";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
@@ -88,6 +89,46 @@ export function botonesRevision(
 
 export function pagoPendiente(tarea: Pick<TareaAdmin, "estado" | "hashPago">): boolean {
   return tarea.estado !== "pagado" && Boolean(tarea.hashPago?.trim());
+}
+
+/**
+ * Demo sessions have no wallet, so lock and pay are simulated on the server: same buttons
+ * as the real flow, with a demo budget reference instead of a contract. Pay never signs.
+ */
+export function botonesDemo(
+  tarea: Pick<TareaAdmin, "estado">,
+  contrato: string | null,
+): { bloquear: boolean; pagar: boolean } {
+  const abierto = tarea.estado !== "pagado";
+  return {
+    bloquear: abierto && !contrato,
+    pagar: abierto && tarea.estado === "en revisión" && esContratoDemo(contrato),
+  };
+}
+
+const AVISO_ACCION_DEMO = "The demo step did not go through. Try again.";
+
+export async function accionDemo(
+  tareaId: string,
+  accion: "bloquear" | "pagar",
+  opciones: OpcionesRemoto = {},
+): Promise<{ ok: true; contrato: string | null } | { ok: false; aviso: string }> {
+  const id = tareaId.trim();
+  if (!id) return { ok: false, aviso: "The task is missing." };
+  try {
+    const respuesta = await (opciones.fetch ?? fetch)(`/api/revision/${encodeURIComponent(id)}/demo`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accion }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; contrato?: unknown } | null;
+    if (respuesta.ok) return { ok: true, contrato: typeof cuerpo?.contrato === "string" ? cuerpo.contrato : null };
+    return { ok: false, aviso: typeof cuerpo?.aviso === "string" ? cuerpo.aviso : AVISO_ACCION_DEMO };
+  } catch {
+    return { ok: false, aviso: AVISO_ACCION_DEMO };
+  }
 }
 
 export async function cargarDetalleOrganizador(tareaId: string, opciones: OpcionesRemoto = {}): Promise<DetalleRevision | null> {
