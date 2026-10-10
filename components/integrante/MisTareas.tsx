@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
@@ -121,7 +121,23 @@ function ComoFunciona() {
   );
 }
 
-function Saludo({ nombre }: { nombre: string | null }) {
+/** One line, then “See more”. No chat bubble and no second Mile. */
+function NotaMile({ tono, children }: { tono: "pend" | "rev" | "ok"; children: ReactNode }) {
+  const t = useTexto();
+  const [abierta, setAbierta] = useState(false);
+  return (
+    <p className={`hyto-nota-mile hyto-nota-mile-${tono}${abierta ? " is-abierta" : ""}`} role={tono === "rev" ? "status" : undefined}>
+      <span className="hyto-nota-mile-texto">{children}</span>
+      {abierta ? null : (
+        <button type="button" className="hyto-nota-mile-mas" onClick={() => setAbierta(true)}>
+          {t("comunes.seeMore")}
+        </button>
+      )}
+    </p>
+  );
+}
+
+function Saludo({ nombre, sinDibujo = false }: { nombre: string | null; sinDibujo?: boolean }) {
   const t = useTexto();
   const [ahora, setAhora] = useState<Date | null>(null);
   const [quieto, setQuieto] = useState(false);
@@ -140,7 +156,7 @@ function Saludo({ nombre }: { nombre: string | null }) {
 
   return (
     <div className="hyto-saludo">
-      {quieto ? <Mile estado="cara-feliz" tamano={72} /> : <MileAnimada estado="saludo" tamano={72} />}
+      {sinDibujo ? null : quieto ? <Mile estado="cara-feliz" tamano={72} className="hyto-mile-prominente" /> : <MileAnimada estado="saludo" tamano={72} className="hyto-mile-prominente" />}
       <div className="min-w-0">
         <p className="hyto-eyebrow">{t("tareas.title")}</p>
         <h1 className="hyto-h1">{frase}</h1>
@@ -154,7 +170,7 @@ function Cargando() {
   return (
     <div aria-busy="true" aria-live="polite">
       <div className="hyto-tarjeta flex items-center gap-3 p-4">
-        <MileAnimada estado="buscando" tamano={56} />
+        <MileAnimada estado="buscando" tamano={56} className="hyto-mile-prominente" />
         <p className="text-sm text-[var(--suave)]">{t("tareas.loadingMile")}</p>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
@@ -307,7 +323,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
     <main className="hyto-page">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Saludo nombre={nombre} />
+          <Saludo nombre={nombre} sinDibujo={!lista || Boolean(error) || tareas.length === 0} />
           {lista && subtitulo ? <p className="hyto-subtitulo">{subtitulo}</p> : null}
         </div>
         {lista && tareas.length > 0 ? (
@@ -319,7 +335,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
 
       {lista && error ? (
         <div className="hyto-tarjeta hyto-estado-vacio" role="alert">
-          <MileAnimada estado="error-subida" tamano={96} />
+          <MileAnimada estado="error-subida" tamano={96} className="hyto-mile-prominente" />
           <h2>{claro(error)}</h2>
           <div className="hyto-estado-vacio-acciones">
             <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
@@ -331,7 +347,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
 
       {lista && !error && tareas.length === 0 ? (
         <div className="hyto-tarjeta hyto-estado-vacio">
-          <MileAnimada estado="vacio" tamano={120} />
+          <Mile estado="descansando" tamano={120} className="hyto-cofre-vacio hyto-mile-prominente" />
           <h2>{t("tareas.emptyTitle")}</h2>
           <p>{t("tareas.emptyBody")}</p>
           <div className="hyto-estado-vacio-acciones">
@@ -448,10 +464,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           {abierta ? (
                             <>
                               <p className="hyto-tarea-condicion">{textoVisible(tarea.condicion, idioma)}</p>
-                              <p className="hyto-nota-mile hyto-nota-mile-pend">
-                                <Mile estado="cara-neutra" tamano={28} />
-                                <span>{puntos > 1 ? t("tareas.mileChecks", { n: puntos }) : t("tareas.mileChecksOne")}</span>
-                              </p>
+                              <NotaMile tono="pend">{puntos > 1 ? t("tareas.mileChecks", { n: puntos }) : t("tareas.mileChecksOne")}</NotaMile>
                             </>
                           ) : null}
                           {tarea.estado === "en revisión" ? (
@@ -462,42 +475,26 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                                 <NotaCobro tarea={tarea} />
                               </div>
                             ) : reintento ? (
-                              <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
-                                <Mile estado="cara-neutra" tamano={28} />
-                                <span>{t("evidencia.mileCouldntFinish")}</span>
-                              </p>
+                              <NotaMile tono="rev">{t("evidencia.mileCouldntFinish")}</NotaMile>
                             ) : (
-                              <p className="hyto-nota-mile hyto-nota-mile-rev" role="status">
-                                <Mile estado="cara-neutra" tamano={28} />
-                                <span>
-                                  {t(documental ? "tareas.mileReviewingFile" : "tareas.mileReviewing")}
-                                  {". "}
-                                  {t("tareas.mileStill")}
-                                </span>
-                              </p>
+                              <NotaMile tono="rev">
+                                {t(documental ? "tareas.mileReviewingFile" : "tareas.mileReviewing")}
+                                {". "}
+                                {t("tareas.mileStill")}
+                              </NotaMile>
                             )
                           ) : null}
-                          {recibido ? (
-                            <p className="hyto-nota-mile hyto-nota-mile-ok">
-                              <Mile estado="cara-feliz" tamano={28} />
-                              <span>{t("tareas.paidNote", { amount: recibido })}</span>
-                            </p>
-                          ) : null}
+                          {recibido ? <NotaMile tono="ok">{t("tareas.paidNote", { amount: recibido })}</NotaMile> : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
-                            <p className="hyto-nota-mile hyto-nota-mile-pend">
-                              <Mile estado="cara-neutra" tamano={28} />
-                              <span>
-                                {quienOrganiza
-                                  ? t("evidencia.organizerAskedName", { name: quienOrganiza })
-                                  : t("evidencia.organizerAsked")}
-                                {tarea.rechazo?.nota ? (
-                                  <>
-                                    {" "}
-                                    <q>{tarea.rechazo.nota}</q>
-                                  </>
-                                ) : null}
-                              </span>
-                            </p>
+                            <NotaMile tono="pend">
+                              {quienOrganiza ? t("evidencia.organizerAskedName", { name: quienOrganiza }) : t("evidencia.organizerAsked")}
+                              {tarea.rechazo?.nota ? (
+                                <>
+                                  {" "}
+                                  <q>{tarea.rechazo.nota}</q>
+                                </>
+                              ) : null}
+                            </NotaMile>
                           ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <>

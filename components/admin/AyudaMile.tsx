@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { ATAJOS, PREGUNTAS, buscarPreguntas, type IdPregunta, type PreguntaVisible } from "@/lib/ui/ayuda";
@@ -64,7 +65,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
     };
   }, [abierto, alCerrar, devolver]);
 
-  if (!abierto) return null;
+  if (!abierto || typeof document === "undefined") return null;
 
   function elegirAtajo(atajo: (typeof ATAJOS)[number]) {
     if ("faq" in atajo && atajo.faq) {
@@ -80,7 +81,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
     alCerrar();
   }
 
-  return (
+  return createPortal(
     <div className="hyto-capa hyto-capa-ayuda" onMouseDown={alCerrar}>
       <div
         ref={panel}
@@ -144,6 +145,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
           </ul>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

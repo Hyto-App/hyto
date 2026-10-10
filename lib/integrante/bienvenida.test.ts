@@ -137,6 +137,13 @@ test("eventos muestra la bienvenida y la cuenta ya no tiene el botón", async ()
     assert.match(texto(), /You are signed in/);
     assert.match(texto(), /Take your first step/);
     assert.match(texto(), /No events yet/);
+    const vacio = document.querySelector(".hyto-estado-vacio");
+    const acciones = [...(vacio?.querySelectorAll("a") ?? [])];
+    assert.equal(acciones.length, 2);
+    assert.match(acciones[0]?.className ?? "", /\bhyto-btn\b/);
+    assert.doesNotMatch(acciones[0]?.className ?? "", /hyto-btn-line/);
+    assert.match(acciones[1]?.className ?? "", /hyto-btn-line/);
+    assert.equal(document.querySelector("header .hyto-btn"), null);
     const cuenta = readFileSync(new URL("../../app/(integrante)/cuentas/page.tsx", import.meta.url), "utf8");
     assert.equal(cuenta.includes("PrepararUsdc"), false);
   } finally {
