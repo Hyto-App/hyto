@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { useTexto } from "@/components/ui/Idioma";
 
 /** The one next step the card offers. Each case has a single main button. */
@@ -18,14 +19,19 @@ type Props = {
 
 export function Bienvenida({ paso, accion }: Props) {
   const t = useTexto();
+  const demo = useRolDemo() !== null || paso.tipo === "demo";
 
   return (
     <section className="hyto-welcome" aria-labelledby="hyto-welcome-title">
       <article className="hyto-card hyto-welcome-card">
         <div className="hyto-welcome-cabeza">
-          <h2 id="hyto-welcome-title" className="hyto-title">
-            {t("bienvenida.title")}
-          </h2>
+          <div className="hyto-welcome-titulo">
+            <h2 id="hyto-welcome-title" className="hyto-title">
+              {t("bienvenida.title")}
+            </h2>
+            {/* Always visible, demo or real session: the app still runs on the test network. */}
+            <span className="hyto-red-etiqueta">{t(demo ? "bienvenida.testnetDemo" : "bienvenida.testnet")}</span>
+          </div>
           {accion ? <div className="hyto-welcome-ocultar">{accion}</div> : null}
         </div>
         <p className="hyto-sub">{t("bienvenida.body")}</p>
