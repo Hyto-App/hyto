@@ -287,7 +287,7 @@ test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del 
   assert.equal(texto("es", "bienvenida.title"), "Bienvenido a Hyto");
   assert.equal(
     texto("es", "bienvenida.body"),
-    "Hyto paga tareas de eventos cuando hay prueba: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
+    "Hyto paga tareas de eventos cuando hay evidencia: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
   );
   assert.equal(texto("es", "bienvenida.open", { name: "ZEEK" }), "Abrir ZEEK");
   assert.equal(texto("es", "bienvenida.join"), "Unirme con código");
