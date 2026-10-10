@@ -263,3 +263,58 @@ test("el camino del demo en español no mezcla el tuteo con el usted", () => {
   assert.doesNotMatch(texto("es", "tareas.step1"), /Únete|Te unes/);
   assert.doesNotMatch(texto("es", "tareas.step2"), /Haces|subes/);
 });
+
+test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del demo", () => {
+  // The testnet pill is the one place the welcome names the test network.
+  const sinEtiqueta = <T extends Record<string, unknown>>(rama: T) => {
+    const { testnet: _t, testnetDemo: _d, ...resto } = rama as T & { testnet?: unknown; testnetDemo?: unknown };
+    return resto;
+  };
+  const bienvenida = [...textosDe(sinEtiqueta(es.bienvenida)), ...textosDe(sinEtiqueta(en.bienvenida))];
+  for (const valor of bienvenida) {
+    assert.doesNotMatch(valor, /\bes c[oó]mo\b|\bis like\b/i, valor);
+    assert.doesNotMatch(valor, /no puede preparar cobros|can't set up payouts/i, valor);
+    assert.doesNotMatch(valor, /\b(usdc|wallet|billetera|testnet|red de prueba|test network)\b/i, valor);
+  }
+  const clitico = /(^|[^a-záéíóúüñ])(tú|tu|tus|te|ti|vos)([^a-záéíóúüñ]|$)/i;
+  for (const valor of textosDe(es.bienvenida)) {
+    assert.equal(clitico.test(valor), false, valor);
+    for (const verbo of [...TUTEO, ...VOSEO]) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
+  assert.equal(texto("es", "bienvenida.title"), "Bienvenido a Hyto");
+  assert.equal(
+    texto("es", "bienvenida.body"),
+    "Hyto paga tareas de eventos cuando hay evidencia: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
+  );
+  assert.equal(texto("es", "bienvenida.open", { name: "ZEEK" }), "Abrir ZEEK");
+  assert.equal(texto("es", "bienvenida.join"), "Unirme con código");
+  assert.equal(texto("es", "bienvenida.startDemo"), "Empezar el demo");
+  assert.equal(texto("es", "bienvenida.testnet"), "Testnet");
+  assert.equal(texto("es", "bienvenida.testnetDemo"), "Demo en testnet");
+  assert.equal(texto("en", "bienvenida.testnetDemo"), "Testnet demo");
+  assert.equal(texto("en", "bienvenida.title"), "Welcome to Hyto");
+  assert.equal(texto("en", "bienvenida.open", { name: "ZEEK" }), "Open ZEEK");
+  for (const valor of textosDe(es)) {
+    assert.doesNotMatch(valor, /no puede preparar cobros|ninguna billetera firma/i, valor);
+  }
+});
+
+test("el demo dice una sola frase y no habla de red ni billetera", () => {
+  const frase = { es: "Demo: pago de práctica, no se mueve dinero real.", en: "Demo: practice payment, no real money moves." };
+  for (const idioma of ["es", "en"] as const) {
+    for (const clave of ["bienvenida.demo", "evidencia.practiceNetwork", "revision.demoNoMoney", "revision.demoNote", "cuenta.demoNota"] as const) {
+      assert.equal(texto(idioma, clave), frase[idioma], clave);
+    }
+    for (const clave of ["errores.demoCobro", "errores.demoPagos"] as const) {
+      const valor = texto(idioma, clave);
+      assert.ok(valor.startsWith(frase[idioma]), clave);
+      assert.match(valor, /1\. .+ 2\. .+ 3\. /, clave);
+      assert.doesNotMatch(valor, /billetera|wallet|testnet|red de prueba|network/i, clave);
+    }
+  }
+  assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una foto mejor; quien organiza decide.");
+  assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send a better photo; the organizer decides.");
+});

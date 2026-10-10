@@ -13,15 +13,26 @@ const CLASE: Record<SeveridadNota, string> = {
 export function EtiquetasNota({
   etiquetas,
   compacto = false,
+  conMotivo = false,
 }: {
   etiquetas?: readonly EtiquetaNota[] | null;
   compacto?: boolean;
+  /** `MotivoNota` already shows the main reason next to the percentage. Its pill is not repeated; only its explanation stays. */
+  conMotivo?: boolean;
 }) {
   const idioma = useIdioma();
   if (!etiquetas || etiquetas.length === 0) return null;
-  const visibles = (compacto ? etiquetas.filter((etiqueta) => etiqueta.severidad !== "good") : etiquetas).map((etiqueta) =>
-    presentarEtiqueta(etiqueta, idioma),
-  );
+  const motivo = conMotivo ? motivoPrincipal(etiquetas) : null;
+  const principal = motivo ? presentarEtiqueta(motivo, idioma).texto : undefined;
+  const vistos = new Set<string>();
+  const visibles = (compacto ? etiquetas.filter((etiqueta) => etiqueta.severidad !== "good") : etiquetas)
+    .map((etiqueta) => presentarEtiqueta(etiqueta, idioma))
+    .filter((etiqueta) => {
+      // Two tags can read the same once translated. Each text shows once.
+      if (vistos.has(etiqueta.texto)) return false;
+      vistos.add(etiqueta.texto);
+      return true;
+    });
   if (visibles.length === 0) return null;
   if (compacto) {
     return (
@@ -38,8 +49,8 @@ export function EtiquetasNota({
     <ul className="mt-3 space-y-2">
       {visibles.map((etiqueta) => (
         <li key={etiqueta.id}>
-          <span className={`hyto-pill text-xs ${CLASE[etiqueta.severidad]}`}>{etiqueta.texto}</span>
-          <p className="mt-1 text-sm leading-6 text-[var(--suave)]">{etiqueta.explicacion}</p>
+          {etiqueta.texto === principal ? null : <span className={`hyto-pill text-xs ${CLASE[etiqueta.severidad]}`}>{etiqueta.texto}</span>}
+          <p className={`${etiqueta.texto === principal ? "" : "mt-1 "}text-sm leading-6 text-[var(--suave)]`}>{etiqueta.explicacion}</p>
         </li>
       ))}
     </ul>

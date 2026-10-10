@@ -4677,12 +4677,71 @@ html.hyto-firmando body {
   }
 }
 
-/* Welcome card that can be hidden: the Hide button sits inside the card, on the kicker row. */
+/* Welcome card that can be hidden: the Hide button sits inside the card, on the title row. */
 .hyto-welcome-cabeza {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hyto-welcome-cabeza .hyto-title {
+  margin-top: 0;
+}
+
+/* Title and the testnet pill share a line and wrap together on narrow phones. */
+.hyto-welcome-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+/* Small, always-visible testnet label: lime on navy, Poppins. */
+.hyto-red-etiqueta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 1px solid rgba(183, 238, 52, 0.45);
+  border-radius: 999px;
+  background: #14162b;
+  padding: 2px 10px;
+  font-family: var(--font-poppins), Poppins, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  color: #b7ee34;
+  white-space: nowrap;
+}
+
+/* One main next step, with an optional secondary one beside it. */
+.hyto-welcome-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--e-3);
+}
+
+@media (max-width: 480px) {
+  .hyto-welcome-acciones > .hyto-btn,
+  .hyto-welcome-acciones > .hyto-btn-line {
+    width: 100%;
+  }
+}
+
+@keyframes hyto-welcome-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hyto-welcome-card {
+    animation: hyto-welcome-entra 240ms ease-out both;
+  }
 }
 
 .hyto-welcome-ocultar {

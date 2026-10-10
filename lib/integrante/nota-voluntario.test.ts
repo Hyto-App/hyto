@@ -61,7 +61,7 @@ test("con nota real la pastilla muestra el porcentaje y aclara que el pago lo de
     assert.equal(document.querySelector(".hyto-resumen-mini img")?.getAttribute("src"), "/api/evidencias/ev-1/foto");
     assert.match(texto(), /In review/);
     assert.equal(document.querySelector('.hyto-rastreo li[aria-current="step"]')?.textContent, "In review");
-    assert.match(texto(), new RegExp(FRASE_PAGO));
+    assert.match(texto(), /the organizer decides\./);
     assert.equal(document.querySelector(".hyto-pill-veredicto")?.getAttribute("aria-label"), "64% · Partially completed");
     assert.match(document.querySelector(".hyto-pill-veredicto")?.className ?? "", /hyto-pill-mid/);
     assert.equal(document.querySelector(".hyto-pill-bar > span") instanceof HTMLElement, true);
@@ -183,7 +183,7 @@ test("con menos movimiento la pastilla del voluntario salta al porcentaje final"
     assert.equal(pill.style.getPropertyValue("--hyto-nota"), "40");
     assert.equal(pill.style.getPropertyValue("--hyto-llenado"), "40");
     assert.equal(pill.getAttribute("aria-label"), "40% · Insufficient");
-    assert.match(texto(), new RegExp(FRASE_PAGO));
+    assert.match(texto(), /the organizer decides\./);
   } finally {
     restaurar();
     globalThis.fetch = anterior;
@@ -267,7 +267,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     assert.doesNotMatch(texto(), /Great job/);
     assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
-    assert.match(texto(), new RegExp(FRASE_PAGO));
+    assert.match(texto(), /the organizer decides\./);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
     assert.equal(lecturas >= 2, true);
   } finally {
@@ -291,6 +291,8 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
       }),
     );
     assert.match(texto(), /Your photo already reached the organizer/);
+    assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
+    assert.equal((texto().match(/the organizer decides|makes the final call/g) ?? []).length, 1);
     assert.match(texto(), /Take another/);
     await act(async () => {
       [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));

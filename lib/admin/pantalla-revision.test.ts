@@ -1330,7 +1330,7 @@ test("en demo, bloquear y aprobar marcan Pagado sin firmar ni llamar a la red", 
         }),
       }),
     );
-    await esperar(() => rotulo("Lock budget") && texto().includes("no wallet signs"));
+    await esperar(() => rotulo("Lock budget") && texto().includes("Demo: practice payment"));
     const bloquear = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock budget");
     assert.equal(bloquear instanceof HTMLButtonElement && bloquear.disabled, false);
     await pulsar("Lock budget");
@@ -1338,7 +1338,7 @@ test("en demo, bloquear y aprobar marcan Pagado sin firmar ni llamar a la red", 
     await esperar(() => rotulo("Approve and pay"));
     await pulsar("Approve and pay");
     await confirmarDialogo();
-    await esperar(() => texto().includes("Paid") && texto().includes("practice network"));
+    await esperar(() => texto().includes("Paid") && texto().includes("practice payment"));
     assert.equal(rotulo("Approve and pay"), false);
     assert.equal(firmas, 0);
     assert.equal(pedidos.some((pedido) => pedido.includes("/api/firma") || pedido.includes("/api/escrow")), false);

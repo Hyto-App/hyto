@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Bienvenida } from "@/components/sesion/Bienvenida";
-import { useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { useCallback, useEffect, useState } from "react";
+import { Bienvenida, type PasoBienvenida } from "@/components/sesion/Bienvenida";
+import { useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
+import { leerEstadoUsdc } from "@/lib/integrante/prepararUsdc";
 import type { Clave } from "@/lib/ui/diccionario";
 import { muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 
@@ -19,9 +21,8 @@ const ROL: Record<Exclude<Rol, null>, Clave> = {
 
 const CLAVE_BIENVENIDA = "hyto-bienvenida-oculta";
 
-/** The welcome card goes after the page head and can be hidden. The choice is kept in this browser only. */
-function BienvenidaColapsable() {
-  const t = useTexto();
+/** The welcome card can be hidden. The choice is kept in this browser only. */
+function useBienvenidaOculta(): [boolean, () => void] {
   const [oculta, setOculta] = useState(false);
 
   useEffect(() => {
@@ -41,17 +42,47 @@ function BienvenidaColapsable() {
     }
   }
 
-  if (oculta) return null;
+  return [oculta, ocultar];
+}
+
+/** The single next step: open an event (the first with something pending), start the demo, or join with a code. */
+function pasoDe(eventos: readonly Evento[], demo: boolean, rolDemo: string | null, puedeCrear: boolean): PasoBienvenida {
+  const destacado = eventos.find((evento) => (evento.pendientes ?? 0) > 0) ?? eventos[0];
+  if (demo) {
+    const href = rolDemo !== "voluntario" && destacado ? `/eventos/${destacado.id}` : "/mis-tareas";
+    return { tipo: "demo", href };
+  }
+  if (destacado) return { tipo: "abrir", href: `/eventos/${destacado.id}`, nombre: destacado.nombre };
+  return { tipo: "unirse", puedeCrear };
+}
+
+/**
+ * Get ready to be paid stays on Events, outside the welcome, so it is there after the welcome is hidden.
+ * It shows only while the account still needs it, or to report how it went.
+ */
+function CobroEventos() {
+  const t = useTexto();
+  const demo = useModoDemo();
+  const [visible, setVisible] = useState(false);
+  const consultar = useCallback(async () => {
+    try {
+      const listo = await leerEstadoUsdc();
+      setVisible(!listo);
+      return listo;
+    } catch (error) {
+      setVisible(true);
+      throw error;
+    }
+  }, []);
+
+  if (demo) return null;
   return (
-    <div className="mt-6">
-      <Bienvenida
-        accion={
-          <button type="button" onClick={ocultar}>
-            {t("tareas.hideWelcome")}
-          </button>
-        }
-      />
-    </div>
+    <section className="hyto-card hyto-welcome-step mt-6 p-5" hidden={!visible} aria-labelledby="hyto-cobro-title">
+      <h2 id="hyto-cobro-title" className="hyto-welcome-step-title">
+        {t("bienvenida.cobro")}
+      </h2>
+      <PrepararUsdc consultar={consultar} />
+    </section>
   );
 }
 
@@ -61,9 +92,14 @@ export function ListaEventos() {
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
-  const demoOrganizador = useRolDemo() === "organizador";
+  const demo = useModoDemo();
+  const rolDemo = useRolDemo();
+  const demoOrganizador = rolDemo === "organizador";
   const organizados = (eventos ?? []).filter((evento) => evento.rol === "organizer").map((evento) => evento.id);
   const puedeCrear = muestraNavOrganizador(organizados, demoOrganizador);
+  const [bienvenidaOculta, ocultarBienvenida] = useBienvenidaOculta();
+  // The welcome waits for the list, so its one step is the right one.
+  const conBienvenida = !bienvenidaOculta && eventos !== null && !error;
 
   useEffect(() => {
     let vivo = true;
@@ -111,7 +147,18 @@ export function ListaEventos() {
           </div>
         )}
       </header>
-      <BienvenidaColapsable />
+      {conBienvenida ? (
+        <div className="mt-6">
+          <Bienvenida
+            paso={pasoDe(eventos ?? [], demo, rolDemo, puedeCrear)}
+            accion={
+              <button type="button" onClick={ocultarBienvenida}>
+                {t("tareas.hideWelcome")}
+              </button>
+            }
+          />
+        </div>
+      ) : null}
       {!eventos ? (
         <div className="hyto-skel mt-6" aria-busy="true">
           <i />
@@ -134,15 +181,19 @@ export function ListaEventos() {
           ) : eventos.length === 0 ? (
             <div className="hyto-tarjeta hyto-estado-vacio mt-6">
               <h2>{t("eventos.empty")}</h2>
-              <p>{t("eventos.emptyHelp")}</p>
-              <div className="hyto-estado-vacio-acciones">
-                <Link href="/eventos/nuevo" className="hyto-btn">
-                  {t("eventos.create")}
-                </Link>
-                <Link href="/join" className="hyto-btn-line">
-                  {t("eventos.joinCode")}
-                </Link>
-              </div>
+              <p>{t(puedeCrear ? "eventos.emptyHelp" : "eventos.emptyHelpJoin")}</p>
+              {conBienvenida ? null : (
+                <div className="hyto-estado-vacio-acciones">
+                  <Link href="/join" className="hyto-btn">
+                    {t("eventos.joinCode")}
+                  </Link>
+                  {puedeCrear ? (
+                    <Link href="/eventos/nuevo" className="hyto-btn-line">
+                      {t("bienvenida.create")}
+                    </Link>
+                  ) : null}
+                </div>
+              )}
             </div>
           ) : (
             <ul className="mt-6 grid gap-3">
@@ -160,6 +211,7 @@ export function ListaEventos() {
               ))}
             </ul>
           )}
+          <CobroEventos />
         </>
       )}
     </main>
