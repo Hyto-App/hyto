@@ -1,17 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { idNavOrganizador, muestraNavOrganizador } from "./nav-organizador";
+import { ENLACES_BARRA, enlacesBarra, muestraNavOrganizador } from "./nav-organizador";
 
-test("el organizador demo abre el evento demo aunque no haya membresía cargada", () => {
+test("organiza quien ya organiza un evento o el organizador demo", () => {
   assert.equal(muestraNavOrganizador([], true), true);
-  assert.equal(idNavOrganizador("/mis-tareas", [], true), "demo");
-  assert.equal(idNavOrganizador("/eventos/nuevo", [], true), "demo");
-});
-
-test("el evento abierto gana cuando la sesión lo organiza", () => {
-  assert.equal(idNavOrganizador("/eventos/feria/tareas", ["demo", "feria"], false), "feria");
-  assert.equal(idNavOrganizador("/eventos/otro", ["demo"], false), "demo");
   assert.equal(muestraNavOrganizador(["demo"], false), true);
   assert.equal(muestraNavOrganizador([], false), false);
-  assert.equal(idNavOrganizador("/mis-tareas", [], false), null);
+});
+
+test("la barra tiene exactamente dos entradas principales: Eventos y Mis tareas", () => {
+  assert.deepEqual(
+    ENLACES_BARRA.map((enlace) => enlace.href),
+    ["/eventos", "/mis-tareas"],
+  );
+  assert.deepEqual(
+    ENLACES_BARRA.map((enlace) => enlace.clave),
+    ["nav.events", "nav.myTasks"],
+  );
+  assert.equal(enlacesBarra(false), ENLACES_BARRA);
+});
+
+test("la barra no enlaza la bandeja, el informe, las tareas del evento ni el código", () => {
+  for (const comunidades of [false, true]) {
+    for (const enlace of enlacesBarra(comunidades)) {
+      assert.doesNotMatch(enlace.href, /^\/eventos\/[^/]+/);
+      assert.doesNotMatch(enlace.href, /\/informe|\/eventos\/[^/]+\/tareas|^\/join/);
+    }
+  }
+});
+
+test("cada entrada lleva a un lugar distinto con un ícono distinto", () => {
+  for (const comunidades of [false, true]) {
+    const enlaces = enlacesBarra(comunidades);
+    assert.equal(new Set(enlaces.map((enlace) => enlace.href)).size, enlaces.length);
+    assert.equal(new Set(enlaces.map((enlace) => enlace.icono)).size, enlaces.length);
+  }
+  assert.deepEqual(
+    enlacesBarra(true).map((enlace) => enlace.href),
+    ["/eventos", "/mis-tareas", "/comunidades"],
+  );
 });

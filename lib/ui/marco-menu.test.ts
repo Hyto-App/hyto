@@ -78,6 +78,9 @@ test("el avatar usa solo letras y cae al correo", async () => {
     );
     const letras = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.deepEqual(letras, ["V", "V"]);
+    const datos = document.querySelector(".hyto-foot .hyto-usuario-datos");
+    assert.equal(datos?.textContent, "Volunteer (demo)");
+    assert.equal(datos?.getAttribute("title"), "voluntario@hyto.demo");
     await desmontar();
     await montar(
       createElement(Marco, {
@@ -86,6 +89,9 @@ test("el avatar usa solo letras y cae al correo", async () => {
       }),
       { ruta: "/mis-tareas" },
     );
+    const soloCorreo = document.querySelector(".hyto-foot .hyto-usuario-datos");
+    assert.equal(soloCorreo?.textContent, "ana@hyto.dev");
+    assert.equal(soloCorreo?.getAttribute("title"), "ana@hyto.dev");
     await pulsar("ana@hyto.dev");
     const delCorreo = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.ok(delCorreo.every((letra) => letra === "A"));
@@ -96,7 +102,7 @@ test("el avatar usa solo letras y cae al correo", async () => {
   }
 });
 
-test("el organizador ve sus secciones arriba y Eventos va primero en el móvil", async () => {
+test("la barra del organizador solo tiene Eventos y Mis tareas, en escritorio y en el móvil", async () => {
   limpiarPantalla();
   try {
     await montar(
@@ -105,28 +111,26 @@ test("el organizador ve sus secciones arriba y Eventos va primero en el móvil",
         rol: "organizador",
         children: createElement(Marco, {
           usuario: { nombre: "Organizer (demo)", email: "org@hyto.demo" },
+          eventosOrganizados: ["demo"],
           children: createElement("p", null, "inicio"),
         }),
       }),
-      { ruta: "/mis-tareas" },
+      { ruta: "/eventos/demo/informe" },
     );
-    const escritorio = [...(document.querySelector(".hyto-nav-escritorio")?.querySelectorAll("a") ?? [])].map((enlace) =>
-      enlace.getAttribute("href"),
+    const escritorio = [...(document.querySelector(".hyto-nav-escritorio")?.querySelectorAll("a") ?? [])];
+    assert.deepEqual(
+      escritorio.map((enlace) => enlace.getAttribute("href")),
+      ["/eventos", "/mis-tareas"],
     );
-    assert.deepEqual(escritorio, [
-      "/eventos",
-      "/eventos/demo",
-      "/eventos/demo/informe",
-      "/eventos/demo/tareas",
-      "/mis-tareas",
-      "/join",
-    ]);
-    assert.match(texto(), /Your event/);
-    assert.match(texto(), /Inbox/);
-    assert.match(texto(), /Event tasks/);
+    assert.equal(escritorio[0]?.getAttribute("aria-current"), "page");
+    const iconos = escritorio.map((enlace) => enlace.querySelector("svg path")?.getAttribute("d"));
+    assert.equal(new Set(iconos).size, 2);
+    assert.equal(document.querySelectorAll(".hyto-nav-grupo").length, 0);
+    assert.doesNotMatch(texto(), /Your event|Your work|Join an event|Inbox|Event tasks/);
     const movil = [...(document.querySelector(".hyto-nav-movil")?.querySelectorAll("a") ?? [])].map((enlace) => enlace.getAttribute("href"));
-    assert.equal(movil[0], "/eventos");
-    assert.deepEqual(movil, escritorio);
+    assert.deepEqual(movil, ["/eventos", "/mis-tareas"]);
+    const barra = [...document.querySelectorAll(".hyto-side nav a")].map((enlace) => enlace.getAttribute("href") ?? "");
+    assert.ok(barra.every((href) => !/\/informe|^\/eventos\/[^/]+|^\/join/.test(href)), barra.join(", "));
     assert.equal(document.querySelector('a[href="/comunidades"]'), null);
     const letras = [...document.querySelectorAll(".hyto-usuario-iniciales")].map((nodo) => nodo.textContent?.trim());
     assert.ok(letras.every((letra) => letra === "O"));
@@ -191,6 +195,12 @@ test("la barra recuerda si está minimizada y Ctrl+K sigue abriendo a Mile", asy
     assert.equal(document.querySelector('.hyto-nav-escritorio a[href="/mis-tareas"]')?.getAttribute("aria-label"), "My tasks");
     assert.equal(document.querySelector('.hyto-nav-escritorio a[href="/mis-tareas"]')?.getAttribute("title"), "My tasks");
     assert.equal(document.querySelector(".hyto-nav-movil a")?.getAttribute("aria-label"), null);
+    const plegados = [...document.querySelectorAll(".hyto-nav-escritorio a")];
+    assert.deepEqual(
+      plegados.map((enlace) => enlace.getAttribute("title")),
+      ["Events", "My tasks"],
+    );
+    assert.equal(new Set(plegados.map((enlace) => enlace.querySelector("svg path")?.getAttribute("d"))).size, 2);
 
     await act(async () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));

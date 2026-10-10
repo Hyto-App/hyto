@@ -6055,12 +6055,11 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 @media (max-width: 1023px) {
+  /* One tab per main entry: Events, My tasks, and Communities only when its flag is on. */
   .hyto-nav.hyto-nav-movil {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hyto-nav.hyto-nav-movil.is-organiza a {
-    white-space: normal;
+    grid-template-columns: none;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
   }
 }
 
