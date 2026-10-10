@@ -128,6 +128,7 @@ export function SelectorIdiomaMenu({ className = "" }: { className?: string }) {
     }
   };
 
+  const etiqueta = `${t("idioma.grupo")}: ${idioma.toUpperCase()}`;
   return (
     <div ref={raiz} className={`hyto-idioma-menu ${className}`.trim()}>
       <button
@@ -137,7 +138,8 @@ export function SelectorIdiomaMenu({ className = "" }: { className?: string }) {
         aria-haspopup="menu"
         aria-expanded={abierto}
         aria-controls={abierto ? idMenu : undefined}
-        aria-label={`${t("idioma.grupo")}: ${idioma.toUpperCase()}`}
+        aria-label={etiqueta}
+        title={etiqueta}
         onClick={() => setAbierto((v) => !v)}
         onKeyDown={teclasBoton}
       >

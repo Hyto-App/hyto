@@ -10,15 +10,18 @@ import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
+import { MomentoLaTengo } from "@/components/integrante/evidencia/MomentoLaTengo";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
+import { errorSinCamara, listaSinCamara } from "@/lib/integrante/camaraDispositivo";
+import { codigoTelefono } from "@/lib/integrante/codigoTelefono";
 import { leerMemoria } from "@/lib/integrante/almacen";
-import { archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
-import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esMimeDocumental } from "@/lib/evidencia/tipo";
+import { ACCEPT_GALERIA, AVISO_GALERIA_TIPO, ORIGEN_GALERIA, archivoDeCamaraReciente, esFotoDeCamara } from "@/lib/integrante/fotoEnVivo";
+import { ACCEPT_RECIBO, archivoReciboPermitido, esDocumentoDeclarado, esImagen, esMimeDocumental } from "@/lib/evidencia/tipo";
 import { avisoArchivo, evaluarArchivo } from "@/lib/evidencia/validar";
 import { formatearFecha, formatearHora, formatearMonto, montoDeTarea, montosDeCobro, vistaMonto } from "@/lib/integrante/formato";
 import { notaDeTarea } from "@/lib/integrante/nota";
@@ -40,6 +43,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const streamRef = useRef<MediaStream | null>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
   const capturaRef = useRef<HTMLInputElement>(null);
+  const galeriaRef = useRef<HTMLInputElement>(null);
   const fotoUrlRef = useRef<string | null>(null);
   const montadoRef = useRef(true);
   const enviandoRef = useRef(false);
@@ -52,6 +56,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [error, setError] = useState<string | null>(null);
   const [avisoEnvio, setAvisoEnvio] = useState<string | null>(null);
   const [conCaptura, setConCaptura] = useState(false);
+  const [sinCamara, setSinCamara] = useState(false);
   const [capturadaEn, setCapturadaEn] = useState<string | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const [cargaError, setCargaError] = useState<string | null>(null);
@@ -66,6 +71,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const [pestana, setPestana] = useState<PestanaEvidencia>("tarea");
   const baseId = useId();
   const [rechazoVivo, setRechazoVivo] = useState<null | "camara" | "galeria">(null);
+  const [desdeGaleria, setDesdeGaleria] = useState(false);
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -128,8 +134,27 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   useEffect(() => {
     montadoRef.current = true;
-    if (!navigator.mediaDevices?.getUserMedia) setConCaptura(true);
+    const medios = navigator.mediaDevices;
+    if (!medios?.getUserMedia) {
+      setConCaptura(true);
+      return () => {
+        montadoRef.current = false;
+        streamRef.current?.getTracks().forEach((pista) => pista.stop());
+        streamRef.current = null;
+        if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
+      };
+    }
+    let vivo = true;
+    if (medios.enumerateDevices) {
+      medios
+        .enumerateDevices()
+        .then((lista) => {
+          if (vivo && listaSinCamara(lista)) setSinCamara(true);
+        })
+        .catch(() => undefined);
+    }
     return () => {
+      vivo = false;
       montadoRef.current = false;
       streamRef.current?.getTracks().forEach((pista) => pista.stop());
       streamRef.current = null;
@@ -185,7 +210,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     };
   }, [vigilar, tareaId, demo, esperaLocal, tarea?.enviadaEn]);
 
-  function usarFoto(blob: Blob, nombre: string | null, captura: string | null) {
+  function usarFoto(blob: Blob, nombre: string | null, captura: string | null, galeria = false) {
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     const url = URL.createObjectURL(blob);
     fotoUrlRef.current = url;
@@ -193,6 +218,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFoto(blob);
     setNombreArchivo(nombre);
     setCapturadaEn(captura);
+    setDesdeGaleria(galeria);
     setError(null);
     setArchivoRechazado(false);
     streamRef.current?.getTracks().forEach((pista) => pista.stop());
@@ -223,8 +249,24 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       }
       streamRef.current = stream;
       setFase("camara");
+    } catch (error) {
+      if (errorSinCamara(error)) {
+        setSinCamara(true);
+        setError(null);
+        return;
+      }
+      setError(t("evidencia.noCamera"));
+    }
+  }
+
+  async function seguirEnTelefono() {
+    const id = tarea?.id ?? tareaId;
+    const codigo = codigoTelefono(id);
+    const url = `${window.location.origin}/tareas/${encodeURIComponent(id)}`;
+    try {
+      await navigator.clipboard?.writeText(`${codigo}\n${url}`);
     } catch {
-      setError("Could not open the camera. Allow the camera and try again.");
+      // The code stays on the screen either way.
     }
   }
 
@@ -270,6 +312,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFoto(null);
     setNombreArchivo(null);
     setCapturadaEn(null);
+    setDesdeGaleria(false);
   }
 
   function rechazarSeleccion(aviso: string, bloquearEnvio: boolean) {
@@ -319,7 +362,33 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     void aceptarCaptura(archivo);
   }
 
+  function elegirGaleria(evento: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = "";
+    if (!archivo || tarea?.tipo !== "trabajo" || !demo) return;
+    void aceptarGaleria(archivo);
+  }
+
+  async function aceptarGaleria(archivo: File) {
+    setRechazoVivo(null);
+    prepararRevision(false);
+    const validado = await evaluarArchivo(archivo);
+    if (!validado.ok || !esImagen(validado.tipo)) {
+      rechazarSeleccion(
+        !validado.ok && validado.motivo !== "falso" && validado.motivo !== "tipo" ? avisoArchivo(validado.motivo) : AVISO_GALERIA_TIPO,
+        false,
+      );
+      return;
+    }
+    usarFoto(archivo, archivo.name || null, null, true);
+  }
+
   async function aceptarCaptura(archivo: File) {
+    // A desktop can ignore `capture` and open the file picker. In demo mode that file is a gallery pick.
+    if (demo && (!esFotoDeCamara(archivo) || !archivoDeCamaraReciente(archivo))) {
+      await aceptarGaleria(archivo);
+      return;
+    }
     if (!esFotoDeCamara(archivo)) {
       setRechazoVivo("camara");
       rechazarSeleccion(t("evidencia.useCamera"), false);
@@ -355,11 +424,13 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setFase("enviando");
     setError(null);
     try {
-      const token = pestana === "tarea" && tarea.tipo === "trabajo" ? await pedirTokenEvidencia(tarea.id) : undefined;
+      const galeria = desdeGaleria && demo && tarea.tipo === "trabajo";
+      const token = pestana === "tarea" && tarea.tipo === "trabajo" && !galeria ? await pedirTokenEvidencia(tarea.id) : undefined;
       const resultado = await subirEvidencia(tarea, foto, {
         token,
         capturadaEn: capturadaEn ?? undefined,
         nombre: nombreArchivo ?? undefined,
+        origen: galeria ? ORIGEN_GALERIA : undefined,
       });
       const fresco = await leerTarea(tarea.id, { miembroId: "" }, { muestra: demo });
       if (fresco.tarea && !fresco.ejemplo) setTarea(fresco.tarea);
@@ -395,6 +466,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setEnviadaEn(null);
     setArchivoRechazado(false);
     setRechazoVivo(null);
+    setDesdeGaleria(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -411,6 +483,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
     setError(null);
     setArchivoRechazado(false);
     setRechazoVivo(null);
+    setDesdeGaleria(false);
     if (fotoUrlRef.current) URL.revokeObjectURL(fotoUrlRef.current);
     fotoUrlRef.current = null;
     setFotoUrl(null);
@@ -468,8 +541,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   const idTarea = `${baseId}-tarea`;
   const idPanel = `${baseId}-panel`;
   const envioBloqueado = archivoRechazado && coincide && fase === "inicio" && !foto;
-  const accion =
-    !coincide || envioBloqueado
+  const seguirTelefono = sinCamara && !recibo && coincide && fase === "inicio";
+  const accion = seguirTelefono
+    ? t("evidencia.continuePhone")
+    : !coincide || envioBloqueado
       ? t("evidencia.send")
       : fase === "camara"
         ? t("evidencia.takePhoto")
@@ -508,6 +583,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
   if (tarea.estado === "pagado") {
     return <PantallaPagada tarea={tarea} titulo={titulo} />;
   }
+
+  const montoFrente = vista.pago || (tarea.tipo === "trabajo" ? formatearMonto(tarea.monto, idioma) : vista.linea);
+  const topeFondo = vista.tope && vista.pago && vista.tope !== vista.pago ? t("eventos.limit", { amount: vista.tope }) : null;
+  const cumbre = calificacion?.veredicto === "cumplió" && !mileSinTerminar && !avisoEnvio;
 
   if (rechazada && fase === "inicio" && !reintentando) {
     return (
@@ -612,6 +691,36 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           <p className="hyto-pista">{fase === "enviando" ? t("evidencia.sendingNote") : t("evidencia.stillHere")}</p>
         </div>
       </main>
+    );
+  }
+
+  if (enviada && cumbre) {
+    return (
+      <MomentoLaTengo tareaId={tarea.id} monto={montoFrente} tope={topeFondo}>
+        <article className="hyto-tarjeta hyto-resumen">
+          {vistaFoto ? <div className="hyto-resumen-mini">{vistaFoto}</div> : null}
+          <div>
+            <PastillaEstado estado={tarea.estado} />
+            <h2>{titulo}</h2>
+            {calificacion ? (
+              <div className="hyto-resumen-nota">
+                <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
+                <EtiquetasNota etiquetas={tarea.notas} />
+                <NotaCobro tarea={tarea} />
+                <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
+              </div>
+            ) : null}
+          </div>
+          <p className="hyto-amount">{montoVisible}</p>
+        </article>
+        <LineaRevision tarea={tarea} revisionCerrada={esperaAgotada || !!avisoEnvio} monto={montoPaso} archivo={documental} />
+        <ActividadTarea tarea={tarea} />
+        {!cerrada ? (
+          <button type="button" onClick={tomarOtra} className="hyto-btn-line">
+            {recibo ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
+          </button>
+        ) : null}
+      </MomentoLaTengo>
     );
   }
 
@@ -769,8 +878,25 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       </div>
       <div className="hyto-tarea-cols" role="tabpanel" id={idPanel} aria-labelledby={recibo ? idRecibo : idTarea}>
         <div className="hyto-tarea-col">
+          {!recibo && fase === "inicio" && coincide ? (
+            <div className="hyto-requisito-angosto">
+              <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} ancla="hyto-requisito-titulo" />
+              <p className="hyto-pista">{t("evidencia.galleryHint")}</p>
+            </div>
+          ) : null}
+          {seguirTelefono ? (
+            <div className="hyto-sin-camara" role="status">
+              <p>{t("evidencia.noCameraDevice")}</p>
+              <p>{t("evidencia.phoneCodeHelp")}</p>
+              <p className="hyto-codigo-telefono">
+                <span>{t("evidencia.phoneCodeLabel")}</span> <strong>{codigoTelefono(tarea.id)}</strong>
+              </p>
+            </div>
+          ) : null}
           <PanelMile />
-          <div className="hyto-visor">
+          <div
+            className={`hyto-visor${fase === "inicio" && !fotoUrl && !recibo ? " is-apagada" : ""}${seguirTelefono ? " is-sin-camara" : ""}`}
+          >
             {!coincide ? (
               <div className="hyto-visor-vacio">
                 <p role="status">{recibo ? t("evidencia.mismatchReceipt") : t("evidencia.mismatchTask")}</p>
@@ -787,11 +913,6 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             ) : (
               <div className="hyto-visor-vacio">
                 <p>{recibo ? t("evidencia.receiptPlaceholder") : t("evidencia.cameraOff")}</p>
-                {!recibo ? (
-                  <button type="button" className="hyto-btn-line" onClick={() => void abrirCamara()}>
-                    {t("evidencia.openCamera")}
-                  </button>
-                ) : null}
               </div>
             )}
             {coincide && fase === "foto" ? (
@@ -814,10 +935,19 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               {t("evidencia.choosePdf")}
             </button>
           ) : null}
-          {coincide && !recibo && fase === "inicio" ? <p className="hyto-pista">{t("evidencia.galleryHint")}</p> : null}
+          {coincide && !recibo && fase === "inicio" && demo ? (
+            <button type="button" onClick={() => galeriaRef.current?.click()} className="hyto-btn-line is-dashed">
+              {t("evidencia.chooseGallery")}
+            </button>
+          ) : null}
+          {coincide && !recibo && fase === "inicio" ? (
+            <p className="hyto-pista hyto-pista-despues">{t(demo ? "evidencia.galleryDemoHint" : "evidencia.galleryHint")}</p>
+          ) : null}
         </div>
         <div className="hyto-tarea-col">
-          <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
+          <div className="hyto-checklist-lado">
+            <Checklist condicion={tarea.condicion} fallidos={fallidosMarcados} />
+          </div>
           <ActividadTarea tarea={tarea} />
           {mostrarRevision ? (
             <dl className="hyto-tarjeta hyto-dato-leido">
@@ -840,8 +970,12 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             <BotonPrincipal
               type="button"
               className="hyto-btn-grande"
-              disabled={!coincide || envioBloqueado}
+              disabled={(!coincide || envioBloqueado) && !seguirTelefono}
               onClick={() => {
+                if (seguirTelefono) {
+                  void seguirEnTelefono();
+                  return;
+                }
                 if (!coincide || envioBloqueado) return;
                 if (fase === "camara") tomarFoto();
                 else if (fase === "foto") void enviar();
@@ -867,7 +1001,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           className="sr-only"
           onChange={elegirArchivo}
         />
-      ) : coincide && conCaptura ? (
+      ) : coincide && conCaptura && !sinCamara ? (
         <input
           ref={capturaRef}
           type="file"
@@ -877,6 +1011,17 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           aria-hidden="true"
           className="sr-only"
           onChange={elegirCaptura}
+        />
+      ) : null}
+      {!reembolso && demo ? (
+        <input
+          ref={galeriaRef}
+          type="file"
+          accept={ACCEPT_GALERIA}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={elegirGaleria}
         />
       ) : null}
     </main>

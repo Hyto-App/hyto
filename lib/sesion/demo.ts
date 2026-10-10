@@ -48,3 +48,14 @@ export function rechazarFirmaDemo(sesion: Pick<SesionFila, "email" | "usuarioId"
   if (!sesionEsDemo(sesion)) return null;
   return Response.json({ aviso: AVISO_FIRMA_DEMO }, { status: 403 });
 }
+
+/** Budget reference a demo lock stores in `tareas.contrato_escrow`. It is never a `C…` contract, so the escrow code ignores it. */
+const PREFIJO_CONTRATO_DEMO = "demo-lock-";
+
+export function contratoDemo(tareaId: string): string {
+  return `${PREFIJO_CONTRATO_DEMO}${tareaId}`;
+}
+
+export function esContratoDemo(contrato: string | null | undefined): boolean {
+  return Boolean(contrato?.startsWith(PREFIJO_CONTRATO_DEMO));
+}

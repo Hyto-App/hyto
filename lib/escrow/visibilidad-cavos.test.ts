@@ -4,10 +4,16 @@
  * on a card inside an opaque-origin iframe. Chrome reports `isVisible` false when a control
  * covers the iframe, when a modal dialog is open, or when html has opacity, a transform,
  * a filter, or will-change.
+ *
+ * The harness, not the gate, is what used to fail on a busy runner. Chrome sometimes took
+ * longer than 8s to open the DevTools port (`fetch failed`), and `fs.rm` of the profile
+ * sometimes threw `ENOTEMPTY` because a child kept writing `Default/` after the parent
+ * was killed. Launch is retried once, the whole process group is killed, and the profile
+ * delete is retried while those codes last.
  */
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -73,33 +79,26 @@ async function fase(name, setup) {
 type Fase = { name: string; anyTrue: boolean; anyFalse: boolean; n: number };
 type Resultado = { ready: boolean; can: boolean; phases: Fase[] };
 
-test("the Cavos visibility gate stays shut while Hyto covers the iframe or paints an effect on html", { skip: CHROME ? false : "Chrome is not installed", timeout: 30_000 }, async () => {
+const ARGUMENTOS_CHROME = [
+  "--headless=new",
+  "--no-sandbox",
+  "--disable-gpu",
+  "--disable-dev-shm-usage",
+  "--disable-breakpad",
+  "--disable-crash-reporter",
+  "--no-first-run",
+  "--disable-background-networking",
+  "--disable-sync",
+  "--remote-allow-origins=*",
+  "--window-size=1280,800",
+];
+
+test("the Cavos visibility gate stays shut while Hyto covers the iframe or paints an effect on html", { skip: CHROME ? false : "Chrome is not installed", timeout: 90_000 }, async () => {
   const directorio = await mkdtemp(join(tmpdir(), "hyto-vis-"));
   const archivo = join(directorio, "index.html");
   await writeFile(archivo, PAGINA);
-  const puerto = 9300 + Math.floor(Math.random() * 500);
-  const perfil = join(directorio, "perfil");
-  const proceso = spawn(
-    CHROME!,
-    [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-gpu",
-      "--disable-dev-shm-usage",
-      "--no-first-run",
-      "--disable-background-networking",
-      "--disable-sync",
-      `--remote-debugging-port=${puerto}`,
-      `--user-data-dir=${perfil}`,
-      "about:blank",
-    ],
-    { stdio: "ignore" },
-  );
   try {
-    await esperarPuerto(puerto);
-    const abierta = await fetch(`http://127.0.0.1:${puerto}/json/new?file://${archivo}`, { method: "PUT" });
-    const pagina = (await abierta.json()) as { webSocketDebuggerUrl: string };
-    const resultado = await leerResultado(pagina.webSocketDebuggerUrl);
+    const resultado = await medirVisibilidad(directorio, archivo);
     assert.equal(resultado.ready, true);
     assert.equal(resultado.can, true);
     const fase = (nombre: string) => {
@@ -115,15 +114,52 @@ test("the Cavos visibility gate stays shut while Hyto covers the iframe or paint
       assert.equal(fase(nombre).anyFalse, true, nombre);
     }
   } finally {
-    await cerrarChrome(proceso);
-    await rm(directorio, { recursive: true, force: true });
+    await borrarDirectorio(directorio);
   }
 });
 
-async function esperarPuerto(puerto: number): Promise<void> {
-  const limite = Date.now() + 8_000;
+async function medirVisibilidad(directorio: string, archivo: string): Promise<Resultado> {
+  let ultimo = "Chrome did not open a DevTools port.";
+  for (let intento = 0; intento < 2; intento++) {
+    const puerto = 9300 + Math.floor(Math.random() * 500);
+    const errores = join(directorio, `chrome-${intento}.err`);
+    const descriptor = openSync(errores, "w");
+    const proceso = spawn(
+      CHROME!,
+      [
+        ...ARGUMENTOS_CHROME,
+        `--remote-debugging-port=${puerto}`,
+        `--user-data-dir=${join(directorio, `perfil-${intento}`)}`,
+        "about:blank",
+      ],
+      { detached: true, stdio: ["ignore", "ignore", descriptor] },
+    );
+    closeSync(descriptor);
+    try {
+      await esperarPuerto(puerto, proceso, errores);
+      const abierta = await fetch(`http://127.0.0.1:${puerto}/json/new?file://${archivo}`, { method: "PUT" });
+      if (!abierta.ok) throw new Error(`DevTools /json/new answered ${abierta.status}.`);
+      const pagina = (await abierta.json()) as { webSocketDebuggerUrl?: string };
+      if (!pagina.webSocketDebuggerUrl) throw new Error("DevTools did not return a page socket.");
+      return await leerResultado(pagina.webSocketDebuggerUrl);
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
+      const detalle = cola(errores);
+      ultimo = detalle ? `${mensaje} ${detalle}` : mensaje;
+    } finally {
+      await cerrarChrome(proceso);
+    }
+  }
+  throw new Error(ultimo);
+}
+
+async function esperarPuerto(puerto: number, proceso: ChildProcess, errores: string): Promise<void> {
+  const limite = Date.now() + 20_000;
   let ultimo = "Chrome did not open a DevTools port.";
   while (Date.now() < limite) {
+    if (proceso.exitCode !== null || proceso.signalCode) {
+      throw new Error(`Chrome exited (${proceso.exitCode ?? proceso.signalCode}) before DevTools. ${cola(errores)}`.trim());
+    }
     try {
       const respuesta = await fetch(`http://127.0.0.1:${puerto}/json/version`);
       if (respuesta.ok) return;
@@ -133,7 +169,7 @@ async function esperarPuerto(puerto: number): Promise<void> {
     }
     await new Promise((resolver) => setTimeout(resolver, 100));
   }
-  throw new Error(ultimo);
+  throw new Error(`${ultimo} ${cola(errores)}`.trim());
 }
 
 async function leerResultado(url: string): Promise<Resultado> {
@@ -160,7 +196,7 @@ async function leerResultado(url: string): Promise<Resultado> {
   });
   try {
     await enviar("Runtime.enable");
-    const limite = Date.now() + 12_000;
+    const limite = Date.now() + 20_000;
     let texto = "pending";
     while (Date.now() < limite) {
       const resultado = (await enviar("Runtime.evaluate", {
@@ -178,7 +214,53 @@ async function leerResultado(url: string): Promise<Resultado> {
 }
 
 async function cerrarChrome(proceso: ChildProcess): Promise<void> {
-  if (proceso.exitCode !== null || proceso.signalCode) return;
-  proceso.kill("SIGKILL");
-  await new Promise((resolver) => proceso.once("exit", resolver));
+  const pid = proceso.pid;
+  if (pid) {
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {
+      try {
+        proceso.kill("SIGKILL");
+      } catch {
+        /* already gone */
+      }
+    }
+  }
+  if (proceso.exitCode === null && !proceso.signalCode) {
+    await new Promise<void>((resolver) => {
+      const espera = setTimeout(resolver, 2_000);
+      proceso.once("exit", () => {
+        clearTimeout(espera);
+        resolver();
+      });
+    });
+  }
+}
+
+async function borrarDirectorio(directorio: string): Promise<void> {
+  let ultimo: unknown;
+  for (let intento = 0; intento < 8; intento++) {
+    try {
+      await rm(directorio, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      ultimo = error;
+      if (!["ENOTEMPTY", "EBUSY", "EPERM", "EACCES"].includes(codigoDe(error))) throw error;
+      await new Promise((resolver) => setTimeout(resolver, 80 * (intento + 1)));
+    }
+  }
+  throw ultimo instanceof Error ? ultimo : new Error("Could not remove the Chrome profile.");
+}
+
+function codigoDe(error: unknown): string {
+  return error && typeof error === "object" && "code" in error ? String(error.code) : "";
+}
+
+function cola(archivo: string): string {
+  try {
+    const texto = readFileSync(archivo, "utf8").trim().replace(/\s+/g, " ");
+    return texto.slice(-400);
+  } catch {
+    return "";
+  }
 }

@@ -93,14 +93,16 @@ export function ListaEventos() {
     <main className="hyto-page">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="hyto-h1">{t("eventos.title")}</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-            {t("eventos.create")}
-          </Link>
-          <Link href="/join" className="hyto-btn-line is-inline px-5">
-            {t("eventos.joinCode")}
-          </Link>
-        </div>
+        {eventos && eventos.length === 0 && !error ? null : (
+          <div className="flex flex-wrap gap-2">
+            <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
+              {t("eventos.create")}
+            </Link>
+            <Link href="/join" className="hyto-btn-line is-inline px-5">
+              {t("eventos.joinCode")}
+            </Link>
+          </div>
+        )}
       </header>
       <BienvenidaColapsable />
       {!eventos ? (
@@ -123,9 +125,17 @@ export function ListaEventos() {
               </button>
             </div>
           ) : eventos.length === 0 ? (
-            <div className="hyto-card mt-6 px-6 py-10">
-              <p className="text-lg font-semibold">{t("eventos.empty")}</p>
-              <p className="mt-2 text-sm text-[var(--suave)]">{t("eventos.emptyHelp")}</p>
+            <div className="hyto-tarjeta hyto-estado-vacio mt-6">
+              <h2>{t("eventos.empty")}</h2>
+              <p>{t("eventos.emptyHelp")}</p>
+              <div className="hyto-estado-vacio-acciones">
+                <Link href="/eventos/nuevo" className="hyto-btn">
+                  {t("eventos.create")}
+                </Link>
+                <Link href="/join" className="hyto-btn-line">
+                  {t("eventos.joinCode")}
+                </Link>
+              </div>
             </div>
           ) : (
             <ul className="mt-6 grid gap-3">
