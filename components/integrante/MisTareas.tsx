@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BadgeTarea } from "@/components/integrante/EstadoTarea";
 import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { claseBoton } from "@/components/ui/Boton";
 import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
-import { explicarPago } from "@/lib/integrante/formato";
+import { explicarPago, totalGanado, vistaMonto } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
@@ -24,65 +24,28 @@ import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { nombreParaMostrar } from "@/lib/sesion/nombre";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
-import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
 
 type Filtro = "all" | EstadoTarea;
 
-function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
-  const idioma = useIdioma();
-  const prioridad = etiquetaPrioridad(tarea.prioridad, idioma);
-  const dificultad = etiquetaDificultad(tarea.dificultad, idioma);
-  if (!prioridad && !dificultad) return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      {prioridad ? (
-        <span className="hyto-pill hyto-pill-ok">
-          <i className="hyto-dot" aria-hidden="true" />
-          {prioridad}
-        </span>
-      ) : null}
-      {dificultad ? (
-        <span className="hyto-pill hyto-pill-muted">
-          <i className="hyto-dot" aria-hidden="true" />
-          {dificultad}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function totalRecibido(tareas: readonly Tarea[]): string {
-  let total = 0n;
-  for (const tarea of tareas) {
-    if (tarea.estado !== "pagado") continue;
-    const plano = recibidoDeCampos(tarea);
-    const unidades = plano ? unidadesUsdc(plano) : null;
-    if (unidades !== null) total += unidades;
-  }
-  return presentarUsdc(total);
-}
-
-function cifra(valor: number, idioma: "en" | "es"): string {
-  return valor.toLocaleString(idioma === "es" ? "es-CR" : "en-US", {
-    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function Monto({ tarea }: { tarea: Tarea }) {
-  const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
     const pago = explicarPago(tarea, idioma);
     if (!pago) return null;
     return <span className="hyto-monto">{pago.corto}</span>;
   }
-  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
+  const { partes } = vistaMonto(tarea, idioma);
+  if (partes.length < 2) return <span className="hyto-monto">{partes[0]}</span>;
   return (
-    <span className="hyto-monto">
-      {tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}
-      <small>USDC</small>
+    <span className="hyto-monto hyto-monto-doble">
+      {partes.map((parte, indice) => (
+        <Fragment key={parte}>
+          {indice > 0 ? " · " : null}
+          <span>{parte}</span>
+        </Fragment>
+      ))}
     </span>
   );
 }
@@ -93,7 +56,7 @@ function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: st
     <div className={`hyto-metricas ${className}`.trim()}>
       <div className="hyto-metrica-ganado">
         <b>{ganado}</b>
-        <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
+        <span>{t("tareas.earnedShort")}</span>
       </div>
       <div>
         <b>{revision}</b>
@@ -262,7 +225,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const mejores = idsMejorPagadas(tareas);
   const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
-  const ganado = totalRecibido(tareas);
+  const ganado = totalGanado(tareas, idioma);
   const enRevision = contarEnRevision(tareas);
   const idAbierta = porEvento.flatMap((grupo) => grupo.tareas).find((tarea) => tarea.estado === "pendiente")?.id ?? null;
   const eventosDeTareas = new Set(tareas.map((tarea) => tarea.proyectoId));
@@ -277,7 +240,6 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
     { id: "pagado", etiqueta: t("tareas.filterDone"), total: cuenta("pagado") },
   ];
   const ordenes: { id: OrdenTareas; etiqueta: string }[] = [
-    { id: "prioridad", etiqueta: t("tareas.sortPriority") },
     { id: "mayor", etiqueta: t("tareas.sortHighest") },
     { id: "defecto", etiqueta: t("tareas.sortDefault") },
   ];
@@ -322,7 +284,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <MileAnimada estado="error-subida" tamano={96} />
           <h2>{claro(error)}</h2>
           <div className="hyto-estado-vacio-acciones">
-            <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
+            <button type="button" className={claseBoton("primario", true)} onClick={() => setIntento((actual) => actual + 1)}>
               {t("comunes.tryAgain")}
             </button>
           </div>
@@ -335,10 +297,10 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
           <h2>{t("tareas.emptyTitle")}</h2>
           <p>{t("tareas.emptyBody")}</p>
           <div className="hyto-estado-vacio-acciones">
-            <Link href="/join" className="hyto-btn hyto-btn-grande">
+            <Link href="/join" className={claseBoton("primario", true)}>
               {t("tareas.join")}
             </Link>
-            <Link href="/eventos" className="hyto-btn-line">
+            <Link href="/eventos" className={claseBoton("fantasma")}>
               {t("tareas.viewEvents")}
             </Link>
           </div>
@@ -436,7 +398,6 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               </span>
                             ) : null}
                           </div>
-                          <InsigniasClasificacion tarea={tarea} />
                           {mejores.has(tarea.id) ? (
                             <p className="mt-2">
                               <span className="hyto-pill hyto-pill-ok">
@@ -501,7 +462,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                           ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <>
-                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn hyto-btn-grande">
+                              <Link href={`/tareas/${tarea.id}`} className={claseBoton("primario", true)}>
                                 <Icono nombre="camera" tamano={18} />
                                 {tarea.tipo === "reembolso" ? (
                                   <>
@@ -512,12 +473,12 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                                   t("tareas.takeAnotherPhoto")
                                 )}
                               </Link>
-                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line">
+                              <Link href={`/tareas/${tarea.id}`} className={claseBoton("secundario")}>
                                 {t("tareas.view")}
                               </Link>
                             </>
                           ) : tarea.estado === "pendiente" ? (
-                            <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className={abierta ? claseBoton("primario", true) : claseBoton("secundario")}>
                               {abierta ? (
                                 <>
                                   <Icono nombre="camera" tamano={18} />
@@ -528,7 +489,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               )}
                             </Link>
                           ) : (
-                            <Link href={`/tareas/${tarea.id}`} className={reintento ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className={reintento ? claseBoton("primario", true) : claseBoton("fantasma")}>
                               {reintento ? t("comunes.tryAgain") : t("tareas.view")}
                             </Link>
                           )}

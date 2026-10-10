@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { claseBoton } from "@/components/ui/Boton";
 import { useTexto } from "@/components/ui/Idioma";
 
 type Resumen = {
@@ -64,7 +65,7 @@ export function ListaComunidades() {
           <h1 className="hyto-title">{t("comunidades.titulo")}</h1>
           <p className="hyto-sub">{t("comunidades.subtitulo")}</p>
         </div>
-        <Link href="/comunidades/nueva" className="hyto-btn is-inline">
+        <Link href="/comunidades/nueva" className={`${claseBoton("primario")} is-inline`}>
           {t("comunidades.crear")}
         </Link>
       </header>
@@ -100,7 +101,7 @@ export function ListaComunidades() {
         ))}
       </ul>
       <p className="mt-8">
-        <Link href="/comunidades/unirse" className="hyto-btn-line is-inline">
+        <Link href="/comunidades/unirse" className={`${claseBoton("secundario")} is-inline`}>
           {t("comunidades.entrarCodigo")}
         </Link>
       </p>
@@ -175,7 +176,7 @@ export function FormularioComunidad() {
           <p className="text-[var(--suave)]">{t("comunidades.privadaNota")}</p>
         </fieldset>
         {aviso ? <p className="text-sm">{aviso}</p> : null}
-        <button type="submit" className="hyto-btn" disabled={ocupado}>
+        <button type="submit" className={claseBoton("primario")} disabled={ocupado} aria-busy={ocupado}>
           {t("comunidades.guardar")}
         </button>
       </form>
@@ -286,7 +287,7 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
       ) : null}
       {aviso ? <p className="mt-4 text-sm">{aviso}</p> : null}
       {!detalle.membresia ? (
-        <button type="button" className="hyto-btn mt-6" onClick={() => void unirse()}>
+        <button type="button" className={`${claseBoton("primario")} mt-6`} onClick={() => void unirse()}>
           {detalle.comunidad.visibilidad === "publica" ? t("comunidades.unirse") : t("comunidades.solicitar")}
         </button>
       ) : (
@@ -310,10 +311,10 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
               <li key={solicitud.id} className="hyto-card flex flex-wrap items-center justify-between gap-3">
                 <span>{solicitud.nombre || solicitud.usuarioId}</span>
                 <span className="flex gap-2">
-                  <button type="button" className="hyto-btn is-inline" onClick={() => void decidir(solicitud.id, "aprobada")}>
+                  <button type="button" className={`${claseBoton("primario")} is-inline`} onClick={() => void decidir(solicitud.id, "aprobada")}>
                     {t("comunidades.aprobar")}
                   </button>
-                  <button type="button" className="hyto-btn-line is-inline" onClick={() => void decidir(solicitud.id, "rechazada")}>
+                  <button type="button" className={`${claseBoton("peligro")} is-inline`} onClick={() => void decidir(solicitud.id, "rechazada")}>
                     {t("comunidades.rechazar")}
                   </button>
                 </span>
@@ -354,10 +355,10 @@ export function PaginaComunidad({ id, mostrarTablon = false }: { id: string; mos
                   ))}
                 </select>
               </label>
-              <button type="submit" className="hyto-btn is-inline" disabled={!elegido}>
+              <button type="submit" className={`${claseBoton("primario")} is-inline`} disabled={!elegido}>
                 {t("comunidades.agregarEvento")}
               </button>
-              <button type="button" className="hyto-btn-line is-inline" disabled={!elegido} onClick={() => void vincular(true)}>
+              <button type="button" className={`${claseBoton("peligro")} is-inline`} disabled={!elegido} onClick={() => void vincular(true)}>
                 {t("comunidades.quitarEvento")}
               </button>
             </form>
@@ -434,7 +435,7 @@ function Tablon({ comunidadId }: { comunidadId: string }) {
           <li key={aviso.id} className="hyto-card flex flex-wrap items-center justify-between gap-3">
             <p>{fraseAviso(t, aviso)}</p>
             {aviso.libre && aviso.tareaId ? (
-              <button type="button" className="hyto-btn is-inline" onClick={() => void tomar(aviso.tareaId!)}>
+              <button type="button" className={`${claseBoton("primario")} is-inline`} onClick={() => void tomar(aviso.tareaId!)}>
                 {t("tablon.tomar")}
               </button>
             ) : null}
@@ -475,7 +476,7 @@ export function UnirseCodigo() {
           <input id="codigo-comunidad" className="hyto-input mt-2 w-full" value={codigo} onChange={(evento) => setCodigo(evento.target.value)} autoComplete="off" />
         </label>
         {aviso ? <p className="text-sm">{aviso}</p> : null}
-        <button type="submit" className="hyto-btn">
+        <button type="submit" className={claseBoton("primario")}>
           {t("comunidades.unirse")}
         </button>
       </form>

@@ -1,5 +1,6 @@
 import type { Almacen } from "@/lib/db/almacen";
 import { avisarAsignacion } from "@/lib/tablon/publicar";
+import { cambioDeMiembro } from "./cobro";
 import { avisoBloqueo } from "./editar-tarea";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
@@ -21,14 +22,14 @@ export async function asignarTareaHttp(request: Request, almacen: Almacen, tarea
   const destino = miembroDe(body);
   if (destino === null) return json({ aviso: "Choose a person in this event." }, 400);
   if (destino === "") {
-    await almacen.actualizarTarea(tarea.id, { miembroId: "" });
+    await almacen.actualizarTarea(tarea.id, cambioDeMiembro(tarea, ""));
     await avisarAsignacion(almacen, tarea.id);
     return json({ tareaId: tarea.id, miembroId: "" });
   }
   const miembros = await almacen.listarMiembros(tarea.proyectoId);
   const miembro = miembros.find((item) => item.usuarioId === destino && item.estado === "active");
   if (!miembro) return json({ aviso: "That person is not in this event." }, 400);
-  await almacen.actualizarTarea(tarea.id, { miembroId: destino });
+  await almacen.actualizarTarea(tarea.id, cambioDeMiembro(tarea, destino));
   await avisarAsignacion(almacen, tarea.id);
   return json({ tareaId: tarea.id, miembroId: destino });
 }

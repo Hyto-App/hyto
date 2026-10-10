@@ -125,7 +125,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       fetchImpl,
       undefined,
       llamarLaya,
-      reglaDeEvento(contexto.evento),
+      reglaDeEvento(contexto.evento, tarea.tipo),
       { lectura: descripcion.lectura },
     );
     // A transcribed file has no Groq list. An empty faltantes there is not "nothing missing".

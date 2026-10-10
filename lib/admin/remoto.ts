@@ -293,6 +293,7 @@ function leerTareaAdmin(valor: unknown): TareaAdmin | null {
     ...perfilDe(datos.perfilVoluntario),
     intentosAnteriores: leerIntentos(datos.intentosAnteriores),
     ...(datos.apartado === true ? { apartado: true } : {}),
+    ...(datos.faltaCobro === "asignar" || datos.faltaCobro === "cuenta" ? { faltaCobro: datos.faltaCobro } : {}),
   };
 }
 
