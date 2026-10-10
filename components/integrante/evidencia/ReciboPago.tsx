@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { datosRecibo } from "@/lib/integrante/recibo";
@@ -10,6 +11,7 @@ import { textoVisible } from "@/lib/ui/etiquetas";
 export function ReciboPago({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
+  const demo = useModoDemo();
   const datos = datosRecibo(tarea, idioma);
   const volver = (
     <Link href={`/tareas/${encodeURIComponent(tarea.id)}`} className="hyto-btn-line is-inline px-5">
@@ -49,6 +51,7 @@ export function ReciboPago({ tarea }: { tarea: Tarea }) {
   return (
     <main className="hyto-page hyto-recibo-pagina">
       <h1>{t("evidencia.receiptTitle")}</h1>
+      {demo ? <p className="text-sm leading-6 text-[var(--suave)]">{t("evidencia.practiceNetwork")}</p> : null}
       <p className="hyto-recibo-neto">{datos.neto}</p>
       <p className="text-sm text-[var(--suave)]">{t("evidencia.youReceived")}</p>
       <section className="hyto-tarjeta hyto-recibo">

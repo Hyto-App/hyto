@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { explicarPago } from "@/lib/integrante/formato";
@@ -18,6 +19,7 @@ import type { Tarea } from "@/lib/integrante/tipos";
 export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string }) {
   const t = useTexto();
   const idioma = useIdioma();
+  const demo = useModoDemo();
   const [visto, setVisto] = useState<boolean | null>(null);
   const pago = explicarPago(tarea, idioma);
   const monto = pago?.frase ?? "";
@@ -48,6 +50,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
           <MileAnimada estado="lo-tengo" tamano={96} />
           <h1 className="hyto-tarea-titulo">{t("evidencia.youGotPaid")}</h1>
           <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
+          {demo ? <p className="hyto-tarea-meta">{t("evidencia.practiceNetwork")}</p> : null}
         </header>
         <Recibo monto={monto} tareaId={tarea.id} />
         <LineaRevision tarea={tarea} revisionCerrada monto={monto} />
@@ -80,6 +83,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
       <p className="hyto-pagada-monto">+{corto}</p>
       {monto && monto !== corto ? <p className="hyto-tarea-meta">{monto}</p> : null}
       <p className="hyto-tarea-meta">{t("evidencia.paidFor", { title: titulo })}</p>
+      {demo ? <p className="hyto-tarea-meta">{t("evidencia.practiceNetwork")}</p> : null}
       <Recibo monto={monto} tareaId={tarea.id} />
       <ActividadTarea tarea={tarea} />
       <div className="hyto-enviada-acciones">
@@ -96,6 +100,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
 
 function Recibo({ monto, tareaId }: { monto: string; tareaId: string }) {
   const t = useTexto();
+  const demo = useModoDemo();
   return (
     <section className="hyto-tarjeta hyto-recibo">
       <div>
@@ -106,6 +111,7 @@ function Recibo({ monto, tareaId }: { monto: string; tareaId: string }) {
         <span>{t("evidencia.youReceived")}</span>
         <strong className="hyto-recibo-lima">{monto}</strong>
       </div>
+      {demo ? <p className="hyto-tarea-meta">{t("evidencia.demoPaid")}</p> : null}
       <Link className="hyto-recibo-abrir" href={`/tareas/${encodeURIComponent(tareaId)}/recibo`}>
         {t("evidencia.viewReceipt")}
       </Link>

@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { Revision } from "@/components/admin/Revision";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
+import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
 import type { Tarea } from "@/lib/integrante/tipos";
 import { desmontar, montar, texto } from "../../tests/integracion/montar";
 
@@ -44,6 +45,39 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
     const recibo = document.querySelector('a[href="/tareas/comida/recibo"]');
     assert.equal(recibo?.textContent, "View receipt");
     assert.equal(recibo?.getAttribute("target"), null);
+    assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
+    assert.equal(texto().includes("practice network"), false);
+  } finally {
+    await desmontar();
+  }
+});
+
+test("en demo la pantalla pagada marca la red de práctica y el pago simulado", async () => {
+  const tarea: Tarea = {
+    id: "demo-stand",
+    proyectoId: "demo",
+    titulo: "Set up the booth",
+    tipo: "trabajo",
+    monto: "20",
+    tope: null,
+    condicion: "Banner",
+    miembroId: "v",
+    walletCobro: "",
+    estado: "pagado",
+    prioridad: "normal",
+    dificultad: null,
+  };
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "voluntario",
+        children: createElement(PantallaPagada, { tarea, titulo: "Set up the booth" }),
+      }),
+    );
+    await esperar(() => texto().includes("You were paid"));
+    assert.match(texto(), /No real money moves on this practice network/);
+    assert.match(texto(), /Demo payment\. No money moved/);
     assert.equal(document.querySelector("a[href*='stellar.expert']"), null);
   } finally {
     await desmontar();
