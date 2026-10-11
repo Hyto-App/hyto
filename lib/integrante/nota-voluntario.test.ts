@@ -141,13 +141,13 @@ test("una tarea rechazada muestra el punto que falta y esconde la frase interna"
         contratoEscrow: "NO",
       }),
     );
-    assert.match(texto(), /New photo requested/);
+    assert.match(texto(), /New evidence requested/);
     assert.equal(texto().includes("Task rejected"), false);
     assert.equal(texto().includes("Rejected"), false);
     assert.equal(document.querySelector(".hyto-visor img")?.getAttribute("src"), "/api/evidencias/ev-stand/foto");
     assert.match(texto(), /Missing: Wristband visible/);
-    assert.match(texto(), /Not in the photo/);
-    assert.match(texto(), /Take another photo/);
+    assert.match(texto(), /Not in the evidence/);
+    assert.match(texto(), /Send another piece of evidence/);
     assert.match(texto(), /Organizer · organizer/);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
     assert.equal(texto().includes("NO"), false);
@@ -266,7 +266,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     });
     assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /Great job/);
-    assert.match(texto(), /Mile marked this as partially completed/);
+    assert.match(texto(), /Mile marked your evidence as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), /the organizer decides\./);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
@@ -292,11 +292,11 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
       }),
     );
     assert.match(texto(), /Your evidence already reached the organizer/);
-    assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
+    assert.match(texto(), /If you want, you can send better evidence; the organizer decides\./);
     assert.equal((texto().match(/the organizer decides|makes the final call/g) ?? []).length, 1);
-    assert.match(texto(), /Take another/);
+    assert.match(texto(), /Send another piece of evidence/);
     await act(async () => {
-      [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      [...document.querySelectorAll("button")].find((item) => item.textContent === "Send another piece of evidence")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Take photo/);
     assert.equal(texto().includes("Your evidence already reached the organizer"), false);

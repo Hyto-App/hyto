@@ -7,10 +7,11 @@ import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { esOrganizador } from "./invitaciones";
 import { json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
-import { tareaPublica } from "./tareas";
+import { evidenciaVigente } from "./etapa";
+import { rechazoPublico, tareaPublica } from "./tareas";
 
 export const AVISO_SOLO_ORGANIZADOR = "Only the organizer can edit tasks.";
-export const AVISO_CON_FOTO = "This task already has a photo, so it can't be edited.";
+export const AVISO_CON_FOTO = "This task already has evidence, so it can't be edited.";
 export const AVISO_CON_PAGO = "This task already has a payment, so it can't be edited.";
 export const AVISO_MONTO_BLOQUEADO = "The amount is already locked in the payment, so this task can't be edited.";
 
@@ -23,6 +24,14 @@ export function avisoBloqueo(tarea: Pick<TareaFila, "estado" | "hashPago" | "con
   if (tarea.contratoEscrow?.trim()) return AVISO_MONTO_BLOQUEADO;
   if (tieneEvidencia) return AVISO_CON_FOTO;
   return null;
+}
+
+/**
+ * Whether the task has evidence that counts now. A pending demo task keeps an old file from an earlier run;
+ * that is history, so it does not lock editing (same rule as the task list, see evidenciaVigente).
+ */
+export async function tieneEvidenciaVigente(almacen: Pick<Almacen, "ultimaEvidencia">, tarea: TareaFila): Promise<boolean> {
+  return Boolean(evidenciaVigente(tarea, await almacen.ultimaEvidencia(tarea.id), rechazoPublico(tarea) !== null));
 }
 
 export type OpcionesEditar = {
@@ -57,7 +66,7 @@ export async function editarTareaHttp(
   }
   const fresco = await almacen.leerTarea(tarea.id);
   if (!fresco) return json({ aviso: "We couldn't find that task." }, 404);
-  const bloqueo = avisoBloqueo(fresco, Boolean(await almacen.ultimaEvidencia(fresco.id)));
+  const bloqueo = avisoBloqueo(fresco, await tieneEvidenciaVigente(almacen, fresco));
   if (bloqueo) return json({ aviso: bloqueo }, 409);
   const subida = montoBloqueable(fresco, leido.cambio);
   const wallet = opciones.wallet?.trim() ?? "";

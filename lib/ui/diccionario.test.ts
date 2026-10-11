@@ -88,16 +88,16 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "cuenta.ausente"), "Esta cuenta todavía no puede recibir un pago.");
   assert.equal(texto("en", "revision.yourAccount", { direccion: "G…AAAA" }), "Payment account ID (for support): G…AAAA");
   assert.equal(texto("es", "revision.yourAccount", { direccion: "G…AAAA" }), "ID de su cuenta de pagos (para soporte): G…AAAA");
-  assert.equal(texto("en", "evidencia.uploaded"), "Photo uploaded successfully");
-  assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
+  assert.equal(texto("en", "evidencia.uploaded"), "Evidence uploaded successfully");
+  assert.equal(texto("es", "evidencia.uploaded"), "Evidencia subida correctamente");
   assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your evidence already reached the organizer");
   assert.equal(texto("es", "evidencia.reachedOrganizer"), "Su evidencia ya le llegó al organizador");
   assert.equal(texto("en", "evidencia.mileCouldntFinish"), "Mile could not finish. Try again.");
   assert.equal(texto("es", "evidencia.mileCouldntFinish"), "Mile no pudo terminar. Intente de nuevo.");
-  assert.equal(texto("en", "evidencia.mileRetry"), "The review did not finish. Send the photo again.");
-  assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envíe la foto otra vez.");
-  assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this photo did not pass Mile's review");
-  assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta foto no pasó la revisión de Mile");
+  assert.equal(texto("en", "evidencia.mileRetry"), "The review did not finish. Send the evidence again.");
+  assert.equal(texto("es", "evidencia.mileRetry"), "La revisión no terminó. Envíe la evidencia otra vez.");
+  assert.equal(texto("en", "evidencia.notEnoughName", { name: "Ana" }), "Ana, this evidence did not pass Mile's review");
+  assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta evidencia no pasó la revisión de Mile");
 });
 
 const VOSEO = [
@@ -190,7 +190,14 @@ test("configuración en español usa usted y no deja la llave de acceso en ingl�
   assert.match(texto("es", "cuenta.passkeyTelefono"), /Usar un teléfono o una tablet/);
   assert.match(texto("es", "cuenta.passkeyListo"), /Usar llave de acceso/);
   assert.match(texto("es", "guiaPasskey.paso2"), /Crear llave de acceso/);
-  assert.match(texto("es", "guiaPasskey.paso3"), /Usar un teléfono o una tablet/);
+  assert.match(texto("es", "guiaPasskey.paso3"), /guardar la llave en otro dispositivo/);
+  assert.equal(texto("es", "guiaPasskey.titulo"), "Prepare este dispositivo en 4 pasos");
+  assert.match(texto("es", "guiaPasskey.paso1Titulo"), /Abra Configuración/);
+  assert.match(texto("en", "guiaPasskey.paso1Titulo"), /Open Settings/);
+  for (const valor of textosDe(es.guiaPasskey)) assert.doesNotMatch(valor, /tel[eé]fono|\bCuenta\b/, valor);
+  for (const valor of textosDe(en.guiaPasskey)) assert.doesNotMatch(valor, /\bphone\b|\bon Account\b|Open Account/, valor);
+  assert.match(texto("es", "errores.dispositivo"), /vaya a Configuración/);
+  assert.match(texto("en", "errores.dispositivo"), /go to Settings/);
   assert.match(texto("es", "guiaPasskey.ayuda1"), /computadora portátil/);
   assert.match(texto("es", "errores.passkey"), /Usar llave de acceso/);
   assert.doesNotMatch(texto("es", "guiaPasskey.introCuenta"), /\bagregá\b/i);
@@ -356,8 +363,8 @@ test("el demo dice una sola frase y no habla de red ni billetera", () => {
       assert.doesNotMatch(valor, /billetera|wallet|testnet|red de prueba|network/i, clave);
     }
   }
-  assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una foto mejor; quien organiza decide.");
-  assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send a better photo; the organizer decides.");
+  assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una evidencia mejor; quien organiza decide.");
+  assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send better evidence; the organizer decides.");
 });
 
 test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y nadie dice que la galería no se acepta", () => {
@@ -404,4 +411,39 @@ test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y 
     assert.equal(vieja in en.evidencia, false, vieja);
     assert.equal(vieja in es.evidencia, false, vieja);
   }
+});
+
+test("la copia nunca dice IA ni AI (es Mile) y Hyto es global: sin Latinoamérica", () => {
+  for (const valor of [...textosDe(es), ...textosDe(en)]) {
+    assert.doesNotMatch(valor, /(^|[^\p{L}])(IA|AI)([^\p{L}]|$)/u, valor);
+    assert.doesNotMatch(valor, /Latinoam[ée]rica|Latin America/i, valor);
+  }
+  assert.equal(texto("es", "revision.origenIa"), "Recomendación de Mile");
+  assert.equal(texto("en", "revision.origenIa"), "Mile's recommendation");
+});
+
+test("los títulos del resultado hablan de «evidencia» y el botón dice «Enviar otra evidencia»", () => {
+  for (const clave of ["evidencia.notEnough", "evidencia.notEnoughFile", "evidencia.partial", "evidencia.greatJob", "evidencia.greatJobFile"] as const) {
+    assert.match(texto("es", clave), /evidencia/, clave);
+    assert.match(texto("en", clave), /evidence/, clave);
+    assert.doesNotMatch(texto("es", clave), /foto|archivo/, clave);
+  }
+  assert.equal(texto("es", "evidencia.notEnoughName", { name: "Ana" }), "Ana, esta evidencia no pasó la revisión de Mile");
+  assert.equal(texto("es", "evidencia.sendAnotherEvidence"), "Enviar otra evidencia");
+  assert.equal(texto("en", "evidencia.sendAnotherEvidence"), "Send another piece of evidence");
+});
+
+test("la revisión del organizador pide y revisa «evidencia», no «foto»", () => {
+  assert.equal(texto("es", "revision.askAnother"), "Pedir otra evidencia");
+  assert.equal(texto("en", "revision.askAnother"), "Ask for other evidence");
+  assert.equal(texto("es", "pago.reviewPhoto"), "Revisar la evidencia");
+  assert.equal(texto("en", "pago.reviewPhoto"), "Review the evidence");
+});
+
+test("la evidencia no se llama foto: pastilla de archivo y Mile no decide el pago", () => {
+  assert.equal(texto("es", "evidencia.onePhoto"), "1 archivo");
+  assert.equal(texto("en", "evidencia.onePhoto"), "1 file");
+  assert.equal(texto("es", "evidencia.tomarFoto"), "Tomar foto");
+  assert.equal(texto("es", "evidencia.mileReadSame", { monto: "US$20,00" }), "Mile leyó US$20,00. Quien organiza lo revisa y aprueba.");
+  assert.equal(texto("en", "evidencia.mileReadSame", { monto: "US$20.00" }), "Mile read US$20.00. The organizer reviews and approves it.");
 });

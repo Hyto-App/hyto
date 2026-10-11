@@ -393,10 +393,10 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
   try {
     await fallarCon(AVISO_DISPOSITIVO);
     assert.match(texto(), /Set up this device in 4 steps/);
-    assert.match(texto(), /Open Account where you signed up/);
-    assert.match(texto(), /localhost\/account/);
+    assert.match(texto(), /Open Settings where you signed up/);
+    assert.match(texto(), /localhost\/configuracion/);
     assert.match(texto(), /Tap Add a passkey, then Create passkey/);
-    assert.match(texto(), /Use a phone or tablet/);
+    assert.match(texto(), /save the passkey on another device/);
     assert.match(texto(), /Tap Try again, then choose Use passkey/);
     assert.match(texto(), /Don't remember where you signed up\?/);
     assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);
@@ -420,7 +420,7 @@ test("los avisos de cuenta antigua se leen en el botón y solo ofrecen volver a 
   }
 });
 
-test("la guía de llave de acceso copia el enlace a Cuenta y Try again repite el paso", async () => {
+test("la guía de llave de acceso copia el enlace a Configuración y Try again repite el paso", async () => {
   limpiarPantalla();
   let intentos = 0;
   let copiado: string | null = null;
@@ -452,7 +452,7 @@ test("la guía de llave de acceso copia el enlace a Cuenta y Try again repite el
     await act(async () => {
       await Promise.resolve();
     });
-    assert.equal(copiado, "http://localhost/account?add=passkey#passkey");
+    assert.equal(copiado, "http://localhost/configuracion?add=passkey#passkey");
     assert.match(texto(), /Link copied/);
     await pulsar("Try again");
     await act(async () => {

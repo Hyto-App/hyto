@@ -11,6 +11,7 @@ import { reglaDeEvento, type ContextoEvento } from "./contexto-evento";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "./fallo";
 import { describirFotoGemini } from "./gemini";
 import { aplicarV4DeFaltantes } from "./faltantes-groq";
+import { conciliarConLectura } from "./conciliar";
 import { preguntarLaya, type LlamadaLaya } from "./laya";
 import { montoSinUsd } from "./lectura";
 import { nivelesConLectura } from "./lectura-completa";
@@ -132,9 +133,18 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       { lectura: descripcion.lectura },
     );
     // A transcribed file has no Groq list. An empty faltantes there is not "nothing missing".
-    const senalesParaNota = textual
+    const senalesV4 = textual
       ? senales
       : aplicarV4DeFaltantes(senales, descripcion.lectura, tarea.condicion);
+    // The reading wins over Laya's text-only hedges, so the grade and the tags agree with it.
+    const senalesParaNota = conciliarConLectura(senalesV4, descripcion.lectura, {
+      tipoTarea: tarea.tipo,
+      condicion: tarea.condicion,
+      textual,
+      tope: tarea.tope,
+      monto: descripcion.monto,
+      fecha: descripcion.fecha,
+    });
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senalesParaNota, "scout");
     if (!cerrado) return fallar(new FalloRevision("respuesta", { fuente: "laya", providerMessage: "veredicto" }));
     return cerrado;

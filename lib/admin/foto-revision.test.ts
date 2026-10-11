@@ -140,7 +140,7 @@ test("a failed photo shows a clear error and the enlarged view can close", async
     imagenDe(document).dispatchEvent(new Event("error"));
   });
   const alerta = document.querySelector("[role=alert]");
-  assert.equal(alerta?.textContent, "This photo could not be shown.");
+  assert.equal(alerta?.textContent, "This evidence could not be shown.");
   assert.equal(document.querySelector(".hyto-photo-abrir"), null);
   await desmontar();
 
@@ -154,7 +154,7 @@ test("a failed photo shows a clear error and the enlarged view can close", async
   await act(async () => {
     imagenDe(dialogo).dispatchEvent(new Event("error"));
   });
-  assert.equal(dialogo.querySelector("[role=alert]")?.textContent, "This photo could not be shown.");
+  assert.equal(dialogo.querySelector("[role=alert]")?.textContent, "This evidence could not be shown.");
   await pulsar("Close");
   assert.equal(document.querySelector("[role=dialog]"), null);
   await desmontar();
@@ -169,7 +169,7 @@ test("a photo that failed before React was listening still shows the error", asy
     await act(async () => {
       await Promise.resolve();
     });
-    assert.equal(document.querySelector("[role=alert]")?.textContent, "This photo could not be shown.");
+    assert.equal(document.querySelector("[role=alert]")?.textContent, "This evidence could not be shown.");
     assert.equal(document.querySelector(".hyto-photo-abrir"), null);
   } finally {
     proto.decode = original;
@@ -183,7 +183,7 @@ test("el mismo estado en español", async () => {
   await act(async () => {
     imagenDe(document).dispatchEvent(new Event("error"));
   });
-  assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo mostrar esta foto.");
+  assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo mostrar esta evidencia.");
   await desmontar();
 
   await montar(foto("es"));

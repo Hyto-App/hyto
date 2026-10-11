@@ -160,7 +160,7 @@ test("cada fallo de una evidencia real deja el error y no el guion", async () =>
       fetchImpl: async () => Response.json({ choices: [{ finish_reason: "length", message: { content: '{"texto":' } }] }),
     },
     { codigo: "sin_clave", frase: /not configured/, clave: null },
-    { codigo: "sin_foto", frase: /no photo/i, foto: null },
+    { codigo: "sin_foto", frase: /no evidence/i, foto: null },
   ];
   for (const caso of casos) {
     const logs: unknown[][] = [];

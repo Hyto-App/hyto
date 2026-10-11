@@ -17,7 +17,15 @@ test("en español Receipt no se queda en inglés aunque la explicación no esté
   const monto = presentarEtiqueta(etiqueta({ id: "amount_missing", texto: "Receipt amount missing" }), "es");
   assert.equal(fecha.texto.includes("Receipt"), false);
   assert.equal(monto.texto.includes("Receipt"), false);
-  assert.equal(fecha.texto, "Falta la fecha del recibo");
+  assert.equal(fecha.texto, "Falta la fecha de la factura");
   assert.equal(monto.texto, "Falta el monto del recibo");
   assert.equal(presentarEtiqueta(etiqueta({ id: "date_missing", texto: "Receipt date missing" }), "en").texto, "Receipt date missing");
+});
+
+test("las notas de Mile para quien organiza dicen evidencia, no foto", () => {
+  for (const id of ["cap_otra", "cap_no_coincide", "cap_regla_evento", "photo_unclear", "selfie_or_empty"]) {
+    const nota = presentarEtiqueta(etiqueta({ id, texto: "Stored" }), "es");
+    assert.doesNotMatch(`${nota.texto} ${nota.explicacion}`, /\bfotos?\b/i, id);
+    assert.match(`${nota.texto} ${nota.explicacion}`, /evidencia/i, id);
+  }
 });
