@@ -53,6 +53,61 @@ export const SIGUIENTES: Record<IdPregunta, readonly IdPregunta[]> = {
   datos: ["ver", "sesion"],
 };
 
+/** Who a question is for. The answers about "your evidence" speak to the volunteer; "ambos" shows to everyone. */
+export type Publico = "organizador" | "voluntario" | "todos";
+
+export const PARA: Record<IdPregunta, "organizador" | "voluntario" | "ambos"> = {
+  pago: "voluntario",
+  tarda: "voluntario",
+  fondear: "organizador",
+  costos: "organizador",
+  sinPagar: "organizador",
+  orgReembolso: "organizador",
+  evidencia: "voluntario",
+  mile: "voluntario",
+  unirse: "voluntario",
+  ver: "voluntario",
+  otra: "voluntario",
+  reembolso: "voluntario",
+  cobrar: "voluntario",
+  sesion: "ambos",
+  datos: "ambos",
+};
+
+const INICIO_POR_PUBLICO: Record<Publico, readonly IdPregunta[]> = {
+  todos: INICIO,
+  voluntario: ["pago", "tarda", "evidencia", "otra", "mile", "unirse"],
+  organizador: ["fondear", "costos", "orgReembolso", "sinPagar", "datos", "sesion"],
+};
+
+/** A demo organizer never sees "How do I get paid?", a demo volunteer never sees "How do I set money aside?". */
+export function preguntasPara(publico: Publico): IdPregunta[] {
+  if (publico === "todos") return [...PREGUNTAS];
+  return PREGUNTAS.filter((id) => PARA[id] === "ambos" || PARA[id] === publico);
+}
+
+export function inicioPara(publico: Publico): IdPregunta[] {
+  return [...INICIO_POR_PUBLICO[publico]];
+}
+
+/**
+ * Always two or three next questions for this audience: the hand-picked follow-ups first, then questions not asked yet,
+ * and only when nothing new is left, ones already asked. Never the question just answered.
+ */
+export function siguientesPara(id: IdPregunta, publico: Publico, preguntadas: readonly IdPregunta[] = []): IdPregunta[] {
+  const validas = preguntasPara(publico);
+  const salida: IdPregunta[] = [];
+  const sumar = (candidata: IdPregunta) => {
+    if (salida.length >= 3 || candidata === id || salida.includes(candidata) || !validas.includes(candidata)) return;
+    salida.push(candidata);
+  };
+  for (const candidata of SIGUIENTES[id]) if (!preguntadas.includes(candidata)) sumar(candidata);
+  for (const candidata of [...INICIO_POR_PUBLICO[publico], ...validas]) if (!preguntadas.includes(candidata)) sumar(candidata);
+  for (const candidata of SIGUIENTES[id]) sumar(candidata);
+  for (const candidata of validas) sumar(candidata);
+  return salida;
+}
+
 /** "Mile is typing" before each bubble, and the bubble's fade-in. */
 export const ESCRIBIENDO_MS = 600;
 export const ENTRADA_MS = 200;

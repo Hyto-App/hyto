@@ -6,16 +6,18 @@ import { createPortal } from "react-dom";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
+import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import {
   ATAJOS,
-  INICIO,
-  PREGUNTAS,
-  SIGUIENTES,
   buscarPreguntas,
+  inicioPara,
   partesRespuesta,
+  preguntasPara,
+  siguientesPara,
   tiemposPartes,
   type IdPregunta,
   type PreguntaVisible,
+  type Publico,
 } from "@/lib/ui/ayuda";
 import { teclaDialogo } from "@/lib/ui/dialogo";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -43,6 +45,8 @@ function movimientoReducido(): boolean {
 /** Fixed answers told as a short chat. Search only filters the questions. */
 export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
   const t = useTexto();
+  // In the demo the role is known: each side only sees its own questions. A real account can be both, so it sees all.
+  const publico: Publico = useRolDemo() ?? "todos";
   const panel = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const charla = useRef<HTMLDivElement>(null);
@@ -57,12 +61,12 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
 
   const preguntas = useMemo<PreguntaVisible[]>(
     () =>
-      PREGUNTAS.map((id) => ({
+      preguntasPara(publico).map((id) => ({
         id,
         pregunta: t(`ayuda.${id}Q`),
         respuesta: t(`ayuda.${id}A`),
       })),
-    [t],
+    [t, publico],
   );
   const porId = useMemo(() => new Map(preguntas.map((item) => [item.id, item])), [preguntas]);
   const ultimo = turnos.at(-1) ?? null;
@@ -76,7 +80,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
       ? preguntas
       : escribiendo
         ? []
-        : (ultimo ? SIGUIENTES[ultimo.id] : INICIO).flatMap((id) => porId.get(id) ?? []);
+        : (ultimo ? siguientesPara(ultimo.id, publico, turnos.map((turno) => turno.id)) : inicioPara(publico)).flatMap((id) => porId.get(id) ?? []);
 
   useEffect(() => {
     if (!abierto) return;
@@ -117,6 +121,11 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
     fin.current?.scrollIntoView?.({ block: "nearest", behavior: reducido ? "auto" : "smooth" });
   }, [turnos.length, mostradas, reducido]);
 
+  // While searching, only the matching questions show, from the top of the panel.
+  useEffect(() => {
+    if (buscada && panel.current) panel.current.scrollTop = 0;
+  }, [buscada, consulta]);
+
   if (!abierto || typeof document === "undefined") return null;
 
   function preguntar(id: IdPregunta) {
@@ -146,6 +155,19 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
     alCerrar();
   }
 
+  const listaChips =
+    chips.length > 0 ? (
+      <div className="hyto-ayuda-chips" role="group" aria-label={ultimo && !buscada && !todas ? t("ayuda.siguientes") : t("ayuda.preguntas")}>
+        {chips.map((item) => (
+          <button key={item.id} type="button" className="hyto-ayuda-chip" onClick={() => preguntar(item.id)}>
+            {item.pregunta}
+          </button>
+        ))}
+      </div>
+    ) : buscada ? (
+      <p className="hyto-ayuda-vacio">{t("ayuda.vacio")}</p>
+    ) : null;
+
   return createPortal(
     <div className="hyto-capa hyto-capa-ayuda" onMouseDown={alCerrar}>
       <div
@@ -173,7 +195,9 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
             onChange={(evento) => setConsulta(evento.target.value)}
           />
         </label>
-        <div className="hyto-ayuda-atajos" role="group" aria-label={t("ayuda.atajos")}>
+        {/* Search results go right under the field. The shortcuts and the conversation step aside until the field is empty. */}
+        {buscada ? listaChips : null}
+        <div className="hyto-ayuda-atajos" hidden={buscada} role="group" aria-label={t("ayuda.atajos")}>
           {ATAJOS.map((atajo) =>
             "href" in atajo && atajo.href ? (
               <Link key={atajo.id} href={atajo.href} className="hyto-ayuda-atajo" onClick={() => elegirAtajo(atajo)}>
@@ -186,7 +210,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
             ),
           )}
         </div>
-        <div ref={charla} className="hyto-ayuda-charla" role="log" aria-live="polite" aria-label={t("ayuda.titulo")} tabIndex={-1}>
+        <div ref={charla} className="hyto-ayuda-charla" hidden={buscada} role="log" aria-live="polite" aria-label={t("ayuda.titulo")} tabIndex={-1}>
           <div className="hyto-ayuda-fila is-mile">
             <Mile estado="cara-feliz" tamano={32} />
             <div className="hyto-ayuda-burbujas">
@@ -237,17 +261,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
           })}
           <div ref={fin} />
         </div>
-        {chips.length > 0 ? (
-          <div className="hyto-ayuda-chips" role="group" aria-label={ultimo && !buscada && !todas ? t("ayuda.siguientes") : t("ayuda.preguntas")}>
-            {chips.map((item) => (
-              <button key={item.id} type="button" className="hyto-ayuda-chip" onClick={() => preguntar(item.id)}>
-                {item.pregunta}
-              </button>
-            ))}
-          </div>
-        ) : buscada ? (
-          <p className="hyto-ayuda-vacio">{t("ayuda.vacio")}</p>
-        ) : null}
+        {buscada ? null : listaChips}
       </div>
     </div>,
     document.body,

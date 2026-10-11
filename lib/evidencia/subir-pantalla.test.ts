@@ -281,7 +281,7 @@ test("un 201 sin aviso sí dice que la foto llegó", async () => {
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" } }, 201));
     assert.match(texto(), /Your file arrived/);
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /action needed/);
     assert.match(texto(), /as soon as the organizer approves it/);
   } finally {

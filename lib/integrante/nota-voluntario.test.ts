@@ -81,7 +81,7 @@ test("sin nota real no hay porcentaje ni la frase del pago", async () => {
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ nota: null, veredicto: null, frase: "SECRETO-LAYA" }));
-    assert.match(texto(), /Mile is checking your photo/);
+    assert.match(texto(), /Mile is checking your evidence/);
     assert.equal(document.querySelector(".hyto-pill-veredicto"), null);
     assert.equal(texto().includes("%"), false);
     assert.equal(texto().includes(FRASE_PAGO), false);
@@ -264,7 +264,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /Great job/);
     assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);

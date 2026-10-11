@@ -26,7 +26,7 @@ test("Mile renders both theme images with the right src", () => {
 
 test("a label makes Mile accessible and sizes under 24px are raised", () => {
   const html = renderToStaticMarkup(createElement(Mile, { estado: "buscando", etiqueta: true, tamano: 10 }));
-  assert.ok(html.includes('alt="Mile is checking your photo"'));
+  assert.ok(html.includes('alt="Mile is checking your evidence"'));
   assert.ok(html.includes("width:24px"));
   assert.ok(!html.includes('aria-hidden="true" class="hyto-mile'));
 });
