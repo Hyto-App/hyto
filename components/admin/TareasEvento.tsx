@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
+import { SugeridosAsignar } from "@/components/perfil/Sugeridos";
+import type { Sugerido } from "@/lib/perfil/sugeridos";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
 import { detalleMontoTarea, lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
@@ -62,10 +64,15 @@ export function TareasEvento({
   tareas,
   miembros,
   saldo = null,
+  proyectoId,
+  sugeridos,
 }: {
   tareas: FilaTareaEvento[];
   miembros: { usuarioId: string; email: string; ficha?: Ficha }[];
   saldo?: string | null;
+  /** With HYTO_PERFIL_PUBLICO on: the suggested-people picker replaces the plain list. */
+  proyectoId?: string;
+  sugeridos?: Sugerido[];
 }) {
   const t = useTexto();
   const claro = useClaro();
@@ -75,6 +82,8 @@ export function TareasEvento({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [eligiendoId, setEligiendoId] = useState<string | null>(null);
+  const conSugeridos = Boolean(sugeridos && proyectoId);
 
   async function asignar(tareaId: string, usuarioId: string) {
     setAviso(null);
@@ -86,9 +95,10 @@ export function TareasEvento({
     if (!respuesta.ok) {
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: string } | null;
       setAviso(cuerpo?.aviso ?? "Could not assign that task.");
-      return;
+      return false;
     }
     setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
+    return true;
   }
 
   async function clasificar(tareaId: string, cambio: { prioridad?: PrioridadTarea; dificultad?: DificultadTarea | null }) {
@@ -318,6 +328,50 @@ export function TareasEvento({
                 </form>
               ) : (
                 <div>
+                  {conSugeridos && sugeridos && proyectoId ? (
+                    <div className="grid gap-3">
+                      <p className="text-sm">{t("eventos.assign")}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {(() => {
+                          const persona = sugeridos.find((item) => item.usuarioId === tarea.miembroId);
+                          const miembro = miembros.find((item) => item.usuarioId === tarea.miembroId);
+                          if (!tarea.miembroId) return <span className="text-sm text-[var(--suave)]">{t("sugeridos.sinAsignar")}</span>;
+                          return (
+                            <span className="sg-chip">
+                              <span className="sg-mini" aria-hidden="true">
+                                {persona?.iniciales ?? "•"}
+                              </span>
+                              <span>{persona?.nombre ?? persona?.email ?? miembro?.email ?? tarea.miembroId}</span>
+                            </span>
+                          );
+                        })()}
+                        {tarea.bloqueo ? null : (
+                          <button
+                            type="button"
+                            className="hyto-btn-line is-inline px-4"
+                            aria-expanded={eligiendoId === tarea.id}
+                            onClick={() => setEligiendoId((actual) => (actual === tarea.id ? null : tarea.id))}
+                          >
+                            {tarea.miembroId ? t("sugeridos.cambiar") : t("sugeridos.asignar")}
+                          </button>
+                        )}
+                      </div>
+                      {eligiendoId === tarea.id && !tarea.bloqueo ? (
+                        <div className="hyto-card p-4">
+                          <SugeridosAsignar
+                            proyectoId={proyectoId}
+                            tarea={{ id: tarea.id, titulo: textoVisible(tarea.titulo, idioma) }}
+                            sugeridos={sugeridos}
+                            actualId={tarea.miembroId}
+                            onAsignar={async (usuarioId) => {
+                              if (await asignar(tarea.id, usuarioId)) setEligiendoId(null);
+                            }}
+                            onCerrar={() => setEligiendoId(null)}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
                   <label className="text-sm" htmlFor={`asignar-${tarea.id}`}>
                     {t("eventos.assign")}
                     <select
@@ -336,6 +390,7 @@ export function TareasEvento({
                       ))}
                     </select>
                   </label>
+                  )}
                   <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
                   {tarea.bloqueo ? (
                     <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">

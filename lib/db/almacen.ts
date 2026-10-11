@@ -1,11 +1,13 @@
 import type {
   AvisoComunidad,
+  CambioPedido,
   Comunidad,
   ComunidadMiembro,
   ComunidadSolicitud,
   EstadoSolicitudComunidad,
   EvidenciaFila,
   PedidoCanje,
+  PrivacidadPerfil,
   Proyecto,
   ProyectoInvitacion,
   ProyectoMiembro,
@@ -110,6 +112,16 @@ export type Almacen = {
   fijarComunidadProyecto(proyectoId: string, comunidadId: string | null): Promise<void>;
   listarAvisosComunidad(comunidadId: string): Promise<AvisoComunidad[]>;
   crearAvisoComunidad(aviso: AvisoComunidad): Promise<void>;
+  /** Saves the display name the person chose. */
+  guardarNombre(id: string, nombre: string): Promise<void>;
+  /** Public profile settings (0014). Null when there is no row or the table is not there yet. */
+  leerPrivacidadPerfil(usuarioId: string): Promise<PrivacidadPerfil | null>;
+  /** False when the 0014 table is not there yet. */
+  guardarPrivacidadPerfil(usuarioId: string, privacidad: PrivacidadPerfil): Promise<boolean>;
+  /** Stores an organizer's "ask for another photo". Does nothing before 0014. */
+  registrarCambioPedido(cambio: CambioPedido): Promise<void>;
+  /** How many changes organizers asked for, per task id. Empty before 0014. */
+  contarCambiosPedidos(tareaIds: string[]): Promise<Record<string, number>>;
   /** Assigns the task only while miembro_id is still empty. */
   tomarTarea(tareaId: string, usuarioId: string): Promise<boolean>;
 };

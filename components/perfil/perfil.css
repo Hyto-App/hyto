@@ -1,0 +1,494 @@
+/* Public profile, phase 1. Styles from hyto_campana/perfil/perfil.html, on the app's theme tokens. */
+.pf-pagina {
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--fondo);
+  color: var(--tinta);
+}
+[data-theme="dark"] .pf-pagina {
+  background: linear-gradient(180deg, #121633 0%, #0b0d1c 100%);
+}
+.pf-col {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 20px 32px;
+  box-sizing: border-box;
+}
+.pf-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 18px 0 8px;
+}
+.pf-top a,
+.pf-top button.pf-volver {
+  justify-self: start;
+  font-size: 14px;
+  color: var(--tenue);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  cursor: pointer;
+  font: inherit;
+}
+.pf-logo {
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+  text-decoration: none;
+}
+.pf-av {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-weight: 600;
+  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px auto 0;
+  box-shadow: 0 0 0 4px var(--fondo), 0 0 0 7px var(--acento);
+}
+[data-theme="dark"] .pf-av {
+  box-shadow: 0 0 0 4px #121633, 0 0 0 7px var(--acento);
+}
+.pf-nombre {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.pf-sub {
+  text-align: center;
+  color: var(--tenue);
+  font-size: 13px;
+  margin-top: 2px;
+}
+.pf-bio {
+  text-align: center;
+  color: var(--suave);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 10px auto 0;
+  max-width: 36ch;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.pf-aviso {
+  margin-top: 14px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--suave);
+  text-align: center;
+}
+.pf-stats {
+  display: flex;
+  margin-top: 20px;
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 18px;
+}
+.pf-st {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 14px 6px;
+  container-type: inline-size;
+}
+.pf-st + .pf-st {
+  border-left: 1px solid var(--linea);
+}
+.pf-st b {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+}
+.pf-st span {
+  display: block;
+  font-size: 11px;
+  color: var(--tenue);
+  white-space: nowrap;
+}
+/* «Aprobadas sin cambios» never breaks in two lines: it only shows when it fits. */
+.pf-st .pf-largo {
+  display: none;
+}
+@container (min-width: 150px) {
+  .pf-st .pf-largo {
+    display: block;
+  }
+  .pf-st .pf-corto {
+    display: none;
+  }
+}
+.pf-h3 {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+  font-weight: 600;
+  margin: 24px 0 10px;
+}
+.pf-lista {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pf-it {
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 16px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.pf-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.pf-fila + .pf-fila {
+  margin-top: 4px;
+}
+.pf-t {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pf-ok {
+  flex: none;
+  font-size: 11px;
+  color: var(--sobre-acento);
+  background: var(--acento);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+.pf-m {
+  font-size: 12px;
+  color: var(--tenue);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pf-oculto {
+  font-size: 11px;
+}
+.pf-enlace {
+  flex: none;
+  font-size: 12px;
+  color: var(--acento-texto);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pf-enlace:hover,
+.pf-enlace:focus-visible {
+  text-decoration: underline;
+}
+.pf-mas {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px solid var(--borde);
+  background: transparent;
+  color: var(--tinta);
+  border-radius: 14px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pf-vacio {
+  border: 1px dashed var(--borde);
+  border-radius: 16px;
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--suave);
+}
+.pf-vacio strong {
+  display: block;
+  color: var(--tinta);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.pf-regla {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--tenue);
+  line-height: 1.5;
+}
+.pf-share {
+  margin-top: 22px;
+  width: 100%;
+  border: 0;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  border-radius: 16px;
+  text-align: center;
+  padding: 14px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* Suggested people (assign and invite). */
+.sg-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.sg-titulo {
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sg-sub {
+  font-size: 13px;
+  color: var(--tenue);
+}
+.sg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  background: color-mix(in srgb, var(--acento) 14%, transparent);
+  border: 1px solid var(--acento);
+  border-radius: 20px;
+  padding: 4px 6px 4px 4px;
+  font-size: 12px;
+  color: var(--tinta);
+}
+.sg-chip span:not(.sg-mini) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-chip button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0 4px;
+  cursor: pointer;
+}
+.sg-mini {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sg-h {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+  font-weight: 600;
+  margin-top: 4px;
+}
+.sg-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linea);
+  min-width: 0;
+}
+.sg-ra {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--superficie-2, #e4e6ee);
+  color: var(--tinta);
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sg-ra.is-on {
+  background: var(--acento);
+  color: var(--sobre-acento);
+  box-shadow: 0 0 0 2px var(--papel), 0 0 0 4px var(--acento);
+}
+.sg-datos {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.sg-rn {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sg-rm {
+  font-size: 11.5px;
+  color: var(--tenue);
+  overflow-wrap: anywhere;
+}
+.sg-add {
+  flex: none;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--acento-texto);
+  color: var(--acento-texto);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sg-add.is-on {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: var(--sobre-acento);
+}
+.sg-add.is-texto {
+  font-size: 13px;
+  padding: 0 12px;
+}
+.sg-add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sg-inv {
+  width: 100%;
+  border: 1px dashed var(--borde);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+  font: inherit;
+  font-size: 13px;
+  color: var(--suave);
+  background: transparent;
+  cursor: pointer;
+}
+.sg-vacio {
+  font-size: 13px;
+  color: var(--suave);
+}
+.sg-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sg-enlace {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  color: var(--suave);
+}
+.pf-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.pf-switch button[role="switch"] {
+  flex: none;
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  background: var(--primario-off-fondo);
+  cursor: pointer;
+  padding: 0;
+}
+.pf-switch button[role="switch"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primario-off-texto);
+  transition: transform 160ms var(--hyto-curva, ease);
+}
+.pf-switch button[role="switch"][aria-checked="true"] {
+  background: var(--acento);
+  border-color: var(--acento);
+}
+.pf-switch button[role="switch"][aria-checked="true"]::after {
+  transform: translateX(20px);
+  background: var(--sobre-acento);
+}
+.pf-switch button[role="switch"]:disabled {
+  opacity: 0.6;
+}
+
+/* Josué's rule (10 Oct): symmetric and centered, nothing pushed to the left. */
+.pf-h3,
+.pf-regla,
+.sg-titulo,
+.sg-sub,
+.sg-h,
+.sg-vacio {
+  text-align: center;
+}
+.pf-st dd {
+  margin: 0;
+}
+.sg-panel {
+  justify-items: stretch;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 520px;
+}
+.sg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.sg-acciones {
+  justify-content: center;
+}
+.pf-top a.pf-logo {
+  justify-self: center;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+  font-size: 22px;
+  padding: 0;
+}
+.pf-oculto {
+  white-space: nowrap;
+}
+.pf-ajustes .hyto-btn,
+.pf-ajustes .hyto-btn-line {
+  width: 100%;
+}

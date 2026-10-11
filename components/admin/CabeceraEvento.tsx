@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { EVENTO_INVITAR_CORREO, SugeridosInvitar } from "@/components/perfil/Sugeridos";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import type { Sugerido } from "@/lib/perfil/sugeridos";
 import { useTexto } from "@/components/ui/Idioma";
 
 export function CabeceraEvento({
@@ -10,11 +12,14 @@ export function CabeceraEvento({
   nombre,
   rol,
   pestana,
+  sugeridos,
 }: {
   id: string;
   nombre: string;
   rol: "organizer" | "team" | "volunteer";
   pestana: "inbox" | "tasks" | "report";
+  /** With HYTO_PERFIL_PUBLICO on: people from this organizer's other events. */
+  sugeridos?: Sugerido[];
 }) {
   const [abierto, setAbierto] = useState(false);
   const [secreto, setSecreto] = useState<string | null>(null);
@@ -23,6 +28,21 @@ export function CabeceraEvento({
   const [confirmacion, setConfirmacion] = useState<{ tipo: "code" | "direct"; abierto: boolean } | null>(null);
   const t = useTexto();
   const organiza = rol === "organizer";
+
+  // «Invitar a alguien nuevo por correo» from the assign picker opens this panel on the email field.
+  useEffect(() => {
+    if (!organiza) return;
+    function abrirCorreo() {
+      setAbierto(true);
+      window.setTimeout(() => {
+        const campo = document.getElementById("invite-email");
+        campo?.scrollIntoView({ behavior: "smooth", block: "center" });
+        campo?.focus();
+      }, 50);
+    }
+    window.addEventListener(EVENTO_INVITAR_CORREO, abrirCorreo);
+    return () => window.removeEventListener(EVENTO_INVITAR_CORREO, abrirCorreo);
+  }, [organiza]);
 
   async function invitar(tipo: "code" | "direct", senal?: AbortSignal) {
     setCopiado(false);
@@ -64,6 +84,7 @@ export function CabeceraEvento({
       {organiza && abierto ? (
         <div className="hyto-card mt-4 grid gap-3 p-5" role="region" aria-label={t("eventos.inviteRegion")}>
           <p className="text-sm text-[var(--suave)]">{t("confirmar.accessNote")}</p>
+          {sugeridos ? <SugeridosInvitar proyectoId={id} sugeridos={sugeridos} /> : null}
           <button type="button" className="hyto-btn-line" onClick={() => setConfirmacion({ tipo: "code", abierto: true })}>
             {t("eventos.createCode")}
           </button>

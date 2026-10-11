@@ -199,6 +199,13 @@ export const VARIABLES_SERVIDOR: DefinicionVariable[] = [
     silenciosa: true,
     para: "Exact value on lets a community member write a short profile and choose up to 5 tags. Nobody scores them. Unset or anything else keeps the app as it is. Do not turn this on until migration 0012 is applied.",
   },
+  {
+    nombre: "HYTO_PERFIL_PUBLICO",
+    ambito: "servidor",
+    requerida: false,
+    silenciosa: true,
+    para: "Exact value on turns on public profiles (phase 1): the /p/[id] page with figures and history, the privacy settings in Account, and suggested people when assigning or inviting. Unset or anything else keeps the app as it is. Do not turn this on until migration 0014 is applied.",
+  },
 ];
 
 export const VARIABLES: DefinicionVariable[] = [...VARIABLES_PUBLICAS, ...VARIABLES_SERVIDOR];
