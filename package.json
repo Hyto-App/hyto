@@ -22,7 +22,7 @@
     "verificar:entorno": "tsx scripts/verificar-entorno.ts"
   },
   "dependencies": {
-    "@cavos/kit": "0.2.5",
+    "@cavos/kit": "0.3.0",
     "@neondatabase/serverless": "^1.1.0",
     "@stellar/stellar-sdk": "^17.1.0",
     "@vercel/blob": "^2.8.0",
