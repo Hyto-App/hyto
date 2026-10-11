@@ -116,11 +116,32 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
   },
 };
 
+/**
+ * Reasons Mile names in the missing line. A Spanish reading stays on the row; the screen
+ * follows the session language. The meal-receipt sentence says evidencia, not foto.
+ */
+const RAZONES_FALTA: Record<string, { es: string; en: string }> = {
+  "la foto del comprobante de la comida no es visible": {
+    es: "La evidencia del comprobante de la comida no es visible",
+    en: "evidence of the meal receipt",
+  },
+  "el monto de la factura": { es: "el monto de la factura", en: "the invoice amount" },
+  "the invoice amount": { es: "el monto de la factura", en: "the invoice amount" },
+  "la fecha de la factura": { es: "la fecha de la factura", en: "the invoice date" },
+  "the invoice date": { es: "la fecha de la factura", en: "the invoice date" },
+};
+
+function razonFalta(item: string, idioma: Idioma): string | null {
+  const clave = item.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "").toLowerCase();
+  const razon = RAZONES_FALTA[clave];
+  return razon ? razon[idioma === "es" ? "es" : "en"] : null;
+}
+
 function traducirLista(lista: string, idioma: Idioma): string {
   return lista
     .replace(/[.;]+$/, "")
     .split(/;\s*/)
-    .map((item) => textoVisible(item.trim(), idioma))
+    .map((item) => razonFalta(item, idioma) ?? textoVisible(item.trim(), idioma))
     .filter(Boolean)
     .join("; ");
 }

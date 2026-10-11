@@ -36,6 +36,43 @@ test("poco detalle nombra a Mile, no al modelo", () => {
   assert.equal(es.explicacion.includes("el modelo"), false);
 });
 
+test("la nota de lo que falta localiza el comprobante, el monto y la fecha", () => {
+  const comida = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: La foto del comprobante de la comida no es visible.",
+  });
+  const monto = etiqueta({
+    id: "amount_missing",
+    texto: "Receipt amount missing",
+    explicacion: "The receipt answers do not give an amount.",
+  });
+  const fecha = etiqueta({
+    id: "date_missing",
+    texto: "Receipt date missing",
+    explicacion: "The receipt answers do not give a date.",
+  });
+  const etiquetas = [comida, monto, fecha];
+  assert.equal(textoFalta(etiquetas, "en"), "Missing: evidence of the meal receipt; the invoice amount; the invoice date.");
+  assert.equal(
+    textoFalta(etiquetas, "es"),
+    "Falta: La evidencia del comprobante de la comida no es visible; el monto de la factura; la fecha de la factura.",
+  );
+  assert.equal(presentarEtiqueta(comida, "en").explicacion, "Missing: evidence of the meal receipt.");
+  assert.equal(presentarEtiqueta(comida, "es").explicacion, "Falta: La evidencia del comprobante de la comida no es visible.");
+  assert.equal(presentarEtiqueta(comida, "es").explicacion.includes("foto"), false);
+  const junta = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Falta: La foto del comprobante de la comida no es visible; el monto de la factura; la fecha de la factura.",
+  });
+  assert.equal(
+    presentarEtiqueta(junta, "en").explicacion,
+    "Missing: evidence of the meal receipt; the invoice amount; the invoice date.",
+  );
+  assert.equal(textoFalta([junta], "en"), "Missing: evidence of the meal receipt; the invoice amount; the invoice date.");
+});
+
 test("en inglés My tasks traduce «Missing: el comprobante de la comida.»", () => {
   const etiquetaNota = etiqueta({
     id: "part_missing",
