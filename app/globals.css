@@ -1664,25 +1664,16 @@ a {
   }
 
   .hyto-main {
-    /* Ask Mile and the profile circle stack above the bar, 40px each with 16px gaps. The last card ends 16px above them. */
-    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px + 40px + 16px);
+    /* Ask Mile is 16px above the bar. The last card ends 16px above that circle. */
+    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px);
   }
 
-  /* 390: Ask Mile stays 16px from the edge and 16px above the bottom bar. */
+  /* 390: Ask Mile stays 16px from the edge and 16px above the bottom bar. The profile stays in the header. */
   .hyto-preguntar.hyto-preguntar-icono {
     position: fixed;
     right: 16px;
     bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
     z-index: 25;
-  }
-
-  /* The other round button, the profile, sits above Ask Mile on the same 16px line, clear of the cards. */
-  .hyto-brand-acciones .hyto-perfil-boton.is-compacto {
-    position: fixed;
-    right: 16px;
-    bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px);
-    z-index: 26;
-    background: var(--papel);
   }
 
   .hyto-btn,
@@ -6212,15 +6203,6 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   gap: 2px;
   width: min(320px, calc(100vw - 24px));
   padding: 8px;
-}
-
-/* On a phone the avatar floats above Ask Mile, so the sheet opens just above that circle. */
-@media (max-width: 1023px) {
-  .hyto-perfil-menu {
-    top: auto;
-    right: 16px;
-    bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px + 40px + 8px);
-  }
 }
 
 .hyto-perfil-cabeza {

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { textoFalta } from "./falta";
 import { presentarEtiqueta } from "./notas-idioma";
-import type { EtiquetaNota } from "./razones";
+import { faltantesDe, type EtiquetaNota } from "./razones";
+import type { LecturaEvidencia } from "./lectura";
 
 function etiqueta(parcial: Partial<EtiquetaNota> & Pick<EtiquetaNota, "id" | "texto">): EtiquetaNota {
   return {
@@ -83,7 +84,66 @@ test("en inglés My tasks traduce «Missing: el comprobante de la comida.»", ()
   assert.equal(en.explicacion, "Missing: evidence of the meal receipt.");
   assert.equal(en.explicacion.includes("el comprobante"), false);
   assert.equal(textoFalta([etiquetaNota], "en"), "Missing: evidence of the meal receipt.");
-  assert.equal(textoFalta([etiquetaNota], "es"), "Falta: el comprobante de la comida.");
+  assert.equal(textoFalta([etiquetaNota], "es"), "Falta: la evidencia del comprobante de la comida.");
+});
+
+test("varias redacciones de Mile caen en el requisito, en Mis tareas y en la nota", () => {
+  const redacciones = [
+    "La foto del comprobante de la comida no es visible",
+    "No se muestra la foto del comprobante de la comida",
+    "el comprobante de la comida",
+    "The meal receipt photo is not visible",
+    "Photo of the meal receipt is missing",
+    "no aparece la evidencia del comprobante de la comida",
+  ];
+  for (const redaccion of redacciones) {
+    const nota = etiqueta({
+      id: "part_missing",
+      texto: "Part of the request missing",
+      explicacion: `Missing: ${redaccion}.`,
+    });
+    assert.equal(presentarEtiqueta(nota, "es").explicacion, "Falta: la evidencia del comprobante de la comida.", redaccion);
+    assert.equal(presentarEtiqueta(nota, "en").explicacion, "Missing: evidence of the meal receipt.", redaccion);
+    assert.equal(textoFalta([nota], "es"), "Falta: la evidencia del comprobante de la comida.", redaccion);
+    assert.equal(textoFalta([nota], "en"), "Missing: evidence of the meal receipt.", redaccion);
+  }
+  const mezcla = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Falta: el monto de la factura; No se muestra la foto del comprobante de la comida; la fecha de la factura.",
+  });
+  assert.equal(
+    presentarEtiqueta(mezcla, "es").explicacion,
+    "Falta: el monto de la factura; la evidencia del comprobante de la comida; la fecha de la factura.",
+  );
+  assert.equal(
+    presentarEtiqueta(mezcla, "en").explicacion,
+    "Missing: the invoice amount; evidence of the meal receipt; the invoice date.",
+  );
+  assert.equal(presentarEtiqueta(mezcla, "en").explicacion.includes("No se muestra"), false);
+  assert.equal(
+    textoFalta([mezcla], "es"),
+    "Falta: el monto de la factura; la evidencia del comprobante de la comida; la fecha de la factura.",
+  );
+  const suelta = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: No se ve el logo del local.",
+  });
+  assert.equal(presentarEtiqueta(suelta, "es").explicacion, "Falta: algo de lo pedido.");
+  assert.equal(presentarEtiqueta(suelta, "en").explicacion, "Missing: something the task asks for.");
+  assert.equal(presentarEtiqueta(suelta, "en").explicacion.includes("logo"), false);
+  const pedido = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: el mantel; la hoja de registro.",
+  });
+  assert.equal(presentarEtiqueta(pedido, "es").explicacion, "Falta: el mantel; la hoja de registro.");
+  assert.equal(textoFalta([pedido], "en"), "Missing: el mantel; la hoja de registro.");
+  assert.equal(
+    faltantesDe({ faltantes: ["No se muestra la foto del comprobante de la comida", "el monto de la factura", "No se ve el logo del local"] } as LecturaEvidencia),
+    "evidence of the meal receipt; the invoice amount; something the task asks for",
+  );
 });
 
 test("My tasks cambia «the model was unsure» y «el modelo» por Mile", () => {

@@ -1,5 +1,6 @@
 import { textoVisible } from "@/lib/ui/etiquetas";
 import type { Idioma } from "@/lib/ui/idioma";
+import { claseFaltante, fraseFaltante } from "./faltante-requisito";
 import { PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
 
 const FIJAS: Record<string, { texto: string; explicacion: string }> = {
@@ -116,34 +117,19 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
   },
 };
 
-/**
- * Reasons Mile names in the missing line. A Spanish reading stays on the row; the screen
- * follows the session language. The meal-receipt sentence says evidencia, not foto.
- */
-const RAZONES_FALTA: Record<string, { es: string; en: string }> = {
-  "la foto del comprobante de la comida no es visible": {
-    es: "la evidencia del comprobante de la comida",
-    en: "evidence of the meal receipt",
-  },
-  "el monto de la factura": { es: "el monto de la factura", en: "the invoice amount" },
-  "the invoice amount": { es: "el monto de la factura", en: "the invoice amount" },
-  "la fecha de la factura": { es: "la fecha de la factura", en: "the invoice date" },
-  "the invoice date": { es: "la fecha de la factura", en: "the invoice date" },
-};
-
-function razonFalta(item: string, idioma: Idioma): string | null {
-  const clave = item.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "").toLowerCase();
-  const razon = RAZONES_FALTA[clave];
-  return razon ? razon[idioma === "es" ? "es" : "en"] : null;
-}
-
 function traducirLista(lista: string, idioma: Idioma): string {
-  return lista
-    .replace(/[.;]+$/, "")
-    .split(/;\s*/)
-    .map((item) => razonFalta(item, idioma) ?? textoVisible(item.trim(), idioma))
-    .filter(Boolean)
-    .join("; ");
+  const vistos = new Set<string>();
+  const salida: string[] = [];
+  for (const crudo of lista.replace(/[.;]+$/, "").split(/;\s*/)) {
+    const base = crudo.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "");
+    if (!base) continue;
+    const item = claseFaltante(base) === "propio" ? textoVisible(base, idioma) : fraseFaltante(base, idioma);
+    const llave = item.toLowerCase();
+    if (!item || vistos.has(llave)) continue;
+    vistos.add(llave);
+    salida.push(item);
+  }
+  return salida.join("; ");
 }
 
 /** The missing-items list follows the reader's language. The prefix stays in that language too. */
@@ -210,7 +196,13 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
     etiqueta.id === "cap_otra" && etiqueta.texto === "Serious issue: it does not show what was requested"
       ? FIJAS.cap_otra_incompleta
       : FIJAS[etiqueta.id];
-  if (base && (etiqueta.explicacion.startsWith(PREFIJO_FALTA) || etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR))) {
+  if (
+    base &&
+    (etiqueta.explicacion.startsWith(PREFIJO_FALTA) ||
+      etiqueta.explicacion.startsWith("Falta: ") ||
+      etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR) ||
+      etiqueta.explicacion.startsWith("No se pudo confirmar: "))
+  ) {
     const traducida = traducirListas(etiqueta, "es");
     return { ...traducida, texto: base.texto };
   }

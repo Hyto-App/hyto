@@ -4,6 +4,7 @@ import { montoSinUsd, type LecturaEvidencia } from "./lectura";
 import { lecturaCompleta } from "./lectura-completa";
 import { layaPuedeTaparPorOtra } from "./otra-groq";
 import { condicionPideLugar } from "./lugar-pedido";
+import { canonicoFaltante } from "./faltante-requisito";
 import type { DetalleRazones } from "./snapshot-razones";
 
 export type SeveridadNota = "good" | "warning" | "problem";
@@ -65,9 +66,20 @@ const ORDEN = [
 /** Start of a part_missing explanation that names what is missing. notas-idioma.ts keeps the list. */
 export const PREFIJO_FALTA = "Missing: ";
 
-/** What the vision reading says is missing, in the session language, joined for one sentence. */
+/**
+ * What the vision reading says is missing, joined for one sentence. Each item is the task
+ * requirement it refers to, not Mile's sentence. A label that already names the item stays.
+ */
 export function faltantesDe(lectura: LecturaEvidencia | null | undefined): string | null {
-  const lista = (lectura?.faltantes ?? []).map((item) => item.trim().replace(/[.;]+$/, "")).filter(Boolean);
+  const vistos = new Set<string>();
+  const lista: string[] = [];
+  for (const crudo of lectura?.faltantes ?? []) {
+    const item = canonicoFaltante(crudo);
+    const llave = item.toLowerCase();
+    if (!item || vistos.has(llave)) continue;
+    vistos.add(llave);
+    lista.push(item);
+  }
   return lista.length > 0 ? lista.join("; ") : null;
 }
 
