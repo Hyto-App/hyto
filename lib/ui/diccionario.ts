@@ -266,6 +266,7 @@ export const en = {
     tituloPestana: "Hyto · Sign in",
     signUp: "Sign up",
     newHere: "New to Hyto",
+    welcome: "Welcome",
     welcomeBack: "Welcome back",
     signUpBody: "First time here. Sign in with email. We'll create your Hyto account so your community can pay you when the spend is proven.",
     signInBody:
@@ -1747,6 +1748,7 @@ export const es: Rama<typeof en> = {
     tituloPestana: "Hyto · Entrar",
     signUp: "Crear cuenta",
     newHere: "Nuevo en Hyto",
+    welcome: "Bienvenido",
     welcomeBack: "Hola de nuevo",
     signUpBody: "Es su primera vez. Entre con su correo. Creamos su cuenta de Hyto para que su comunidad pueda pagarle cuando el gasto esté comprobado.",
     signInBody: "Ya tiene cuenta. Entre con Google o con un código que le enviamos al correo. No creamos otra cuenta.",

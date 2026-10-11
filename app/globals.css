@@ -415,6 +415,16 @@ a {
   max-width: 100%;
 }
 
+/* Secondary action next to the one lime button: 1px #8A8C9A outline (Pao, 11-oct). */
+.hyto-btn-line.is-contorno {
+  border-color: #8a8c9a;
+  color: #f4f5f8;
+}
+
+:root:not([data-theme="dark"]) .hyto-btn-line.is-contorno {
+  color: #0a0a0a;
+}
+
 .hyto-btn-line.is-dashed {
   border-style: dashed;
 }

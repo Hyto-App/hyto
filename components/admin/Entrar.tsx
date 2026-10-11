@@ -162,6 +162,15 @@ export function Entrar({
   const [retorno, setRetorno] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>(abrirLogin ? "correo" : "inicio");
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
+  /** «Welcome back» is only for someone who already signed in on this browser; a first visit reads «Welcome». */
+  const [vuelve, setVuelve] = useState(false);
+  useEffect(() => {
+    try {
+      setVuelve(window.localStorage.getItem("hyto_ya_entro") === "1");
+    } catch {
+      setVuelve(false);
+    }
+  }, []);
   const [correo, setCorreo] = useState("");
   const [enfocado, setEnfocado] = useState(false);
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
@@ -628,6 +637,11 @@ export function Entrar({
         entrarListo(resultado.direccion, resultado.pendiente, false);
         return;
       }
+      try {
+        window.localStorage.setItem("hyto_ya_entro", "1");
+      } catch {
+        // Private mode: the next visit reads «Welcome» again.
+      }
       setFase("exito");
     } catch (error) {
       mostrarFallo(error);
@@ -836,7 +850,7 @@ export function Entrar({
           </button>
         </section>
         <section className="hyto-entry hyto-entry-signin" aria-labelledby={`${ids}-signin`}>
-          <p className="hyto-kicker">{t("entrar.welcomeBack")}</p>
+          <p className="hyto-kicker">{t(vuelve ? "entrar.welcomeBack" : "entrar.welcome")}</p>
           <h2 id={`${ids}-signin`} className="text-lg font-semibold tracking-tight">
             {t("entrar.signIn")}
           </h2>
@@ -882,7 +896,7 @@ export function Entrar({
             ? t("entrar.chipCodigoLlego")
             : fase === "enlace"
               ? t("entrar.chipEnlace")
-              : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
+              : t(alta ? "entrar.newHere" : vuelve ? "entrar.welcomeBack" : "entrar.welcome");
   const paso = fase === "exito" ? 3 : fase === "codigo" || fase === "enlace" ? 2 : 1;
   const llenado: [number, number, number] =
     fase === "exito"
