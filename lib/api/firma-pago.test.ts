@@ -751,7 +751,7 @@ test("un XDR que el servidor no preparó no se envía", async () => {
   }
 });
 
-test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", async () => {
+test("desplegar recupera la cuenta del asignado, con o sin evidencia", async () => {
   reiniciarLimite();
   const almacen = crearMemoria();
   await asegurarSemilla(almacen);
@@ -799,7 +799,7 @@ test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", 
     assert.equal(sinCuenta.status, 400);
     assert.equal(
       ((await sinCuenta.json()) as { aviso: string }).aviso,
-      "The task has no payout wallet. Ask the volunteer to sign in and open the task.",
+      "The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account.",
     );
     assert.equal((await almacen.leerTarea("registro"))?.walletCobro, "");
 
@@ -831,9 +831,19 @@ test("desplegar recupera la cuenta del asignado cuando la tarea ya tiene foto", 
       expiraEn: "2026-10-03T00:00:00.000Z",
       wallet: "G" + "F".repeat(55),
     });
+    // Lock budget comes before any evidence: the assigned volunteer's sign-in is enough.
     const sinEvidencia = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
-    assert.equal(sinEvidencia.status, 400);
-    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, "");
+    assert.equal(sinEvidencia.status, 200);
+    assert.equal(await almacen.ultimaEvidencia("bienvenida"), null);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, "G" + "F".repeat(55));
+    assert.equal(visto.receptor, "G" + "F".repeat(55));
+
+    // Nobody assigned: the notice says to assign first, and no other person's account is used.
+    await almacen.actualizarTarea("comida", { miembroId: "" });
+    const sinAsignar = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "comida" }), almacen);
+    assert.equal(sinAsignar.status, 400);
+    assert.equal(((await sinAsignar.json()) as { aviso: string }).aviso, "The task has no volunteer yet. Assign it before you lock the budget.");
+    assert.equal((await almacen.leerTarea("comida"))?.walletCobro, "");
 
     await almacen.crearSesion({
       token: "vieja",
