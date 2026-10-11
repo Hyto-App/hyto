@@ -252,7 +252,7 @@ test("el camino del demo en español no mezcla el tuteo con el usted", () => {
       assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
     }
   }
-  assert.equal(texto("es", "evidencia.galleryHint"), "La foto se toma aquí. No se aceptan fotos de la galería.");
+  assert.equal(texto("es", "evidencia.unaEvidencia"), "Envíe una sola evidencia: una foto, una factura, un PDF o una lista.");
   assert.equal(texto("es", "evidencia.sample"), "Tarea de ejemplo, hasta que carguen las suyas.");
   assert.match(texto("es", "evidencia.archivoFalso"), /Abra el archivo y compruebe que se ve la foto/);
   assert.equal(texto("es", "ayuda.placeholder"), "Busque en las respuestas");
@@ -272,7 +272,6 @@ test("los diálogos de revisión y de recibo tratan de usted, no de tú", () => 
     es.evidencia.receiptNotPaid,
     es.evidencia.receiptLoadFail,
     es.evidencia.receiptHelp,
-    es.evidencia.receiptPlaceholder,
     es.evidencia.youReceived,
     es.evidencia.viewReceipt,
     es.evidencia.setAside,
@@ -359,4 +358,50 @@ test("el demo dice una sola frase y no habla de red ni billetera", () => {
   }
   assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una foto mejor; quien organiza decide.");
   assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send a better photo; the organizer decides.");
+});
+
+test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y nadie dice que la galería no se acepta", () => {
+  assert.equal(texto("es", "evidencia.tomarFoto"), "Tomar foto");
+  assert.equal(texto("en", "evidencia.tomarFoto"), "Take photo");
+  assert.equal(texto("es", "evidencia.subirArchivo"), "Subir archivo");
+  assert.equal(texto("en", "evidencia.subirArchivo"), "Upload file");
+  assert.equal(texto("es", "evidencia.soltarTitulo"), "Arrastre su evidencia o elija un archivo");
+  assert.equal(texto("en", "evidencia.soltarTitulo"), "Drag your evidence here or choose a file");
+  assert.equal(texto("es", "evidencia.soltarFormatos"), "Foto, factura, PDF o lista");
+  assert.equal(texto("en", "evidencia.soltarFormatos"), "Photo, invoice, PDF, or list");
+  assert.match(texto("es", "tareas.step2"), /una foto, una factura, un PDF o una lista/);
+  assert.match(texto("en", "bienvenida.body"), /you upload your evidence, Mile reviews it/);
+  const nuevas = [
+    "evidencia.tomarFoto",
+    "evidencia.subirArchivo",
+    "evidencia.soltarTitulo",
+    "evidencia.soltarFormatos",
+    "evidencia.unaEvidencia",
+    "evidencia.photoHelp",
+    "tareas.step2",
+    "bienvenida.body",
+  ] as const;
+  const voseo = ["subí", "arrastrá", "elegí", "tomá", "tenés", "podés", "enviá", "mandá", "sacá", "subís", "elegís"];
+  const clitico = /(^|[^a-záéíóúüñ])(tú|tu|tus|te|ti|vos)([^a-záéíóúüñ]|$)/i;
+  for (const clave of nuevas) {
+    const valor = texto("es", clave);
+    assert.equal(clitico.test(valor), false, valor);
+    for (const verbo of [...voseo, ...TUTEO, ...VOSEO]) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
+  for (const valor of textosDe(es.evidencia)) {
+    assert.doesNotMatch(valor, /No se aceptan fotos de la galería|solo con la cámara/i, valor);
+  }
+  for (const valor of textosDe(en.evidencia)) {
+    assert.doesNotMatch(valor, /Photos from the gallery are not accepted/i, valor);
+  }
+  for (const valor of [...textosDe(es), ...textosDe(en)]) {
+    assert.doesNotMatch(valor, /No se aceptan fotos de la galería|evidencia y la factura/i, valor);
+  }
+  for (const vieja of ["tabReceipt", "tabTask", "mismatchReceipt", "mismatchTask", "backToReceipt", "backToTask", "galleryHint", "gallery"]) {
+    assert.equal(vieja in en.evidencia, false, vieja);
+    assert.equal(vieja in es.evidencia, false, vieja);
+  }
 });
