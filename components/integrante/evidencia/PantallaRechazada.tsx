@@ -141,17 +141,20 @@ function NotaOrganizador({ nombre, nota }: { nombre: string; nota: string }) {
 function FotoEnviada({ id, hora }: { id: string | null; hora: string | null }) {
   const t = useTexto();
   const [rota, setRota] = useState(false);
+  const pie = hora ? t("evidencia.photoSentAt", { time: hora }) : t("evidencia.photoSent");
   return (
-    <div className="hyto-visor">
-      {id && !rota ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={`/api/evidencias/${encodeURIComponent(id)}/foto`} alt={t("evidencia.alt")} onError={() => setRota(true)} />
-      ) : (
-        <div className="hyto-visor-vacio">
-          <p>{t("evidencia.photoSent")}</p>
-        </div>
-      )}
-      <span className="hyto-visor-pill">{hora ? t("evidencia.photoSentAt", { time: hora }) : t("evidencia.photoSent")}</span>
+    <div className="hyto-foto-enviada">
+      <div className="hyto-visor">
+        {id && !rota ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={`/api/evidencias/${encodeURIComponent(id)}/foto`} alt={t("evidencia.alt")} onError={() => setRota(true)} />
+        ) : (
+          <div className="hyto-visor-vacio">
+            <p>{t("evidencia.photoSent")}</p>
+          </div>
+        )}
+      </div>
+      <p className="hyto-visor-pie">{pie}</p>
     </div>
   );
 }

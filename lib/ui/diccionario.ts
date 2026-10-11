@@ -114,8 +114,8 @@ export const en = {
   },
   ausente: {
     titulo: "Page not found",
-    cuerpo: "That page is not in Hyto.",
-    inicio: "Home",
+    cuerpo: "That address is not a page in Hyto. Check the link, or go back home.",
+    inicio: "Back to home",
   },
   eventos: {
     title: "Projects",
@@ -334,6 +334,7 @@ export const en = {
     continuarCorreo: "Continue with email",
     enviandoCodigo: "Sending code…",
     cambiarCorreo: "Change email",
+    yaTengoCodigo: "I already have a code",
     revisaCorreo: "Check your email",
     enviamosA: "We sent a 6-digit code to",
     digito: "Digit {n} of 6",
@@ -949,6 +950,7 @@ export const en = {
       "This account needs a little test balance for the network fee. If the account already exists, send that balance from another account, then try again.",
     cancelaste: "You cancelled the confirmation. Nothing was sent.",
     reingreso: "Your sign-in expired. Sign in again to continue.",
+    sinTiempoRevision: "There isn't enough time left to review this evidence. Try again in a moment.",
     sinConfig: "Sign-in isn't set up yet.",
     cuentasNo: "Account setup isn't available yet.",
     cuentaNoAbrio: "The payout account didn't open. Try again.",
@@ -1539,8 +1541,8 @@ export const es: Rama<typeof en> = {
   },
   ausente: {
     titulo: "Página no encontrada",
-    cuerpo: "Esa página no está en Hyto.",
-    inicio: "Inicio",
+    cuerpo: "Esa dirección no es una página de Hyto. Revise el enlace o vuelva al inicio.",
+    inicio: "Volver al inicio",
   },
   eventos: {
     title: "Proyectos",
@@ -1758,6 +1760,7 @@ export const es: Rama<typeof en> = {
     continuarCorreo: "Continuar con correo",
     enviandoCodigo: "Enviando código…",
     cambiarCorreo: "Cambiar correo",
+    yaTengoCodigo: "Ya tengo un código",
     revisaCorreo: "Revise su correo",
     enviamosA: "Enviamos un código de 6 dígitos a",
     digito: "Dígito {n} de 6",
@@ -2373,6 +2376,7 @@ export const es: Rama<typeof en> = {
       "Esta cuenta necesita un poco de saldo de prueba para la comisión de la red. Si la cuenta ya existe, envíale ese saldo desde otra cuenta e intente de nuevo.",
     cancelaste: "Canceló la confirmación. No se envió nada.",
     reingreso: "Su ingreso venció. Vuelva a entrar para continuar.",
+    sinTiempoRevision: "No queda tiempo suficiente para revisar esta evidencia. Intente de nuevo en un momento.",
     sinConfig: "El ingreso todavía no está configurado.",
     cuentasNo: "La preparación de la cuenta todavía no está disponible.",
     cuentaNoAbrio: "La cuenta de cobro no se abrió. Intente de nuevo.",

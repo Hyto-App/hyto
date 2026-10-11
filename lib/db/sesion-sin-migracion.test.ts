@@ -82,6 +82,12 @@ function ledgerSinMigrar() {
       if (texto.includes("returning")) return { rows: [fila] };
       return { rows: [] };
     }
+    if (texto.startsWith("update") && texto.includes('update "usuarios"')) {
+      const id = params.find((valor) => valor === "u-viejo");
+      const fila = typeof id === "string" ? usuarios.find((item) => item.id === id) : undefined;
+      if (fila) fila.nombre = "";
+      return { rows: [] };
+    }
     if (texto.startsWith("insert") && texto.includes('into "sesiones"')) {
       const columnas = columnasDe(consulta, "insert", "sesiones");
       const fila: Fila = {};

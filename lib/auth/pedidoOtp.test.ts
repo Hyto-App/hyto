@@ -54,8 +54,8 @@ test("si el navegador esconde el 429, Retry-After sigue siendo la espera y no la
   try {
     await assert.rejects(pedirOtp(auth, "ana@example.com"), (error: unknown) => {
       const aviso = avisoDeIngreso(error);
-      assert.equal(aviso.esperaSegundos, 19);
-      assert.equal(aviso.texto, textoEspera(19));
+      assert.equal(aviso.esperaSegundos, 53);
+      assert.equal(aviso.texto, textoEspera(53));
       assert.notEqual(aviso.texto, AVISO_RED);
       assert.equal(aviso.texto.includes("Failed to fetch"), false);
       return true;
@@ -82,6 +82,29 @@ test("un fallo de red de verdad sigue siendo falta de conexión", async () => {
       return true;
     });
     assert.equal(auth.pendingNonce, "nonce-aceptado");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("un envío aceptado devuelve la espera del Retry-After, no un plazo fijo más corto", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ status: "sent" }), {
+      status: 200,
+      headers: { "content-type": "application/json", "retry-after": "45" },
+    });
+  const auth = {
+    pendingNonce: null as string | null,
+    async sendOtp() {
+      this.pendingNonce = "nonce-nuevo";
+      const respuesta = await fetch("https://cavos.xyz/api/oauth/firebase/otp/request", { method: "POST", body: "{}" });
+      if (!respuesta.ok) throw new Error("no");
+    },
+  };
+  try {
+    assert.equal(await pedirOtp(auth, "ana@example.com"), 45);
+    assert.equal(auth.pendingNonce, "nonce-nuevo");
   } finally {
     globalThis.fetch = original;
   }

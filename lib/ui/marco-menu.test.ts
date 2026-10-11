@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { Marco } from "@/components/admin/Marco";
 import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
+import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
@@ -245,4 +246,28 @@ test("el ancho de la barra dura 200 ms y se apaga si hay menos movimiento", () =
   assert.ok(escritorio > 0);
   assert.equal(css.slice(0, escritorio).includes("data-barra"), false);
   assert.match(css.slice(escritorio), /grid-template-columns:\s*72px/);
+});
+
+test("sin nombre, el menú de la cuenta dice Su cuenta y el correo va en la segunda línea", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(Marco, {
+          usuario: { nombre: null, email: "ana.larga@hyto.dev" },
+          children: createElement("p", null, "inicio"),
+        }),
+      }),
+      { ruta: "/eventos" },
+    );
+    await pulsar("ana.larga@hyto.dev");
+    const menu = document.querySelector('[role="dialog"].hyto-perfil-menu');
+    assert.ok(menu);
+    assert.equal(menu.querySelector("strong")?.textContent, "Su cuenta");
+    assert.match(menu.textContent ?? "", /ana\.larga@hyto\.dev/);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
 });

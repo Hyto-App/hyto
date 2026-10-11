@@ -3,9 +3,8 @@ import { Poppins } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { TituloDocumento } from "@/components/ui/TituloDocumento";
-import { ESLOGAN } from "@/components/ui/marca/trazos";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
-import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
+import { descripcionSeo, HOST_PUBLICO, metaPublica, tituloMarca } from "@/lib/ui/seo";
 import "./globals.css";
 import "@/components/perfil/perfil.css";
 import "@/components/admin/crear.css";
@@ -22,29 +21,28 @@ const poppins = Poppins({
 const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0E1024":"#F5F6FA");}catch(e){}})();`;
 const BARRA_BOOT = `(function(){try{if(localStorage.getItem("hyto-barra")==="colapsada"){document.documentElement.setAttribute("data-barra","colapsada");}}catch(e){}})();`;
 
-const DESCRIPCION = DESCRIPCION_PAGINA;
-const TITULO = `Hyto · ${ESLOGAN}`;
-
-export const metadata: Metadata = {
-  metadataBase: new URL("https://hyto.vercel.app"),
-  title: { default: "Hyto", template: "%s · Hyto" },
-  description: DESCRIPCION,
-  applicationName: "Hyto",
-  openGraph: {
-    type: "website",
-    siteName: "Hyto",
-    title: TITULO,
-    description: DESCRIPCION,
-    url: "/",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: TITULO }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: TITULO,
-    description: DESCRIPCION,
-    images: ["/twitter-image"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const jar = await cookies();
+  const guardado = jar.get(COOKIE_IDIOMA)?.value;
+  const idioma = guardado ? idiomaDe(guardado) : idiomaDeNavegador((await headers()).get("accept-language"));
+  const descripcion = descripcionSeo(idioma);
+  const marca = tituloMarca();
+  const base = metaPublica({
+    idioma,
+    title: marca,
+    description: descripcion,
+    path: "/",
+    absoluteTitle: true,
+  });
+  return {
+    metadataBase: new URL(HOST_PUBLICO),
+    title: { default: "Hyto", template: "%s · Hyto" },
+    description: descripcion,
+    applicationName: "Hyto",
+    openGraph: base.openGraph,
+    twitter: base.twitter,
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

@@ -1,28 +1,21 @@
-"use client";
+import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
+import { NoEncontrado } from "@/components/ui/NoEncontrado";
+import { texto } from "@/lib/ui/diccionario";
+import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
+import { ROBOTS_PRIVADO } from "@/lib/ui/seo";
 
-import Link from "next/link";
-import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
-import { Logo } from "@/components/ui/Marca";
+export async function generateMetadata(): Promise<Metadata> {
+  const jar = await cookies();
+  const guardado = jar.get(COOKIE_IDIOMA)?.value;
+  const idioma = guardado ? idiomaDe(guardado) : idiomaDeNavegador((await headers()).get("accept-language"));
+  return {
+    title: { absolute: `${texto(idioma, "ausente.titulo")} · Hyto` },
+    description: texto(idioma, "ausente.cuerpo"),
+    robots: ROBOTS_PRIVADO,
+  };
+}
 
-export default function NoEncontrado() {
-  const t = useTexto();
-  return (
-    <main className="hyto-ausente">
-      <header className="hyto-ausente-top">
-        <Link href="/" aria-label="Hyto">
-          <Logo />
-        </Link>
-        <div className="hyto-idioma-marco">
-          <SelectorIdiomaMenu />
-        </div>
-      </header>
-      <div className="hyto-ausente-cuerpo">
-        <h1 className="hyto-title">{t("ausente.titulo")}</h1>
-        <p className="hyto-sub">{t("ausente.cuerpo")}</p>
-        <Link href="/" className="hyto-btn mt-6 max-w-xs">
-          {t("ausente.inicio")}
-        </Link>
-      </div>
-    </main>
-  );
+export default function PaginaAusente() {
+  return <NoEncontrado />;
 }

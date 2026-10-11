@@ -15,14 +15,39 @@ export function reiniciarLimite(): void {
 }
 
 export function excedido(clave: string, ahora = Date.now(), tope = TOPE): boolean {
-  const recientes = (marcas.get(clave) ?? []).filter((marca) => ahora - marca < VENTANA_MS);
+  return segundosSiExcedido(clave, ahora, tope) !== null;
+}
+
+/**
+ * Records one hit and, when the window is full, returns how many seconds remain
+ * until the oldest hit falls out. A fixed delay would let a countdown reach 0
+ * while this window still refuses the next call.
+ */
+export function segundosSiExcedido(clave: string, ahora = Date.now(), tope = TOPE, ventanaMs = VENTANA_MS): number | null {
+  const recientes = marcasEnVentana(clave, ahora, ventanaMs);
   if (recientes.length >= tope) {
     marcas.set(clave, recientes);
-    return true;
+    return segundosHastaHueco(recientes, ahora, ventanaMs);
   }
   recientes.push(ahora);
   marcas.set(clave, recientes);
-  return false;
+  return null;
+}
+
+/** Seconds until one slot frees, after a call was just recorded. 0 when the next call still fits. */
+export function segundosDeVentanaLlena(clave: string, ahora = Date.now(), tope = TOPE, ventanaMs = VENTANA_MS): number {
+  const recientes = marcasEnVentana(clave, ahora, ventanaMs);
+  if (recientes.length < tope) return 0;
+  return segundosHastaHueco(recientes, ahora, ventanaMs);
+}
+
+function marcasEnVentana(clave: string, ahora: number, ventanaMs: number): number[] {
+  return (marcas.get(clave) ?? []).filter((marca) => ahora - marca < ventanaMs);
+}
+
+function segundosHastaHueco(recientes: number[], ahora: number, ventanaMs: number): number {
+  const primero = recientes[0] ?? ahora;
+  return Math.max(1, Math.ceil((ventanaMs - (ahora - primero)) / 1000));
 }
 
 export function canjeBloqueado(clave: string, ahora = Date.now()): boolean {
