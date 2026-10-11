@@ -18,7 +18,7 @@ const EN = {
     {
       titulo: "What we keep",
       cuerpo:
-        "We store the email you use to sign in, a session so you stay signed in, and the account address used for your payments. When you upload a photo, we store that file and the notes written about it. We also store the events you join, invites for those events, and the record of a finished payment.",
+        "We store the email you use to sign in, a session so you stay signed in, and the account address used for your payments. When you upload a photo, we store that file and the notes written about it. We also store the projects you join, invites for those projects, and the record of a finished payment.",
     },
     {
       titulo: "How we use it",
@@ -28,7 +28,7 @@ const EN = {
     {
       titulo: "Who can see it",
       cuerpo:
-        "You can see your own tasks and account. The organizer of an event can see the tasks, photos, and reviews for that event. Sign-in is handled by Cavos. Payment accounts live on Stellar. We do not sell your information, and we do not publish your email or photos.",
+        "You can see your own tasks and account. The organizer of a project can see the tasks, photos, and reviews for that project. Sign-in is handled by Cavos. Payment accounts live on Stellar. We do not sell your information, and we do not publish your email or photos.",
     },
     {
       titulo: "Cookies",
@@ -49,7 +49,7 @@ const ES = {
     {
       titulo: "Qué guardamos",
       cuerpo:
-        "Guardamos el correo con el que entra, una sesión para que siga dentro y la dirección de la cuenta que se usa para sus pagos. Cuando sube una foto, guardamos ese archivo y las notas que se escriben sobre él. También guardamos los eventos a los que se une, las invitaciones de esos eventos y el registro de un pago terminado.",
+        "Guardamos el correo con el que entra, una sesión para que siga dentro y la dirección de la cuenta que se usa para sus pagos. Cuando sube una foto, guardamos ese archivo y las notas que se escriben sobre él. También guardamos los proyectos a los que se une, las invitaciones de esos proyectos y el registro de un pago terminado.",
     },
     {
       titulo: "Cómo lo usamos",
@@ -59,7 +59,7 @@ const ES = {
     {
       titulo: "Quién puede verlo",
       cuerpo:
-        "Usted puede ver sus tareas y su cuenta. Quien organiza un evento puede ver las tareas, las fotos y las revisiones de ese evento. El ingreso lo maneja Cavos. Las cuentas de pago viven en Stellar. No vendemos su información y no publicamos su correo ni sus fotos.",
+        "Usted puede ver sus tareas y su cuenta. Quien organiza un proyecto puede ver las tareas, las fotos y las revisiones de ese proyecto. El ingreso lo maneja Cavos. Las cuentas de pago viven en Stellar. No vendemos su información y no publicamos su correo ni sus fotos.",
     },
     {
       titulo: "Cookies",

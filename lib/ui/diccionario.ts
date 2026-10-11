@@ -766,7 +766,7 @@ export const en = {
     insigniaRacha: "Three-month streak",
     insigniaRachaDetalle: "Earnings three months in a row",
     confirmWindow: "Confirm in the window if it asks. This can take a minute.",
-    newAccount: "If this account is new, we'll open it on the test network first. You'll confirm once so it can receive the project payment.",
+    newAccount: "If this account is new, we'll open it on the test network first. Confirm once so it can receive the project payment.",
     pasaporteTitulo: "Stellar Passport",
     pasaporteDetalle: "It records participation and achievements in the Stellar ecosystem.",
     pasaporteAbrir: "Open Stellar Passport",
@@ -1341,7 +1341,7 @@ export const en = {
     ejemploAyuda: "It fills in five tasks you can change.",
     siguiente: "Next",
     tareas: "Tasks",
-    mileRevisa: "Mile checks every piece of evidence before payment",
+    mileRevisa: "Mile checks every piece of evidence and recommends",
     tareaN: "Task {n}",
     queHacer: "What needs to be done?",
     queHacerPh: "E.g.: Clean and tidy room 2",
@@ -1418,6 +1418,7 @@ export const en = {
     fechaLejana: "Choose a date within the next 5 years",
     fechaFormato: "Enter a day like 10/16/2026",
     botonLista: "Create project",
+    vistaPrevia: "Preview",
   },
 };
 
@@ -2186,7 +2187,7 @@ export const es: Rama<typeof en> = {
     insigniaRacha: "Racha de tres meses",
     insigniaRachaDetalle: "Ingresos tres meses seguidos",
     confirmWindow: "Confirme en la ventana si se lo pide. Puede tardar un minuto.",
-    newAccount: "Si esta cuenta es nueva, primero la abrimos en la red de prueba. Confirma una vez para que pueda recibir el pago del proyecto.",
+    newAccount: "Si esta cuenta es nueva, primero la abrimos en la red de prueba. Confirme una vez para que pueda recibir el pago del proyecto.",
     pasaporteTitulo: "Stellar Passport",
     pasaporteDetalle: "Registra la participación y los logros en el ecosistema Stellar.",
     pasaporteAbrir: "Abrir Stellar Passport",
@@ -2761,7 +2762,7 @@ export const es: Rama<typeof en> = {
     ejemploAyuda: "Llena cinco tareas que usted puede cambiar.",
     siguiente: "Siguiente",
     tareas: "Tareas",
-    mileRevisa: "Mile revisa cada evidencia antes del pago",
+    mileRevisa: "Mile revisa cada evidencia y recomienda",
     tareaN: "Tarea {n}",
     queHacer: "¿Qué hay que hacer?",
     queHacerPh: "Ej.: Limpiar y ordenar la habitación 2",
@@ -2838,6 +2839,7 @@ export const es: Rama<typeof en> = {
     fechaLejana: "Elija una fecha dentro de los próximos 5 años",
     fechaFormato: "Escriba un día como 16/10/2026",
     botonLista: "Crear proyecto",
+    vistaPrevia: "Vista previa",
   },
 };
 
