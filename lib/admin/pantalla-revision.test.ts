@@ -872,7 +872,7 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
     await esperar(() => rotulo("Bloquear y aprobar"));
-    assert.match(texto(), /Esto aparta US\$0\.22 en Stellar para esta tarea\./);
+    assert.match(texto(), /Esto aparta US\$0\.22 para esta tarea\./);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
     assert.match(texto(), /Falta la fecha de la factura/);

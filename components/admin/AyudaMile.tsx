@@ -5,7 +5,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
-import { useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { usePathname } from "next/navigation";
 import {
   ATAJOS,
   buscarPreguntas,
@@ -34,7 +34,14 @@ type Props = {
   devolver: HTMLElement | null;
 };
 
-type Turno = { clave: number; id: IdPregunta };
+function publicoDeRuta(ruta: string | null): Publico {
+  if (!ruta) return "todos";
+  if (ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas/")) return "voluntario";
+  if (ruta.startsWith("/eventos") || ruta.startsWith("/revision/") || ruta.startsWith("/informe")) return "organizador";
+  return "todos";
+}
+
+type Turno ={ clave: number; id: IdPregunta };
 
 function movimientoReducido(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
@@ -44,8 +51,8 @@ function movimientoReducido(): boolean {
 /** Fixed answers told as a short chat. Search only filters the questions. */
 export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
   const t = useTexto();
-  // In the demo the role is known: each side only sees its own questions. A real account can be both, so it sees all.
-  const publico: Publico = useRolDemo() ?? "todos";
+  // No stored role: the shortcuts follow the view. Funding screens ask the organizer's questions, task screens the volunteer's.
+  const publico = publicoDeRuta(usePathname());
   const panel = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const charla = useRef<HTMLDivElement>(null);

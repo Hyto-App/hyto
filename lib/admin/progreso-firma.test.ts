@@ -43,7 +43,7 @@ test("progresoCavos: bloquear son 2 firmas, terminar de bloquear 1 y pagar 1", (
 test("en español la línea dice lo que Cavos va a pedir, en usted, con Firma 1 de 2 y puntos", async () => {
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(ProgresoFirma, { acciones: ["desplegar", "fondear"], paso: null }) }));
-    assert.match(texto(), /Cavos le va a pedir confirmar 2 veces, en inglés\. Es para guardar el presupuesto en Stellar\./);
+    assert.match(texto(), /Cavos le va a pedir confirmar 2 veces, en inglés\. Es para guardar el presupuesto\./);
     assert.deepEqual(puntos(), ["no", "no"]);
     assert.equal(texto().includes("Firma"), false);
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(ProgresoFirma, { acciones: ["desplegar", "fondear"], paso: "desplegar" }) }));
@@ -53,7 +53,7 @@ test("en español la línea dice lo que Cavos va a pedir, en usted, con Firma 1 
     assert.equal(contador(), "Firma 2 de 2");
     assert.deepEqual(puntos(), ["si", "si"]);
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(ProgresoFirma, { acciones: ["marcar", "aprobar", "liberar"], paso: "liberar" }) }));
-    assert.match(texto(), /Cavos le va a pedir confirmar una vez, en inglés\. Es para enviar el pago en Stellar\./);
+    assert.match(texto(), /Cavos le va a pedir confirmar una vez, en inglés\. Es para enviar el pago\./);
     assert.equal(contador(), "Firma 1 de 1");
   } finally {
     await desmontar();
@@ -114,7 +114,7 @@ test("Bloquear presupuesto avisa las 2 firmas antes de confirmar y cuenta Signat
     await esperar(() => [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Lock and approve"));
     await pulsar("Lock and approve");
     const dialogo = document.querySelector("dialog");
-    assert.match(dialogo?.textContent ?? "", /Cavos will ask you to confirm twice, in English\. It's to save the budget on Stellar\./);
+    assert.match(dialogo?.textContent ?? "", /Cavos will ask you to confirm twice, in English\. It's to save the budget\./);
     const confirmar = document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn");
     assert.ok(confirmar);
     await act(async () => {

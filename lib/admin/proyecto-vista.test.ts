@@ -26,7 +26,7 @@ test("el botón principal de la revisión: Bloquear y aprobar sin bloqueo, Aprob
 });
 
 test("los tres pasos de la revisión", () => {
-  assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: false, pagado: false }), ["hecho", "ahora", "luego"]);
+  assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: false, pagado: false }), ["hecho", "luego", "luego"]);
   // Step 3 stays pending until the payment exists. «Pagado · Ahora» was early.
   assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: true, pagado: false }), ["hecho", "hecho", "luego"]);
   assert.equal(pasosRevision({ evidencia: true, bloqueado: true, pagado: false })[2], "luego");
@@ -154,8 +154,8 @@ test("el bloque de Mile habla como Mile, no como «las respuestas»", () => {
   assert.equal(fraseMile("The answers say this is what was requested."), "Mile sees that it matches what was asked.");
   assert.equal(fraseMile("The answers say the work is finished."), "Mile sees the work is finished.");
   assert.equal(fraseMile("El recibo guardado no tiene fecha."), "El recibo guardado no tiene fecha.");
-  assert.equal(textoDe("es", "revision.setsAside", { monto: "US$20.00" }), "Esto aparta US$20.00 en Stellar para esta tarea.");
-  assert.equal(textoDe("en", "revision.setsAside", { monto: "US$20.00" }), "This sets aside US$20.00 on Stellar for this task.");
+  assert.equal(textoDe("es", "revision.setsAside", { monto: "US$20.00" }), "Esto aparta US$20.00 para esta tarea.");
+  assert.equal(textoDe("en", "revision.setsAside", { monto: "US$20.00" }), "This sets aside US$20.00 for this task.");
   assert.equal(textoDe("es", "proyecto.sinCuentaCobro"), "Esta persona aún no tiene cuenta de cobro. Pídale que entre a Hyto para prepararla.");
   assert.equal(textoDe("es", "proyecto.bloqueandoTitulo"), "Bloqueando presupuesto…");
 });

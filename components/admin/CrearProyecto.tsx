@@ -1245,9 +1245,12 @@ export function CrearProyecto({
                   </p>
                 ) : null}
                 {creadoId ? (
-                  <Link href={`/eventos/${creadoId}`} className="cp-enlace">
-                    {t("crear.abrir")}
-                  </Link>
+                  <>
+                    <Mile estado="celebrando" tamano={40} />
+                    <Link href={`/eventos/${creadoId}`} className="cp-enlace">
+                      {t("crear.abrir")}
+                    </Link>
+                  </>
                 ) : null}
               </div>
             ) : null}

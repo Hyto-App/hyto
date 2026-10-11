@@ -750,7 +750,7 @@ export function Revision({
           <div className="pj-mileblk">
             {tarea.veredicto ? (
               <p className="mb-3 flex items-center gap-2.5 text-sm font-medium">
-                <Mile estado="recomendando" tamano={40} />
+                <Mile estado={tarea.estado === "pagado" ? "celebrando" : "recomendando"} tamano={40} />
                 {t("proyecto.recomendacionMile")}
               </p>
             ) : null}

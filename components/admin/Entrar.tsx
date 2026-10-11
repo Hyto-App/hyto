@@ -45,7 +45,7 @@ import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
 import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
-import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { InsigniaDemo, useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { Mile, type EstadoMile } from "@/components/ui/Mile";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
@@ -154,7 +154,6 @@ export function Entrar({
   politica?: CargarPolitica;
 }) {
   const modoDemo = useModoDemo();
-  const rolActual = useRolDemo();
   const t = useTexto();
   const claro = useClaro();
   const [direccion, setDireccion] = useState<string | null>(null);
@@ -175,7 +174,6 @@ export function Entrar({
   const [enfocado, setEnfocado] = useState(false);
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
   const [verDemo, setVerDemo] = useState(false);
-  const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [alertaRegreso, setAlertaRegreso] = useState(false);
@@ -671,7 +669,7 @@ export function Entrar({
     }
   }
 
-  async function entrarDemo(rolPedido = rolDemo) {
+  async function entrarDemo() {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -680,16 +678,14 @@ export function Entrar({
       const respuesta = await fetch("/api/sesion/demo", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rol: rolPedido }),
+        body: JSON.stringify({ rol: "organizador" }),
       });
-      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
       if (!respuesta.ok) {
         setAviso(mensajeClaro(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in."));
         return;
       }
-      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
-      // Demo organizer opens Events. Demo volunteer opens their tasks. The shell nav is unchanged.
-      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/eventos");
+      window.location.assign("/eventos");
     } catch {
       setAviso("Could not sign in.");
     } finally {
@@ -761,22 +757,12 @@ export function Entrar({
   }, [fase]);
 
   if (modoDemo) {
-    const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
-    const nombreRol = rolActual === "voluntario" ? t("entrar.volunteerDemo") : t("entrar.organizerDemo");
     return (
       <div className="flex w-full flex-col items-stretch gap-3">
         <p className="text-sm text-[var(--suave)]">
           <InsigniaDemo />
-          <span className="ml-2 align-middle">{nombreRol} · Cavos</span>
+          <span className="ml-2 align-middle">{t("entrar.tryDemo")}</span>
         </p>
-        <button
-          type="button"
-          onClick={() => void entrarDemo(otro)}
-          disabled={ocupado !== null}
-          className="hyto-btn-line"
-        >
-          {ocupado === "demo" ? t("entrar.switching") : t(otro === "voluntario" ? "entrar.switchVolunteer" : "entrar.switchOrganizer")}
-        </button>
         <button
           type="button"
           onClick={() => void salirDemo()}
@@ -863,7 +849,7 @@ export function Entrar({
             {t("entrar.signIn")}
           </button>
         </section>
-        {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
+        {demoHabilitado ? <Demo ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
         {mensaje ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
             {claro(mensaje)}
@@ -1181,7 +1167,7 @@ export function Entrar({
                   </>
                 ) : null}
                 {demoHabilitado && verDemo ? (
-                  <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
+                  <Demo ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
               </div>
             ) : null}
@@ -1451,39 +1437,12 @@ function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionI
   })().finally(() => olvidarIntencion());
 }
 
-function Demo({
-  rolDemo,
-  setRolDemo,
-  ocupado,
-  entrarDemo,
-}: {
-  rolDemo: "organizador" | "voluntario";
-  setRolDemo: (rol: "organizador" | "voluntario") => void;
-  ocupado: Ocupado | null;
-  entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
-}) {
+function Demo({ ocupado, entrarDemo }: { ocupado: Ocupado | null; entrarDemo: () => Promise<void> }) {
   const t = useTexto();
-  const idRol = `${useId()}-rol-demo`;
   return (
     <div className="hyto-card grid gap-3 p-4">
       <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
       <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-      <label className="sr-only" htmlFor={idRol}>
-        {t("entrar.demoRole")}
-      </label>
-      <select
-        id={idRol}
-        value={rolDemo}
-        onChange={(evento) => {
-          const valor = evento.target.value;
-          if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
-        }}
-        disabled={ocupado !== null}
-        className="hyto-input"
-      >
-        <option value="organizador">{t("entrar.organizerDemo")}</option>
-        <option value="voluntario">{t("entrar.volunteerDemo")}</option>
-      </select>
       <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
         {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
       </button>

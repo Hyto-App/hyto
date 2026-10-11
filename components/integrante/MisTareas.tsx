@@ -474,7 +474,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                           ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <>
-                              <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line is-contorno">
                                 <Icono nombre="camera" tamano={18} />
                                 {tarea.tipo === "reembolso" ? (
                                   <>
@@ -490,7 +490,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                               </Link>
                             </>
                           ) : tarea.estado === "pendiente" ? (
-                            <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line is-contorno">
                               {abierta ? (
                                 <>
                                   <Icono nombre="camera" tamano={18} />
@@ -501,7 +501,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                               )}
                             </Link>
                           ) : (
-                            <Link href={`/tareas/${tarea.id}`} className={reintento ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
+                            <Link href={`/tareas/${tarea.id}`} className="hyto-btn-line is-contorno">
                               {reintento ? t("comunes.tryAgain") : t("tareas.view")}
                             </Link>
                           )}
