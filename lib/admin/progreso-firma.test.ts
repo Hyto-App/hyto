@@ -111,8 +111,8 @@ test("Bloquear presupuesto avisa las 2 firmas antes de confirmar y cuenta Signat
   };
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar }));
-    await esperar(() => [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Lock budget"));
-    await pulsar("Lock budget");
+    await esperar(() => [...document.querySelectorAll("button")].some((boton) => boton.textContent?.trim() === "Lock and approve"));
+    await pulsar("Lock and approve");
     const dialogo = document.querySelector("dialog");
     assert.match(dialogo?.textContent ?? "", /Cavos will ask you to confirm twice, in English\. It's to save the budget on Stellar\./);
     const confirmar = document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn");

@@ -572,7 +572,7 @@ test("en demo no aparece y en la revisión real sí", async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.doesNotMatch(texto(), /Get ready to be paid/);
-    assert.match(texto(), /Lock budget/);
+    assert.match(texto(), /Lock and approve/);
 
     await montar(
       createElement(ProveedorModoDemo, {

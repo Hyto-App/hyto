@@ -8,6 +8,7 @@ import { descripcionSeo, HOST_PUBLICO, metaPublica, tituloMarca } from "@/lib/ui
 import "./globals.css";
 import "@/components/perfil/perfil.css";
 import "@/components/admin/crear.css";
+import "@/components/admin/proyecto.css";
 
 export const dynamic = "force-dynamic";
 

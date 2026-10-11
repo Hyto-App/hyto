@@ -83,13 +83,13 @@ test("Bloquear presupuesto sin la clave en este navegador: lo dice antes, guía 
     await esperar(() => texto().includes("This browser can't sign for your account yet"));
     assert.match(texto(), /To lock this budget, this browser needs your account key/);
     assert.match(texto(), /Set up this device in 4 steps/);
-    assert.equal(boton("Lock budget")?.disabled, true);
-    assert.match(boton("Lock budget")?.getAttribute("aria-describedby") ?? "", /clave-navegador/);
+    assert.equal(boton("Lock and approve")?.disabled, true);
+    assert.match(boton("Lock and approve")?.getAttribute("aria-describedby") ?? "", /clave-navegador/);
     assert.deepEqual(firmas, []);
     await pulsar("Try again");
     await esperar(() => texto().includes("Done. This browser now has your account key."));
     assert.deepEqual(vistos.at(-1), { restaurar: true });
-    assert.equal(boton("Lock budget")?.disabled, false);
+    assert.equal(boton("Lock and approve")?.disabled, false);
     assert.equal(texto().includes("This browser can't sign for your account yet"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -103,8 +103,8 @@ test("con la clave en este navegador, Bloquear presupuesto queda igual", async (
   const { revisar, vistos } = revisor(LISTA, LISTA);
   try {
     await montar(createElement(Revision, { tareaId: "stand", revisarFirma: revisar }));
-    await esperar(() => vistos.length > 0 && boton("Lock budget") !== undefined);
-    assert.equal(boton("Lock budget")?.disabled, false);
+    await esperar(() => vistos.length > 0 && boton("Lock and approve") !== undefined);
+    assert.equal(boton("Lock and approve")?.disabled, false);
     assert.equal(texto().includes("can't sign for your account"), false);
     assert.deepEqual(vistos, [undefined]);
   } finally {

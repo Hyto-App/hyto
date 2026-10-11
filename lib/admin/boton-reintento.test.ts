@@ -6,7 +6,7 @@ import { act } from "react";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { Revision } from "@/components/admin/Revision";
 import { reiniciarReintentoFondo } from "@/lib/admin/reintento-fondo";
-import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { desmontar, montar, pulsar, pulsarEnlace, texto } from "../../tests/integracion/montar";
 
 test("la bandeja muestra un botón de reintento en cada revisión fallida", async () => {
   reiniciarReintentoFondo();
@@ -53,9 +53,9 @@ test("la bandeja muestra un botón de reintento en cada revisión fallida", asyn
     assert.ok(boton);
     assert.equal(boton?.className.includes("hyto-btn-line"), true);
     assert.equal(boton?.parentElement?.closest("button"), null);
-    await pulsar("Team meal");
+    await pulsarEnlace("Team meal");
     assert.equal(botonReintento(), undefined);
-    await pulsar("Set up the booth");
+    await pulsarEnlace("Set up the booth");
     await pulsar("Retry review");
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));

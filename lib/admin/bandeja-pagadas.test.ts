@@ -40,17 +40,20 @@ test("la bandeja deja ver una tarea pagada y abrir su revisión", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
-    await esperar(() => texto().includes("Team meal") && texto().includes("Nothing to approve"));
-    assert.match(texto(), /Paid tasks/);
-    // The net is the figure; the gross and the fee are a separate detail.
-    assert.match(texto(), /Paid · US\$12\.44 · Limit US\$15\.00/);
+    await esperar(() => texto().includes("Team meal"));
+    // Status chips carry their counts; the paid row shows the net, the gross and fee are a detail.
+    assert.match(texto(), /Paid 1/);
+    assert.match(texto(), /To review 0/);
+    assert.match(texto(), /US\$12\.44/);
     assert.match(texto(), /US\$12\.48 minus a US\$0\.04 fee/);
     assert.equal(texto().includes("Up to US$15"), false);
-    const enlace = document.querySelector('a[href="/revision/comida"]');
-    assert.equal(enlace?.textContent?.includes("Open review"), true);
-    await pulsar("Paid tasks");
-    assert.equal(texto().includes("Nothing to approve"), false);
-    assert.equal(document.querySelector('a[href="/revision/comida"]')?.textContent?.includes("Team meal"), true);
+    const enlaces = [...document.querySelectorAll('a[href="/revision/comida"]')];
+    assert.equal(enlaces.some((nodo) => nodo.textContent?.includes("Open review")), true);
+    assert.equal(enlaces.some((nodo) => nodo.textContent?.includes("Team meal")), true);
+    await pulsar("To review");
+    assert.equal(document.querySelector('a.pj-item[href="/revision/comida"]'), null);
+    await pulsar("Paid");
+    assert.equal(document.querySelector('a.pj-item[href="/revision/comida"]')?.textContent?.includes("Team meal"), true);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -119,7 +122,7 @@ test("cada tarea en revisión enlaza a su propia revisión", async () => {
   }
 });
 
-test("una tarea pendiente sin foto ofrece bloquear el presupuesto", async () => {
+test("una tarea pendiente sin foto aparece como Aún sin evidencia y abre su revisión", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -172,12 +175,13 @@ test("una tarea pendiente sin foto ofrece bloquear el presupuesto", async () => 
   try {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
     await esperar(() => texto().includes("No evidence yet"));
-    assert.match(texto(), /You can set this amount aside before evidence arrives/);
-    const enlace = document.querySelector('a[href="/revision/stand"]');
-    assert.equal(enlace?.textContent, "Lock budget");
-    const comida = document.querySelector('a[href="/revision/comida"]');
-    assert.equal(comida?.getAttribute("href"), "/revision/comida");
-    assert.match(comida?.textContent ?? "", /Open review/);
+    assert.match(texto(), /Pending 2/);
+    // Locking lives in Tasks now: the inbox rows only open the review.
+    assert.equal([...document.querySelectorAll("a")].some((nodo) => nodo.textContent === "Lock budget"), false);
+    const stand = document.querySelector('a.pj-item[href="/revision/stand"]');
+    assert.match(stand?.textContent ?? "", /Unassigned/);
+    const comida = document.querySelector('a.pj-item[href="/revision/comida"]');
+    assert.match(comida?.textContent ?? "", /Ana/);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
