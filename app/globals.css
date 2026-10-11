@@ -1528,8 +1528,10 @@ a {
   .hyto-shell {
     display: flex;
     flex-direction: column;
-    /* Phone: only Ask Mile floats, 16px from the edge and 16px above the bottom bar. */
+    /* 390: theme, avatar and Ask Mile share one column, 16px from the edge, 12px apart. */
     --pila-1: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    --pila-2: calc(var(--pila-1) + 40px + 12px);
+    --pila-3: calc(var(--pila-2) + 40px + 12px);
   }
 
   /* A real box. display:contents let the desktop foot's theme (also .hyto-brand-acciones .hyto-tema) paint fixed at mid-screen. */
@@ -1671,14 +1673,27 @@ a {
   }
 
   .hyto-main {
-    /* Cards keep the side margin. Bottom padding clears Ask Mile so it does not cover the last row. */
-    padding: var(--e-1) var(--margen-lateral) calc(var(--pila-1) + 40px + 16px);
+    /* The column is theme, avatar, then Ask Mile. Content ends 16px above the top circle. */
+    padding: var(--e-1) var(--margen-lateral) calc(var(--pila-3) + 40px + 16px);
+    /* Column is 40px wide and 16px from the edge; 16px more stays between it and the cards at every scroll position. */
+    padding-right: calc(16px + 40px + 16px);
   }
 
-  /* Theme and avatar stay in the header bar. They do not float. */
-  .hyto-brand-acciones.hyto-solo-movil .hyto-tema,
+  /* 390: only the mobile header's round controls join the column. The desktop foot stays hidden and is not fixed. */
+  .hyto-brand-acciones.hyto-solo-movil .hyto-tema {
+    position: fixed;
+    right: 16px;
+    bottom: var(--pila-3);
+    z-index: 27;
+    background: var(--papel);
+  }
+
   .hyto-brand-acciones.hyto-solo-movil .hyto-perfil-boton.is-compacto {
-    position: static;
+    position: fixed;
+    right: 16px;
+    bottom: var(--pila-2);
+    z-index: 26;
+    background: var(--papel);
   }
 
   .hyto-preguntar.hyto-preguntar-icono {
@@ -1717,8 +1732,9 @@ a {
     bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
-  /* Focus mode hides the side, so Ask Mile is gone. The review CTA is the fixed piece that must stay clear. */
+  /* Focus mode hides the side, so the column is gone. The review CTA is the fixed piece that must stay clear. */
   .hyto-shell-foco .hyto-main {
+    padding-right: var(--margen-lateral);
     padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
 
@@ -4298,48 +4314,10 @@ html.hyto-firmando body {
 .hyto-idioma-marco .hyto-idioma-menu-boton,
 .hyto-brand-acciones .hyto-tema,
 .hyto-brand-acciones .hyto-perfil-boton.is-compacto,
-.hyto-brand-acciones .hyto-preguntar-icono,
-.hyto-brand-acciones .hyto-encabezado-mas-boton {
+.hyto-brand-acciones .hyto-preguntar-icono {
   box-sizing: border-box;
   height: 40px;
   min-height: 40px;
-}
-
-.hyto-encabezado-mas {
-  position: relative;
-}
-
-.hyto-encabezado-mas-boton {
-  display: inline-flex;
-  width: 40px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--borde);
-  border-radius: 999px;
-  color: var(--suave);
-  background: transparent;
-}
-
-.hyto-encabezado-mas-boton:hover,
-.hyto-encabezado-mas-boton[aria-expanded="true"] {
-  color: var(--tinta);
-  border-color: var(--tinta);
-}
-
-.hyto-encabezado-mas-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 50;
-  display: grid;
-  min-width: 180px;
-  gap: 2px;
-  padding: 8px;
-  border: 1px solid var(--linea);
-  border-radius: 16px;
-  background: var(--papel);
-  box-shadow: var(--sombra-tarjeta);
 }
 
 .hyto-foot .hyto-idioma-menu-lista {
@@ -6253,6 +6231,14 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   gap: 2px;
   width: min(320px, calc(100vw - 24px));
   padding: 8px;
+}
+
+@media (max-width: 1023px) {
+  .hyto-perfil-menu {
+    top: auto;
+    right: 16px;
+    bottom: calc(var(--pila-2) + 40px + 8px);
+  }
 }
 
 .hyto-perfil-cabeza {

@@ -248,49 +248,6 @@ test("el ancho de la barra dura 200 ms y se apaga si hay menos movimiento", () =
   assert.match(css.slice(escritorio), /grid-template-columns:\s*72px/);
 });
 
-test("en el teléfono el menú del encabezado ofrece Notes, y en español Notas", async () => {
-  limpiarPantalla();
-  try {
-    await montar(createElement(Marco, { usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" }, children: createElement("p", null, "inicio") }), {
-      ruta: "/eventos/demo/tareas",
-    });
-    const boton = document.querySelector(".hyto-encabezado-mas-boton");
-    assert.equal(boton?.getAttribute("aria-label"), "More");
-    assert.equal(boton?.closest(".hyto-solo-movil")?.classList.contains("hyto-brand-acciones"), true);
-    assert.equal(document.querySelector(".hyto-encabezado-mas-menu"), null);
-    await act(async () => {
-      boton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    const menu = document.querySelector(".hyto-encabezado-mas-menu");
-    assert.equal(menu?.getAttribute("role"), "menu");
-    const notas = menu?.querySelector('[role="menuitem"]');
-    assert.equal(notas?.textContent, "Notes");
-    assert.equal(notas?.getAttribute("href"), "/mis-tareas");
-    assert.equal(notas?.classList.contains("hyto-perfil-item"), true);
-    assert.equal(notas?.querySelector("svg path")?.getAttribute("d"), "M5 6h10M5 10h10M5 14h6");
-    await desmontar();
-    await montar(
-      createElement(ProveedorIdioma, {
-        idioma: "es",
-        children: createElement(Marco, {
-          usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" },
-          children: createElement("p", null, "inicio"),
-        }),
-      }),
-      { ruta: "/eventos/demo/tareas" },
-    );
-    const mas = document.querySelector(".hyto-encabezado-mas-boton");
-    assert.equal(mas?.getAttribute("aria-label"), "Más");
-    await act(async () => {
-      mas?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    assert.equal(document.querySelector(".hyto-encabezado-mas-menu [role='menuitem']")?.textContent, "Notas");
-  } finally {
-    await desmontar();
-    limpiarPantalla();
-  }
-});
-
 test("sin nombre, el menú de la cuenta dice Su cuenta y el correo va en la segunda línea", async () => {
   limpiarPantalla();
   try {
