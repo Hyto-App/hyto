@@ -51,7 +51,7 @@ test("las respuestas escritas no prometen jerga ni otro tipo de evidencia", () =
       const respuesta = leerTexto(idioma, `ayuda.${id}A`);
       assert.equal(JERGA.test(pregunta), false, pregunta);
       assert.equal(JERGA.test(respuesta), false, respuesta);
-      assert.doesNotMatch(`${pregunta} ${respuesta}`, /pdf|video|audio|documento/i);
+      assert.doesNotMatch(`${pregunta} ${respuesta}`, /video|audio|documento/i);
     }
   }
   const claves = Object.keys(es.ayuda);
@@ -95,8 +95,8 @@ test("cada respuesta entra en 2 a 4 burbujas cortas", () => {
     }
   }
   assert.deepEqual(partesRespuesta(leerTexto("es", "ayuda.pagoA")).slice(0, 2), [
-    "Usted sube la evidencia del trabajo y la factura.",
-    "Mile las revisa.",
+    "Usted sube su evidencia (foto, factura, PDF o lista).",
+    "Mile la revisa.",
   ]);
 });
 

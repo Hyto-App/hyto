@@ -235,7 +235,7 @@ export const en = {
   },
   bienvenida: {
     title: "Welcome to Hyto",
-    body: "Hyto pays for event tasks when there is evidence: you upload the evidence and the invoice, Mile reviews them, and a person approves the payment.",
+    body: "Hyto pays for event tasks when there is evidence: you upload your evidence, Mile reviews it, and a person approves the payment.",
     step: "Take your first step",
     join: "Join with a code",
     create: "Create event",
@@ -1081,7 +1081,7 @@ export const en = {
     atajoFaq: "Frequently asked questions",
     pagoQ: "How do I get paid?",
     pagoA:
-      "You upload the evidence of the work and the invoice.\nMile reviews them.\nA person from the event approves them and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank yet.",
+      "You upload one piece of evidence (a photo, invoice, PDF or list).\nMile reviews it.\nA person from the event approves it and the payment reaches your balance in digital dollars.\nThis is practice money: Hyto cannot send that balance to a bank yet.",
     tardaQ: "How long does it take?",
     tardaA:
       "Mile reviews your evidence.\nThen the organizer approves it. That part depends on them.\nOnce they pay, the money shows up in your balance.",
@@ -1099,7 +1099,7 @@ export const en = {
       "The person sends you the invoice.\nOn the review, you confirm the amount before the payment is prepared.\nYou cannot go over the task limit, and only the amount you confirm is paid.",
     evidenciaQ: "What do I send?",
     evidenciaA:
-      "A photo taken where the work happened: that is your evidence.\nFor a reimbursement, upload the invoice too.\nHyto does not ask for another kind of evidence.",
+      "One piece of evidence, in any format: a photo, invoice, PDF or list.\nIt has to show what the task asks for.\nHyto does not ask for anything else.",
     mileQ: "What does Mile do with my evidence?",
     mileA:
       "Mile describes your evidence and suggests a score from 0 to 100.\nUnder 50 is insufficient, 50 to 79 is partial, and 80 to 100 is completed.\nThe score is a recommendation. The organizer decides whether to pay.",
@@ -1123,7 +1123,7 @@ export const en = {
       "Tap your name at the bottom of the bar and choose Sign out.\nIt is also in Settings.\nA session on this browser lasts up to a day.",
     datosQ: "What does Hyto keep?",
     datosA:
-      "We keep your sign-in email, the session, the payout address, and the evidence and invoices you send.\nWe also keep the record of each finished payment. We do not sell your information.\nThe details are on the Privacy page.",
+      "We keep your sign-in email, the session, the payout address, and the evidence you send.\nWe also keep the record of each finished payment. We do not sell your information.\nThe details are on the Privacy page.",
   },
   actividad: {
     titulo: "Activity",
@@ -1461,7 +1461,7 @@ export const es: Rama<typeof en> = {
   },
   bienvenida: {
     title: "Bienvenido a Hyto",
-    body: "Hyto paga tareas de eventos cuando hay evidencia: usted sube la evidencia y la factura, Mile las revisa y una persona aprueba el pago.",
+    body: "Hyto paga tareas de eventos cuando hay evidencia: usted sube su evidencia, Mile la revisa y una persona aprueba el pago.",
     step: "Dé su primer paso",
     join: "Unirme con código",
     create: "Crear evento",
@@ -2306,7 +2306,7 @@ export const es: Rama<typeof en> = {
     atajoFaq: "Preguntas frecuentes",
     pagoQ: "¿Cómo me pagan?",
     pagoA:
-      "Usted sube la evidencia del trabajo y la factura.\nMile las revisa.\nUna persona del evento las aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco.",
+      "Usted sube su evidencia (foto, factura, PDF o lista).\nMile la revisa.\nUna persona del evento la aprueba y el pago llega a su saldo en dólares digitales.\nEs dinero de práctica: Hyto todavía no puede enviar ese saldo a un banco.",
     tardaQ: "¿Cuánto tarda?",
     tardaA:
       "Mile revisa su evidencia.\nDespués, quien organiza la aprueba. Esa parte depende de esa persona.\nCuando le paga, el dinero aparece en su saldo.",
@@ -2324,7 +2324,7 @@ export const es: Rama<typeof en> = {
       "La persona le envía la factura.\nEn la revisión, usted confirma el monto antes de preparar el pago.\nNo puede pasar del límite de la tarea, y solo se paga el monto que confirma.",
     evidenciaQ: "¿Qué tengo que enviar?",
     evidenciaA:
-      "Una foto tomada donde pasó el trabajo: esa es su evidencia.\nSi es un reembolso, suba también la factura.\nHyto no pide otro tipo de evidencia.",
+      "Una sola evidencia, en el formato que tenga: foto, factura, PDF o lista.\nTiene que mostrar lo que pide la tarea.\nHyto no pide nada más.",
     mileQ: "¿Qué hace Mile con mi evidencia?",
     mileA:
       "Mile describe su evidencia y propone una nota del 0 al 100.\nMenos de 50 es insuficiente, de 50 a 79 es parcial y de 80 a 100 es completada.\nLa nota es una recomendación. Quien organiza decide si paga.",
@@ -2348,7 +2348,7 @@ export const es: Rama<typeof en> = {
       "Toque su nombre al pie de la barra y elija Cerrar sesión.\nTambién está en Configuración.\nLa sesión dura hasta un día en este navegador.",
     datosQ: "¿Qué datos guarda Hyto?",
     datosA:
-      "Guardamos el correo con el que entra, la sesión, la dirección de cobro y la evidencia y las facturas que envía.\nTambién el registro de cada pago terminado. No vendemos sus datos.\nEl detalle está en Privacidad.",
+      "Guardamos el correo con el que entra, la sesión, la dirección de cobro y la evidencia que envía.\nTambién el registro de cada pago terminado. No vendemos sus datos.\nEl detalle está en Privacidad.",
   },
   actividad: {
     titulo: "Actividad",
