@@ -138,11 +138,32 @@ test("varias redacciones de Mile caen en el requisito, en Mis tareas y en la not
     texto: "Part of the request missing",
     explicacion: "Missing: el mantel; la hoja de registro.",
   });
-  assert.equal(presentarEtiqueta(pedido, "es").explicacion, "Falta: el mantel; la hoja de registro.");
-  assert.equal(textoFalta([pedido], "en"), "Missing: el mantel; la hoja de registro.");
+  const mesa = "Mesa armada en la entrada con mantel, cartel de bienvenida y hoja de registro";
+  assert.equal(presentarEtiqueta(pedido, "es").explicacion, "Falta: algo de lo pedido.");
+  assert.equal(presentarEtiqueta(pedido, "en").explicacion, "Missing: something the task asks for.");
+  assert.equal(presentarEtiqueta(pedido, "es", mesa).explicacion, "Falta: mantel; hoja de registro.");
+  assert.equal(presentarEtiqueta(pedido, "en", mesa).explicacion, "Missing: mantel; hoja de registro.");
+  assert.equal(textoFalta([pedido], "en", mesa), "Missing: mantel; hoja de registro.");
+  const deMile = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: mantel sobre la mesa; No se ve el logo del local.",
+  });
+  assert.equal(presentarEtiqueta(deMile, "es", mesa).explicacion, "Falta: mantel; algo de lo pedido.");
+  assert.equal(presentarEtiqueta(deMile, "en", mesa).explicacion, "Missing: mantel; something the task asks for.");
+  assert.equal(presentarEtiqueta(deMile, "en", mesa).explicacion.includes("sobre la mesa"), false);
+  assert.equal(presentarEtiqueta(deMile, "en", mesa).explicacion.includes("logo"), false);
   assert.equal(
     faltantesDe({ faltantes: ["No se muestra la foto del comprobante de la comida", "el monto de la factura", "No se ve el logo del local"] } as LecturaEvidencia),
     "evidence of the meal receipt; the invoice amount; something the task asks for",
+  );
+  assert.equal(
+    faltantesDe({ faltantes: ["mantel sobre la mesa", "cartel de bienvenida", "No se ve el logo del local"] } as LecturaEvidencia, [
+      "mantel",
+      "cartel de bienvenida",
+      "hoja de registro",
+    ]),
+    "mantel; cartel de bienvenida; something the task asks for",
   );
 });
 

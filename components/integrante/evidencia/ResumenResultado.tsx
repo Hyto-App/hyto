@@ -37,7 +37,7 @@ export function ResumenResultado({
 }) {
   const t = useTexto();
   const idioma = useIdioma();
-  const falta = calificacion ? textoFalta(tarea.notas, idioma) : null;
+  const falta = calificacion ? textoFalta(tarea.notas, idioma, tarea.condicion) : null;
   const banda = calificacion ? (typeof calificacion.nota === "number" ? etiquetaDesdeNota(calificacion.nota) : calificacion.veredicto) : null;
   const estado = banda ? etiquetaVeredicto(banda, idioma) : null;
   return (
@@ -60,7 +60,7 @@ export function ResumenResultado({
         </div>
       ) : null}
       {montoVisible ? <p className="hyto-amount">{montoVisible}</p> : null}
-      {calificacion ? <NotasMileRejilla etiquetas={tarea.notas} /> : null}
+      {calificacion ? <NotasMileRejilla etiquetas={tarea.notas} condicion={tarea.condicion} /> : null}
       {calificacion ? <NotaCobro tarea={tarea} /> : null}
       {calificacion && mostrarLlamada ? <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p> : null}
       {falta ? (

@@ -446,7 +446,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                             typeof tarea.nota === "number" && tarea.veredicto ? (
                               <div className="mt-3">
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
-                                <EtiquetasNota etiquetas={tarea.notas} />
+                                <EtiquetasNota etiquetas={tarea.notas} condicion={tarea.condicion} />
                                 <NotaCobro tarea={tarea} />
                               </div>
                             ) : reintento ? (

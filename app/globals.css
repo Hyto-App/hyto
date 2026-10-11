@@ -1528,6 +1528,10 @@ a {
   .hyto-shell {
     display: flex;
     flex-direction: column;
+    /* 390: theme, avatar and Ask Mile share one column, 16px from the edge, 12px apart. */
+    --pila-1: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    --pila-2: calc(var(--pila-1) + 40px + 12px);
+    --pila-3: calc(var(--pila-2) + 40px + 12px);
   }
 
   .hyto-side {
@@ -1542,13 +1546,16 @@ a {
 
   .hyto-brand {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     min-height: 60px;
     padding: 0 var(--margen-lateral);
     padding-top: env(safe-area-inset-top);
+    flex-wrap: nowrap;
+  }
+
+  .hyto-brand-acciones.hyto-solo-movil {
     flex-wrap: nowrap;
   }
 
@@ -1664,15 +1671,31 @@ a {
   }
 
   .hyto-main {
-    /* Ask Mile is 16px above the bar. The last card ends 16px above that circle. */
-    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px);
+    /* The column is theme, avatar, then Ask Mile. Content ends 16px above the top circle. */
+    padding: var(--e-1) var(--margen-lateral) calc(var(--pila-3) + 40px + 16px);
   }
 
-  /* 390: Ask Mile stays 16px from the edge and 16px above the bottom bar. The profile stays in the header. */
+  /* 390: the round controls share one column, 16px from the edge and 12px apart. None sit at mid-screen. */
+  .hyto-brand-acciones .hyto-tema {
+    position: fixed;
+    right: 16px;
+    bottom: var(--pila-3);
+    z-index: 27;
+    background: var(--papel);
+  }
+
+  .hyto-brand-acciones .hyto-perfil-boton.is-compacto {
+    position: fixed;
+    right: 16px;
+    bottom: var(--pila-2);
+    z-index: 26;
+    background: var(--papel);
+  }
+
   .hyto-preguntar.hyto-preguntar-icono {
     position: fixed;
     right: 16px;
-    bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    bottom: var(--pila-1);
     z-index: 25;
   }
 
@@ -6203,6 +6226,14 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   gap: 2px;
   width: min(320px, calc(100vw - 24px));
   padding: 8px;
+}
+
+@media (max-width: 1023px) {
+  .hyto-perfil-menu {
+    top: auto;
+    right: 16px;
+    bottom: calc(var(--pila-2) + 40px + 8px);
+  }
 }
 
 .hyto-perfil-cabeza {

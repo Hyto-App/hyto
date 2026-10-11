@@ -15,11 +15,15 @@ const FIJOS: Record<string, { es: string; en: string }> = {
 };
 
 /**
- * One line for the result card's strip: «Falta: el mantel; la hoja de registro.» Null when nothing is missing.
+ * One line for the result card's strip: «Falta: mantel; hoja de registro.» Null when nothing is missing.
  * Items come from tags that name what is missing. When the answers only could not confirm the task's items,
  * the line says «Falta confirmar: …». A tag without a list adds nothing.
  */
-export function textoFalta(etiquetas: readonly EtiquetaNota[] | null | undefined, idioma: Idioma): string | null {
+export function textoFalta(
+  etiquetas: readonly EtiquetaNota[] | null | undefined,
+  idioma: Idioma,
+  condicion?: string | null,
+): string | null {
   if (!etiquetas || etiquetas.length === 0) return null;
   const lengua = idioma === "es" ? "es" : "en";
   const faltan: string[] = [];
@@ -38,7 +42,7 @@ export function textoFalta(etiquetas: readonly EtiquetaNota[] | null | undefined
       agregar(faltan, fijo[lengua]);
       continue;
     }
-    const explicacion = presentarEtiqueta(etiqueta, idioma).explicacion;
+    const explicacion = presentarEtiqueta(etiqueta, idioma, condicion).explicacion;
     if (explicacion.startsWith(FALTA[lengua])) agregar(faltan, explicacion.slice(FALTA[lengua].length));
     else if (explicacion.startsWith(SIN_CONFIRMAR[lengua])) agregar(sinConfirmar, explicacion.slice(SIN_CONFIRMAR[lengua].length));
   }

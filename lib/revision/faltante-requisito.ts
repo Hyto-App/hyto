@@ -18,6 +18,30 @@ function limpio(item: string): string {
   return item.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "");
 }
 
+function nucleo(texto: string): string {
+  return texto.replace(/^(?:el|la|los|las|un|una|unos|unas|the|an|a)\s+/i, "");
+}
+
+function incluyeFrase(texto: string, frase: string): boolean {
+  if (frase.length < 3) return false;
+  const escapada = frase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|\\s)${escapada}(?:\\s|$)`, "i").test(texto);
+}
+
+/** The task requirement this item refers to, in the requirement's own words, lowercased. Null when none fits. */
+export function requisitoQueCalza(item: string, requisitos: readonly string[]): string | null {
+  const texto = nucleo(limpio(item).toLowerCase());
+  if (!texto) return null;
+  let mejor: string | null = null;
+  for (const requisito of requisitos) {
+    const pedido = nucleo(limpio(requisito).toLowerCase());
+    if (pedido.length < 3) continue;
+    if (texto !== pedido && !incluyeFrase(texto, pedido)) continue;
+    if (!mejor || pedido.length > mejor.length) mejor = pedido;
+  }
+  return mejor;
+}
+
 /** A sentence Mile wrote, not the requirement's own words. */
 const PROSA =
   /\b(?:no se (?:muestra|ve|observa|aprecia|puede)|no es visible|no aparece|not visible|is not (?:shown|visible)|not shown|does not show|isn't visible|cannot be seen|can't see)\b/i;
@@ -55,21 +79,23 @@ export function claseFaltante(item: string): Clase {
   return "propio";
 }
 
-/** The requirement this missing item refers to, in the reader's language. A label that already is the requirement stays. */
-export function fraseFaltante(item: string, idioma: Idioma): string {
+/**
+ * The requirement this missing item refers to. Receipt items use the fixed phrase in the reader's
+ * language. A task item uses that requirement's own words, lowercased. Mile's sentence never
+ * comes back: when nothing matches, the line uses the generic phrase.
+ */
+export function fraseFaltante(item: string, idioma: Idioma, requisitos: readonly string[] = []): string {
   const lengua = idioma === "es" ? "es" : "en";
+  const texto = limpio(item).toLowerCase();
   const clase = claseFaltante(item);
   if (clase === "comida") return COMIDA[lengua];
   if (clase === "monto") return MONTO[lengua];
   if (clase === "fecha") return FECHA[lengua];
-  if (clase === "generico") return GENERICO[lengua];
-  return limpio(item);
+  if (texto === GENERICO.es || texto === GENERICO.en) return GENERICO[lengua];
+  return requisitoQueCalza(item, requisitos) ?? GENERICO[lengua];
 }
 
-/**
- * What gets stored on the note: the requirement, in one wording, so the next review does not
- * keep Mile's sentence. Labels that already name a task item stay as written.
- */
-export function canonicoFaltante(item: string): string {
-  return fraseFaltante(item, "en");
+/** What gets stored on the note: the requirement, never the sentence Mile wrote. */
+export function canonicoFaltante(item: string, requisitos: readonly string[] = []): string {
+  return fraseFaltante(item, "en", requisitos);
 }

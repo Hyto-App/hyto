@@ -16,6 +16,7 @@ export function EtiquetasNota({
   compacto = false,
   conMotivo = false,
   vozMile = false,
+  condicion = null,
 }: {
   etiquetas?: readonly EtiquetaNota[] | null;
   compacto?: boolean;
@@ -23,14 +24,16 @@ export function EtiquetasNota({
   vozMile?: boolean;
   /** `MotivoNota` already shows the main reason next to the percentage. Its pill is not repeated; only its explanation stays. */
   conMotivo?: boolean;
+  /** Task condition. A missing-item list shows these requirements, never Mile's sentence. */
+  condicion?: string | null;
 }) {
   const idioma = useIdioma();
   if (!etiquetas || etiquetas.length === 0) return null;
   const motivo = conMotivo ? motivoPrincipal(etiquetas) : null;
-  const principal = motivo ? presentarEtiqueta(motivo, idioma).texto : undefined;
+  const principal = motivo ? presentarEtiqueta(motivo, idioma, condicion).texto : undefined;
   const vistos = new Set<string>();
   const visibles = (compacto ? etiquetas.filter((etiqueta) => etiqueta.severidad !== "good") : etiquetas)
-    .map((etiqueta) => presentarEtiqueta(etiqueta, idioma))
+    .map((etiqueta) => presentarEtiqueta(etiqueta, idioma, condicion))
     .filter((etiqueta) => {
       // Two tags can read the same once translated. Each text shows once.
       if (vistos.has(etiqueta.texto)) return false;
@@ -74,11 +77,11 @@ export function EtiquetasNota({
 }
 
 /** The main reason, written next to the percentage. */
-export function MotivoNota({ etiquetas }: { etiquetas?: readonly EtiquetaNota[] | null }) {
+export function MotivoNota({ etiquetas, condicion = null }: { etiquetas?: readonly EtiquetaNota[] | null; condicion?: string | null }) {
   const idioma = useIdioma();
   const motivo = motivoPrincipal(etiquetas);
   if (!motivo) return null;
-  const visible = presentarEtiqueta(motivo, idioma);
+  const visible = presentarEtiqueta(motivo, idioma, condicion);
   return (
     <span className="text-sm font-medium" title={visible.explicacion} data-motivo={visible.id}>
       {visible.texto}

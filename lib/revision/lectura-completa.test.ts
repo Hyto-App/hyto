@@ -115,9 +115,11 @@ test("cuando sí falta algo, Mile dice qué falta, en español, y la nota no sub
   const parte = etiquetas.find((etiqueta) => etiqueta.id === "part_missing");
   assert.ok(parte);
   assert.equal(parte.severidad, "problem");
-  const es = presentarEtiqueta(parte, "es");
+  const es = presentarEtiqueta(parte, "es", CONDICION);
   assert.equal(es.texto, "Falta parte de lo pedido");
-  assert.equal(es.explicacion, "Falta: el rótulo con el nombre del evento; la firma del grupo.");
+  assert.equal(es.explicacion, "Falta: algo de lo pedido.");
+  assert.equal(es.explicacion.includes("rótulo"), false);
+  assert.equal(es.explicacion.includes("firma"), false);
 });
 
 test("los fallos reales no se suben: otra cosa, coincide no o parcial, borrosa, sin el interruptor", () => {

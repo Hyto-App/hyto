@@ -330,7 +330,7 @@ export function Bandeja({
                             <span className="pj-solo-m pj-amt-s">{monto.linea}</span>
                             <span className="pj-solo-d">{nota}</span>
                           </span>
-                          <EtiquetasNota etiquetas={tarea.etiquetas} compacto />
+                          <EtiquetasNota etiquetas={tarea.etiquetas} compacto condicion={tarea.condicion} />
                           <span className="pj-item-m">
                             <PastillaEstadoProyecto estado={tarea.estado} />
                             {nota}
@@ -450,7 +450,7 @@ function DetalleBandeja({
         {tarea.veredicto ? (
           <span className="flex flex-wrap items-center gap-2">
             <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
-            <MotivoNota etiquetas={tarea.etiquetas} />
+            <MotivoNota etiquetas={tarea.etiquetas} condicion={tarea.condicion} />
           </span>
         ) : (
           <span className="text-sm text-[var(--suave)]">{t("bandeja.noRecommendation")}</span>

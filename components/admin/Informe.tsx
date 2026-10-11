@@ -136,7 +136,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: formatearMonto(detalle.tope, idioma) })}</p>
                     ) : null}
                     {origen ? <p className="mt-3 text-sm text-[var(--suave)]">{origen}</p> : null}
-                    <EtiquetasNota etiquetas={tarea.etiquetas} />
+                    <EtiquetasNota etiquetas={tarea.etiquetas} condicion={tarea.condicion} />
                     {tarea.origen === "error" && tarea.frase ? (
                       <p role="alert" className="mt-3 text-sm leading-6">
                         {textoVisible(tarea.frase, idioma)}

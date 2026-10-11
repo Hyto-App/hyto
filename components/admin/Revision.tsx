@@ -757,11 +757,11 @@ export function Revision({
             ) : null}
             <div className="flex flex-wrap items-center gap-3">
               {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
-              {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} /> : null}
+              {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} condicion={tarea.condicion} /> : null}
               {/* The title already says «Recomendación de Mile»; only a failed review names its origin. */}
               {origen && tarea.origen === "error" ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
             </div>
-            <EtiquetasNota etiquetas={tarea.etiquetas} conMotivo={Boolean(tarea.veredicto)} vozMile />
+            <EtiquetasNota etiquetas={tarea.etiquetas} conMotivo={Boolean(tarea.veredicto)} vozMile condicion={tarea.condicion} />
             {notaManual(tarea.codigo) ? (
               <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
             ) : tarea.origen === "error" ? (

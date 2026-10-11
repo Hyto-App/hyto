@@ -1,7 +1,6 @@
-import { textoVisible } from "@/lib/ui/etiquetas";
 import type { Idioma } from "@/lib/ui/idioma";
-import { claseFaltante, fraseFaltante } from "./faltante-requisito";
-import { PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
+import { fraseFaltante } from "./faltante-requisito";
+import { elementosPedidos, PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
 
 const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   cap_otra_incompleta: {
@@ -117,13 +116,13 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
   },
 };
 
-function traducirLista(lista: string, idioma: Idioma): string {
+function traducirLista(lista: string, idioma: Idioma, requisitos: readonly string[]): string {
   const vistos = new Set<string>();
   const salida: string[] = [];
   for (const crudo of lista.replace(/[.;]+$/, "").split(/;\s*/)) {
     const base = crudo.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "");
     if (!base) continue;
-    const item = claseFaltante(base) === "propio" ? textoVisible(base, idioma) : fraseFaltante(base, idioma);
+    const item = fraseFaltante(base, idioma, requisitos);
     const llave = item.toLowerCase();
     if (!item || vistos.has(llave)) continue;
     vistos.add(llave);
@@ -133,7 +132,8 @@ function traducirLista(lista: string, idioma: Idioma): string {
 }
 
 /** The missing-items list follows the reader's language. The prefix stays in that language too. */
-function traducirListas(etiqueta: EtiquetaNota, idioma: Idioma): EtiquetaNota {
+function traducirListas(etiqueta: EtiquetaNota, idioma: Idioma, condicion?: string | null): EtiquetaNota {
+  const requisitos = elementosPedidos(condicion);
   const falta = idioma === "es" ? "Falta: " : PREFIJO_FALTA;
   const duda = idioma === "es" ? "No se pudo confirmar: " : PREFIJO_SIN_CONFIRMAR;
   const origenFalta = etiqueta.explicacion.startsWith(PREFIJO_FALTA)
@@ -142,7 +142,7 @@ function traducirListas(etiqueta: EtiquetaNota, idioma: Idioma): EtiquetaNota {
       ? "Falta: "
       : null;
   if (origenFalta) {
-    return { ...etiqueta, explicacion: `${falta}${traducirLista(etiqueta.explicacion.slice(origenFalta.length), idioma)}.` };
+    return { ...etiqueta, explicacion: `${falta}${traducirLista(etiqueta.explicacion.slice(origenFalta.length), idioma, requisitos)}.` };
   }
   const origenDuda = etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR)
     ? PREFIJO_SIN_CONFIRMAR
@@ -150,7 +150,7 @@ function traducirListas(etiqueta: EtiquetaNota, idioma: Idioma): EtiquetaNota {
       ? "No se pudo confirmar: "
       : null;
   if (origenDuda) {
-    return { ...etiqueta, explicacion: `${duda}${traducirLista(etiqueta.explicacion.slice(origenDuda.length), idioma)}.` };
+    return { ...etiqueta, explicacion: `${duda}${traducirLista(etiqueta.explicacion.slice(origenDuda.length), idioma, requisitos)}.` };
   }
   return etiqueta;
 }
@@ -161,9 +161,9 @@ function nombrarMile(etiqueta: EtiquetaNota): EtiquetaNota {
   return explicacion === etiqueta.explicacion ? etiqueta : { ...etiqueta, explicacion };
 }
 
-/** Shows a stored English tag in the session language. Unknown text stays as stored. */
-export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): EtiquetaNota {
-  if (idioma !== "es") return nombrarMile(traducirListas(etiqueta, "en"));
+/** Shows a stored English tag in the session language. A missing-item list uses the task requirements when `condicion` is set. */
+export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma, condicion?: string | null): EtiquetaNota {
+  if (idioma !== "es") return nombrarMile(traducirListas(etiqueta, "en", condicion));
   const par = POR_TEXTO[`${etiqueta.texto}|${etiqueta.explicacion}`];
   if (par) return { ...etiqueta, ...par };
   const moneda = /^No rate for (.+)$/.exec(etiqueta.texto);
@@ -203,7 +203,7 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
       etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR) ||
       etiqueta.explicacion.startsWith("No se pudo confirmar: "))
   ) {
-    const traducida = traducirListas(etiqueta, "es");
+    const traducida = traducirListas(etiqueta, "es", condicion);
     return { ...traducida, texto: base.texto };
   }
   const fija = base;

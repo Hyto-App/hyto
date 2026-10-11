@@ -642,7 +642,7 @@
   gap: 8px;
 }
 @media (max-width: 1023px) {
-  /* ~375: the last card scrolls clear of Ask Mile. The avatar stays in the header, off the titles. */
+  /* ~375: the last card scrolls clear of the right-hand column (theme, avatar, Ask Mile). */
   .pj-tlista,
   .pj-lista {
     padding-bottom: 140px;

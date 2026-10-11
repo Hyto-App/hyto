@@ -143,7 +143,7 @@ function etiquetas(resultado: Awaited<ReturnType<typeof revisar>>, entrada: { ti
 }
 
 const ids = (lista: readonly EtiquetaNota[]) => lista.map((etiqueta) => etiqueta.id);
-const es = (lista: readonly EtiquetaNota[]) => lista.map((etiqueta) => presentarEtiqueta(etiqueta, "es"));
+const es = (lista: readonly EtiquetaNota[], condicion?: string) => lista.map((etiqueta) => presentarEtiqueta(etiqueta, "es", condicion));
 
 test("r7 caso 1: la mesa completa (Groq: coincide sí, nada falta) llega a «Cumplió» aunque Laya dudó (prod: 57%, «Trabajo sin terminar»)", async () => {
   const titulo = "Mesa de bienvenida completa";
@@ -170,20 +170,21 @@ test("r7 caso 2: la mesa incompleta dice qué falta, en español, y no «La evid
     })),
   );
   assert.equal(resultado.veredicto, "insuficiente");
-  const lista = es(etiquetas(resultado, { tipo: "trabajo", condicion: MESA }));
+  const lista = es(etiquetas(resultado, { tipo: "trabajo", condicion: MESA }), MESA);
   assert.equal(ids(lista).includes("selfie_or_empty"), false);
   const otra = lista.find((etiqueta) => etiqueta.id === "cap_otra");
   assert.ok(otra);
   assert.equal(otra.texto, "Problema grave: no muestra lo que pide la tarea");
-  assert.equal(otra.explicacion, "Falta: mantel sobre la mesa; cartel de bienvenida; hoja de registro.");
-  assert.equal(textoFalta(etiquetas(resultado, { tipo: "trabajo", condicion: MESA }), "es"), "Falta: mantel sobre la mesa; cartel de bienvenida; hoja de registro.");
+  assert.equal(otra.explicacion, "Falta: mantel; cartel de bienvenida; hoja de registro.");
+  assert.equal(otra.explicacion.includes("sobre la mesa"), false);
+  assert.equal(textoFalta(etiquetas(resultado, { tipo: "trabajo", condicion: MESA }), "es", MESA), "Falta: mantel; cartel de bienvenida; hoja de registro.");
 });
 
 test("r7 caso 2 sin lista de Groq: los elementos salen de la tarea (mantel, cartel, hoja de registro)", () => {
   const titulo = "Mesa de bienvenida (incompleta)";
   const guardado = PROD[titulo]!.texto_scout.replace(/"faltantes":\[[^\]]*\]/, '"faltantes":[]');
   const lista = etiquetasDesdeVeredicto({ textoScout: guardado, origen: "scout", monto: null, fecha: null, tope: null, tipo: "trabajo", condicion: MESA });
-  const texto = textoFalta(lista, "es") ?? "";
+  const texto = textoFalta(lista, "es", MESA) ?? "";
   assert.match(texto, /mantel/);
   assert.match(texto, /cartel de bienvenida/);
   assert.match(texto, /hoja de registro/);
@@ -261,12 +262,12 @@ test("r7 caso 7: la factura sin fecha dice «Falta la fecha de la factura» y no
 
 test("r7 en lectura: los veredictos ya guardados en prod muestran etiquetas coherentes", () => {
   const leer = (titulo: string, tipo: "trabajo" | "reembolso", condicion: string, tope: string | null = null) =>
-    es(etiquetasDesdeVeredicto({ textoScout: PROD[titulo]!.texto_scout, origen: "scout", monto: PROD[titulo]!.monto, fecha: PROD[titulo]!.fecha, tope, tipo, condicion }));
+    es(etiquetasDesdeVeredicto({ textoScout: PROD[titulo]!.texto_scout, origen: "scout", monto: PROD[titulo]!.monto, fecha: PROD[titulo]!.fecha, tope, tipo, condicion }), condicion);
   const completa = leer("Mesa de bienvenida completa", "trabajo", MESA);
   assert.equal(ids(completa).includes("unfinished"), false, "Groq saw everything; Laya's 'unfinished' is not shown");
   const incompleta = leer("Mesa de bienvenida (incompleta)", "trabajo", MESA);
   assert.equal(ids(incompleta).includes("selfie_or_empty"), false);
-  assert.match(incompleta.find((etiqueta) => etiqueta.id === "cap_otra")?.explicacion ?? "", /^Falta: mantel sobre la mesa; cartel de bienvenida; hoja de registro\.$/);
+  assert.match(incompleta.find((etiqueta) => etiqueta.id === "cap_otra")?.explicacion ?? "", /^Falta: mantel; cartel de bienvenida; hoja de registro\.$/);
   const sinFecha = leer("Factura sin fecha", "reembolso", "", "4");
   assert.equal(ids(sinFecha).includes("cap_no_razonable"), false);
   assert.ok(sinFecha.some((etiqueta) => etiqueta.texto === "Falta la fecha de la factura"));
