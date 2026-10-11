@@ -7192,6 +7192,16 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   margin-top: 2px;
 }
 
+/* On Projects the empty card sits between the welcome and «Antes de su primer pago»: all three read left-aligned (Pao). */
+.hyto-estado-vacio.is-izquierda {
+  justify-items: start;
+  text-align: left;
+}
+
+.hyto-estado-vacio.is-izquierda .hyto-dos-botones {
+  justify-self: start;
+}
+
 @media (max-width: 1023px) {
   header > .hyto-dos-botones {
     width: 100%;

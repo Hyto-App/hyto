@@ -5,12 +5,12 @@ import { act, createElement } from "react";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { ProveedorIdioma } from "../../components/ui/Idioma";
-import { ejemploCasaAlquiler, calcularPresupuesto, puedeCrear } from "./crear-flujo";
+import { ejemploCasaAlquiler, calcularPresupuesto, montoEnCampo, puedeCrear } from "./crear-flujo";
 import { leerMemoriaAdmin } from "./memoria";
 import { desmontar, escribir, escribirArea, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 function botonCrear(): HTMLButtonElement {
-  const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create project and set the budget aside"));
+  const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create and set aside budget"));
   assert.ok(boton instanceof HTMLButtonElement, "Falta el botón de crear.");
   return boton;
 }
@@ -50,7 +50,7 @@ test("en modo demo se recorren los tres pasos, se ve el aviso y crear queda apag
     await llenarHastaVista();
     assert.match(texto(), /This is how your team will see it/);
     assert.equal(botonCrear().disabled, true);
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(red.cuerpos.length, 0);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
@@ -69,7 +69,7 @@ test("crear proyecto manda prioridad normal, dificultad nula y abre el proyecto"
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
     assert.equal(/Priority|Difficulty/.test(texto()), false);
     await llenarHastaVista();
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(red.cuerpos.length, 1);
     const tareas = red.cuerpos[0]?.tareas as { titulo?: string; prioridad?: string; dificultad?: string | null; monto?: string }[];
     assert.equal(red.cuerpos[0]?.nombre, "Feria");
@@ -93,7 +93,7 @@ test("la fecha «¿Para cuándo?» solo se manda cuando la base la tiene", async
     await montar(createElement(CrearProyecto, { conFecha: true }), { push: () => undefined });
     await escribir("#fecha-proyecto", "2026-10-17");
     await llenarHastaVista();
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(red.cuerpos[0]?.fecha, "2026-10-17");
   } finally {
     red.restaurar();
@@ -149,7 +149,7 @@ test("saldo insuficiente: barra naranja, Agregar saldo y el botón de crear apag
     const boton = botonCrear();
     assert.equal(boton.disabled, true);
     assert.equal(boton.getAttribute("aria-describedby"), "aviso-saldo-crear");
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(red.cuerpos.length, 0);
 
     // The breakdown opens from the bar.
@@ -171,7 +171,7 @@ test("con saldo suficiente la barra dice cuánto queda y crear envía", async ()
     assert.match(document.querySelector(".cp-presupuesto")?.textContent ?? "", /You have US\$10\.00 left/);
     assert.equal(document.querySelector("#aviso-saldo-crear"), null);
     assert.equal(botonCrear().disabled, false);
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(red.cuerpos.length, 1);
   } finally {
     red.restaurar();
@@ -198,7 +198,8 @@ test("Usar un ejemplo: Casa de alquiler llena cinco tareas, la última es reembo
     assert.equal(titulos.length, 5);
     assert.equal(titulos[0], "Limpiar y ordenar la habitación 2");
     const montos = [...document.querySelectorAll<HTMLInputElement>("[id^='monto-']")].map((campo) => campo.value);
-    assert.deepEqual(montos, ["25", "20", "15", "20", "40"]);
+    // Shown with two decimals, like every other amount on the screen.
+    assert.deepEqual(montos, ["25,00", "20,00", "15,00", "20,00", "40,00"]);
     const tipos = [...document.querySelectorAll(".cp-tipos")].map((grupo) => grupo.querySelector("[aria-pressed='true']")?.textContent ?? "");
     assert.match(tipos[4] ?? "", /Reembolso/);
     assert.equal(tipos.slice(0, 4).every((tipo) => /Trabajo/.test(tipo)), true);
@@ -242,6 +243,35 @@ test("Agregar otra tarea suma una tarjeta con clic y con toque", async () => {
     });
     assert.equal(contar(), 3);
     assert.match(texto(), /Task 3/);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el monto se ve con dos decimales y al editar muestra lo escrito", async () => {
+  assert.equal(montoEnCampo("25", "es"), "25,00");
+  assert.equal(montoEnCampo("25", "en"), "25.00");
+  assert.equal(montoEnCampo("12.5", "en"), "12.50");
+  assert.equal(montoEnCampo("", "es"), "");
+  assert.equal(montoEnCampo("12.", "en"), "12.");
+  assert.equal(montoEnCampo("-5", "en"), "-5");
+  limpiarPantalla();
+  try {
+    await montar(createElement(CrearProyecto), { push: () => undefined });
+    await escribirArea("#nombre-proyecto", "Feria");
+    await pulsar("Next");
+    const campo = document.querySelector("#monto-1") as HTMLInputElement;
+    const Foco = (window as unknown as { FocusEvent: typeof FocusEvent }).FocusEvent;
+    await act(async () => {
+      campo.dispatchEvent(new Foco("focusin", { bubbles: true }));
+    });
+    await escribir("#monto-1", "8");
+    assert.equal(campo.value, "8");
+    await act(async () => {
+      campo.dispatchEvent(new Foco("focusout", { bubbles: true }));
+    });
+    assert.equal(campo.value, "8.00");
   } finally {
     await desmontar();
     limpiarPantalla();

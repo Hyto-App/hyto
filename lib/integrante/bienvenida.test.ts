@@ -122,6 +122,8 @@ test("eventos sin eventos: Crear proyecto y Unirme con código del mismo tamaño
     // The welcome only explains: the two buttons live in the empty state right below.
     assert.deepEqual(enlaces(), []);
     assert.match(texto(), /No projects yet/);
+    // Left-aligned like the welcome above and «Before your first payment» below.
+    assert.ok(document.querySelector(".hyto-estado-vacio.is-izquierda"));
     const vacio = [...document.querySelectorAll(".hyto-estado-vacio .hyto-dos-botones a")];
     assert.deepEqual(
       vacio.map((enlace) => [enlace.getAttribute("href"), enlace.textContent, enlace.className]),

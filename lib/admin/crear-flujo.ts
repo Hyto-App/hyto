@@ -1,6 +1,7 @@
 import { normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import { aUnidades, faltaParaCrear, RESERVA_USDC, type FaltaSaldo } from "@/lib/escrow/saldo";
 import type { TipoTarea } from "@/lib/integrante/tipos";
+import { formatearMonto } from "@/lib/integrante/formato";
 import type { Idioma } from "@/lib/ui/idioma";
 import { texto, type Clave } from "@/lib/ui/diccionario";
 
@@ -133,4 +134,11 @@ export function ejemploCasaAlquiler(idioma: Idioma): { nombre: string; descripci
       asignado: "",
     })),
   };
+}
+
+/** «25» shows as «25,00» (es) or «25.00» (en). Anything not yet a valid amount shows as typed. */
+export function montoEnCampo(valor: string, idioma: Idioma): string {
+  const monto = normalizarMonto(valor);
+  if (!monto) return valor;
+  return formatearMonto(monto, idioma).replace(/^\s*US\$\s*/, "");
 }

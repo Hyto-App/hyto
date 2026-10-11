@@ -74,9 +74,9 @@ describe("pantallas de admin", { concurrency: false }, () => {
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
     await pulsar("See how it looks");
-    const crear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create project and set the budget aside"));
+    const crear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create and set aside budget"));
     assert.equal(crear instanceof HTMLButtonElement && crear.disabled, true);
-    await pulsar("Create project and set the budget aside");
+    await pulsar("Create and set aside budget");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -96,7 +96,7 @@ describe("pantallas de admin", { concurrency: false }, () => {
       await escribir("#titulo-1", "Cajas");
       await escribir("#monto-1", "8");
       await pulsar("See how it looks");
-      await pulsar("Create project and set the budget aside");
+      await pulsar("Create and set aside budget");
       assert.deepEqual(idas, ["/eventos/evt-1"]);
       assert.equal(leerMemoriaAdmin().proyecto, null);
     } finally {

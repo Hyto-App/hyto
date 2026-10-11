@@ -180,7 +180,7 @@ export function ListaEventos() {
               </button>
             </div>
           ) : eventos.length === 0 ? (
-            <div className="hyto-tarjeta hyto-estado-vacio mt-6">
+            <div className="hyto-tarjeta hyto-estado-vacio is-izquierda mt-6">
               <h2>{t("eventos.empty")}</h2>
               <p>{t(muestraCrear ? "eventos.emptyHelp" : "eventos.emptyHelpJoin")}</p>
               {botones}

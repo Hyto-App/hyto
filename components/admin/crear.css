@@ -130,7 +130,8 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding-bottom: 28px;
+  /* Room for the floating dock (budget bar + button), measured live in CrearProyecto. */
+  padding-bottom: calc(var(--cp-dock, 220px) + 24px);
   animation: cp-entrar 320ms var(--hyto-curva, ease) both;
 }
 
@@ -1089,10 +1090,11 @@
 
 /* Dock: budget bar and the main button, centered and sticky at the bottom. */
 .cp-dock {
-  position: sticky;
+  position: fixed;
+  right: 0;
   bottom: 0;
+  left: 0;
   z-index: 6;
-  margin-top: auto;
   padding: 26px 20px calc(18px + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, rgba(8, 9, 12, 0) 0%, rgba(8, 9, 12, 0.92) 26%, #08090c 60%);
   pointer-events: none;

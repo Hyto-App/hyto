@@ -13,6 +13,7 @@ import {
   cuerpoCrear,
   ejemploCasaAlquiler,
   filaVacia,
+  montoEnCampo,
   puedeCrear,
   revisarTareas,
   type FilaCrear,
@@ -285,6 +286,8 @@ function TarjetaTarea({
   const t = useTexto();
   const claro = useClaro();
   const reembolso = fila.tipo === "reembolso";
+  const idioma = useIdioma();
+  const [editandoMonto, setEditandoMonto] = useState(false);
   const avisoMonto = avisoMontoEntrada(fila.monto);
   const idTitulo = `cp-tarea-${fila.clave}`;
   return (
@@ -328,7 +331,10 @@ function TarjetaTarea({
             inputMode="decimal"
             autoComplete="off"
             placeholder="0.00"
-            value={fila.monto}
+            // While typing, the raw value; otherwise two decimals like the rest of the screen (25 → 25,00).
+            value={editandoMonto ? fila.monto : montoEnCampo(fila.monto, idioma)}
+            onFocus={() => setEditandoMonto(true)}
+            onBlur={() => setEditandoMonto(false)}
             aria-invalid={avisoMonto ? true : undefined}
             aria-describedby={avisoMonto ? `monto-error-${fila.clave}` : undefined}
             onChange={(evento) => onCambio({ monto: escribirMonto(evento.target.value) })}
@@ -410,6 +416,7 @@ export function CrearProyecto({
   const escena = useRef<HTMLDivElement>(null);
   const titulo = useRef<HTMLHeadingElement>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
+  const dock = useRef<HTMLElement>(null);
   const [paso, setPaso] = useState<Paso>(1);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -440,6 +447,19 @@ export function CrearProyecto({
     setVistaPortada(url);
     return () => URL.revokeObjectURL(url);
   }, [portada]);
+
+  // The dock floats over the steps. Its live height pads the scene so the last field scrolls fully above it.
+  useLayoutEffect(() => {
+    const pie = dock.current;
+    const raiz = escena.current;
+    if (!pie || !raiz) return;
+    const medir = () => raiz.style.setProperty("--cp-dock", `${Math.ceil(pie.getBoundingClientRect().height)}px`);
+    medir();
+    if (typeof ResizeObserver === "undefined") return;
+    const observador = new ResizeObserver(medir);
+    observador.observe(pie);
+    return () => observador.disconnect();
+  }, []);
 
   // New card: bring it into view and put the cursor in its first field.
   useEffect(() => {
@@ -574,10 +594,6 @@ export function CrearProyecto({
   const nombreVisible = nombre.trim() || t("crear.sinNombre");
   const contadas = filas.filter(cuentaFila);
   const personas = new Set(contadas.map((fila) => fila.asignado.trim().toLowerCase()).filter(Boolean)).size;
-  const fechaVisible =
-    conFecha && fecha
-      ? new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${fecha}T00:00:00Z`))
-      : null;
   const fechaCorta =
     conFecha && fecha ? new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${fecha}T00:00:00Z`)) : null;
 
@@ -807,7 +823,6 @@ export function CrearProyecto({
               <div className="cp-vista-cuerpo">
                 <h2 className="cp-vista-titulo">{nombreVisible}</h2>
                 {descripcion.trim() ? <p className="cp-vista-desc">{descripcion.trim()}</p> : null}
-                {fechaVisible ? <p className="cp-vista-desc">{fechaVisible}</p> : null}
                 <ul className={`cp-cifras${fechaCorta ? " is-cuatro" : ""}`}>
                   <li>
                     <b>{contadas.length}</b>
@@ -890,7 +905,7 @@ export function CrearProyecto({
         ) : null}
       </div>
 
-      <footer className="cp-dock">
+      <footer className="cp-dock" ref={dock}>
         <div className="cp-dock-col">
           {paso > 1 ? <BarraPresupuesto p={p} /> : null}
           {paso === 1 ? (
