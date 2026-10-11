@@ -45,7 +45,8 @@ export function huellaDeXdr(xdr: string): string {
 }
 
 const AVISO_SIN_SECRETO = "The server cannot sign this payment.";
-const AVISO_SIN_COBRO = "The task has no payout wallet. Ask the volunteer to sign in and open the task.";
+const AVISO_SIN_COBRO = "The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account.";
+const AVISO_SIN_ASIGNAR = "The task has no volunteer yet. Assign it before you lock the budget.";
 const AVISO_SIN_PREPARAR = "This signature was not prepared by the server.";
 const AVISO_VENCIDO = "This payment request has expired. Prepare it again.";
 const AVISO_NO_COINCIDE = "This signature does not match the prepared payment.";
@@ -315,7 +316,9 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   let evidencia;
   try {
     evidencia = await almacen.ultimaEvidencia(tarea.id);
-    if (!esCuenta(tarea.walletCobro) && evidencia) {
+    // The budget is locked before any evidence exists, so the payout account cannot wait for an upload:
+    // it comes from the assigned volunteer's own (non-demo) sign-in.
+    if (!esCuenta(tarea.walletCobro) && tarea.miembroId.trim()) {
       const recuperado = await almacen.walletDeUsuario(tarea.miembroId);
       if (recuperado && esCuenta(recuperado)) {
         await almacen.actualizarTarea(tarea.id, { walletCobro: recuperado });
@@ -326,7 +329,8 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
     return Response.json({ aviso: "The database is not ready." }, { status: 503 });
   }
   if (!esCuenta(tarea.walletCobro)) {
-    return Response.json({ aviso: AVISO_SIN_COBRO }, { status: 400 });
+    const aviso = tarea.miembroId.trim() ? AVISO_SIN_COBRO : AVISO_SIN_ASIGNAR;
+    return Response.json({ aviso }, { status: 400 });
   }
   if (tarea.tipo === "reembolso") {
     if (!evidencia?.monto?.trim() && !evidencia?.montoConfirmado?.trim()) {
