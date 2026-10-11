@@ -190,7 +190,14 @@ test("configuración en español usa usted y no deja la llave de acceso en ingl�
   assert.match(texto("es", "cuenta.passkeyTelefono"), /Usar un teléfono o una tablet/);
   assert.match(texto("es", "cuenta.passkeyListo"), /Usar llave de acceso/);
   assert.match(texto("es", "guiaPasskey.paso2"), /Crear llave de acceso/);
-  assert.match(texto("es", "guiaPasskey.paso3"), /Usar un teléfono o una tablet/);
+  assert.match(texto("es", "guiaPasskey.paso3"), /guardar la llave en otro dispositivo/);
+  assert.equal(texto("es", "guiaPasskey.titulo"), "Prepare este dispositivo en 4 pasos");
+  assert.match(texto("es", "guiaPasskey.paso1Titulo"), /Abra Configuración/);
+  assert.match(texto("en", "guiaPasskey.paso1Titulo"), /Open Settings/);
+  for (const valor of textosDe(es.guiaPasskey)) assert.doesNotMatch(valor, /tel[eé]fono|\bCuenta\b/, valor);
+  for (const valor of textosDe(en.guiaPasskey)) assert.doesNotMatch(valor, /\bphone\b|\bon Account\b|Open Account/, valor);
+  assert.match(texto("es", "errores.dispositivo"), /vaya a Configuración/);
+  assert.match(texto("en", "errores.dispositivo"), /go to Settings/);
   assert.match(texto("es", "guiaPasskey.ayuda1"), /computadora portátil/);
   assert.match(texto("es", "errores.passkey"), /Usar llave de acceso/);
   assert.doesNotMatch(texto("es", "guiaPasskey.introCuenta"), /\bagregá\b/i);
@@ -431,4 +438,12 @@ test("la revisión del organizador pide y revisa «evidencia», no «foto»", ()
   assert.equal(texto("en", "revision.askAnother"), "Ask for other evidence");
   assert.equal(texto("es", "pago.reviewPhoto"), "Revisar la evidencia");
   assert.equal(texto("en", "pago.reviewPhoto"), "Review the evidence");
+});
+
+test("la evidencia no se llama foto: pastilla de archivo y Mile no decide el pago", () => {
+  assert.equal(texto("es", "evidencia.onePhoto"), "1 archivo");
+  assert.equal(texto("en", "evidencia.onePhoto"), "1 file");
+  assert.equal(texto("es", "evidencia.tomarFoto"), "Tomar foto");
+  assert.equal(texto("es", "evidencia.mileReadSame", { monto: "US$20,00" }), "Mile leyó US$20,00. Quien organiza lo revisa y aprueba.");
+  assert.equal(texto("en", "evidencia.mileReadSame", { monto: "US$20.00" }), "Mile read US$20.00. The organizer reviews and approves it.");
 });

@@ -160,7 +160,7 @@ test("r7 caso 1: la mesa completa (Groq: coincide sí, nada falta) llega a «Cum
   assert.equal(textoFalta(lista, "es"), null);
 });
 
-test("r7 caso 2: la mesa incompleta dice qué falta, en español, y no «Parece una foto de la persona»", async () => {
+test("r7 caso 2: la mesa incompleta dice qué falta, en español, y no «La evidencia parece mostrar a la persona»", async () => {
   const titulo = "Mesa de bienvenida (incompleta)";
   const resultado = await conSwitches(() =>
     revisar(tarea("trabajo", MESA), { tipo: "image/jpeg", bytes: archivo("r7_mesa_incomplete.jpg") }, contexto({

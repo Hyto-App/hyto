@@ -8,11 +8,11 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   },
   cap_otra: {
     texto: "Problema grave: no se ve el trabajo ni un recibo",
-    explicacion: "La foto no es el trabajo pedido ni un recibo, así que la nota se queda en insuficiente.",
+    explicacion: "La evidencia no es el trabajo pedido ni un recibo, así que la nota se queda en insuficiente.",
   },
   cap_no_coincide: {
     texto: "Problema grave: no coincide con lo pedido",
-    explicacion: "La foto no coincide con lo pedido, así que la nota se queda en insuficiente.",
+    explicacion: "La evidencia no coincide con lo pedido, así que la nota se queda en insuficiente.",
   },
   cap_sin_empezar: {
     texto: "Problema grave: el trabajo no empezó",
@@ -24,19 +24,19 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   },
   cap_regla_evento: {
     texto: "Problema grave: no cumple la regla del evento",
-    explicacion: "La foto no sigue una regla que la persona organizadora escribió para este evento, así que la nota se queda en insuficiente.",
+    explicacion: "La evidencia no sigue una regla que la persona organizadora escribió para este evento, así que la nota se queda en insuficiente.",
   },
   cap_no_razonable: {
     texto: "No puede quedar completada: el gasto no es razonable",
     explicacion: "El gasto no es razonable para la tarea, así que la nota no puede llegar a completada.",
   },
   photo_unclear: {
-    texto: "Foto borrosa o poco clara",
-    explicacion: "La descripción dice que la foto está borrosa, oscura o es difícil de leer.",
+    texto: "Evidencia borrosa o poco clara",
+    explicacion: "La descripción dice que la evidencia está borrosa, oscura o es difícil de leer.",
   },
   selfie_or_empty: {
-    texto: "Parece una foto de la persona / no se ve el trabajo ni un recibo",
-    explicacion: "La foto se clasificó como algo distinto del trabajo pedido o de un recibo.",
+    texto: "La evidencia parece mostrar a la persona / no se ve el trabajo ni un recibo",
+    explicacion: "La evidencia se clasificó como algo distinto del trabajo pedido o de un recibo.",
   },
   unclear_match: {
     texto: "No se puede confirmar la coincidencia",

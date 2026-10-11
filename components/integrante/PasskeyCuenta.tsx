@@ -24,8 +24,8 @@ export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
   const [resaltada, setResaltada] = useState(false);
   const tarjeta = useRef<HTMLElement>(null);
 
-  // Arriving from the guide's link (/account?add=passkey#passkey): bring this card into view and
-  // mark it. The card mounts after Account loads, so the browser's own jump to the hash misses it.
+  // Arriving from the guide's link (/configuracion?add=passkey#passkey): bring this card into view and
+  // mark it. The card mounts after Settings loads, so the browser's own jump to the hash misses it.
   useEffect(() => {
     if (demo || !pidePasskey(window.location.search, window.location.hash)) return;
     setResaltada(true);

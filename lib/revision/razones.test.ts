@@ -114,7 +114,7 @@ test("otra y una foto borrosa muestran la falta grave, el selfie y el desenfoque
 
 test("el desenfoque sale de la descripción y no de out of frame", () => {
   const borrosa = etiquetasDe(entrada({ descripcion: "The banner is blurry and hard to read." }));
-  assert.equal(borrosa[0]?.texto, "Photo unclear or blurry");
+  assert.equal(borrosa[0]?.texto, "Evidence unclear or blurry");
   assert.deepEqual(borrosa[0]?.preguntas, []);
   const fuera = etiquetasDe(entrada({
     descripcion: "The back of the room is out of frame.",

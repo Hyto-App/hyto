@@ -133,7 +133,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       vioLoPedido ? "Serious issue: it does not show what was requested" : "Serious issue: no work or receipt shown",
       faltaOtra
         ? `${PREFIJO_FALTA}${faltaOtra}.`
-        : "The photo is not the requested work and not a receipt, so the grade stays Insufficient.",
+        : "The evidence is not the requested work and not a receipt, so the grade stays Insufficient.",
       "problem",
       ["c1"],
     ));
@@ -142,7 +142,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_no_coincide",
       "Serious issue: does not match the request",
-      "The photo does not match what was requested, so the grade stays Insufficient.",
+      "The evidence does not match what was requested, so the grade stays Insufficient.",
       "problem",
       ["v1"],
     ));
@@ -169,7 +169,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "cap_regla_evento",
       "Serious issue: it breaks the organizer's rule",
-      "The photo does not follow a rule the organizer wrote for this event, so the grade stays Insufficient.",
+      "The evidence does not follow a rule the organizer wrote for this event, so the grade stays Insufficient.",
       "problem",
       ["r1"],
     ));
@@ -186,8 +186,8 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   if (borroso) {
     etiquetas.push(etiqueta(
       "photo_unclear",
-      "Photo unclear or blurry",
-      "The description says the photo is blurry, dark, or hard to read.",
+      "Evidence unclear or blurry",
+      "The description says the evidence is blurry, dark, or hard to read.",
       "problem",
       otra ? ["c1"] : [],
     ));
@@ -195,8 +195,8 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   if (otra && !vioLoPedido && !faltantesDe(entrada.lectura)) {
     etiquetas.push(etiqueta(
       "selfie_or_empty",
-      "Looks like a photo of the person / no work or receipt shown",
-      "The photo was classified as something other than the requested work or a receipt.",
+      "The evidence seems to show the person / no work or receipt shown",
+      "The evidence was classified as something other than the requested work or a receipt.",
       "problem",
       ["c1"],
     ));
