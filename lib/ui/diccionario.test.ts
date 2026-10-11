@@ -370,7 +370,7 @@ test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y 
   assert.equal(texto("es", "evidencia.soltarFormatos"), "Foto, factura, PDF o lista");
   assert.equal(texto("en", "evidencia.soltarFormatos"), "Photo, invoice, PDF, or list");
   assert.match(texto("es", "tareas.step2"), /una foto, una factura, un PDF o una lista/);
-  assert.match(texto("en", "bienvenida.body"), /one piece of evidence \(a photo, an invoice, a PDF, or a list\), Mile reviews it/);
+  assert.match(texto("en", "bienvenida.body"), /you upload your evidence, Mile reviews it/);
   const nuevas = [
     "evidencia.tomarFoto",
     "evidencia.subirArchivo",
