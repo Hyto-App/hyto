@@ -2119,7 +2119,7 @@ export const es: Rama<typeof en> = {
     elegir: "Elija una evidencia para revisarla.",
     evidencias: "Evidencias del proyecto",
     recientes: "Más recientes primero",
-    pagadoPct: "{p} % pagado",
+    pagadoPct: "{p}% pagado",
     deTotal: "{pagado} de {total}",
     mileNota: "Mile revisa cada evidencia y le deja una recomendación. Usted decide si aprueba y cuándo se paga.",
     recomendacionMile: "Recomendación de Mile",
