@@ -39,7 +39,7 @@ test("sin recuperación de Cavos (lo de hoy) siguen Google, Apple y el código p
     const pantalla = texto();
     assert.match(pantalla, /Continue with Google/);
     assert.match(pantalla, /Continue with Apple/);
-    assert.match(pantalla, /or with your email/);
+    assert.match(pantalla, /or continue with/);
     assert.match(pantalla, /6-digit code/);
     assert.ok(document.querySelector('input[type="email"]'));
   } finally {
@@ -55,7 +55,7 @@ test("con la recuperación en Google solo se ofrece Google", async () => {
     const pantalla = texto();
     assert.match(pantalla, /Continue with Google/);
     assert.doesNotMatch(pantalla, /Continue with Apple/);
-    assert.doesNotMatch(pantalla, /or with your email/);
+    assert.doesNotMatch(pantalla, /or continue with/);
     assert.equal(document.querySelector('input[type="email"]'), null);
   } finally {
     await desmontar();

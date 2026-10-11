@@ -85,7 +85,7 @@ export function LineaRevision({
             aria-current={paso.estado === "ahora" ? "step" : undefined}
           >
             <span className="hyto-paso-marca" aria-hidden="true">
-              {paso.rosa ? "✗" : paso.estado === "hecho" ? "✓" : paso.estado === "ahora" && paso.clave === "mile" ? <Mile estado="buscando" tamano={28} halo={false} /> : indice + 1}
+              {paso.rosa ? "✗" : paso.estado === "hecho" ? "✓" : paso.estado === "ahora" && paso.clave === "mile" ? <Mile estado="recomendando" tamano={28} /> : indice + 1}
             </span>
             <span className="hyto-paso-texto">
               <strong>{paso.titulo}</strong>

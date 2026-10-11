@@ -6,7 +6,7 @@ import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { Icono } from "@/components/ui/Marca";
-import { MileAnimada } from "@/components/ui/MileAnimada";
+import { Mile } from "@/components/ui/Mile";
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { formatearHora, montoDeTarea, vistaMonto } from "@/lib/integrante/formato";
@@ -65,10 +65,10 @@ export function PantallaRechazada({
         <div className="hyto-tarea-col">
           <section className={`hyto-tarjeta hyto-mile-rechazo${cerrado ? " is-cerrada" : ""}`}>
             <div className="hyto-solo-movil">
-              <MileAnimada estado="rechazado" tamano={140} />
+              <Mile estado="preocupada" tamano={140} />
             </div>
             <div className="hyto-solo-escritorio">
-              <MileAnimada estado="rechazado" tamano={180} />
+              <Mile estado="preocupada" tamano={180} />
             </div>
             <div>
               <span className="hyto-badge hyto-badge-pend">{t("tareas.badgeNewPhoto")}</span>

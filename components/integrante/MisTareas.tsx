@@ -12,7 +12,6 @@ import { EstadoVacio } from "@/components/ui/EstadoVacio";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
-import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { explicarPago, montoDeTarea, totalGanado } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
@@ -96,15 +95,9 @@ function Saludo({ nombre, sinDibujo = false }: { nombre: string | null; sinDibuj
   const t = useTexto();
   const idioma = useIdioma();
   const [ahora, setAhora] = useState<Date | null>(null);
-  const [quieto, setQuieto] = useState(false);
 
   useEffect(() => {
     setAhora(new Date());
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const aplicar = () => setQuieto(media.matches);
-    aplicar();
-    media.addEventListener("change", aplicar);
-    return () => media.removeEventListener("change", aplicar);
   }, []);
 
   const persona = primerNombre(nombre ? nombreEnIdioma(nombre, idioma) : null);
@@ -112,7 +105,7 @@ function Saludo({ nombre, sinDibujo = false }: { nombre: string | null; sinDibuj
 
   return (
     <div className="hyto-saludo">
-      {sinDibujo ? null : quieto ? <Mile estado="cara-feliz" tamano={72} className="hyto-mile-prominente" /> : <MileAnimada estado="saludo" tamano={72} className="hyto-mile-prominente" />}
+      {sinDibujo ? null : <Mile estado="reposo" tamano={72} className="hyto-mile-prominente" />}
       <div className="min-w-0">
         <p className="hyto-eyebrow">{t("tareas.title")}</p>
         <h1 className="hyto-h1">{frase}</h1>
@@ -126,7 +119,7 @@ function Cargando() {
   return (
     <div aria-busy="true" aria-live="polite">
       <div className="hyto-tarjeta flex items-center gap-3 p-4">
-        <MileAnimada estado="buscando" tamano={56} className="hyto-mile-prominente" />
+        <Mile estado="leyendo" tamano={56} className="hyto-mile-prominente" />
         <p className="text-sm text-[var(--suave)]">{t("tareas.loadingMile")}</p>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
@@ -312,7 +305,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
 
       {lista && error ? (
         <div className="hyto-tarjeta hyto-estado-vacio" role="alert">
-          <MileAnimada estado="error-subida" tamano={96} className="hyto-mile-prominente" />
+          <Mile estado="preocupada" tamano={96} className="hyto-mile-prominente" />
           <h2>{claro(error)}</h2>
           <div className="hyto-estado-vacio-acciones">
             <button type="button" className="hyto-btn hyto-btn-grande" onClick={() => setIntento((actual) => actual + 1)}>
@@ -324,7 +317,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
 
       {lista && !error && tareas.length === 0 ? (
         <div className="hyto-tarjeta hyto-estado-vacio">
-          <Mile estado="descansando" tamano={120} className="hyto-cofre-vacio hyto-mile-prominente" />
+          <Mile estado="reposo" tamano={120} className="hyto-mile-prominente" />
           <h2>{t("tareas.emptyTitle")}</h2>
           <p>{t("tareas.emptyBody")}</p>
           <div className="hyto-estado-vacio-acciones">
@@ -481,7 +474,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                           ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <>
-                              <Link href={`/tareas/${tarea.id}`} className="hyto-btn hyto-btn-grande">
+                              <Link href={`/tareas/${tarea.id}`} className={abierta ? "hyto-btn hyto-btn-grande" : "hyto-btn-line"}>
                                 <Icono nombre="camera" tamano={18} />
                                 {tarea.tipo === "reembolso" ? (
                                   <>

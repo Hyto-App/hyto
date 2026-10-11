@@ -844,6 +844,10 @@
   width: 100%;
   min-height: 56px;
   margin-top: 14px;
+  /* Always below the last card and clear of the fixed dock. */
+  position: relative;
+  z-index: 1;
+  scroll-margin-bottom: calc(var(--cp-dock, 220px) + 24px);
   border-radius: 18px;
   border: 1.5px dashed rgba(183, 238, 52, 0.38);
   background: rgba(183, 238, 52, 0.03);

@@ -599,8 +599,8 @@ test("el vacío de tareas es una invitación con un solo cofre en reposo", async
     assert.match(acciones[1]?.textContent ?? "", /Ver proyectos/);
     const millas = [...document.querySelectorAll(".hyto-mile")];
     assert.equal(millas.length, 1);
-    assert.match(millas[0]?.className ?? "", /hyto-mile-descansando/);
-    assert.match(millas[0]?.className ?? "", /hyto-cofre-vacio/);
+    assert.match(millas[0]?.className ?? "", /hyto-mile-reposo/);
+    assert.equal(millas[0]?.querySelector("svg.mile")?.getAttribute("data-mile"), "reposo");
     assert.equal(document.querySelector(".hyto-saludo .hyto-mile"), null);
   } finally {
     globalThis.fetch = anterior;

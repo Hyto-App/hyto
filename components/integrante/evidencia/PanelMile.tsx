@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Mile } from "@/components/ui/Mile";
 import { useTexto } from "@/components/ui/Idioma";
 
-/** One line from Mile, then the rest. The chest stays at rest. No chat bubble. */
+/** One line from Mile, then the rest. Mile recommends and never approves. No chat bubble. */
 export function PanelMile() {
   const t = useTexto();
   const [mas, setMas] = useState(false);
   return (
     <section className="hyto-tarjeta hyto-tarjeta-heroe hyto-panel-mile">
-      <Mile estado="descansando" tamano={96} className="hyto-mile-prominente" />
+      <Mile estado="recomendando" tamano={96} className="hyto-mile-prominente" />
       <div className="hyto-panel-mile-nota">
         <p className={mas ? "is-abierta" : undefined}>
           {t("evidencia.mileCheck")}

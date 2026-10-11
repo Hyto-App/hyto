@@ -299,7 +299,7 @@ test("Agregar otra tarea suma una tarjeta con clic y con toque", async () => {
     assert.ok(boton instanceof HTMLButtonElement);
     const contar = () => document.querySelectorAll(".cp-tarjetas > *").length;
     assert.equal(contar(), 1);
-    await pulsar("Add another task");
+    await pulsar("Add task");
     assert.equal(contar(), 2);
     // Touch: pointerdown (default prevented so the keyboard stays) then click.
     await act(async () => {

@@ -4327,58 +4327,7 @@ html.hyto-firmando body {
   left: 0;
 }
 
-/* Mile */
-.hyto-mile {
-  position: relative;
-  display: inline-block;
-  flex: none;
-  line-height: 0;
-}
-
-.hyto-mile img {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.hyto-mile-halo::before {
-  content: "";
-  position: absolute;
-  inset: -6%;
-  border-radius: 999px;
-  background: radial-gradient(closest-side, var(--halo, var(--halo-lima)), transparent 72%);
-}
-
-.hyto-mile-buscando {
-  --halo: var(--halo-lavanda);
-}
-
-.hyto-mile-rechazado {
-  --halo: var(--halo-rosa);
-}
-
-.hyto-mile-la-tengo::before {
-  transform: scale(1.15);
-  --halo: rgba(183, 238, 52, 0.38);
-}
-
-/* Animated Mile: the rig draws on a 480 viewBox and the static art on 400, so the fallback is scaled to match and nothing jumps when the rig takes over. */
-.hyto-mile-animada > .hyto-mile {
-  transform: scale(0.82);
-}
-
-.hyto-mile-animada.is-llena > .hyto-mile,
-.hyto-mile-animada.is-llena > .hyto-mile img {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-[data-theme="dark"] .hyto-mile-claro,
-:root:not([data-theme="dark"]) .hyto-mile-oscuro {
-  display: none;
-}
-
+/* Mile: see components/ui/mile.css */
 /* Shared card, badges, chips */
 .hyto-tarjeta {
   border-radius: var(--r-lg);
@@ -6084,7 +6033,7 @@ html.hyto-firmando body {
 }
 
 .hyto-preguntar-mile .hyto-mile,
-.hyto-preguntar-mile .hyto-mile img {
+.hyto-preguntar-mile .hyto-mile .mile {
   width: 18px !important;
   height: 18px !important;
 }
@@ -7553,4 +7502,26 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   letter-spacing: 0.14em;
   line-height: 1.4;
   text-align: center;
+}
+
+/* Entry screen: Google, Apple and the demo share one row; Mile is standalone (no chest). */
+.hyto-login-alternas {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.hyto-login-alternas .hyto-login-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  margin-top: 0;
+  padding-inline: 10px;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.hyto-login-mile {
+  width: auto;
+  height: auto;
 }

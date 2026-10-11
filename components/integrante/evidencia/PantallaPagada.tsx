@@ -13,7 +13,7 @@ import { clavePagoVisto } from "@/lib/integrante/revision";
 import type { Tarea } from "@/lib/integrante/tipos";
 
 /**
- * Calm close after a person approves. The amount and one line. Mile rests.
+ * Calm close after a person approves. The amount and one line. Mile celebrates only here, after a person approved.
  * The first open hides the grade. A later open shows it, already settled.
  */
 export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string }) {
@@ -38,11 +38,11 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
   return (
     <main className="hyto-page hyto-pagada hyto-cierre hyto-asentado">
       <p className="hyto-estado-pagado">{corto ? t("evidencia.pagadoRecibio", { amount: corto }) : t("evidencia.pagadoSolo")}</p>
-      <Mile estado="descansando" tamano={96} />
+      <Mile estado="celebrando" tamano={96} />
       {corto ? <p className="hyto-cierre-monto">{corto}</p> : null}
       {pago?.detalle ? <p className="hyto-tarea-meta">{pago.detalle}</p> : null}
       <p className="hyto-cierre-frase">{t("evidencia.personApproved")}</p>
-      <p className="hyto-cierre-frase">{demo ? t("evidencia.practiceNetwork") : t("evidencia.inBalance")}</p>
+      <p className="hyto-cierre-frase">{demo ? t("evidencia.demoDatos") : t("evidencia.inBalance")}</p>
       {titulo ? <p className="hyto-tarea-meta">{titulo}</p> : null}
       {visto && calificacion ? <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} /> : null}
       <Recibo bruto={recibo?.bruto ?? corto} neto={corto} tareaId={tarea.id} />

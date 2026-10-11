@@ -54,7 +54,7 @@ export function MomentoLaTengo({
 
   return (
     <main className={`hyto-page hyto-tarea hyto-enviada hyto-la-tengo${asentado ? " hyto-asentado" : ""}`}>
-      <Mile estado="la-tengo" tamano={140} />
+      <Mile estado="listo" tamano={140} />
       <h1 className="hyto-tarea-titulo">{t("evidencia.evidenceReady")}</h1>
       {monto ? <p className="hyto-la-tengo-monto">{monto}</p> : null}
       {tope ? <p className="hyto-la-tengo-tope">{tope}</p> : null}

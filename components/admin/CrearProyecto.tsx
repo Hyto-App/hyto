@@ -1164,7 +1164,7 @@ export function CrearProyecto({
                   onClick={agregarTarea}
                 >
                   <Icono nombre="mas" />
-                  {t("crear.agregarOtra")}
+                  {t("eventos.addTask")}
                 </button>
               </div>
             ) : null}
