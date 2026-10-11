@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
+import { MiniaturaEvidencia } from "@/components/integrante/evidencia/MiniaturaEvidencia";
 import { ResumenResultado } from "@/components/integrante/evidencia/ResumenResultado";
 import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
@@ -549,6 +550,10 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <img src={srcFoto} alt={t("evidencia.alt")} />
     ) : null;
 
+  const miniatura = (
+    <MiniaturaEvidencia src={srcFoto} documento={esDocumento} etiqueta={esDocumento ? etiquetaDocumento : t("evidencia.alt")} />
+  );
+
   if (revisando) {
     return (
       <main className="hyto-page hyto-tarea">
@@ -591,7 +596,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             titulo={titulo}
             calificacion={calificacion}
             montoVisible={montoVisible}
-            miniatura={vistaFoto}
+            miniatura={miniatura}
           />
         }
       >
@@ -599,7 +604,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
         <ActividadTarea tarea={tarea} />
         {!cerrada ? (
           <button type="button" onClick={tomarOtra} className="hyto-btn-line">
-            {recibo ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
+            {t("evidencia.sendAnotherEvidence")}
           </button>
         ) : null}
       </MomentoLaTengo>
@@ -664,7 +669,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
           titulo={titulo}
           calificacion={calificacion}
           montoVisible={montoVisible}
-          miniatura={vistaFoto}
+          miniatura={miniatura}
           mostrarLlamada={!mejorable}
           meta={
             nombreEvento || hora ? (
@@ -702,7 +707,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </Link>
           ) : !cerrada ? (
             <button type="button" onClick={tomarOtra} className="hyto-btn-line">
-              {recibo ? t("evidencia.sendAnother") : t("evidencia.takeAnother")}
+              {t("evidencia.sendAnotherEvidence")}
             </button>
           ) : null}
         </div>

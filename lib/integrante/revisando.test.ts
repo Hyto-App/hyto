@@ -94,7 +94,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
       await new Promise((resolver) => setTimeout(resolver, INTERVALO_SEGUIMIENTO_MS + 300));
     });
     assert.match(texto(), /Mile could not finish. Try again./);
-    assert.match(texto(), /Send the photo again/);
+    assert.match(texto(), /Send the evidence again/);
     assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /Mile checks your evidence/);
     const reintentar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Try again");
@@ -131,7 +131,7 @@ test("una revisión guardada como error ofrece reenviar sin esperar el plazo", a
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Mile could not finish. Try again./);
-    assert.match(texto(), /Send the photo again/);
+    assert.match(texto(), /Send the evidence again/);
     assert.doesNotMatch(texto(), /Mile is checking your evidence/);
     assert.doesNotMatch(texto(), /Your evidence arrived/);
     const reintentar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Try again");
@@ -254,7 +254,7 @@ test("una nota insuficiente no usa el texto de éxito", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Ana, this photo did not pass Mile's review/);
+    assert.match(texto(), /Ana, this evidence did not pass Mile's review/);
     assert.match(texto(), /40% · Insufficient/);
     assert.match(texto(), /If you want, you can send better evidence; the organizer decides\./);
     assert.doesNotMatch(texto(), /Your evidence arrived/);

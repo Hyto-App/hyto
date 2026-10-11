@@ -10,6 +10,9 @@ const CLASE: Record<SeveridadNota, string> = {
   good: "hyto-pill-ok",
 };
 
+/** A "Falta: …" list is shown once, in the card's orange strip, not again inside the flag box. */
+const LISTA_FALTA = /^(Falta|Missing|No se pudo confirmar|Not confirmed): /;
+
 /** Mile's flags as boxes in two equal columns (one on a phone). Each text shows once. */
 export function NotasMileRejilla({ etiquetas }: { etiquetas?: readonly EtiquetaNota[] | null }) {
   const idioma = useIdioma();
@@ -27,7 +30,7 @@ export function NotasMileRejilla({ etiquetas }: { etiquetas?: readonly EtiquetaN
       {visibles.map((etiqueta) => (
         <li key={etiqueta.id} className="hyto-resumen-caja">
           <span className={`hyto-pill text-xs ${CLASE[etiqueta.severidad]}`}>{etiqueta.texto}</span>
-          <p>{etiqueta.explicacion}</p>
+          {LISTA_FALTA.test(etiqueta.explicacion) ? null : <p>{etiqueta.explicacion}</p>}
         </li>
       ))}
     </ul>

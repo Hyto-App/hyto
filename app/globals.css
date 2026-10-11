@@ -5225,6 +5225,15 @@ html.hyto-firmando body {
   background: var(--papel);
 }
 
+.hyto-resumen-icono {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--suave);
+  background: var(--superficie-2);
+}
+
 .hyto-resumen-mini img {
   width: 100%;
   height: 100%;

@@ -171,8 +171,8 @@ test("una tarea pendiente sin foto ofrece bloquear el presupuesto", async () => 
   }) as typeof fetch;
   try {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
-    await esperar(() => texto().includes("No photo yet"));
-    assert.match(texto(), /You can set this amount aside before a photo arrives/);
+    await esperar(() => texto().includes("No evidence yet"));
+    assert.match(texto(), /You can set this amount aside before evidence arrives/);
     const enlace = document.querySelector('a[href="/revision/stand"]');
     assert.equal(enlace?.textContent, "Lock budget");
     const comida = document.querySelector('a[href="/revision/comida"]');

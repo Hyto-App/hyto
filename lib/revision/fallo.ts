@@ -20,7 +20,7 @@ const MENSAJES: Record<CodigoFalloRevision, string> = {
   tiempo: "Mile did not respond in time",
   proveedor: "Mile could not finish the review",
   respuesta: "Mile returned a response that could not be read",
-  sin_foto: "There is no photo to review",
+  sin_foto: "There is no evidence to review",
 };
 
 export class FalloRevision extends Error {
