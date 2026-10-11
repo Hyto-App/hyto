@@ -22,6 +22,7 @@ import {
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { Sugerido } from "@/lib/perfil/sugeridos";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
+import { fechaGuardadaVisible, problemaFechaLocal, rangoFecha, type ProblemaFecha } from "@/lib/tareas/fecha-limite";
 import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
 import type { Clave } from "@/lib/ui/diccionario";
 
@@ -89,7 +90,7 @@ function ArtePortada() {
   );
 }
 
-function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" | "atras" | "candado" | "foto" | "pdf" | "lista" | "chispa" | "arriba" }) {
+function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" | "atras" | "candado" | "chispa" | "arriba" }) {
   const comun = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
   switch (nombre) {
     case "trabajo":
@@ -135,27 +136,6 @@ function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" 
         <svg {...comun}>
           <rect x="5" y="11" width="14" height="9" rx="2" />
           <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-        </svg>
-      );
-    case "foto":
-      return (
-        <svg {...comun} width={12} height={12}>
-          <rect x="3" y="6" width="18" height="14" rx="3" />
-          <circle cx="12" cy="13" r="3.5" />
-          <path d="M9 6l1.5-2h3L15 6" />
-        </svg>
-      );
-    case "pdf":
-      return (
-        <svg {...comun} width={12} height={12}>
-          <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-          <path d="M14 3v6h6" />
-        </svg>
-      );
-    case "lista":
-      return (
-        <svg {...comun} width={12} height={12}>
-          <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
         </svg>
       );
     case "chispa":
@@ -250,9 +230,22 @@ function BarraPresupuesto({ p }: { p: Presupuesto }) {
   );
 }
 
-function Campo({ etiqueta, htmlFor, children, ayuda }: { etiqueta: string; htmlFor?: string; children: ReactNode; ayuda?: ReactNode }) {
+function Campo({
+  etiqueta,
+  htmlFor,
+  children,
+  ayuda,
+  zona,
+}: {
+  etiqueta: string;
+  htmlFor?: string;
+  children: ReactNode;
+  ayuda?: ReactNode;
+  /** Grid area on desktop (crear.css): type and amount sit side by side. */
+  zona?: "titulo" | "tipo" | "monto" | "evidencia" | "quien";
+}) {
   return (
-    <div className="cp-campo-grupo">
+    <div className={`cp-campo-grupo${zona ? ` is-${zona}` : ""}`}>
       {htmlFor ? (
         <label className="cp-etiqueta" htmlFor={htmlFor}>
           {etiqueta}
@@ -295,7 +288,7 @@ function TarjetaTarea({
       <p className="cp-insignia">
         <span id={idTitulo}>{t("crear.tareaN", { n: numero })}</span>
       </p>
-      <Campo etiqueta={t("crear.queHacer")} htmlFor={`titulo-${fila.clave}`}>
+      <Campo etiqueta={t("crear.queHacer")} htmlFor={`titulo-${fila.clave}`} zona="titulo">
         <input
           id={`titulo-${fila.clave}`}
           className="cp-campo cp-input"
@@ -305,7 +298,7 @@ function TarjetaTarea({
           onChange={(evento) => onCambio({ titulo: evento.target.value })}
         />
       </Campo>
-      <Campo etiqueta={t("crear.tipo")}>
+      <Campo etiqueta={t("crear.tipo")} zona="tipo">
         <div className="cp-tipos" role="group" aria-label={t("crear.tipo")}>
           {(["trabajo", "reembolso"] as const).map((tipo) => {
             const on = fila.tipo === tipo;
@@ -321,7 +314,7 @@ function TarjetaTarea({
           })}
         </div>
       </Campo>
-      <Campo etiqueta={`${t(reembolso ? "crear.montoReembolso" : "crear.montoTrabajo")} (US$)`} htmlFor={`monto-${fila.clave}`}>
+      <Campo etiqueta={`${t(reembolso ? "crear.montoReembolso" : "crear.montoTrabajo")} (US$)`} htmlFor={`monto-${fila.clave}`} zona="monto">
         <div className={`cp-monto${avisoMonto ? " is-error" : ""}`}>
           <span className="cp-moneda" aria-hidden="true">
             US$
@@ -349,27 +342,12 @@ function TarjetaTarea({
       <Campo
         etiqueta={t("crear.evidencia")}
         htmlFor={`condicion-${fila.clave}`}
+        zona="evidencia"
         ayuda={
-          <>
-            <p className="cp-ayuda">
-              <Icono nombre="chispa" />
-              {t("crear.evidenciaAyuda")}
-            </p>
-            <ul className="cp-chips" aria-label={t("crear.formatos")}>
-              <li>
-                <Icono nombre="foto" />
-                {t("crear.formatoFoto")}
-              </li>
-              <li>
-                <Icono nombre="pdf" />
-                {t("crear.formatoPdf")}
-              </li>
-              <li>
-                <Icono nombre="lista" />
-                {t("crear.formatoLista")}
-              </li>
-            </ul>
-          </>
+          <p className="cp-ayuda">
+            <Icono nombre="chispa" />
+            {t("crear.evidenciaAyuda")}
+          </p>
         }
       >
         <Area
@@ -381,7 +359,7 @@ function TarjetaTarea({
           onCambio={(valor) => onCambio({ condicion: valor })}
         />
       </Campo>
-      <Campo etiqueta={t("crear.quien")} htmlFor={`asignado-${fila.clave}`}>
+      <Campo etiqueta={t("crear.quien")} htmlFor={`asignado-${fila.clave}`} zona="quien">
         <SugeridosElegir id={`asignado-${fila.clave}`} sugeridos={sugeridos} valor={fila.asignado} onCambio={(correo) => onCambio({ asignado: correo })} />
       </Campo>
       {error ? (
@@ -421,6 +399,10 @@ export function CrearProyecto({
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [fecha, setFecha] = useState("");
+  const [errorFecha, setErrorFecha] = useState<ProblemaFecha | null>(null);
+  // Today in the person's own time zone. Read after mount so the server render and the browser agree.
+  const [rango, setRango] = useState<{ min: string; max: string } | null>(null);
+  useEffect(() => setRango(rangoFecha()), []);
   const [contextoIa, setContextoIa] = useState("");
   const [contextoPorUsuario, setContextoPorUsuario] = useState(false);
   const [portada, setPortada] = useState<File | null>(null);
@@ -519,10 +501,22 @@ export function CrearProyecto({
     irA(2);
   }
 
+  /** «¿Para cuándo?» from today onward. Returns false and shows the message when the date can't be used. */
+  function revisarFecha(): boolean {
+    if (!conFecha) return true;
+    const problema = problemaFechaLocal(fecha);
+    setErrorFecha(problema);
+    return problema === null;
+  }
+
   function siguienteDesde1() {
     if (!nombre.trim()) {
       setErrorNombre(true);
       document.getElementById("nombre-proyecto")?.focus();
+      return;
+    }
+    if (!revisarFecha()) {
+      document.getElementById("fecha-proyecto")?.focus();
       return;
     }
     irA(2);
@@ -545,6 +539,10 @@ export function CrearProyecto({
     if (!nombre.trim()) {
       irA(1);
       setErrorNombre(true);
+      return;
+    }
+    if (!revisarFecha()) {
+      irA(1);
       return;
     }
     const problema = revisarTareas(filas);
@@ -594,8 +592,7 @@ export function CrearProyecto({
   const nombreVisible = nombre.trim() || t("crear.sinNombre");
   const contadas = filas.filter(cuentaFila);
   const personas = new Set(contadas.map((fila) => fila.asignado.trim().toLowerCase()).filter(Boolean)).size;
-  const fechaCorta =
-    conFecha && fecha ? new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${fecha}T00:00:00Z`)) : null;
+  const fechaCorta = conFecha && fecha ? fechaGuardadaVisible(fecha, idioma, { day: "numeric", month: "short" }) : null;
 
   const notaDemo = modoDemo ? (
     <p className="cp-nota-demo" role="note">
@@ -671,7 +668,7 @@ export function CrearProyecto({
                 onChange={(evento) => elegirPortada(evento.target.files)}
               />
             </section>
-            <div className="cp-col">
+            <div className="cp-col is-paso1">
               <div className={`cp-nombre${errorNombre ? " is-error" : ""}`}>
                 <label htmlFor="nombre-proyecto" className="cp-nombre-etiqueta">
                   {t("crear.nombre")}
@@ -701,13 +698,18 @@ export function CrearProyecto({
                 </p>
               ) : null}
 
-              <button type="button" className="cp-ejemplo" onClick={usarEjemplo}>
-                <Icono nombre="chispa" />
-                {t("crear.ejemplo")}
-              </button>
-              <p className="cp-ayuda">{t("crear.ejemploAyuda")}</p>
+              {/* The sample project is for the demo tour only; a real organizer starts from a blank project. */}
+              {modoDemo ? (
+                <>
+                  <button type="button" className="cp-ejemplo" onClick={usarEjemplo}>
+                    <Icono nombre="chispa" />
+                    {t("crear.ejemplo")}
+                  </button>
+                  <p className="cp-ayuda">{t("crear.ejemploAyuda")}</p>
+                </>
+              ) : null}
 
-              <div className="cp-seccion">
+              <div className="cp-seccion is-descripcion">
                 <label className="cp-seccion-titulo" htmlFor="descripcion-proyecto">
                   {t("crear.queSeTrata")}
                 </label>
@@ -729,16 +731,37 @@ export function CrearProyecto({
               </div>
 
               {conFecha ? (
-                <div className="cp-seccion">
+                <div className="cp-seccion is-fecha">
                   <label className="cp-seccion-titulo" htmlFor="fecha-proyecto">
                     {t("crear.paraCuando")}
                   </label>
                   <p className="cp-ayuda">{t("crear.paraCuandoAyuda")}</p>
-                  <input id="fecha-proyecto" type="date" className="cp-campo cp-fecha" value={fecha} onChange={(evento) => setFecha(evento.target.value)} />
+                  <input
+                    id="fecha-proyecto"
+                    type="date"
+                    className="cp-campo cp-fecha"
+                    value={fecha}
+                    min={rango?.min}
+                    max={rango?.max}
+                    aria-invalid={errorFecha ? true : undefined}
+                    aria-describedby={errorFecha ? "fecha-error" : undefined}
+                    onChange={(evento) => {
+                      const valor = evento.target.value;
+                      setFecha(valor);
+                      // Clear as soon as the day works; a new error waits for blur so typing a year does not flash it.
+                      if (errorFecha && problemaFechaLocal(valor) === null) setErrorFecha(null);
+                    }}
+                    onBlur={(evento) => setErrorFecha(problemaFechaLocal(evento.target.value))}
+                  />
+                  {errorFecha ? (
+                    <p id="fecha-error" role="alert" className="cp-error">
+                      {t(errorFecha === "lejana" ? "crear.fechaLejana" : "crear.fechaPasada")}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
 
-              <div className="cp-seccion">
+              <div className="cp-seccion is-contexto">
                 {contextoAbierto(contextoIa, contextoPorUsuario) ? (
                   <>
                     <label className="cp-seccion-titulo" htmlFor="contexto-ia-proyecto">
@@ -771,7 +794,7 @@ export function CrearProyecto({
         ) : null}
 
         {paso === 2 ? (
-          <div className="cp-col">
+          <div className="cp-col is-paso2">
             <p className="cp-mile">
               <span className="cp-mile-sello" aria-hidden="true">
                 M
@@ -809,7 +832,7 @@ export function CrearProyecto({
         ) : null}
 
         {paso === 3 ? (
-          <div className="cp-col">
+          <div className="cp-col is-paso3">
             <p className="cp-sub">{t("crear.reviseAntes")}</p>
             <article className="cp-vista">
               <div className="cp-vista-portada">

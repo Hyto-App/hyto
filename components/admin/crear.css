@@ -1354,3 +1354,222 @@
 .cp-seccion > .cp-enlace {
   align-self: center;
 }
+
+/*
+ * Desktop (Josué, 10-oct): on a 16:9 screen the flow should read as a page, not a stretched phone.
+ * Mobile above stays as it is. Labels stay left-aligned; titles and the main button stay centered.
+ */
+@media (min-width: 1024px) {
+  .cp {
+    --cp-ancho: 640px;
+  }
+
+  /* Step 1: a wide banner, then the fields in two columns. */
+  .cp-portada {
+    height: clamp(240px, 36vh, 360px);
+  }
+
+  .cp-col.is-paso1 {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    column-gap: 40px;
+    align-items: start;
+    max-width: 1080px;
+    padding: 0 40px;
+  }
+
+  .cp-col.is-paso1 > * {
+    grid-column: 1 / -1;
+  }
+
+  .cp-col.is-paso1 > .cp-nombre {
+    justify-self: center;
+    width: min(720px, 100%);
+  }
+
+  .cp-col.is-paso1 > .cp-ejemplo,
+  .cp-col.is-paso1 > .cp-ejemplo + .cp-ayuda {
+    justify-self: center;
+  }
+
+  .cp-col.is-paso1 > .cp-seccion.is-descripcion {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+
+  .cp-col.is-paso1 > .cp-seccion.is-fecha,
+  .cp-col.is-paso1 > .cp-seccion.is-contexto {
+    grid-column: 2;
+  }
+
+  /* The context link is a quiet extra; on desktop it sits under the date, from the left. */
+  .cp-col.is-paso1 > .cp-seccion.is-contexto > .cp-enlace {
+    align-self: flex-start;
+  }
+
+  .cp-col.is-paso1 .cp-area-grande {
+    min-height: 168px;
+  }
+
+  .cp-col.is-paso1 .cp-fecha {
+    max-width: none;
+  }
+
+  /* Step 2: comfortable cards, type and amount side by side. */
+  .cp-col.is-paso2 {
+    max-width: 840px;
+    padding: 0 40px;
+  }
+
+  .cp-tarjetas {
+    gap: 20px;
+  }
+
+  .cp-tarjeta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+    row-gap: 22px;
+    padding: 30px 32px;
+  }
+
+  .cp-tarjeta > * {
+    grid-column: 1 / -1;
+  }
+
+  .cp-tarjeta > .cp-insignia {
+    margin-bottom: -4px;
+  }
+
+  .cp-tarjeta > .cp-campo-grupo.is-tipo {
+    grid-column: 1;
+  }
+
+  .cp-tarjeta > .cp-campo-grupo.is-monto {
+    grid-column: 2;
+  }
+
+  .cp-tarjeta > .cp-campo-grupo + .cp-campo-grupo {
+    margin-top: 0;
+  }
+
+  .cp-tarjeta > .cp-quitar {
+    justify-self: center;
+  }
+
+  .cp-col.is-paso2 > .cp-agregar {
+    max-width: 420px;
+  }
+
+  /* Step 3: the preview as a wide project page. */
+  .cp-col.is-paso3 {
+    max-width: 1080px;
+    padding: 0 40px;
+  }
+
+  .cp-vista-portada {
+    height: 260px;
+  }
+
+  .cp-vista-cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+    grid-template-areas:
+      "titulo titulo"
+      "desc desc"
+      "tareas cifras"
+      "tareas candado";
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: 32px;
+    padding: 4px 32px 32px;
+  }
+
+  .cp-vista-titulo {
+    grid-area: titulo;
+    font-size: 28px;
+  }
+
+  .cp-vista-desc {
+    grid-area: desc;
+    max-width: 68ch;
+    justify-self: center;
+    font-size: 14px;
+  }
+
+  .cp-vista-tareas {
+    grid-area: tareas;
+    align-content: start;
+    margin-top: 24px;
+  }
+
+  .cp-vista-tareas li {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 14px 18px;
+    text-align: left;
+  }
+
+  .cp-cifras,
+  .cp-cifras.is-cuatro {
+    grid-area: cifras;
+    grid-template-columns: repeat(2, 1fr);
+    align-self: start;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .cp-cifras li {
+    padding: 14px 8px;
+    border-radius: 16px;
+    border: 1px solid var(--cp-linea);
+    background: rgba(8, 9, 12, 0.35);
+  }
+
+  .cp-cifras li + li {
+    border-left: 1px solid var(--cp-linea);
+  }
+
+  .cp-cifras b {
+    font-size: 17px;
+  }
+
+  .cp-candado {
+    grid-area: candado;
+    align-self: start;
+  }
+
+  .cp-col.is-paso3 > .cp-desglose-tarjeta {
+    max-width: var(--cp-ancho);
+  }
+
+  /* The dock: one centered bar, not a full-width strip. */
+  .cp-dock {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  .cp-boton {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+}
+
+/*
+ * QA, 10-oct: nothing decorative may take a click. The art, the glows and the fades are
+ * pointer-events: none; the floating dock lets clicks through everywhere except its own
+ * budget bar and buttons (lib/ui/crear-capas.test.ts checks this list).
+ */
+.cp-arte,
+.cp-arte *,
+.cp-portada::after,
+.cp-vista-portada::after,
+.cp-tarjeta::before,
+.cp-subrayado,
+.cp-dock,
+.cp-dock-col {
+  pointer-events: none;
+}
+
+.cp-dock-col > * {
+  pointer-events: auto;
+}

@@ -78,6 +78,8 @@ export type VistaCuenta = {
   walletMuestra: boolean;
   saldo: string | null;
   saldoEstado: EstadoSaldo;
+  /** Stellar network the balance was read on. Missing means testnet (older answers). */
+  red?: "testnet" | "public";
   orgullo: Orgullo;
 };
 

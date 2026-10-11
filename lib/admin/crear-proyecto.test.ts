@@ -5,6 +5,7 @@ import { act, createElement } from "react";
 import { CrearProyecto } from "../../components/admin/CrearProyecto";
 import { ProveedorModoDemo } from "../../components/sesion/InsigniaDemo";
 import { ProveedorIdioma } from "../../components/ui/Idioma";
+import { hoyLocal, moverDia } from "@/lib/tareas/fecha-limite";
 import { ejemploCasaAlquiler, calcularPresupuesto, montoEnCampo, puedeCrear } from "./crear-flujo";
 import { leerMemoriaAdmin } from "./memoria";
 import { desmontar, escribir, escribirArea, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
@@ -91,10 +92,53 @@ test("la fecha «¿Para cuándo?» solo se manda cuando la base la tiene", async
     await montar(createElement(CrearProyecto), { push: () => undefined });
     assert.equal(document.querySelector("#fecha-proyecto"), null);
     await montar(createElement(CrearProyecto, { conFecha: true }), { push: () => undefined });
-    await escribir("#fecha-proyecto", "2026-10-17");
+    const semana = moverDia(hoyLocal(), { dias: 7 });
+    await escribir("#fecha-proyecto", semana);
     await llenarHastaVista();
     await pulsar("Create and set aside budget");
-    assert.equal(red.cuerpos[0]?.fecha, "2026-10-17");
+    assert.equal(red.cuerpos[0]?.fecha, semana);
+  } finally {
+    red.restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+async function salirDeFecha(): Promise<void> {
+  const campo = document.querySelector("#fecha-proyecto");
+  await act(async () => {
+    campo?.dispatchEvent(new Event("focusout", { bubbles: true }));
+  });
+}
+
+test("«¿Para cuándo?» va de hoy a cinco años y no deja seguir con una fecha pasada", async () => {
+  limpiarPantalla();
+  const red = conFetch(creado);
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(CrearProyecto, { conFecha: true }) }), { push: () => undefined });
+    const campo = document.querySelector<HTMLInputElement>("#fecha-proyecto");
+    const hoy = hoyLocal();
+    assert.equal(campo?.min, hoy);
+    assert.equal(campo?.max, moverDia(hoy, { anios: 5 }));
+    await escribirArea("#nombre-proyecto", "Feria");
+    await escribir("#fecha-proyecto", "2005-03-01");
+    await salirDeFecha();
+    assert.match(texto(), /Elija una fecha de hoy en adelante/);
+    assert.equal(campo?.getAttribute("aria-invalid"), "true");
+    await pulsar("Siguiente");
+    // Still on step 1: the task cards are not there and nothing went to the API.
+    assert.equal(document.querySelector("#titulo-1"), null);
+    await escribir("#fecha-proyecto", moverDia(hoy, { dias: -1 }));
+    await pulsar("Siguiente");
+    assert.equal(document.querySelector("#titulo-1"), null);
+    await escribir("#fecha-proyecto", moverDia(hoy, { anios: 6 }));
+    await salirDeFecha();
+    assert.match(texto(), /Elija una fecha dentro de los próximos 5 años/);
+    await escribir("#fecha-proyecto", hoy);
+    assert.doesNotMatch(texto(), /Elija una fecha/);
+    await pulsar("Siguiente");
+    assert.ok(document.querySelector("#titulo-1"));
+    assert.equal(red.cuerpos.length, 0);
   } finally {
     red.restaurar();
     await desmontar();
@@ -189,10 +233,28 @@ test("puedeCrear: apagado sin saldo, en demo, enviando o con total cero", () => 
   assert.equal(puedeCrear(calcularPresupuesto([{ ...filas[0]!, monto: "" }], "31"), { demo: false, enviando: false, creado: false }), false);
 });
 
-test("Usar un ejemplo: Casa de alquiler llena cinco tareas, la última es reembolso y nunca dice Airbnb", async () => {
+test("Usar un ejemplo: Casa de alquiler no aparece en el flujo real", async () => {
   limpiarPantalla();
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(CrearProyecto, { saldo: "500" }) }), { push: () => undefined });
+    assert.doesNotMatch(texto(), /Usar un ejemplo|Casa de alquiler|Llena cinco tareas/);
+    assert.equal(document.querySelector(".cp-ejemplo"), null);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en demo, Usar un ejemplo: Casa de alquiler llena cinco tareas, la última es reembolso y nunca dice Airbnb", async () => {
+  limpiarPantalla();
+  try {
+    await montar(
+      createElement(ProveedorIdioma, {
+        idioma: "es",
+        children: createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto, { saldo: "500" }) }),
+      }),
+      { push: () => undefined },
+    );
     await pulsar("Usar un ejemplo: Casa de alquiler");
     const titulos = [...document.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>("[id^='titulo-']")].map((campo) => campo.value);
     assert.equal(titulos.length, 5);

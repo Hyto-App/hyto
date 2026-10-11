@@ -273,3 +273,115 @@ test("el panel muestra el neto recibido al lado del saldo, no el monto apartado"
     await desmontar();
   }
 });
+
+function cuenta(cambio: Record<string, unknown>) {
+  return {
+    demo: false,
+    muestra: false,
+    email: "ana@hyto.test",
+    wallet: WALLET,
+    walletMuestra: false,
+    saldo: "0",
+    saldoEstado: "ok",
+    orgullo: armarOrgullo([]),
+    ...cambio,
+  };
+}
+
+test("con la línea USDC abierta, Recargar saldo de prueba abre el faucet de Circle y Copiar confirma «Copiada»", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  let copiado = "";
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      writeText: async (valor: string) => {
+        copiado = valor;
+      },
+    },
+  });
+  globalThis.fetch = (async () => responder(cuenta({ red: "testnet" }))) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta, { revisarFirma: LISTA }) }));
+    await asentar();
+    const seccion = document.getElementById("saldo");
+    assert.ok(seccion);
+    const faucet = seccion.querySelector<HTMLAnchorElement>("a[href='https://faucet.circle.com']");
+    assert.ok(faucet, "Falta el enlace al faucet.");
+    assert.match(faucet.textContent ?? "", /Recargar saldo de prueba/);
+    assert.equal(faucet.getAttribute("target"), "_blank");
+    assert.equal(faucet.getAttribute("rel"), "noopener noreferrer");
+    assert.ok(faucet.classList.contains("hyto-btn"));
+    assert.match(
+      seccion.textContent ?? "",
+      /Copie su dirección, ábrala en el faucet de Circle, elija Stellar Testnet y péguela\. Es dinero de prueba, no real\./,
+    );
+    assert.match(seccion.textContent ?? "", /Su dirección/);
+    const boton = seccion.querySelector<HTMLButtonElement>("button[data-copiar]");
+    assert.equal(boton?.textContent, "Copiar");
+    await act(async () => {
+      boton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    assert.equal(copiado, WALLET);
+    assert.equal(boton?.textContent, "Copiada");
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("sin la línea USDC no se sugiere el faucet: primero prepararse para cobrar", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => responder(cuenta({ saldo: null, saldoEstado: "ausente" }))) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
+    await asentar();
+    assert.equal(document.querySelector("a[href='https://faucet.circle.com']"), null);
+    assert.match(texto(), /First get your account ready to be paid\. Then you can top up test balance\./);
+    assert.ok([...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")));
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("demo, muestra, red pública o saldo ilegible no ofrecen el faucet", async () => {
+  const original = globalThis.fetch;
+  for (const cambio of [{ demo: true }, { muestra: true, walletMuestra: true }, { red: "public" }, { saldo: null, saldoEstado: "error" }]) {
+    limpiarPantalla();
+    globalThis.fetch = (async () => responder(cuenta(cambio))) as typeof fetch;
+    try {
+      await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
+      await asentar();
+      assert.equal(document.querySelector("a[href='https://faucet.circle.com']"), null, JSON.stringify(cambio));
+      assert.doesNotMatch(texto(), /Top up test balance|First get your account ready/, JSON.stringify(cambio));
+    } finally {
+      globalThis.fetch = original;
+      await desmontar();
+    }
+  }
+});
+
+test("«Agregar saldo» (/configuracion#saldo) baja a la tarjeta del saldo cuando la cuenta termina de cargar", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  const previo = window.location.hash;
+  window.location.hash = "#saldo";
+  let llevada = 0;
+  const scroll = HTMLElement.prototype.scrollIntoView;
+  HTMLElement.prototype.scrollIntoView = function (this: HTMLElement) {
+    if (this.id === "saldo") llevada += 1;
+  };
+  globalThis.fetch = (async () => responder(cuenta({}))) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
+    await asentar();
+    assert.equal(llevada, 1);
+  } finally {
+    HTMLElement.prototype.scrollIntoView = scroll;
+    window.location.hash = previo;
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});

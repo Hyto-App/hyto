@@ -3,7 +3,7 @@ import type { EvidenciaFila, TareaFila } from "@/lib/db/tipos";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { cifraConfirmada } from "@/lib/escrow/monto";
 import { montoRecibido } from "@/lib/escrow/recibido";
-import { leerSaldoUsdc, type LectorSaldo } from "@/lib/escrow/saldo";
+import { leerSaldoUsdc, redStellar, type LectorSaldo } from "@/lib/escrow/saldo";
 import { centavos, normalizarMonto, textoMonto } from "@/lib/admin/vista";
 import {
   armarOrgullo,
@@ -67,6 +67,7 @@ export async function armarVistaCuenta(opciones: {
     walletMuestra: false,
     saldo: saldo.saldo,
     saldoEstado: saldo.estado,
+    red: redStellar(),
     orgullo,
   };
 }
