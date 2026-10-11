@@ -1,7 +1,8 @@
 "use client";
 
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
+import { textoVisible } from "@/lib/ui/etiquetas";
 
 /**
  * "Your photo must show": numbered points.
@@ -21,7 +22,9 @@ export function Checklist({
   ancla?: string;
 }) {
   const t = useTexto();
-  const puntos = puntosDeCondicion(condicion);
+  const idioma = useIdioma();
+  // A seeded condition is stored in one language; the points show in the reader's language.
+  const puntos = puntosDeCondicion(textoVisible(condicion, idioma));
   if (puntos.length === 0) return null;
   const marcado = fallidos !== null && fallidos.length > 0;
   return (

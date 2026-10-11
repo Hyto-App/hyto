@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { act, createElement } from "react";
 import { AyudaMile } from "@/components/admin/AyudaMile";
+import { ProveedorModoDemo } from "@/components/sesion/InsigniaDemo";
 import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 function movimiento(reducido: boolean): () => void {
@@ -100,4 +101,46 @@ test("las burbujas usan la curva de Hyto y se quedan quietas con movimiento redu
   const css = readFileSync("app/globals.css", "utf8");
   assert.match(css, /\.hyto-ayuda-burbuja \{[^}]*animation: hyto-burbuja 200ms var\(--hyto-curva\) backwards/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.hyto-ayuda-burbuja,\s*\.hyto-ayuda-puntos i \{\s*animation: none;/);
+});
+
+test("en el demo de quien hace tareas, Mile no ofrece preguntas de quien organiza y la búsqueda filtra arriba", async () => {
+  limpiarPantalla();
+  const restaurar = movimiento(true);
+  try {
+    await montar(
+      createElement(ProveedorModoDemo, {
+        activo: true,
+        rol: "voluntario",
+        children: createElement(AyudaMile, { abierto: true, alCerrar: () => {}, devolver: null }),
+      }),
+    );
+    const organiza = ["How do I set money aside for a task?", "What does it cost to pay a task?", "How do I pay a reimbursement?", "What if I set money aside and I don't pay?"];
+    for (const chip of organiza) assert.equal(chips().includes(chip), false, chip);
+    await pulsar("How do I get paid?");
+    for (let vuelta = 0; vuelta < 4; vuelta += 1) {
+      const siguientes = chips();
+      assert.ok(siguientes.length >= 2 && siguientes.length <= 3, siguientes.join(" | "));
+      for (const chip of organiza) assert.equal(siguientes.includes(chip), false, chip);
+      await pulsar(siguientes[0]);
+    }
+    await escribir(".hyto-ayuda-buscar input", "reimbursement");
+    assert.deepEqual(chips(), ["How does a reimbursement work?"]);
+    // Results sit right under the field; the conversation steps aside until the field is empty.
+    const resultados = document.querySelector(".hyto-ayuda-chips");
+    assert.equal(resultados?.previousElementSibling?.classList.contains("hyto-ayuda-buscar"), true);
+    assert.equal(document.querySelector<HTMLElement>(".hyto-ayuda-charla")?.hidden, true);
+    await escribir(".hyto-ayuda-buscar input", "");
+    assert.equal(document.querySelector<HTMLElement>(".hyto-ayuda-charla")?.hidden, false);
+  } finally {
+    restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el panel de Mile cabe en un teléfono: chips que se parten y el × siempre a la vista", () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  assert.match(css, /\.hyto-ayuda-chip \{[^}]*max-width: 100%;[^}]*overflow-wrap: anywhere;/);
+  assert.match(css, /\.hyto-ayuda > \[hidden\] \{\s*display: none;/);
+  assert.match(css, /\.hyto-capa-ayuda \.hyto-ayuda-cabeza \{[^}]*position: sticky;/);
 });
