@@ -13,7 +13,9 @@ import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
-import { AvisoFirma } from "@/components/sesion/AvisoFirma";
+import { AvisoFirma, esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
+import { ProgresoFirma } from "@/components/admin/ProgresoFirma";
+import { ClaveNavegador, sinClave, useFirmaNavegador, type RevisarFirma } from "@/components/sesion/ClaveNavegador";
 import { AvisoSesion } from "@/components/sesion/AvisoSesion";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { guardarDecision } from "@/lib/admin/memoria";
@@ -39,6 +41,7 @@ import { CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, montoDentroDelTope } from "@/lib/escrow/monto";
 import {
   AVISO_FIRMA,
+  AVISO_PASSKEY,
   AVISO_REINGRESO,
   AVISO_SIN_CUENTA_FIRMA,
   ErrorFirmaCliente,
@@ -81,11 +84,14 @@ export function Revision({
   eventoId,
   firmar,
   saldo = null,
+  revisarFirma,
 }: {
   tareaId: string;
   eventoId?: string;
   firmar?: (unsignedXdr: string) => Promise<string>;
   saldo?: string | null;
+  /** Same check Settings uses: does this browser hold the account key? */
+  revisarFirma?: RevisarFirma;
 }) {
   const modoDemo = useModoDemo();
   const t = useTexto();
@@ -95,6 +101,8 @@ export function Revision({
   const [foto, setFoto] = useState<string | null>(null);
   const [real, setReal] = useState(false);
   const [paso, setPaso] = useState<AccionCliente | null>(null);
+  // The steps of the signature in flight, from before the key check until it ends. Drives the Cavos line.
+  const [firmando, setFirmando] = useState<readonly AccionCliente[] | null>(null);
   const [hashPaso, setHashPaso] = useState<string | null>(null);
   const [contrato, setContrato] = useState<string | null>(null);
   const [fondeado, setFondeado] = useState<boolean | null>(null);
@@ -107,6 +115,10 @@ export function Revision({
   const [fallidosPedir, setFallidosPedir] = useState<number[]>([]);
   const [falloPaso, setFalloPaso] = useState<AccionCliente | null>(null);
   const [falloCodigo, setFalloCodigo] = useState<string | null>(null);
+  // Asked up front, like Settings: a browser without the account key sees the steps to bring it
+  // here before Lock budget, not a notice after the server already prepared the step.
+  const firmaNavegador = useFirmaNavegador(real && !modoDemo && Boolean(wallet) && !firmar, revisarFirma);
+  const faltaClave = sinClave(firmaNavegador);
 
   function publicarAviso(
     mensaje: string | null,
@@ -390,6 +402,7 @@ export function Revision({
       return;
     }
     publicarAviso(null);
+    setFirmando(acciones);
     let actual: AccionCliente | null = null;
     let pago: PagoFirmado | null = null;
     let contratoParcial: string | null = null;
@@ -430,13 +443,19 @@ export function Revision({
       } else {
         if (actual === "marcar" || actual === "aprobar" || actual === "liberar") setReanudar(actual);
         if (error instanceof ErrorFirmaCliente && error.contrato) contratoParcial = error.contrato;
-        publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
+        const mensajeError = error instanceof ErrorFirmaCliente ? error.message : "";
+        if (esAvisoDispositivo(mensajeError) || mensajeError === AVISO_PASSKEY) {
+          // Same guide as the up-front check, with Try again restoring the key from a passkey.
+          firmaNavegador.marcarSinClave(mensajeError === AVISO_PASSKEY);
+          publicarAviso(null);
+        } else publicarAviso(mensajeClaro(mensajeFirmaVisible(error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA)), {
           paso: actual,
           codigo,
         });
       }
     } finally {
       setPaso(null);
+      setFirmando(null);
       if (!yaEnRed && !pago && contratoParcial) setContrato(contratoParcial);
       if (!yaEnRed && !pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
       const fresco = await cargarDetalleOrganizador(tareaId);
@@ -523,6 +542,7 @@ export function Revision({
     esperaOtraFoto ? "bloqueo-foto" : "",
     esperaConfirmacion && !puedeDesplegar ? "bloqueo-monto" : "",
     faltaSaldo ? "bloqueo-saldo" : "",
+    faltaClave ? "clave-navegador" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -535,6 +555,9 @@ export function Revision({
   const ocupado = paso !== null;
   const caja = cajaDeFallo({ paso: falloPaso, codigo: falloCodigo });
   const avisoVisible = aviso ? claro(aviso) : null;
+  // Said in the dialog before the person confirms, and kept up to date while it signs.
+  const progresoDe = (acciones: readonly AccionCliente[]) =>
+    demoReal ? undefined : <ProgresoFirma acciones={firmando ?? acciones} paso={paso} />;
   const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
     const cifra = montoDeVista(tarea);
     const monto = cifra === null ? undefined : cifra.toString();
@@ -547,6 +570,7 @@ export function Revision({
         detalle: t("confirmar.payDetail"),
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: visible }),
+        progreso: progresoDe(pasosDesde(reanudar)),
         onConfirmar: (senal: AbortSignal) => (demoReal ? correrDemo("pagar", senal) : correr(pasosDesde(reanudar), senal)),
       };
     }
@@ -559,6 +583,7 @@ export function Revision({
         clave === "bloquear" ? (bloqueo?.hasta ? "confirmar.lockDetailCap" : "confirmar.lockDetail") : "confirmar.finishDetail",
       ),
       confirmar: t("confirmar.lockAction", { monto: bloqueo?.accion ?? "" }),
+      progreso: progresoDe(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
       onConfirmar: (senal: AbortSignal) =>
         demoReal && clave === "bloquear" ? correrDemo("bloquear", senal) : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };
@@ -818,6 +843,14 @@ export function Revision({
               </p>
             ) : null}
 
+            {!demoReal && (puedeDesplegar || esperaConfirmacion || botones.fondear || botones.pagar) ? (
+              <ClaveNavegador
+                id="clave-navegador"
+                firma={firmaNavegador}
+                contexto={botones.pagar && !puedeDesplegar && !botones.fondear ? "pago" : "bloqueo"}
+              />
+            ) : null}
+
             {puedeDesplegar || esperaConfirmacion ? (
               <>
                 <p className="text-sm leading-6 text-[var(--suave)]">
@@ -840,11 +873,11 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || !puedeDesplegar || esperaOtraFoto || Boolean(faltaSaldo)}
+                  disabled={ocupado || !puedeDesplegar || esperaOtraFoto || Boolean(faltaSaldo) || faltaClave}
                   aria-busy={ocupado}
                   aria-describedby={describeBloqueo || undefined}
                   onClick={() => {
-                    if (ocupado || !puedeDesplegar || esperaOtraFoto || faltaSaldo) return;
+                    if (ocupado || !puedeDesplegar || esperaOtraFoto || faltaSaldo || faltaClave) return;
                     setConfirmacion({ clave: "bloquear", abierto: true });
                   }}
                 >
@@ -862,11 +895,11 @@ export function Revision({
                 ) : null}
                 <BotonPrincipal
                   type="button"
-                  disabled={ocupado || Boolean(faltaSaldo)}
+                  disabled={ocupado || Boolean(faltaSaldo) || faltaClave}
                   aria-busy={ocupado}
-                  aria-describedby={faltaSaldo ? "bloqueo-saldo" : undefined}
+                  aria-describedby={[faltaSaldo ? "bloqueo-saldo" : "", faltaClave ? "clave-navegador" : ""].filter(Boolean).join(" ") || undefined}
                   onClick={() => {
-                    if (ocupado || faltaSaldo) return;
+                    if (ocupado || faltaSaldo || faltaClave) return;
                     setConfirmacion({ clave: "fondear", abierto: true });
                   }}
                 >
@@ -879,7 +912,16 @@ export function Revision({
                 {fondeado === true ? (
                   <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
                 ) : null}
-                <BotonPrincipal type="button" disabled={ocupado} aria-busy={ocupado} onClick={() => setConfirmacion({ clave: "pagar", abierto: true })}>
+                <BotonPrincipal
+                  type="button"
+                  disabled={ocupado || faltaClave}
+                  aria-busy={ocupado}
+                  aria-describedby={faltaClave ? "clave-navegador" : undefined}
+                  onClick={() => {
+                    if (ocupado || faltaClave) return;
+                    setConfirmacion({ clave: "pagar", abierto: true });
+                  }}
+                >
                   {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
                 </BotonPrincipal>
               </>
@@ -893,6 +935,8 @@ export function Revision({
               {...datosConfirmacion(confirmacion.clave)}
             />
           ) : null}
+
+          {firmando ? <ProgresoFirma acciones={firmando} paso={paso} /> : null}
 
           {paso ? (
             <p className="mt-4 text-sm leading-6 text-[var(--suave)]" aria-live="polite">

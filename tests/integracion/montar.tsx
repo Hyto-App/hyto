@@ -12,6 +12,7 @@ const contextos = requerir("next/dist/shared/lib/app-router-context.shared-runti
 };
 const rutas = requerir("next/dist/shared/lib/hooks-client-context.shared-runtime.js") as {
   PathnameContext: { Provider: Proveedor };
+  SearchParamsContext: { Provider: Proveedor };
 };
 
 let raiz: Root | null = null;
@@ -27,7 +28,7 @@ export async function desmontar(): Promise<void> {
 
 export async function montar(
   nodo: ReactNode,
-  opciones?: { ruta?: string; push?: (href: string) => void },
+  opciones?: { ruta?: string; push?: (href: string) => void; busqueda?: string },
 ): Promise<void> {
   await desmontar();
   const div = document.createElement("div");
@@ -37,6 +38,9 @@ export async function montar(
   let arbol = nodo;
   if (opciones?.ruta !== undefined) {
     arbol = createElement(rutas.PathnameContext.Provider, { value: opciones.ruta }, arbol);
+  }
+  if (opciones?.busqueda !== undefined) {
+    arbol = createElement(rutas.SearchParamsContext.Provider, { value: new URLSearchParams(opciones.busqueda) }, arbol);
   }
   if (opciones?.push) {
     arbol = createElement(contextos.AppRouterContext.Provider, { value: { push: opciones.push } }, arbol);

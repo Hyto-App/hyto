@@ -808,6 +808,23 @@ export const en = {
     revision: "In review",
     pagado: "Paid",
   },
+  claveNavegador: {
+    revisando: "Checking whether this browser can sign for your account…",
+    faltaTitulo: "This browser can't sign for your account yet",
+    faltaCuenta:
+      "You're signed in and your balance shows, but your account key isn't in this browser. Without it you can't lock a budget or pay from here. Follow these steps to bring it here.",
+    faltaBloqueo:
+      "To lock this budget, this browser needs your account key, and it isn't here yet. Follow these steps, then tap Lock budget.",
+    faltaPago:
+      "To approve and pay, this browser needs your account key, and it isn't here yet. Follow these steps, then tap Approve and pay.",
+    restaurada: "Done. This browser now has your account key.",
+  },
+  firmaCavos: {
+    bloqueoDos: "Cavos will ask you to confirm twice, in English. It's to save the budget on Stellar.",
+    bloqueoUna: "Cavos will ask you to confirm once, in English. It's to save the budget on Stellar.",
+    pago: "Cavos will ask you to confirm once, in English. It's to send the payment on Stellar.",
+    contador: "Signature {i} of {n}",
+  },
   veredictos: {
     cumplio: "Completed",
     parcial: "Partially completed",
@@ -1131,6 +1148,7 @@ export const en = {
     envio: "You sent your evidence",
     mile: "Mile reviewed your evidence",
     camino: "Payment on the way",
+    sinActividad: "No activity yet. It shows up when you send your evidence.",
     vacio: "After you send your evidence, the trail shows up here.",
   },
   comunidades: {
@@ -2103,6 +2121,23 @@ export const es: Rama<typeof en> = {
     revision: "En revisión",
     pagado: "Pagado",
   },
+  claveNavegador: {
+    revisando: "Revisando si este navegador puede firmar con su cuenta…",
+    faltaTitulo: "Este navegador todavía no puede firmar con su cuenta",
+    faltaCuenta:
+      "Usted entró y ve su saldo, pero la clave de su cuenta no está en este navegador. Sin ella no puede bloquear un presupuesto ni pagar desde aquí. Siga estos pasos para traerla.",
+    faltaBloqueo:
+      "Para bloquear este presupuesto, este navegador necesita la clave de su cuenta, y todavía no está aquí. Siga estos pasos y luego toque Bloquear presupuesto.",
+    faltaPago:
+      "Para aprobar y pagar, este navegador necesita la clave de su cuenta, y todavía no está aquí. Siga estos pasos y luego toque Aprobar y pagar.",
+    restaurada: "Listo. Este navegador ya tiene la clave de su cuenta.",
+  },
+  firmaCavos: {
+    bloqueoDos: "Cavos le va a pedir confirmar 2 veces, en inglés. Es para guardar el presupuesto en Stellar.",
+    bloqueoUna: "Cavos le va a pedir confirmar una vez, en inglés. Es para guardar el presupuesto en Stellar.",
+    pago: "Cavos le va a pedir confirmar una vez, en inglés. Es para enviar el pago en Stellar.",
+    contador: "Firma {i} de {n}",
+  },
   veredictos: {
     cumplio: "Completado",
     parcial: "Parcialmente completado",
@@ -2426,6 +2461,7 @@ export const es: Rama<typeof en> = {
     envio: "Envió su evidencia",
     mile: "Mile revisó su evidencia",
     camino: "Pago en camino",
+    sinActividad: "Todavía no hay actividad. Aparece cuando envíe su evidencia.",
     vacio: "Cuando envíe su evidencia, el recorrido aparece aquí.",
   },
   comunidades: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
 import { acortarDireccion, formatearMonto } from "@/lib/integrante/formato";
@@ -22,9 +22,11 @@ type Props = {
   confirmar: string;
   peligro?: boolean;
   onConfirmar: (senal: AbortSignal) => Promise<void>;
+  /** What Cavos will ask, shown before confirming and while it signs. */
+  progreso?: ReactNode;
 };
 
-export function ConfirmDialog({ abierto, onCerrar, titulo, monto, montoTexto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
+export function ConfirmDialog({ abierto, onCerrar, titulo, monto, montoTexto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar, progreso }: Props) {
   const t = useTexto();
   const idioma = useIdioma();
   const claro = useClaro();
@@ -138,6 +140,7 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, montoTexto, de
           ) : null}
           {detalle ? <p className="text-sm text-[var(--suave)]">{detalle}</p> : null}
           {irreversible ? <p className="hyto-dialogo-aviso">{t("confirmar.irreversible")}</p> : null}
+          {progreso ?? null}
         </div>
         {error ? (
           <p role="alert" className="text-sm text-[var(--peligro)]">

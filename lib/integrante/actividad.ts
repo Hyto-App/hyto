@@ -32,7 +32,11 @@ export function marcasPago(tarea: TareaActividad): { aprobada: boolean; enviado:
   return { aprobada, enviado, pagado };
 }
 
-export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[] } {
+/**
+ * `empezo` is false while nothing has happened yet (no evidence sent, nothing reviewed or paid):
+ * the screen then shows no steps at all, only that there is no activity yet.
+ */
+export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; eventos: EventoActividad[]; empezo: boolean } {
   const marcas = marcasPago(tarea);
   const empezo = Boolean(instanteGuardado(tarea.enviadaEn) || tarea.etapa || tarea.estado !== "pendiente" || marcas.enviado);
   const pasos: PasoActividad[] = [
@@ -51,5 +55,5 @@ export function seguimientoDe(tarea: TareaActividad): { pasos: PasoActividad[]; 
   if (marcas.aprobada) eventos.push({ id: "aprobada", en: null });
   if (marcas.enviado) eventos.push({ id: "camino", en: null });
   if (marcas.pagado) eventos.push({ id: "pagado", en: null });
-  return { pasos, eventos };
+  return { pasos, eventos, empezo };
 }

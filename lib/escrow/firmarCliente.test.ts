@@ -501,3 +501,21 @@ test("con la recuperación de Cavos (enclave), un navegador sin la llave pide en
     AVISO_SIN_RESPALDO,
   );
 });
+
+test("sin la clave en este navegador, Bloquear presupuesto lo dice antes de preparar nada en el servidor", async () => {
+  const red = fetchDe([{ body: { xdr: "uno", contrato: "C9", monto: 20, token: "tok-1" } }]);
+  const vistos: string[] = [];
+  await assert.rejects(
+    () =>
+      firmarPasos(["desplegar", "fondear"], "tarea-1", {
+        fetch: red.fetch,
+        verificar: async () => {
+          throw new ErrorFirmaCliente(AVISO_DISPOSITIVO, null, null, "needs-device-approval");
+        },
+        alEmpezar: (accion) => vistos.push(accion),
+      }),
+    (error: unknown) => error instanceof ErrorFirmaCliente && error.message === AVISO_DISPOSITIVO,
+  );
+  assert.equal(red.llamadas.length, 0);
+  assert.deepEqual(vistos, []);
+});
