@@ -19,6 +19,11 @@ export type Usuario = {
   experiencia?: string | null;
   /** Chosen tags, at most 5. Stored as JSON text. */
   etiquetas?: string[] | null;
+  /**
+   * Payout account kept from the person's own sign-in (0016). leerUsuario and listarUsuarios
+   * never fill it, so no route returns it. Read it with walletCobroDeUsuario.
+   */
+  walletCobro?: string | null;
 };
 
 export type Proyecto = {

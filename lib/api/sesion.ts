@@ -1,8 +1,10 @@
 import { AVISO_SIN_CUENTA } from "@/lib/auth/errores";
 import { intencionDe } from "@/lib/auth/intencion";
 import type { Almacen } from "@/lib/db/almacen";
+import type { SesionFila } from "@/lib/db/tipos";
 import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_ENTRAR } from "@/lib/sesion/avisos";
+import { guardarCuentaCobro } from "@/lib/sesion/cobro";
 import { olvidarNombreDeCorreo } from "@/lib/sesion/limpiar-nombre";
 import { nombreVisible } from "@/lib/sesion/nombre";
 import { COOKIE_SESION, encabezadoAlta, encabezadoCookie, encabezadoCookieCerrada, expiracion, leerCookie, segundosDeSesion, tokenSesion, vigente } from "@/lib/sesion/cookie";
@@ -65,14 +67,16 @@ export async function crearSesionHttp(request: Request, almacen: Almacen): Promi
     usuario = await olvidarNombreDeCorreo(almacen, usuario);
     const segundos = segundosDeSesion(correo.exp);
     const sesion = tokenSesion();
+    const wallet = walletDelToken(token) ?? "";
     await almacen.crearSesion({
       token: sesion,
       email: usuario.email,
       usuarioId: usuario.id,
       rol: usuario.rol,
       expiraEn: expiracion(segundos),
-      wallet: walletDelToken(token) ?? "",
+      wallet,
     });
+    await conservarCuentaCobro(almacen, { email: usuario.email, usuarioId: usuario.id }, wallet);
     const provisionar = intencion === "signup";
     const cookies = [encabezadoCookie(sesion, segundos)];
     if (provisionar) cookies.push(encabezadoAlta(true));
@@ -137,8 +141,24 @@ export async function fijarWalletHttp(request: Request, almacen: Almacen): Promi
       return json({ aviso: "That account doesn't match this sign-in. Sign in again." }, 400);
     }
     await almacen.guardarWallet(token, wallet);
+    await conservarCuentaCobro(almacen, sesion, wallet);
     return json({ wallet }, 200);
   } catch (error) {
     return baseNoLista(error);
+  }
+}
+
+// Signing out deletes the session row. The copy on the user is what Lock budget still finds afterwards.
+// It never fails the sign-in: the browser drops a session whose wallet step fails.
+async function conservarCuentaCobro(
+  almacen: Almacen,
+  sesion: Pick<SesionFila, "email" | "usuarioId">,
+  wallet: string,
+): Promise<void> {
+  try {
+    await guardarCuentaCobro(almacen, sesion, wallet);
+  } catch {
+    // Step only: never the token, the email, or the account.
+    console.warn("[api/sesion] Could not keep the payout account on the user. The session still has it.");
   }
 }

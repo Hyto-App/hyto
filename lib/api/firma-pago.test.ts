@@ -11,6 +11,7 @@ import { CONTRATO_XDR, FIRMANTE_XDR, xdrDeAlta, xdrDeInvocacion } from "../escro
 import { enviarFirmaHttp, huellaDeXdr, prepararFirmaHttp } from "./firma";
 import { emitirTokenPreparado } from "./preparado";
 import { leerRevisionHttp } from "./revision";
+import { cerrarSesionHttp, fijarWalletHttp } from "./sesion";
 
 const SECRETO_TOKEN = "hyto-token-secret-for-tests-32ch";
 let secretoPrevio: string | undefined;
@@ -831,6 +832,8 @@ test("desplegar recupera la cuenta del asignado, con o sin evidencia", async () 
       expiraEn: "2026-10-03T00:00:00.000Z",
       wallet: "G" + "F".repeat(55),
     });
+    // A session from before 0016 has no copy on the user: the session is still read, as before.
+    assert.equal(await almacen.walletCobroDeUsuario("voluntario-3"), null);
     // Lock budget comes before any evidence: the assigned volunteer's sign-in is enough.
     const sinEvidencia = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
     assert.equal(sinEvidencia.status, 200);
@@ -865,6 +868,103 @@ test("desplegar recupera la cuenta del asignado, con o sin evidencia", async () 
     assert.equal(listo.status, 200);
     assert.equal(visto.receptor, RECEPTOR);
     assert.equal((await almacen.leerTarea("stand"))?.walletCobro, RECEPTOR);
+  } finally {
+    globalThis.fetch = original;
+    restaurar("TRUSTLESS_API_KEY", anterior.clave);
+    restaurar("HYTO_ESCROW_PLATFORM", anterior.plataforma);
+    restaurar("HYTO_ESCROW_RESOLVER", anterior.resolutor);
+    restaurar("HYTO_ESCROW_ADMIN", anterior.admin);
+    reiniciarLimite();
+  }
+});
+
+test("desplegar paga a la cuenta guardada de la persona asignada aunque ya haya cerrado sesión", async () => {
+  reiniciarLimite();
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "organizador");
+  const anterior = {
+    clave: process.env.TRUSTLESS_API_KEY,
+    plataforma: process.env.HYTO_ESCROW_PLATFORM,
+    resolutor: process.env.HYTO_ESCROW_RESOLVER,
+    admin: process.env.HYTO_ESCROW_ADMIN,
+  };
+  process.env.TRUSTLESS_API_KEY = "clave-de-prueba";
+  process.env.HYTO_ESCROW_PLATFORM = PLATAFORMA;
+  process.env.HYTO_ESCROW_RESOLVER = RESOLUTOR;
+  process.env.HYTO_ESCROW_ADMIN = ADMIN;
+  const original = globalThis.fetch;
+  const receptores: (string | null)[] = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.includes("horizon")) {
+      return new Response(
+        JSON.stringify({
+          balances: [{ balance: "1000", asset_code: "USDC", asset_issuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" }],
+        }),
+        { status: 200 },
+      );
+    }
+    if (url.endsWith("/escrow/multi-release/v2/deploy")) {
+      const cuerpo = JSON.parse(String(init?.body)) as { milestones?: { receiver?: string }[] };
+      receptores.push(cuerpo.milestones?.[0]?.receiver ?? null);
+      return new Response(JSON.stringify({ unsignedXdr: "AAAA", txHash: "abc", contractId: CONTRATO }), { status: 200 });
+    }
+    throw new Error(`fetch inesperado: ${url}`);
+  };
+  try {
+    // "registro" is assigned to voluntario-2. The browser posts the Cavos account after sign-in.
+    await almacen.crearSesion({
+      token: "tok-registro",
+      email: "voluntario2@demo.hyto",
+      usuarioId: "voluntario-2",
+      rol: "voluntario",
+      expiraEn: new Date(Date.now() + 60_000).toISOString(),
+      wallet: "",
+    });
+    const entrada = await fijarWalletHttp(
+      new Request("http://local/api/sesion/wallet", {
+        method: "POST",
+        headers: { cookie: "hyto_sesion=tok-registro", "content-type": "application/json" },
+        body: JSON.stringify({ wallet: RECEPTOR }),
+      }),
+      almacen,
+    );
+    assert.equal(entrada.status, 200);
+    const salida = await cerrarSesionHttp(
+      new Request("http://local/api/sesion", { method: "DELETE", headers: { cookie: "hyto_sesion=tok-registro" } }),
+      almacen,
+    );
+    assert.equal(salida.status, 200);
+    assert.equal(await almacen.leerSesion("tok-registro"), null);
+    assert.equal(await almacen.walletDeUsuario("voluntario-2"), null);
+
+    const registro = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "registro" }), almacen);
+    assert.equal(registro.status, 200);
+    assert.equal(receptores.at(-1), RECEPTOR);
+    assert.equal((await almacen.leerTarea("registro"))?.walletCobro, RECEPTOR);
+
+    // The kept account goes first, even when an older session still holds another account.
+    const guardada = "G" + "H".repeat(55);
+    assert.equal(await almacen.guardarWalletCobro("voluntario-3", guardada), true);
+    await almacen.crearSesion({
+      token: "previa",
+      email: "voluntario3@demo.hyto",
+      usuarioId: "voluntario-3",
+      rol: "voluntario",
+      expiraEn: "2026-10-03T00:00:00.000Z",
+      wallet: "G" + "J".repeat(55),
+    });
+    const bienvenida = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "bienvenida" }), almacen);
+    assert.equal(bienvenida.status, 200);
+    assert.equal(receptores.at(-1), guardada);
+    assert.equal((await almacen.leerTarea("bienvenida"))?.walletCobro, guardada);
+
+    // Another person's kept account is never used for this task.
+    const stand = await prepararFirmaHttp(sesion(ORGANIZADOR), pedido({ accion: "desplegar", tareaId: "stand" }), almacen);
+    assert.equal(stand.status, 400);
+    assert.equal((await almacen.leerTarea("stand"))?.walletCobro, "");
+    assert.equal(receptores.length, 2);
   } finally {
     globalThis.fetch = original;
     restaurar("TRUSTLESS_API_KEY", anterior.clave);

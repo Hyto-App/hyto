@@ -14,6 +14,8 @@ export const usuarios = pgTable("usuarios", {
   // Volunteer profile. Only read when HYTO_PERFIL_VOLUNTARIO is on.
   experiencia: text("experiencia"),
   etiquetas: text("etiquetas"),
+  // Payout account from the person's own sign-in (0016). Signing out keeps it. Null until they sign in again.
+  walletCobro: text("wallet_cobro"),
 });
 
 // A community is an organization. It does not replace the per-event role.

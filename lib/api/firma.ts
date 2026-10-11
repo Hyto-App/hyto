@@ -21,6 +21,7 @@ import { anclaDeXdr, direccionFeeDeLiberacion, esAltaDeFabrica, leerInvocacion }
 import { respuestaSiNoOrganiza } from "@/lib/api/organizador";
 import { avisarCompletada } from "@/lib/tablon/publicar";
 import { emitirTokenPreparado, secretoPreparado, verificarTokenPreparado } from "@/lib/api/preparado";
+import { cuentaCobroDe } from "@/lib/sesion/cobro";
 import { avisoSesionResolutor } from "@/lib/sesion/exigir";
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 
@@ -317,9 +318,9 @@ async function prepararDespliegueHttp(sesion: SesionFila, tareaId: string, almac
   try {
     evidencia = await almacen.ultimaEvidencia(tarea.id);
     // The budget is locked before any evidence exists, so the payout account cannot wait for an upload:
-    // it comes from the assigned volunteer's own (non-demo) sign-in.
+    // it comes from the assigned volunteer's own (non-demo) sign-in, even after they signed out.
     if (!esCuenta(tarea.walletCobro) && tarea.miembroId.trim()) {
-      const recuperado = await almacen.walletDeUsuario(tarea.miembroId);
+      const recuperado = await cuentaCobroDe(almacen, tarea.miembroId);
       if (recuperado && esCuenta(recuperado)) {
         await almacen.actualizarTarea(tarea.id, { walletCobro: recuperado });
         tarea = { ...tarea, walletCobro: recuperado };
