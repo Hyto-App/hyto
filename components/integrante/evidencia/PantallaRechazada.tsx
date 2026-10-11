@@ -40,7 +40,7 @@ export function PantallaRechazada({
   const hayPuntosBien = fallidos.length > 0 && puntos.some((_, indice) => !fallidos.includes(indice));
   const cerrado = plazoVencido(tarea.venceEn);
   const cuando = tarea.venceEn && !cerrado ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
-  const nombre = nombreParaMostrar(tarea.organizador?.nombre, evento || tarea.evento) || "";
+  const nombre = nombreParaMostrar(tarea.organizador?.nombre, evento || tarea.evento, idioma) || "";
   const nota = tarea.rechazo?.nota ?? null;
   const reembolso = tarea.tipo === "reembolso";
   const hora = horaDe(tarea.enviadaEn ?? tarea.rechazo?.en, idioma);

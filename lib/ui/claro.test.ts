@@ -143,3 +143,8 @@ test("the payment steps move from the photo to the locked budget to paid", () =>
     ["done", "done", "done"],
   );
 });
+
+test("el aviso de volver a entrar antes del cobro sale en español con usted", () => {
+  assert.equal(mensajeClaro("Sign in again before setting up payouts.", "es"), "Vuelva a iniciar sesión antes de configurar sus pagos.");
+  assert.equal(mensajeClaro("Sign in again before setting up payouts.", "en"), "Sign in again before setting up payouts.");
+});

@@ -278,7 +278,7 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     assert.match(texto(), /Amount on the receipt/);
     assert.match(texto(), /Amount to pay/);
-    assert.match(texto(), /Limit US\$15\. Confirm this amount before locking the budget\./);
+    assert.match(texto(), /Limit US\$15\.00\. Confirm this amount before locking the budget\./);
     assert.equal(texto().includes("deploy"), false);
     const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
@@ -878,7 +878,7 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   }
 });
 
-test("approve and pay shows US$2, the same amount as the rest of the screen", async () => {
+test("approve and pay shows US$2.00, the same amount as the rest of the screen", async () => {
   const contrato = "CSTAND";
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -896,11 +896,10 @@ test("approve and pay shows US$2, the same amount as the rest of the screen", as
     assert.match(texto(), /US\$2/);
     await pulsar("Approve and pay");
     const monto = document.querySelector(".hyto-dialogo-monto");
-    assert.equal(monto?.textContent, "US$2");
+    assert.equal(monto?.textContent, "US$2.00");
     assert.equal(monto?.querySelector("small"), null);
-    assert.equal(document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn")?.textContent, "Pay US$2");
+    assert.equal(document.querySelector("dialog .hyto-dialogo-acciones .hyto-btn")?.textContent, "Pay US$2.00");
     assert.equal(texto().includes("USDC"), false);
-    assert.equal(texto().includes("2.00"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -1026,7 +1025,7 @@ test("a receipt above the cap prefills the cap and shows the overage note", asyn
     await esperar(() => Boolean(document.querySelector("#monto-confirmado")));
     const campo = document.querySelector("#monto-confirmado") as HTMLInputElement;
     assert.equal(campo.value, "15");
-    assert.match(texto(), /above the US\$15 cap/);
+    assert.match(texto(), /above the US\$15\.00 cap/);
     assert.match(texto(), /US\$15\.74/);
   } finally {
     globalThis.fetch = anterior;

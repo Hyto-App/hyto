@@ -128,6 +128,8 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_USDC_PENDIENTE]: "errores.cobroPendiente",
   [AVISO_USDC_OTRA_CUENTA]: "errores.cobroOtraCuenta",
   [AVISO_USDC_LENTO]: "errores.cobroLento",
+  // Same text as AVISO_USDC_SIN_WALLET in lib/api/usdc.ts (server code, not imported here).
+  "Sign in again before setting up payouts.": "errores.cobroReingreso",
   "Sign in to continue.": "errores.entrarContinuar",
   [AVISO_GENERICO]: "errores.noEntrar",
   [AVISO_CODIGO_INVALIDO]: "errores.codigoNo",

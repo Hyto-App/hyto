@@ -41,7 +41,7 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
     assert.match(texto(), /US\$12\.44/);
     assert.match(texto(), /You received/);
     assert.match(texto(), /A person from the event approved it/);
-    assert.match(texto(), /US\$12\.44 \(US\$12\.48 minus a US\$0\.04 fee\)/);
+    assert.match(texto(), /US\$12\.48 minus a US\$0\.04 fee/);
     assert.equal(texto().includes("US$15"), false);
     assert.equal(texto().includes("12.44256"), false);
     const recibo = document.querySelector('a[href="/tareas/comida/recibo"]');

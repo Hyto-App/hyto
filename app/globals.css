@@ -4337,6 +4337,21 @@ html.hyto-firmando body {
 
 .hyto-metricas .hyto-metrica-ganado b {
   color: var(--acento-texto);
+  white-space: nowrap;
+}
+
+/* "US$26,45" fits a third of a 360 px row. */
+@media (max-width: 1023px) {
+  .hyto-metricas .hyto-metrica-ganado b {
+    font-size: clamp(15px, 4.4vw, 20px);
+  }
+}
+
+.hyto-monto-detalle {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--suave);
 }
 
 .hyto-segmentado {
@@ -4892,16 +4907,15 @@ html.hyto-firmando body {
   min-width: 0;
 }
 
+/* The whole title wraps onto as many lines as it needs. It is never clamped or cut. */
 .hyto-tarea-titulo {
-  display: -webkit-box;
   margin: 4px 0 0;
-  overflow: hidden;
   font-size: 22px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .hyto-tarea-meta {
@@ -5287,6 +5301,51 @@ html.hyto-firmando body {
 .hyto-enviada-acciones {
   display: grid;
   gap: 8px;
+}
+
+/* Phones (360–430 px): the title takes the full row and the amount chip drops below it; status cards fill the width. */
+@media (max-width: 1023px) {
+  .hyto-tarea-cab {
+    flex-wrap: wrap;
+  }
+
+  .hyto-tarea-cab > div {
+    flex: 1 1 100%;
+  }
+
+  .hyto-enviada {
+    width: 100%;
+    max-width: none;
+  }
+
+  .hyto-tarea > .hyto-tarjeta,
+  .hyto-ver-mas-cuerpo > .hyto-tarjeta {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .hyto-resumen,
+  .hyto-resumen:not(:has(.hyto-resumen-mini)) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .hyto-resumen:not(:has(.hyto-resumen-mini)) > div {
+    grid-column: 1 / -1;
+  }
+
+  .hyto-resumen > .hyto-amount {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .hyto-revisando {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hyto-revisando > div {
+    min-width: 0;
+  }
 }
 
 @media (min-width: 1024px) {

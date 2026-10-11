@@ -28,6 +28,7 @@ import { notaDeTarea } from "@/lib/integrante/nota";
 import { estaRechazada, puntosFallidos } from "@/lib/integrante/revision";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, mostrarReintento, seguirConsultando, topeSeguimientoMs } from "@/lib/integrante/seguimiento";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
 import { textoVisible } from "@/lib/ui/etiquetas";
 import { ContextoEvento } from "./ContextoEvento";
 
@@ -744,14 +745,14 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                 ? t("evidencia.sentAction")
                 : insuficiente
                   ? nombre
-                    ? t(documental ? "evidencia.notEnoughNameFile" : "evidencia.notEnoughName", { name: nombre })
+                    ? t(documental ? "evidencia.notEnoughNameFile" : "evidencia.notEnoughName", { name: nombreEnIdioma(nombre, idioma) })
                     : t(documental ? "evidencia.notEnoughFile" : "evidencia.notEnough")
                   : parcial
                     ? nombre
-                      ? t("evidencia.partialName", { name: nombre })
+                      ? t("evidencia.partialName", { name: nombreEnIdioma(nombre, idioma) })
                       : t("evidencia.partial")
                     : nombre
-                      ? t(documental ? "evidencia.greatJobNameFile" : "evidencia.greatJobName", { name: nombre })
+                      ? t(documental ? "evidencia.greatJobNameFile" : "evidencia.greatJobName", { name: nombreEnIdioma(nombre, idioma) })
                       : t(documental ? "evidencia.greatJobFile" : "evidencia.greatJob")}
           </h1>
           {mileSinTerminar ? (

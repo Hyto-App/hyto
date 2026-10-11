@@ -104,7 +104,8 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
     assert.doesNotMatch(texto(), /You were paid|You did it|Keep going/);
     // US$20 funded, minus the 0.3% protocol fee, shown in cents. No celebratory plus.
     assert.equal(texto().includes("+US$"), false);
-    assert.match(texto(), /US\$19\.94 \(US\$20 minus a US\$0\.06 fee\)/);
+    assert.match(texto(), /US\$19\.94/);
+    assert.match(texto(), /US\$20\.00 minus a US\$0\.06 fee/);
     assert.equal(document.querySelectorAll("a.hyto-btn").length, 1);
     assert.equal(document.querySelector("a.hyto-btn")?.textContent, "Back to my tasks");
     assert.ok(document.querySelector('img[src="/mile/mile-descansando-dark.svg"]'));

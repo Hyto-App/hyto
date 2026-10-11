@@ -48,7 +48,7 @@ import {
   type AccionCliente,
   type PagoFirmado,
 } from "@/lib/escrow/firmarCliente";
-import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
+import { acortarDireccion, explicarPago, formatearFecha, formatearMonto, montoAsegurado, montoDelBloqueo, montoQueAparta, textosSaldo, vistaMonto } from "@/lib/integrante/formato";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
@@ -537,22 +537,28 @@ export function Revision({
   const avisoVisible = aviso ? claro(aviso) : null;
   const datosConfirmacion = (clave: "bloquear" | "fondear" | "pagar") => {
     const cifra = montoDeVista(tarea);
-    const monto = cifra === null ? undefined : formatearMonto(cifra.toString(), idioma);
-    if (clave === "pagar")
+    const monto = cifra === null ? undefined : cifra.toString();
+    if (clave === "pagar") {
+      const visible = monto ? formatearMonto(monto, idioma) : "";
       return {
         titulo: t("confirmar.payTitle"),
         monto,
-        destinatario: tarea.miembro ? { nombre: tarea.miembro } : undefined,
+        destinatario: tarea.miembro ? { nombre: textoVisible(tarea.miembro, idioma) } : undefined,
         detalle: t("confirmar.payDetail"),
         irreversible: true,
-        confirmar: t("confirmar.payAction", { monto: monto ?? "" }),
+        confirmar: t("confirmar.payAction", { monto: visible }),
         onConfirmar: (senal: AbortSignal) => (demoReal ? correrDemo("pagar", senal) : correr(pasosDesde(reanudar), senal)),
       };
+    }
+    // The lock dialog always names the amount. A reimbursement without a confirmed amount shows "Up to" the cap.
+    const bloqueo = montoDelBloqueo(tarea, idioma);
     return {
       titulo: t(clave === "bloquear" ? "confirmar.lockTitle" : "confirmar.finishTitle"),
-      monto,
-      detalle: t(clave === "bloquear" ? "confirmar.lockDetail" : "confirmar.finishDetail"),
-      confirmar: t("confirmar.lockAction", { monto: monto ?? "" }),
+      montoTexto: bloqueo?.visible,
+      detalle: t(
+        clave === "bloquear" ? (bloqueo?.hasta ? "confirmar.lockDetailCap" : "confirmar.lockDetail") : "confirmar.finishDetail",
+      ),
+      confirmar: t("confirmar.lockAction", { monto: bloqueo?.accion ?? "" }),
       onConfirmar: (senal: AbortSignal) =>
         demoReal && clave === "bloquear" ? correrDemo("bloquear", senal) : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
     };

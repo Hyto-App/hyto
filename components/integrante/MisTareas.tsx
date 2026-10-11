@@ -13,8 +13,7 @@ import { Icono } from "@/components/ui/Marca";
 import { Mile } from "@/components/ui/Mile";
 import { MileAnimada } from "@/components/ui/MileAnimada";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
-import { explicarPago } from "@/lib/integrante/formato";
+import { explicarPago, montoDeTarea, totalGanado } from "@/lib/integrante/formato";
 import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } from "@/lib/integrante/orden-pago";
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
@@ -22,7 +21,7 @@ import { listarTareas } from "@/lib/integrante/rutas";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, reintentoEnLista, seguirEnLista } from "@/lib/integrante/seguimiento";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
-import { nombreParaMostrar } from "@/lib/sesion/nombre";
+import { nombreEnIdioma, nombreParaMostrar } from "@/lib/sesion/nombre";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
 import { etiquetaDificultad, etiquetaPrioridad, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { claveSaludo, franjaDe, primerNombre } from "@/lib/ui/saludo";
@@ -52,48 +51,24 @@ function InsigniasClasificacion({ tarea }: { tarea: Tarea }) {
   );
 }
 
-function totalRecibido(tareas: readonly Tarea[]): string {
-  let total = 0n;
-  for (const tarea of tareas) {
-    if (tarea.estado !== "pagado") continue;
-    const plano = recibidoDeCampos(tarea);
-    const unidades = plano ? unidadesUsdc(plano) : null;
-    if (unidades !== null) total += unidades;
-  }
-  return presentarUsdc(total);
-}
-
-function cifra(valor: number, idioma: "en" | "es"): string {
-  return valor.toLocaleString(idioma === "es" ? "es-CR" : "en-US", {
-    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
-}
-
+/** A paid card shows the net the person received, the same figure the organizer's inbox shows. */
 function Monto({ tarea }: { tarea: Tarea }) {
-  const t = useTexto();
   const idioma = useIdioma();
   if (tarea.estado === "pagado") {
     const pago = explicarPago(tarea, idioma);
     if (!pago) return null;
     return <span className="hyto-monto">{pago.corto}</span>;
   }
-  const valor = cifra(Number(tarea.tope ?? tarea.monto) || 0, idioma);
-  return (
-    <span className="hyto-monto">
-      {tarea.tipo === "reembolso" ? t("tareas.upTo", { monto: valor }) : valor}
-      <small>USDC</small>
-    </span>
-  );
+  return <span className="hyto-monto">{montoDeTarea(tarea, idioma)}</span>;
 }
 
 function Metricas({ ganado, revision, pendientes, className = "" }: { ganado: string; revision: number; pendientes: number; className?: string }) {
   const t = useTexto();
   return (
     <div className={`hyto-metricas ${className}`.trim()}>
-      <div className="hyto-metrica-ganado">
+      <div className="hyto-metrica-ganado" role="group" aria-label={t("tareas.earnedUsdc", { amount: ganado })}>
         <b>{ganado}</b>
-        <span>{t("tareas.earnedUsdc", { amount: "USDC" })}</span>
+        <span>{t("tareas.earned")}</span>
       </div>
       <div>
         <b>{revision}</b>
@@ -139,6 +114,7 @@ function NotaMile({ tono, children }: { tono: "pend" | "rev" | "ok"; children: R
 
 function Saludo({ nombre, sinDibujo = false }: { nombre: string | null; sinDibujo?: boolean }) {
   const t = useTexto();
+  const idioma = useIdioma();
   const [ahora, setAhora] = useState<Date | null>(null);
   const [quieto, setQuieto] = useState(false);
 
@@ -151,7 +127,7 @@ function Saludo({ nombre, sinDibujo = false }: { nombre: string | null; sinDibuj
     return () => media.removeEventListener("change", aplicar);
   }, []);
 
-  const persona = primerNombre(nombre);
+  const persona = primerNombre(nombre ? nombreEnIdioma(nombre, idioma) : null);
   const frase = ahora ? t(claveSaludo(franjaDe(ahora), persona !== null), persona ? { name: persona } : undefined) : t("tareas.title");
 
   return (
@@ -278,7 +254,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
   const mejores = idsMejorPagadas(tareas);
   const porEvento = agruparPorEvento(ordenarPorPago(visibles, orden), orden === "defecto" ? "unir" : "seguir");
   const pendientes = cuenta("pendiente");
-  const ganado = totalRecibido(tareas);
+  const ganado = totalGanado(tareas, idioma);
   const enRevision = contarEnRevision(tareas);
   const idAbierta = porEvento.flatMap((grupo) => grupo.tareas).find((tarea) => tarea.estado === "pendiente")?.id ?? null;
   const eventosDeTareas = new Set(tareas.map((tarea) => tarea.proyectoId));
@@ -303,7 +279,7 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
       : filtro === "en revisión"
         ? { titulo: t("tareas.emptySentTitle"), accion: t("tareas.emptySentAction"), destino: "pendiente" as Filtro }
         : { titulo: t("tareas.emptyDoneTitle"), accion: t("tareas.emptyDoneAction"), destino: "pendiente" as Filtro };
-  const saludo = nombre ? t("tareas.hello", { name: nombre }) : t("tareas.helloNoName");
+  const saludo = nombre ? t("tareas.hello", { name: nombreEnIdioma(nombre, idioma) }) : t("tareas.helloNoName");
   const subtitulo =
     eventosDeTareas.size === 1 ? (
       <>
@@ -433,9 +409,9 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                       const puntos = puntosDeCondicion(tarea.condicion).length;
                       const vence = tarea.venceEn ? cuandoVence(tarea.venceEn, new Date(), idioma) : null;
                       const reintento = reintentoEnLista(tarea, reloj, vistosRef.current.get(tarea.id));
-                      const recibido = tarea.estado === "pagado" ? (explicarPago(tarea, idioma)?.frase ?? "") : "";
+                      const pagada = tarea.estado === "pagado" ? explicarPago(tarea, idioma) : null;
                       const documental = esMimeDocumental(tarea.tipoArchivo);
-                      const quienOrganiza = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento);
+                      const quienOrganiza = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento, idioma);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
                           <div className="hyto-tarea-fila">
@@ -484,7 +460,12 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
                               </NotaMile>
                             )
                           ) : null}
-                          {recibido ? <NotaMile tono="ok">{t("tareas.paidNote", { amount: recibido })}</NotaMile> : null}
+                          {pagada ? (
+                            <NotaMile tono="ok">
+                              {t("tareas.paidNote", { amount: pagada.corto })}
+                              {pagada.detalle ? <small className="hyto-monto-detalle">{pagada.detalle}</small> : null}
+                            </NotaMile>
+                          ) : null}
                           {tarea.estado === "pendiente" && tarea.rechazada ? (
                             <NotaMile tono="pend">
                               {quienOrganiza ? t("evidencia.organizerAskedName", { name: quienOrganiza }) : t("evidencia.organizerAsked")}

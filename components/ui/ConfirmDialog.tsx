@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } fro
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { firmaCavosActiva, suscribirFirmaCavos } from "@/lib/escrow/capaCavos";
 import { acortarDireccion, formatearMonto } from "@/lib/integrante/formato";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
 import { crearConfirmacion } from "@/lib/ui/confirmar";
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
   titulo: string;
   /** Raw amount, such as "20" or "12.48". Shown as US$ with the app's amount format. */
   monto?: string;
+  /** Amount already written out, such as "Up to US$15.00". Wins over `monto`. */
+  montoTexto?: string;
   destinatario?: { nombre?: string; direccion?: string };
   detalle?: string;
   irreversible?: boolean;
@@ -21,7 +24,7 @@ type Props = {
   onConfirmar: (senal: AbortSignal) => Promise<void>;
 };
 
-export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
+export function ConfirmDialog({ abierto, onCerrar, titulo, monto, montoTexto, destinatario, detalle, irreversible, confirmar, peligro, onConfirmar }: Props) {
   const t = useTexto();
   const idioma = useIdioma();
   const claro = useClaro();
@@ -125,10 +128,10 @@ export function ConfirmDialog({ abierto, onCerrar, titulo, monto, destinatario, 
         </button>
         <h2 id={idTitulo}>{titulo}</h2>
         <div id={idDetalle} className="grid gap-3">
-          {monto ? <p className="hyto-dialogo-monto">{formatearMonto(monto, idioma)}</p> : null}
+          {montoTexto || monto ? <p className="hyto-dialogo-monto">{montoTexto || formatearMonto(monto ?? "", idioma)}</p> : null}
           {destinatario ? (
             <p className="hyto-dialogo-destino">
-              {t("confirmar.to")} {destinatario.nombre ?? ""}
+              {t("confirmar.to")} {destinatario.nombre ? nombreEnIdioma(destinatario.nombre, idioma) : ""}
               {destinatario.nombre && destinatario.direccion ? " · " : ""}
               {destinatario.direccion ? <span>{acortarDireccion(destinatario.direccion)}</span> : null}
             </p>

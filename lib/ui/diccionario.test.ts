@@ -264,6 +264,48 @@ test("el camino del demo en español no mezcla el tuteo con el usted", () => {
   assert.doesNotMatch(texto("es", "tareas.step2"), /Haces|subes/);
 });
 
+test("los diálogos de revisión y de recibo tratan de usted, no de tú", () => {
+  const recibo = [
+    es.evidencia.receiptTitle,
+    es.evidencia.receiptBack,
+    es.evidencia.receiptMissing,
+    es.evidencia.receiptNotPaid,
+    es.evidencia.receiptLoadFail,
+    es.evidencia.receiptHelp,
+    es.evidencia.receiptPlaceholder,
+    es.evidencia.youReceived,
+    es.evidencia.viewReceipt,
+    es.evidencia.setAside,
+    es.evidencia.fee,
+    es.evidencia.networkNote,
+    es.evidencia.taskPayment,
+    es.tareas.paidNote,
+    es.tareas.earnedUsdc,
+  ];
+  const dialogos = [...textosDe(es.confirmar), ...textosDe(es.revision), ...textosDe(es.bandeja), ...textosDe(es.pago), ...recibo];
+  const clitico = /(^|[^a-záéíóúüñ])(tú|tu|tus|te|ti|vos)([^a-záéíóúüñ]|$)/i;
+  // An order at the start of a sentence is "Apruebe" and "Revise", never "Aprueba" or "Revisa".
+  const imperativoTu = /(^|[.!?:]\s+)(Aprueba|Revisa|Confirma|Bloquea|Paga|Pide|Toma|Sube|Abre|Intenta)\b/;
+  for (const valor of dialogos) {
+    assert.equal(clitico.test(valor), false, valor);
+    assert.doesNotMatch(valor, imperativoTu, valor);
+    for (const verbo of [...TUTEO, ...VOSEO]) {
+      const marca = new RegExp(`(^|[^a-záéíóúüñ])${verbo}([^a-záéíóúüñ]|$)`, "i");
+      assert.equal(marca.test(valor), false, `${verbo} en: ${valor}`);
+    }
+  }
+  assert.equal(texto("es", "confirmar.payDetail"), "Apruebe el trabajo y el pago llega a quien lo hizo.");
+  assert.equal(texto("es", "tareas.earnedUsdc", { amount: "US$26,45" }), "Ganado: US$26,45");
+  assert.equal(texto("en", "tareas.earnedUsdc", { amount: "US$26.45" }), "Earned: US$26.45");
+  assert.equal(
+    texto("es", "revision.brutoMenosComision", { bruto: "US$6,53", comision: "US$0,02" }),
+    "US$6,53 menos comisión de US$0,02",
+  );
+  for (const valor of textosDe(es)) {
+    assert.doesNotMatch(valor, /(^|[.!?]\s+)(Aprueba|Revisa) /, valor);
+  }
+});
+
 test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del demo", () => {
   // The testnet pill is the one place the welcome names the test network.
   const sinEtiqueta = <T extends Record<string, unknown>>(rama: T) => {
