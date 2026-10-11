@@ -23,3 +23,13 @@ test("la tarea no se desborda en un teléfono: sus columnas pueden encogerse", (
   // Desktop keeps its two columns.
   assert.match(css, /@media \(min-width: 1024px\) \{[^@]*\.hyto-tarea-cols \{\s*grid-template-columns: minmax\(0, 1\.5fr\) minmax\(320px, 1fr\);/);
 });
+
+// Josué's rule: on a phone the organizer's task actions (Lock budget, Edit) are centered and full width.
+test("las acciones de la tarea del organizador quedan centradas y a todo el ancho en el teléfono", () => {
+  const tareas = readFileSync("components/admin/TareasEvento.tsx", "utf8");
+  assert.match(tareas, /className="hyto-acciones-fila /);
+  assert.match(
+    css,
+    /@media \(max-width: 1023px\) \{\s*\.hyto-acciones-fila \{[^}]*grid-template-columns: minmax\(0, 1fr\);[^}]*\}\s*\.hyto-acciones-fila > \.hyto-btn,\s*\.hyto-acciones-fila > \.hyto-btn-line \{[^}]*width: 100%;[^}]*justify-content: center;/,
+  );
+});

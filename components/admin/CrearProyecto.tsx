@@ -305,34 +305,6 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`prioridad-${fila.clave}`}>
-                    {t("clasificacion.priority")}
-                    <select
-                      id={`prioridad-${fila.clave}`}
-                      value={fila.prioridad}
-                      onChange={(evento) => cambiar(fila.clave, { prioridad: evento.target.value as PrioridadTarea })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="normal">{t("clasificacion.normal")}</option>
-                      <option value="high">{t("clasificacion.high")}</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm text-[var(--suave)]" htmlFor={`dificultad-${fila.clave}`}>
-                    {t("clasificacion.difficulty")}
-                    <select
-                      id={`dificultad-${fila.clave}`}
-                      value={fila.dificultad}
-                      onChange={(evento) => cambiar(fila.clave, { dificultad: evento.target.value as DificultadTarea | "" })}
-                      className="hyto-input mt-2"
-                    >
-                      <option value="">{t("clasificacion.notSet")}</option>
-                      <option value="easy">{t("clasificacion.easy")}</option>
-                      <option value="medium">{t("clasificacion.medium")}</option>
-                      <option value="hard">{t("clasificacion.hard")}</option>
-                    </select>
-                  </label>
-                </div>
                 <label className="mt-4 block text-sm text-[var(--suave)]" htmlFor={`condicion-${fila.clave}`}>
                   {t("eventos.photoMust")}
                 </label>
@@ -365,9 +337,11 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
             ))}
           </div>
 
-          <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="hyto-btn-line is-inline mt-4 px-5">
-            {t("eventos.addTask")}
-          </button>
+          <div className="hyto-acciones-fila mt-4 flex">
+            <button type="button" onClick={() => setFilas((actuales) => [...actuales, filaNueva()])} className="hyto-btn-line is-inline px-5">
+              {t("eventos.addTask")}
+            </button>
+          </div>
         </div>
 
         <aside className="hyto-panel lg:sticky lg:top-6">
@@ -386,7 +360,7 @@ export function CrearProyecto({ saldo = null }: { saldo?: string | null }) {
               <dd className="hyto-amount">{formatearMonto(total, idioma)}</dd>
             </div>
           </dl>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="hyto-acciones-fila mt-5 flex flex-wrap items-center gap-3">
             <BotonPrincipal
               type="button"
               onClick={() => void fondear()}

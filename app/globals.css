@@ -7142,3 +7142,25 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     transition: none;
   }
 }
+
+/* Organizer task actions on phones: one centered, full-width column so nothing sits pushed to the left. */
+@media (max-width: 1023px) {
+  .hyto-acciones-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    gap: 8px;
+  }
+
+  .hyto-acciones-fila > .hyto-btn,
+  .hyto-acciones-fila > .hyto-btn-line {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hyto-acciones-fila > p {
+    text-align: center;
+  }
+}

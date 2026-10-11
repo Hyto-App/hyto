@@ -116,7 +116,7 @@ test("Tomar foto abre la cámara en vivo y Subir archivo es un selector sin capt
     assert.match(texto(), /Drag your evidence here or choose a file/);
     assert.match(texto(), /Photo, invoice, PDF, or list/);
     assert.match(texto(), /Send one piece of evidence/);
-    assert.match(texto(), /Your photo must show/);
+    assert.match(texto(), /Your evidence must show/);
     assert.doesNotMatch(texto(), /gallery/i);
     assert.doesNotMatch(texto(), /Receipt|What you are sending/);
     assert.equal(document.querySelector('[role="tablist"]'), null);
@@ -294,7 +294,7 @@ function sinRevisionLocal() {
   assert.doesNotMatch(JSON.stringify({ ...window.localStorage }), /en revisión/);
 }
 
-test("una foto de cámara que el servidor rechaza no dice Your photo arrived", async () => {
+test("una foto de cámara que el servidor rechaza no dice Your evidence arrived", async () => {
   limpiarPantalla();
   definirCamara(undefined);
   const original = globalThis.fetch;
@@ -302,7 +302,7 @@ test("una foto de cámara que el servidor rechaza no dice Your photo arrived", a
   try {
     const pedidos = await enviarCaptura({ subida: () => json({ aviso }, 503) });
     assert.ok(pedidos.includes("POST /api/evidencias"));
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("Photo checks are not ready on the server yet."));
     assert.equal(boton("Send evidence").textContent, "Send evidence");
     sinRevisionLocal();
@@ -323,7 +323,7 @@ test("si la red cae al subir la foto de cámara, no hay envío de ejemplo", asyn
         throw new Error("offline");
       },
     });
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.match(texto(), /Check your connection and try again/);
     sinRevisionLocal();
   } finally {
@@ -365,7 +365,7 @@ test("si el token de captura falla, se ve el aviso del servidor y no se sube nad
   try {
     const pedidos = await enviarCaptura({ token: () => json({ aviso }, 503), subida: () => json({}, 500) });
     assert.ok(!pedidos.includes("POST /api/evidencias"));
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
     sinRevisionLocal();
   } finally {
@@ -383,7 +383,7 @@ test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
   try {
     await enviarCaptura({ subida: () => json({ evidencia: { id: "ev-1", tareaId: "stand", blobId: "blob-1" }, aviso }, 201) });
     assert.match(texto(), /Evidence sent, action needed/);
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes(aviso));
     sinRevisionLocal();
   } finally {
@@ -393,7 +393,7 @@ test("una foto de cámara con 201 y aviso de cobro pide acción", async () => {
   }
 });
 
-test("una foto de cámara con 201 limpio dice Your photo arrived y manda el token y la hora de captura", async () => {
+test("una foto de cámara con 201 limpio dice Your evidence arrived y manda el token y la hora de captura", async () => {
   limpiarPantalla();
   definirCamara(undefined);
   const original = globalThis.fetch;
@@ -408,7 +408,7 @@ test("una foto de cámara con 201 limpio dice Your photo arrived y manda el toke
     const enviado = cuerpo as FormData | null;
     assert.equal(enviado?.get("token"), "t-1");
     assert.ok(!Number.isNaN(Date.parse(String(enviado?.get("capturadaEn")))));
-    assert.match(texto(), /Your photo arrived/);
+    assert.match(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /action needed/);
     assert.match(texto(), /as soon as the organizer approves it/);
     assert.match(texto(), /What happens now/);

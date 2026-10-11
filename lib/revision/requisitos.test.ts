@@ -61,14 +61,14 @@ test("solo no_cumple rechaza, parcial sigue, y el tope deja la foto al organizad
   assert.equal(sigue.accion, "seguir");
   assert.equal(sigue.puntaje, 100);
   assert.deepEqual(sigue.fallidos, []);
-  assert.equal(sigue.notaMile, "Your photo meets every point. The organizer reviews it next.");
-  assert.equal(sigue.resultados[0]?.observacion, "This is in your photo.");
+  assert.equal(sigue.notaMile, "Your evidence meets every point. The organizer reviews it next.");
+  assert.equal(sigue.resultados[0]?.observacion, "This is in your evidence.");
 
   const parcial = decidirRequisitos({ requisitos, niveles: [2, 1], idioma: "es", intento: 1, maxIntentos: 3 });
   assert.equal(parcial?.accion, "seguir");
   assert.equal(parcial?.puntaje, 75);
   assert.equal(parcial?.resultados[1]?.estado, "parcial");
-  assert.equal(parcial?.resultados[1]?.observacion, "Esto está solo en parte en su foto.");
+  assert.equal(parcial?.resultados[1]?.observacion, "Esto está solo en parte en su evidencia.");
   assert.match(parcial?.notaMile ?? "", /organizador decide/);
 
   const rechazo = decidirRequisitos({ requisitos, niveles: [2, 0], idioma: "es", intento: 1, maxIntentos: 3 });
@@ -76,7 +76,7 @@ test("solo no_cumple rechaza, parcial sigue, y el tope deja la foto al organizad
   assert.deepEqual(rechazo?.fallidos, ["mesa"]);
   assert.equal(rechazo?.puntaje, 50);
   assert.equal(rechazo?.resultados[1]?.estado, "no_cumple");
-  assert.equal(rechazo?.resultados[1]?.observacion, "Esto no aparece en su foto.");
+  assert.equal(rechazo?.resultados[1]?.observacion, "Esto no aparece en su evidencia.");
   assert.match(rechazo?.notaMile ?? "", /Falta en su evidencia: «Mesa»\. Envíe otra evidencia/);
 
   const tope = decidirRequisitos({ requisitos, niveles: [0, 0], idioma: "en", intento: 3, maxIntentos: 3 });
@@ -185,7 +185,7 @@ test("con la bandera encendida Mile rechaza el requisito que no cumple", async (
   assert.equal(resultado.mile?.accion, "rechazar");
   assert.equal(resultado.mile?.puntaje, 50);
   assert.equal(resultado.mile?.resultados[1]?.estado, "no_cumple");
-  assert.equal(resultado.mile?.resultados[1]?.observacion, "Esto no aparece en su foto.");
+  assert.equal(resultado.mile?.resultados[1]?.observacion, "Esto no aparece en su evidencia.");
   assert.match(resultado.frase, /Falta en su evidencia: «La mesa armada»/);
   const rechazo = leerRechazo(resultado.mile?.rechazoJson);
   assert.equal(rechazo?.origen, "mile");
