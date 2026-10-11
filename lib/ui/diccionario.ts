@@ -2535,7 +2535,7 @@ export const es: Rama<typeof en> = {
     copiado: "Enlace copiado.",
     reglaCifras: "Solo cuentan tareas aprobadas por una persona y pagadas. Los eventos demo o de prueba no cuentan.",
     ajustesTitulo: "Su perfil público",
-    ajustesSub: "Su perfil muestra su nombre, sus tareas aprobadas y pagadas y sus cifras. Nunca muestra sus evidencias, su correo ni su teléfono.",
+    ajustesSub: "Su perfil muestra su nombre, sus tareas aprobadas y pagadas y sus cifras. Nunca muestra su evidencia, su correo ni su teléfono.",
     nombre: "Nombre en su perfil",
     nombreAyuda: "De 2 a 60 caracteres. Sin correo ni teléfono.",
     publico: "Perfil público",
