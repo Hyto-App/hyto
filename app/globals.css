@@ -1534,8 +1534,10 @@ a {
     --pila-3: calc(var(--pila-2) + 40px + 12px);
   }
 
+  /* A real box. display:contents let the desktop foot's theme (also .hyto-brand-acciones .hyto-tema) paint fixed at mid-screen. */
   .hyto-side {
-    display: contents;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Compound selector: the later `.hyto-nav { display: flex }` must not bring the desktop nav back. */
@@ -1673,10 +1675,12 @@ a {
   .hyto-main {
     /* The column is theme, avatar, then Ask Mile. Content ends 16px above the top circle. */
     padding: var(--e-1) var(--margen-lateral) calc(var(--pila-3) + 40px + 16px);
+    /* Column is 40px wide and 16px from the edge; 16px more stays between it and the cards at every scroll position. */
+    padding-right: calc(16px + 40px + 16px);
   }
 
-  /* 390: the round controls share one column, 16px from the edge and 12px apart. None sit at mid-screen. */
-  .hyto-brand-acciones .hyto-tema {
+  /* 390: only the mobile header's round controls join the column. The desktop foot stays hidden and is not fixed. */
+  .hyto-brand-acciones.hyto-solo-movil .hyto-tema {
     position: fixed;
     right: 16px;
     bottom: var(--pila-3);
@@ -1684,7 +1688,7 @@ a {
     background: var(--papel);
   }
 
-  .hyto-brand-acciones .hyto-perfil-boton.is-compacto {
+  .hyto-brand-acciones.hyto-solo-movil .hyto-perfil-boton.is-compacto {
     position: fixed;
     right: 16px;
     bottom: var(--pila-2);
@@ -1728,8 +1732,9 @@ a {
     bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
-  /* Focus mode hides the bottom nav: the fixed CTA (.hyto-actions, 140px) is what must not cover content. */
+  /* Focus mode hides the side, so the column is gone. The review CTA is the fixed piece that must stay clear. */
   .hyto-shell-foco .hyto-main {
+    padding-right: var(--margen-lateral);
     padding-bottom: calc(140px + env(safe-area-inset-bottom));
   }
 

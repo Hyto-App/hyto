@@ -22,6 +22,7 @@ import { listarTareas } from "@/lib/integrante/rutas";
 import { CONSULTA_SUBIR, tareaParaSubir } from "@/lib/integrante/subir";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, reintentoEnLista, seguirEnLista } from "@/lib/integrante/seguimiento";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
+import { etiquetasSinLineaFalta, textoFalta } from "@/lib/revision/falta";
 import { cuandoVence } from "@/lib/integrante/vence";
 import { nombreEnIdioma, nombreParaMostrar } from "@/lib/sesion/nombre";
 import { esMimeDocumental } from "@/lib/evidencia/tipo";
@@ -412,6 +413,7 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                       const pagada = tarea.estado === "pagado" ? explicarPago(tarea, idioma) : null;
                       const documental = esMimeDocumental(tarea.tipoArchivo);
                       const quienOrganiza = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento, idioma);
+                      const falta = textoFalta(tarea.notas, idioma, tarea.condicion);
                       return (
                         <article key={tarea.id} className={`hyto-tarjeta hyto-tarea${abierta ? " hyto-tarjeta-abierta" : ""}`}>
                           <div className="hyto-tarea-fila">
@@ -446,7 +448,8 @@ export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string
                             typeof tarea.nota === "number" && tarea.veredicto ? (
                               <div className="mt-3">
                                 <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} />
-                                <EtiquetasNota etiquetas={tarea.notas} condicion={tarea.condicion} />
+                                {falta ? <p className="mt-3 text-sm leading-6 text-[var(--suave)]">{falta}</p> : null}
+                                <EtiquetasNota etiquetas={etiquetasSinLineaFalta(tarea.notas, idioma, tarea.condicion)} condicion={tarea.condicion} />
                                 <NotaCobro tarea={tarea} />
                               </div>
                             ) : reintento ? (

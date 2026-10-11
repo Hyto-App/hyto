@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { textoFalta } from "./falta";
+import { etiquetasSinLineaFalta, textoFalta } from "./falta";
 import { presentarEtiqueta } from "./notas-idioma";
 import { faltantesDe, type EtiquetaNota } from "./razones";
 import type { LecturaEvidencia } from "./lectura";
@@ -72,6 +72,31 @@ test("la nota de lo que falta localiza el comprobante, el monto y la fecha", () 
     "Missing: evidence of the meal receipt; the invoice amount; the invoice date.",
   );
   assert.equal(textoFalta([junta], "en"), "Missing: evidence of the meal receipt; the invoice amount; the invoice date.");
+});
+
+test("My tasks muestra la nota completa y no repite monto ni fecha", () => {
+  const etiquetas = [
+    etiqueta({
+      id: "part_missing",
+      texto: "Part of the request missing",
+      explicacion: "Missing: La foto del comprobante de la comida no es visible.",
+    }),
+    etiqueta({ id: "amount_missing", texto: "Receipt amount missing", explicacion: "The receipt answers do not give an amount." }),
+    etiqueta({ id: "date_missing", texto: "Receipt date missing", explicacion: "The receipt answers do not give a date." }),
+    etiqueta({ id: "over_cap", texto: "Amount over the cap", explicacion: "The amount is over the cap." }),
+  ];
+  assert.equal(
+    textoFalta(etiquetas, "en"),
+    "Missing: evidence of the meal receipt; the invoice amount; the invoice date.",
+  );
+  assert.equal(
+    textoFalta(etiquetas, "es"),
+    "Falta: la evidencia del comprobante de la comida; el monto de la factura; la fecha de la factura.",
+  );
+  assert.deepEqual(
+    etiquetasSinLineaFalta(etiquetas, "en").map((nota) => nota.id),
+    ["over_cap"],
+  );
 });
 
 test("en inglés My tasks traduce «Missing: el comprobante de la comida.»", () => {

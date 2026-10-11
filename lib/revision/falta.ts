@@ -50,3 +50,22 @@ export function textoFalta(
   if (sinConfirmar.length > 0) return `${CABEZA_SIN_CONFIRMAR[lengua]}${sinConfirmar.join("; ")}.`;
   return null;
 }
+
+const LISTA = /^(?:Missing|Falta|Not confirmed|No se pudo confirmar): /;
+
+/**
+ * Tags already written into `textoFalta`. My tasks shows that one line and does not repeat
+ * the amount, the date, or the short missing list as their own chips.
+ */
+export function etiquetasSinLineaFalta(
+  etiquetas: readonly EtiquetaNota[] | null | undefined,
+  idioma: Idioma,
+  condicion?: string | null,
+): EtiquetaNota[] {
+  if (!etiquetas || etiquetas.length === 0) return [];
+  if (!textoFalta(etiquetas, idioma, condicion)) return [...etiquetas];
+  return etiquetas.filter((etiqueta) => {
+    if (etiqueta.id === "amount_missing" || etiqueta.id === "date_missing") return false;
+    return !LISTA.test(presentarEtiqueta(etiqueta, idioma, condicion).explicacion);
+  });
+}
