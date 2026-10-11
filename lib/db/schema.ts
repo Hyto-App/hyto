@@ -56,6 +56,8 @@ export const proyectos = pgTable("proyectos", {
   contextoIa: text("contexto_ia"),
   // Null keeps the event on its own. Only read when HYTO_COMUNIDADES is on.
   comunidadId: text("comunidad_id").references(() => comunidades.id, { onDelete: "set null" }),
+  // «¿Para cuándo?» as YYYY-MM-DD. Null on projects created before 0015.
+  fecha: text("fecha"),
 });
 
 export const tareas = pgTable("tareas", {

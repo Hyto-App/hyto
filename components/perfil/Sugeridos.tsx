@@ -320,3 +320,82 @@ export function SugeridosInvitar({ proyectoId, sugeridos }: { proyectoId: string
     </div>
   );
 }
+
+/**
+ * «¿Quién la hace?» in «Crear proyecto»: the project does not exist yet, so this only picks an email.
+ * Same people and search as the assign panel. Phase 1 shows no verification mark on the avatars.
+ */
+export function SugeridosElegir({
+  id,
+  sugeridos,
+  valor,
+  onCambio,
+}: {
+  id: string;
+  sugeridos: Sugerido[];
+  valor: string;
+  onCambio: (correo: string) => void;
+}) {
+  const t = useTexto();
+  const nombreDe = useNombreDe();
+  const limpio = valor.trim().toLowerCase();
+  const elegido = sugeridos.find((persona) => persona.email.toLowerCase() === limpio) ?? null;
+  const visibles = filtrar(sugeridos, elegido ? "" : valor).slice(0, 4);
+  const primerNombre = (persona: Sugerido) => nombreDe(persona).split(/[\s@]/)[0] || nombreDe(persona);
+  return (
+    <div className="cp-persona">
+      {elegido ? (
+        <div className="cp-campo cp-persona-elegida">
+          <span className="sg-chip">
+            <span className="sg-mini" aria-hidden="true">
+              {elegido.iniciales}
+            </span>
+            <span>{nombreDe(elegido)}</span>
+            <button type="button" aria-label={t("crear.quitarPersona", { nombre: nombreDe(elegido) })} onClick={() => onCambio("")}>
+              ×
+            </button>
+          </span>
+        </div>
+      ) : (
+        <input
+          id={id}
+          className="cp-campo cp-input"
+          type={sugeridos.length > 0 ? "text" : "email"}
+          inputMode="email"
+          autoComplete="off"
+          value={valor}
+          placeholder={t("crear.quienPh")}
+          onChange={(evento) => onCambio(evento.target.value)}
+        />
+      )}
+      {sugeridos.length > 0 && visibles.length > 0 ? (
+        <>
+          <ul className="cp-avatares">
+            {visibles.map((persona) => {
+              const on = elegido?.usuarioId === persona.usuarioId;
+              return (
+                <li key={persona.usuarioId}>
+                  <button
+                    type="button"
+                    className={`cp-avatar${on ? " is-on" : ""}`}
+                    aria-pressed={on}
+                    aria-label={t(on ? "crear.quitarPersona" : "crear.elegir", { nombre: nombreDe(persona) })}
+                    onClick={() => onCambio(on ? "" : persona.email)}
+                  >
+                    <span className="cp-avatar-circulo" aria-hidden="true">
+                      {persona.iniciales}
+                    </span>
+                    <span className="cp-avatar-nombre" aria-hidden="true">
+                      {primerNombre(persona)}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="cp-ayuda">{t("crear.yaTrabajaron")}</p>
+        </>
+      ) : null}
+    </div>
+  );
+}

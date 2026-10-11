@@ -187,7 +187,7 @@ const EXACTO: Record<string, Clave> = {
   "Could not assign that task.": "eventos.assignFail",
   "Enter a name and at least one task with an amount.": "eventos.needFields",
   "Could not create the event.": "eventos.createFail",
-  "Demo mode cannot create events. Sign in with your email to create one.": "eventos.demoCreate",
+  "In the demo you can see everything. To create a real project, sign in with your email.": "eventos.demoCreate",
   "Could not prepare the account.": "eventos.prepareFail",
   "Account setup isn't available yet.": "errores.cuentasNo",
   "Could not open the demo. Try again.": "entrar.demoOpenFail",

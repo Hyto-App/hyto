@@ -41,6 +41,7 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
             nombre={proyecto.nombre}
             descripcion={publicoOrganizador.descripcion}
             portada={publicoOrganizador.portada}
+            fecha={publicoOrganizador.fecha}
           />
         </div>
         <Bandeja proyectoId={proyecto.id} miembros={personas} />
@@ -68,7 +69,7 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
     <>
       <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol={rol} pestana="inbox" />
       <div className="hyto-page pb-0 pt-0">
-        <ContextoEvento proyectoId={proyecto.id} nombre={proyecto.nombre} descripcion={publico.descripcion} portada={publico.portada} />
+        <ContextoEvento proyectoId={proyecto.id} nombre={proyecto.nombre} descripcion={publico.descripcion} portada={publico.portada} fecha={publico.fecha} />
       </div>
       <TareasMiembro tareas={tareas} />
     </>

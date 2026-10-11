@@ -99,7 +99,7 @@ test("una tarea pagada abre con el pago y, al volver, muestra la nota", async ()
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pagado", nota: 84, veredicto: "cumplió" }));
-    assert.match(texto(), /A person from the event approved it/);
+    assert.match(texto(), /A person from the project approved it/);
     assert.match(texto(), /It's already in your balance/);
     assert.doesNotMatch(texto(), /You were paid|You did it|Keep going/);
     // US$20 funded, minus the 0.3% protocol fee, shown in cents. No celebratory plus.

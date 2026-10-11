@@ -44,7 +44,7 @@ test("el comprobante en español deja la red como enlace secundario", async () =
     assert.match(texto(), /Comisión/);
     assert.match(texto(), /Fecha/);
     assert.match(texto(), /Tarea/);
-    assert.match(texto(), /Evento/);
+    assert.match(texto(), /Proyecto/);
     assert.match(texto(), /US\$12,44/);
     assert.match(texto(), /US\$12,48/);
     assert.match(texto(), /US\$0,04/);

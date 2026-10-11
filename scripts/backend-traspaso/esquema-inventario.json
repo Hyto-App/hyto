@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "a956d7eeeee8ce1aec6afc15072fbfc3f4cdcbcddd0438f2c3f70b5885d2623c",
+      "sha256": "c254ddcae9f83e23373f785314d7dc25c4c4d2cbdf93c54f7c07234867a2a792",
       "detalle": {
         "exportacionesDeTabla": [
           "comunidadAvisos",
@@ -90,7 +90,8 @@
           "drizzle/0011_tipo_cuenta.sql",
           "drizzle/0012_perfil_voluntario.sql",
           "drizzle/0013_tablon.sql",
-          "drizzle/0014_perfiles_publicos.sql"
+          "drizzle/0014_perfiles_publicos.sql",
+          "drizzle/0015_fecha_proyecto.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -269,6 +270,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "1c142ba081edab84b697e89db5e6106046a7c8430a08e913a16aedfa677fdefd",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0015_fecha_proyecto.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "7bea8853243723e553759a72b0da500339ed45876e151eda874a8bdbccf7db9a",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -981,6 +994,39 @@
             "archivo": "lib/db/tipos.ts",
             "tipo": "Proyecto",
             "campo": "comunidadId",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
+          }
+        },
+        {
+          "nombre": "fecha",
+          "nombreEnDrizzle": "fecha",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Proyecto",
+            "campo": "fecha",
             "tipoTs": "string",
             "literales": null,
             "aceptaNull": true,

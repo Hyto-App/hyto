@@ -8,7 +8,6 @@ import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { useClaro, useTexto } from "@/components/ui/Idioma";
 import { leerEstadoUsdc } from "@/lib/integrante/prepararUsdc";
 import type { Clave } from "@/lib/ui/diccionario";
-import { muestraNavOrganizador } from "@/lib/ui/nav-organizador";
 
 type Rol = "organizer" | "team" | "volunteer" | null;
 type Evento = { id: string; nombre: string; rol?: Rol; pendientes?: number };
@@ -53,6 +52,8 @@ function pasoDe(eventos: readonly Evento[], demo: boolean, rolDemo: string | nul
     return { tipo: "demo", href };
   }
   if (destacado) return { tipo: "abrir", href: `/eventos/${destacado.id}`, nombre: destacado.nombre };
+  // With no projects, the empty state right below carries both buttons. The card does not repeat them.
+  if (eventos.length === 0) return { tipo: "explicar" };
   return { tipo: "unirse", puedeCrear };
 }
 
@@ -94,9 +95,20 @@ export function ListaEventos() {
   const [intento, setIntento] = useState(0);
   const demo = useModoDemo();
   const rolDemo = useRolDemo();
-  const demoOrganizador = rolDemo === "organizador";
-  const organizados = (eventos ?? []).filter((evento) => evento.rol === "organizer").map((evento) => evento.id);
-  const puedeCrear = muestraNavOrganizador(organizados, demoOrganizador);
+  // Any account can open «Crear proyecto» (Pao, 10-oct). Only the demo volunteer role stays on tasks.
+  const muestraCrear = !(demo && rolDemo === "voluntario");
+  const botones = (
+    <div className={`hyto-dos-botones${muestraCrear ? "" : " is-uno"}`}>
+      {muestraCrear ? (
+        <Link href="/eventos/nuevo" className="hyto-btn">
+          {t("crear.botonLista")}
+        </Link>
+      ) : null}
+      <Link href="/join" className="hyto-btn-line">
+        {t("eventos.joinCode")}
+      </Link>
+    </div>
+  );
   const [bienvenidaOculta, ocultarBienvenida] = useBienvenidaOculta();
   // The welcome waits for the list, so its one step is the right one.
   const conBienvenida = !bienvenidaOculta && eventos !== null && !error;
@@ -134,23 +146,12 @@ export function ListaEventos() {
     <main className="hyto-page">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="hyto-h1">{t("eventos.title")}</h1>
-        {eventos && eventos.length === 0 && !error ? null : (
-          <div className="flex flex-wrap gap-2">
-            {puedeCrear ? (
-              <Link href="/eventos/nuevo" className="hyto-btn is-inline px-5">
-                {t("eventos.create")}
-              </Link>
-            ) : null}
-            <Link href="/join" className="hyto-btn-line is-inline px-5">
-              {t("eventos.joinCode")}
-            </Link>
-          </div>
-        )}
+        {eventos && eventos.length === 0 && !error ? null : botones}
       </header>
       {conBienvenida ? (
         <div className="mt-6">
           <Bienvenida
-            paso={pasoDe(eventos ?? [], demo, rolDemo, puedeCrear)}
+            paso={pasoDe(eventos ?? [], demo, rolDemo, muestraCrear)}
             accion={
               <button type="button" onClick={ocultarBienvenida}>
                 {t("tareas.hideWelcome")}
@@ -179,21 +180,10 @@ export function ListaEventos() {
               </button>
             </div>
           ) : eventos.length === 0 ? (
-            <div className="hyto-tarjeta hyto-estado-vacio mt-6">
+            <div className="hyto-tarjeta hyto-estado-vacio is-izquierda mt-6">
               <h2>{t("eventos.empty")}</h2>
-              <p>{t(puedeCrear ? "eventos.emptyHelp" : "eventos.emptyHelpJoin")}</p>
-              {conBienvenida ? null : (
-                <div className="hyto-estado-vacio-acciones">
-                  <Link href="/join" className="hyto-btn">
-                    {t("eventos.joinCode")}
-                  </Link>
-                  {puedeCrear ? (
-                    <Link href="/eventos/nuevo" className="hyto-btn-line">
-                      {t("bienvenida.create")}
-                    </Link>
-                  ) : null}
-                </div>
-              )}
+              <p>{t(muestraCrear ? "eventos.emptyHelp" : "eventos.emptyHelpJoin")}</p>
+              {botones}
             </div>
           ) : (
             <ul className="mt-6 grid gap-3">

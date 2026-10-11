@@ -206,7 +206,7 @@ test("la barra recuerda si está minimizada y Ctrl+K sigue abriendo a Mile", asy
     const plegados = [...document.querySelectorAll(".hyto-nav-escritorio a")];
     assert.deepEqual(
       plegados.map((enlace) => enlace.getAttribute("title")),
-      ["Events", "My tasks"],
+      ["Projects", "My tasks"],
     );
     assert.equal(new Set(plegados.map((enlace) => enlace.querySelector("svg path")?.getAttribute("d"))).size, 2);
 

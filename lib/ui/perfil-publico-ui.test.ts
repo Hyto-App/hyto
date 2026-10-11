@@ -115,12 +115,12 @@ test("sugeridos al asignar: una sola persona, «Ya trabajó con usted» primero,
       }),
     );
     assert.match(texto(), /Worked with you/);
-    assert.match(texto(), /2 events with you · 12 tasks/);
-    assert.match(texto(), /Not in this event yet/);
+    assert.match(texto(), /2 projects with you · 12 tasks/);
+    assert.match(texto(), /Not in this project yet/);
     assert.match(texto(), /Invite someone new by email/);
     const textoPanel = texto();
-    assert.ok(textoPanel.indexOf("Worked with you") < textoPanel.indexOf("In this event"));
-    assert.ok(textoPanel.indexOf("In this event") < textoPanel.indexOf("Invite someone new by email"));
+    assert.ok(textoPanel.indexOf("Worked with you") < textoPanel.indexOf("In this project"));
+    assert.ok(textoPanel.indexOf("In this project") < textoPanel.indexOf("Invite someone new by email"));
     const elegir = [...document.querySelectorAll("button[aria-pressed]")] as HTMLButtonElement[];
     assert.equal(elegir.length, 2);
     elegir[0].click();

@@ -7292,6 +7292,49 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   }
 }
 
+/* Projects list: «Crear proyecto» and «Unirme con código», the same size side by side (Pao, 10-oct). */
+.hyto-dos-botones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 26rem);
+}
+
+.hyto-dos-botones.is-uno {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 13rem);
+}
+
+.hyto-dos-botones > .hyto-btn,
+.hyto-dos-botones > .hyto-btn-line {
+  width: 100%;
+  max-width: none;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hyto-estado-vacio .hyto-dos-botones {
+  justify-self: center;
+  margin-top: 2px;
+}
+
+/* On Projects the empty card sits between the welcome and «Antes de su primer pago»: all three read left-aligned (Pao). */
+.hyto-estado-vacio.is-izquierda {
+  justify-items: start;
+  text-align: left;
+}
+
+.hyto-estado-vacio.is-izquierda .hyto-dos-botones {
+  justify-self: start;
+}
+
+@media (max-width: 1023px) {
+  header > .hyto-dos-botones {
+    width: 100%;
+  }
+}
+
 /* Paid status on the volunteer's task: a centered lime pill, same shape as the «TAREA 1» tag in tarea_v2. */
 .hyto-estado-pagado {
   align-self: center;
