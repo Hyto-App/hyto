@@ -110,7 +110,7 @@ export const discurso: Record<ClaveDiscurso, string> = {
 export const discursoEs: Record<ClaveDiscurso, string> = {
   sloganLead: "Primero la prueba,",
   sloganPay: "después el pago.",
-  tagline: "Demuestre su valor. Reciba su pago.",
+  tagline: "Prove your worth. Get paid.",
   subheadline:
     "Cualquier comunidad, en cualquier lugar del mundo, que recibe fondos desde lejos rinde cuentas de cada gasto. Aparte dólares digitales (USDC), suba su evidencia (foto, factura, PDF o lista), y una persona libera el pago.",
   networkLabel: "Demo en testnet",

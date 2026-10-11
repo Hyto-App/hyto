@@ -56,7 +56,8 @@ test("el discurso en español usa las mismas claves", () => {
   assert.deepEqual(Object.keys(discursoEs).sort(), [...CLAVES_DISCURSO].sort());
   for (const clave of CLAVES_DISCURSO) {
     assert.ok(discursoEs[clave].trim().length > 0, clave);
-    assert.notEqual(discursoEs[clave], discurso[clave], clave);
+    // The tagline stays in English in both languages (Josué, 2026-10-10).
+    if (clave !== "tagline") assert.notEqual(discursoEs[clave], discurso[clave], clave);
     if (clave !== "networkLabel") assert.equal(JERGA.test(discursoEs[clave]), false, `${clave}: ${discursoEs[clave]}`);
   }
   assert.equal(discursoDe("en"), discurso);
