@@ -3,7 +3,7 @@ import { createSign, generateKeyPairSync, type JsonWebKey } from "node:crypto";
 import test from "node:test";
 import { drizzle as drizzleProxy, type RemoteCallback } from "drizzle-orm/pg-proxy";
 import { crearSesionHttp } from "@/lib/api/sesion";
-import { crearAlmacenDesde, type DbAlmacen } from "./neon";
+import { crearAlmacenDesde, esColumnaFaltante, type DbAlmacen } from "./neon";
 
 const EMISOR = "https://emisor.prueba";
 const par = generateKeyPairSync("rsa", { modulusLength: 2048 });
@@ -22,11 +22,14 @@ delete process.env.HYTO_PERFIL_VOLUNTARIO;
 delete process.env.HYTO_TABLON;
 
 const COLUMNAS_NUEVAS =
-  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id)\b/;
+  /\b(tipo_cuenta|empresa_nombre|empresa_actividad|empresa_descripcion|empresa_foto|experiencia|etiquetas|comunidades|comunidad_miembros|comunidad_solicitudes|comunidad_avisos|comunidad_id|wallet_cobro)\b/;
+
+// Testnet-shaped placeholder, not a real account.
+const CUENTA = "G" + "K".repeat(55);
 
 type Fila = Record<string, unknown>;
 
-function token(email: string): string {
+function token(email: string, extra: Record<string, unknown> = {}): string {
   const encabezado = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: "prueba" })).toString("base64url");
   const cuerpo = Buffer.from(
     JSON.stringify({
@@ -34,6 +37,7 @@ function token(email: string): string {
       iss: EMISOR,
       email,
       exp: Math.floor(Date.now() / 1000) + 3600,
+      ...extra,
     }),
   ).toString("base64url");
   const datos = `${encabezado}.${cuerpo}`;
@@ -61,8 +65,9 @@ function ledgerSinMigrar() {
   const consultas: string[] = [];
   const callback: RemoteCallback = async (consulta, params) => {
     consultas.push(consulta);
-    if (COLUMNAS_NUEVAS.test(consulta)) {
-      throw Object.assign(new Error('column "tipo_cuenta" of relation "usuarios" does not exist'), { code: "42703" });
+    const ausente = COLUMNAS_NUEVAS.exec(consulta)?.[1];
+    if (ausente) {
+      throw Object.assign(new Error(`column "${ausente}" of relation "usuarios" does not exist`), { code: "42703" });
     }
     const texto = consulta.replace(/\s+/g, " ").trim().toLowerCase();
     if (texto.startsWith("select") && texto.includes('from "usuarios"')) {
@@ -102,11 +107,11 @@ function ledgerSinMigrar() {
   };
 }
 
-function pedido(email: string, intencion: "signup" | "signin") {
+function pedido(email: string, intencion: "signup" | "signin", extra: Record<string, unknown> = {}) {
   return new Request("http://local/api/sesion", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, token: token(email), intencion }),
+    body: JSON.stringify({ email, token: token(email, extra), intencion }),
   });
 }
 
@@ -173,4 +178,29 @@ test("el ingreso no nombra columnas de features aunque el interruptor esté ence
     delete process.env.HYTO_COMUNIDADES;
     delete process.env.HYTO_TABLON;
   }
+});
+
+test("sin 0016 la cuenta guardada se lee vacía, y otro error de la base no se esconde", async () => {
+  const { almacen } = ledgerSinMigrar();
+  assert.equal(await almacen.walletCobroDeUsuario("u-1"), null);
+  assert.equal(await almacen.guardarWalletCobro("u-1", CUENTA), false);
+
+  const caida = crearAlmacenDesde(
+    drizzleProxy(async () => {
+      throw Object.assign(new Error("Connection terminated unexpectedly"), { code: "08006" });
+    }) as unknown as DbAlmacen,
+  );
+  await assert.rejects(() => caida.walletCobroDeUsuario("u-1"), /Failed query/);
+  await assert.rejects(() => caida.guardarWalletCobro("u-1", CUENTA), /Failed query/);
+});
+
+test("una columna que falta se reconoce aunque Drizzle envuelva el error, y otro error no", () => {
+  const driver = Object.assign(new Error('column "wallet_cobro" of relation "usuarios" does not exist'), { code: "42703" });
+  assert.equal(esColumnaFaltante(driver), true);
+  assert.equal(esColumnaFaltante(Object.assign(new Error('Failed query: select "wallet_cobro" from "usuarios"'), { cause: driver })), true);
+  assert.equal(esColumnaFaltante(new Error("column usuarios.wallet_cobro does not exist")), true);
+  assert.equal(esColumnaFaltante(new Error("no existe la columna «wallet_cobro» en la relación «usuarios»")), true);
+  assert.equal(esColumnaFaltante(Object.assign(new Error('relation "usuarios" does not exist'), { code: "42P01" })), false);
+  assert.equal(esColumnaFaltante(Object.assign(new Error("Connection terminated unexpectedly"), { code: "08006" })), false);
+  assert.equal(esColumnaFaltante(null), false);
 });

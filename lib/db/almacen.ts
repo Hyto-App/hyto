@@ -91,7 +91,12 @@ export type Almacen = {
   leerSesion(token: string): Promise<SesionFila | null>;
   borrarSesion(token: string): Promise<void>;
   guardarWallet(token: string, wallet: string): Promise<void>;
+  /** Newest non-demo session's account. It goes away when that session is closed. */
   walletDeUsuario(usuarioId: string): Promise<string | null>;
+  /** Keeps the payout account on the user (0016). False when there is no such user or the column is not there yet. */
+  guardarWalletCobro(usuarioId: string, wallet: string): Promise<boolean>;
+  /** The payout account kept on the user. Null when nothing is kept or the column is not there yet. */
+  walletCobroDeUsuario(usuarioId: string): Promise<string | null>;
   listarMiembros(proyectoId: string): Promise<ProyectoMiembro[]>;
   miembrosDeUsuario(usuarioId: string): Promise<ProyectoMiembro[]>;
   guardarMiembro(miembro: ProyectoMiembro): Promise<void>;

@@ -1,7 +1,49 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { drizzle as drizzleProxy } from "drizzle-orm/pg-proxy";
 import type { Pool } from "pg";
-import { cerrarPools, crearAlmacenNeon } from "./neon";
+import { cerrarPools, crearAlmacenDesde, crearAlmacenNeon, type DbAlmacen } from "./neon";
+
+// Testnet-shaped placeholder, not a real account.
+const CUENTA = "G" + "K".repeat(55);
+
+test("con 0016 la cuenta de cobro va en usuarios.wallet_cobro, y leer un usuario no la nombra", async () => {
+  const filas: Record<string, unknown>[] = [{ id: "u-1", email: "ana@hyto.app", nombre: "Ana", rol: "voluntario", wallet_cobro: null }];
+  const consultas: string[] = [];
+  const db = drizzleProxy(async (consulta, params) => {
+    consultas.push(consulta);
+    const texto = consulta.replace(/\s+/g, " ").toLowerCase();
+    if (texto.startsWith('update "usuarios" set "wallet_cobro" = $1 where "usuarios"."id" = $2 returning')) {
+      const fila = filas.find((item) => item.id === params[1]);
+      if (!fila) return { rows: [] };
+      fila.wallet_cobro = params[0];
+      return { rows: [[fila.id]] };
+    }
+    if (/^select (?:"usuarios"\.)?"wallet_cobro" from "usuarios" where "usuarios"\."id" = \$1/.test(texto)) {
+      const fila = filas.find((item) => item.id === params[0]);
+      return { rows: fila ? [[fila.wallet_cobro]] : [] };
+    }
+    if (texto.startsWith("select") && texto.includes('from "usuarios"')) {
+      return { rows: filas.map((fila) => [fila.id, fila.email, fila.nombre, fila.rol]) };
+    }
+    throw new Error(`consulta inesperada: ${consulta}`);
+  });
+  const almacen = crearAlmacenDesde(db as unknown as DbAlmacen);
+  assert.equal(await almacen.walletCobroDeUsuario("u-1"), null);
+  assert.equal(await almacen.guardarWalletCobro("u-1", CUENTA), true);
+  assert.equal(await almacen.guardarWalletCobro("u-2", CUENTA), false);
+  assert.equal(await almacen.walletCobroDeUsuario(" u-1 "), CUENTA);
+  assert.equal(filas[0]?.wallet_cobro, CUENTA);
+  assert.equal(await almacen.walletCobroDeUsuario(""), null);
+
+  const antes = consultas.length;
+  const leido = await almacen.leerUsuario("u-1");
+  const todos = await almacen.listarUsuarios();
+  assert.equal(leido?.email, "ana@hyto.app");
+  assert.equal(leido?.walletCobro, undefined);
+  assert.equal(todos[0]?.walletCobro, undefined);
+  assert.doesNotMatch(consultas.slice(antes).join("\n"), /wallet_cobro/);
+});
 
 test("el pool local escucha error sin cerrar el proceso", async () => {
   const url = "postgres://hyto:hyto@127.0.0.1:1/hyto";

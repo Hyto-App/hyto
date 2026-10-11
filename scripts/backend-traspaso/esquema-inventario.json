@@ -32,7 +32,7 @@
       "presente": true,
       "lenguaje": "TypeScript",
       "ormOSql": "Drizzle ORM (drizzle-orm/pg-core, pgTable)",
-      "sha256": "c254ddcae9f83e23373f785314d7dc25c4c4d2cbdf93c54f7c07234867a2a792",
+      "sha256": "f27e254d68c95a25711b30b4c773893af6aa5894c75c792c4c828e1a36843baf",
       "detalle": {
         "exportacionesDeTabla": [
           "comunidadAvisos",
@@ -91,7 +91,8 @@
           "drizzle/0012_perfil_voluntario.sql",
           "drizzle/0013_tablon.sql",
           "drizzle/0014_perfiles_publicos.sql",
-          "drizzle/0015_fecha_proyecto.sql"
+          "drizzle/0015_fecha_proyecto.sql",
+          "drizzle/0016_cuenta_cobro.sql"
         ],
         "parteSentenciasCon": "lib/db/sql.ts sentencias()"
       }
@@ -282,6 +283,18 @@
       "lenguaje": "SQL",
       "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
       "sha256": "7bea8853243723e553759a72b0da500339ed45876e151eda874a8bdbccf7db9a",
+      "detalle": {
+        "loEjecutaMigrarTs": true,
+        "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
+      }
+    },
+    {
+      "ruta": "drizzle/0016_cuenta_cobro.sql",
+      "rol": "migracion",
+      "presente": true,
+      "lenguaje": "SQL",
+      "ormOSql": "SQL de PostgreSQL. Lo aplica scripts/migrar.ts. No hay journal de drizzle-kit en el repositorio.",
+      "sha256": "f276689b50787d81f4fbcfcb3856f4465804c1405c0c2a68236e9c0d69a52e65",
       "detalle": {
         "loEjecutaMigrarTs": true,
         "nota": "scripts/migrar.ts lo lee con readFileSync y ejecuta cada sentencia."
@@ -665,6 +678,39 @@
             "aceptaNull": true,
             "esCheckDeLaBase": false,
             "nota": "confirmar con Esteban"
+          }
+        },
+        {
+          "nombre": "wallet_cobro",
+          "nombreEnDrizzle": "walletCobro",
+          "tipoSql": "text",
+          "tipoDrizzle": "text",
+          "claseDrizzle": "PgText",
+          "aceptaNull": true,
+          "aceptaNullEnDrizzle": true,
+          "notNullExplicitoEnSql": false,
+          "esLlavePrimaria": false,
+          "esUnico": false,
+          "nombreUnicoEnSql": null,
+          "nombreUnicoGeneradoPorDrizzleOrm": null,
+          "nombreUnicoEscritoEnSchemaTs": false,
+          "nombreUnicoEnNeon": null,
+          "defaultSql": null,
+          "defaultDeclaradoEnSql": false,
+          "defaultEsNullEnSql": false,
+          "defaultDrizzle": null,
+          "defaultDeclaradoEnDrizzle": false,
+          "claveForanea": null,
+          "checksEnSql": [],
+          "tipoAplicacion": {
+            "archivo": "lib/db/tipos.ts",
+            "tipo": "Usuario",
+            "campo": "walletCobro",
+            "tipoTs": "string",
+            "literales": null,
+            "aceptaNull": true,
+            "esCheckDeLaBase": false,
+            "nota": "En la aplicación es string. La columna SQL es text sin CHECK."
           }
         }
       ],

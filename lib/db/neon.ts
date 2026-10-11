@@ -142,7 +142,23 @@ function esColumnaAusente(error: unknown): boolean {
   return /sha256|requisitos|42703|does not exist|no existe|undefined column/i.test(mensaje);
 }
 
-/** Each switch hides its own columns, so a migration that has not run yet is not selected. */
+/** A migration that adds a column has not run yet (42703). Drizzle can wrap the driver error in `cause`. */
+export function esColumnaFaltante(error: unknown): boolean {
+  let actual: unknown = error;
+  for (let paso = 0; paso < 3 && actual; paso += 1) {
+    const codigo = (actual as { code?: unknown }).code;
+    if (codigo === "42703") return true;
+    const mensaje = actual instanceof Error ? actual.message : String(actual);
+    if (/column \S+ (?:of relation \S+ )?does not exist|no existe la columna/i.test(mensaje)) return true;
+    actual = (actual as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/**
+ * Each switch hides its own columns, so a migration that has not run yet is not selected.
+ * The payout account is never selected here: only walletCobroDeUsuario reads it.
+ */
 function columnasUsuarioVisibles() {
   const todas = getTableColumns(usuarios);
   const {
@@ -153,6 +169,7 @@ function columnasUsuarioVisibles() {
     empresaFoto,
     experiencia,
     etiquetas,
+    walletCobro: _walletCobro,
     ...base
   } = todas;
   return {
@@ -661,6 +678,36 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
       if (!id) return null;
       const filas = await db.select().from(sesiones).where(eq(sesiones.usuarioId, id));
       return walletDeSesiones(filas.map((fila) => ({ ...fila, rol: rolDe(fila.rol), wallet: fila.wallet ?? "" })));
+    },
+    async guardarWalletCobro(usuarioId, wallet) {
+      const id = usuarioId.trim();
+      if (!id) return false;
+      try {
+        const filas = await db
+          .update(usuarios)
+          .set({ walletCobro: wallet })
+          .where(eq(usuarios.id, id))
+          .returning({ id: usuarios.id });
+        return filas.length > 0;
+      } catch (error) {
+        if (esColumnaFaltante(error)) return false;
+        throw error;
+      }
+    },
+    async walletCobroDeUsuario(usuarioId) {
+      const id = usuarioId.trim();
+      if (!id) return null;
+      try {
+        const filas = await db
+          .select({ walletCobro: usuarios.walletCobro })
+          .from(usuarios)
+          .where(eq(usuarios.id, id))
+          .limit(1);
+        return filas[0]?.walletCobro?.trim() || null;
+      } catch (error) {
+        if (esColumnaFaltante(error)) return null;
+        throw error;
+      }
     },
     async listarMiembros(proyectoId) {
       const filas = await db.select().from(proyectoMiembros).where(eq(proyectoMiembros.proyectoId, proyectoId));

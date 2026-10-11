@@ -35,6 +35,8 @@ export function crearMemoria(): Almacen {
   const avisosComunidad = new Map<string, AvisoComunidad>();
   const privacidades = new Map<string, PrivacidadPerfil>();
   const cambiosPedidos = new Map<string, CambioPedido>();
+  // Not on the user objects: leerUsuario and listarUsuarios never return it, as in Neon.
+  const walletsCobro = new Map<string, string>();
 
   function claveMiembro(proyectoId: string, usuarioId: string): string {
     return `${proyectoId}:${usuarioId}`;
@@ -226,6 +228,15 @@ export function crearMemoria(): Almacen {
       const id = usuarioId.trim();
       if (!id) return null;
       return walletDeSesiones([...sesiones.values()].filter((sesion) => sesion.usuarioId === id));
+    },
+    async guardarWalletCobro(usuarioId, wallet) {
+      const id = usuarioId.trim();
+      if (!id || !usuarios.has(id)) return false;
+      walletsCobro.set(id, wallet);
+      return true;
+    },
+    async walletCobroDeUsuario(usuarioId) {
+      return walletsCobro.get(usuarioId.trim())?.trim() || null;
     },
     async listarMiembros(proyectoId) {
       return [...miembros.values()].filter((miembro) => miembro.proyectoId === proyectoId);
