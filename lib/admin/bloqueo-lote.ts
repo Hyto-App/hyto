@@ -154,8 +154,14 @@ export function reintentarTarea(estado: EstadoLote, tareaId: string): EstadoLote
 }
 
 /** «Bloqueando tarea i de n · firma f de g»: counts the tasks in this run and the signatures of the current one. */
-export function progresoLote(estado: EstadoLote | null): { i: number; n: number; f: number; g: number } | null {
+export function progresoLote(
+  estado: EstadoLote | null,
+): { i: number; n: number; f: number; g: number; pct: number } | null {
   if (!estado || loteTerminado(estado)) return null;
   const tarea = estado.cola[estado.indice]!;
-  return { i: estado.indice + 1, n: estado.cola.length, f: estado.paso + 1, g: tarea.pasos.length };
+  // The thin bar: signatures already behind this one (signed or skipped by a failure) out of all in the run.
+  const total = estado.cola.reduce((suma, item) => suma + item.pasos.length, 0);
+  const atras = estado.cola.slice(0, estado.indice).reduce((suma, item) => suma + item.pasos.length, 0) + estado.paso;
+  const pct = total > 0 ? Math.round((atras / total) * 100) : 0;
+  return { i: estado.indice + 1, n: estado.cola.length, f: estado.paso + 1, g: tarea.pasos.length, pct };
 }

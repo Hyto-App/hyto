@@ -67,7 +67,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
   }
 });
 
-test("el demo carga la revisión remota y marca el guion como muestra", async () => {
+test("el demo carga la revisión remota; el bloque de Mile no repite «Recomendación de ejemplo»", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -84,7 +84,9 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Sample recommendation/);
+    // Angie: the block title already says «Mile's recommendation»; the sample origin is not repeated.
+    assert.equal(texto().includes("Sample recommendation"), false);
+    assert.match(texto(), /Mile's recommendation/);
     assert.match(texto(), /100% · Completed/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
@@ -869,7 +871,7 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
     await esperar(() => rotulo("Bloquear y aprobar"));
-    assert.match(texto(), /Esto aparta US\$0,22/);
+    assert.match(texto(), /Esto aparta US\$0,22 en Stellar para esta tarea\./);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
     assert.match(texto(), /Falta la fecha de la factura/);
@@ -1383,3 +1385,40 @@ function json(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
+
+test("en español el bloque de Mile dice «Mile ve que…», «Coincide con lo pedido» sale una vez y «Terminado» va en su línea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        origen: "guion",
+        veredicto: "cumplió",
+        nota: 100,
+        frase: "Mesa armada.",
+        etiquetas: [
+          { id: "matches", texto: "Matches the request", explicacion: "The answers say this is what was requested.", severidad: "good", preguntas: [] },
+          { id: "finished", texto: "Finished", explicacion: "The answers say the work is finished.", severidad: "good", preguntas: [] },
+        ],
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => texto().includes("Mile ve que"));
+    assert.equal(texto().split("Coincide con lo pedido").length - 1, 1);
+    assert.match(texto(), /Mile ve que coincide con lo pedido\./);
+    assert.equal(texto().includes("Las respuestas dicen"), false);
+    assert.equal(texto().includes("Recomendación de ejemplo"), false);
+    const linea = [...document.querySelectorAll(".pj-mlineas li")].find((nodo) => nodo.textContent?.includes("Mile ve que el trabajo está terminado."));
+    assert.equal(linea?.querySelector(".hyto-pill")?.textContent, "Terminado");
+    assert.match(texto(), /Mile solo recomienda\. Usted decide\./);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});

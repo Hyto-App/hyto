@@ -77,3 +77,22 @@ export function porcentajePagado(pagado: string, total: string): number {
   if (!(t > 0) || !Number.isFinite(p)) return 0;
   return Math.max(0, Math.min(100, Math.round((p / t) * 100)));
 }
+
+const FRASES_MILE: Record<string, string> = {
+  "The answers say this is what was requested.": "Mile sees it matches what was asked.",
+  "The answers say this expense is what was requested.": "Mile sees this expense matches what was asked.",
+  "Las respuestas dicen que esto es lo pedido.": "Mile ve que coincide con lo pedido.",
+  "Las respuestas dicen que este gasto es lo pedido.": "Mile ve que este gasto coincide con lo pedido.",
+};
+
+/**
+ * The review's Mile block speaks as Mile: «Las respuestas dicen que…» becomes «Mile ve que…»
+ * («The answers say…» → «Mile sees…»). Stored tags keep their text; this is only how they read here.
+ */
+export function fraseMile(explicacion: string): string {
+  const fija = FRASES_MILE[explicacion];
+  if (fija) return fija;
+  if (explicacion.startsWith("Las respuestas dicen que ")) return `Mile ve que ${explicacion.slice("Las respuestas dicen que ".length)}`;
+  if (explicacion.startsWith("The answers say ")) return `Mile sees ${explicacion.slice("The answers say ".length)}`;
+  return explicacion;
+}

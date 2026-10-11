@@ -347,7 +347,7 @@ test("en español: banner, nota de Stellar y botón Bloquear K de N; sin cuenta 
     assert.equal(botonLote()?.textContent, "Bloquear 1 de 2 tareas");
     assert.match(texto(), /Ya tiene evidencia/);
     assert.match(texto(), /Aún sin evidencia/);
-    assert.match(texto(), /Esta persona aún no tiene cuenta de cobro/);
+    assert.match(texto(), /Esta persona aún no tiene cuenta de cobro\. Pídale que entre a Hyto para prepararla\./);
     assert.equal([...document.querySelectorAll("button.hyto-btn")].length, 1);
   } finally {
     await desmontar();
@@ -355,7 +355,7 @@ test("en español: banner, nota de Stellar y botón Bloquear K de N; sin cuenta 
   }
 });
 
-test("en demo el lote corre solo, sin Cavos, con el bloqueo de práctica", async () => {
+test("en demo el lote va firma por firma, sin Cavos, con el bloqueo de práctica", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;
   const demos: string[] = [];
@@ -385,6 +385,24 @@ test("en demo el lote corre solo, sin Cavos, con el bloqueo de práctica", async
       }),
     );
     assert.equal(botonLote()?.textContent, "Lock 2 of 3 tasks");
+    // Same rhythm as a real run: one click per signature, a lime «Next signature» between them.
+    await pulsarLote();
+    assert.match(texto(), /Locking budget…/);
+    assert.match(texto(), /Locking task 1 of 2 · signature 2 of 2/);
+    assert.equal(document.querySelector(".pj-lote-barra")?.getAttribute("aria-valuenow"), "25");
+    assert.equal(botonLote()?.textContent, "Next signature");
+    assert.equal(botonLote()?.disabled, false);
+    assert.equal(botonLote()?.getAttribute("aria-disabled"), null);
+    assert.deepEqual(demos, []);
+    await pulsarLote();
+    for (let i = 0; i < 20 && demos.length < 1; i += 1) {
+      await act(async () => {
+        await new Promise((resolver) => setTimeout(resolver, 10));
+      });
+    }
+    assert.deepEqual(demos, ["/api/revision/a/demo"]);
+    assert.match(texto(), /Locking task 2 of 2 · signature 1 of 2/);
+    await pulsarLote();
     await pulsarLote();
     for (let i = 0; i < 20 && demos.length < 2; i += 1) {
       await act(async () => {
@@ -394,6 +412,7 @@ test("en demo el lote corre solo, sin Cavos, con el bloqueo de práctica", async
     assert.deepEqual(demos, ["/api/revision/a/demo", "/api/revision/b/demo"]);
     assert.ok(document.querySelector('[data-tarea="a"] .pj-candado'));
     assert.ok(document.querySelector('[data-tarea="b"] .pj-candado'));
+    assert.equal(texto().includes("Locking budget…"), false);
     assert.equal(botonLote()?.textContent, "Lock 0 of 1 task");
   } finally {
     globalThis.fetch = anterior;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useIdioma } from "@/components/ui/Idioma";
+import { fraseMile } from "@/lib/admin/proyecto-vista";
 import { presentarEtiqueta } from "@/lib/revision/notas-idioma";
 import { motivoPrincipal, type EtiquetaNota, type SeveridadNota } from "@/lib/revision/razones";
 
@@ -14,9 +15,12 @@ export function EtiquetasNota({
   etiquetas,
   compacto = false,
   conMotivo = false,
+  vozMile = false,
 }: {
   etiquetas?: readonly EtiquetaNota[] | null;
   compacto?: boolean;
+  /** Review screen: each line reads «Mile ve que…», with its chip on the same line. */
+  vozMile?: boolean;
   /** `MotivoNota` already shows the main reason next to the percentage. Its pill is not repeated; only its explanation stays. */
   conMotivo?: boolean;
 }) {
@@ -43,6 +47,18 @@ export function EtiquetasNota({
           </span>
         ))}
       </span>
+    );
+  }
+  if (vozMile) {
+    return (
+      <ul className="pj-mlineas">
+        {visibles.map((etiqueta) => (
+          <li key={etiqueta.id}>
+            {etiqueta.texto === principal ? null : <span className={`hyto-pill text-xs ${CLASE[etiqueta.severidad]}`}>{etiqueta.texto}</span>}
+            <span>{fraseMile(etiqueta.explicacion)}</span>
+          </li>
+        ))}
+      </ul>
     );
   }
   return (

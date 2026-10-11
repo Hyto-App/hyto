@@ -72,7 +72,7 @@ function correr(estado: EstadoLote, falla: (tareaId: string, accion: string) => 
 
 test("el lote firma una vez por clic, en orden, y salta las tareas sin persona", () => {
   const lote = iniciarLote(FILAS, resumenLote(FILAS).listas);
-  assert.deepEqual(progresoLote(lote), { i: 1, n: 2, f: 1, g: 2 });
+  assert.deepEqual(progresoLote(lote), { i: 1, n: 2, f: 1, g: 2, pct: 0 });
   const { actual, firmas, clics } = correr(lote, () => false);
   assert.deepEqual(firmas, ["a:desplegar", "a:fondear", "b:desplegar", "b:fondear"]);
   assert.equal(clics, 4);
@@ -106,7 +106,7 @@ test("un fallo en el primer paso pide las dos firmas otra vez; reintentar a mita
   assert.deepEqual(lote.fallidas.a?.pasos, ["desplegar", "fondear"]);
   // b is halfway (deployed, fund next): Retry on a goes to the end so b keeps its fund signature.
   lote = terminarPaso(empezarFirma(lote), { ok: true, contrato: "C-b" });
-  assert.deepEqual(progresoLote(lote), { i: 2, n: 2, f: 2, g: 2 });
+  assert.deepEqual(progresoLote(lote), { i: 2, n: 2, f: 2, g: 2, pct: 75 });
   lote = reintentarTarea(lote, "a");
   assert.deepEqual(siguientePaso(lote), { tareaId: "b", accion: "fondear", contrato: "C-b" });
   const { firmas } = correr(lote, () => false);

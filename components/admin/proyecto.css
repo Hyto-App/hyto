@@ -1094,3 +1094,68 @@
     flex-wrap: wrap;
   }
 }
+
+/* Mile's lines on the review: chip and sentence on one line, like the percentage. */
+.pj-mlineas {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pj-mlineas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+.pj-mlineas .hyto-pill {
+  flex: none;
+}
+/* The evidence fills its frame on the review; the enlarged view still shows it whole. */
+.pj-rgrid .hyto-photo img {
+  object-fit: cover;
+}
+/* Warnings on inbox rows use the same orange as the rest («Trabajo sin terminar»). */
+.pj-item .hyto-pill-bad,
+.pj-item .hyto-pill-mid {
+  border-color: color-mix(in srgb, #ff9f43 40%, transparent);
+  background: color-mix(in srgb, #ff9f43 12%, transparent);
+  color: #ff9f43;
+}
+
+/* While locking: a thin lime bar under the banner title. */
+.pj-lote-barra {
+  height: 4px;
+  margin-top: 8px;
+  max-width: 420px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--linea);
+}
+.pj-lote-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--acento);
+  transition: width 0.3s ease;
+}
+.pj-lote .hyto-btn[aria-disabled="true"] {
+  background: var(--acento);
+  color: var(--sobre-acento);
+  opacity: 0.85;
+  cursor: progress;
+}
+/* Phone rows: the person on its own line, the evidence status under it. */
+@media (max-width: 1023px) {
+  .pj-tcampo-m.is-bot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .pj-tcampo-m.is-bot > :first-child {
+    flex: none;
+    max-width: 100%;
+  }
+}

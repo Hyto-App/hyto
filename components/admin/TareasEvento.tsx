@@ -323,7 +323,7 @@ export function TareasEvento({
     const paso = siguientePaso(estado);
     if (!paso) return;
     if (demo) {
-      await correrDemo(estado);
+      await firmarDemo(estado);
       return;
     }
     setLote(empezarFirma(estado));
@@ -347,26 +347,27 @@ export function TareasEvento({
     }
   }
 
-  /** Demo sessions have no wallet: the same queue runs on its own with the demo lock, no Cavos window. */
-  async function correrDemo(inicio: EstadoLote) {
-    let estado = inicio;
-    while (!loteTerminado(estado)) {
-      const tarea = estado.cola[estado.indice]!;
-      for (let i = 0; i < tarea.pasos.length; i += 1) {
-        estado = { ...estado, paso: i, firmando: true };
-        setLote(estado);
-        await new Promise((listo) => setTimeout(listo, pausaDemo()));
-      }
-      const resultado = await accionDemo(tarea.id, "bloquear");
-      if (resultado.ok) {
-        marcarFila(tarea.id, { contrato: resultado.contrato, fondeado: true });
-        estado = { ...estado, paso: tarea.pasos.length - 1 };
-        estado = terminarPaso(estado, { ok: true, contrato: resultado.contrato });
-      } else {
-        setAvisosFila((actual) => ({ ...actual, [tarea.id]: resultado.aviso }));
-        estado = terminarPaso({ ...estado, paso: 0 }, { ok: false, contrato: null });
-      }
-      setLote(estado);
+  /**
+   * Demo sessions have no wallet and no Cavos window, but the run reads the same: one click per signature,
+   * «Siguiente firma» between them. The task's last signature sets the practice lock.
+   */
+  async function firmarDemo(estado: EstadoLote) {
+    const tarea = estado.cola[estado.indice]!;
+    const ultimo = estado.paso === tarea.pasos.length - 1;
+    setLote(empezarFirma(estado));
+    await new Promise((listo) => setTimeout(listo, pausaDemo()));
+    if (!ultimo) {
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: true, contrato: null }) : actual));
+      return;
+    }
+    const resultado = await accionDemo(tarea.id, "bloquear");
+    if (resultado.ok) {
+      marcarFila(tarea.id, { contrato: resultado.contrato, fondeado: true });
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: true, contrato: resultado.contrato }) : actual));
+    } else {
+      setAvisosFila((actual) => ({ ...actual, [tarea.id]: resultado.aviso }));
+      // The practice lock is one call: a failure starts that task over.
+      setLote((actual) => (actual ? terminarPaso({ ...actual, paso: 0 }, { ok: false, contrato: null }) : actual));
     }
   }
 
@@ -388,9 +389,10 @@ export function TareasEvento({
   }
 
   const total = filas.reduce((suma, fila) => suma + (Number(fila.tipo === "reembolso" ? (fila.tope ?? fila.monto) : fila.monto) || 0), 0);
-  const botonDeshabilitado = firmando || faltaClave || (!enCurso && (resumen.k === 0 || Boolean(faltaSaldo)));
-  // Demo runs the queue by itself (no Cavos window), so it never asks for the next signature.
-  const rotuloBoton = enCurso && !demo
+  // Mid-run the button stays lime: «Siguiente firma» between signatures, busy (not gray) while one is open.
+  const botonDeshabilitado = !enCurso && (faltaClave || resumen.k === 0 || Boolean(faltaSaldo));
+  const botonOcupado = firmando || (enCurso && faltaClave);
+  const rotuloBoton = enCurso
     ? t("proyecto.siguienteFirma")
     : t(resumen.n === 1 ? "proyecto.bloquearLoteUna" : "proyecto.bloquearLote", { k: resumen.k, n: resumen.n });
 
@@ -403,7 +405,7 @@ export function TareasEvento({
           </span>
           <div className="pj-lote-txt">
             <p id="lote-titulo" className="pj-lote-t">
-              {(() => {
+              {enCurso ? t("proyecto.bloqueandoTitulo") : (() => {
                 const monto = formatearMonto(resumen.monto, idioma);
                 const frase = t(resumen.n === 1 ? "proyecto.sinBloquearUna" : "proyecto.sinBloquear", { monto: "\u0000", n: resumen.n });
                 const [antes, despues] = frase.split("\u0000");
@@ -416,15 +418,28 @@ export function TareasEvento({
                 );
               })()}
             </p>
-            <p className="pj-lote-s">
-              <Icono nombre="info" tam={14} />
-              {t("proyecto.notaStellar")}
-            </p>
             {progreso ? (
-              <p className="pj-lote-prog" role="status" aria-live="polite">
-                {t("proyecto.progresoLote", { i: progreso.i, n: progreso.n, f: progreso.f, g: progreso.g })}
+              <>
+                <div
+                  className="pj-lote-barra"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progreso.pct}
+                  aria-labelledby="lote-titulo"
+                >
+                  <i style={{ width: `${Math.max(progreso.pct, 4)}%` }} />
+                </div>
+                <p className="pj-lote-prog" role="status" aria-live="polite">
+                  {t("proyecto.progresoLote", { i: progreso.i, n: progreso.n, f: progreso.f, g: progreso.g })}
+                </p>
+              </>
+            ) : (
+              <p className="pj-lote-s">
+                <Icono nombre="info" tam={14} />
+                {t("proyecto.notaStellar")}
               </p>
-            ) : null}
+            )}
             {faltaSaldo && !enCurso ? (
               <p id="lote-saldo" role="alert" className="mt-2 text-sm text-[var(--suave)]">
                 {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
@@ -435,9 +450,13 @@ export function TareasEvento({
             type="button"
             className="hyto-btn"
             disabled={botonDeshabilitado}
+            aria-disabled={botonOcupado || undefined}
             aria-busy={firmando}
             aria-describedby={[faltaSaldo && !enCurso ? "lote-saldo" : "", faltaClave ? "clave-lote" : ""].filter(Boolean).join(" ") || undefined}
-            onClick={() => void firmarSiguiente()}
+            onClick={() => {
+              if (botonOcupado) return;
+              void firmarSiguiente();
+            }}
           >
             <Icono nombre="lock" />
             {rotuloBoton}
