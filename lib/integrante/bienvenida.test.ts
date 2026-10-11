@@ -54,7 +54,7 @@ test("la bienvenida dice qué es Hyto y ofrece un solo paso", async () => {
   try {
     await montar(createElement(Bienvenida, { paso: { tipo: "unirse", puedeCrear: false } }));
     assert.match(texto(), /Welcome to Hyto/);
-    assert.match(texto(), /Hyto pays for event tasks when there is evidence: you upload the evidence and the invoice, Mile reviews them, and a person approves the payment\./);
+    assert.match(texto(), /Hyto pays for event tasks when there is evidence: you upload your evidence, Mile reviews it, and a person approves the payment\./);
     assert.deepEqual(
       enlaces().map((enlace) => [enlace.getAttribute("href"), enlace.textContent]),
       [["/join", "Join with a code"]],

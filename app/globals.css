@@ -5695,7 +5695,7 @@ html.hyto-firmando body {
 .hyto-perfil-item,
 .hyto-ayuda-atajo,
 .hyto-ayuda-cerrar,
-.hyto-ayuda-lista button {
+.hyto-ayuda-chip {
   border: 0;
   background: transparent;
   color: inherit;
@@ -5798,7 +5798,7 @@ html.hyto-firmando body {
 .hyto-perfil-boton[aria-expanded="true"],
 .hyto-perfil-item:hover,
 .hyto-ayuda-atajo:hover,
-.hyto-ayuda-lista button:hover {
+.hyto-ayuda-chip:hover {
   background: var(--superficie-2);
 }
 
@@ -5927,7 +5927,7 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   max-width: 100%;
 }
 
-.hyto-ayuda-respuesta p {
+.hyto-ayuda-burbuja {
   overflow-wrap: anywhere;
 }
 
@@ -6004,30 +6004,123 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   font-weight: 500;
 }
 
-.hyto-ayuda-lista {
+.hyto-ayuda-charla {
   display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: 10px;
+  outline: none;
 }
 
-.hyto-ayuda-lista button {
-  width: 100%;
-  min-height: 44px;
-  border-radius: 12px;
-  padding: 8px 10px;
-  text-align: left;
+.hyto-ayuda-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hyto-ayuda-fila.is-persona {
+  justify-content: flex-end;
+}
+
+.hyto-ayuda-burbujas {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+  max-width: 85%;
+}
+
+.hyto-ayuda-burbuja {
+  margin: 0;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--superficie-2);
+  padding: 9px 13px;
+  font-size: 14px;
+  line-height: 1.45;
+  animation: hyto-burbuja 200ms var(--hyto-curva) backwards;
+}
+
+.hyto-ayuda-burbuja.is-persona {
+  max-width: 85%;
+  border-radius: 16px 16px 4px 16px;
+  background: var(--acento);
+  color: var(--sobre-acento);
   font-weight: 500;
 }
 
-.hyto-ayuda-respuesta h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+.hyto-ayuda-escribiendo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--suave);
+  font-size: 12px;
 }
 
-.hyto-ayuda-respuesta p,
+.hyto-ayuda-puntos {
+  display: inline-flex;
+  gap: 4px;
+  padding: 12px 13px;
+}
+
+.hyto-ayuda-puntos i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--suave);
+  animation: hyto-puntos 1s var(--hyto-curva) infinite;
+}
+
+.hyto-ayuda-puntos i:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.hyto-ayuda-puntos i:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+@keyframes hyto-burbuja {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes hyto-puntos {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.hyto-ayuda-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hyto-ayuda-chip {
+  min-height: 36px;
+  border: 1px solid var(--acento-texto);
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Reduced motion: the answer is already all there, and nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .hyto-ayuda-burbuja,
+  .hyto-ayuda-puntos i {
+    animation: none;
+  }
+}
+
 .hyto-ayuda-vacio,
 .hyto-actividad-vacio {
   margin: 8px 0 0;
