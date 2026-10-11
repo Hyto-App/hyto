@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { SugeridosAsignar } from "@/components/perfil/Sugeridos";
 import { Icono } from "@/components/admin/IconosProyecto";
+import { campoDeError, TarjetaTarea, type CampoTarea } from "@/components/admin/CrearProyecto";
 import { PersonaProyecto, useNombrePersona } from "@/components/admin/PersonaProyecto";
 import { esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
 import { ClaveNavegador, sinClave, useFirmaNavegador, type RevisarFirma } from "@/components/sesion/ClaveNavegador";
@@ -36,6 +37,9 @@ import { mensajeClaro } from "@/lib/ui/claro";
 import { esContratoDemo } from "@/lib/sesion/demo";
 import { estadoConFoto, etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { cuerpoCrear, filaVacia, revisarTareas, type FilaCrear } from "@/lib/admin/crear-flujo";
+import { normalizarMonto } from "@/lib/admin/vista";
+import type { Clave } from "@/lib/ui/diccionario";
 
 export type FilaTareaEvento = {
   id: string;
@@ -97,6 +101,7 @@ export function TareasEvento({
   saldo = null,
   wallet = null,
   proyectoId,
+  eventoId,
   sugeridos,
   firmar,
   revisarFirma,
@@ -109,6 +114,8 @@ export function TareasEvento({
   /** With HYTO_PERFIL_PUBLICO on: the suggested-people picker replaces the plain list. */
   proyectoId?: string;
   sugeridos?: Sugerido[];
+  /** The event the list belongs to. With it, «+ Add task» closes the list. */
+  eventoId?: string;
   /** Tests sign without Cavos. */
   firmar?: (unsignedXdr: string) => Promise<string>;
   revisarFirma?: RevisarFirma;
@@ -128,6 +135,9 @@ export function TareasEvento({
   const [fondeos, setFondeos] = useState<Record<string, boolean | null>>({});
   const [lote, setLote] = useState<EstadoLote | null>(null);
   const [avisosFila, setAvisosFila] = useState<Record<string, string>>({});
+  const [nueva, setNueva] = useState<FilaCrear | null>(null);
+  const [errorNueva, setErrorNueva] = useState<{ texto: string; campo: CampoTarea | null } | null>(null);
+  const [agregando, setAgregando] = useState(false);
   const loteRef = useRef(lote);
   loteRef.current = lote;
   const montoServidor = useRef(new Map<string, number>());
@@ -149,6 +159,15 @@ export function TareasEvento({
       viva = false;
     };
   }, [tareas]);
+
+  // A new card: put the cursor in its first field, as in the wizard.
+  const claveNueva = nueva?.clave ?? null;
+  useEffect(() => {
+    if (!claveNueva) return;
+    const campo = document.getElementById(`titulo-${claveNueva}`);
+    campo?.scrollIntoView?.({ block: "center" });
+    campo?.focus({ preventScroll: true });
+  }, [claveNueva]);
 
   // Close the ⋯ menu on Escape or a click outside it.
   useEffect(() => {
@@ -290,6 +309,74 @@ export function TareasEvento({
     setBorrador(null);
   }
 
+  function abrirNueva() {
+    setAviso(null);
+    setMenuId(null);
+    setEligiendoId(null);
+    setEditandoId(null);
+    setBorrador(null);
+    setErrorNueva(null);
+    setNueva(filaVacia());
+  }
+
+  /** Same checks as the wizard's step 2, then one task on this event. The list and its total take the new row. */
+  async function agregarNueva() {
+    if (!nueva || !eventoId || agregando) return;
+    const problema = revisarTareas([nueva]);
+    if (problema) {
+      setErrorNueva({ texto: t(`crear.${problema.error}` as Clave), campo: campoDeError(problema.error) });
+      return;
+    }
+    const falta = demo ? null : faltaParaBloquear(saldo, normalizarMonto(nueva.monto)!);
+    if (falta) {
+      setErrorNueva({ texto: t("errores.saldoNoCubre", textosSaldo(falta, idioma)), campo: "monto" });
+      return;
+    }
+    setErrorNueva(null);
+    setAgregando(true);
+    let respuesta: Response | null = null;
+    let json: { aviso?: string; tarea?: Omit<FilaTareaEvento, "bloqueo" | "tieneFoto"> } | null = null;
+    try {
+      respuesta = await fetch(`/api/eventos/${encodeURIComponent(eventoId)}/tareas`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(cuerpoCrear({ nombre: "", descripcion: "", contextoIa: "", filas: [nueva] }).tareas[0]),
+      });
+      json = (await respuesta.json().catch(() => null)) as typeof json;
+    } catch {
+      respuesta = null;
+    }
+    setAgregando(false);
+    const tarea = json?.tarea;
+    if (!respuesta?.ok || !tarea) {
+      setErrorNueva({ texto: json?.aviso ?? "Could not add the task.", campo: null });
+      return;
+    }
+    setFilas((actuales) => [
+      ...actuales,
+      {
+        id: tarea.id,
+        titulo: tarea.titulo,
+        tipo: tarea.tipo,
+        monto: tarea.monto,
+        tope: tarea.tope,
+        condicion: tarea.condicion,
+        estado: tarea.estado,
+        miembroId: tarea.miembroId,
+        prioridad: tarea.prioridad,
+        dificultad: tarea.dificultad,
+        bloqueo: null,
+        tieneFoto: false,
+        cuentaCobro: Boolean(tarea.miembroId && miembros.find((item) => item.usuarioId === tarea.miembroId)?.cuentaCobro),
+        contrato: null,
+        // Same as the page: a reimbursement locks its confirmed amount, so only the cap counts until then.
+        montoLote: tarea.tipo === "reembolso" ? null : tarea.monto,
+        topeLote: tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto,
+      },
+    ]);
+    setNueva(null);
+  }
+
   /** One Cavos signature of the existing per-task lock: deploy, or fund an existing contract. */
   async function firmarPaso(paso: NonNullable<ReturnType<typeof siguientePaso>>): Promise<string | null> {
     const fila = filasLote.find((item) => item.id === paso.tareaId);
@@ -380,10 +467,53 @@ export function TareasEvento({
     if (siguientePaso(siguiente)?.tareaId === tareaId) void firmarSiguiente(siguiente);
   }
 
+  // Mock B (Pao): the list's last row. Neutral dashed, like the wizard's; the screen's one lime action is the lock.
+  const filaAgregar = eventoId ? (
+    <li className="pj-tnueva" data-agregar-tarea>
+      {nueva ? (
+        <form
+          className="cp-suelta"
+          onSubmit={(evento) => {
+            evento.preventDefault();
+            void agregarNueva();
+          }}
+        >
+          <TarjetaTarea
+            fila={nueva}
+            numero={filas.length + 1}
+            quitable={false}
+            sugeridos={sugeridos ?? []}
+            error={errorNueva?.texto ?? null}
+            campoError={errorNueva?.campo ?? null}
+            onCambio={(cambio) => {
+              setNueva((actual) => (actual ? { ...actual, ...cambio } : actual));
+              setErrorNueva(null);
+            }}
+            onQuitar={() => setNueva(null)}
+          />
+          <div className="hyto-acciones-fila mt-3 flex flex-wrap justify-center gap-2">
+            <button type="submit" className="hyto-btn-line is-inline px-5" disabled={agregando} aria-busy={agregando || undefined}>
+              {t("eventos.addTask")}
+            </button>
+            <button type="button" className="hyto-btn-line is-inline px-5" onClick={() => setNueva(null)}>
+              {t("eventos.cancel")}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="cp-agregar pj-agregar" onClick={abrirNueva}>
+          <Icono nombre="plus" />
+          {t("eventos.addTask")}
+        </button>
+      )}
+    </li>
+  ) : null;
+
   if (filas.length === 0) {
     return (
       <main className="hyto-page">
         <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
+        {filaAgregar ? <ul className="pj-tlista">{filaAgregar}</ul> : null}
       </main>
     );
   }
@@ -753,6 +883,7 @@ export function TareasEvento({
             </li>
           );
         })}
+        {filaAgregar}
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">

@@ -651,6 +651,10 @@
     align-self: start;
   }
 }
+/* «+ Add task» (mock B): the list's last row; .cp-agregar draws it (56px, dashed, neutral). */
+.pj-agregar {
+  margin-top: 0;
+}
 .pj-trow {
   position: relative;
   padding: 14px 18px;

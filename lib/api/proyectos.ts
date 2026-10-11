@@ -15,6 +15,7 @@ import { clasificarFalloBase, detalleErrorBase } from "./aviso-base";
 import { baseNoLista, json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
 import { tareaPublica } from "./tareas";
+import { esOrganizador } from "./invitaciones";
 
 export type FondosCreacion = { wallet: string; leerSaldo?: LectorSaldo };
 
@@ -73,6 +74,51 @@ export async function crearProyectoHttp(
     console.error("[api/proyectos] crear", detalleErrorCrear(error));
     const fallo = clasificarErrorCrear(error);
     return json({ aviso: fallo.aviso }, fallo.status);
+  }
+}
+
+export const AVISO_SOLO_ORGANIZADOR_AGREGAR = "Only the organizer can add tasks.";
+
+/**
+ * «+ Add task» on a project's Tasks screen: one task with the same fields and checks as the create wizard.
+ * The balance has to cover this task plus the reserve, like editing an amount upward.
+ */
+export async function agregarTareaHttp(
+  request: Request,
+  almacen: Almacen,
+  proyectoId: string,
+  organizadorId: string,
+  fondos?: FondosCreacion,
+): Promise<Response> {
+  const proyecto = await almacen.leerProyecto(proyectoId);
+  if (!proyecto) return json({ aviso: "We couldn't find that event." }, 404);
+  if (!(await esOrganizador(almacen, proyectoId, organizadorId))) return json({ aviso: AVISO_SOLO_ORGANIZADOR_AGREGAR }, 403);
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ aviso: "The body is not JSON." }, 400);
+  }
+  const crudo = body && typeof body === "object" && "tarea" in body ? (body as { tarea: unknown }).tarea : body;
+  const tarea = leerTarea(crudo, proyectoId);
+  if ("aviso" in tarea) return json({ aviso: tarea.aviso }, 400);
+  try {
+    const asignadas = await asignarTareas(almacen, organizadorId, [tarea]);
+    if (asignadas instanceof Response) return asignadas;
+    const fila = asignadas[0]!;
+    const wallet = fondos?.wallet.trim() ?? "";
+    if (/^G[A-Z2-7]{55}$/.test(wallet)) {
+      const rechazo = await rechazoSiFondos(wallet, fila.tope ?? fila.monto, fondos?.leerSaldo);
+      if (rechazo) return rechazo;
+    }
+    // The project row already exists, so its insert is a no-op; the task and, when assigned, the volunteer membership are new.
+    await almacen.crearProyecto(proyecto, [fila]);
+    await avisarTareasNuevas(almacen, proyecto.comunidadId, [fila]);
+    return json({ tarea: tareaPublica(fila) }, 201);
+  } catch (error) {
+    console.error("[api/eventos/tareas] agregar", detalleErrorCrear(error));
+    const fallo = clasificarFalloBase(error);
+    return json({ aviso: fallo?.aviso ?? "Could not add the task." }, fallo?.status ?? 500);
   }
 }
 

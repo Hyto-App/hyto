@@ -27,6 +27,7 @@ const TRAZOS = {
   ),
   chevR: <path d="M9.5 6l6 6-6 6" />,
   chevL: <path d="M14.5 6l-6 6 6 6" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   dots: <path d="M5.5 12h.01M12 12h.01M18.5 12h.01" strokeWidth="3.2" />,
   swap: <path d="M5 8h13l-3.5-3.5M19 16H6l3.5 3.5" />,
   edit: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,

@@ -38,10 +38,10 @@ import type { Clave } from "@/lib/ui/diccionario";
 
 type Paso = 1 | 2 | 3;
 
-type CampoTarea = "titulo" | "monto" | "quien";
+export type CampoTarea = "titulo" | "monto" | "quien";
 
 /** Which field of the card a task error points at. */
-function campoDeError(error: string): CampoTarea {
+export function campoDeError(error: string): CampoTarea {
   if (error === "montoInvalido" || error === "faltaMonto") return "monto";
   if (error === "correoInvalido") return "quien";
   return "titulo";
@@ -471,7 +471,8 @@ function Campo({
   );
 }
 
-function TarjetaTarea({
+/** One task card. The wizard's step 2, and «+ Add task» on a project's Tasks screen (TareasEvento). */
+export function TarjetaTarea({
   fila,
   numero,
   quitable,

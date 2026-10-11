@@ -70,7 +70,7 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
   return (
     <>
       <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="tasks" sugeridos={sugeridos} />
-      <TareasEvento tareas={tareas} miembros={miembros} saldo={await saldoP} wallet={sesion.wallet || null} proyectoId={sugeridos ? proyecto.id : undefined} sugeridos={sugeridos} />
+      <TareasEvento tareas={tareas} miembros={miembros} saldo={await saldoP} wallet={sesion.wallet || null} proyectoId={sugeridos ? proyecto.id : undefined} eventoId={proyecto.id} sugeridos={sugeridos} />
     </>
   );
 }

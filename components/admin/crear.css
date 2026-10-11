@@ -49,9 +49,42 @@
   background: var(--cp-bg);
 }
 
+/*
+ * The wizard's task card outside the stage: «+ Add task» on a project's Tasks screen (#315).
+ * Same tokens as .cp, without the fixed full-screen layout.
+ */
+.cp-suelta {
+  --cp-card: #14162b;
+  --cp-well: #0e1021;
+  --cp-lima: #b7ee34;
+  --cp-naranja: #ff9f43;
+  --cp-suave: #8a8c9a;
+  --cp-texto: #f4f5f8;
+  --cp-blando: #b9bcc8;
+  --cp-tenue: #6d7084;
+  --cp-linea: rgba(255, 255, 255, 0.07);
+  --cp-linea-2: rgba(255, 255, 255, 0.12);
+  color: var(--cp-texto);
+  text-align: center;
+}
+
+:root:not([data-theme="dark"]) .cp-suelta {
+  --cp-card: #ffffff;
+  --cp-well: #ecede6;
+  --cp-lima-t: #5a7d00;
+  --cp-suave: #5f6270;
+  --cp-texto: #0a0a0a;
+  --cp-blando: #3b3e4a;
+  --cp-linea: rgba(10, 10, 10, 0.08);
+  --cp-linea-2: rgba(10, 10, 10, 0.14);
+}
+
 .cp *,
 .cp *::before,
-.cp *::after {
+.cp *::after,
+.cp-suelta *,
+.cp-suelta *::before,
+.cp-suelta *::after {
   box-sizing: border-box;
 }
 
@@ -1302,7 +1335,8 @@
 }
 
 /* The suggested-people chip from #303, on the dark stage. */
-.cp .sg-chip {
+.cp .sg-chip,
+.cp-suelta .sg-chip {
   gap: 8px;
   padding: 4px 10px 4px 4px;
   border-color: rgba(183, 238, 52, 0.3);
@@ -1312,7 +1346,8 @@
   color: var(--cp-texto);
 }
 
-.cp .sg-chip button {
+.cp .sg-chip button,
+.cp-suelta .sg-chip button {
   min-width: 28px;
   min-height: 28px;
   color: var(--cp-suave);
