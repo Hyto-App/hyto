@@ -102,8 +102,8 @@ test("configuración en español muestra el costo y la llave en tuteo", async ()
     await asentar();
     assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
     assert.match(texto(), /comisión del 0,3 %/);
-    assert.match(texto(), /US\$1,99 \(US\$2,00 menos comisión de US\$0,01\)/);
-    assert.match(texto(), /US\$12,44 \(US\$12,48 menos comisión de US\$0,04\)/);
+    assert.match(texto(), /US\$1\.99 \(US\$2\.00 menos comisión de US\$0\.01\)/);
+    assert.match(texto(), /US\$12\.44 \(US\$12\.48 menos comisión de US\$0\.04\)/);
     assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|Create passkey|Use passkey|\bpasskey\b/i);

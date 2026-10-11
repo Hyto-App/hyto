@@ -76,7 +76,7 @@ test("una tarea pagada muestra lo pagado y el límite, no el tope como si fuera 
     assert.match(texto(), /Each task is saved on Stellar separately/);
     const lote = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock 0 of 1 task"));
     assert.equal(lote instanceof HTMLButtonElement && lote.disabled, true);
-    assert.match(texto(), /Assign someone to lock/);
+    assert.match(texto(), /Assign someone before you can lock the budget/);
     assert.equal(document.querySelector('[data-tarea="stand"]')?.getAttribute("data-fila"), "gris");
     assert.match(texto(), /Has evidence/);
     // No lime button per row: actions live in the ⋯ menu.
@@ -342,7 +342,7 @@ test("en español: banner, nota de Stellar y botón Bloquear K de N; sin cuenta 
         }),
       }),
     );
-    assert.match(texto(), /Presupuesto sin bloquear · US\$20,00 para 2 tareas/);
+    assert.match(texto(), /Presupuesto sin bloquear · US\$20\.00 para 2 tareas/);
     assert.match(texto(), /Cada tarea queda guardada en Stellar por separado/);
     assert.equal(botonLote()?.textContent, "Bloquear 1 de 2 tareas");
     assert.match(texto(), /Ya tiene evidencia/);

@@ -27,4 +27,8 @@ test("la privacidad está en inglés y no nombra la red ni el contrato", () => {
   assert.equal(JERGA.test(unidoEs), false, unidoEs);
   assert.match(unidoEs, /Privacidad/);
   assert.match(unidoEs, /dólares digitales \(USDC\)/);
+  assert.equal(/\bfotos?\b/i.test(unidoEs), false, unidoEs);
+  assert.equal(/\beventos?\b/i.test(unidoEs), false, unidoEs);
+  assert.match(unidoEs, /evidencia/i);
+  assert.match(unidoEs, /proyecto/i);
 });

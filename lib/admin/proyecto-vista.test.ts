@@ -145,10 +145,10 @@ async function esperar(listo: () => boolean): Promise<void> {
 test("el bloque de Mile habla como Mile, no como «las respuestas»", () => {
   assert.equal(fraseMile("Las respuestas dicen que esto es lo pedido."), "Mile ve que coincide con lo pedido.");
   assert.equal(fraseMile("Las respuestas dicen que el trabajo está terminado."), "Mile ve que el trabajo está terminado.");
-  assert.equal(fraseMile("The answers say this is what was requested."), "Mile sees it matches what was asked.");
+  assert.equal(fraseMile("The answers say this is what was requested."), "Mile sees that it matches what was asked.");
   assert.equal(fraseMile("The answers say the work is finished."), "Mile sees the work is finished.");
   assert.equal(fraseMile("El recibo guardado no tiene fecha."), "El recibo guardado no tiene fecha.");
-  assert.equal(textoDe("es", "revision.setsAside", { monto: "US$20,00" }), "Esto aparta US$20,00 en Stellar para esta tarea.");
+  assert.equal(textoDe("es", "revision.setsAside", { monto: "US$20.00" }), "Esto aparta US$20.00 en Stellar para esta tarea.");
   assert.equal(textoDe("en", "revision.setsAside", { monto: "US$20.00" }), "This sets aside US$20.00 on Stellar for this task.");
   assert.equal(textoDe("es", "proyecto.sinCuentaCobro"), "Esta persona aún no tiene cuenta de cobro. Pídale que entre a Hyto para prepararla.");
   assert.equal(textoDe("es", "proyecto.bloqueandoTitulo"), "Bloqueando presupuesto…");

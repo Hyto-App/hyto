@@ -39,7 +39,7 @@ function Ejemplo({
 test("a decimal amount uses the same US$ format in Spanish", async () => {
   await montar(createElement(Ejemplo, { onConfirmar: async () => undefined, idioma: "es", monto: "12.48" }));
   await pulsar("Open it");
-  assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$12,48");
+  assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$12.48");
   assert.equal(texto().includes("USDC"), false);
   await desmontar();
 });

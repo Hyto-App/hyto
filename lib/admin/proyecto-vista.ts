@@ -79,7 +79,7 @@ export function porcentajePagado(pagado: string, total: string): number {
 }
 
 const FRASES_MILE: Record<string, string> = {
-  "The answers say this is what was requested.": "Mile sees it matches what was asked.",
+  "The answers say this is what was requested.": "Mile sees that it matches what was asked.",
   "The answers say this expense is what was requested.": "Mile sees this expense matches what was asked.",
   "Las respuestas dicen que esto es lo pedido.": "Mile ve que coincide con lo pedido.",
   "Las respuestas dicen que este gasto es lo pedido.": "Mile ve que este gasto coincide con lo pedido.",

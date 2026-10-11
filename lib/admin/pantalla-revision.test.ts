@@ -594,7 +594,8 @@ test("al recargar, el monto del recibo sigue en colones después de pedir otra f
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
     assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
-    assert.equal(texto().includes("US$13.66"), false);
+    assert.match(texto(), /Monto a pagar US\$13\.66/);
+    assert.equal(monto?.textContent?.includes("US$"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -871,12 +872,12 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
     await esperar(() => rotulo("Bloquear y aprobar"));
-    assert.match(texto(), /Esto aparta US\$0,22 en Stellar para esta tarea\./);
+    assert.match(texto(), /Esto aparta US\$0\.22 en Stellar para esta tarea\./);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
     assert.match(texto(), /Falta la fecha de la factura/);
     await pulsar("Bloquear y aprobar");
-    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
+    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0.22");
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

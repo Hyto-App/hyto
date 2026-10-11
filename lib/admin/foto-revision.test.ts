@@ -55,6 +55,15 @@ function variable(css: string, bloque: string, nombre: string): string {
   return encontrado[1].toLowerCase();
 }
 
+test("the project review shows the whole evidence and inbox thumbnails stay cropped", () => {
+  const css = readFileSync(new URL("../../components/admin/proyecto.css", import.meta.url), "utf8");
+  const revision = css.slice(css.indexOf(".pj-rgrid .hyto-photo img"));
+  assert.match(revision, /object-fit:\s*contain/);
+  assert.match(revision, /background:\s*#14162b/i);
+  const miniatura = css.slice(css.indexOf(".pj-ev img"), css.indexOf(".pj-ev-vacia"));
+  assert.match(miniatura, /object-fit:\s*cover/);
+});
+
 test("the review frame keeps its size and the photo uses contain", () => {
   const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
   const marco = css.slice(css.indexOf(".hyto-photo {"), css.indexOf(".hyto-photo img,"));

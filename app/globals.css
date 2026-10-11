@@ -984,7 +984,7 @@ a {
   height: auto;
   object-fit: contain;
   border-radius: 12px;
-  background: var(--papel);
+  background: #14162b;
 }
 
 .hyto-photo-amplia-marco .hyto-photo-nota {
@@ -2404,10 +2404,12 @@ html.hyto-firmando body {
 .hyto-login .hyto-login-titulo {
   max-width: 15ch;
   margin-top: 10px;
+  margin-inline: auto;
   font-size: 25px;
   font-weight: 600;
   line-height: 1.12;
   letter-spacing: -0.035em;
+  text-align: center;
   color: var(--l-tinta);
 }
 
@@ -2597,6 +2599,7 @@ html.hyto-firmando body {
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .hyto-login-cambio {
@@ -2754,8 +2757,10 @@ html.hyto-firmando body {
 }
 
 .hyto-login-btn.is-primario {
+  margin-inline: auto;
   background: var(--l-acento);
   color: var(--l-sobre);
+  text-align: center;
   box-shadow: 0 8px 18px -10px rgba(124, 170, 10, 0.6);
 }
 

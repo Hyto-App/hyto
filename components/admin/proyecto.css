@@ -973,6 +973,7 @@
 }
 .pj-rgrid .hyto-photo {
   border: 1px solid var(--linea);
+  background: #14162b;
 }
 .pj-lab {
   font-size: 11.5px;
@@ -1113,9 +1114,10 @@
 .pj-mlineas .hyto-pill {
   flex: none;
 }
-/* The evidence fills its frame on the review; the enlarged view still shows it whole. */
+/* The review shows the whole evidence. Inbox thumbnails (.pj-ev) stay cropped. */
 .pj-rgrid .hyto-photo img {
-  object-fit: cover;
+  object-fit: contain;
+  background: #14162b;
 }
 /* Warnings on inbox rows use the same orange as the rest («Trabajo sin terminar»). */
 .pj-item .hyto-pill-bad,

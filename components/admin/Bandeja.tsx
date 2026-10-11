@@ -417,7 +417,7 @@ function DetalleBandeja({
     <aside className="pj-card pj-detalle" aria-label={textoVisible(tarea.titulo, idioma)}>
       <div className="pj-ev">
         {foto && !esTipoDocumento(tarea.tipoArchivo) ? (
-          <img src={foto} alt="" />
+          <img src={foto} alt={textoVisible(tarea.titulo, idioma)} />
         ) : (
           <p className="pj-ev-vacia">{tarea.estado === "pendiente" ? t("proyecto.sinEvidencia") : etiquetaTipo(tarea.tipo, idioma)}</p>
         )}
