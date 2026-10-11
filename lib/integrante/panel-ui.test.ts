@@ -129,7 +129,7 @@ test("si la cuenta no carga, el costo de pagar sigue en la página", async () =>
   }
 });
 
-test("una wallet ausente pide Get ready to be paid", async () => {
+test("una wallet ausente pide Set up my account, un solo botón", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
   globalThis.fetch = (async () =>
@@ -147,9 +147,10 @@ test("una wallet ausente pide Get ready to be paid", async () => {
     await montar(createElement(PanelCuenta));
     await asentar();
     assert.match(texto(), /cannot receive a payment yet/);
-    const preparar = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Get ready to be paid"));
+    const preparar = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Set up my account"));
     assert.ok(preparar instanceof HTMLButtonElement);
     assert.equal(preparar.disabled, false);
+    assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")), false);
     const avanzado = document.querySelector("details");
     assert.equal(avanzado?.hasAttribute("open"), false);
     assert.match(avanzado?.textContent ?? "", /Payment account ID \(for support\)/);
@@ -338,8 +339,46 @@ test("sin la línea USDC no se sugiere el faucet: primero prepararse para cobrar
     await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
     await asentar();
     assert.equal(document.querySelector("a[href='https://faucet.circle.com']"), null);
-    assert.match(texto(), /First get your account ready to be paid\. Then you can top up test balance\./);
+    const ayuda = document.querySelector("[data-recarga='preparar']");
+    assert.equal(ayuda?.textContent, "First get your account ready to be paid. Then you can top up test balance.");
+    // The button sits right under that line, and it is the card's only setup button.
+    const boton = ayuda?.nextElementSibling;
+    assert.ok(boton instanceof HTMLButtonElement);
+    assert.equal(boton.textContent, "Set up my account");
+    const seccion = document.getElementById("saldo");
+    const botones = [...(seccion?.querySelectorAll("button") ?? [])].filter((item) => /Set up my account|Get ready to be paid/.test(item.textContent ?? ""));
+    assert.equal(botones.length, 1);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("en español la línea y el botón son los de Angie", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => responder(cuenta({ saldo: null, saldoEstado: "ausente" }))) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta, { revisarFirma: LISTA }) }));
+    await asentar();
+    assert.match(texto(), /Primero prepare su cuenta para recibir pagos\. Después podrá recargar saldo de prueba\./);
+    assert.ok([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Preparar mi cuenta"));
+    assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Preparar el cobro"), false);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("en red pública sin línea se queda Get ready to be paid, sin hablar del faucet", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => responder(cuenta({ saldo: null, saldoEstado: "ausente", red: "public" }))) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
+    await asentar();
     assert.ok([...document.querySelectorAll("button")].some((boton) => boton.textContent?.includes("Get ready to be paid")));
+    assert.doesNotMatch(texto(), /Set up my account|top up test balance/);
   } finally {
     globalThis.fetch = original;
     await desmontar();
@@ -381,6 +420,38 @@ test("«Agregar saldo» (/configuracion#saldo) baja a la tarjeta del saldo cuand
   } finally {
     HTMLElement.prototype.scrollIntoView = scroll;
     window.location.hash = previo;
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
+test("Set up my account usa la misma preparación del cobro y después aparece el faucet", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  let lineaAbierta = false;
+  let preparaciones = 0;
+  globalThis.fetch = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(entrada);
+    if (url.includes("/api/usdc")) {
+      if (init?.method === "POST") {
+        preparaciones += 1;
+        lineaAbierta = true;
+        return responder({ listo: true });
+      }
+      return responder({ listo: lineaAbierta });
+    }
+    return responder(lineaAbierta ? cuenta({}) : cuenta({ saldo: null, saldoEstado: "ausente" }));
+  }) as typeof fetch;
+  try {
+    await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
+    await asentar();
+    assert.equal(document.querySelector("a[href='https://faucet.circle.com']"), null);
+    await pulsar("Set up my account");
+    await asentar();
+    assert.equal(preparaciones, 1);
+    assert.ok(document.querySelector("a[href='https://faucet.circle.com']"), "El faucet no apareció después de preparar la cuenta.");
+    assert.doesNotMatch(texto(), /Set up my account|First get your account ready/);
+  } finally {
     globalThis.fetch = original;
     await desmontar();
   }

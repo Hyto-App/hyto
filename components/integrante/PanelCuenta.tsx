@@ -185,6 +185,7 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
   const publica = direccionPublica(vista.wallet);
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
+  const recarga = estadoRecarga(vista);
   return (
     // «Agregar saldo» in Crear proyecto links here (/configuracion#saldo).
     <section id="saldo" className="hyto-card scroll-mt-24 p-5 sm:p-6">
@@ -195,7 +196,14 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
         {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
       <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
-      {sinCobro && !vista.demo && !vista.muestra ? <PrepararUsdc silencioPendiente onListo={alListo} /> : null}
+      {sinCobro && !vista.demo && !vista.muestra ? (
+        // Without the USDC line the faucet would fail, so this one button opens the line first; then the faucet block appears.
+        recarga === "preparar" ? (
+          <PrepararUsdc silencioPendiente onListo={alListo} ayuda={t("cuenta.recargarAntes")} etiqueta={t("cuenta.prepararCuenta")} />
+        ) : (
+          <PrepararUsdc silencioPendiente onListo={alListo} />
+        )
+      ) : null}
       <RecargaPrueba vista={vista} />
       <details className="mt-6 text-sm">
         <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
@@ -250,14 +258,8 @@ function Direccion({ direccion }: { direccion: string }) {
 function RecargaPrueba({ vista }: { vista: VistaCuenta }) {
   const t = useTexto();
   const estado = estadoRecarga(vista);
-  if (estado === "oculta") return null;
-  if (estado === "preparar") {
-    return (
-      <p className="mt-4 max-w-prose text-sm leading-6 text-[var(--suave)]" data-recarga="preparar">
-        {t("cuenta.recargarAntes")}
-      </p>
-    );
-  }
+  // «preparar»: the line and «Preparar mi cuenta» live in PrepararUsdc above, as the card's only setup button.
+  if (estado !== "lista") return null;
   const direccion = vista.wallet ?? "";
   return (
     <div className="mt-6 grid gap-5 border-t border-[var(--linea)] pt-5" data-recarga="lista">

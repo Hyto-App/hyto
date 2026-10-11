@@ -598,3 +598,41 @@ test("en demo no aparece y en la revisión real sí", async () => {
     limpiarPantalla();
   }
 });
+
+test("con ayuda y etiqueta propias, el mismo botón prepara la cuenta y avisa al terminar", async () => {
+  limpiarPantalla();
+  let llamadas = 0;
+  let listos = 0;
+  try {
+    await montar(
+      createElement(PrepararUsdc, {
+        consultar: async () => false,
+        preparar: async () => {
+          llamadas += 1;
+          return { hash: null };
+        },
+        silencioPendiente: true,
+        ayuda: "First get your account ready to be paid. Then you can top up test balance.",
+        etiqueta: "Set up my account",
+        onListo: () => {
+          listos += 1;
+        },
+      }),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const botones = [...document.querySelectorAll("button")];
+    assert.equal(botones.length, 1);
+    assert.equal(botones[0]?.textContent, "Set up my account");
+    assert.equal(botones[0]?.previousElementSibling?.textContent, "First get your account ready to be paid. Then you can top up test balance.");
+    await pulsar("Set up my account");
+    assert.equal(llamadas, 1);
+    assert.equal(listos, 1);
+    assert.match(texto(), /Payout account ready/);
+    assert.doesNotMatch(texto(), /First get your account ready/);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
