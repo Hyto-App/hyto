@@ -48,6 +48,22 @@ test("en 1440 el titular y el párrafo van a la izquierda y el formulario queda 
   assert.match(h2, /text-align:\s*center/);
 });
 
+test("en claro «Get paid.» va en #5A7D00; el botón y el oscuro siguen en lima", () => {
+  const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
+  const claro = bloque(css, '[data-theme="light"] .hyto-login .hyto-login-titulo em {', "[data-theme=\"light\"] .hyto-login-escena");
+  assert.match(claro, /color:\s*#5a7d00/);
+  const oscuro = bloque(css, ".hyto-login .hyto-login-titulo em {", ".hyto-login-sub {");
+  assert.match(oscuro, /color:\s*var\(--l-acento\)/);
+  assert.doesNotMatch(oscuro, /#5a7d00/);
+  const tokens = bloque(css, ".hyto-login {\n  --l-acento:", ".hyto-login.is-saliendo");
+  assert.match(tokens, /--l-acento:\s*#b7ee34/);
+  const claroTokens = bloque(css, '[data-theme="light"] .hyto-login {', '[data-theme="light"] .hyto-login .hyto-login-titulo em');
+  assert.doesNotMatch(claroTokens, /--l-acento:/);
+  const boton = bloque(css, ".hyto-login-btn.is-primario {", ".hyto-login-btn.is-primario:disabled");
+  assert.match(boton, /background:\s*var\(--l-acento\)/);
+  assert.match(boton, /color:\s*var\(--l-sobre\)/);
+});
+
 test("el claro aclara el fondo y baja el remolino negro en 390 y en 1440", () => {
   const css = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
   const claro = bloque(css, '[data-theme="light"] .hyto-login {', '[data-theme="light"] .hyto-login-escena');

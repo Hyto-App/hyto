@@ -3929,6 +3929,11 @@ html.hyto-firmando body {
   color-scheme: light;
 }
 
+/* «Get paid.» on the sign-in title. Light only; the button and dark mode stay lime. */
+[data-theme="light"] .hyto-login .hyto-login-titulo em {
+  color: #5a7d00;
+}
+
 [data-theme="light"] .hyto-login-escena,
 [data-theme="light"] .hyto-login.is-exito .hyto-login-escena {
   background: radial-gradient(ellipse 90% 40% at 50% 20%, #ffffff 0%, var(--l-velo) 50%, transparent 85%), var(--l-fondo);
