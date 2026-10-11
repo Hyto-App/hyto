@@ -65,7 +65,7 @@ test("una recarga en «revisa tu correo» conserva el código y el mismo nonce",
     assert.match(texto(), /ana@example.com/);
     await escribir('input[autocomplete="one-time-code"]', "123456");
     assert.deepEqual(nonces, [NONCE]);
-    assert.match(texto(), /That code doesn't match/);
+    assert.match(texto(), /That code didn't work/);
   } finally {
     restaurar();
     window.sessionStorage.clear();

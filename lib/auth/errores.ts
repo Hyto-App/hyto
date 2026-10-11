@@ -8,7 +8,7 @@ export const AVISO_GENERICO = "Could not sign in. Try again.";
  * refused even when production is allowed. The raw text includes that host.
  */
 export const AVISO_ORIGEN_CAVOS =
-  "This site can't open the signing window yet. Use the main Hyto site, or ask whoever runs Hyto to allow this address.";
+  "Sign-in isn't available on this address yet. Please use hyto.vercel.app.";
 export const AVISO_CODIGO_INVALIDO = "That code does not match. Check your email and try again.";
 export const AVISO_CODIGO_VENCIDO = "That code expired. Request another one.";
 export const AVISO_RED = "No connection. Check the network and try again.";

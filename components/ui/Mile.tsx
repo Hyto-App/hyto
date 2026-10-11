@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import "@/components/ui/mile.css";
 import { useTexto } from "@/components/ui/Idioma";
 import type { Clave } from "@/lib/ui/diccionario";
 import { conDetalle, desplazarOjos, estadoMile, type EstadoMile, type EstadoMileEntrada } from "@/lib/ui/mile";
