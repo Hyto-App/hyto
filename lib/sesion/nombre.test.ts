@@ -49,7 +49,7 @@ test("los usuarios demo se ven en español con ES y en inglés con EN, sin cambi
   assert.equal(`${texto("es", "confirmar.to")} ${nombreEnIdioma(voluntario.nombre ?? "", "es")}`, "Para Voluntario (demo)");
   const decide = nombreParaMostrar(organizador.nombre, "ZEEK", "es");
   assert.equal(decide, "Organizador (demo)");
-  assert.equal(texto("es", "evidencia.stepOrganizerName", { name: decide ?? "" }), "El organizador aprueba (Organizador (demo) decide)");
+  assert.equal(texto("es", "evidencia.stepOrganizerName", { name: decide ?? "" }), "El organizador aprueba: decide Organizador (demo)");
   assert.equal(nombreParaMostrar(organizador.nombre, "ZEEK", "en"), "Organizer (demo)");
   assert.equal(nombreParaMostrar("Organizer", "ZEEK", "es"), "Organizador");
 });
