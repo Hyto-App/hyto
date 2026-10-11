@@ -50,7 +50,12 @@ test("una foto derecha que cabe se envía tal cual", async () => {
   assert.equal(ajustada.tipo, "image/jpeg");
 
   const sinGiro = await fotoGirada(1);
-  assert.equal((await ajustarParaVision(sinGiro, "image/jpeg")).bytes, sinGiro);
+  const limpia = await ajustarParaVision(sinGiro, "image/jpeg");
+  const datos = await sharp(Buffer.from(limpia.bytes)).metadata();
+  assert.equal(datos.width, 40);
+  assert.equal(datos.height, 20);
+  assert.equal(datos.exif, undefined);
+  assert.equal(datos.orientation === undefined || datos.orientation === 1, true);
 });
 
 test("lo que sharp no puede leer y los PDF pasan sin tocar", async () => {
