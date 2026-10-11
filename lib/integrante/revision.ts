@@ -1,3 +1,4 @@
+import { iniciales as inicialesComunes } from "@/lib/perfil/iniciales";
 import { presentarUsdc, recibidoDeCampos, unidadesUsdc } from "@/lib/escrow/recibido";
 import type { EstadoTarea, EtapaTarea, OrigenRechazo, Rechazo, RequisitoRevision, Tarea } from "./tipos";
 
@@ -89,10 +90,10 @@ export function puntosFallidos(tarea: Pick<Tarea, "rechazo" | "requisitos">, tot
   return salida;
 }
 
+/** Same rule as the avatars elsewhere: a parenthetical word and symbols are dropped, so «Organizador (demo)» is «O», not «O(». */
 export function iniciales(nombre: string): string {
-  const partes = nombre.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  const letras = partes.map((parte) => parte[0]?.toUpperCase() ?? "").join("");
-  return letras || "?";
+  const letras = inicialesComunes(nombre);
+  return letras === "•" ? "?" : letras;
 }
 
 export function abreviarNota(nota: string, maximo = 80): string {

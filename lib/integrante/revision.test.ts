@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { listarTareas } from "./rutas";
-import { cuerpoPedirOtra, leerCamposRevision, montoUsdc, plazoVencido, puntosFallidos, sanearNota } from "./revision";
+import { cuerpoPedirOtra, iniciales, leerCamposRevision, montoUsdc, plazoVencido, puntosFallidos, sanearNota } from "./revision";
 
 const base = {
   id: "t1",
@@ -172,4 +172,13 @@ test("lo recibido es el neto liberado, no el tope del reembolso", () => {
   assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15", montoPagado: "12.44256", montoConfirmado: "12.48" }), "12.44256");
   assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15", montoConfirmado: "12.48" }), "12.44256");
   assert.equal(montoUsdc({ tipo: "reembolso", monto: "15", tope: "15" }), "");
+});
+
+test("las iniciales del organizador ignoran el paréntesis y la puntuación", () => {
+  assert.equal(iniciales("Organizador (demo)"), "O");
+  assert.equal(iniciales("Organizer (demo)"), "O");
+  assert.equal(iniciales("Ana Solís."), "AS");
+  assert.equal(iniciales("María-José, Pérez"), "MP");
+  assert.equal(iniciales("(demo)"), "?");
+  assert.equal(iniciales(""), "?");
 });
