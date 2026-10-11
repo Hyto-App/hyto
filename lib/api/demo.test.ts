@@ -4,13 +4,14 @@ import { GET as estadoDemo, POST as entrarDemo } from "../../app/api/sesion/demo
 import { atenderEnviar } from "../../app/api/firma/enviar/route";
 import { atenderPreparar } from "../../app/api/firma/route";
 import { crearMemoria } from "../db/memoria";
-import { asegurarSemilla } from "../db/semilla";
+import { asegurarSemilla, veredictosDemo } from "../db/semilla";
 import type { SesionFila } from "../db/tipos";
 import { reiniciarLimite } from "../escrow/limite";
 import { AVISO_FIRMA_DEMO, esContratoDemo } from "../sesion/demo";
 import { SESION_SIN_EXP_SEGUNDOS } from "../sesion/cookie";
 import { AVISO_PAGO_DEMO_SIN_FOTO, AVISO_PAGO_DEMO_SIN_PRESUPUESTO, accionDemoDe, accionDemoHttp, crearDemoHttp, estadoDemoHttp } from "./demo";
 import { cerrarSesionHttp, leerSesionHttp } from "./sesion";
+import { tareaConNota } from "./tareas";
 
 const ENV_ON = { HYTO_DEMO_LOGIN: "1" };
 const ENV_OFF = { HYTO_DEMO_LOGIN: "" };
@@ -375,6 +376,117 @@ describe("ingreso demo", { concurrency: false }, () => {
       assert.equal(bienvenida?.estado, "pendiente");
       assert.equal(bienvenida?.contratoEscrow ?? null, null);
       assert.equal((await almacen.leerTarea("demo-registro"))?.contratoEscrow, contratoReal);
+    } finally {
+      if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+      else process.env.HYTO_DEMO_LOGIN = anterior;
+    }
+  });
+
+  test("cambiar de rol dentro del demo conserva lo pagado; solo una entrada nueva o reiniciar lo deshace", async () => {
+    const anterior = process.env.HYTO_DEMO_LOGIN;
+    process.env.HYTO_DEMO_LOGIN = "1";
+    reiniciarLimite();
+    try {
+      const almacen = crearMemoria();
+      const org = await crearDemoHttp(pedido("organizador", "203.0.113.60"), almacen, ENV_ON);
+      const tokenOrg = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(org.headers.get("set-cookie") ?? "")?.[1] ?? "");
+      await accionDemoHttp(almacen, sesion({ token: tokenOrg }), "demo-stand", "bloquear", ENV_ON);
+      await accionDemoHttp(almacen, sesion({ token: tokenOrg }), "demo-stand", "pagar", ENV_ON);
+      assert.equal((await almacen.leerTarea("demo-stand"))?.estado, "pagado");
+
+      const cambio = await crearDemoHttp(
+        new Request("http://local/api/sesion/demo", {
+          method: "POST",
+          headers: { cookie: `hyto_sesion=${tokenOrg}`, "content-type": "application/json", "x-forwarded-for": "203.0.113.61" },
+          body: JSON.stringify({ rol: "voluntario" }),
+        }),
+        almacen,
+        ENV_ON,
+      );
+      assert.equal(cambio.status, 200);
+      assert.equal((await almacen.leerTarea("demo-stand"))?.estado, "pagado", "the volunteer sees what the organizer paid");
+      const tokenVol = decodeURIComponent(/hyto_sesion=([^;]+)/.exec(cambio.headers.get("set-cookie") ?? "")?.[1] ?? "");
+
+      const reinicio = await crearDemoHttp(
+        new Request("http://local/api/sesion/demo", {
+          method: "POST",
+          headers: { cookie: `hyto_sesion=${tokenVol}`, "content-type": "application/json", "x-forwarded-for": "203.0.113.62" },
+          body: JSON.stringify({ rol: "organizador", reiniciar: true }),
+        }),
+        almacen,
+        ENV_ON,
+      );
+      assert.equal(reinicio.status, 200);
+      assert.equal((await almacen.leerTarea("demo-stand"))?.estado, "en revisión");
+    } finally {
+      if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+      else process.env.HYTO_DEMO_LOGIN = anterior;
+    }
+  });
+
+  test("una tarea demo pendiente no muestra un envío ni una nota de un demo anterior", async () => {
+    const anterior = process.env.HYTO_DEMO_LOGIN;
+    process.env.HYTO_DEMO_LOGIN = "1";
+    try {
+      const almacen = crearMemoria();
+      await asegurarSemilla(almacen);
+      // An earlier demo uploaded to the welcome task and Mile graded it; a restart put it back to pending.
+      await almacen.crearEvidencia({
+        id: "vieja",
+        tareaId: "demo-bienvenida",
+        blobId: "evidencias/vieja.jpg",
+        monto: null,
+        montoConfirmado: null,
+        fecha: null,
+        creadaEn: "2026-10-10T22:12:00.000Z",
+      });
+      await almacen.guardarVeredicto({
+        id: "vieja",
+        evidenciaId: "vieja",
+        tareaId: "demo-bienvenida",
+        veredicto: "parcial",
+        frase: "Mesa armada. Category work, grade 67%.",
+        textoScout: "",
+        choice: "trabajo",
+        noul: "si",
+        score: "67",
+        origen: "scout",
+      });
+      await almacen.actualizarTarea("demo-bienvenida", { estado: "pendiente" });
+      const tarea = await almacen.leerTarea("demo-bienvenida");
+      assert.ok(tarea);
+      const vista = await tareaConNota(almacen, tarea);
+      assert.equal(vista.enviadaEn, null);
+      assert.equal(vista.etapa, null);
+      assert.equal(vista.nota, null);
+      assert.equal(vista.veredicto, null);
+      assert.equal(vista.intentos, 0);
+    } finally {
+      if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
+      else process.env.HYTO_DEMO_LOGIN = anterior;
+    }
+  });
+
+  test("una tarea demo con su foto de ejemplo siempre muestra la nota de ejemplo, no una corrida del modelo", async () => {
+    const anterior = process.env.HYTO_DEMO_LOGIN;
+    process.env.HYTO_DEMO_LOGIN = "1";
+    reiniciarLimite();
+    try {
+      const almacen = crearMemoria();
+      await asegurarSemilla(almacen);
+      const plantilla = veredictosDemo().find((fila) => fila.tareaId === "demo-comida");
+      assert.ok(plantilla);
+      await almacen.guardarVeredicto({
+        ...plantilla,
+        frase: "The image displays a white paper receipt from a business named Pops Plaza Rofas. Category receipt, grade 88%.",
+        score: "88",
+        origen: "scout",
+      });
+      const entrada = await crearDemoHttp(pedido("organizador", "203.0.113.70"), almacen, ENV_ON);
+      assert.equal(entrada.status, 200);
+      const guardado = await almacen.veredictoDe(plantilla.evidenciaId);
+      assert.equal(guardado?.origen, plantilla.origen);
+      assert.equal(guardado?.frase, plantilla.frase);
     } finally {
       if (anterior === undefined) delete process.env.HYTO_DEMO_LOGIN;
       else process.env.HYTO_DEMO_LOGIN = anterior;

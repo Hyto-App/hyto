@@ -44,3 +44,15 @@ test("estadoConFoto keeps a pending task pending when a photo exists", () => {
   assert.equal(estadoConFoto("en revisión", true), "en revisión");
   assert.equal(estadoConFoto("pagado", true), "pagado");
 });
+
+test("la cola en inglés «Category X, grade N%.» de la nota de Mile no llega a la pantalla", () => {
+  assert.equal(
+    textoVisible("Mesa armada en la entrada, con el banner de frente. Category work, grade 67%.", "es"),
+    "Mesa armada en la entrada, con el banner de frente.",
+  );
+  assert.equal(
+    textoVisible("The image displays a white paper receipt. Category receipt, grade 88%.", "en"),
+    "The image displays a white paper receipt.",
+  );
+  assert.equal(textoVisible("Category work, grade 67%.", "es"), "");
+});

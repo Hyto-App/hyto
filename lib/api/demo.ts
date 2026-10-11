@@ -37,18 +37,19 @@ export async function crearDemoHttp(
   if (!rol) return json({ aviso: "That demo account is not allowed." }, 400);
 
   try {
-    await reiniciarPagosDemo(almacen);
+    // Switching between organizer and volunteer keeps the demo where it is, so the volunteer sees what the
+    // organizer paid. Only a fresh entry (no demo session yet) or an explicit restart starts it over.
+    const previa = leerCookie(request, COOKIE_SESION);
+    const sesionPrevia = previa ? await almacen.leerSesion(previa) : null;
+    const cambioDeRol = Boolean(sesionPrevia && sesionEsDemo(sesionPrevia));
+    if (!cambioDeRol || pideReinicio(body)) await reiniciarPagosDemo(almacen);
     await asegurarSemilla(almacen);
     await asegurarVoluntarioDemo(almacen);
     const fijo = usuarioDemo(rol);
     await almacen.guardarUsuario(fijo);
     const usuario = await almacen.usuarioPorEmail(fijo.email);
     if (!usuario || usuario.rol !== rol) return json({ aviso: "Could not open the demo session." }, 500);
-    const previa = leerCookie(request, COOKIE_SESION);
-    if (previa) {
-      const sesionPrevia = await almacen.leerSesion(previa);
-      if (sesionPrevia && sesionEsDemo(sesionPrevia)) await almacen.borrarSesion(previa);
-    }
+    if (previa && cambioDeRol) await almacen.borrarSesion(previa);
     const sesion = tokenSesion();
     await almacen.crearSesion({
       token: sesion,
@@ -125,6 +126,11 @@ async function confirmarMontoDemo(almacen: Almacen, tarea: TareaFila): Promise<v
   const tope = validarMontoConfirmado(tarea.tope ?? tarea.monto, tarea.tope, tarea.monto);
   const elegido = "monto" in leido ? leido : tope;
   if ("monto" in elegido) await almacen.actualizarEvidencia(evidencia.id, { montoConfirmado: elegido.monto });
+}
+
+/** `{ "reiniciar": true }` starts the demo over even when switching roles. */
+function pideReinicio(body: unknown): boolean {
+  return Boolean(body && typeof body === "object" && !Array.isArray(body) && (body as { reiniciar?: unknown }).reiniciar === true);
 }
 
 function rolPedido(body: unknown): ReturnType<typeof rolDemoDe> {
