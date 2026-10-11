@@ -175,3 +175,28 @@ export type SesionFila = {
   expiraEn: string;
   wallet: string;
 };
+
+/** Public profile settings. Missing row: public profile, amounts hidden. */
+export type PrivacidadPerfil = {
+  publico: boolean;
+  mostrarMontos: boolean;
+};
+
+export const PRIVACIDAD_POR_DEFECTO: PrivacidadPerfil = { publico: true, mostrarMontos: false };
+
+/** An organizer asked for another photo. Mile's own send-backs are not stored. */
+export type CambioPedido = {
+  id: string;
+  tareaId: string;
+  pedidoPor: string;
+  creadoEn: string;
+};
+
+/** Row of `perfil_privacidad` (0014). */
+export type PerfilPrivacidadFila = {
+  usuarioId: string;
+  /** "si" or "no". */
+  publico: string;
+  mostrarMontos: string;
+  actualizadoEn: string;
+};

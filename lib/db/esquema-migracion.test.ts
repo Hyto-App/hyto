@@ -44,6 +44,7 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "0011_tipo_cuenta.sql",
     "0012_perfil_voluntario.sql",
     "0013_tablon.sql",
+    "0014_perfiles_publicos.sql",
   ]);
   assert.deepEqual(esperado.tablas, [
     "usuarios",
@@ -58,8 +59,10 @@ test("la migración real declara las seis tablas y las relaciones que el código
     "comunidad_miembros",
     "comunidad_solicitudes",
     "comunidad_avisos",
+    "perfil_privacidad",
+    "tarea_cambios_pedidos",
   ]);
-  assert.equal(esperado.columnas.length, 106);
+  assert.equal(esperado.columnas.length, 114);
   const confirmado = esperado.columnas.find((columna) => columna.tabla === "evidencias" && columna.nombre === "monto_confirmado");
   assert.equal(confirmado?.tipo, "text");
   assert.equal(confirmado?.nullable, true);
@@ -90,6 +93,9 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "proyectos.comunidad_id→comunidades.id",
       "comunidad_avisos.comunidad_id→comunidades.id",
       "comunidad_avisos.tarea_id→tareas.id",
+      "perfil_privacidad.usuario_id→usuarios.id",
+      "tarea_cambios_pedidos.tarea_id→tareas.id",
+      "tarea_cambios_pedidos.pedido_por→usuarios.id",
     ],
   );
   assert.equal(
@@ -121,11 +127,14 @@ test("la migración real declara las seis tablas y las relaciones que el código
       "comunidades:id",
       "comunidad_solicitudes:id",
       "comunidad_avisos:id",
+      "perfil_privacidad:usuario_id",
+      "tarea_cambios_pedidos:id",
     ],
   );
   assert.deepEqual(esperado.indices, [
     { nombre: "evidencias_sha256_idx", tabla: "evidencias" },
     { nombre: "evidencias_phash_idx", tabla: "evidencias" },
+    { nombre: "tarea_cambios_pedidos_tarea_idx", tabla: "tarea_cambios_pedidos" },
   ]);
   const estado = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "estado");
   const condicion = esperado.columnas.find((columna) => columna.tabla === "tareas" && columna.nombre === "condicion");

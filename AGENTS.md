@@ -27,6 +27,8 @@ Why USDC and not a local rail such as SINPE: the money comes from abroad in doll
 
 Communities, the bulletin, account type, and the volunteer profile (`HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, `HYTO_PERFIL_VOLUNTARIO`) are the same story. They stay off until their migrations are applied and someone sets the flag to `on`.
 
+Public profiles, phase 1 (`HYTO_PERFIL_PUBLICO`, migration `0014_perfiles_publicos.sql`): `/p/[id]` shows initials, name, three figures (tasks done, events, % approved with no changes) and the paid history with a stellar.expert testnet link. Figures count only tasks an organizer paid (`lib/perfil/cifras.ts`); Mile's grade, an organizer's own task in their own event, and demo or test events (`lib/perfil/prueba.ts`) do not count. "No changes" reads `tarea_cambios_pedidos`, written only when an organizer asks for another photo (`lib/api/pedir.ts`), so a retry after a Mile error is not a change. Privacy lives in `perfil_privacidad` (no row: public profile, amounts hidden). Suggested people (`lib/perfil/sugeridos.ts`) come only from the organizer's own events. Off until 0014 is applied.
+
 The sample event is ZEEK: three US$20 work tasks and a meal reimbursement up to US$15. Those amounts live in the seed and the local example. They are not real payments or real wallets. There is still no testnet USDC payment hash in this repo. Login is Cavos email. It does not ask the person to install a wallet first.
 
 ### Membership (per event, not a login role)

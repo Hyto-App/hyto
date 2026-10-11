@@ -16,10 +16,10 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
   assert.deepEqual(inventario.comparacionSqlYDrizzle.diferencias, []);
   assert.deepEqual(
     inventario.tablas.map((tabla) => tabla.nombre),
-    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "comunidades", "comunidad_miembros", "comunidad_solicitudes", "comunidad_avisos"],
+    ["usuarios", "proyectos", "tareas", "evidencias", "veredictos", "sesiones", "proyecto_miembros", "proyecto_invitaciones", "comunidades", "comunidad_miembros", "comunidad_solicitudes", "comunidad_avisos", "perfil_privacidad", "tarea_cambios_pedidos"],
   );
   assert.equal(inventario.sentenciasNoParseadas.length, 0);
-  assert.equal(inventario.relaciones.length, 16);
+  assert.equal(inventario.relaciones.length, 19);
 
   const tarea = inventario.tablas.find((tabla) => tabla.nombre === "tareas");
   assert.ok(tarea);
@@ -51,6 +51,8 @@ test("el SQL real declara seis tablas y el inventario coincide con Drizzle", () 
         tabla.indices.map((indice) => indice.nombre).sort(),
         ["evidencias_phash_idx", "evidencias_sha256_idx", "evidencias_phash_idx", "evidencias_sha256_idx"].sort(),
       );
+    } else if (tabla.nombre === "tarea_cambios_pedidos") {
+      assert.equal(tabla.indices.length > 0, true);
     } else {
       assert.equal(tabla.indices.length, 0);
     }

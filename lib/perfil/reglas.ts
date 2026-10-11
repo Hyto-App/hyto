@@ -1,3 +1,5 @@
+import { validarBio } from "./validar";
+
 export const ETIQUETAS = [
   "responsable",
   "amable",
@@ -26,6 +28,8 @@ export function leerFicha(body: unknown): FichaVoluntario | { aviso: string } {
   const crudo = body as Record<string, unknown>;
   const experiencia = leerExperiencia(crudo.experiencia);
   if (experiencia === false) return { aviso: `Experience can have up to ${MAX_EXPERIENCIA} characters.` };
+  if (experiencia === "html") return { aviso: "Experience cannot have code or symbols like < >." };
+  if (experiencia === "contacto") return { aviso: "Do not put an email or phone number in your experience." };
   if (!Array.isArray(crudo.etiquetas)) return { aviso: "Choose tags from the list." };
   const etiquetas: EtiquetaVoluntario[] = [];
   for (const item of crudo.etiquetas) {
@@ -56,11 +60,14 @@ export function etiquetasGuardadas(valor: string | null | undefined): EtiquetaVo
   }
 }
 
-function leerExperiencia(valor: unknown): string | null | false {
+function leerExperiencia(valor: unknown): string | null | false | "html" | "contacto" {
   if (valor === undefined || valor === null) return null;
   if (typeof valor !== "string") return false;
   const limpio = valor.trim();
   if (!limpio) return null;
   if (limpio.length > MAX_EXPERIENCIA) return false;
-  return limpio;
+  // Server-side check: no markup or scripts, no contact data. React escapes on render too.
+  const validado = validarBio(limpio);
+  if (!validado.ok) return validado.motivo === "html" || validado.motivo === "contacto" ? validado.motivo : false;
+  return validado.valor || null;
 }

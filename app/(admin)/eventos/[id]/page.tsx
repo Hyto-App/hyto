@@ -7,6 +7,8 @@ import { tareasVisibles } from "@/lib/api/alcance";
 import { datosPublicosDeEvento } from "@/lib/api/contexto-evento";
 import { almacenNeon } from "@/lib/db/neon";
 import { personaVisible } from "@/lib/perfil/vista";
+import { perfilPublicoActivo } from "@/lib/perfil/bandera";
+import { sugeridosDeEvento } from "@/lib/api/perfil-publico";
 import { exigirEvento, exigirPagina, visorDeSesion } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
@@ -29,9 +31,10 @@ export default async function PaginaEvento({ params }: { params: Promise<{ id: s
       .filter((miembro) => miembro.estado === "active")
       .map((miembro) => personaVisible(usuarios.find((usuario) => usuario.id === miembro.usuarioId), miembro.usuarioId));
     const publicoOrganizador = datosPublicosDeEvento(proyecto);
+    const sugeridos = perfilPublicoActivo() ? await sugeridosDeEvento(almacen, sesion.usuarioId, id) : undefined;
     return (
       <>
-        <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" />
+        <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="inbox" sugeridos={sugeridos} />
         <div className="hyto-page pb-0 pt-0">
           <ContextoEvento
             proyectoId={proyecto.id}

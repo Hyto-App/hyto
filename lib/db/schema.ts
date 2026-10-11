@@ -159,3 +159,21 @@ export const proyectoInvitaciones = pgTable("proyecto_invitaciones", {
   creadoPor: text("creado_por").notNull().references(() => usuarios.id),
   creadoEn: text("creado_en").notNull(),
 });
+
+// Public profile settings (0014). No row means public profile, amounts hidden.
+// Only read when HYTO_PERFIL_PUBLICO is on.
+export const perfilPrivacidad = pgTable("perfil_privacidad", {
+  usuarioId: text("usuario_id").primaryKey().references(() => usuarios.id, { onDelete: "cascade" }),
+  // "si" or "no".
+  publico: text("publico").notNull().default("si"),
+  mostrarMontos: text("mostrar_montos").notNull().default("no"),
+  actualizadoEn: text("actualizado_en").notNull(),
+});
+
+// Each "ask for another photo" by an organizer (0014). Mile's send-backs are not stored.
+export const tareaCambiosPedidos = pgTable("tarea_cambios_pedidos", {
+  id: text("id").primaryKey(),
+  tareaId: text("tarea_id").notNull().references(() => tareas.id, { onDelete: "cascade" }),
+  pedidoPor: text("pedido_por").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+  creadoEn: text("creado_en").notNull(),
+}, (tabla) => [index("tarea_cambios_pedidos_tarea_idx").on(tabla.tareaId)]);

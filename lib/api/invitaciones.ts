@@ -2,7 +2,9 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Almacen } from "@/lib/db/almacen";
 import type { ProyectoInvitacion, RolInvitacion, TipoInvitacion } from "@/lib/db/tipos";
 import { anotarFalloCanje, canjeBloqueado, clienteDe } from "@/lib/escrow/limite";
+import { perfilPublicoActivo } from "@/lib/perfil/bandera";
 import { json } from "./json";
+import { trabajoConOrganizador } from "./perfil-publico";
 
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const DIAS = 7;
@@ -42,6 +44,18 @@ export async function crearInvitacionHttp(
     body = await request.json();
   } catch {
     return json({ aviso: "The body is not JSON." }, 400);
+  }
+  const persona = personaDe(body);
+  if (persona) {
+    // Invite someone this organizer already worked with, by id. The email is read on the
+    // server, only for people who were in one of this organizer's events.
+    if (!perfilPublicoActivo()) return json({ aviso: "A direct invite needs an email." }, 400);
+    if (!(await trabajoConOrganizador(almacen, creadoPor, persona))) {
+      return json({ aviso: "You can only invite people from your own events this way." }, 403);
+    }
+    const usuario = await almacen.leerUsuario(persona);
+    if (!usuario?.email) return json({ aviso: "We couldn't find that person." }, 404);
+    (body as Record<string, unknown>).email = usuario.email;
   }
   const pedido = leerPedido(body);
   if ("aviso" in pedido) return json({ aviso: pedido.aviso }, 400);
@@ -102,6 +116,14 @@ function secretoDe(body: unknown): string {
   if (!body || typeof body !== "object") return "";
   const secreto = (body as { secreto?: unknown }).secreto;
   return typeof secreto === "string" ? secreto.trim() : "";
+}
+
+function personaDe(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const crudo = body as Record<string, unknown>;
+  if (crudo.tipo !== "direct" || typeof crudo.usuarioId !== "string") return null;
+  const id = crudo.usuarioId.trim();
+  return id ? id : null;
 }
 
 function leerPedido(
