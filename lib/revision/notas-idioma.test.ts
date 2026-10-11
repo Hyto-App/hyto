@@ -56,10 +56,10 @@ test("la nota de lo que falta localiza el comprobante, el monto y la fecha", () 
   assert.equal(textoFalta(etiquetas, "en"), "Missing: evidence of the meal receipt; the invoice amount; the invoice date.");
   assert.equal(
     textoFalta(etiquetas, "es"),
-    "Falta: La evidencia del comprobante de la comida no es visible; el monto de la factura; la fecha de la factura.",
+    "Falta: la evidencia del comprobante de la comida; el monto de la factura; la fecha de la factura.",
   );
   assert.equal(presentarEtiqueta(comida, "en").explicacion, "Missing: evidence of the meal receipt.");
-  assert.equal(presentarEtiqueta(comida, "es").explicacion, "Falta: La evidencia del comprobante de la comida no es visible.");
+  assert.equal(presentarEtiqueta(comida, "es").explicacion, "Falta: la evidencia del comprobante de la comida.");
   assert.equal(presentarEtiqueta(comida, "es").explicacion.includes("foto"), false);
   const junta = etiqueta({
     id: "part_missing",

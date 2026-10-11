@@ -122,7 +122,7 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
  */
 const RAZONES_FALTA: Record<string, { es: string; en: string }> = {
   "la foto del comprobante de la comida no es visible": {
-    es: "La evidencia del comprobante de la comida no es visible",
+    es: "la evidencia del comprobante de la comida",
     en: "evidence of the meal receipt",
   },
   "el monto de la factura": { es: "el monto de la factura", en: "the invoice amount" },
