@@ -1683,26 +1683,18 @@ a {
   }
 
   .hyto-main {
-    /* The column is theme, avatar, then Ask Mile. Content ends 16px above the top circle. */
-    padding: var(--e-1) var(--margen-lateral) calc(var(--pila-3) + 40px + 16px);
-    /* Column is 40px wide and 16px from the edge; 16px more stays between it and the cards at every scroll position. */
-    padding-right: calc(16px + 40px + 16px);
+    /* Cards run full width with the same 20px on each side. Only Ask Mile floats; content ends 16px above it. */
+    padding: var(--e-1) var(--margen-lateral) calc(var(--pila-1) + 40px + 16px);
   }
 
-  /* 390: only the mobile header's round controls join the column. The desktop foot stays hidden and is not fixed. */
+  /* 390 (Aang, Pao): theme and avatar sit in the header, in the flow. Ask Mile is the one floating button. */
   .hyto-brand-acciones.hyto-solo-movil .hyto-tema {
-    position: fixed;
-    right: 16px;
-    bottom: var(--pila-3);
-    z-index: 27;
+    position: static;
     background: var(--papel);
   }
 
   .hyto-brand-acciones.hyto-solo-movil .hyto-perfil-boton.is-compacto {
-    position: fixed;
-    right: 16px;
-    bottom: var(--pila-2);
-    z-index: 26;
+    position: static;
     background: var(--papel);
   }
 
@@ -2298,6 +2290,13 @@ html.hyto-firmando body {
   justify-content: space-between;
   margin: 0 var(--l-gutter);
   padding: 0 12px;
+}
+
+/* Language and theme, also before sign-in. */
+.hyto-login-top-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .hyto-login-logo {
@@ -6193,10 +6192,13 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 @media (max-width: 1023px) {
+  /* Drops from the header avatar: 60px header, 8px gap. */
   .hyto-perfil-menu {
-    top: auto;
+    top: calc(60px + env(safe-area-inset-top) + 8px);
     right: 16px;
-    bottom: calc(var(--pila-2) + 40px + 8px);
+    bottom: auto;
+    max-height: calc(100dvh - 60px - env(safe-area-inset-top) - var(--alto-nav) - 16px);
+    overflow-y: auto;
   }
 }
 
@@ -6919,6 +6921,84 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   color: var(--contador-alto);
 }
 
+/* Entry screen: Google, Apple and the demo share one row; Mile is standalone (no chest). */
+.hyto-login-alternas {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.hyto-login-alternas .hyto-login-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  margin-top: 0;
+  padding-inline: 10px;
+  gap: 8px;
+  font-size: 13.5px;
+}
+
+.hyto-login-mile {
+  width: auto;
+  height: auto;
+}
+
+/* Entry: no sparkle and no chest seal on the standalone Mile. */
+.hyto-login-mile .mile-destello,
+.hyto-login-mile .mile-sello {
+  display: none;
+}
+
+/* 390: Mile 96px centered, then the slogan full width and centered, then the card, with 20px margins. */
+@media (max-width: 480px) {
+  .hyto-login .hyto-login-grid {
+    padding-inline: 20px;
+  }
+
+  /* One column: the 1023 grid (text, then a 92px Mile column) put the slogan in the 92px column once Mile moved first. */
+  .hyto-login .hyto-login-izq {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .hyto-login .hyto-login-mile,
+  .hyto-login.is-exito .hyto-login-mile {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    order: -1;
+    align-self: center;
+    width: 96px;
+    height: 96px;
+    margin: 8px 0 0;
+  }
+
+  .hyto-login .hyto-login-mile .hyto-mile,
+  .hyto-login .hyto-login-mile .mile {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  .hyto-login .hyto-login-hero {
+    width: 100%;
+    padding-inline: 0;
+    text-align: center;
+  }
+
+  .hyto-login .hyto-login-titulo {
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .hyto-login .hyto-login-alternas .hyto-login-prueba {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
+
 /* App micro-interactions. Login keeps its own motion. One curve, no bounce. */
 .hyto-shell :is(.hyto-btn, .hyto-btn-line, .hyto-btn-danger) {
   transition:
@@ -7514,79 +7594,6 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   text-align: center;
 }
 
-/* Entry screen: Google, Apple and the demo share one row; Mile is standalone (no chest). */
-.hyto-login-alternas {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.hyto-login-alternas .hyto-login-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 48px;
-  margin-top: 0;
-  padding-inline: 10px;
-  gap: 8px;
-  font-size: 13.5px;
-}
-
-.hyto-login-mile {
-  width: auto;
-  height: auto;
-}
-
-/* Entry: no sparkle and no chest seal on the standalone Mile. */
-.hyto-login-mile .mile-destello,
-.hyto-login-mile .mile-sello {
-  display: none;
-}
-
-/* 390: Mile 96px centered, then the slogan, then the card, with 20px margins. */
-@media (max-width: 480px) {
-  .hyto-login .hyto-login-grid {
-    padding-inline: 20px;
-  }
-
-  .hyto-login .hyto-login-izq {
-    align-items: center;
-    min-height: 0;
-  }
-
-  .hyto-login .hyto-login-mile,
-  .hyto-login.is-exito .hyto-login-mile {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    order: -1;
-    align-self: center;
-    width: 96px;
-    height: 96px;
-    margin: 8px 0 0;
-  }
-
-  .hyto-login .hyto-login-mile .hyto-mile,
-  .hyto-login .hyto-login-mile .mile {
-    width: 96px !important;
-    height: 96px !important;
-  }
-
-  .hyto-login .hyto-login-hero {
-    padding-inline: 0;
-    text-align: center;
-  }
-
-  .hyto-login .hyto-login-titulo {
-    margin-inline: auto;
-    text-align: center;
-  }
-
-  .hyto-login .hyto-login-alternas .hyto-login-prueba {
-    font-size: 14px;
-    white-space: nowrap;
-  }
-}
-
 /* Mile next to «Mile's recommendation» (Inbox, Tasks, Review). */
 .pj-mile-l .hyto-mile,
 .pj-mileblk .hyto-mile {
@@ -7594,12 +7601,21 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   height: 40px !important;
 }
 
-/* 390: the bottom bar exists, so the floating theme, avatar and Mile buttons leave the cards alone. */
+/* 390: theme and avatar stay in the header and Ask Mile keeps floating, so Settings and Sign out are one tap away. */
 @media (max-width: 480px) {
-  .hyto-brand-acciones.hyto-solo-movil .hyto-tema,
-  .hyto-brand-acciones.hyto-solo-movil .hyto-perfil-boton.is-compacto,
-  .hyto-preguntar.hyto-preguntar-icono {
-    display: none;
+  /* Projects (Aang): «Create project» and «Join with code» keep room inside the button and inside the card. */
+  .hyto-dos-botones > .hyto-btn,
+  .hyto-dos-botones > .hyto-btn-line {
+    padding-inline: 16px;
+  }
+
+  .hyto-estado-vacio {
+    padding: 24px;
+  }
+
+  .hyto-estado-vacio .hyto-dos-botones {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
 
   .pj-tlista,

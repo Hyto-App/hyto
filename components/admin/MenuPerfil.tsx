@@ -38,9 +38,17 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
       if (!panel.current) return;
       teclaDialogo(evento, panel.current, alCerrar);
     }
+    // The sheet is anchored to the avatar of one layout. A width change can swap the layout and leave it
+    // floating over other buttons, so it closes. Height alone (a phone's address bar) keeps it open.
+    const ancho = window.innerWidth;
+    function medida() {
+      if (window.innerWidth !== ancho) alCerrar();
+    }
     document.addEventListener("keydown", tecla);
+    window.addEventListener("resize", medida);
     return () => {
       document.removeEventListener("keydown", tecla);
+      window.removeEventListener("resize", medida);
       devolver?.focus();
     };
   }, [abierto, alCerrar, devolver]);

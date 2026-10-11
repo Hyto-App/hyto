@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
-import { usePathname } from "next/navigation";
 import {
   ATAJOS,
   buscarPreguntas,
@@ -34,13 +34,6 @@ type Props = {
   devolver: HTMLElement | null;
 };
 
-function publicoDeRuta(ruta: string | null): Publico {
-  if (!ruta) return "todos";
-  if (ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas/")) return "voluntario";
-  if (ruta.startsWith("/eventos") || ruta.startsWith("/revision/") || ruta.startsWith("/informe")) return "organizador";
-  return "todos";
-}
-
 type Turno ={ clave: number; id: IdPregunta };
 
 function movimientoReducido(): boolean {
@@ -51,8 +44,8 @@ function movimientoReducido(): boolean {
 /** Fixed answers told as a short chat. Search only filters the questions. */
 export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
   const t = useTexto();
-  // No stored role: the shortcuts follow the view. Funding screens ask the organizer's questions, task screens the volunteer's.
-  const publico = publicoDeRuta(usePathname());
+  // Roles are per event, so a signed-in account sees every question. Only a demo role narrows them.
+  const publico: Publico = useRolDemo() ?? "todos";
   const panel = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const charla = useRef<HTMLDivElement>(null);

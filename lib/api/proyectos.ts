@@ -12,6 +12,7 @@ import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { tareaEnBandeja } from "./informe";
 import { datosPublicosDeEvento, leerContextoEvento } from "./contexto-evento";
 import { clasificarFalloBase, detalleErrorBase } from "./aviso-base";
+import { esOrganizador } from "./invitaciones";
 import { baseNoLista, json } from "./json";
 import { entradaRequisitos, serializarRequisitos } from "@/lib/revision/requisitos";
 import { tareaPublica } from "./tareas";
@@ -73,6 +74,62 @@ export async function crearProyectoHttp(
     console.error("[api/proyectos] crear", detalleErrorCrear(error));
     const fallo = clasificarErrorCrear(error);
     return json({ aviso: fallo.aviso }, fallo.status);
+  }
+}
+
+/**
+ * «+ Add task» on an existing project's Tasks screen: the wizard's task card, one task at a time.
+ * Same reading and assign-by-email as creating a project. The balance must cover this task plus the reserve.
+ */
+export async function agregarTareaHttp(
+  request: Request,
+  almacen: Almacen,
+  proyectoId: string,
+  organizadorId: string,
+  fondos?: FondosCreacion,
+): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ aviso: "The body is not JSON." }, 400);
+  }
+  try {
+    const proyecto = await almacen.leerProyecto(proyectoId);
+    if (!proyecto) return json({ aviso: "We couldn't find that event." }, 404);
+    if (!(await esOrganizador(almacen, proyectoId, organizadorId))) {
+      return json({ aviso: "Only the organizer can edit tasks." }, 403);
+    }
+    const crudo = body && typeof body === "object" ? (body as Record<string, unknown>).tarea : undefined;
+    const tarea = leerTarea(crudo, proyectoId);
+    if ("aviso" in tarea) return json({ aviso: tarea.aviso }, 400);
+    const asignadas = await asignarTareas(almacen, organizadorId, [tarea]);
+    if (asignadas instanceof Response) return asignadas;
+    const nueva = asignadas[0]!;
+    if (fondos) {
+      const rechazo = await rechazoSiFondos(fondos.wallet, nueva.tope ?? nueva.monto, fondos.leerSaldo);
+      if (rechazo) return rechazo;
+    }
+    const yaMiembro = nueva.miembroId
+      ? (await almacen.listarMiembros(proyectoId)).some((miembro) => miembro.usuarioId === nueva.miembroId && miembro.estado === "active")
+      : true;
+    // The project row already exists, so only the task (and the assigned person's membership) is written.
+    await almacen.crearProyecto(proyecto, [nueva]);
+    if (!yaMiembro && nueva.miembroId !== organizadorId) {
+      await almacen.guardarMiembro({
+        proyectoId,
+        usuarioId: nueva.miembroId,
+        rol: "volunteer",
+        estado: "active",
+        creadoEn: new Date().toISOString(),
+      });
+    }
+    await avisarTareasNuevas(almacen, proyecto.comunidadId, [nueva]);
+    return json({ tarea: tareaPublica(nueva) }, 201);
+  } catch (error) {
+    console.error("[api/eventos/tareas] agregar", detalleErrorCrear(error));
+    const fallo = clasificarFalloBase(error);
+    return json({ aviso: fallo?.aviso ?? "Could not save that task." }, fallo?.status ?? 500);
   }
 }
 

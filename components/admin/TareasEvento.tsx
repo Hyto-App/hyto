@@ -36,6 +36,10 @@ import { mensajeClaro } from "@/lib/ui/claro";
 import { esContratoDemo } from "@/lib/sesion/demo";
 import { estadoConFoto, etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { TarjetaTarea, campoDeError, type CampoTarea } from "@/components/admin/CrearProyecto";
+import { cuerpoCrear, filaVacia, revisarTareas, type FilaCrear } from "@/lib/admin/crear-flujo";
+import { normalizarMonto } from "@/lib/admin/vista";
+import type { Clave } from "@/lib/ui/diccionario";
 
 export type FilaTareaEvento = {
   id: string;
@@ -91,16 +95,148 @@ function FichaAsignada({ miembros, miembroId }: { miembros: Persona[]; miembroId
   return <FichaVoluntario ficha={ficha} />;
 }
 
+/** «+ Add task» (mock B, Pao): the last row of the list, then the wizard's task card in its place. */
+function AgregarTarea({
+  eventoId,
+  numero,
+  saldo,
+  sugeridos,
+  onCreada,
+}: {
+  eventoId: string;
+  numero: number;
+  saldo: string | null;
+  sugeridos: Sugerido[];
+  onCreada: (tarea: TareaCreada) => void;
+}) {
+  const t = useTexto();
+  const idioma = useIdioma();
+  const [fila, setFila] = useState<FilaCrear | null>(null);
+  const [error, setError] = useState<{ texto: string; campo: CampoTarea | null } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  if (!fila) {
+    return (
+      <li className="pj-agregar-fila">
+        <button
+          type="button"
+          className="cp-agregar"
+          data-agregar-tarea
+          onClick={() => {
+            setError(null);
+            setFila(filaVacia());
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          {t("eventos.addTask")}
+        </button>
+      </li>
+    );
+  }
+
+  async function guardar() {
+    if (!fila || enviando) return;
+    // An untouched card counts as missing a title, like the wizard's first card.
+    const problema = revisarTareas([fila]);
+    if (problema) {
+      setError({ texto: t(`crear.${problema.error}` as Clave), campo: campoDeError(problema.error) });
+      return;
+    }
+    const monto = normalizarMonto(fila.monto)!;
+    const falta = faltaParaBloquear(saldo, monto);
+    if (falta) {
+      setError({ texto: t("errores.saldoNoCubre", textosSaldo(falta, idioma)), campo: "monto" });
+      return;
+    }
+    setError(null);
+    setEnviando(true);
+    try {
+      const respuesta = await fetch(`/api/eventos/${encodeURIComponent(eventoId)}/tareas`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tarea: cuerpoCrear({ nombre: "", descripcion: "", contextoIa: "", filas: [fila] }).tareas[0] }),
+      });
+      const json = (await respuesta.json().catch(() => null)) as { aviso?: string; tarea?: TareaCreada } | null;
+      if (!respuesta.ok || !json?.tarea) {
+        setError({ texto: json?.aviso ?? "Could not save that task.", campo: null });
+        return;
+      }
+      onCreada(json.tarea);
+      setFila(null);
+    } catch {
+      setError({ texto: "Could not save that task.", campo: null });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <li className="pj-agregar-fila cp-suelta">
+      <form
+        onSubmit={(evento) => {
+          evento.preventDefault();
+          void guardar();
+        }}
+      >
+        <TarjetaTarea
+          fila={fila}
+          numero={numero}
+          quitable={false}
+          sugeridos={sugeridos}
+          error={error?.texto ?? null}
+          campoError={error?.campo ?? null}
+          onCambio={(cambio) => setFila((actual) => (actual ? { ...actual, ...cambio } : actual))}
+          onQuitar={() => setFila(null)}
+        />
+        <div className="hyto-acciones-fila cp-suelta-acciones">
+          <button type="submit" className="hyto-btn-line is-inline px-5" disabled={enviando} aria-busy={enviando || undefined}>
+            {t("eventos.save")}
+          </button>
+          <button
+            type="button"
+            className="hyto-btn-line is-inline px-5"
+            disabled={enviando}
+            onClick={() => {
+              setFila(null);
+              setError(null);
+            }}
+          >
+            {t("eventos.cancel")}
+          </button>
+        </div>
+      </form>
+    </li>
+  );
+}
+
+type TareaCreada = {
+  id: string;
+  titulo: string;
+  tipo: TipoTarea;
+  monto: string;
+  tope: string | null;
+  condicion: string;
+  miembroId: string;
+  estado: string;
+  prioridad: PrioridadTarea;
+  dificultad: DificultadTarea | null;
+};
+
 export function TareasEvento({
   tareas,
   miembros,
   saldo = null,
   wallet = null,
   proyectoId,
+  eventoId,
   sugeridos,
   firmar,
   revisarFirma,
 }: {
+  /** The project, for «+ Add task». Without it the list has no add row. */
+  eventoId?: string;
   tareas: FilaTareaEvento[];
   miembros: Persona[];
   saldo?: string | null;
@@ -380,10 +516,43 @@ export function TareasEvento({
     if (siguientePaso(siguiente)?.tareaId === tareaId) void firmarSiguiente(siguiente);
   }
 
+  /** A saved new task joins the list, so the count, the total and «Lock N of N tasks» follow it. */
+  function agregada(tarea: TareaCreada) {
+    setFilas((actuales) => [
+      ...actuales,
+      {
+        id: tarea.id,
+        titulo: tarea.titulo,
+        tipo: tarea.tipo,
+        monto: tarea.monto,
+        tope: tarea.tope,
+        condicion: tarea.condicion,
+        estado: tarea.estado,
+        miembroId: tarea.miembroId,
+        prioridad: tarea.prioridad,
+        dificultad: tarea.dificultad,
+        bloqueo: null,
+        tieneFoto: false,
+        montoConfirmado: null,
+        montoRevisado: null,
+        cuentaCobro: Boolean(tarea.miembroId && miembros.find((item) => item.usuarioId === tarea.miembroId)?.cuentaCobro),
+        contrato: null,
+        // Same as the page: a reimbursement locks once its amount is confirmed; until then its cap counts.
+        montoLote: tarea.tipo === "reembolso" ? null : tarea.monto,
+        topeLote: tarea.tipo === "reembolso" ? (tarea.tope ?? tarea.monto) : tarea.monto,
+      },
+    ]);
+  }
+
+  const agregar = eventoId ? (
+    <AgregarTarea eventoId={eventoId} numero={filas.length + 1} saldo={demo ? null : saldo} sugeridos={sugeridos ?? []} onCreada={agregada} />
+  ) : null;
+
   if (filas.length === 0) {
     return (
       <main className="hyto-page">
         <p className="text-lg font-semibold">{t("eventos.noTasks")}</p>
+        {agregar ? <ul className="pj-tlista mt-4">{agregar}</ul> : null}
       </main>
     );
   }
@@ -753,6 +922,7 @@ export function TareasEvento({
             </li>
           );
         })}
+        {agregar}
       </ul>
       {aviso ? (
         <p role="alert" className="mt-4 text-sm text-[var(--peligro)]">

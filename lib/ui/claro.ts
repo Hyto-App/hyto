@@ -4,7 +4,7 @@ import {
   AVISO_PASSKEY_SIN_CLAVE,
   AVISO_PASSKEY_SIN_SOPORTE,
 } from "@/lib/auth/avisosPasskey";
-import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_PASSKEY, AVISO_REINGRESO, AVISO_SIN_CUENTA_FIRMA, CODIGO_RED_FIRMA } from "@/lib/escrow/firmarCliente";
 import {
   AVISO_USDC_FIRMANTE,
   AVISO_USDC_LENTO,
@@ -320,7 +320,7 @@ const SALDO_NO_CUBRE =
 export function mensajeClaro(mensaje: string, idioma: Idioma = "en"): string {
   const limpio = mensaje.trim();
   if (!limpio) return limpio;
-  if (esOrigenCavos(limpio)) return texto(idioma, "errores.origenCavos");
+  if (esOrigenCavos(limpio)) return texto(idioma, "errores.origenFirma");
   const espera = ESPERA.exec(limpio);
   if (espera) return texto(idioma, "entrar.espera", { n: espera[1] });
   const saldo = SALDO_NO_CUBRE.exec(limpio);
@@ -396,13 +396,22 @@ const DETALLE_PROPIO: Clave[] = [
   "errores.feeIlegible",
 ];
 
-export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en"): string {
-  // A pay step with no escrow balance uses the generic line. A missing network fee, or the
-  // protocol-fee account, is a different problem and keeps its own words.
-  if (caja === "pago" && !DETALLE_PROPIO.some((clave) => aviso === texto(idioma, clave))) {
-    return texto(idioma, "pago.noUsdcLeft");
+/** Same value as CODIGO_SIN_CONFIRMAR in lib/api/firma.ts (server code, not imported here). */
+const CODIGO_SIN_CONFIRMAR = "HYTO_TX_NOT_CONFIRMED";
+
+export function detalleFallo(caja: CajaFallo, aviso: string, idioma: Idioma = "en", codigo: string | null = null): string {
+  if (caja !== "pago") return aviso;
+  // A missing network fee, or the protocol-fee account, is a different problem and keeps its own words.
+  if (DETALLE_PROPIO.some((clave) => aviso === texto(idioma, clave))) return aviso;
+  // Sent and not confirmed yet: it may still land, so this line never says nothing was charged.
+  if (codigo === CODIGO_SIN_CONFIRMAR) return texto(idioma, "pago.errorTiempo");
+  if (codigo === CODIGO_RED_FIRMA) return texto(idioma, "pago.errorRed");
+  if (aviso === texto(idioma, "errores.saldoInsuficiente")) return texto(idioma, "pago.errorSaldo");
+  if (aviso === texto(idioma, "errores.cancelaste") || aviso === texto(idioma, "errores.passkeyCancelada")) {
+    return texto(idioma, "pago.errorCancelado");
   }
-  return aviso;
+  // Every other pay failure was refused before or at submit, so no USDC left the escrow.
+  return texto(idioma, "pago.errorOtro");
 }
 
 export function frasePaso(accion: "desplegar" | "fondear" | "marcar" | "aprobar" | "liberar", idioma: Idioma = "en"): string {
