@@ -14,12 +14,12 @@ const CLASE: Record<SeveridadNota, string> = {
 const LISTA_FALTA = /^(Falta|Missing|No se pudo confirmar|Not confirmed): /;
 
 /** Mile's flags as boxes in two equal columns (one on a phone). Each text shows once. */
-export function NotasMileRejilla({ etiquetas }: { etiquetas?: readonly EtiquetaNota[] | null }) {
+export function NotasMileRejilla({ etiquetas, condicion = null }: { etiquetas?: readonly EtiquetaNota[] | null; condicion?: string | null }) {
   const idioma = useIdioma();
   if (!etiquetas || etiquetas.length === 0) return null;
   const vistos = new Set<string>();
   const visibles = etiquetas
-    .map((etiqueta) => presentarEtiqueta(etiqueta, idioma))
+    .map((etiqueta) => presentarEtiqueta(etiqueta, idioma, condicion))
     .filter((etiqueta) => {
       if (vistos.has(etiqueta.texto)) return false;
       vistos.add(etiqueta.texto);

@@ -96,7 +96,7 @@ test("un trabajo manda las once preguntas y los niveles de score en orden", () =
 });
 
 test("una factura manda las nueve preguntas y no inventa un pedido distinto", () => {
-  const pedido = "Photo of the meal receipt";
+  const pedido = "Evidence of the meal receipt";
   const preguntas = preguntasFactura(pedido);
   assert.deepEqual(Object.keys(preguntas), ["f1", "f2", "f3", "f4", "g1", "g2", "g3", "g4", "g5"]);
   assert.equal(preguntas.f1.instructions, `The organizer asked for a receipt for: ${pedido}. What was the money spent on, according to the written description?`);
@@ -302,7 +302,7 @@ test("primero clasifica y después pregunta solo el camino de trabajo", async ()
 
 test("una factura no dispara las preguntas de trabajo", async () => {
   const ids: string[][] = [];
-  const senales = await preguntarLaya("https://laya.example", "Meal receipt 12.40.", "Photo of the meal receipt", async (_input, init) => {
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt 12.40.", "Evidence of the meal receipt", async (_input, init) => {
     const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
     ids.push(Object.keys(cuerpo.questions));
     if (ids.length === 1) return Response.json({ answers: { c1: { choice: "factura" } } });
@@ -414,7 +414,7 @@ test("un selfie sin relación sigue insuficiente en 0", async () => {
 
 test("un reembolso clasificado como otra sin match se queda en 0", async () => {
   let llamadas = 0;
-  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Photo of the meal receipt", async (_input, init) => {
+  const senales = await preguntarLaya("https://laya.example", "Meal receipt for something else.", "Evidence of the meal receipt", async (_input, init) => {
     llamadas += 1;
     const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
     if ("c1" in cuerpo.questions) return Response.json({ answers: { c1: { choice: "otra" } } });
@@ -457,7 +457,7 @@ test("un recibo que Laya llama trabajo se puntúa como factura y nombra los íte
   const texto = "Evidence type: a receipt or an invoice.\nItems: Arroz, Huevos.\nTotal as printed: ₡7.950,00.";
   assert.equal(esReciboEscrito(texto), true);
   const ids: string[][] = [];
-  const senales = await preguntarLaya("https://laya.example", texto, "Photo of the meal receipt", async (_input, init) => {
+  const senales = await preguntarLaya("https://laya.example", texto, "Evidence of the meal receipt", async (_input, init) => {
     const cuerpo = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> };
     ids.push(Object.keys(cuerpo.questions));
     if (ids.length === 1) return Response.json({ answers: { c1: { choice: "trabajo" } } });

@@ -359,6 +359,102 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
   }
 });
 
+const NOTAS_COMIDA = [
+  {
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: La foto del comprobante de la comida no es visible.",
+    severidad: "problem" as const,
+    preguntas: [] as string[],
+  },
+  {
+    id: "amount_missing",
+    texto: "Receipt amount missing",
+    explicacion: "The receipt answers do not give an amount.",
+    severidad: "warning" as const,
+    preguntas: [] as string[],
+  },
+  {
+    id: "date_missing",
+    texto: "Receipt date missing",
+    explicacion: "The receipt answers do not give a date.",
+    severidad: "warning" as const,
+    preguntas: [] as string[],
+  },
+  {
+    id: "over_cap",
+    texto: "Amount over the cap",
+    explicacion: "The amount is over the cap.",
+    severidad: "warning" as const,
+    preguntas: [] as string[],
+  },
+];
+
+function fetchComida(idioma: "en" | "es") {
+  return (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/tareas")) {
+      return json({
+        tareas: [
+          {
+            id: "comida",
+            proyectoId: "uno",
+            titulo: idioma === "es" ? "Comida" : "Meal",
+            tipo: "reembolso",
+            monto: "15",
+            tope: "15",
+            condicion: "Evidence of the meal receipt",
+            miembroId: "v",
+            walletCobro: "",
+            estado: "en revisión",
+            prioridad: "normal",
+            dificultad: null,
+            nota: 49,
+            veredicto: "parcial",
+            notas: NOTAS_COMIDA,
+          },
+        ],
+      });
+    }
+    if (url.startsWith("/api/proyectos")) return json({ proyectos: [{ id: "uno", nombre: "North" }] });
+    return json({ aviso: "no" }, 404);
+  }) as typeof fetch;
+}
+
+test("My tasks muestra la nota completa y no repite monto ni fecha", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = fetchComida("en");
+  try {
+    await montar(createElement(MisTareas));
+    await esperar(() => texto().includes("Meal"));
+    const tarjeta = tarjetaDe("Meal").textContent ?? "";
+    assert.match(tarjeta, /Missing: evidence of the meal receipt; the invoice amount; the invoice date\./);
+    assert.equal(tarjeta.includes("Receipt amount missing"), false);
+    assert.equal(tarjeta.includes("Receipt date missing"), false);
+    assert.match(tarjeta, /Amount over the cap/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
+test("Mis tareas en español muestra la misma nota completa", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = fetchComida("es");
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
+    await esperar(() => texto().includes("Comida"));
+    const tarjeta = tarjetaDe("Comida").textContent ?? "";
+    assert.match(tarjeta, /Falta: la evidencia del comprobante de la comida; el monto de la factura; la fecha de la factura\./);
+    assert.equal(tarjeta.includes("Falta el monto del recibo"), false);
+    assert.equal(tarjeta.includes("Falta la fecha de la factura"), false);
+    assert.match(tarjeta, /Monto sobre el límite/);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});
+
 test("otra foto pedida no usa un pedazo del correo y tiene Ver tarea", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {

@@ -4,6 +4,7 @@ import { montoSinUsd, type LecturaEvidencia } from "./lectura";
 import { lecturaCompleta } from "./lectura-completa";
 import { layaPuedeTaparPorOtra } from "./otra-groq";
 import { condicionPideLugar } from "./lugar-pedido";
+import { canonicoFaltante } from "./faltante-requisito";
 import type { DetalleRazones } from "./snapshot-razones";
 
 export type SeveridadNota = "good" | "warning" | "problem";
@@ -65,9 +66,20 @@ const ORDEN = [
 /** Start of a part_missing explanation that names what is missing. notas-idioma.ts keeps the list. */
 export const PREFIJO_FALTA = "Missing: ";
 
-/** What the vision reading says is missing, in the session language, joined for one sentence. */
-export function faltantesDe(lectura: LecturaEvidencia | null | undefined): string | null {
-  const lista = (lectura?.faltantes ?? []).map((item) => item.trim().replace(/[.;]+$/, "")).filter(Boolean);
+/**
+ * What the vision reading says is missing, joined for one sentence. Each item is the task
+ * requirement it refers to, not Mile's sentence. A label that already names the item stays.
+ */
+export function faltantesDe(lectura: LecturaEvidencia | null | undefined, requisitos: readonly string[] = []): string | null {
+  const vistos = new Set<string>();
+  const lista: string[] = [];
+  for (const crudo of lectura?.faltantes ?? []) {
+    const item = canonicoFaltante(crudo, requisitos);
+    const llave = item.toLowerCase();
+    if (!item || vistos.has(llave)) continue;
+    vistos.add(llave);
+    lista.push(item);
+  }
   return lista.length > 0 ? lista.join("; ") : null;
 }
 
@@ -95,9 +107,9 @@ export function elementosPedidos(condicion: string | null | undefined): string[]
 
 /** What is missing: the reading's own list, or else the task's items. */
 function listaFalta(entrada: EntradaRazones): { prefijo: string; lista: string } | null {
-  const faltan = faltantesDe(entrada.lectura);
-  if (faltan) return { prefijo: PREFIJO_FALTA, lista: faltan };
   const pedidos = elementosPedidos(entrada.condicion);
+  const faltan = faltantesDe(entrada.lectura, pedidos);
+  if (faltan) return { prefijo: PREFIJO_FALTA, lista: faltan };
   return pedidos.length > 0 ? { prefijo: PREFIJO_SIN_CONFIRMAR, lista: pedidos.join("; ") } : null;
 }
 
@@ -123,11 +135,12 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   const reembolso = entrada.clase === "factura" || entrada.tipo === "reembolso";
   const sinUsd = reembolso && montoSinUsd(entrada.lectura);
 
+  const pedidos = elementosPedidos(entrada.condicion);
   const falta = listaFalta(entrada);
   // The reading saw the requested kind of evidence (work or a receipt), only incomplete: say what is missing.
   const vioLoPedido = entrada.lectura?.tipo === "trabajo" || entrada.lectura?.tipo === "recibo";
   if (otra) {
-    const faltaOtra = faltantesDe(entrada.lectura) ?? (falta ? falta.lista : null);
+    const faltaOtra = faltantesDe(entrada.lectura, pedidos) ?? (falta ? falta.lista : null);
     etiquetas.push(etiqueta(
       "cap_otra",
       vioLoPedido ? "Serious issue: it does not show what was requested" : "Serious issue: no work or receipt shown",
@@ -192,7 +205,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       otra ? ["c1"] : [],
     ));
   }
-  if (otra && !vioLoPedido && !faltantesDe(entrada.lectura)) {
+  if (otra && !vioLoPedido && !faltantesDe(entrada.lectura, pedidos)) {
     etiquetas.push(etiqueta(
       "selfie_or_empty",
       "The evidence seems to show the person / no work or receipt shown",
@@ -360,7 +373,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "low_detail",
       "Low detail",
-      "Two or more answers are unclear or the model was unsure, so this grade is less certain.",
+      "Two or more answers are unclear or Mile was unsure, so this grade is less certain.",
       "warning",
       debiles,
     ));

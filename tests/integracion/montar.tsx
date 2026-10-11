@@ -83,6 +83,15 @@ export async function pulsar(textoBoton: string): Promise<void> {
   });
 }
 
+/** Clicks a link by its text (list rows that open the detail on a wide screen). */
+export async function pulsarEnlace(textoEnlace: string): Promise<void> {
+  const enlace = [...document.querySelectorAll("a")].find((item) => item.textContent?.includes(textoEnlace));
+  if (!enlace) throw new Error(`Sin enlace ${textoEnlace}.`);
+  await act(async () => {
+    enlace.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+  });
+}
+
 export function limpiarPantalla(): void {
   document.body.replaceChildren();
   window.localStorage.clear();

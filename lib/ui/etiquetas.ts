@@ -39,11 +39,17 @@ const LEGADO: Record<string, string> = {
   "Montar el stand": "Set up the booth",
   "Banner visible y mesa armada": "Banner visible and the table set up",
   "Registro de asistentes": "Check-in list",
-  "Lista de quienes llegaron al evento": "List of people who arrived",
+  // Older rows keep an earlier Spanish title. The screen says «Comprobantes de llegada recibidos».
+  "Lista de quienes llegaron al evento": "Check-in proofs received",
+  "Comprobantes recibidos": "Check-in proofs received",
+  "Comprobantes de llegada recibidos": "Check-in proofs received",
   "Mesa de bienvenida": "Welcome table",
   "Mesa armada en la entrada": "Table set up at the entrance",
   "Comida del equipo": "Team meal",
-  "Foto del comprobante de la comida": "Photo of the meal receipt",
+  "Foto del comprobante de la comida": "Evidence of the meal receipt",
+  "Foto del comprobante": "Evidence of the meal receipt",
+  "el comprobante de la comida": "evidence of the meal receipt",
+  "Evidencia de la comida": "Evidence of the meal",
   "Voluntario 1": "Volunteer 1",
   "Voluntario 2": "Volunteer 2",
   "Voluntario 3": "Volunteer 3",
@@ -64,6 +70,23 @@ const LEGADO: Record<string, string> = {
 const INVERSO_LEGADO: Record<string, string> = Object.fromEntries(
   Object.entries(LEGADO).map(([origen, ingles]) => [ingles, origen]),
 );
+
+/** Older stored titles. The inbox shows one phrase, in either language. */
+/** The meal receipt condition, stored in either language. The screen says evidencia, not foto. */
+const COMPROBANTE_COMIDA = new Set([
+  "Foto del comprobante",
+  "Foto del comprobante de la comida",
+  "Photo of the meal receipt",
+  "Evidence of the meal receipt",
+]);
+
+const LLEGADA = new Set([
+  "Lista de quienes llegaron al evento",
+  "Comprobantes recibidos",
+  "Comprobantes de llegada recibidos",
+  "List of people who arrived",
+  "Check-in proofs received",
+]);
 
 export function etiquetaEstado(estado: string, idioma: Idioma = "en"): string {
   if (estado in ESTADOS) return texto(idioma, ESTADOS[estado as EstadoTarea]);
@@ -115,7 +138,17 @@ export function textoVisible(valor: string | null | undefined, idioma: Idioma = 
   if (!valor) return "";
   // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
   const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
-  const directo = idioma === "es" ? (INVERSO_LEGADO[base] ?? base) : (LEGADO[base] ?? base);
+  const directo = COMPROBANTE_COMIDA.has(base)
+    ? idioma === "es"
+      ? "Evidencia del comprobante de la comida"
+      : "Evidence of the meal receipt"
+    : LLEGADA.has(base)
+    ? idioma === "es"
+      ? "Comprobantes de llegada recibidos"
+      : "Check-in proofs received"
+    : idioma === "es"
+      ? (INVERSO_LEGADO[base] ?? base)
+      : (LEGADO[base] ?? base);
   const frase = directo
     .replace(/ Categoría ([^,]+), condición (cumplida|no cumplida), evidencia ([^.]+)\./g, (_todo, choice: string, condicion: string, evidencia: string) => {
       const met = condicion === "cumplida";

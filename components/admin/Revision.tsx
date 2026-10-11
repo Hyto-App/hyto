@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
+import { Icono } from "@/components/admin/IconosProyecto";
+import { PersonaProyecto } from "@/components/admin/PersonaProyecto";
+import { pasosRevision, rotuloPasoPago, rotuloPrincipalRevision } from "@/lib/admin/proyecto-vista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -56,7 +59,7 @@ import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { cuerpoPedirOtra } from "@/lib/integrante/revision";
 import { AVISO_ENVIO_FALLIDO } from "@/lib/integrante/rutas";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, pasosDePago, tituloFallo } from "@/lib/ui/claro";
+import { cajaDeFallo, detalleFallo, frasePaso, mensajeClaro, tituloFallo } from "@/lib/ui/claro";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
 import { esContratoDemo } from "@/lib/sesion/demo";
 import type { TareaAdmin } from "@/lib/admin/tipos";
@@ -137,6 +140,10 @@ export function Revision({
   const [consultaPago, setConsultaPago] = useState<EstadoConsulta>(null);
   const [vueltaPago, setVueltaPago] = useState(0);
   const [confirmacion, setConfirmacion] = useState<{ clave: "bloquear" | "fondear" | "pagar"; abierto: boolean } | null>(null);
+  // «Bloquear y aprobar»: set when the lock was started from a task with evidence waiting; a good lock opens the pay dialog.
+  const aprobarTras = useRef(false);
+  const abrirPago = useRef(false);
+  const pagoDisponible = useRef(false);
 
   useEffect(() => {
     let viva = true;
@@ -359,28 +366,29 @@ export function Revision({
   }
 
   /** Demo mode walks the same steps as the real flow, with no wallet and no signature. */
-  async function correrDemo(accion: "bloquear" | "pagar", senal: AbortSignal) {
-    if (paso || !tarea) return;
+  async function correrDemo(accion: "bloquear" | "pagar", senal: AbortSignal): Promise<boolean> {
+    if (paso || !tarea) return false;
     publicarAviso(null);
     const pasos: AccionCliente[] = accion === "bloquear" ? ["desplegar", "fondear"] : ["marcar", "aprobar", "liberar"];
     let resultado: Awaited<ReturnType<typeof accionDemo>> | null = null;
     try {
       for (const actual of pasos) {
-        if (senal.aborted) return;
+        if (senal.aborted) return false;
         setPaso(actual);
         await new Promise((listo) => setTimeout(listo, pausaPasoDemo()));
       }
-      if (senal.aborted) return;
+      if (senal.aborted) return false;
       resultado = await accionDemo(tareaId, accion);
       if (!resultado.ok) {
         publicarAviso(resultado.aviso);
-        return;
+        return false;
       }
       if (resultado.contrato) {
         fondeoForzado.current = resultado.contrato;
         setContrato(resultado.contrato);
         setFondeado(true);
       }
+      return true;
     } finally {
       setPaso(null);
       if (resultado?.ok) {
@@ -391,15 +399,16 @@ export function Revision({
     }
   }
 
-  async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal) {
-    if (paso || !tarea) return;
+  /** True when the steps went through (or the network already held the budget). */
+  async function correr(acciones: readonly AccionCliente[], senal?: AbortSignal): Promise<boolean> {
+    if (paso || !tarea) return false;
     if (!wallet) {
       publicarAviso(AVISO_SIN_CUENTA_FIRMA);
-      return;
+      return false;
     }
     if (acciones[0] !== "desplegar" && !contrato) {
       publicarAviso("Lock the budget before you pay.");
-      return;
+      return false;
     }
     publicarAviso(null);
     setFirmando(acciones);
@@ -407,6 +416,7 @@ export function Revision({
     let pago: PagoFirmado | null = null;
     let contratoParcial: string | null = null;
     let yaEnRed = false;
+    let exito = false;
     try {
       pago = await firmarPasos(acciones, tareaId, {
         ...(firmar ? { firmar } : {}),
@@ -460,6 +470,7 @@ export function Revision({
       if (!yaEnRed && !pago && contratoParcial && acciones.includes("fondear")) setFondeado(false);
       const fresco = await cargarDetalleOrganizador(tareaId);
       const contratoConocido = fresco?.contratoEscrow ?? pago?.contrato ?? contratoParcial;
+      exito = Boolean(pago) || yaEnRed;
       if (contratoConocido) setContrato(contratoConocido);
       if (!yaEnRed && !pago && acciones.includes("fondear") && contratoConocido) setFondeado(false);
       if (fresco) {
@@ -475,6 +486,7 @@ export function Revision({
         });
       }
     }
+    return exito;
   }
 
   if (tarea === undefined) {
@@ -571,7 +583,9 @@ export function Revision({
         irreversible: true,
         confirmar: t("confirmar.payAction", { monto: visible }),
         progreso: progresoDe(pasosDesde(reanudar)),
-        onConfirmar: (senal: AbortSignal) => (demoReal ? correrDemo("pagar", senal) : correr(pasosDesde(reanudar), senal)),
+        onConfirmar: async (senal: AbortSignal) => {
+          await (demoReal ? correrDemo("pagar", senal) : correr(pasosDesde(reanudar), senal));
+        },
       };
     }
     // The lock dialog always names the amount. A reimbursement without a confirmed amount shows "Up to" the cap.
@@ -584,8 +598,14 @@ export function Revision({
       ),
       confirmar: t("confirmar.lockAction", { monto: bloqueo?.accion ?? "" }),
       progreso: progresoDe(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"]),
-      onConfirmar: (senal: AbortSignal) =>
-        demoReal && clave === "bloquear" ? correrDemo("bloquear", senal) : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal),
+      onConfirmar: async (senal: AbortSignal) => {
+        const encadenar = aprobarTras.current;
+        aprobarTras.current = false;
+        const listo = await (demoReal && clave === "bloquear"
+          ? correrDemo("bloquear", senal)
+          : correr(clave === "bloquear" ? ["desplegar", "fondear"] : ["fondear"], senal));
+        abrirPago.current = listo && encadenar && !senal.aborted;
+      },
     };
   };
   const etiquetaPaso = (accion: AccionCliente) =>
@@ -599,28 +619,98 @@ export function Revision({
             ? t("pago.approving")
             : t("pago.paying");
 
+  const enRevision = tarea.estado === "en revisión";
+  const bloqueado = Boolean(contrato) && fondeado === true;
+  // One primary per screen: pay when the budget is locked, otherwise lock (and approve right after, when evidence waits).
+  const primaria: "pagar" | "fondear" | "bloquear" | null = botones.pagar
+    ? "pagar"
+    : botones.fondear
+      ? "fondear"
+      : puedeDesplegar || esperaConfirmacion
+        ? "bloquear"
+        : null;
+  const rotulo = rotuloPrincipalRevision({
+    enRevision,
+    desplegar: primaria === "bloquear",
+    fondear: primaria === "fondear",
+    pagar: primaria === "pagar",
+  });
+  const bloqueoInactivo =
+    primaria === "bloquear" ? !puedeDesplegar || esperaOtraFoto || Boolean(faltaSaldo) || faltaClave : primaria === "fondear" ? Boolean(faltaSaldo) || faltaClave : faltaClave;
+  const describePrimaria =
+    primaria === "bloquear"
+      ? describeBloqueo
+      : primaria === "fondear"
+        ? [faltaSaldo ? "bloqueo-saldo" : "", faltaClave ? "clave-navegador" : ""].filter(Boolean).join(" ")
+        : faltaClave
+          ? "clave-navegador"
+          : "";
+  pagoDisponible.current = botones.pagar;
+  const pulsarPrimaria = () => {
+    if (ocupado || !primaria || bloqueoInactivo) return;
+    // «Bloquear y aprobar»: after the lock signs, the payment dialog opens so the same decision finishes.
+    aprobarTras.current = primaria !== "pagar" && enRevision;
+    setConfirmacion({ clave: primaria, abierto: true });
+  };
+  const pasosLinea = pasosRevision({
+    evidencia: tarea.estado !== "pendiente",
+    bloqueado: bloqueado || tarea.estado === "pagado",
+    pagado: tarea.estado === "pagado",
+  });
+  const montoLinea = vistaMonto(tarea, idioma);
+  const nombreMiembro = textoVisible(tarea.miembro, idioma);
+  const subPasos = [
+    t("proyecto.pasoEvidencia"),
+    t("proyecto.pasoBloqueado"),
+    rotuloPasoPago(tarea.estado === "pagado", idioma),
+  ];
+  const detallesPasos = [
+    "",
+    bloqueado || tarea.estado === "pagado" ? t("proyecto.pasoEnStellar", { monto: montoLinea.linea }) : "",
+    nombreMiembro ? t("proyecto.pasoA", { nombre: nombreMiembro }) : "",
+  ];
+
   return (
     <main className="hyto-page">
-      <p className="hyto-crumb print:hidden">
-        <Link href={eventoId ? `/eventos/${eventoId}` : "/eventos"}>{t("nav.events")}</Link>
-        <span aria-hidden="true">/</span>
-        <span>{t("revision.crumb")}</span>
-      </p>
-      <header className="hyto-page-head">
-        <div>
+      <header>
+        <div className="pj-rtitulo">
           <h1 className="hyto-title">{textoVisible(tarea.titulo, idioma)}</h1>
-          <p className="hyto-sub">
-            {etiquetaTipo(tarea.tipo, idioma)} · {textoVisible(tarea.miembro, idioma)}
-          </p>
-          {tarea.perfilVoluntario ? <FichaVoluntario ficha={tarea.perfilVoluntario} /> : null}
-          <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
-        </div>
-        <div className="text-right">
           <MontoCabecera tarea={tarea} />
         </div>
+        <p className="pj-rsub">
+          <span>{etiquetaTipo(tarea.tipo, idioma)}</span>
+          <span aria-hidden="true">·</span>
+          <PersonaProyecto nombre={tarea.miembro} asignada={Boolean(tarea.miembro)} tam="sm" />
+        </p>
+        {tarea.perfilVoluntario ? <FichaVoluntario ficha={tarea.perfilVoluntario} /> : null}
+        <IndicadorActualizado activo={real && Boolean(eventoId)} visible={reciente} />
       </header>
       {sesionVencida ? <AvisoSesion /> : null}
-      <div className="hyto-review">
+      {real ? (
+        <ol className="hyto-tarjeta pj-pasos" aria-label={t("proyecto.pasos")}>
+          {pasosLinea.map((estado, indice) => (
+            <Fragment key={subPasos[indice]}>
+              {indice > 0 ? <li aria-hidden="true" className="pj-linea" data-hecha={estado === "hecho" ? "si" : "no"} /> : null}
+              <li className="pj-paso" data-estado={estado} aria-current={estado === "ahora" ? "step" : undefined}>
+                <span className="pj-punto" aria-hidden="true">
+                  {estado === "hecho" ? <Icono nombre="check" tam={14} /> : indice + 1}
+                </span>
+                <span>
+                  <b>{subPasos[indice]}</b>
+                  {detallesPasos[indice] ? <small>{detallesPasos[indice]}</small> : null}
+                  {indice === 2 ? null : (
+                    <span className="sr-only">
+                      {" · "}
+                      {estado === "hecho" ? t("comunes.done") : estado === "ahora" ? t("comunes.now") : t("comunes.later")}
+                    </span>
+                  )}
+                </span>
+              </li>
+            </Fragment>
+          ))}
+        </ol>
+      ) : null}
+      <div className="pj-rgrid">
         <figure className="hyto-photo">
           {foto && esTipoDocumento(tarea.tipoArchivo) ? (
             <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-8 text-center">
@@ -646,51 +736,54 @@ export function Revision({
           )}
         </figure>
 
-        <section className="hyto-panel">
+        <section className="hyto-panel pj-rpanel">
           {tarea.condicion ? (
             <>
-              <p className="text-sm font-medium">{t("bandeja.photoMust")}</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p>
+              <p className="pj-lab">{t("proyecto.loPedido")}</p>
+              <p className="pj-pedido">{textoVisible(tarea.condicion, idioma)}</p>
+              <div className="pj-hr" aria-hidden="true" />
             </>
           ) : null}
-          {real ? (
-            <ol className="mt-5 space-y-2 text-sm" aria-label={t("revision.steps")}>
-              {pasosDePago({
-                tieneVeredicto: Boolean(tarea.veredicto),
-                revisionFallida: tarea.origen === "error",
-                presupuestoListo: Boolean(contrato) && fondeado === true,
-                pagado: tarea.estado === "pagado",
-              }, idioma).map((item, indice) => (
-                <li key={item.nombre} className={item.estado === "now" ? "font-semibold" : "text-[var(--suave)]"}>
-                  {item.estado === "done" ? t("comunes.done") : item.estado === "now" ? t("comunes.now") : t("comunes.later")} · {indice + 1}. {item.nombre}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="mt-5 text-sm leading-6 text-[var(--suave)]">{t("revision.sampleReview")}</p>
-          )}
+          {!real ? <p className="mb-4 text-sm leading-6 text-[var(--suave)]">{t("revision.sampleReview")}</p> : null}
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
-            {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} /> : null}
-            {origen ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
+          <div className="pj-mileblk">
+            {tarea.veredicto ? (
+              <p className="mb-3 flex items-center gap-2.5 text-sm font-medium">
+                <span className="pj-mm" aria-hidden="true">
+                  <Icono nombre="spark" tam={14} />
+                </span>
+                {t("proyecto.recomendacionMile")}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-3">
+              {tarea.veredicto ? <PastillaVeredicto veredicto={tarea.veredicto} nota={tarea.nota} /> : <PastillaEstado estado={tarea.estado} />}
+              {tarea.veredicto ? <MotivoNota etiquetas={tarea.etiquetas} condicion={tarea.condicion} /> : null}
+              {/* The title already says «Recomendación de Mile»; only a failed review names its origin. */}
+              {origen && tarea.origen === "error" ? <span className="text-sm text-[var(--suave)]">{origen}</span> : null}
+            </div>
+            <EtiquetasNota etiquetas={tarea.etiquetas} conMotivo={Boolean(tarea.veredicto)} vozMile condicion={tarea.condicion} />
+            {notaManual(tarea.codigo) ? (
+              <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
+            ) : tarea.origen === "error" ? (
+              <p className="mt-4 text-sm font-medium text-[var(--peligro)]">{t("revision.mileNo")}</p>
+            ) : null}
+            {notaCopia(tarea.motivoCopia) ? (
+              <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "", idioma)}</p>
+            ) : null}
+            {tarea.origen === "error" && tarea.frase ? (
+              <p role="alert" className="mt-2 text-base leading-7">
+                {textoVisible(tarea.frase, idioma)}
+              </p>
+            ) : tarea.frase ? (
+              <p className="mt-3 text-[15px] leading-6">{textoVisible(tarea.frase, idioma)}</p>
+            ) : null}
+            {tarea.veredicto || tarea.frase ? (
+              <p className="pj-mnota">
+                <Icono nombre="info" tam={14} />
+                {t("proyecto.mileDecide")}
+              </p>
+            ) : null}
           </div>
-          <EtiquetasNota etiquetas={tarea.etiquetas} conMotivo={Boolean(tarea.veredicto)} />
-          {notaManual(tarea.codigo) ? (
-            <p className="mt-4 text-sm font-medium">{claro(notaManual(tarea.codigo) ?? "")}</p>
-          ) : tarea.origen === "error" ? (
-            <p className="mt-4 text-sm font-medium text-[var(--peligro)]">{t("revision.mileNo")}</p>
-          ) : null}
-          {notaCopia(tarea.motivoCopia) ? (
-            <p className="mt-4 text-sm font-medium">{textoVisible(notaCopia(tarea.motivoCopia) ?? "", idioma)}</p>
-          ) : null}
-          {tarea.origen === "error" && tarea.frase ? (
-            <p role="alert" className="mt-2 text-base leading-7">
-              {textoVisible(tarea.frase, idioma)}
-            </p>
-          ) : tarea.frase ? (
-            <p className="mt-4 text-base leading-7">{textoVisible(tarea.frase, idioma)}</p>
-          ) : null}
           {tarea.origen === "error" && real && tarea.estado !== "pagado" && !contrato ? (
             <AccionesRevisionFallida tareaId={tarea.id} onDetalle={aplicarDetalle} />
           ) : null}
@@ -784,18 +877,68 @@ export function Revision({
           ) : null}
 
           <div className="hyto-actions">
-            {demoReal && (botones.desplegar || botones.pagar) ? (
-              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.demoNote")}</p>
-            ) : null}
             {botones.aprobarLocal ? (
               <BotonPrincipal type="button" onClick={() => decidir("pagado")}>
                 {t("revision.approve")}
               </BotonPrincipal>
             ) : null}
 
+            {!demoReal && primaria ? (
+              <ClaveNavegador id="clave-navegador" firma={firmaNavegador} contexto={primaria === "pagar" ? "pago" : "bloqueo"} />
+            ) : null}
+
+            {primaria === "bloquear" ? (
+              <>
+                <p className="text-sm leading-6 text-[var(--suave)]">
+                  {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
+                </p>
+                {esperaOtraFoto && !pidioOtra ? (
+                  <p className="text-sm leading-6 text-[var(--suave)]">
+                    {t("revision.lockWaitingPhoto")}
+                  </p>
+                ) : null}
+                {esperaConfirmacion && !puedeDesplegar ? (
+                  <p id="bloqueo-monto" className="text-sm leading-6 text-[var(--suave)]">
+                    {t("revision.lockNeedsAmount")}
+                  </p>
+                ) : null}
+              </>
+            ) : primaria === "fondear" ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
+            ) : primaria === "pagar" && fondeado === true ? (
+              <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
+            ) : null}
+            {primaria !== "pagar" && primaria && faltaSaldo ? (
+              <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
+                {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
+              </p>
+            ) : null}
+
+            {primaria && rotulo ? (
+              <BotonPrincipal
+                type="button"
+                disabled={ocupado || bloqueoInactivo}
+                aria-busy={ocupado}
+                aria-describedby={describePrimaria || undefined}
+                onClick={pulsarPrimaria}
+              >
+                {paso ? (
+                  etiquetaPaso(paso)
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    {primaria !== "pagar" ? <Icono nombre="lock" tam={16} /> : null}
+                    {t(rotulo)}
+                  </span>
+                )}
+              </BotonPrincipal>
+            ) : null}
+
             {botones.pedirOtra ? (
               <button type="button" onClick={abrirPedir} className="hyto-btn-line">
-                {t("revision.askAnother")}
+                <span className="inline-flex items-center gap-2">
+                  <Icono nombre="refresh" tam={16} />
+                  {t("revision.askAnother")}
+                </span>
               </button>
             ) : null}
 
@@ -843,95 +986,25 @@ export function Revision({
               </p>
             ) : null}
 
-            {!demoReal && (puedeDesplegar || esperaConfirmacion || botones.fondear || botones.pagar) ? (
-              <ClaveNavegador
-                id="clave-navegador"
-                firma={firmaNavegador}
-                contexto={botones.pagar && !puedeDesplegar && !botones.fondear ? "pago" : "bloqueo"}
-              />
-            ) : null}
-
-            {puedeDesplegar || esperaConfirmacion ? (
-              <>
-                <p className="text-sm leading-6 text-[var(--suave)]">
-                  {t("revision.setsAside", { monto: montoQueAparta(tarea, idioma) })}
-                </p>
-                {esperaOtraFoto && !pidioOtra ? (
-                  <p className="text-sm leading-6 text-[var(--suave)]">
-                    {t("revision.lockWaitingPhoto")}
-                  </p>
-                ) : null}
-                {esperaConfirmacion && !puedeDesplegar ? (
-                  <p id="bloqueo-monto" className="text-sm leading-6 text-[var(--suave)]">
-                    {t("revision.lockNeedsAmount")}
-                  </p>
-                ) : null}
-                {faltaSaldo ? (
-                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
-                  </p>
-                ) : null}
-                <BotonPrincipal
-                  type="button"
-                  disabled={ocupado || !puedeDesplegar || esperaOtraFoto || Boolean(faltaSaldo) || faltaClave}
-                  aria-busy={ocupado}
-                  aria-describedby={describeBloqueo || undefined}
-                  onClick={() => {
-                    if (ocupado || !puedeDesplegar || esperaOtraFoto || faltaSaldo || faltaClave) return;
-                    setConfirmacion({ clave: "bloquear", abierto: true });
-                  }}
-                >
-                  {paso === "desplegar" || paso === "fondear" ? etiquetaPaso(paso) : t("pago.lockBudget")}
-                </BotonPrincipal>
-              </>
-            ) : null}
-            {botones.fondear ? (
-              <>
-                <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.oneMore")}</p>
-                {faltaSaldo ? (
-                  <p id="bloqueo-saldo" role="alert" className="text-sm leading-6 text-[var(--suave)]">
-                    {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
-                  </p>
-                ) : null}
-                <BotonPrincipal
-                  type="button"
-                  disabled={ocupado || Boolean(faltaSaldo) || faltaClave}
-                  aria-busy={ocupado}
-                  aria-describedby={[faltaSaldo ? "bloqueo-saldo" : "", faltaClave ? "clave-navegador" : ""].filter(Boolean).join(" ") || undefined}
-                  onClick={() => {
-                    if (ocupado || faltaSaldo || faltaClave) return;
-                    setConfirmacion({ clave: "fondear", abierto: true });
-                  }}
-                >
-                  {paso === "fondear" ? etiquetaPaso("fondear") : t("pago.finishLocking")}
-                </BotonPrincipal>
-              </>
-            ) : null}
-            {botones.pagar ? (
-              <>
-                {fondeado === true ? (
-                  <p className="text-sm leading-6 text-[var(--suave)]">{t("revision.secured", { monto: montoAsegurado(tarea, idioma) })}</p>
-                ) : null}
-                <BotonPrincipal
-                  type="button"
-                  disabled={ocupado || faltaClave}
-                  aria-busy={ocupado}
-                  aria-describedby={faltaClave ? "clave-navegador" : undefined}
-                  onClick={() => {
-                    if (ocupado || faltaClave) return;
-                    setConfirmacion({ clave: "pagar", abierto: true });
-                  }}
-                >
-                  {paso === "marcar" || paso === "aprobar" || paso === "liberar" ? etiquetaPaso(paso) : t("pago.approvePay")}
-                </BotonPrincipal>
-              </>
+            {demoReal && (botones.desplegar || botones.pagar) ? (
+              <p className="text-center text-sm leading-6 text-[var(--suave)]">{t("revision.demoNote")}</p>
             ) : null}
           </div>
 
           {confirmacion ? (
             <ConfirmDialog
               abierto={confirmacion.abierto}
-              onCerrar={() => setConfirmacion((actual) => (actual ? { ...actual, abierto: false } : actual))}
+              onCerrar={() => {
+                setConfirmacion((actual) => (actual ? { ...actual, abierto: false } : actual));
+                if (abrirPago.current) {
+                  abrirPago.current = false;
+                  // Opened on the next tick so the lock dialog finishes closing first.
+                  // Only when the screen really offers payment now (budget read as locked, task still in review).
+                  window.setTimeout(() => {
+                    if (pagoDisponible.current) setConfirmacion({ clave: "pagar", abierto: true });
+                  }, 0);
+                }
+              }}
               {...datosConfirmacion(confirmacion.clave)}
             />
           ) : null}
@@ -1235,15 +1308,13 @@ function MontoCabecera({
   if (vista.pago && vista.tope) {
     return (
       <>
-        <p className="text-sm text-[var(--suave)]">{t("revision.amountToPay")}</p>
-        <p className="hyto-amount text-2xl">{vista.pago}</p>
-        <p className="mt-1 text-sm text-[var(--suave)]">{t("eventos.limit", { amount: vista.tope })}</p>
+        <span className="pj-precio">
+          <span className="sr-only">{t("revision.amountToPay")} </span>
+          {vista.pago}
+        </span>
+        <span className="text-sm text-[var(--suave)]">{t("eventos.limit", { amount: vista.tope })}</span>
       </>
     );
   }
-  return (
-    <p className="hyto-amount text-2xl">
-      {vista.tope ? t("eventos.limit", { amount: vista.tope }) : vista.linea}
-    </p>
-  );
+  return <span className="pj-precio">{vista.tope ? t("eventos.limit", { amount: vista.tope }) : vista.linea}</span>;
 }

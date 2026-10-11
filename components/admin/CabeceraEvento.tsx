@@ -76,7 +76,7 @@ export function CabeceraEvento({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="hyto-title">{nombre}</h1>
         {organiza ? (
-          <button id="invitar" type="button" className="hyto-btn is-inline px-6" onClick={() => setAbierto((actual) => !actual)}>
+          <button id="invitar" type="button" className="hyto-btn-line is-inline px-5" onClick={() => setAbierto((actual) => !actual)}>
             {t("eventos.invite")}
           </button>
         ) : null}
@@ -131,7 +131,7 @@ export function CabeceraEvento({
         />
       ) : null}
       {organiza ? (
-        <div className="hyto-tabs mt-6 flex flex-wrap" role="tablist" aria-label={t("eventos.tablist")}>
+        <div className="hyto-tabs pj-tabs mt-6 flex flex-nowrap overflow-x-auto" role="tablist" aria-label={t("eventos.tablist")}>
           <Link href={`/eventos/${id}`} role="tab" aria-selected={pestana === "inbox"} aria-current={pestana === "inbox" ? "page" : undefined}>
             {t("eventos.inbox")}
           </Link>

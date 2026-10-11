@@ -8,7 +8,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
-import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { desmontar, montar, texto } from "../../tests/integracion/montar";
 
 test("la pastilla sin nota muestra la palabra y no un porcentaje", async () => {
   await montar(createElement(PastillaVeredicto, { veredicto: "cumplió", nota: null }));
@@ -178,23 +178,13 @@ test("la bandeja separa las notas 49, 50, 79 y 80", async () => {
     await montar(createElement(Bandeja, { proyectoId: "evt" }));
     await esperar(() => texto().includes("Forty nine") && texto().includes("Eighty"));
 
-    await pulsar("Insufficient");
-    assert.match(texto(), /Forty nine/);
-    assert.equal(texto().includes("Fifty"), false);
-    assert.equal(texto().includes("Seventy nine"), false);
-    assert.equal(texto().includes("Eighty"), false);
-
-    await pulsar("Partially completed");
-    assert.match(texto(), /Fifty/);
-    assert.match(texto(), /Seventy nine/);
-    assert.equal(texto().includes("Forty nine"), false);
-    assert.equal(texto().includes("Eighty"), false);
-
-    await pulsar("Completed");
-    assert.match(texto(), /Eighty/);
-    assert.equal(texto().includes("Forty nine"), false);
-    assert.equal(texto().includes("Fifty"), false);
-    assert.equal(texto().includes("Seventy nine"), false);
+    // Status chips replaced the verdict filters; each row still carries its own band.
+    const filaDe = (id: string) => document.querySelector(`a.pj-item[href="/revision/${id}"]`)?.textContent ?? "";
+    assert.match(filaDe("n49"), /Insufficient/);
+    assert.match(filaDe("n50"), /Partially completed/);
+    assert.match(filaDe("n79"), /Partially completed/);
+    assert.match(filaDe("n80"), /Completed/);
+    assert.equal(/Partially/.test(filaDe("n80")), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

@@ -251,9 +251,9 @@ test("la revisión clasifica y después manda solo las preguntas de la factura",
   assert.equal(resultado.veredicto, "cumplió");
   assert.equal(cuerpos.length, 2);
   assert.equal(cuerpos[0].model, "multilingual");
-  assert.match(cuerpos[0].state ?? "", /Condition: Photo of the meal receipt/);
+  assert.match(cuerpos[0].state ?? "", /Condition: Evidence of the meal receipt/);
   assert.deepEqual(Object.keys(cuerpos[0].questions ?? {}), ["c1"]);
-  assert.equal(cuerpos[1].questions?.g2?.instructions?.includes("Photo of the meal receipt"), true);
+  assert.equal(cuerpos[1].questions?.g2?.instructions?.includes("Evidence of the meal receipt"), true);
   assert.equal(Array.isArray(cuerpos[1].questions?.g5?.criteria), true);
   assert.equal((cuerpos[1].questions?.g5?.criteria as unknown[]).length, 3);
   assert.equal(cuerpos[1].questions?.t10, undefined);

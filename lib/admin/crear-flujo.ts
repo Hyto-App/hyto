@@ -136,7 +136,7 @@ export function ejemploCasaAlquiler(idioma: Idioma): { nombre: string; descripci
   };
 }
 
-/** «25» shows as «25,00» (es) or «25.00» (en). Anything not yet a valid amount shows as typed. */
+/** «25» shows as «25.00» in both languages. Anything not yet a valid amount shows as typed. */
 export function montoEnCampo(valor: string, idioma: Idioma): string {
   const monto = normalizarMonto(valor);
   if (!monto) return valor;

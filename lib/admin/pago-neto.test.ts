@@ -11,15 +11,15 @@ const pagada = { tipo: "trabajo" as const, monto: "20", tope: null, estado: "pag
 
 test("a paid task shows the net received, with the gross minus the fee below", () => {
   const es = pagoNetoTarea(pagada, "es");
-  assert.equal(es?.corto, "US$19,94");
-  assert.equal(es?.detalle, "US$20,00 menos comisión de US$0,06");
+  assert.equal(es?.corto, "US$19.94");
+  assert.equal(es?.detalle, "US$20.00 menos comisión de US$0.06");
   assert.equal(pagoNetoTarea({ ...pagada, estado: "pendiente" as never }, "es"), null);
 });
 
 test("the event paid total is the sum of nets, the same figure each task shows", () => {
   const total = pagadoNetoEvento([pagada, { ...pagada, estado: "pendiente" as never }], "es");
-  assert.equal(total.corto, "US$19,94");
-  assert.equal(total.detalle, "US$20,00 menos comisión de US$0,06");
+  assert.equal(total.corto, "US$19.94");
+  assert.equal(total.detalle, "US$20.00 menos comisión de US$0.06");
 });
 
 test("the volunteer's paid label reads «Pagado · recibió …»", () => {

@@ -375,8 +375,8 @@ test("el demo dice una sola frase y no habla de red ni billetera", () => {
 });
 
 test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y nadie dice que la galería no se acepta", () => {
-  assert.equal(texto("es", "evidencia.tomarFoto"), "Tomar foto");
-  assert.equal(texto("en", "evidencia.tomarFoto"), "Take photo");
+  assert.equal(texto("es", "evidencia.tomarFoto"), "Agregar evidencia");
+  assert.equal(texto("en", "evidencia.tomarFoto"), "Add evidence");
   assert.equal(texto("es", "evidencia.subirArchivo"), "Subir archivo");
   assert.equal(texto("en", "evidencia.subirArchivo"), "Upload file");
   assert.equal(texto("es", "evidencia.soltarTitulo"), "Arrastre su evidencia o elija un archivo");
@@ -450,7 +450,12 @@ test("la revisión del organizador pide y revisa «evidencia», no «foto»", ()
 test("la evidencia no se llama foto: pastilla de archivo y Mile no decide el pago", () => {
   assert.equal(texto("es", "evidencia.onePhoto"), "1 archivo");
   assert.equal(texto("en", "evidencia.onePhoto"), "1 file");
-  assert.equal(texto("es", "evidencia.tomarFoto"), "Tomar foto");
+  assert.equal(texto("es", "evidencia.tomarFoto"), "Agregar evidencia");
+  assert.equal(texto("en", "evidencia.tomarFoto"), "Add evidence");
+  assert.equal(texto("es", "evidencia.takePhoto"), "Agregar evidencia");
+  assert.equal(texto("en", "evidencia.takePhoto"), "Add evidence");
+  assert.doesNotMatch(texto("es", "evidencia.tomarFoto"), /foto/i);
+  assert.doesNotMatch(texto("en", "evidencia.tomarFoto"), /photo/i);
   assert.equal(texto("es", "evidencia.mileReadSame", { monto: "US$20,00" }), "Mile leyó US$20,00. Quien organiza lo revisa y aprueba.");
   assert.equal(texto("en", "evidencia.mileReadSame", { monto: "US$20.00" }), "Mile read US$20.00. The organizer reviews and approves it.");
 });

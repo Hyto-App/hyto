@@ -10,15 +10,16 @@ function localeDe(idioma: Idioma): string {
 }
 
 /**
- * The one amount format in the app: `US$26.45` in English, `US$26,45` in Spanish.
- * Always two decimals, a whole dollar included (`US$20.00`).
+ * The one amount format in the app: `US$26.45` in English and in Spanish.
+ * Always two decimals and a dot, a whole dollar included (`US$20.00`).
+ * Dates keep their locale. This is display only; the ledger is unchanged.
  */
-export function formatearMonto(monto: string, idioma: Idioma = "en"): string {
+export function formatearMonto(monto: string, _idioma: Idioma = "en"): string {
   const limpio = monto.trim();
   if (!limpio) return "";
   const valor = Number(limpio);
   if (!Number.isFinite(valor)) return monto;
-  return `US$${valor.toLocaleString(localeDe(idioma), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `US$${valor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** Same as `formatearMonto`. Kept for the balance notices that import it. */

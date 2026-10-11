@@ -45,7 +45,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
     assert.match(texto(), /Review failed/);
     assert.match(texto(), /Mile is unavailable/);
     assert.equal(
-      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget"),
+      [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock and approve"),
       true,
     );
     assert.equal(texto().includes("Mesa armada, banner de ZEEK de frente, tres cajas"), false);
@@ -67,7 +67,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
   }
 });
 
-test("el demo carga la revisión remota y marca el guion como muestra", async () => {
+test("el demo carga la revisión remota; el bloque de Mile no repite «Recomendación de ejemplo»", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -84,7 +84,9 @@ test("el demo carga la revisión remota y marca el guion como muestra", async ()
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Sample recommendation/);
+    // Angie: the block title already says «Mile's recommendation»; the sample origin is not repeated.
+    assert.equal(texto().includes("Sample recommendation"), false);
+    assert.match(texto(), /Mile's recommendation/);
     assert.match(texto(), /100% · Completed/);
     assert.match(texto(), /Table set up, ZEEK banner facing forward/);
     assert.equal(texto().includes("Retry review"), false);
@@ -214,18 +216,18 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
 
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Lock budget"));
+    await esperar(() => rotulo("Lock and approve"));
     const lecturasAntes = lecturas;
-    await pulsar("Lock budget");
+    await pulsar("Lock and approve");
     await confirmarDialogo();
-    await esperar(() => rotulo("Finish locking") && !rotulo("Lock budget") && texto().includes("That step did not finish."));
+    await esperar(() => rotulo("Lock and approve") && texto().includes("One more confirmation locks the money") && texto().includes("That step did not finish."));
     assert.match(texto(), /Budget not locked/);
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("No USDC left the escrow."), false);
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
-    await pulsar("Finish locking");
+    await pulsar("Lock and approve");
     await confirmarDialogo();
     await esperar(() => firmas.filter((item) => item.url === "/api/firma/enviar" && item.body.accion === "fondear").length === 2);
     const reintento = firmas.filter((item) => item.url === "/api/firma" && item.body.accion === "fondear").at(-1);
@@ -248,7 +250,7 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     tipo: "reembolso",
     monto: "15",
     tope: "15",
-    condicion: "Photo of the meal receipt",
+    condicion: "Evidence of the meal receipt",
     miembroId: "voluntario-1",
     miembro: "Volunteer 1",
     estado: "en revisión",
@@ -280,10 +282,10 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     assert.match(texto(), /Amount to pay/);
     assert.match(texto(), /Limit US\$15\.00\. Confirm this amount before locking the budget\./);
     assert.equal(texto().includes("deploy"), false);
-    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    const bloqueado = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock and approve"));
     assert.ok(bloqueado instanceof HTMLButtonElement);
     assert.equal(bloqueado.disabled, true);
-    assert.match(texto(), /Confirm the amount before Lock budget can be used/);
+    assert.match(texto(), /Confirm the amount before you can lock the budget/);
     assert.equal(bloqueado.getAttribute("aria-describedby"), "bloqueo-monto");
     await escribir("#monto-confirmado", "12.40");
     await pulsar("Confirm amount");
@@ -292,11 +294,11 @@ test("un reembolso pide confirmar el monto antes de desplegar", async () => {
     });
     const post = llamadas.find((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/comida/monto");
     assert.equal(post?.body, JSON.stringify({ monto: "12.40" }));
-    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock budget"));
+    const listo = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Lock and approve"));
     assert.ok(listo instanceof HTMLButtonElement);
     assert.equal(listo.disabled, false);
     assert.equal(listo.getAttribute("aria-describedby"), null);
-    assert.equal(/Confirm the amount before Lock budget can be used/.test(texto()), false);
+    assert.equal(/Confirm the amount before you can lock the budget/.test(texto()), false);
     assert.equal(document.querySelector("#monto-confirmado"), null);
     assert.match(texto(), /Amount to pay/);
     assert.match(texto(), /US\$12\.40/);
@@ -322,8 +324,8 @@ test("sin cuenta para firmar, Lock budget no dice que el ingreso venció y no ll
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Lock budget"));
-    await pulsar("Lock budget");
+    await esperar(() => rotulo("Lock and approve"));
+    await pulsar("Lock and approve");
     await confirmarDialogo();
     await esperar(() => texto().includes("no account to sign with"));
     assert.match(texto(), /Sign in again on this site/);
@@ -352,8 +354,8 @@ test("lock budget shows the payout error and does not claim USDC left an escrow"
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand", firmar: async () => "SIGNED" }));
-    await esperar(() => rotulo("Lock budget"));
-    await pulsar("Lock budget");
+    await esperar(() => rotulo("Lock and approve"));
+    await pulsar("Lock and approve");
     await confirmarDialogo();
     await esperar(() => texto().includes("Budget not locked"));
     assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -524,7 +526,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
     tipo: "reembolso",
     monto: "15",
     tope: "15",
-    condicion: "Photo of the meal receipt",
+    condicion: "Evidence of the meal receipt",
     origen: "scout",
     veredicto: "parcial",
     nota: 78,
@@ -592,7 +594,8 @@ test("al recargar, el monto del recibo sigue en colones después de pedir otra f
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
     assert.match(texto(), /Impreso ₡6\.900,00, convertido a 505 CRC por dólar\./);
-    assert.equal(texto().includes("US$13.66"), false);
+    assert.match(texto(), /Monto a pagar US\$13\.66/);
+    assert.equal(monto?.textContent?.includes("US$"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -664,7 +667,7 @@ test("pedir otra foto sin red muestra el error y no cambia la tarea", async () =
     assert.match(texto(), /Half of the booth is set up/);
     assert.equal(texto().includes("Asked for other evidence. The request was sent"), false);
     assert.equal(texto().includes("What's missing?"), true);
-    assert.equal(rotulo("Lock budget") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget" && !(boton as HTMLButtonElement).disabled), true);
+    assert.equal(rotulo("Lock and approve") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock and approve" && !(boton as HTMLButtonElement).disabled), true);
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
@@ -823,10 +826,10 @@ test("the lock sentence and the dialog use the confirmed amount, not the cap", a
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "comida" }));
-    await esperar(() => rotulo("Lock budget"));
+    await esperar(() => rotulo("Lock and approve"));
     assert.match(texto(), /This sets aside US\$0\.22/);
     assert.equal(/This sets aside Up to/.test(texto()), false);
-    await pulsar("Lock budget");
+    await pulsar("Lock and approve");
     assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0.22");
   } finally {
     globalThis.fetch = anterior;
@@ -868,13 +871,13 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
   }) as typeof fetch;
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "comida" }) }));
-    await esperar(() => rotulo("Bloquear presupuesto"));
-    assert.match(texto(), /Esto aparta US\$0,22/);
+    await esperar(() => rotulo("Bloquear y aprobar"));
+    assert.match(texto(), /Esto aparta US\$0\.22 en Stellar para esta tarea\./);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
     assert.match(texto(), /Falta la fecha de la factura/);
-    await pulsar("Bloquear presupuesto");
-    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
+    await pulsar("Bloquear y aprobar");
+    assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0.22");
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -941,7 +944,7 @@ test("the review card shows the main reason next to the percentage and what the 
         tipo: "reembolso",
         monto: "15",
         tope: "15",
-        condicion: "Photo of the meal receipt",
+        condicion: "Evidence of the meal receipt",
         origen: "scout",
         veredicto: "parcial",
         nota: 78,
@@ -1050,8 +1053,8 @@ test("un escrow con fondos en la red no ofrece terminar de bloquear", async () =
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
     await esperar(() => texto().includes("Budget secured"));
-    assert.equal(rotulo("Finish locking"), false);
-    assert.equal(rotulo("Lock budget"), false);
+    assert.equal(rotulo("Lock and approve"), false);
+    assert.equal(rotulo("Lock and approve"), false);
     assert.equal(rotulo("Approve and pay"), true);
   } finally {
     globalThis.fetch = anterior;
@@ -1091,11 +1094,11 @@ test("si el fondeo ya está en la red, terminar de bloquear no pide otra firma",
         },
       }),
     );
-    await esperar(() => rotulo("Finish locking"));
-    await pulsar("Finish locking");
+    await esperar(() => rotulo("Lock and approve"));
+    await pulsar("Lock and approve");
     await confirmarDialogo();
     await esperar(() => texto().includes("Budget secured") && rotulo("Approve and pay"));
-    assert.equal(rotulo("Finish locking"), false);
+    assert.equal(rotulo("Lock and approve"), false);
     assert.equal(texto().includes("Budget not locked"), false);
     assert.equal(firmas, 0);
   } finally {
@@ -1137,8 +1140,8 @@ test("bloquear queda apagado cuando el saldo no alcanza y el aviso usa dos decim
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand", saldo: "1.30" }));
-    await esperar(() => rotulo("Lock budget"));
-    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock budget");
+    await esperar(() => rotulo("Lock and approve"));
+    const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock and approve");
     assert.equal(boton instanceof HTMLButtonElement && boton.disabled, true);
     const aviso = document.querySelector("#bloqueo-saldo");
     assert.match(aviso?.textContent ?? "", /US\$40\.60/);
@@ -1332,13 +1335,14 @@ test("en demo, bloquear y aprobar marcan Pagado sin firmar ni llamar a la red", 
         }),
       }),
     );
-    await esperar(() => rotulo("Lock budget") && texto().includes("Demo: practice payment"));
-    const bloquear = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock budget");
+    await esperar(() => rotulo("Lock and approve") && texto().includes("Demo: practice payment"));
+    const bloquear = [...document.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Lock and approve");
     assert.equal(bloquear instanceof HTMLButtonElement && bloquear.disabled, false);
-    await pulsar("Lock budget");
+    await pulsar("Lock and approve");
     await confirmarDialogo();
-    await esperar(() => rotulo("Approve and pay"));
-    await pulsar("Approve and pay");
+    // «Bloquear y aprobar»: once the lock lands, the pay dialog opens by itself; one more tap pays.
+    await esperar(() => rotulo("Approve and pay") && Boolean(document.querySelector("dialog")?.hasAttribute("open")));
+    assert.match(document.querySelector("dialog")?.textContent ?? "", /Approve and pay/);
     await confirmarDialogo();
     await esperar(() => texto().includes("Paid") && texto().includes("practice payment"));
     assert.equal(rotulo("Approve and pay"), false);
@@ -1382,3 +1386,40 @@ function json(body: unknown, status = 200): Response {
     headers: { "content-type": "application/json" },
   });
 }
+
+test("en español el bloque de Mile dice «Mile ve que…», «Coincide con lo pedido» sale una vez y «Terminado» va en su línea", async () => {
+  const anterior = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/tareas") return json({ tareas: [{ id: "stand", hashPago: null, contratoEscrow: null }] });
+    return json({
+      tarea: tarea({
+        origen: "guion",
+        veredicto: "cumplió",
+        nota: 100,
+        frase: "Mesa armada.",
+        etiquetas: [
+          { id: "matches", texto: "Matches the request", explicacion: "The answers say this is what was requested.", severidad: "good", preguntas: [] },
+          { id: "finished", texto: "Finished", explicacion: "The answers say the work is finished.", severidad: "good", preguntas: [] },
+        ],
+      }),
+      foto: null,
+      contratoEscrow: null,
+      wallet: "GORGANIZADOR",
+    });
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
+    await esperar(() => texto().includes("Mile ve que"));
+    assert.equal(texto().split("Coincide con lo pedido").length - 1, 1);
+    assert.match(texto(), /Mile ve que coincide con lo pedido\./);
+    assert.equal(texto().includes("Las respuestas dicen"), false);
+    assert.equal(texto().includes("Recomendación de ejemplo"), false);
+    const linea = [...document.querySelectorAll(".pj-mlineas li")].find((nodo) => nodo.textContent?.includes("Mile ve que el trabajo está terminado."));
+    assert.equal(linea?.querySelector(".hyto-pill")?.textContent, "Terminado");
+    assert.match(texto(), /Mile solo recomienda\. Usted decide\./);
+  } finally {
+    globalThis.fetch = anterior;
+    await desmontar();
+  }
+});

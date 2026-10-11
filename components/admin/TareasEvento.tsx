@@ -1,19 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { SugeridosAsignar } from "@/components/perfil/Sugeridos";
+import { Icono } from "@/components/admin/IconosProyecto";
+import { PersonaProyecto, useNombrePersona } from "@/components/admin/PersonaProyecto";
+import { esAvisoDispositivo } from "@/components/sesion/AvisoFirma";
+import { ClaveNavegador, sinClave, useFirmaNavegador, type RevisarFirma } from "@/components/sesion/ClaveNavegador";
+import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import type { Sugerido } from "@/lib/perfil/sugeridos";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import type { FichaVoluntario as Ficha } from "@/lib/perfil/reglas";
-import { detalleMontoTarea, lineaMontoTarea, textosSaldo } from "@/lib/integrante/formato";
+import {
+  empezarFirma,
+  estaBloqueada,
+  iniciarLote,
+  loteTerminado,
+  progresoLote,
+  reintentarTarea,
+  resumenLote,
+  siguientePaso,
+  sinBloquear,
+  terminarPaso,
+  type EstadoLote,
+  type FilaLote,
+} from "@/lib/admin/bloqueo-lote";
+import { accionDemo, leerFondeo } from "@/lib/admin/remoto";
+import { detalleMontoTarea, formatearMonto, textosSaldo } from "@/lib/integrante/formato";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
+import { AVISO_FIRMA, AVISO_PASSKEY, AVISO_SIN_CUENTA_FIRMA, ErrorFirmaCliente, firmarPasos, mensajeFirmaVisible } from "@/lib/escrow/firmarCliente";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
-import { nombreEnIdioma } from "@/lib/sesion/nombre";
-import { estadoConFoto, etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
-import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
+import { mensajeClaro } from "@/lib/ui/claro";
+import { esContratoDemo } from "@/lib/sesion/demo";
+import { estadoConFoto, etiquetaEstado, etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
+import type { DificultadTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
 export type FilaTareaEvento = {
   id: string;
@@ -30,7 +52,17 @@ export type FilaTareaEvento = {
   tieneFoto: boolean;
   montoConfirmado?: string | null;
   montoRevisado?: string | null;
+  /** The assigned person can be paid (a payout account on the task or on their own sign-in). */
+  cuentaCobro?: boolean;
+  /** Trustless Work contract already on the task. */
+  contrato?: string | null;
+  /** What a lock would set aside right now; null for a reimbursement with no confirmed amount. */
+  montoLote?: string | null;
+  /** The cap «Presupuesto sin bloquear» counts while the amount is unknown. */
+  topeLote?: string | null;
 };
+
+type Persona = { usuarioId: string; email: string; nombre?: string; ficha?: Ficha; cuentaCobro?: boolean };
 
 type Borrador = {
   titulo: string;
@@ -39,6 +71,10 @@ type Borrador = {
   tope: string;
   miembroId: string;
 };
+
+function pausaDemo(): number {
+  return typeof process !== "undefined" && process.env.NODE_TEST_CONTEXT ? 0 : 700;
+}
 
 function faltaDeBorrador(tarea: FilaTareaEvento, borrador: Borrador, saldo: string | null) {
   const subida = montoBloqueable(tarea, {
@@ -49,13 +85,7 @@ function faltaDeBorrador(tarea: FilaTareaEvento, borrador: Borrador, saldo: stri
   return faltaParaBloquear(saldo, subida);
 }
 
-function FichaAsignada({
-  miembros,
-  miembroId,
-}: {
-  miembros: { usuarioId: string; ficha?: Ficha }[];
-  miembroId: string;
-}) {
+function FichaAsignada({ miembros, miembroId }: { miembros: Persona[]; miembroId: string }) {
   const ficha = miembros.find((persona) => persona.usuarioId === miembroId)?.ficha;
   if (!ficha) return null;
   return <FichaVoluntario ficha={ficha} />;
@@ -65,26 +95,99 @@ export function TareasEvento({
   tareas,
   miembros,
   saldo = null,
+  wallet = null,
   proyectoId,
   sugeridos,
+  firmar,
+  revisarFirma,
 }: {
   tareas: FilaTareaEvento[];
-  miembros: { usuarioId: string; email: string; ficha?: Ficha }[];
+  miembros: Persona[];
   saldo?: string | null;
+  /** The organizer's session account, which signs each lock. */
+  wallet?: string | null;
   /** With HYTO_PERFIL_PUBLICO on: the suggested-people picker replaces the plain list. */
   proyectoId?: string;
   sugeridos?: Sugerido[];
+  /** Tests sign without Cavos. */
+  firmar?: (unsignedXdr: string) => Promise<string>;
+  revisarFirma?: RevisarFirma;
 }) {
   const t = useTexto();
   const claro = useClaro();
   const idioma = useIdioma();
+  const demo = useModoDemo();
+  const nombreDe = useNombrePersona();
   const [filas, setFilas] = useState(tareas);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [eligiendoId, setEligiendoId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [fondeos, setFondeos] = useState<Record<string, boolean | null>>({});
+  const [lote, setLote] = useState<EstadoLote | null>(null);
+  const [avisosFila, setAvisosFila] = useState<Record<string, string>>({});
+  const loteRef = useRef(lote);
+  loteRef.current = lote;
+  const montoServidor = useRef(new Map<string, number>());
   const conSugeridos = Boolean(sugeridos && proyectoId);
+  const firmaNavegador = useFirmaNavegador(!demo && Boolean(wallet) && !firmar, revisarFirma);
+  const faltaClave = sinClave(firmaNavegador);
+
+  // A contract with no known balance: read it once, so a deployed-but-unfunded task offers only the fund signature.
+  useEffect(() => {
+    let viva = true;
+    for (const fila of tareas) {
+      const contrato = fila.contrato ?? null;
+      if (!contrato || fila.estado === "pagado" || esContratoDemo(contrato)) continue;
+      void leerFondeo(contrato).then((valor) => {
+        if (viva) setFondeos((actual) => (fila.id in actual ? actual : { ...actual, [fila.id]: valor }));
+      });
+    }
+    return () => {
+      viva = false;
+    };
+  }, [tareas]);
+
+  // Close the ⋯ menu on Escape or a click outside it.
+  useEffect(() => {
+    if (!menuId) return;
+    function cerrar(evento: Event) {
+      if (evento instanceof KeyboardEvent && evento.key !== "Escape") return;
+      if (evento.type === "pointerdown" && evento.target instanceof Element && evento.target.closest(`[data-menu="${menuId}"]`)) return;
+      setMenuId(null);
+    }
+    document.addEventListener("keydown", cerrar);
+    document.addEventListener("pointerdown", cerrar);
+    return () => {
+      document.removeEventListener("keydown", cerrar);
+      document.removeEventListener("pointerdown", cerrar);
+    };
+  }, [menuId]);
+
+  const filasLote: FilaLote[] = filas.map((fila) => {
+    const contrato = fila.contrato ?? null;
+    return {
+      id: fila.id,
+      estado: fila.estado,
+      miembroId: fila.miembroId,
+      cuentaCobro: Boolean(fila.cuentaCobro),
+      contrato,
+      fondeado: contrato ? (esContratoDemo(contrato) ? true : (fondeos[fila.id] ?? null)) : null,
+      montoLote: fila.montoLote === undefined ? fila.monto : fila.montoLote,
+      topeLote: fila.topeLote ?? null,
+    };
+  });
+  const resumen = resumenLote(filasLote, demo);
+  const enCurso = lote !== null && !loteTerminado(lote);
+  const firmando = Boolean(lote?.firmando);
+  const progreso = progresoLote(lote);
+  const actualId = enCurso && lote ? lote.cola[lote.indice]?.id : null;
+  const montoListas = resumen.listas
+    .map((id) => filasLote.find((fila) => fila.id === id)?.montoLote)
+    .reduce((total, monto) => total + (Number(monto) || 0), 0);
+  const faltaSaldo = !demo && resumen.k > 0 ? faltaParaBloquear(saldo, montoListas.toFixed(2)) : null;
 
   async function asignar(tareaId: string, usuarioId: string) {
     setAviso(null);
@@ -98,12 +201,22 @@ export function TareasEvento({
       setAviso(cuerpo?.aviso ?? "Could not assign that task.");
       return false;
     }
-    setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, miembroId: usuarioId } : fila)));
+    const persona = miembros.find((item) => item.usuarioId === usuarioId);
+    setFilas((actuales) =>
+      actuales.map((fila) =>
+        fila.id === tareaId
+          ? // A new person brings their own payout account; the lock reads it again from the server.
+            { ...fila, miembroId: usuarioId, cuentaCobro: usuarioId ? (fila.miembroId === usuarioId ? fila.cuentaCobro : Boolean(persona?.cuentaCobro)) : false }
+          : fila,
+      ),
+    );
     return true;
   }
 
   function abrir(tarea: FilaTareaEvento) {
     setAviso(null);
+    setMenuId(null);
+    setEligiendoId(null);
     setEditandoId(tarea.id);
     setBorrador({
       titulo: tarea.titulo,
@@ -164,12 +277,107 @@ export function TareasEvento({
               monto: json.tarea!.monto,
               tope: json.tarea!.tope,
               miembroId: json.tarea!.miembroId,
+              cuentaCobro:
+                json.tarea!.miembroId === fila.miembroId
+                  ? fila.cuentaCobro
+                  : Boolean(miembros.find((item) => item.usuarioId === json.tarea!.miembroId)?.cuentaCobro),
+              ...(fila.tipo === "reembolso" ? { topeLote: json.tarea!.tope ?? json.tarea!.monto } : { montoLote: json.tarea!.monto }),
             }
           : fila,
       ),
     );
     setEditandoId(null);
     setBorrador(null);
+  }
+
+  /** One Cavos signature of the existing per-task lock: deploy, or fund an existing contract. */
+  async function firmarPaso(paso: NonNullable<ReturnType<typeof siguientePaso>>): Promise<string | null> {
+    const fila = filasLote.find((item) => item.id === paso.tareaId);
+    const monto = montoServidor.current.get(paso.tareaId) ?? (fila?.montoLote ? Number(fila.montoLote) : undefined);
+    const pago = await firmarPasos([paso.accion], paso.tareaId, {
+      ...(firmar ? { firmar } : {}),
+      extra: {
+        firmante: wallet ?? undefined,
+        ...(paso.contrato ? { contrato: paso.contrato } : {}),
+        ...(typeof monto === "number" && Number.isFinite(monto) ? { monto } : {}),
+      },
+    });
+    if (paso.accion === "desplegar" && typeof pago.monto === "number") montoServidor.current.set(paso.tareaId, pago.monto);
+    return pago.contrato;
+  }
+
+  function marcarFila(tareaId: string, cambio: { contrato?: string | null; fondeado?: boolean | null }) {
+    if (cambio.contrato) setFilas((actuales) => actuales.map((fila) => (fila.id === tareaId ? { ...fila, contrato: cambio.contrato } : fila)));
+    if (cambio.fondeado !== undefined) setFondeos((actual) => ({ ...actual, [tareaId]: cambio.fondeado ?? null }));
+  }
+
+  /** Every click signs exactly one step, so each Cavos window opens from that click. */
+  async function firmarSiguiente(base: EstadoLote | null = loteRef.current) {
+    if (firmando) return;
+    setAviso(null);
+    if (!demo && !wallet) {
+      setAviso(AVISO_SIN_CUENTA_FIRMA);
+      return;
+    }
+    const estado = base && !loteTerminado(base) ? base : iniciarLote(filasLote, resumen.listas);
+    const paso = siguientePaso(estado);
+    if (!paso) return;
+    if (demo) {
+      await firmarDemo(estado);
+      return;
+    }
+    setLote(empezarFirma(estado));
+    setAvisosFila((actual) => {
+      const resto = { ...actual };
+      delete resto[paso.tareaId];
+      return resto;
+    });
+    try {
+      const contrato = await firmarPaso(paso);
+      if (paso.accion === "desplegar") marcarFila(paso.tareaId, { contrato, fondeado: false });
+      else marcarFila(paso.tareaId, { contrato, fondeado: true });
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: true, contrato }) : actual));
+    } catch (error) {
+      const contrato = error instanceof ErrorFirmaCliente ? error.contrato : null;
+      if (contrato) marcarFila(paso.tareaId, { contrato, fondeado: false });
+      const mensaje = error instanceof ErrorFirmaCliente ? error.message : AVISO_FIRMA;
+      if (esAvisoDispositivo(mensaje) || mensaje === AVISO_PASSKEY) firmaNavegador.marcarSinClave(mensaje === AVISO_PASSKEY);
+      setAvisosFila((actual) => ({ ...actual, [paso.tareaId]: mensajeClaro(mensajeFirmaVisible(mensaje)) }));
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: false, contrato }) : actual));
+    }
+  }
+
+  /**
+   * Demo sessions have no wallet and no Cavos window, but the run reads the same: one click per signature,
+   * «Siguiente firma» between them. The task's last signature sets the practice lock.
+   */
+  async function firmarDemo(estado: EstadoLote) {
+    const tarea = estado.cola[estado.indice]!;
+    const ultimo = estado.paso === tarea.pasos.length - 1;
+    setLote(empezarFirma(estado));
+    await new Promise((listo) => setTimeout(listo, pausaDemo()));
+    if (!ultimo) {
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: true, contrato: null }) : actual));
+      return;
+    }
+    const resultado = await accionDemo(tarea.id, "bloquear");
+    if (resultado.ok) {
+      marcarFila(tarea.id, { contrato: resultado.contrato, fondeado: true });
+      setLote((actual) => (actual ? terminarPaso(actual, { ok: true, contrato: resultado.contrato }) : actual));
+    } else {
+      setAvisosFila((actual) => ({ ...actual, [tarea.id]: resultado.aviso }));
+      // The practice lock is one call: a failure starts that task over.
+      setLote((actual) => (actual ? terminarPaso({ ...actual, paso: 0 }, { ok: false, contrato: null }) : actual));
+    }
+  }
+
+  function reintentar(tareaId: string) {
+    const actual = loteRef.current;
+    if (!actual || firmando) return;
+    const siguiente = reintentarTarea(actual, tareaId);
+    setLote(siguiente);
+    // Signs right away only when that task is next; otherwise it waits its turn behind «Siguiente firma».
+    if (siguientePaso(siguiente)?.tareaId === tareaId) void firmarSiguiente(siguiente);
   }
 
   if (filas.length === 0) {
@@ -180,25 +388,272 @@ export function TareasEvento({
     );
   }
 
+  const total = filas.reduce((suma, fila) => suma + (Number(fila.tipo === "reembolso" ? (fila.tope ?? fila.monto) : fila.monto) || 0), 0);
+  // Mid-run the button stays lime: «Siguiente firma» between signatures, busy (not gray) while one is open.
+  const botonDeshabilitado = !enCurso && (faltaClave || resumen.k === 0 || Boolean(faltaSaldo));
+  const botonOcupado = firmando || (enCurso && faltaClave);
+  const rotuloBoton = enCurso
+    ? t("proyecto.siguienteFirma")
+    : t(resumen.n === 1 ? "proyecto.bloquearLoteUna" : "proyecto.bloquearLote", { k: resumen.k, n: resumen.n });
+
   return (
     <main className="hyto-page">
-      <ul className="grid gap-3">
+      {resumen.n > 0 || enCurso ? (
+        <section className="pj-card pj-lote" aria-labelledby="lote-titulo">
+          <span className="pj-lote-ic" aria-hidden="true">
+            <Icono nombre="lock" />
+          </span>
+          <div className="pj-lote-txt">
+            <p id="lote-titulo" className="pj-lote-t">
+              {enCurso ? t("proyecto.bloqueandoTitulo") : (() => {
+                const monto = formatearMonto(resumen.monto, idioma);
+                const frase = t(resumen.n === 1 ? "proyecto.sinBloquearUna" : "proyecto.sinBloquear", { monto: "\u0000", n: resumen.n });
+                const [antes, despues] = frase.split("\u0000");
+                return (
+                  <>
+                    {antes}
+                    <b>{monto}</b>
+                    {despues}
+                  </>
+                );
+              })()}
+            </p>
+            {progreso ? (
+              <>
+                <div
+                  className="pj-lote-barra"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progreso.pct}
+                  aria-labelledby="lote-titulo"
+                >
+                  <i style={{ width: `${Math.max(progreso.pct, 4)}%` }} />
+                </div>
+                <p className="pj-lote-prog" role="status" aria-live="polite">
+                  {t("proyecto.progresoLote", { i: progreso.i, n: progreso.n, f: progreso.f, g: progreso.g })}
+                </p>
+              </>
+            ) : (
+              <p className="pj-lote-s">
+                <Icono nombre="info" tam={14} />
+                {t("proyecto.notaStellar")}
+              </p>
+            )}
+            {faltaSaldo && !enCurso ? (
+              <p id="lote-saldo" role="alert" className="mt-2 text-sm text-[var(--suave)]">
+                {t("errores.saldoNoCubre", textosSaldo(faltaSaldo, idioma))}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="hyto-btn"
+            disabled={botonDeshabilitado}
+            aria-disabled={botonOcupado || undefined}
+            aria-busy={firmando}
+            aria-describedby={[faltaSaldo && !enCurso ? "lote-saldo" : "", faltaClave ? "clave-lote" : ""].filter(Boolean).join(" ") || undefined}
+            onClick={() => {
+              if (botonOcupado) return;
+              void firmarSiguiente();
+            }}
+          >
+            <Icono nombre="lock" />
+            {rotuloBoton}
+          </button>
+        </section>
+      ) : null}
+      {!demo && resumen.k > 0 ? <ClaveNavegador id="clave-lote" className="mt-3" firma={firmaNavegador} contexto="bloqueo" /> : null}
+
+      <div className="pj-thead" aria-hidden="true">
+        <span />
+        <span>{t("proyecto.colTarea")}</span>
+        <span>{t("proyecto.colTipo")}</span>
+        <span>{t("proyecto.colMonto")}</span>
+        <span>{t("proyecto.colPersona")}</span>
+        <span>{t("proyecto.colEstado")}</span>
+        <span />
+      </div>
+      <p className="pj-mlist-h">
+        <span>{t("proyecto.nTareas", { n: filas.length })}</span>
+        <span>{t("proyecto.totalMonto", { monto: formatearMonto(total.toFixed(2), idioma) })}</span>
+      </p>
+
+      <ul className="pj-tlista">
         {filas.map((tarea) => {
+          const filaLote = filasLote.find((item) => item.id === tarea.id)!;
           const editando = editandoId === tarea.id && borrador && !tarea.bloqueo;
           const faltaFila = editando && borrador ? faltaDeBorrador(tarea, borrador, saldo) : null;
+          const fallida = Boolean(lote?.fallidas[tarea.id]);
+          const pendienteBloqueo = sinBloquear(filaLote);
+          const sinPersona = pendienteBloqueo && !tarea.miembroId.trim();
+          const sinCuenta = !demo && pendienteBloqueo && !sinPersona && !tarea.cuentaCobro;
+          const bloqueada = estaBloqueada(filaLote);
+          const tono = fallida ? "naranja" : actualId === tarea.id ? "activa" : sinPersona ? "gris" : undefined;
+          const persona = miembros.find((item) => item.usuarioId === tarea.miembroId);
+          const nombre = persona?.nombre ?? sugeridos?.find((item) => item.usuarioId === tarea.miembroId)?.nombre ?? null;
+          const hasta = tarea.tipo === "reembolso" && !tarea.montoConfirmado;
+          const cifra = tarea.tipo === "reembolso" ? (tarea.montoConfirmado ?? tarea.tope ?? tarea.monto) : tarea.monto;
+          const detalle = detalleMontoTarea(tarea, idioma);
+          const estadoVisible = estadoConFoto(tarea.estado, tarea.tieneFoto);
+          const nota = fallida ? (
+            <button type="button" className="pj-reintentar" disabled={firmando} onClick={() => reintentar(tarea.id)}>
+              <Icono nombre="refresh" tam={14} />
+              {t("proyecto.reintentar")}
+            </button>
+          ) : sinPersona ? (
+            <span className="pj-tnota">
+              <Icono nombre="alert" tam={14} />
+              {t("proyecto.asigneAlguien")}
+            </span>
+          ) : sinCuenta ? (
+            <span className="pj-tnota">
+              <Icono nombre="alert" tam={14} />
+              {t("proyecto.sinCuentaCobro")}
+            </span>
+          ) : (
+            <span className="pj-tnota">
+              <Icono nombre={tarea.tieneFoto ? "checkC" : "cal"} tam={14} />
+              {t(tarea.tieneFoto ? "proyecto.yaEvidencia" : "proyecto.sinEvidencia")}
+            </span>
+          );
+          const montoNodo = (
+            <span className="pj-amt">
+              {hasta ? <small>{t("proyecto.hasta")}</small> : null}
+              {formatearMonto(cifra, idioma)}
+              {bloqueada ? (
+                <span className="pj-candado" role="img" aria-label={t("proyecto.bloqueada")} title={t("proyecto.bloqueada")}>
+                  <Icono nombre="lock" tam={14} />
+                </span>
+              ) : null}
+            </span>
+          );
+          const tipoNodo = (
+            <span className="pj-tipo" data-tipo={tarea.tipo}>
+              {etiquetaTipo(tarea.tipo, idioma)}
+            </span>
+          );
+          const estadoNodo = (
+            <span className="pj-st" data-estado={estadoVisible}>
+              {estadoVisible === "en revisión" ? t("proyecto.porRevisar") : etiquetaEstado(estadoVisible, idioma)}
+            </span>
+          );
+          const personaNodo = <PersonaProyecto nombre={nombre} asignada={Boolean(tarea.miembroId)} />;
           return (
-            <li key={tarea.id} className="hyto-card grid gap-4 p-5">
-              <div className="min-w-0">
-                <p className="text-lg font-semibold">{textoVisible(tarea.titulo, idioma)}</p>
-                <p className="mt-1 text-sm text-[var(--suave)]">
-                  {etiquetaEstado(estadoConFoto(tarea.estado, tarea.tieneFoto) as EstadoTarea, idioma)} · {lineaMontoTarea(tarea, idioma, (amount) => t("eventos.limit", { amount }))}
-                </p>
-                {detalleMontoTarea(tarea, idioma) ? <p className="mt-0.5 text-xs text-[var(--suave)]">{detalleMontoTarea(tarea, idioma)}</p> : null}
-                {!editando && tarea.condicion ? <p className="mt-2 text-sm text-[var(--suave)]">{textoVisible(tarea.condicion, idioma)}</p> : null}
+            <li key={tarea.id} className="pj-trow" data-fila={tono} data-tarea={tarea.id}>
+              <span className="pj-ticon" aria-hidden="true">
+                <Icono nombre={tarea.tipo === "reembolso" ? "receipt" : "broom"} />
+              </span>
+              <div className="pj-tc-titulo min-w-0">
+                <p className="pj-item-t">{textoVisible(tarea.titulo, idioma)}</p>
+                {nota}
+                {detalle ? <p className="text-xs text-[var(--suave)]">{detalle}</p> : null}
+                {fallida && avisosFila[tarea.id] ? <p className="pj-tnota is-naranja">{claro(avisosFila[tarea.id]!)}</p> : null}
               </div>
+              <div className="pj-tc-tipo">{tipoNodo}</div>
+              <div className="pj-tc-monto">{montoNodo}</div>
+              <div className="pj-tc-persona min-w-0">{personaNodo}</div>
+              <div className="pj-tc-estado">{estadoNodo}</div>
+              <div className="pj-tcampo-m is-mid" aria-hidden="true">
+                {tipoNodo}
+                {montoNodo}
+                {estadoNodo}
+              </div>
+              <div className="pj-tcampo-m is-bot">
+                {personaNodo}
+                {nota}
+              </div>
+              <div className="pj-tc-mas relative" data-menu={tarea.id}>
+                <button
+                  type="button"
+                  className="pj-mas"
+                  aria-haspopup="menu"
+                  aria-expanded={menuId === tarea.id}
+                  aria-label={t("proyecto.masAcciones", { titulo: textoVisible(tarea.titulo, idioma) })}
+                  onClick={() => setMenuId((actual) => (actual === tarea.id ? null : tarea.id))}
+                >
+                  <Icono nombre="dots" />
+                </button>
+                {menuId === tarea.id ? (
+                  <div className="pj-menu" role="menu">
+                    {tarea.bloqueo ? null : (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuId(null);
+                          setEditandoId(null);
+                          setEligiendoId(tarea.id);
+                        }}
+                      >
+                        <Icono nombre="swap" tam={16} />
+                        {tarea.miembroId ? t("sugeridos.cambiar") : t("sugeridos.asignar")}
+                      </button>
+                    )}
+                    {tarea.bloqueo ? null : (
+                      <button type="button" role="menuitem" onClick={() => abrir(tarea)}>
+                        <Icono nombre="edit" tam={16} />
+                        {t("eventos.edit")}
+                      </button>
+                    )}
+                    <Link href={`/revision/${tarea.id}`} role="menuitem" className="flex min-h-10 items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13.5px] hover:bg-[var(--superficie-2)]">
+                      <Icono nombre="chevR" tam={16} />
+                      {t("bandeja.openReview")}
+                    </Link>
+                    {tarea.bloqueo ? (
+                      <p className="pj-menu-nota">
+                        <Icono nombre="checkC" tam={16} />
+                        {t("proyecto.yaEvidencia")}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {eligiendoId === tarea.id && !tarea.bloqueo ? (
+                <div className="pj-panel-fila mt-3">
+                  {conSugeridos && sugeridos && proyectoId ? (
+                    <div className="hyto-card p-4">
+                      <SugeridosAsignar
+                        proyectoId={proyectoId}
+                        tarea={{ id: tarea.id, titulo: textoVisible(tarea.titulo, idioma) }}
+                        sugeridos={sugeridos}
+                        actualId={tarea.miembroId}
+                        onAsignar={async (usuarioId) => {
+                          if (await asignar(tarea.id, usuarioId)) setEligiendoId(null);
+                        }}
+                        onCerrar={() => setEligiendoId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <label className="block text-sm" htmlFor={`asignar-${tarea.id}`}>
+                      {t("eventos.assign")}
+                      <select
+                        id={`asignar-${tarea.id}`}
+                        className="hyto-input mt-2"
+                        value={tarea.miembroId}
+                        onChange={(evento) => {
+                          void asignar(tarea.id, evento.target.value).then((ok) => {
+                            if (ok) setEligiendoId(null);
+                          });
+                        }}
+                      >
+                        <option value="">{t("comunes.unassigned")}</option>
+                        {miembros.map((item) => (
+                          <option key={item.usuarioId} value={item.usuarioId}>
+                            {nombreDe(item.nombre)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
+                </div>
+              ) : null}
+
               {editando && borrador ? (
                 <form
-                  className="grid gap-4 sm:grid-cols-2"
+                  className="pj-panel-fila mt-3 grid gap-4 sm:grid-cols-2"
                   onSubmit={(evento) => {
                     evento.preventDefault();
                     void guardar(tarea);
@@ -266,15 +721,15 @@ export function TareasEvento({
                       onChange={(evento) => setBorrador({ ...borrador, miembroId: evento.target.value })}
                     >
                       <option value="">{t("comunes.unassigned")}</option>
-                      {miembros.map((persona) => (
-                        <option key={persona.usuarioId} value={persona.usuarioId}>
-                          {persona.email}
+                      {miembros.map((item) => (
+                        <option key={item.usuarioId} value={item.usuarioId}>
+                          {nombreDe(item.nombre)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <div className="hyto-acciones-fila flex flex-wrap gap-2 sm:col-span-2">
-                    <button type="submit" className="hyto-btn is-inline px-5" disabled={guardando || Boolean(faltaFila)}>
+                    <button type="submit" className="hyto-btn-line is-inline px-5" disabled={guardando || Boolean(faltaFila)}>
                       {t("eventos.save")}
                     </button>
                     <button
@@ -289,95 +744,12 @@ export function TareasEvento({
                     </button>
                   </div>
                 </form>
-              ) : (
-                <div>
-                  {conSugeridos && sugeridos && proyectoId ? (
-                    <div className="grid gap-3">
-                      <p className="text-sm">{t("eventos.assign")}</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {(() => {
-                          const persona = sugeridos.find((item) => item.usuarioId === tarea.miembroId);
-                          const miembro = miembros.find((item) => item.usuarioId === tarea.miembroId);
-                          if (!tarea.miembroId) return <span className="text-sm text-[var(--suave)]">{t("sugeridos.sinAsignar")}</span>;
-                          return (
-                            <span className="sg-chip">
-                              <span className="sg-mini" aria-hidden="true">
-                                {persona?.iniciales ?? "•"}
-                              </span>
-                              <span>{persona?.nombre ? nombreEnIdioma(persona.nombre, idioma) : (persona?.email ?? miembro?.email ?? tarea.miembroId)}</span>
-                            </span>
-                          );
-                        })()}
-                        {tarea.bloqueo ? null : (
-                          <button
-                            type="button"
-                            className="hyto-btn-line is-inline px-4"
-                            aria-expanded={eligiendoId === tarea.id}
-                            onClick={() => setEligiendoId((actual) => (actual === tarea.id ? null : tarea.id))}
-                          >
-                            {tarea.miembroId ? t("sugeridos.cambiar") : t("sugeridos.asignar")}
-                          </button>
-                        )}
-                      </div>
-                      {eligiendoId === tarea.id && !tarea.bloqueo ? (
-                        <div className="hyto-card p-4">
-                          <SugeridosAsignar
-                            proyectoId={proyectoId}
-                            tarea={{ id: tarea.id, titulo: textoVisible(tarea.titulo, idioma) }}
-                            sugeridos={sugeridos}
-                            actualId={tarea.miembroId}
-                            onAsignar={async (usuarioId) => {
-                              if (await asignar(tarea.id, usuarioId)) setEligiendoId(null);
-                            }}
-                            onCerrar={() => setEligiendoId(null)}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : (
-                  <label className="text-sm" htmlFor={`asignar-${tarea.id}`}>
-                    {t("eventos.assign")}
-                    <select
-                      id={`asignar-${tarea.id}`}
-                      className="hyto-input mt-2"
-                      value={tarea.miembroId}
-                      disabled={Boolean(tarea.bloqueo)}
-                      aria-describedby={tarea.bloqueo ? `bloqueo-${tarea.id}` : undefined}
-                      onChange={(evento) => void asignar(tarea.id, evento.target.value)}
-                    >
-                      <option value="">{t("comunes.unassigned")}</option>
-                      {miembros.map((persona) => (
-                        <option key={persona.usuarioId} value={persona.usuarioId}>
-                          {persona.email}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  )}
-                  <FichaAsignada miembros={miembros} miembroId={tarea.miembroId} />
-                  {tarea.bloqueo ? (
-                    <p id={`bloqueo-${tarea.id}`} className="mt-3 text-sm text-[var(--suave)]">
-                      {claro(tarea.bloqueo)}
-                    </p>
-                  ) : null}
-                  <div className="hyto-acciones-fila mt-3 flex flex-wrap gap-2">
-                    {tarea.estado === "pendiente" && !tarea.tieneFoto && !tarea.bloqueo ? (
-                      <Link href={`/revision/${tarea.id}`} className="hyto-btn is-inline px-5">
-                        {t("pago.lockBudget")}
-                      </Link>
-                    ) : (
-                      <Link href={`/revision/${tarea.id}`} className="hyto-btn-line is-inline px-5">
-                        {t("bandeja.openReview")}
-                      </Link>
-                    )}
-                    {tarea.bloqueo ? null : (
-                      <button type="button" className="hyto-btn-line is-inline px-5" onClick={() => abrir(tarea)}>
-                        {t("eventos.edit")}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              ) : null}
+              {tarea.bloqueo && (eligiendoId === tarea.id || editandoId === tarea.id) ? (
+                <p id={`bloqueo-${tarea.id}`} className="pj-panel-fila mt-3 text-sm text-[var(--suave)]">
+                  {claro(tarea.bloqueo)}
+                </p>
+              ) : null}
             </li>
           );
         })}

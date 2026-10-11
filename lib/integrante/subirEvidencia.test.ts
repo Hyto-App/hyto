@@ -82,7 +82,7 @@ async function jpegReciente(): Promise<File> {
   return new File([await jpegDePrueba()], "ahora.jpg", { type: "image/jpeg", lastModified: Date.now() });
 }
 
-test("Tomar foto abre la cámara en vivo y Subir archivo es un selector sin capture", async () => {
+test("Agregar evidencia abre la cámara en vivo y Subir archivo es un selector sin capture", async () => {
   limpiarPantalla();
   const pedidos: unknown[] = [];
   let clicks = 0;
@@ -111,7 +111,7 @@ test("Tomar foto abre la cámara en vivo y Subir archivo es un selector sin capt
   });
   try {
     await montarTarea();
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
     assert.match(texto(), /Upload file/);
     assert.match(texto(), /Drag your evidence here or choose a file/);
     assert.match(texto(), /Photo, invoice, PDF, or list/);
@@ -120,7 +120,7 @@ test("Tomar foto abre la cámara en vivo y Subir archivo es un selector sin capt
     assert.doesNotMatch(texto(), /gallery/i);
     assert.doesNotMatch(texto(), /Receipt|What you are sending/);
     assert.equal(document.querySelector('[role="tablist"]'), null);
-    const lima = boton("Take photo");
+    const lima = boton("Add evidence");
     assert.match(lima.className, /hyto-btn-grande/);
     assert.match(boton("Upload file").className, /hyto-evid-contorno/);
     assert.ok(document.querySelector(".hyto-evid-soltar"));
@@ -138,7 +138,7 @@ test("Tomar foto abre la cámara en vivo y Subir archivo es un selector sin capt
     assert.equal(pedidos.length, 1);
     assert.deepEqual(pedidos[0], { audio: false, video: { facingMode: { ideal: "environment" } } });
     assert.equal(document.querySelector('video[aria-label="Camera preview"]')?.tagName, "VIDEO");
-    assert.equal(boton("Take photo").textContent, "Take photo");
+    assert.equal(boton("Add evidence").textContent, "Add evidence");
   } finally {
     if (srcPrevio) Object.defineProperty(media, "srcObject", srcPrevio);
     media.play = playPrevio;
@@ -191,10 +191,10 @@ test("si la cámara falla, Subir archivo sigue disponible", async () => {
   try {
     await montarTarea();
     await act(async () => {
-      boton("Take photo").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      boton("Add evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Allow the camera and try again/);
-    assert.equal(boton("Take photo").disabled, false);
+    assert.equal(boton("Add evidence").disabled, false);
     assert.equal(boton("Upload file").disabled, false);
     assert.ok(inputSelector());
   } finally {
@@ -218,7 +218,7 @@ test("sin getUserMedia, la captura abre el input con capture y un archivo viejo 
     assert.equal(input.getAttribute("capture"), "environment");
     assert.equal(input.getAttribute("accept"), "image/jpeg");
     await act(async () => {
-      boton("Take photo").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      boton("Add evidence").dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.equal(clicks, 1);
 
@@ -532,7 +532,7 @@ for (const demo of [false, true]) {
   });
 }
 
-test("en español la pantalla dice Tomar foto, Subir archivo y la zona para soltar, en usted y sin prohibir la galería", async () => {
+test("en español la pantalla dice Agregar evidencia, Subir archivo y la zona para soltar, en usted y sin prohibir la galería", async () => {
   limpiarPantalla();
   definirCamara(async () => ({ getTracks: () => [{ stop() {} }] }) as unknown as MediaStream);
   const original = globalThis.fetch;
@@ -554,7 +554,7 @@ test("en español la pantalla dice Tomar foto, Subir archivo y la zona para solt
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.equal(boton("Tomar foto").textContent, "Tomar foto");
+    assert.equal(boton("Agregar evidencia").textContent, "Agregar evidencia");
     assert.equal(boton("Subir archivo").textContent, "Subir archivo");
     assert.match(texto(), /Arrastre su evidencia o elija un archivo/);
     assert.match(texto(), /Foto, factura, PDF o lista/);

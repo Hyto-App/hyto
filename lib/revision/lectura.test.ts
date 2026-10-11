@@ -22,7 +22,7 @@ const LITTLE_CAESARS = {
   faltantes: [],
 };
 
-function lectura(cambios: Record<string, unknown> = {}, pedido = "Photo of the meal receipt"): LecturaEvidencia {
+function lectura(cambios: Record<string, unknown> = {}, pedido = "Evidence of the meal receipt"): LecturaEvidencia {
   const leida = leerLectura({ ...LITTLE_CAESARS, ...cambios }, { pedido });
   assert.ok(leida);
   return leida;
@@ -142,8 +142,8 @@ test("leerDescripcion lee la forma estructurada y deja la vieja como estaba", ()
 });
 
 test("el pedido a Qwen lleva la condición, las once claves y prohíbe adivinar dólares", async () => {
-  const pedido = pedidoVision({ condicion: "Photo of the meal receipt", tipoTarea: "reembolso" }, {});
-  assert.match(pedido, /The organizer asked for: "Photo of the meal receipt"\./);
+  const pedido = pedidoVision({ condicion: "Evidence of the meal receipt", tipoTarea: "reembolso" }, {});
+  assert.match(pedido, /The organizer asked for: "Evidence of the meal receipt"\./);
   assert.match(pedido, /reimbursement task/);
   assert.match(pedido, /tipo, pais, moneda, monto_original, monto_usd, fecha, comercio, articulos, texto_completo, legible, faltantes/);
   assert.match(pedido, /Never guess USD/);
@@ -171,10 +171,10 @@ test("el pedido a Qwen lleva la condición, las once claves y prohíbe adivinar 
       return Response.json({ choices: [{ message: { content: JSON.stringify(LITTLE_CAESARS) } }] });
     },
     undefined,
-    { condicion: "Photo of the meal receipt", tipoTarea: "reembolso" },
+    { condicion: "Evidence of the meal receipt", tipoTarea: "reembolso" },
     {},
   );
-  assert.match(texto, /Photo of the meal receipt/);
+  assert.match(texto, /Evidence of the meal receipt/);
   assert.equal(tokens, 2048);
   assert.equal(descripcion.monto, "14.55");
 });

@@ -254,7 +254,7 @@ test("una tarea pendiente no muestra el porcentaje aunque la respuesta lo traiga
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ estado: "pendiente", nota: 64, veredicto: "parcial", frase: "SECRETO-LAYA" }));
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
     assert.equal(texto().includes("%"), false);
     assert.equal(texto().includes(FRASE_PAGO), false);
     assert.equal(texto().includes("SECRETO-LAYA"), false);
@@ -302,7 +302,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
     assert.equal(texto().includes("%"), false);
     const input = document.querySelector('input[type="file"]');
     assert.ok(input instanceof HTMLInputElement);
@@ -354,7 +354,7 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
     await act(async () => {
       [...document.querySelectorAll("button")].find((item) => item.textContent === "Send another piece of evidence")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
     assert.equal(texto().includes("Your evidence already reached the organizer"), false);
   } finally {
     globalThis.fetch = anterior;

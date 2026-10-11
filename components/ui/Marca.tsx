@@ -9,8 +9,7 @@ import {
   VIEWBOX_ISOTIPO,
   VIEWBOX_LOGO,
 } from "@/components/ui/marca/trazos";
-
-const TEMA_CLAVE = "hyto-tema";
+import { TEMA_CLAVE, temaInicial, type TemaNombre } from "@/lib/ui/tema";
 
 type PropsMarca = { className?: string; title?: string };
 
@@ -93,7 +92,7 @@ function letraDe(palabra: string): string {
   return palabra.match(/\p{L}/u)?.[0] ?? "";
 }
 
-function aplicarTema(tema: "dark" | "light") {
+function aplicarTema(tema: TemaNombre) {
   document.documentElement.dataset.theme = tema;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", tema === "dark" ? "#0E1024" : "#F5F6FA");
@@ -101,14 +100,18 @@ function aplicarTema(tema: "dark" | "light") {
 
 export function Tema() {
   const t = useTexto();
-  const [tema, setTema] = useState<"dark" | "light" | null>(null);
+  const [tema, setTema] = useState<TemaNombre | null>(null);
 
   useEffect(() => {
-    const guardado = window.localStorage.getItem(TEMA_CLAVE);
-    // Dark is the brand default. Light only when the person picked it.
-    const siguiente = guardado === "light" ? "light" : "dark";
-    aplicarTema(siguiente);
-    setTema(siguiente);
+    const media = window.matchMedia?.("(prefers-color-scheme: light)");
+    const aplicar = () => {
+      const siguiente = temaInicial(window.localStorage.getItem(TEMA_CLAVE), media?.matches === true);
+      aplicarTema(siguiente);
+      setTema(siguiente);
+    };
+    aplicar();
+    media?.addEventListener?.("change", aplicar);
+    return () => media?.removeEventListener?.("change", aplicar);
   }, []);
 
   function alternar() {

@@ -15,11 +15,15 @@ const FIJOS: Record<string, { es: string; en: string }> = {
 };
 
 /**
- * One line for the result card's strip: «Falta: el mantel; la hoja de registro.» Null when nothing is missing.
+ * One line for the result card's strip: «Falta: mantel; hoja de registro.» Null when nothing is missing.
  * Items come from tags that name what is missing. When the answers only could not confirm the task's items,
  * the line says «Falta confirmar: …». A tag without a list adds nothing.
  */
-export function textoFalta(etiquetas: readonly EtiquetaNota[] | null | undefined, idioma: Idioma): string | null {
+export function textoFalta(
+  etiquetas: readonly EtiquetaNota[] | null | undefined,
+  idioma: Idioma,
+  condicion?: string | null,
+): string | null {
   if (!etiquetas || etiquetas.length === 0) return null;
   const lengua = idioma === "es" ? "es" : "en";
   const faltan: string[] = [];
@@ -38,11 +42,30 @@ export function textoFalta(etiquetas: readonly EtiquetaNota[] | null | undefined
       agregar(faltan, fijo[lengua]);
       continue;
     }
-    const explicacion = presentarEtiqueta(etiqueta, idioma).explicacion;
+    const explicacion = presentarEtiqueta(etiqueta, idioma, condicion).explicacion;
     if (explicacion.startsWith(FALTA[lengua])) agregar(faltan, explicacion.slice(FALTA[lengua].length));
     else if (explicacion.startsWith(SIN_CONFIRMAR[lengua])) agregar(sinConfirmar, explicacion.slice(SIN_CONFIRMAR[lengua].length));
   }
   if (faltan.length > 0) return `${FALTA[lengua]}${faltan.join("; ")}.`;
   if (sinConfirmar.length > 0) return `${CABEZA_SIN_CONFIRMAR[lengua]}${sinConfirmar.join("; ")}.`;
   return null;
+}
+
+const LISTA = /^(?:Missing|Falta|Not confirmed|No se pudo confirmar): /;
+
+/**
+ * Tags already written into `textoFalta`. My tasks shows that one line and does not repeat
+ * the amount, the date, or the short missing list as their own chips.
+ */
+export function etiquetasSinLineaFalta(
+  etiquetas: readonly EtiquetaNota[] | null | undefined,
+  idioma: Idioma,
+  condicion?: string | null,
+): EtiquetaNota[] {
+  if (!etiquetas || etiquetas.length === 0) return [];
+  if (!textoFalta(etiquetas, idioma, condicion)) return [...etiquetas];
+  return etiquetas.filter((etiqueta) => {
+    if (etiqueta.id === "amount_missing" || etiqueta.id === "date_missing") return false;
+    return !LISTA.test(presentarEtiqueta(etiqueta, idioma, condicion).explicacion);
+  });
 }

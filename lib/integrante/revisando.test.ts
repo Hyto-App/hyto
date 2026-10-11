@@ -102,7 +102,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
     await act(async () => {
       reintentar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
     assert.doesNotMatch(texto(), /Mile could not finish/);
   } finally {
     Date.now = ahoraPrevio;

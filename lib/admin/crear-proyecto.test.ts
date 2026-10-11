@@ -266,11 +266,11 @@ test("en demo, Usar un ejemplo: Casa de alquiler llena cinco tareas, la última 
     assert.equal(titulos[0], "Limpiar y ordenar la habitación 2");
     const montos = [...document.querySelectorAll<HTMLInputElement>("[id^='monto-']")].map((campo) => campo.value);
     // Shown with two decimals, like every other amount on the screen.
-    assert.deepEqual(montos, ["25,00", "20,00", "15,00", "20,00", "40,00"]);
+    assert.deepEqual(montos, ["25.00", "20.00", "15.00", "20.00", "40.00"]);
     const tipos = [...document.querySelectorAll(".cp-tipos")].map((grupo) => grupo.querySelector("[aria-pressed='true']")?.textContent ?? "");
     assert.match(tipos[4] ?? "", /Reembolso/);
     assert.equal(tipos.slice(0, 4).every((tipo) => /Trabajo/.test(tipo)), true);
-    assert.match(document.querySelector(".cp-presupuesto")?.textContent ?? "", /US\$120,00/);
+    assert.match(document.querySelector(".cp-presupuesto")?.textContent ?? "", /US\$120\.00/);
     assert.match(document.querySelector(".cp-presupuesto")?.textContent ?? "", /5 tareas/);
     assert.doesNotMatch(texto(), /airbnb/i);
     await pulsar("Ver cómo queda");
@@ -317,7 +317,7 @@ test("Agregar otra tarea suma una tarjeta con clic y con toque", async () => {
 });
 
 test("el monto se ve con dos decimales y al editar muestra lo escrito", async () => {
-  assert.equal(montoEnCampo("25", "es"), "25,00");
+  assert.equal(montoEnCampo("25", "es"), "25.00");
   assert.equal(montoEnCampo("25", "en"), "25.00");
   assert.equal(montoEnCampo("12.5", "en"), "12.50");
   assert.equal(montoEnCampo("", "es"), "");
@@ -439,7 +439,7 @@ test("la barra del paso 3 es una sola línea: total y tareas a la izquierda, el 
     const hijos = [...(fila?.children ?? [])];
     assert.equal(hijos[0]?.classList.contains("cp-presupuesto"), true);
     assert.equal(hijos[1]?.tagName, "BUTTON");
-    assert.match(hijos[0]?.textContent ?? "", /^Total US\$85,00 · 1 tarea$/);
+    assert.match(hijos[0]?.textContent ?? "", /^Total US\$85\.00 · 1 tarea$/);
     // No breakdown and no balance in the bar; both are in the summary of the step.
     assert.equal(fila?.querySelector(".cp-filas, [data-saldo], [aria-expanded]"), null);
     assert.match(document.querySelector(".cp-resumen.is-columna")?.textContent ?? "", /Tareas de trabajo.*Su saldo/);

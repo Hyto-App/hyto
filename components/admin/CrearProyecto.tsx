@@ -544,7 +544,7 @@ function TarjetaTarea({
             inputMode="decimal"
             autoComplete="off"
             placeholder="0.00"
-            // While typing, the raw value; otherwise two decimals like the rest of the screen (25 → 25,00).
+            // While typing, the raw value; otherwise two decimals like the rest of the screen (25 → 25.00).
             value={editandoMonto ? fila.monto : montoEnCampo(fila.monto, idioma)}
             onFocus={() => setEditandoMonto(true)}
             onBlur={() => setEditandoMonto(false)}

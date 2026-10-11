@@ -90,7 +90,7 @@ test("un trabajo correcto suma 100 y el crédito parcial resta la mitad del peso
 test("t8 es neutro cuando la condición no pide un lugar", () => {
   assert.equal(condicionPideLugar("Hacer un ensayo"), false);
   assert.equal(condicionPideLugar("Write an essay"), false);
-  assert.equal(condicionPideLugar("Photo of the meal receipt"), false);
+  assert.equal(condicionPideLugar("Evidence of the meal receipt"), false);
   assert.equal(condicionPideLugar("Replace the banner"), false);
   assert.equal(condicionPideLugar("Banner visible and the table set up"), false);
   assert.equal(condicionPideLugar(""), false);

@@ -1,5 +1,6 @@
 import type { Idioma } from "@/lib/ui/idioma";
-import { PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
+import { fraseFaltante } from "./faltante-requisito";
+import { elementosPedidos, PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
 
 const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   cap_otra_incompleta: {
@@ -76,7 +77,7 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   },
   low_detail: {
     texto: "Poco detalle",
-    explicacion: "Dos o más respuestas no están claras o el modelo no estaba seguro, así que esta nota es menos segura.",
+    explicacion: "Dos o más respuestas no están claras o Mile no estaba seguro, así que esta nota es menos segura.",
   },
   finished: {
     texto: "Terminado",
@@ -115,9 +116,54 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
   },
 };
 
-/** Shows a stored English tag in the session language. Unknown text stays as stored. */
-export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): EtiquetaNota {
-  if (idioma !== "es") return etiqueta;
+function traducirLista(lista: string, idioma: Idioma, requisitos: readonly string[]): string {
+  const vistos = new Set<string>();
+  const salida: string[] = [];
+  for (const crudo of lista.replace(/[.;]+$/, "").split(/;\s*/)) {
+    const base = crudo.replace(/\s+/g, " ").trim().replace(/[.;]+$/, "");
+    if (!base) continue;
+    const item = fraseFaltante(base, idioma, requisitos);
+    const llave = item.toLowerCase();
+    if (!item || vistos.has(llave)) continue;
+    vistos.add(llave);
+    salida.push(item);
+  }
+  return salida.join("; ");
+}
+
+/** The missing-items list follows the reader's language. The prefix stays in that language too. */
+function traducirListas(etiqueta: EtiquetaNota, idioma: Idioma, condicion?: string | null): EtiquetaNota {
+  const requisitos = elementosPedidos(condicion);
+  const falta = idioma === "es" ? "Falta: " : PREFIJO_FALTA;
+  const duda = idioma === "es" ? "No se pudo confirmar: " : PREFIJO_SIN_CONFIRMAR;
+  const origenFalta = etiqueta.explicacion.startsWith(PREFIJO_FALTA)
+    ? PREFIJO_FALTA
+    : etiqueta.explicacion.startsWith("Falta: ")
+      ? "Falta: "
+      : null;
+  if (origenFalta) {
+    return { ...etiqueta, explicacion: `${falta}${traducirLista(etiqueta.explicacion.slice(origenFalta.length), idioma, requisitos)}.` };
+  }
+  const origenDuda = etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR)
+    ? PREFIJO_SIN_CONFIRMAR
+    : etiqueta.explicacion.startsWith("No se pudo confirmar: ")
+      ? "No se pudo confirmar: "
+      : null;
+  if (origenDuda) {
+    return { ...etiqueta, explicacion: `${duda}${traducirLista(etiqueta.explicacion.slice(origenDuda.length), idioma, requisitos)}.` };
+  }
+  return etiqueta;
+}
+
+/** Older notes still say «the model» or «el modelo». The screen names Mile. */
+function nombrarMile(etiqueta: EtiquetaNota): EtiquetaNota {
+  const explicacion = etiqueta.explicacion.replaceAll("the model was unsure", "Mile was unsure").replaceAll("el modelo", "Mile");
+  return explicacion === etiqueta.explicacion ? etiqueta : { ...etiqueta, explicacion };
+}
+
+/** Shows a stored English tag in the session language. A missing-item list uses the task requirements when `condicion` is set. */
+export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma, condicion?: string | null): EtiquetaNota {
+  if (idioma !== "es") return nombrarMile(traducirListas(etiqueta, "en", condicion));
   const par = POR_TEXTO[`${etiqueta.texto}|${etiqueta.explicacion}`];
   if (par) return { ...etiqueta, ...par };
   const moneda = /^No rate for (.+)$/.exec(etiqueta.texto);
@@ -150,17 +196,17 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
     etiqueta.id === "cap_otra" && etiqueta.texto === "Serious issue: it does not show what was requested"
       ? FIJAS.cap_otra_incompleta
       : FIJAS[etiqueta.id];
-  if (base && etiqueta.explicacion.startsWith(PREFIJO_FALTA)) {
-    return { ...etiqueta, texto: base.texto, explicacion: `Falta: ${etiqueta.explicacion.slice(PREFIJO_FALTA.length)}` };
-  }
-  if (base && etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR)) {
-    return {
-      ...etiqueta,
-      texto: base.texto,
-      explicacion: `No se pudo confirmar: ${etiqueta.explicacion.slice(PREFIJO_SIN_CONFIRMAR.length)}`,
-    };
+  if (
+    base &&
+    (etiqueta.explicacion.startsWith(PREFIJO_FALTA) ||
+      etiqueta.explicacion.startsWith("Falta: ") ||
+      etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR) ||
+      etiqueta.explicacion.startsWith("No se pudo confirmar: "))
+  ) {
+    const traducida = traducirListas(etiqueta, "es", condicion);
+    return { ...traducida, texto: base.texto };
   }
   const fija = base;
-  if (fija) return { ...etiqueta, ...fija };
-  return etiqueta;
+  if (fija) return nombrarMile({ ...etiqueta, ...fija });
+  return nombrarMile(etiqueta);
 }

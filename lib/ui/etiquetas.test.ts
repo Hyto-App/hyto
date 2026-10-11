@@ -29,6 +29,21 @@ test("los veredictos se muestran en inglés", () => {
   assert.equal(textoNota(etiquetaVeredicto("parcial"), 64), "64% · Partially completed");
 });
 
+test("la bandeja muestra comprobantes de llegada y la evidencia de la comida", () => {
+  assert.equal(textoVisible("Lista de quienes llegaron al evento", "es"), "Comprobantes de llegada recibidos");
+  assert.equal(textoVisible("Lista de quienes llegaron al evento"), "Check-in proofs received");
+  assert.equal(textoVisible("Comprobantes recibidos"), "Check-in proofs received");
+  assert.equal(textoVisible("List of people who arrived", "es"), "Comprobantes de llegada recibidos");
+  assert.equal(textoVisible("Evidencia de la comida"), "Evidence of the meal");
+  assert.equal(textoVisible("Evidencia de la comida", "es"), "Evidencia de la comida");
+  assert.equal(textoVisible("Foto del comprobante de la comida"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Foto del comprobante"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Photo of the meal receipt"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Evidence of the meal receipt", "es"), "Evidencia del comprobante de la comida");
+  assert.equal(textoVisible("Foto del comprobante", "es"), "Evidencia del comprobante de la comida");
+  assert.equal(textoVisible("Photo of the meal receipt", "es"), "Evidencia del comprobante de la comida");
+});
+
 test("los veredictos en español no cambian el valor interno", () => {
   assert.equal(etiquetaVeredicto("insuficiente", "es"), "Insuficiente");
   assert.equal(etiquetaVeredicto("parcial", "es"), "Parcialmente completado");

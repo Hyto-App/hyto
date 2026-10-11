@@ -9,8 +9,14 @@ import type { Tarea } from "./tipos";
 
 type Nota = NonNullable<Tarea["notas"]>[number];
 
-function dibujar(notas: Nota[], nota: number, veredicto: "cumplió" | "parcial" | "insuficiente", idioma: "es" | "en" = "es"): string {
-  const tarea = { id: "t1", estado: "en revisión", notas } as unknown as Tarea;
+function dibujar(
+  notas: Nota[],
+  nota: number,
+  veredicto: "cumplió" | "parcial" | "insuficiente",
+  idioma: "es" | "en" = "es",
+  condicion = "",
+): string {
+  const tarea = { id: "t1", estado: "en revisión", notas, condicion } as unknown as Tarea;
   return renderToStaticMarkup(
     createElement(
       ProveedorIdioma,
@@ -34,11 +40,14 @@ test("a part_missing tag adds the orange strip with «Falta: …»", () => {
     [{ id: "part_missing", texto: "Part missing", explicacion: "Missing: el mantel; la hoja de registro.", severidad: "warning", preguntas: [] }],
     64,
     "parcial",
+    "es",
+    "Mesa armada con mantel y hoja de registro",
   );
   assert.match(html, /role="note"/);
   assert.match(html, /hyto-resumen-falta/);
-  assert.match(html, /Falta: el mantel; la hoja de registro\./);
-  assert.equal((html.match(/Falta: el mantel/g) ?? []).length, 1, "the missing list shows once, only in the strip");
+  assert.match(html, /Falta: mantel; hoja de registro\./);
+  assert.equal(html.includes("el mantel"), false);
+  assert.equal((html.match(/Falta: mantel/g) ?? []).length, 1, "the missing list shows once, only in the strip");
 });
 
 test("a completed invoice with only good tags has no orange strip", () => {

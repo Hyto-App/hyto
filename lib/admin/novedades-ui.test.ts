@@ -6,7 +6,7 @@ import { act } from "react";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { Revision } from "@/components/admin/Revision";
 import { useNovedadesEvento } from "@/components/admin/usarNovedades";
-import { desmontar, escribir, montar, pulsar, texto } from "../../tests/integracion/montar";
+import { desmontar, escribir, montar, pulsar, pulsarEnlace, texto } from "../../tests/integracion/montar";
 
 describe("pantalla en vivo", { concurrency: false }, () => {
   before(() => {
@@ -41,16 +41,16 @@ describe("pantalla en vivo", { concurrency: false }, () => {
     try {
       await montar(createElement(Bandeja as (props: { proyectoId?: string }) => ReturnType<typeof Bandeja>, { proyectoId: "evt" }));
       await esperar(() => texto().includes("Set up the booth") && sondeos >= 2);
-      await pulsar("Check-in list");
+      await pulsarEnlace("Check-in list");
       const main = document.querySelector("main");
       assert.ok(main);
       main.scrollTop = 80;
       fase = "nueva";
       espera.soltar?.(json(fotoDe("b", "insuficiente", "scout")));
       await esperar(() => texto().includes("Updated just now") && texto().includes("Insufficient"));
-      assert.equal(document.querySelector("h3")?.textContent, "Check-in list");
-      const fila = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Check-in list"));
-      assert.equal(fila?.className.includes("is-on"), true);
+      assert.equal(document.querySelector(".pj-d-t")?.textContent, "Check-in list");
+      const fila = [...document.querySelectorAll("a.pj-item")].find((item) => item.textContent?.includes("Check-in list"));
+      assert.equal(fila?.getAttribute("aria-current"), "true");
       assert.equal(document.querySelector("main")?.scrollTop, 80);
       assert.equal(texto().includes("Loading…"), false);
     } finally {

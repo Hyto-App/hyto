@@ -244,6 +244,8 @@ test("Low detail pide dos respuestas débiles o dudosas", () => {
   const dos = etiquetasDe(entrada({ trabajo: { ...trabajo(), lugar: "no_claro", t5: "otra_o_no_claro" } }));
   const baja = dos.find((etiqueta) => etiqueta.id === "low_detail");
   assert.equal(baja?.texto, "Low detail");
+  assert.match(baja?.explicacion ?? "", /Mile was unsure/);
+  assert.equal((baja?.explicacion ?? "").includes("the model"), false);
   assert.deepEqual(baja?.preguntas, ["lugar", "t5"]);
   const cerca = etiquetasDe(entrada({ cerca: ["v2", "t10"] }));
   assert.deepEqual(cerca.find((etiqueta) => etiqueta.id === "low_detail")?.preguntas, ["v2", "t10"]);

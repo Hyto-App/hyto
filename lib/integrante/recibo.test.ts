@@ -26,9 +26,9 @@ test("el comprobante separa neto, bruto y comisión en los dos idiomas", () => {
   assert.equal(en?.red?.includes("/public/"), false);
 
   const es = datosRecibo(tarea, "es");
-  assert.equal(es?.neto, "US$12,44");
-  assert.equal(es?.bruto, "US$12,48");
-  assert.equal(es?.comision, "US$0,04");
+  assert.equal(es?.neto, "US$12.44");
+  assert.equal(es?.bruto, "US$12.48");
+  assert.equal(es?.comision, "US$0.04");
   assert.equal(es?.fecha, "5 oct 2026");
 });
 
