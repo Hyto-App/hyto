@@ -85,6 +85,7 @@ User-facing copy defaults to English. Spanish is optional: cookie `hyto_idioma` 
 - `GET`, `POST /api/proyectos` — list visible events; create one (demo sessions get 403).
 - `GET`, `POST /api/tareas`. `POST /api/tareas/[id]/asignar` — organizer assigns a member.
 - `POST /api/eventos/[id]/invitaciones` — organizer creates an invite. `POST /api/join` redeems one.
+- `POST /api/eventos/[id]/tareas` — organizer adds one task to an existing event («+ Add task» on `/eventos/[id]/tareas`). Same task checks as creating an event; demo sessions get 403; the balance must cover that task plus the 1 USDC reserve.
 - `POST /api/evidencias`, `GET /api/evidencias/:id`, `GET /api/evidencias/:id/foto`.
 - `GET`, `POST /api/revision/:id` — read or force a review. `POST /api/revision/:id/pedir` asks for another photo. `POST /api/revision/:id/monto` stores `monto_confirmado`.
 - `GET /api/informe`.

@@ -223,7 +223,7 @@ test("after deploy succeeds and fund fails, the screen offers Fund and retries t
     await esperar(() => rotulo("Lock and approve") && texto().includes("One more confirmation locks the money") && texto().includes("That step did not finish."));
     assert.match(texto(), /Budget not locked/);
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("Nothing was charged."), false);
     assert.ok(lecturas > lecturasAntes);
     const despliegues = () => firmas.filter((item) => item.body.accion === "desplegar").length;
     const antes = despliegues();
@@ -360,7 +360,7 @@ test("lock budget shows the payout error and does not claim USDC left an escrow"
     await esperar(() => texto().includes("Budget not locked"));
     assert.match(texto(), new RegExp(aviso.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.equal(texto().includes("Payment failed"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("Nothing was charged."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -389,7 +389,7 @@ test("pay still says the payment failed when release does not go through", async
     await pulsar("Approve and pay");
     await confirmarDialogo();
     await esperar(() => texto().includes("Payment failed"));
-    assert.match(texto(), /No USDC left the escrow/);
+    assert.match(texto(), /Something went wrong with this payment\. Nothing was charged\./);
     assert.match(texto(), /The milestone isn't ready/);
     assert.equal(texto().includes("Budget not locked"), false);
   } finally {
@@ -420,7 +420,7 @@ test("an error outside lock or pay does not use the payment box", async () => {
     assert.equal(texto().includes("The request was sent"), false);
     assert.equal(texto().includes("Payment failed"), false);
     assert.equal(texto().includes("Budget not locked"), false);
-    assert.equal(texto().includes("No USDC left the escrow."), false);
+    assert.equal(texto().includes("Nothing was charged."), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

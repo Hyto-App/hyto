@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AVISO_XLM_COMISION, CODIGO_XLM_COMISION } from "@/lib/escrow/comision";
 import { AVISO_FEE_DISTINTA, AVISO_FEE_SIN_TRUSTLINE } from "@/lib/escrow/fee";
-import { AVISO_DISPOSITIVO, AVISO_REINGRESO } from "@/lib/escrow/firmarCliente";
+import { AVISO_DISPOSITIVO, AVISO_FIRMA, AVISO_REINGRESO, CODIGO_RED_FIRMA } from "@/lib/escrow/firmarCliente";
 import { AVISO_HORIZON_RECEPTOR, AVISO_RECEPTOR_NO_LISTO, CODIGO_HORIZON_RECEPTOR, CODIGO_RECEPTOR_NO_LISTO } from "@/lib/escrow/receptorAvisos";
 import {
   AVISO_USDC_FIRMANTE,
@@ -112,7 +112,36 @@ test("the failure box follows the step, not words in the message", () => {
   assert.equal(tituloFallo("bloqueo"), "Budget not locked");
   assert.equal(detalleFallo("bloqueo", AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(tituloFallo("pago"), "Payment failed");
-  assert.equal(detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO), "No USDC left the escrow.");
+  assert.equal(
+    detalleFallo("pago", AVISO_RECEPTOR_NO_LISTO),
+    "Something went wrong with this payment. Nothing was charged. Try again, or contact us if it keeps happening.",
+  );
+  // Angie's copy: each known cause says what to do. Only a confirmed refusal says nothing was charged.
+  assert.equal(
+    detalleFallo("pago", mensajeClaro("insufficient balance")),
+    "There isn't enough balance to release this payment. Add funds to the project and try again.",
+  );
+  assert.equal(
+    detalleFallo("pago", mensajeClaro("insufficient balance", "es"), "es"),
+    "No hay saldo suficiente para liberar este pago. Agregue fondos al proyecto e intente de nuevo.",
+  );
+  assert.equal(
+    detalleFallo("pago", mensajeClaro(AVISO_FIRMA), "en", CODIGO_RED_FIRMA),
+    "We couldn't reach the network. Check your connection and try again in a moment.",
+  );
+  assert.equal(
+    detalleFallo("pago", mensajeClaro("You cancelled the confirmation. Nothing was sent.")),
+    "The payment wasn't confirmed. Approve it with your passkey to continue.",
+  );
+  const tarda = detalleFallo("pago", "The transaction was not confirmed yet.", "en", "HYTO_TX_NOT_CONFIRMED");
+  assert.equal(tarda, "This is taking longer than usual. Your money is safe. Refresh in a minute to see the status.");
+  assert.equal(tarda.includes("Nothing was charged"), false);
+  assert.equal(
+    detalleFallo("pago", "x", "es", "HYTO_TX_NOT_CONFIRMED"),
+    "Esto está tardando más de lo normal. Su dinero está seguro. Actualice en un minuto para ver el estado.",
+  );
+  assert.match(detalleFallo("pago", "x", "es"), /^Algo falló con este pago\. No se cobró nada\./);
+  assert.equal(detalleFallo("bloqueo", "x", "en", "HYTO_TX_NOT_CONFIRMED"), "x");
   assert.equal(detalleFallo("pago", mensajeClaro(AVISO_XLM_COMISION)), mensajeClaro(AVISO_XLM_COMISION));
   assert.match(mensajeClaro(AVISO_FEE_DISTINTA), /0\.3%/);
   assert.match(mensajeClaro(AVISO_FEE_DISTINTA, "es"), /0,3 %/);

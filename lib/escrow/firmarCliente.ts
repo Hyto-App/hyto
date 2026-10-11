@@ -10,6 +10,8 @@ export const AVISO_DEMO_FIRMA = "Demo mode can't send payments. Sign in with you
 export const AVISO_XLM = "This account needs a little test balance for the network fee. Add some and try again.";
 export const AVISO_RECHAZO = "You cancelled the confirmation. Nothing was sent.";
 export const AVISO_FIRMA = "We couldn't complete that step. Try again.";
+/** The browser could not reach Hyto's server for a step. */
+export const CODIGO_RED_FIRMA = "HYTO_NETWORK";
 export const AVISO_SIN_CONTRATO = "The budget was sent, but we couldn't confirm it yet. Refresh and try again.";
 export const AVISO_SESION_CAVOS = "Your sign-in expired. Sign in again to continue.";
 export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.";
@@ -366,6 +368,8 @@ async function postJson(
       signal: senal,
     });
   } catch (error) {
+    // fetch rejects with a TypeError when the request never reached the server.
+    if (error instanceof TypeError && !senal?.aborted) throw new ErrorFirmaCliente(AVISO_FIRMA, null, null, CODIGO_RED_FIRMA);
     throw traducirFirma(error);
   }
   const json = await leerJson(respuesta);

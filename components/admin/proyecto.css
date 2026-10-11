@@ -641,8 +641,16 @@
   display: grid;
   gap: 8px;
 }
+/* «+ Add task» row: full width under the last task. The button itself is the wizard's .cp-agregar (mock B). */
+.pj-agregar-fila {
+  list-style: none;
+  min-width: 0;
+}
+.pj-agregar-fila > .cp-agregar {
+  margin-top: 0;
+}
 @media (max-width: 1023px) {
-  /* ~375: the last card scrolls clear of the right-hand column (theme, avatar, Ask Mile). */
+  /* ~375: the last card scrolls clear of the floating Ask Mile button. */
   .pj-tlista,
   .pj-lista {
     padding-bottom: 140px;

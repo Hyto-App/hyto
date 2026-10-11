@@ -47,8 +47,9 @@ import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { Mile, type EstadoMile } from "@/components/ui/Mile";
-import { Eslogan, Logo } from "@/components/ui/Marca";
+import { Eslogan, Logo, Tema } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
+import type { RolDemo } from "@/lib/sesion/demo";
 
 /** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
 type Fase = "inicio" | "correo" | "codigo" | "enlace" | "exito";
@@ -669,7 +670,7 @@ export function Entrar({
     }
   }
 
-  async function entrarDemo() {
+  async function entrarDemo(rol: RolDemo) {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -678,14 +679,14 @@ export function Entrar({
       const respuesta = await fetch("/api/sesion/demo", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rol: "organizador" }),
+        body: JSON.stringify({ rol }),
       });
       const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
       if (!respuesta.ok) {
         setAviso(mensajeClaro(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in."));
         return;
       }
-      window.location.assign("/eventos");
+      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/eventos");
     } catch {
       setAviso("Could not sign in.");
     } finally {
@@ -930,7 +931,10 @@ export function Entrar({
           >
             <Logo />
           </button>
-          <SelectorIdiomaMenu className="hyto-login-idioma" />
+          <div className="hyto-login-top-acciones">
+            <SelectorIdiomaMenu className="hyto-login-idioma" />
+            <Tema />
+          </div>
         </header>
         <main className="hyto-login-grid">
           <div className="hyto-login-izq">
@@ -1437,14 +1441,18 @@ function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionI
   })().finally(() => olvidarIntencion());
 }
 
-function Demo({ ocupado, entrarDemo }: { ocupado: Ocupado | null; entrarDemo: () => Promise<void> }) {
+/** Both demo paths: the organizer who funds and pays, and the volunteer who sends evidence. */
+function Demo({ ocupado, entrarDemo }: { ocupado: Ocupado | null; entrarDemo: (rol: RolDemo) => Promise<void> }) {
   const t = useTexto();
   return (
     <div className="hyto-card grid gap-3 p-4">
       <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
       <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-      <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
+      <button type="button" onClick={() => void entrarDemo("organizador")} disabled={ocupado !== null} className="hyto-btn-line">
         {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
+      </button>
+      <button type="button" onClick={() => void entrarDemo("voluntario")} disabled={ocupado !== null} className="hyto-btn-line">
+        {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemoVoluntario")}
       </button>
     </div>
   );

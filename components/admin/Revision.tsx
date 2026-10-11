@@ -871,7 +871,7 @@ export function Revision({
           {caja && aviso ? (
             <div className="hyto-callout mt-5">
               <p className="font-semibold">{tituloFallo(caja, idioma)}</p>
-              <p className="mt-1 text-sm">{detalleFallo(caja, avisoVisible ?? "", idioma)}</p>
+              <p className="mt-1 text-sm">{detalleFallo(caja, avisoVisible ?? "", idioma, falloCodigo)}</p>
             </div>
           ) : null}
 

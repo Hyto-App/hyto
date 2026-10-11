@@ -49,10 +49,54 @@
   background: var(--cp-bg);
 }
 
+/* The wizard's task card outside the wizard («+ Add task» on a project's Tasks screen): same tokens, in the page flow. */
+.cp-suelta {
+  --cp-bg: #08090c;
+  --cp-card: #14162b;
+  --cp-well: #0e1021;
+  --cp-lima: #b7ee34;
+  --cp-naranja: #ff9f43;
+  --cp-suave: #8a8c9a;
+  --cp-texto: #f4f5f8;
+  --cp-blando: #b9bcc8;
+  --cp-tenue: #6d7084;
+  --cp-linea: rgba(255, 255, 255, 0.07);
+  --cp-linea-2: rgba(255, 255, 255, 0.12);
+  color: var(--cp-texto);
+  text-align: left;
+}
+
+:root:not([data-theme="dark"]) .cp-suelta {
+  --cp-bg: #f4f5f0;
+  --cp-card: #ffffff;
+  --cp-well: #ecede6;
+  --cp-lima-t: #5a7d00;
+  --cp-suave: #5f6270;
+  --cp-texto: #0a0a0a;
+  --cp-blando: #3b3e4a;
+  --cp-linea: rgba(10, 10, 10, 0.08);
+  --cp-linea-2: rgba(10, 10, 10, 0.14);
+}
+
 .cp *,
 .cp *::before,
-.cp *::after {
+.cp *::after,
+.cp-suelta *,
+.cp-suelta *::before,
+.cp-suelta *::after {
   box-sizing: border-box;
+}
+
+.cp-suelta :focus-visible {
+  outline: 2px solid var(--cp-lima);
+  outline-offset: 2px;
+}
+
+.cp-suelta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .cp :focus-visible {
@@ -143,6 +187,11 @@
   /* Room for the floating dock (budget bar + button), measured live in CrearProyecto. */
   padding-bottom: calc(var(--cp-dock, 220px) + 24px);
   animation: cp-entrar 320ms var(--hyto-curva, ease) both;
+}
+
+/* 390 (Aang): «When is it for?» is the last field of step 1; focusing it scrolls it clear of the Next bar. */
+.cp-seccion.is-fecha {
+  scroll-margin-bottom: calc(var(--cp-dock, 220px) + 24px);
 }
 
 @keyframes cp-entrar {

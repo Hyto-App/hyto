@@ -42,7 +42,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
       {corto ? <p className="hyto-cierre-monto">{corto}</p> : null}
       {pago?.detalle ? <p className="hyto-tarea-meta">{pago.detalle}</p> : null}
       <p className="hyto-cierre-frase">{t("evidencia.personApproved")}</p>
-      <p className="hyto-cierre-frase">{demo ? t("evidencia.demoDatos") : t("evidencia.inBalance")}</p>
+      <p className="hyto-cierre-frase">{demo ? t("evidencia.practiceNetwork") : t("evidencia.inBalance")}</p>
       {titulo ? <p className="hyto-tarea-meta">{titulo}</p> : null}
       {visto && calificacion ? <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} /> : null}
       <Recibo bruto={recibo?.bruto ?? corto} neto={corto} tareaId={tarea.id} />

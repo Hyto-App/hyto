@@ -38,10 +38,10 @@ import type { Clave } from "@/lib/ui/diccionario";
 
 type Paso = 1 | 2 | 3;
 
-type CampoTarea = "titulo" | "monto" | "quien";
+export type CampoTarea = "titulo" | "monto" | "quien";
 
 /** Which field of the card a task error points at. */
-function campoDeError(error: string): CampoTarea {
+export function campoDeError(error: string): CampoTarea {
   if (error === "montoInvalido" || error === "faltaMonto") return "monto";
   if (error === "correoInvalido") return "quien";
   return "titulo";
@@ -471,7 +471,8 @@ function Campo({
   );
 }
 
-function TarjetaTarea({
+/** One task card. The wizard uses it, and so does «+ Add task» on a project's Tasks screen. */
+export function TarjetaTarea({
   fila,
   numero,
   quitable,
@@ -673,10 +674,14 @@ export function CrearProyecto({
     if (!pie || !raiz) return;
     const medir = () => raiz.style.setProperty("--cp-dock", `${Math.ceil(pie.getBoundingClientRect().height)}px`);
     medir();
-    if (typeof ResizeObserver === "undefined") return;
-    const observador = new ResizeObserver(medir);
-    observador.observe(pie);
-    return () => observador.disconnect();
+    // A phone's toolbar or keyboard changes the viewport without resizing the dock itself.
+    window.addEventListener("resize", medir);
+    const observador = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(medir);
+    observador?.observe(pie);
+    return () => {
+      window.removeEventListener("resize", medir);
+      observador?.disconnect();
+    };
   }, []);
 
   // New card: bring it into view and put the cursor in its first field.

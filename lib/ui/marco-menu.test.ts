@@ -75,6 +75,50 @@ test("el avatar abre Configuración, la ayuda y cerrar sesión", async () => {
   }
 });
 
+test("el menú del avatar se cierra cuando cambia el ancho y no queda flotando sobre otros botones", async () => {
+  limpiarPantalla();
+  const original = Object.getOwnPropertyDescriptor(window, "innerWidth");
+  const fijarAncho = (valor: number) => Object.defineProperty(window, "innerWidth", { value: valor, configurable: true, writable: true });
+  try {
+    fijarAncho(1440);
+    await montar(createElement(Marco, { usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" }, children: createElement("p", null, "inicio") }), {
+      ruta: "/eventos",
+    });
+    await pulsar("Ana Solís");
+    assert.ok(document.querySelector("#hyto-perfil"));
+    // Same width (a phone's address bar only changes the height): the menu stays.
+    await act(async () => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    assert.ok(document.querySelector("#hyto-perfil"));
+    fijarAncho(390);
+    await act(async () => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    assert.equal(document.querySelector("#hyto-perfil"), null);
+  } finally {
+    if (original) Object.defineProperty(window, "innerWidth", original);
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en el teléfono el avatar, el tema y Preguntar a Mile están en el encabezado", async () => {
+  limpiarPantalla();
+  try {
+    await montar(createElement(Marco, { usuario: { nombre: "Ana Solís", email: "ana@hyto.dev" }, children: createElement("p", null, "inicio") }), {
+      ruta: "/mis-tareas",
+    });
+    const encabezado = document.querySelector(".hyto-brand-acciones.hyto-solo-movil");
+    assert.ok(encabezado?.querySelector(".hyto-perfil-boton.is-compacto"));
+    assert.ok(encabezado?.querySelector(".hyto-tema"));
+    assert.ok(encabezado?.querySelector(".hyto-preguntar-icono"));
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("el avatar usa solo letras y cae al correo", async () => {
   limpiarPantalla();
   try {
