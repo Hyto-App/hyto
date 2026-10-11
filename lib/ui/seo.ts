@@ -27,6 +27,7 @@ export const PREFIJOS_PRIVADOS = [
   "/join",
   "/comunidades",
   "/proyectos",
+  "/p",
 ] as const;
 
 /** Legal page segments coordinated with hyto#282; only listed when the page file exists. */
@@ -83,7 +84,7 @@ export function metaPublica({ idioma, title, description, path, absoluteTitle }:
       title: ogTitle,
       description,
       url: path,
-      locale: idioma === "es" ? "es_CR" : "en_US",
+      locale: idioma === "es" ? "es_419" : "en_US",
       images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: tituloMarca() }],
     },
     twitter: {

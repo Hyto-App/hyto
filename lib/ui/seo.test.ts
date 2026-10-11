@@ -54,7 +54,7 @@ test("metaPublica arma título, descripción, canonical y tarjetas", () => {
   assert.deepEqual(meta.alternates, { canonical: "/privacy" });
   assert.deepEqual(meta.robots, { index: true, follow: true });
   assert.equal(meta.openGraph?.title, "Privacidad · Hyto");
-  assert.equal(meta.openGraph?.locale, "es_CR");
+  assert.equal(meta.openGraph?.locale, "es_419");
   assert.equal((meta.twitter as { card?: string } | undefined)?.card, "summary_large_image");
   assert.ok(tituloMarca().startsWith("Hyto · "));
   assert.equal(ROBOTS_PRIVADO.index, false);
@@ -90,5 +90,5 @@ test("JSON-LD Organization, SoftwareApplication y FAQPage", () => {
   const entidades = faq.mainEntity as { name: string; acceptedAnswer: { text: string } }[];
   assert.equal(entidades.length, 2);
   assert.match(entidades[0]!.name, /cryptocurrency/i);
-  assert.match(entidades[1]!.acceptedAnswer.text, /SINPE/);
+  assert.match(entidades[1]!.acceptedAnswer.text, /local bank transfer/);
 });
