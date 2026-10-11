@@ -147,7 +147,7 @@ type TareaBorrador = TareaFila & { asignado: string };
 
 function leerProyecto(
   body: unknown,
-): { proyecto: { id: string; nombre: string; creadoEn: string; descripcion: string | null; contextoIa: string | null }; tareas: TareaBorrador[] } | { aviso: string } {
+): { proyecto: { id: string; nombre: string; creadoEn: string; descripcion: string | null; contextoIa: string | null; fecha?: string }; tareas: TareaBorrador[] } | { aviso: string } {
   if (!body || typeof body !== "object") return { aviso: "Enter an event name and at least one task." };
   const crudo = body as Record<string, unknown>;
   const nombre = typeof crudo.nombre === "string" ? crudo.nombre.trim() : "";
@@ -157,6 +157,8 @@ function leerProyecto(
   }
   const contexto = leerContextoEvento(crudo);
   if ("aviso" in contexto) return contexto;
+  const fecha = leerFechaProyecto(crudo.fecha);
+  if (typeof fecha === "object" && fecha !== null) return fecha;
   const proyectoId = crypto.randomUUID();
   const ahora = new Date().toISOString();
   const tareas: TareaBorrador[] = [];
@@ -165,7 +167,7 @@ function leerProyecto(
     if ("aviso" in tarea) return tarea;
     tareas.push(tarea);
   }
-  return { proyecto: { id: proyectoId, nombre, creadoEn: ahora, ...contexto }, tareas };
+  return { proyecto: { id: proyectoId, nombre, creadoEn: ahora, ...contexto, ...(fecha ? { fecha } : {}) }, tareas };
 }
 
 async function asignarTareas(almacen: Almacen, organizadorId: string, tareas: TareaBorrador[]): Promise<TareaFila[] | Response> {
@@ -237,4 +239,17 @@ function emailDe(valor: unknown): string {
   if (typeof valor !== "string") return "";
   const email = valor.trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+/** «¿Para cuándo?»: empty or missing is no date; otherwise a real calendar day as YYYY-MM-DD. */
+export function leerFechaProyecto(valor: unknown): string | null | { aviso: string } {
+  if (valor === undefined || valor === null) return null;
+  if (typeof valor !== "string") return { aviso: "The project date has to be a day like 2026-10-16." };
+  const limpio = valor.trim();
+  if (!limpio) return null;
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(limpio);
+  if (!partes) return { aviso: "The project date has to be a day like 2026-10-16." };
+  const dia = new Date(Date.UTC(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])));
+  if (dia.toISOString().slice(0, 10) !== limpio) return { aviso: "The project date has to be a day like 2026-10-16." };
+  return limpio;
 }

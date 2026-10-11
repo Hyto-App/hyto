@@ -9,7 +9,9 @@ import { useTexto } from "@/components/ui/Idioma";
 export type PasoBienvenida =
   | { tipo: "unirse"; puedeCrear: boolean }
   | { tipo: "abrir"; href: string; nombre: string }
-  | { tipo: "demo"; href: string };
+  | { tipo: "demo"; href: string }
+  /** The page right below already shows «Crear proyecto» and «Unirme con código», so the card only explains. */
+  | { tipo: "explicar" };
 
 type Props = {
   paso: PasoBienvenida;
@@ -40,28 +42,30 @@ export function Bienvenida({ paso, accion }: Props) {
             {t("bienvenida.demo")}
           </p>
         ) : null}
-        <div className="hyto-welcome-acciones">
-          {paso.tipo === "unirse" ? (
-            <>
-              <Link href="/join" className="hyto-btn is-inline px-5">
-                {t("bienvenida.join")}
-              </Link>
-              {paso.puedeCrear ? (
-                <Link href="/eventos/nuevo" className="hyto-btn-line is-inline px-5">
-                  {t("bienvenida.create")}
+        {paso.tipo === "explicar" ? null : (
+          <div className="hyto-welcome-acciones">
+            {paso.tipo === "unirse" ? (
+              <>
+                <Link href="/join" className="hyto-btn is-inline px-5">
+                  {t("bienvenida.join")}
                 </Link>
-              ) : null}
-            </>
-          ) : paso.tipo === "abrir" ? (
-            <Link href={paso.href} className="hyto-btn is-inline px-5">
-              {t("bienvenida.open", { name: paso.nombre })}
-            </Link>
-          ) : (
-            <Link href={paso.href} className="hyto-btn is-inline px-5">
-              {t("bienvenida.startDemo")}
-            </Link>
-          )}
-        </div>
+                {paso.puedeCrear ? (
+                  <Link href="/eventos/nuevo" className="hyto-btn-line is-inline px-5">
+                    {t("bienvenida.create")}
+                  </Link>
+                ) : null}
+              </>
+            ) : paso.tipo === "abrir" ? (
+              <Link href={paso.href} className="hyto-btn is-inline px-5">
+                {t("bienvenida.open", { name: paso.nombre })}
+              </Link>
+            ) : (
+              <Link href={paso.href} className="hyto-btn is-inline px-5">
+                {t("bienvenida.startDemo")}
+              </Link>
+            )}
+          </div>
+        )}
       </article>
     </section>
   );

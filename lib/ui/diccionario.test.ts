@@ -20,6 +20,13 @@ import {
 } from "@/lib/integrante/avisosUsdc";
 import { en, es, leerTexto, rutas, texto, type FuenteTextos } from "./diccionario";
 
+test("no Spanish string says «evento»: the copy says «proyecto» (placeholders aside)", () => {
+  const conEvento = rutas(es).filter((clave) => /evento/i.test(leerTexto("es", clave).replace(/\{[^}]*\}/g, "")));
+  assert.deepEqual(conEvento, []);
+  const conEvent = rutas(en).filter((clave) => /\bevents?\b/i.test(leerTexto("en", clave).replace(/\{[^}]*\}/g, "")));
+  assert.deepEqual(conEvent, []);
+});
+
 test("English and Spanish dictionaries have the same keys", () => {
   assert.deepEqual(rutas(en).sort(), rutas(es).sort());
 });
@@ -32,7 +39,7 @@ test("every dictionary string is non-empty and Spanish falls back to English", (
   const hueco = structuredClone(es);
   hueco.nav.events = "";
   const fuente: FuenteTextos = { en, es: hueco };
-  assert.equal(leerTexto("es", "nav.events", fuente), "Events");
+  assert.equal(leerTexto("es", "nav.events", fuente), "Projects");
   assert.equal(leerTexto("es", "no.existe", fuente), "no.existe");
 });
 
@@ -328,7 +335,7 @@ test("la bienvenida define Hyto sin comparar, en usted y sin el aviso viejo del 
   assert.equal(texto("es", "bienvenida.title"), "Bienvenido a Hyto");
   assert.equal(
     texto("es", "bienvenida.body"),
-    "Hyto paga tareas de eventos cuando hay evidencia: usted sube su evidencia, Mile la revisa y una persona aprueba el pago.",
+    "Hyto paga tareas de proyectos cuando hay evidencia: usted sube su evidencia, Mile la revisa y una persona aprueba el pago.",
   );
   assert.equal(texto("es", "bienvenida.open", { name: "ZEEK" }), "Abrir ZEEK");
   assert.equal(texto("es", "bienvenida.join"), "Unirme con código");

@@ -32,6 +32,8 @@ export type Proyecto = {
   descripcion?: string | null;
   /** Only the AI reviewers read this. Never put it in a route response. */
   contextoIa?: string | null;
+  /** «¿Para cuándo?» as YYYY-MM-DD. Null or missing: no date. */
+  fecha?: string | null;
   /** Set only when HYTO_COMUNIDADES is on. Null keeps the event on its own. */
   comunidadId?: string | null;
 };

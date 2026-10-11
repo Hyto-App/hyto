@@ -487,7 +487,7 @@ test("el vacío de tareas es una invitación con un solo cofre en reposo", async
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
     await esperar(() => texto().includes("Aún no tiene tareas."));
-    assert.match(texto(), /Únase a su evento con el código que le dio quien organiza/);
+    assert.match(texto(), /Únase a su proyecto con el código que le dio quien organiza/);
     assert.match(texto(), /Entre con el código que le dio quien organiza/);
     assert.match(texto(), /Envíe una evidencia del trabajo o del gasto: una foto, una factura, un PDF o una lista\./);
     assert.match(texto(), /Mile recomienda/);
@@ -500,7 +500,7 @@ test("el vacío de tareas es una invitación con un solo cofre en reposo", async
     assert.doesNotMatch(acciones[0]?.className ?? "", /hyto-btn-line/);
     assert.match(acciones[0]?.textContent ?? "", /Unirme con código/);
     assert.match(acciones[1]?.className ?? "", /hyto-btn-line/);
-    assert.match(acciones[1]?.textContent ?? "", /Ver eventos/);
+    assert.match(acciones[1]?.textContent ?? "", /Ver proyectos/);
     const millas = [...document.querySelectorAll(".hyto-mile")];
     assert.equal(millas.length, 1);
     assert.match(millas[0]?.className ?? "", /hyto-mile-descansando/);

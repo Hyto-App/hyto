@@ -1,5 +1,5 @@
 import "./aplicar-guardia";
-import { desmontar, escribir, limpiarPantalla, montar, pulsar, texto } from "./montar";
+import { desmontar, escribir, escribirArea, limpiarPantalla, montar, pulsar, texto } from "./montar";
 import assert from "node:assert/strict";
 import { afterEach, before, beforeEach, describe, test } from "node:test";
 import { createElement } from "react";
@@ -42,21 +42,22 @@ describe("pantallas de admin", { concurrency: false }, () => {
     assert.match(plano, /Team meal/);
     assert.equal(plano.includes("Welcome table"), false);
     assert.equal(plano.includes("Back to the ZEEK example"), false);
-    assert.match(plano, /Sample event, until live tasks load/);
+    assert.match(plano, /Sample project, until live tasks load/);
   });
 
   test("crear proyecto avisa si faltan el nombre o el monto y no navega", async () => {
     const idas: string[] = [];
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-    await pulsar("Create event");
-    assert.match(texto(), /Enter a name and at least one task with an amount/);
+    await pulsar("Next");
+    assert.match(texto(), /Name your project to continue/);
     assert.deepEqual(idas, []);
 
-    await escribir("#nombre-proyecto", "Feria");
+    await escribirArea("#nombre-proyecto", "Feria");
+    await pulsar("Next");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "0");
-    await pulsar("Create event");
-    assert.match(texto(), /Enter a name and at least one task with an amount/);
+    await pulsar("See how it looks");
+    assert.match(texto(), /amount greater than zero/);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -67,13 +68,15 @@ describe("pantallas de admin", { concurrency: false }, () => {
       createElement(ProveedorModoDemo, { activo: true, rol: "organizador", children: createElement(CrearProyecto) }),
       { push: (href) => idas.push(href) },
     );
-    assert.match(texto(), /Demo mode cannot create events/);
-    const fondear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create event"));
-    assert.equal(fondear instanceof HTMLButtonElement && fondear.disabled, true);
-    await escribir("#nombre-proyecto", "Feria");
+    assert.match(texto(), /In the demo you can see everything\. To create a real project, sign in with your email\./);
+    await escribirArea("#nombre-proyecto", "Feria");
+    await pulsar("Next");
     await escribir("#titulo-1", "Cajas");
     await escribir("#monto-1", "8");
-    await pulsar("Create event");
+    await pulsar("See how it looks");
+    const crear = [...document.querySelectorAll("button")].find((boton) => boton.textContent?.includes("Create project and set the budget aside"));
+    assert.equal(crear instanceof HTMLButtonElement && crear.disabled, true);
+    await pulsar("Create project and set the budget aside");
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
   });
@@ -88,10 +91,12 @@ describe("pantallas de admin", { concurrency: false }, () => {
       });
     try {
       await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
-      await escribir("#nombre-proyecto", "Feria");
+      await escribirArea("#nombre-proyecto", "Feria");
+      await pulsar("Next");
       await escribir("#titulo-1", "Cajas");
       await escribir("#monto-1", "8");
-      await pulsar("Create event");
+      await pulsar("See how it looks");
+      await pulsar("Create project and set the budget aside");
       assert.deepEqual(idas, ["/eventos/evt-1"]);
       assert.equal(leerMemoriaAdmin().proyecto, null);
     } finally {

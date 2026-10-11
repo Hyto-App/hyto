@@ -54,7 +54,7 @@ test("la bienvenida dice qué es Hyto y ofrece un solo paso", async () => {
   try {
     await montar(createElement(Bienvenida, { paso: { tipo: "unirse", puedeCrear: false } }));
     assert.match(texto(), /Welcome to Hyto/);
-    assert.match(texto(), /Hyto pays for event tasks when there is evidence: you upload your evidence, Mile reviews it, and a person approves the payment\./);
+    assert.match(texto(), /Hyto pays for project tasks when there is evidence: you upload your evidence, Mile reviews it, and a person approves the payment\./);
     assert.deepEqual(
       enlaces().map((enlace) => [enlace.getAttribute("href"), enlace.textContent]),
       [["/join", "Join with a code"]],
@@ -112,19 +112,25 @@ test("en demo la bienvenida ofrece empezar y no dice que no puede cobrar", async
   }
 });
 
-test("eventos sin eventos: unirse con código, sin repetir el paso, y se puede ocultar", async () => {
+test("eventos sin eventos: Crear proyecto y Unirme con código del mismo tamaño, sin repetirlos en la bienvenida", async () => {
   limpiarPantalla();
   const restaurar = conFetch([]);
   try {
     await montar(createElement(ListaEventos));
     await esperar();
     assert.match(texto(), /Welcome to Hyto/);
+    // The welcome only explains: the two buttons live in the empty state right below.
+    assert.deepEqual(enlaces(), []);
+    assert.match(texto(), /No projects yet/);
+    const vacio = [...document.querySelectorAll(".hyto-estado-vacio .hyto-dos-botones a")];
     assert.deepEqual(
-      enlaces().map((enlace) => enlace.getAttribute("href")),
-      ["/join"],
+      vacio.map((enlace) => [enlace.getAttribute("href"), enlace.textContent, enlace.className]),
+      [
+        ["/eventos/nuevo", "Create project", "hyto-btn"],
+        ["/join", "Join with code", "hyto-btn-line"],
+      ],
     );
-    assert.match(texto(), /No events yet/);
-    assert.equal(document.querySelector(".hyto-estado-vacio a"), null);
+    // Not repeated in the header while the list is empty.
     assert.equal(document.querySelector("header .hyto-btn"), null);
     // Get ready to be paid stays on Events, outside the welcome card.
     assert.equal(bienvenida()?.textContent?.includes("Get ready to be paid"), false);
@@ -137,7 +143,7 @@ test("eventos sin eventos: unirse con código, sin repetir el paso, y se puede o
     const acciones = [...document.querySelectorAll(".hyto-estado-vacio a")];
     assert.deepEqual(
       acciones.map((enlace) => enlace.getAttribute("href")),
-      ["/join"],
+      ["/eventos/nuevo", "/join"],
     );
 
     await montar(createElement(ListaEventos));

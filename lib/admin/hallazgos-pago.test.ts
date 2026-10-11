@@ -40,7 +40,7 @@ test("quien cobra ve lo liberado, no el tope de la tarea", async () => {
     assert.equal(texto().includes("+US$"), false);
     assert.match(texto(), /US\$12\.44/);
     assert.match(texto(), /You received/);
-    assert.match(texto(), /A person from the event approved it/);
+    assert.match(texto(), /A person from the project approved it/);
     assert.match(texto(), /US\$12\.48 minus a US\$0\.04 fee/);
     assert.equal(texto().includes("US$15"), false);
     assert.equal(texto().includes("12.44256"), false);
@@ -77,7 +77,7 @@ test("en demo la pantalla pagada marca la red de práctica y el pago simulado", 
         children: createElement(PantallaPagada, { tarea, titulo: "Set up the booth" }),
       }),
     );
-    await esperar(() => texto().includes("A person from the event approved it"));
+    await esperar(() => texto().includes("A person from the project approved it"));
     // The demo sentence shows once, not twice.
     assert.equal((texto().match(/Demo: practice payment, no real money moves\./g) ?? []).length, 1);
     assert.equal(document.querySelector("a[href*='stellar.expert']"), null);

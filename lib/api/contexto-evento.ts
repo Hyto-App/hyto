@@ -38,8 +38,8 @@ export function leerContextoEvento(
 }
 
 /** What a member may read about an event. `contextoIa` is never part of it. */
-export function datosPublicosDeEvento(proyecto: Proyecto): { descripcion: string | null; portada: boolean } {
-  return { descripcion: proyecto.descripcion?.trim() || null, portada: Boolean(proyecto.portada) };
+export function datosPublicosDeEvento(proyecto: Proyecto): { descripcion: string | null; portada: boolean; fecha: string | null } {
+  return { descripcion: proyecto.descripcion?.trim() || null, portada: Boolean(proyecto.portada), fecha: proyecto.fecha?.trim() || null };
 }
 
 /** Server-side only: the text the AI reviewers get. A missing event or a read error gives none. */

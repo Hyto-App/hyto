@@ -11,6 +11,7 @@ const globales: Record<string, unknown> = {
   HTMLElement: ventana.HTMLElement,
   HTMLInputElement: ventana.HTMLInputElement,
   HTMLSelectElement: ventana.HTMLSelectElement,
+  HTMLTextAreaElement: ventana.HTMLTextAreaElement,
   HTMLButtonElement: ventana.HTMLButtonElement,
   Element: ventana.Element,
   Node: ventana.Node,

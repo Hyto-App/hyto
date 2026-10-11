@@ -1,7 +1,7 @@
 import type { SesionFila, Usuario } from "@/lib/db/tipos";
 
 export const AVISO_FIRMA_DEMO = "Demo mode can't send payments. Sign in with your email to continue.";
-export const AVISO_PROYECTO_DEMO = "Demo mode cannot create events. Sign in with your email to create one.";
+export const AVISO_PROYECTO_DEMO = "In the demo you can see everything. To create a real project, sign in with your email.";
 
 const ROLES_DEMO = ["organizador", "voluntario"] as const;
 

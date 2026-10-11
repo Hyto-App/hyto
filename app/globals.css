@@ -7164,3 +7164,36 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     text-align: center;
   }
 }
+
+/* Projects list: «Crear proyecto» and «Unirme con código», the same size side by side (Pao, 10-oct). */
+.hyto-dos-botones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 26rem);
+}
+
+.hyto-dos-botones.is-uno {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 13rem);
+}
+
+.hyto-dos-botones > .hyto-btn,
+.hyto-dos-botones > .hyto-btn-line {
+  width: 100%;
+  max-width: none;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hyto-estado-vacio .hyto-dos-botones {
+  justify-self: center;
+  margin-top: 2px;
+}
+
+@media (max-width: 1023px) {
+  header > .hyto-dos-botones {
+    width: 100%;
+  }
+}

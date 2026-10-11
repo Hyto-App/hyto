@@ -174,7 +174,8 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
   return (
-    <section className="hyto-card p-5 sm:p-6">
+    // «Agregar saldo» in Crear proyecto links here (/configuracion#saldo).
+    <section id="saldo" className="hyto-card scroll-mt-24 p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-medium text-[var(--suave)]">
           {t("cuenta.saldoHyto")}: <span className="hyto-amount text-3xl text-[var(--tinta)]">{monto}</span>

@@ -46,10 +46,10 @@ test("el título de la pestaña sigue el idioma en vivo", async () => {
 
     await desmontar();
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(TituloDocumento) }), { ruta: "/eventos" });
-    assert.equal(document.title, "Eventos · Hyto");
+    assert.equal(document.title, "Proyectos · Hyto");
     await desmontar();
     await montar(createElement(ProveedorIdioma, { idioma: "en", children: createElement(TituloDocumento) }), { ruta: "/eventos" });
-    assert.equal(document.title, "Events · Hyto");
+    assert.equal(document.title, "Projects · Hyto");
     await desmontar();
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(TituloDocumento) }), { ruta: "/tareas/abc" });
     assert.equal(document.title, "Tarea · Hyto");

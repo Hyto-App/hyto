@@ -28,7 +28,7 @@ test("Back exists on the pass-through screens with the spec defaults", () => {
   assert.deepEqual(destinoVolver("/join/x"), { href: "/mis-tareas", etiqueta: "volver" });
   assert.deepEqual(destinoVolver("/tareas/1"), { href: "/mis-tareas", etiqueta: "volver" });
   assert.equal(destinoVolver("/revision/1")?.etiqueta, "volver");
-  assert.deepEqual(destinoVolver("/eventos/nuevo"), { href: "/eventos", etiqueta: "cancelar" });
+  assert.equal(destinoVolver("/eventos/nuevo"), null);
   assert.deepEqual(destinoVolver("/cuentas/preparar"), { href: "/configuracion", etiqueta: "cancelar" });
   assert.equal(destinoVolver("/mis-tareas"), null);
   assert.equal(destinoVolver("/eventos"), null);

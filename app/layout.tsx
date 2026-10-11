@@ -8,6 +8,7 @@ import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import { DESCRIPCION_PAGINA } from "@/lib/ui/discurso";
 import "./globals.css";
 import "@/components/perfil/perfil.css";
+import "@/components/admin/crear.css";
 
 export const dynamic = "force-dynamic";
 

@@ -60,6 +60,17 @@ export async function escribir(selector: string, valor: string): Promise<void> {
   });
 }
 
+/** Like escribir, for a textarea. */
+export async function escribirArea(selector: string, valor: string): Promise<void> {
+  const nodo = document.querySelector(selector);
+  if (!(nodo instanceof HTMLTextAreaElement)) throw new Error(`No está ${selector}.`);
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  await act(async () => {
+    setter?.call(nodo, valor);
+    nodo.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
 export async function pulsar(textoBoton: string): Promise<void> {
   const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes(textoBoton));
   if (!boton) throw new Error(`Sin botón ${textoBoton}.`);

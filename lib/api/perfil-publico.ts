@@ -104,6 +104,25 @@ export async function sugeridosDeEvento(almacen: Almacen, organizadorId: string,
   return calcularSugeridos({ organizadorId, proyectoId, proyectos, miembros, tareas, usuarios });
 }
 
+/** «Crear proyecto»: people this organizer already worked with, before the new project exists. Empty with the switch off. */
+export async function sugeridosParaNuevo(almacen: Almacen, organizadorId: string): Promise<Sugerido[]> {
+  if (!perfilPublicoActivo()) return [];
+  const propios = (await almacen.miembrosDeUsuario(organizadorId)).filter(
+    (miembro) => miembro.rol === "organizer" && miembro.estado === "active",
+  );
+  const ids = [...new Set(propios.map((miembro) => miembro.proyectoId))];
+  const [miembros, proyectos, tareas, usuarios] = await Promise.all([
+    Promise.all(ids.map((id) => almacen.listarMiembros(id))).then((listas) => listas.flat()),
+    almacen.listarProyectos(),
+    almacen.listarTareas(),
+    almacen.listarUsuarios(),
+  ]);
+  const nuevo = { id: "__nuevo__", nombre: "", creadoEn: new Date().toISOString(), organizadorId };
+  return calcularSugeridos({ organizadorId, proyectoId: nuevo.id, proyectos: [...proyectos, nuevo], miembros, tareas, usuarios }).filter(
+    (persona) => persona.yaTrabajo,
+  );
+}
+
 /** True when the person is an active member of an event this organizer runs. */
 export async function trabajoConOrganizador(almacen: Almacen, organizadorId: string, personaId: string): Promise<boolean> {
   if (!personaId || personaId === organizadorId) return false;

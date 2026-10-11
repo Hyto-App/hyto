@@ -145,8 +145,8 @@ test("si el alta de testnet falla después del código, queda adentro con el avi
     assert.match(texto(), /Signed in/);
     const aviso = document.querySelector('[role="status"]')?.textContent ?? "";
     assert.ok(aviso.includes(mensajeClaro(AVISO_CUENTA_FAUCET)), aviso);
-    assert.match(aviso, /Open Events and tap Get ready to be paid/);
-    assert.equal(document.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Events");
+    assert.match(aviso, /Open Projects and tap Get ready to be paid/);
+    assert.equal(document.querySelector('[role="status"] a[href="/eventos"]')?.textContent, "Open Projects");
     assert.equal(salida().getAttribute("href"), DESTINO);
     assert.equal(document.querySelector('[role="dialog"]'), null);
     assert.equal(window.location.pathname, "/");
