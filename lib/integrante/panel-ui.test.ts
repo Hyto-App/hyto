@@ -129,6 +129,25 @@ test("si la cuenta no carga, el costo de pagar sigue en la página", async () =>
   }
 });
 
+test("si la cuenta no responde, la llave de acceso sigue en la página, en usted", async () => {
+  limpiarPantalla();
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error("network");
+  }) as typeof fetch;
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta, { revisarFirma: LISTA }) }));
+    await asentar();
+    assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
+    assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
+    assert.ok(document.getElementById("passkey"));
+    assert.doesNotMatch(texto(), /Agregá|Agrega una|tu cuenta|\bpasskey\b/i);
+  } finally {
+    globalThis.fetch = original;
+    await desmontar();
+  }
+});
+
 test("una wallet ausente pide Set up my account, un solo botón", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;

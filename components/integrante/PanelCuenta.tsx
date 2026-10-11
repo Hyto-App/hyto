@@ -102,6 +102,8 @@ export function PanelCuenta({ revisarFirma }: { revisarFirma?: RevisarFirma }) {
         </section>
         <ComoCobrar />
         <CostoDePagar />
+        {/* The access key is added in this browser through Cavos and does not read /api/cuenta, so it stays when that read fails. */}
+        <PasskeyCuenta revisar={revisarFirma} />
       </div>
     );
   }
