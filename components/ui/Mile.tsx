@@ -10,7 +10,7 @@ export type { EstadoMile, EstadoMileEntrada };
 
 const ALT: Record<EstadoMile, Clave> = {
   reposo: "mile.alt.descansando",
-  mirando: "mile.alt.descansando",
+  mirando: "mile.alt.mirando",
   leyendo: "mile.alt.buscando",
   listo: "mile.alt.laTengo",
   recomendando: "mile.alt.recomendando",
@@ -94,7 +94,7 @@ export function Mile({ estado: entrada, tamano = 120, etiqueta, className }: Pro
           <g className="mile-cuerpo-grupo">
             <path d={CUERPO} fill="none" stroke="var(--mile-contorno, transparent)" strokeWidth="30" strokeLinejoin="round" />
             <path d={CUERPO} fill="#B7EE34" stroke="#B7EE34" strokeWidth="22" strokeLinejoin="round" />
-            <g>
+            <g className="mile-sello">
               <circle cx="-72" cy="28" r="17" fill="none" stroke="#8CC21C" strokeWidth="3.5" />
               <g transform="translate(-73 29) scale(0.5)" fill="#8CC21C" stroke="#8CC21C" strokeWidth="4" strokeLinejoin="round">
                 <polygon points="-3.4,-16.0 5.6,-16.0 -7.0,14.0 -16.0,14.0" />

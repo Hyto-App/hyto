@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
 import { EtiquetasNota, MotivoNota } from "@/components/admin/EtiquetasNota";
 import { Icono } from "@/components/admin/IconosProyecto";
+import { Mile } from "@/components/ui/Mile";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { PersonaProyecto } from "@/components/admin/PersonaProyecto";
 import { BotonReintentarRevision, ReintentoFondo } from "@/components/admin/RevisionFallida";
@@ -442,9 +443,7 @@ function DetalleBandeja({
       ) : null}
       <div className="pj-mile">
         <span className="pj-mile-l">
-          <span className="pj-mm">
-            <Icono nombre="spark" tam={14} />
-          </span>
+          <Mile estado="reposo" tamano={40} />
           {t("proyecto.recomendacionMile")}
         </span>
         {tarea.veredicto ? (

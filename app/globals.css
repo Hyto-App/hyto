@@ -7525,3 +7525,81 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   width: auto;
   height: auto;
 }
+
+/* Entry: no sparkle and no chest seal on the standalone Mile. */
+.hyto-login-mile .mile-destello,
+.hyto-login-mile .mile-sello {
+  display: none;
+}
+
+/* 390: Mile 96px centered, then the slogan, then the card, with 20px margins. */
+@media (max-width: 480px) {
+  .hyto-login .hyto-login-grid {
+    padding-inline: 20px;
+  }
+
+  .hyto-login .hyto-login-izq {
+    align-items: center;
+    min-height: 0;
+  }
+
+  .hyto-login .hyto-login-mile,
+  .hyto-login.is-exito .hyto-login-mile {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    order: -1;
+    align-self: center;
+    width: 96px;
+    height: 96px;
+    margin: 8px 0 0;
+  }
+
+  .hyto-login .hyto-login-mile .hyto-mile,
+  .hyto-login .hyto-login-mile .mile {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  .hyto-login .hyto-login-hero {
+    padding-inline: 0;
+    text-align: center;
+  }
+
+  .hyto-login .hyto-login-titulo {
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .hyto-login .hyto-login-alternas .hyto-login-prueba {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
+
+/* Mile next to «Mile's recommendation» (Inbox, Tasks, Review). */
+.pj-mile-l .hyto-mile,
+.pj-mileblk .hyto-mile {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+/* 390: the bottom bar exists, so the floating theme, avatar and Mile buttons leave the cards alone. */
+@media (max-width: 480px) {
+  .hyto-brand-acciones.hyto-solo-movil .hyto-tema,
+  .hyto-brand-acciones.hyto-solo-movil .hyto-perfil-boton.is-compacto,
+  .hyto-preguntar.hyto-preguntar-icono {
+    display: none;
+  }
+
+  .pj-tlista,
+  .pj-lista {
+    padding-bottom: 24px;
+  }
+
+  .pj-chips {
+    gap: 8px;
+    padding-inline: 20px;
+    overflow-x: auto;
+  }
+}

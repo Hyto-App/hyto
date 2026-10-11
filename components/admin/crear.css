@@ -848,10 +848,11 @@
   position: relative;
   z-index: 1;
   scroll-margin-bottom: calc(var(--cp-dock, 220px) + 24px);
-  border-radius: 18px;
-  border: 1.5px dashed rgba(183, 238, 52, 0.38);
-  background: rgba(183, 238, 52, 0.03);
-  color: var(--cp-lima);
+  /* Neutral, not lime: the screen's one lime action is the lock button. */
+  border-radius: 12px;
+  border: 1px dashed rgba(138, 140, 154, 0.4);
+  background: transparent;
+  color: #8a8c9a;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -860,8 +861,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+:root:not([data-theme="dark"]) .cp-agregar {
+  color: #5a7d00;
+}
+
 .cp-agregar:active {
-  background: rgba(183, 238, 52, 0.08);
+  background: rgba(138, 140, 154, 0.1);
 }
 
 /* Step 3 · preview */

@@ -121,7 +121,7 @@ function recibo(lienzo: Lienzo): void {
 const cache = new Map<string, Uint8Array>();
 
 /** The caption drawn on the sample image, in the screen's language. */
-export const LEYENDA_MARCADOR = { en: "SAMPLE PHOTO", es: "EVIDENCIA DE EJEMPLO" } as const;
+export const LEYENDA_MARCADOR = { en: "SAMPLE EVIDENCE", es: "EVIDENCIA DE EJEMPLO" } as const;
 
 /** A visible stand-in photo for seeded sample evidence. It is drawn here so no binary lives in the repo. */
 export function marcadorPng(escena: EscenaMarcador, idioma: keyof typeof LEYENDA_MARCADOR = "en"): Uint8Array {

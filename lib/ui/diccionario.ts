@@ -51,6 +51,7 @@ export const en = {
   mile: {
     alt: {
       descansando: "Mile is resting",
+      mirando: "Mile is watching",
       buscando: "Mile is checking your evidence",
       laTengo: "Mile has it",
       rechazado: "Mile needs other evidence",
@@ -511,7 +512,7 @@ export const en = {
     inBalance: "It's already in your balance.",
     personApproved: "A person from the project approved it.",
     practiceNetwork: "Demo: practice payment, no real money moves.",
-    demoDatos: "Demo data, no real money moves.",
+    demoDatos: "Demo data. No real money moves.",
     noCameraDevice: "This device has no camera.",
     phoneCodeHelp: "Continue on your phone with this code. Open the same account, then this task.",
     continuePhone: "Continue on your phone",
@@ -1531,6 +1532,7 @@ export const es: Rama<typeof en> = {
   mile: {
     alt: {
       descansando: "Mile está descansando",
+      mirando: "Mile está mirando",
       buscando: "Mile está revisando su evidencia",
       laTengo: "Mile la tiene",
       rechazado: "Mile necesita otra evidencia",
@@ -1990,7 +1992,7 @@ export const es: Rama<typeof en> = {
     inBalance: "Ya está en su saldo.",
     personApproved: "Lo aprobó una persona del proyecto.",
     practiceNetwork: "Demo: pago de práctica, no se mueve dinero real.",
-    demoDatos: "Datos de demostración, no se mueve dinero real.",
+    demoDatos: "Datos de demostración. No se mueve dinero real.",
     noCameraDevice: "Este dispositivo no tiene cámara.",
     phoneCodeHelp: "Siga en su teléfono con este código. Abra la misma cuenta y luego esta tarea.",
     continuePhone: "Seguir en el teléfono",
