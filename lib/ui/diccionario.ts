@@ -930,7 +930,7 @@ export const en = {
     yaEnRed: "This budget is already locked on the network. Refresh this page. Do not lock it again.",
     enviadoSinContrato: "The budget was sent, but we couldn't confirm it yet. Refresh in a moment.",
     sinWalletVoluntario:
-      "We don't have the volunteer's payout account yet. To fix it: 1. Ask the person assigned to this task to sign in to Hyto with their own email (not the demo). 2. Ask them to stay signed in: signing out removes the account we pay to. 3. Come back here and tap Lock budget again.",
+      "We don't have the volunteer's payout account yet. To fix it: 1. Ask the person assigned to this task to sign in to Hyto with their own email (not the demo). Once is enough: the account stays saved even if they sign out. 2. Come back here and tap Lock budget again.",
     sinVoluntarioAsignado:
       "This task has no volunteer yet. To fix it: 1. Open the project's Tasks tab. 2. Choose the person under Assign. 3. Come back here and tap Lock budget again.",
     esperaRevision: "Wait until the evidence review finishes before locking the budget.",
@@ -2343,7 +2343,7 @@ export const es: Rama<typeof en> = {
     yaEnRed: "Este presupuesto ya está bloqueado en la red. Actualice la página. No lo bloquee de nuevo.",
     enviadoSinContrato: "El presupuesto se envió, pero todavía no pudimos confirmarlo. Actualice en un momento.",
     sinWalletVoluntario:
-      "Todavía no tenemos la cuenta de cobro de la persona voluntaria. Para resolverlo: 1. Pídale a la persona asignada a esta tarea que entre a Hyto con su propio correo (no con el demo). 2. Pídale que no cierre la sesión: al cerrarla se borra la cuenta a la que pagamos. 3. Vuelva aquí y toque Bloquear presupuesto otra vez.",
+      "Todavía no tenemos la cuenta de cobro de la persona voluntaria. Para resolverlo: 1. Pídale a la persona asignada a esta tarea que entre a Hyto con su propio correo (no con el demo). Basta con una vez: la cuenta queda guardada aunque después cierre la sesión. 2. Vuelva aquí y toque Bloquear presupuesto otra vez.",
     sinVoluntarioAsignado:
       "Esta tarea todavía no tiene persona voluntaria. Para resolverlo: 1. Abra la pestaña Tareas del proyecto. 2. Elija a la persona en Asignar. 3. Vuelva aquí y toque Bloquear presupuesto otra vez.",
     esperaRevision: "Espere a que termine la revisión de la evidencia antes de bloquear el presupuesto.",
