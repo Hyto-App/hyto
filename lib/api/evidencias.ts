@@ -76,7 +76,13 @@ export async function leerEvidenciaHttp(almacen: Almacen, id: string, visor: Vis
   }
 }
 
-export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: string, visor: Visor): Promise<Response> {
+export async function leerFotoHttp(
+  almacen: Almacen,
+  fotos: Fotos | null,
+  id: string,
+  visor: Visor,
+  idioma: Idioma = "en",
+): Promise<Response> {
   try {
     const evidencia = await almacen.leerEvidencia(id);
     const acceso = await accesoEvidencia(almacen, visor, evidencia);
@@ -85,10 +91,11 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     if (acceso === "no") return json({ aviso: "You can't view that evidence." }, 403);
     if (esBlobEjemplo(evidencia.blobId)) {
       const tarea = await almacen.leerTarea(evidencia.tareaId);
-      return new Response(Buffer.from(marcadorPng(tarea?.tipo === "reembolso" ? "reembolso" : "trabajo")), {
+      return new Response(Buffer.from(marcadorPng(tarea?.tipo === "reembolso" ? "reembolso" : "trabajo", idioma)), {
         headers: {
           "content-type": "image/png",
           "cache-control": "private, max-age=3600",
+          vary: "Cookie, Accept-Language",
           "x-content-type-options": "nosniff",
         },
       });

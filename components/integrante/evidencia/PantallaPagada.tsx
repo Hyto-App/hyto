@@ -37,6 +37,7 @@ export function PantallaPagada({ tarea, titulo }: { tarea: Tarea; titulo: string
 
   return (
     <main className="hyto-page hyto-pagada hyto-cierre hyto-asentado">
+      <p className="hyto-estado-pagado">{corto ? t("evidencia.pagadoRecibio", { amount: corto }) : t("evidencia.pagadoSolo")}</p>
       <Mile estado="descansando" tamano={96} />
       {corto ? <p className="hyto-cierre-monto">{corto}</p> : null}
       {pago?.detalle ? <p className="hyto-tarea-meta">{pago.detalle}</p> : null}

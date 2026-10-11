@@ -7234,3 +7234,18 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     text-align: center;
   }
 }
+
+/* Paid status on the volunteer's task: a centered lime pill, same shape as the «TAREA 1» tag in tarea_v2. */
+.hyto-estado-pagado {
+  align-self: center;
+  margin: 0 auto 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: #b7ee34;
+  color: #08090c;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-align: center;
+}
