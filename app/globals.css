@@ -6045,11 +6045,18 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
+  /* Shortcuts and suggested questions sit centered, with equal space on both sides. */
+  .hyto-capa-ayuda .hyto-ayuda-atajos,
+  .hyto-capa-ayuda .hyto-ayuda-chips {
+    justify-content: center;
+  }
+
   /* The title and × stay in view while the conversation scrolls inside the sheet. */
   .hyto-capa-ayuda .hyto-ayuda-cabeza {
     position: sticky;
     top: -16px;
     z-index: 1;
+    max-width: none;
     margin: -16px -16px 0;
     padding: 16px 16px 8px;
     background: var(--papel);
