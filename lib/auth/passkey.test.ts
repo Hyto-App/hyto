@@ -137,8 +137,12 @@ test("la tarjeta de Cuenta agrega la llave de acceso y dice cómo usarla en otro
         agregar: async () => {
           llamadas += 1;
         },
+        revisar: async () => ({ estado: "lista" as const, direccion: "GCUENTA" }),
       }),
     );
+    await act(async () => {
+      await Promise.resolve();
+    });
     assert.match(texto(), /Use Hyto on other devices/);
     assert.match(texto(), /Your sign-in is saved only on this device\. Add a passkey so you don't lose your account\./);
     assert.equal(document.querySelector(".hyto-passkey [role='note']")?.textContent?.includes("Add a passkey"), true);
@@ -166,9 +170,13 @@ test("la tarjeta de Cuenta en español usa tuteo y el nombre del botón del nave
           agregar: async () => {
             throw new Error(AVISO_PASSKEY_SIN_CLAVE);
           },
+          revisar: async () => ({ estado: "lista" as const, direccion: "GCUENTA" }),
         }),
       }),
     );
+    await act(async () => {
+      await Promise.resolve();
+    });
     assert.match(texto(), /Agregue una llave de acceso para no perder su cuenta/);
     assert.match(texto(), /Usar un teléfono o una tablet/);
     assert.doesNotMatch(texto(), /Agregá|Use a phone or tablet|\bpasskey\b/i);
@@ -225,10 +233,10 @@ test("sin la clave, la tarjeta de Cuenta guía paso a paso al navegador donde se
       await Promise.resolve();
     });
     assert.match(texto(), /This browser doesn't have your account key, so it can't add a passkey here/);
-    assert.match(texto(), /Open Account where you signed up/);
-    assert.match(texto(), /localhost\/account/);
+    assert.match(texto(), /Open Settings where you signed up/);
+    assert.match(texto(), /localhost\/configuracion/);
     assert.match(texto(), /Tap Add a passkey, then Create passkey/);
-    assert.match(texto(), /Use a phone or tablet/);
+    assert.match(texto(), /save the passkey on another device/);
     assert.match(texto(), /open Projects and tap Get ready to be paid/);
     assert.match(texto(), /Don't remember where you signed up\?/);
     assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);

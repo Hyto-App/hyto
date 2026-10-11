@@ -32,7 +32,7 @@ export function leerContextoEvento(
 ): { descripcion: string | null; contextoIa: string | null } | { aviso: string } {
   const descripcion = leerTexto(crudo.descripcion, MAX_DESCRIPCION, `The event description can have up to ${MAX_DESCRIPCION} characters.`);
   if (!descripcion.ok) return { aviso: descripcion.aviso };
-  const contextoIa = leerTexto(crudo.contextoIa, MAX_CONTEXTO_IA, `The context for the AI can have up to ${MAX_CONTEXTO_IA} characters.`);
+  const contextoIa = leerTexto(crudo.contextoIa, MAX_CONTEXTO_IA, `The context for Mile can have up to ${MAX_CONTEXTO_IA} characters.`);
   if (!contextoIa.ok) return { aviso: contextoIa.aviso };
   return { descripcion: descripcion.valor, contextoIa: contextoIa.valor };
 }

@@ -10,17 +10,21 @@ const ALTO = 360;
 const FUENTE: Record<string, readonly string[]> = {
   A: ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
   C: ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+  D: ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
   E: ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
   H: ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
   I: ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+  J: ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
   K: ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
   L: ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
   M: ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
+  N: ["10001", "11001", "10101", "10101", "10011", "10001", "10001"],
   O: ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
   P: ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
   R: ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
   S: ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
   T: ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+  V: ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
   Z: ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
   "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
   "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
@@ -114,20 +118,24 @@ function recibo(lienzo: Lienzo): void {
   lienzo.texto(306 - anchoTexto("12.40", 2), 266, "12.40", 2, [20, 20, 24]);
 }
 
-const cache = new Map<EscenaMarcador, Uint8Array>();
+const cache = new Map<string, Uint8Array>();
+
+/** The caption drawn on the sample image, in the screen's language. */
+export const LEYENDA_MARCADOR = { en: "SAMPLE PHOTO", es: "EVIDENCIA DE EJEMPLO" } as const;
 
 /** A visible stand-in photo for seeded sample evidence. It is drawn here so no binary lives in the repo. */
-export function marcadorPng(escena: EscenaMarcador): Uint8Array {
-  const guardado = cache.get(escena);
+export function marcadorPng(escena: EscenaMarcador, idioma: keyof typeof LEYENDA_MARCADOR = "en"): Uint8Array {
+  const clave = `${escena}:${idioma}`;
+  const guardado = cache.get(clave);
   if (guardado) return guardado;
   const lienzo = new Lienzo();
   if (escena === "reembolso") recibo(lienzo);
   else stand(lienzo);
-  const leyenda = "SAMPLE PHOTO";
+  const leyenda = LEYENDA_MARCADOR[idioma] ?? LEYENDA_MARCADOR.en;
   lienzo.rect(12, ALTO - 40, anchoTexto(leyenda, 2) + 20, 28, [8, 9, 12]);
   lienzo.texto(22, ALTO - 33, leyenda, 2, [183, 238, 52]);
   const png = codificarPng(lienzo.pixeles);
-  cache.set(escena, png);
+  cache.set(clave, png);
   return png;
 }
 

@@ -5191,22 +5191,29 @@ html.hyto-firmando body {
 }
 
 .hyto-resumen {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 12px;
-  padding: 14px 16px;
-}
-
-.hyto-resumen:not(:has(.hyto-resumen-mini)) {
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 0;
+  overflow: hidden;
+  text-align: center;
 }
 
 .hyto-resumen h2 {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.25;
+}
+
+.hyto-resumen > .hyto-tarea-meta,
+.hyto-resumen > .hyto-amount {
+  margin: 0;
+}
+
+.hyto-resumen > :last-child:not(.hyto-resumen-falta) {
+  margin-bottom: 18px;
 }
 
 .hyto-resumen-mini {
@@ -5218,6 +5225,15 @@ html.hyto-firmando body {
   background: var(--papel);
 }
 
+.hyto-resumen-icono {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--suave);
+  background: var(--superficie-2);
+}
+
 .hyto-resumen-mini img {
   width: 100%;
   height: 100%;
@@ -5226,8 +5242,76 @@ html.hyto-firmando body {
 
 .hyto-resumen-nota {
   display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.hyto-resumen-pct {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.hyto-resumen-estado {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hyto-resumen-notas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+/* An odd last flag spans both columns, so the grid stays symmetric. */
+.hyto-resumen-notas > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.hyto-resumen-caja {
+  display: grid;
+  justify-items: center;
+  align-content: start;
   gap: 4px;
-  margin-top: 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--r-sm);
+  background: var(--superficie-2);
+  overflow-wrap: anywhere;
+}
+
+.hyto-resumen-caja p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+@media (max-width: 640px) {
+  .hyto-resumen-notas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hyto-resumen-falta {
+  box-sizing: border-box;
+  width: calc(100% + 32px);
+  margin: 8px -16px 0;
+  padding: 12px 16px;
+  background: #f59e0b;
+  color: #14162b;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .hyto-linea {
@@ -5326,20 +5410,6 @@ html.hyto-firmando body {
   .hyto-ver-mas-cuerpo > .hyto-tarjeta {
     box-sizing: border-box;
     width: 100%;
-  }
-
-  .hyto-resumen,
-  .hyto-resumen:not(:has(.hyto-resumen-mini)) {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .hyto-resumen:not(:has(.hyto-resumen-mini)) > div {
-    grid-column: 1 / -1;
-  }
-
-  .hyto-resumen > .hyto-amount {
-    grid-column: 1 / -1;
-    margin: 0;
   }
 
   .hyto-revisando {
@@ -6267,25 +6337,30 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   line-height: 1.3;
 }
 
-.hyto-rastreo li::before {
-  content: "";
-  height: 4px;
+/* A step that happened: lime circle with a check. Any other step: empty gray circle, gray text. */
+.hyto-rastreo-marca {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 2px solid var(--linea);
   border-radius: 999px;
-  background: var(--linea);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.hyto-rastreo li[data-estado="hecho"],
-.hyto-rastreo li[data-estado="ahora"] {
+.hyto-rastreo-marca[data-hecho="si"] {
+  border-color: var(--acento);
+  background: var(--acento);
+  color: var(--sobre-acento, #08090c);
+}
+
+.hyto-rastreo li[data-estado="hecho"] {
   color: var(--tinta);
   font-weight: 600;
-}
-
-.hyto-rastreo li[data-estado="hecho"]::before {
-  background: var(--acento);
-}
-
-.hyto-rastreo li[data-estado="ahora"]::before {
-  background: linear-gradient(90deg, var(--acento) 55%, var(--linea) 55%);
 }
 
 .hyto-bitacora {
@@ -6337,6 +6412,58 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 /* Passkey guide: a browser without the account key, walked through adding a passkey. */
 .hyto-guia {
   color: var(--tinta);
+}
+
+/* This browser has no account key: Settings and Lock budget say so, then show the guide. */
+.hyto-clave-navegador {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--peligro) 35%, transparent);
+  background: color-mix(in srgb, var(--peligro) 6%, var(--papel));
+  padding: 14px 16px;
+  margin-top: 16px;
+  color: var(--tinta);
+}
+
+/* What Cavos will ask before it opens, and which signature is in flight. Dots fill lime as each one starts. */
+.hyto-firma-cavos {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--suave);
+}
+
+.hyto-firma-cavos-contador {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.hyto-firma-cavos-puntos {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.hyto-firma-cavos-puntos i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid var(--linea);
+  background: transparent;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.hyto-firma-cavos-puntos i[data-lleno="si"] {
+  border-color: var(--acento);
+  background: var(--acento);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-firma-cavos-puntos i {
+    transition: none;
+  }
 }
 
 .hyto-guia-titulo {
@@ -7206,4 +7333,19 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   header > .hyto-dos-botones {
     width: 100%;
   }
+}
+
+/* Paid status on the volunteer's task: a centered lime pill, same shape as the «TAREA 1» tag in tarea_v2. */
+.hyto-estado-pagado {
+  align-self: center;
+  margin: 0 auto 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: #b7ee34;
+  color: #08090c;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-align: center;
 }

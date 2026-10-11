@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AvisoFirma } from "@/components/sesion/AvisoFirma";
+import { ClaveNavegador, sinClave as faltaClave, useFirmaNavegador, type RevisarFirma } from "@/components/sesion/ClaveNavegador";
 import { GuiaPasskey } from "@/components/sesion/GuiaPasskey";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useTexto } from "@/components/ui/Idioma";
@@ -13,19 +14,22 @@ type Estado = "inicio" | "agregando" | "hecho" | "error";
 
 type Props = {
   agregar?: () => Promise<void>;
+  /** Same check Lock budget uses: does this browser hold the account key? */
+  revisar?: RevisarFirma;
 };
 
 /** Account card: add a passkey so another phone or computer can confirm for this account. */
-export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
+export function PasskeyCuenta({ agregar = () => agregarPasskey(), revisar }: Props) {
   const demo = useModoDemo();
+  const firma = useFirmaNavegador(!demo, revisar);
   const t = useTexto();
   const [estado, setEstado] = useState<Estado>("inicio");
   const [aviso, setAviso] = useState<string | null>(null);
   const [resaltada, setResaltada] = useState(false);
   const tarjeta = useRef<HTMLElement>(null);
 
-  // Arriving from the guide's link (/account?add=passkey#passkey): bring this card into view and
-  // mark it. The card mounts after Account loads, so the browser's own jump to the hash misses it.
+  // Arriving from the guide's link (/configuracion?add=passkey#passkey): bring this card into view and
+  // mark it. The card mounts after Settings loads, so the browser's own jump to the hash misses it.
   useEffect(() => {
     if (demo || !pidePasskey(window.location.search, window.location.hash)) return;
     setResaltada(true);
@@ -54,6 +58,11 @@ export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
   // This browser has no account key, so adding a passkey here can't work: guide them to the
   // browser where they signed up instead of offering the same button again.
   const sinClave = estado === "error" && aviso !== null && mensajeClaro(aviso) === AVISO_PASSKEY_SIN_CLAVE;
+  // Checked up front, the same way Lock budget signs: this browser has no key, so say so and guide
+  // the person to bring it here, instead of claiming the sign-in is saved here.
+  const faltaAqui = faltaClave(firma);
+  const revisando = firma.estado === null;
+  const listaAqui = firma.estado?.estado === "lista";
 
   return (
     <section
@@ -66,9 +75,16 @@ export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
     >
       {resaltada && estado !== "hecho" ? <p className="hyto-passkey-chip">{t("cuenta.passkeyEmpieza")}</p> : null}
       <h2 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.passkeyTitulo")}</h2>
-      <p className="hyto-note mt-3 max-w-prose" role="note">
-        {t("cuenta.passkeyDetalle")}
-      </p>
+      {revisando ? (
+        <p className="mt-3 max-w-prose text-sm leading-6 text-[var(--suave)]" role="status" aria-live="polite">
+          {t("claveNavegador.revisando")}
+        </p>
+      ) : listaAqui ? (
+        <p className="hyto-note mt-3 max-w-prose" role="note">
+          {t("cuenta.passkeyDetalle")}
+        </p>
+      ) : null}
+      <ClaveNavegador firma={firma} contexto="cuenta" className="mt-4" />
       <p className="mt-3 max-w-prose text-sm leading-6">{t("cuenta.passkeyPorQue")}</p>
       <p className="mt-2 max-w-prose text-sm leading-6 text-[var(--suave)]">{t("cuenta.passkeyTelefono")}</p>
       {estado === "hecho" ? (
@@ -76,12 +92,12 @@ export function PasskeyCuenta({ agregar = () => agregarPasskey() }: Props) {
           {t("cuenta.passkeyListo")}
         </p>
       ) : null}
-      {sinClave ? (
+      {faltaAqui ? null : sinClave ? (
         <GuiaPasskey variante="cuenta" className="mt-4" />
       ) : estado === "error" && aviso ? (
         <AvisoFirma mensaje={aviso} className="mt-3 text-sm text-[var(--suave)]" />
       ) : null}
-      {estado !== "hecho" && !sinClave ? (
+      {estado !== "hecho" && !sinClave && !faltaAqui && !revisando ? (
         <button
           type="button"
           className="hyto-btn is-inline mt-5 px-5"

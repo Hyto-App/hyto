@@ -1,8 +1,9 @@
 /** Fixed help. Answers are dictionary keys, never a live model. */
+import { RUTA_SUBIR_EVIDENCIA } from "@/lib/integrante/subir";
 
 export const ATAJOS = [
   { id: "tareas", href: "/mis-tareas" },
-  { id: "evidencia", href: "/mis-tareas" },
+  { id: "evidencia", href: RUTA_SUBIR_EVIDENCIA },
   { id: "pago", faq: "pago" },
   { id: "faq" },
 ] as const;

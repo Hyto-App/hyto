@@ -1,13 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTexto } from "@/components/ui/Idioma";
+import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
+import type { Idioma } from "@/lib/ui/idioma";
 import type { Sugerido } from "@/lib/perfil/sugeridos";
 
 export const EVENTO_INVITAR_CORREO = "hyto:invitar-correo";
 
-function nombreDe(persona: Sugerido): string {
-  return persona.nombre ?? persona.email;
+function nombreEn(persona: Sugerido, idioma: Idioma): string {
+  return persona.nombre ? nombreEnIdioma(persona.nombre, idioma) : persona.email;
+}
+
+/** Demo names like «Volunteer (demo)» read in the screen's language. */
+function useNombreDe() {
+  const idioma = useIdioma();
+  return (persona: Sugerido) => nombreEn(persona, idioma);
 }
 
 function useLinea() {
@@ -55,6 +63,7 @@ function useInvitar(proyectoId: string) {
 
 function FilaInvitada({ persona, enlace }: { persona: Sugerido; enlace: string }) {
   const t = useTexto();
+  const nombreDe = useNombreDe();
   const [copiado, setCopiado] = useState(false);
   return (
     <div className="grid gap-2 pb-3">
@@ -90,6 +99,7 @@ function Fila({
   accion: React.ReactNode;
 }) {
   const linea = useLinea();
+  const nombreDe = useNombreDe();
   return (
     <div className="sg-row">
       <div className={`sg-ra${elegido ? " is-on" : ""}`} aria-hidden="true">
@@ -127,6 +137,7 @@ export function SugeridosAsignar({
   onCerrar: () => void;
 }) {
   const t = useTexto();
+  const nombreDe = useNombreDe();
   const [busqueda, setBusqueda] = useState("");
   const [elegido, setElegido] = useState(actualId);
   const [enviando, setEnviando] = useState(false);
@@ -267,6 +278,7 @@ export function SugeridosAsignar({
 /** Inside the invite panel: people from this organizer's other events who are not in this one yet. */
 export function SugeridosInvitar({ proyectoId, sugeridos }: { proyectoId: string; sugeridos: Sugerido[] }) {
   const t = useTexto();
+  const nombreDe = useNombreDe();
   const { enlaces, error, enCurso, invitar } = useInvitar(proyectoId);
   const fuera = sugeridos.filter((persona) => persona.yaTrabajo && !persona.enEsteEvento);
   return (
@@ -325,6 +337,7 @@ export function SugeridosElegir({
   onCambio: (correo: string) => void;
 }) {
   const t = useTexto();
+  const nombreDe = useNombreDe();
   const limpio = valor.trim().toLowerCase();
   const elegido = sugeridos.find((persona) => persona.email.toLowerCase() === limpio) ?? null;
   const visibles = filtrar(sugeridos, elegido ? "" : valor).slice(0, 4);

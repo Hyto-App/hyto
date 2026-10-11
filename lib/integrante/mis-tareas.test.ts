@@ -348,8 +348,8 @@ test("quien cobra ve el pedido de otra foto y lo que Mile leyó junto a lo que l
     assert.match(texto(), /79%/);
     assert.match(texto(), /Amount over the cap/);
     assert.match(texto(), /Mile read US\$0\.30\. You'll be paid US\$0\.25\./);
-    assert.match(texto(), /Ana asked for another photo/);
-    assert.match(texto(), /New photo requested/);
+    assert.match(texto(), /Ana asked for other evidence/);
+    assert.match(texto(), /New evidence requested/);
     assert.equal(texto().includes("The organizer asked"), false);
     assert.equal(texto().includes("Rejected"), false);
     assert.match(texto(), /The banner is cropped/);
@@ -410,13 +410,13 @@ test("otra foto pedida no usa un pedazo del correo y tiene Ver tarea", async () 
   try {
     await montar(createElement(MisTareas));
     await esperar(() => texto().includes("Booth") && texto().includes("Tables"));
-    assert.match(texto(), /North asked for another photo/);
-    assert.match(texto(), /The organizer asked for another photo/);
+    assert.match(texto(), /North asked for other evidence/);
+    assert.match(texto(), /The organizer asked for other evidence/);
     assert.equal(texto().includes("ana@"), false);
     assert.equal(texto().includes("@"), false);
     const booth = tarjetaDe("Booth");
     const ver = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "View task");
-    const otra = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.includes("Take another photo"));
+    const otra = [...booth.querySelectorAll("a")].find((enlace) => enlace.textContent?.includes("Send another piece of evidence"));
     assert.equal(ver?.getAttribute("href"), "/tareas/stand");
     assert.equal(ver?.className.includes("hyto-btn-line"), true);
     assert.equal(otra?.getAttribute("href"), "/tareas/stand");
@@ -459,9 +459,9 @@ test("en español, otra foto pedida dice quien organiza o el evento, y Ver tarea
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(MisTareas) }));
     await esperar(() => texto().includes("Puesto"));
-    assert.match(texto(), /Quien organiza pidió otra foto/);
+    assert.match(texto(), /Quien organiza pidió otra evidencia/);
     assert.equal(texto().includes("Rejected"), false);
-    assert.equal(texto().includes("Otra foto pedida"), true);
+    assert.equal(texto().includes("Otra evidencia pedida"), true);
     const ver = [...document.querySelectorAll("a")].find((enlace) => enlace.textContent?.trim() === "Ver tarea");
     assert.equal(ver?.getAttribute("href"), "/tareas/stand");
   } finally {

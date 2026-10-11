@@ -16,7 +16,7 @@ export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.
 export const AVISO_SIN_CUENTA_FIRMA =
   "This sign-in has no account to sign with. Sign in again on this site to continue.";
 export const AVISO_DISPOSITIVO =
-  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Settings and tap Add a passkey. Then try again here and use that passkey.";
 export const AVISO_PASSKEY =
   "Confirm with your passkey to use your account in this browser. Try again and choose Use passkey when it asks.";
 
@@ -73,6 +73,12 @@ export type OpcionesFirma = {
    * or cancels. `esperarCavos` still uses a deadline for trustline setup.
    */
   topeMs?: number;
+  /**
+   * Runs once before the first step prepares anything on the server. By default (no `firmar`), it
+   * asks whether this browser holds the account key, so a browser without it hears so in a moment
+   * instead of after the server prepared the step.
+   */
+  verificar?: () => Promise<void>;
 };
 
 /**
@@ -156,6 +162,11 @@ export async function firmarPasos(
   opciones: OpcionesFirma = {},
 ): Promise<PagoFirmado> {
   if (acciones.length === 0) throw new ErrorFirmaCliente("The action is missing.");
+  const verificar = opciones.verificar ?? (opciones.firmar ? null : verificarFirmanteCavos);
+  if (verificar) {
+    if (opciones.senal?.aborted) throw new ErrorFirmaCliente(AVISO_RECHAZO);
+    await verificar();
+  }
   let contrato = texto(opciones.extra?.contrato);
   let monto = opciones.extra?.monto;
   let ultimo: PagoFirmado = vacio();
@@ -250,6 +261,22 @@ export function firmanteDe(billetera: BilleteraSesion): BilleteraSesion {
   if (billetera.status !== "needs-device-approval") return billetera;
   const aviso = billetera.passkeyRestore ? AVISO_PASSKEY : AVISO_DISPOSITIVO;
   throw new ErrorFirmaCliente(aviso, null, null, billetera.status);
+}
+
+/**
+ * Asks the vault whether this browser can sign, before any step is prepared. Passkey mode, like the
+ * signature itself: an account with a passkey restores the key here (Cavos shows its own window),
+ * and one without gets AVISO_DISPOSITIVO, which shows the step-by-step guide.
+ */
+export async function verificarFirmanteCavos(): Promise<void> {
+  const restaurar = bajarCapasParaCavos();
+  try {
+    firmanteDe(await conectarBilleteraDeSesion());
+  } catch (error) {
+    throw traducirFirma(error);
+  } finally {
+    restaurar();
+  }
 }
 
 async function firmarConCavos(unsignedXdr: string, senal?: AbortSignal): Promise<string> {

@@ -2,6 +2,8 @@ import { tituloDe } from "@/lib/ui/titulo";
 import { CabeceraEvento } from "@/components/admin/CabeceraEvento";
 import { TareasEvento } from "@/components/admin/TareasEvento";
 import { avisoBloqueo } from "@/lib/api/editar-tarea";
+import { evidenciaVigente } from "@/lib/api/etapa";
+import { rechazoPublico } from "@/lib/api/tareas";
 import { almacenNeon } from "@/lib/db/neon";
 import { saldoCreacion } from "@/lib/escrow/saldo";
 import { personaVisible } from "@/lib/perfil/vista";
@@ -28,7 +30,7 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
     (await almacen.listarTareas())
       .filter((fila) => fila.proyectoId === id)
       .map(async (tarea) => {
-        const evidencia = await almacen.ultimaEvidencia(tarea.id);
+        const evidencia = evidenciaVigente(tarea, await almacen.ultimaEvidencia(tarea.id), rechazoPublico(tarea) !== null);
         const tieneFoto = Boolean(evidencia);
         return {
           id: tarea.id,

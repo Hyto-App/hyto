@@ -3,9 +3,9 @@ import test from "node:test";
 import { enlacePasskey, enlacePasskeyVisible, pidePasskey, RUTA_PASSKEY_CUENTAS } from "./enlacePasskey";
 
 test("el enlace de la guía apunta a la tarjeta de llave de acceso en el mismo sitio", () => {
-  assert.equal(enlacePasskey("https://hyto.vercel.app"), "https://hyto.vercel.app/account?add=passkey#passkey");
-  assert.equal(enlacePasskey("https://hyto.vercel.app/"), "https://hyto.vercel.app/account?add=passkey#passkey");
-  assert.equal(enlacePasskeyVisible("hyto.vercel.app"), "hyto.vercel.app/account");
+  assert.equal(enlacePasskey("https://hyto.vercel.app"), "https://hyto.vercel.app/configuracion?add=passkey#passkey");
+  assert.equal(enlacePasskey("https://hyto.vercel.app/"), "https://hyto.vercel.app/configuracion?add=passkey#passkey");
+  assert.equal(enlacePasskeyVisible("hyto.vercel.app"), "hyto.vercel.app/configuracion");
   assert.equal(RUTA_PASSKEY_CUENTAS, "/cuentas?add=passkey");
 });
 
