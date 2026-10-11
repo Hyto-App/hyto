@@ -9,7 +9,7 @@ import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, ty
 import { brutoFondado, montoRecibido } from "@/lib/escrow/recibido";
 import { nombreOrganizadorVisible } from "@/lib/sesion/nombre";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
-import { lineaDeEnvio } from "./etapa";
+import { evidenciaVigente, lineaDeEnvio } from "./etapa";
 import { baseNoLista, json } from "./json";
 import { veredictoAlLeer } from "./revision-vencida";
 
@@ -93,10 +93,10 @@ export async function tareaConNota(
   nombres?: Map<string, string>,
   organizadores?: Map<string, { nombre: string; email: string } | null>,
 ) {
-  const evidencia = await almacen.ultimaEvidencia(tarea.id);
+  const rechazo = rechazoPublico(tarea);
+  const evidencia = evidenciaVigente(tarea, await almacen.ultimaEvidencia(tarea.id), rechazo !== null);
   const fila = await veredictoAlLeer(almacen, tarea, evidencia);
   const visible = notaPublica(fila);
-  const rechazo = rechazoPublico(tarea);
   const linea = lineaDeEnvio(tarea, evidencia, fila);
   const bruto = brutoFondado(tarea, evidencia?.montoConfirmado);
   const quien = organizadores?.get(tarea.proyectoId);
@@ -114,7 +114,7 @@ export async function tareaConNota(
     notas: notasPublicas(fila, evidencia, tarea),
     rechazo,
     rechazada: tarea.estado === "pendiente" && rechazo !== null,
-    intentos: await almacen.contarEvidencias(tarea.id),
+    intentos: evidencia ? await almacen.contarEvidencias(tarea.id) : 0,
     revision: revisionPublica(tarea, fila),
     etapa: linea.etapa,
     enviadaEn: linea.enviadaEn,

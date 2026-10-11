@@ -238,6 +238,7 @@ export async function asegurarCaminoDemo(almacen: Almacen): Promise<void> {
     }
   }
   await asegurarRevisionMet(almacen, voluntarioId);
+  await asegurarNotasEjemplo(almacen);
 }
 
 /**
@@ -254,6 +255,59 @@ export async function reiniciarPagosDemo(almacen: Almacen): Promise<void> {
     const evidencia = await almacen.ultimaEvidencia(tarea.id);
     const estado = tarea.id !== TAREA_DEMO_SUBIR && evidencia ? "en revisión" : "pendiente";
     await almacen.actualizarTarea(tarea.id, { contratoEscrow: null, estado });
+  }
+  await volverAEjemplos(almacen);
+}
+
+/**
+ * A restart puts every seeded demo task back on its sample file and sample note, in the reader's
+ * language through the seed's translations. A file an earlier demo uploaded stays stored, but the sample
+ * becomes the latest again, so no stranger's photo or English model note shows up in a new demo.
+ */
+async function volverAEjemplos(almacen: Almacen): Promise<void> {
+  const ahora = new Date().toISOString();
+  const veredictos = veredictosDemo();
+  for (const plantilla of evidenciasDemo()) {
+    const tarea = await almacen.leerTarea(plantilla.tareaId);
+    if (!tarea || tarea.proyectoId !== ID_PROYECTO_DEMO || tarea.estado === "pagado" || tarea.hashPago) continue;
+    if (tarea.contratoEscrow && !esContratoDemo(tarea.contratoEscrow)) continue;
+    const ultima = await almacen.ultimaEvidencia(tarea.id);
+    const guardada = await almacen.leerEvidencia(plantilla.id);
+    if (!guardada) {
+      try {
+        await almacen.crearEvidencia({ ...plantilla, creadaEn: ahora });
+      } catch (error) {
+        if (!esClaveDuplicada(error)) throw error;
+      }
+    } else if (ultima && ultima.id !== plantilla.id) {
+      await almacen.actualizarEvidencia(plantilla.id, { creadaEn: ahora });
+    }
+    if (guardada?.montoConfirmado) await almacen.actualizarEvidencia(plantilla.id, { montoConfirmado: null });
+    const veredicto = veredictos.find((fila) => fila.evidenciaId === plantilla.id);
+    if (veredicto) await asegurarVeredictoEjemplo(almacen, veredicto);
+    // The status follows the usual seed rules after this (reponerPendientes, asegurarRevisionMet).
+    if (tarea.rechazo) await almacen.actualizarTarea(tarea.id, { rechazo: null });
+  }
+  // The upload task starts empty: pending, no send-back. Its old file is history (see evidenciaVigente).
+  const subir = await almacen.leerTarea(TAREA_DEMO_SUBIR);
+  if (subir && subir.proyectoId === ID_PROYECTO_DEMO && !subir.hashPago && !(subir.contratoEscrow && !esContratoDemo(subir.contratoEscrow)) && (subir.estado !== "pendiente" || subir.rechazo)) {
+    await almacen.actualizarTarea(subir.id, { estado: "pendiente", rechazo: null });
+  }
+}
+
+/** A sample file only ever carries the scripted sample note. A model run on it (a re-review) is put back. */
+async function asegurarVeredictoEjemplo(almacen: Almacen, plantilla: VeredictoFila): Promise<void> {
+  const guardado = await almacen.veredictoDe(plantilla.evidenciaId);
+  if (guardado && guardado.origen === plantilla.origen && guardado.frase === plantilla.frase && guardado.score === plantilla.score) return;
+  await almacen.guardarVeredicto(plantilla);
+}
+
+/** Every entry: a seeded demo task still on its sample file shows the sample note, never a model's. */
+async function asegurarNotasEjemplo(almacen: Almacen): Promise<void> {
+  for (const plantilla of veredictosDemo()) {
+    const ultima = await almacen.ultimaEvidencia(plantilla.tareaId);
+    if (!ultima || ultima.id !== plantilla.evidenciaId || !esBlobEjemplo(ultima.blobId)) continue;
+    await asegurarVeredictoEjemplo(almacen, plantilla);
   }
 }
 

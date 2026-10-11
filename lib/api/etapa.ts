@@ -1,4 +1,4 @@
-import { esBlobEjemplo } from "@/lib/db/semilla";
+import { ID_PROYECTO_DEMO, esBlobEjemplo } from "@/lib/db/semilla";
 import type { EvidenciaFila, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import type { EtapaTarea } from "@/lib/integrante/tipos";
 import { leerRechazo } from "@/lib/revision/requisitos";
@@ -41,3 +41,20 @@ export function tareaCerrada(tarea: Pick<TareaFila, "estado" | "hashPago">): boo
   return tarea.estado === "pagado" || Boolean(tarea.hashPago?.trim());
 }
 
+
+/**
+ * The file that belongs to the task as it stands. A demo restart puts a demo task back to pending but
+ * keeps the old file and its review: that is history from an earlier demo, not something this person sent.
+ * Outside the demo, an upload always moves a task to review, so a pending task's file only counts when it
+ * was sent back (a stored rejection).
+ */
+export function evidenciaVigente<E>(
+  tarea: Pick<TareaFila, "proyectoId" | "estado" | "hashPago">,
+  evidencia: E | null,
+  rechazada: boolean,
+): E | null {
+  if (!evidencia) return null;
+  const pendiente = calcularEstadoTarea({ estado: tarea.estado, hashPago: tarea.hashPago }).estado === "pendiente";
+  if (tarea.proyectoId === ID_PROYECTO_DEMO && pendiente && !rechazada && !tarea.hashPago?.trim()) return null;
+  return evidencia;
+}
