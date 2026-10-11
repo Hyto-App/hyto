@@ -9,6 +9,7 @@ import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { acortarDireccion, explicarNeto, formatearFecha, formatearMonto, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
+import { estadoRecarga, FAUCET_CIRCLE } from "@/lib/integrante/recarga";
 import type { Clave } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 import { textoVisible } from "@/lib/ui/etiquetas";
@@ -70,6 +71,16 @@ export function PanelCuenta({ revisarFirma }: { revisarFirma?: RevisarFirma }) {
       viva = false;
     };
   }, [intento]);
+
+  // «Agregar saldo» in Crear proyecto opens /configuracion#saldo. The card mounts after the account loads,
+  // so the browser's own hash jump finds nothing; scroll once it exists.
+  useEffect(() => {
+    if (estado !== "listo" || window.location.hash !== "#saldo") return;
+    const nodo = document.getElementById("saldo");
+    if (!(nodo instanceof HTMLElement)) return;
+    const quieto = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    nodo.scrollIntoView?.({ behavior: quieto ? "auto" : "smooth", block: "start" });
+  }, [estado]);
 
   if (estado === "cargando") {
     return (
@@ -174,6 +185,7 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
   const publica = direccionPublica(vista.wallet);
   const monto = vista.saldoEstado === "ok" && vista.saldo ? formatearRecibido(vista.saldo, idioma) : "—";
   const sinCobro = vista.saldoEstado === "ausente" || vista.saldoEstado === "sin-wallet";
+  const recarga = estadoRecarga(vista);
   return (
     // «Agregar saldo» in Crear proyecto links here (/configuracion#saldo).
     <section id="saldo" className="hyto-card scroll-mt-24 p-5 sm:p-6">
@@ -184,7 +196,15 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
         {vista.walletMuestra ? <span className="hyto-pill hyto-pill-muted">{t("comunes.sample")}</span> : null}
       </div>
       <p className="mt-1 text-sm text-[var(--suave)]">{textoSaldo(vista, t)}</p>
-      {sinCobro && !vista.demo && !vista.muestra ? <PrepararUsdc silencioPendiente onListo={alListo} /> : null}
+      {sinCobro && !vista.demo && !vista.muestra ? (
+        // Without the USDC line the faucet would fail, so this one button opens the line first; then the faucet block appears.
+        recarga === "preparar" ? (
+          <PrepararUsdc silencioPendiente onListo={alListo} ayuda={t("cuenta.recargarAntes")} etiqueta={t("cuenta.prepararCuenta")} />
+        ) : (
+          <PrepararUsdc silencioPendiente onListo={alListo} />
+        )
+      ) : null}
+      <RecargaPrueba vista={vista} />
       <details className="mt-6 text-sm">
         <summary className="cursor-pointer font-medium text-[var(--suave)]">{t("cuenta.avanzado")}</summary>
         <div className="mt-4 grid gap-5">
@@ -205,24 +225,7 @@ function Billetera({ vista, alListo }: { vista: VistaCuenta; alListo: () => void
 
 function Direccion({ direccion }: { direccion: string }) {
   const t = useTexto();
-  const [copiado, setCopiado] = useState(false);
-  const [fallo, setFallo] = useState(false);
-
-  useEffect(() => {
-    if (!copiado) return;
-    const id = window.setTimeout(() => setCopiado(false), 2000);
-    return () => window.clearTimeout(id);
-  }, [copiado]);
-
-  async function copiar() {
-    setFallo(false);
-    setCopiado(true);
-    const ok = (await copiarConPortapapeles(direccion)) || copiarConSeleccion(direccion);
-    if (!ok) {
-      setCopiado(false);
-      setFallo(true);
-    }
-  }
+  const { copiado, fallo, copiar } = useCopiar(direccion);
 
   return (
     <div className="mt-2">
@@ -245,6 +248,81 @@ function Direccion({ direccion }: { direccion: string }) {
         </label>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * «Recargar saldo de prueba». Only when the account already holds the USDC trustline: Circle's faucet
+ * pays USDC, and without the line that payment fails. A missing line keeps «Prepararse para cobrar» above.
+ */
+function RecargaPrueba({ vista }: { vista: VistaCuenta }) {
+  const t = useTexto();
+  const estado = estadoRecarga(vista);
+  // «preparar»: the line and «Preparar mi cuenta» live in PrepararUsdc above, as the card's only setup button.
+  if (estado !== "lista") return null;
+  const direccion = vista.wallet ?? "";
+  return (
+    <div className="mt-6 grid gap-5 border-t border-[var(--linea)] pt-5" data-recarga="lista">
+      <div>
+        <h3 className="text-sm font-medium text-[var(--suave)]">{t("cuenta.tuDireccion")}</h3>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="min-w-0 font-mono text-lg tracking-tight">
+            <span aria-hidden="true">{acortarDireccion(direccion)}</span>
+            <span className="sr-only">{direccion}</span>
+          </p>
+          <BotonCopiar valor={direccion} texto={t("cuenta.copiar")} hecho={t("cuenta.copiada")} />
+        </div>
+      </div>
+      {/* Left-aligned under the address, like the rest of the card (Pao, 10-oct). */}
+      <div className="grid justify-items-start gap-3 text-left" data-recarga-accion>
+        <a className="hyto-btn w-fit max-w-full px-5" href={FAUCET_CIRCLE} target="_blank" rel="noopener noreferrer">
+          {t("cuenta.recargar")}
+          <span className="sr-only"> {t("cuenta.nuevaPestana")}</span>
+        </a>
+        <p className="max-w-prose text-sm leading-6 text-[var(--suave)]">{t("cuenta.recargarAyuda")}</p>
+      </div>
+    </div>
+  );
+}
+
+function useCopiar(valor: string): { copiado: boolean; fallo: boolean; copiar: () => Promise<void> } {
+  const [copiado, setCopiado] = useState(false);
+  const [fallo, setFallo] = useState(false);
+
+  useEffect(() => {
+    if (!copiado) return;
+    const id = window.setTimeout(() => setCopiado(false), 2000);
+    return () => window.clearTimeout(id);
+  }, [copiado]);
+
+  async function copiar() {
+    setFallo(false);
+    setCopiado(true);
+    const ok = (await copiarConPortapapeles(valor)) || copiarConSeleccion(valor);
+    if (!ok) {
+      setCopiado(false);
+      setFallo(true);
+    }
+  }
+
+  return { copiado, fallo, copiar };
+}
+
+function BotonCopiar({ valor, texto, hecho }: { valor: string; texto: string; hecho: string }) {
+  const t = useTexto();
+  const { copiado, fallo, copiar } = useCopiar(valor);
+  return (
+    <>
+      <button type="button" className="hyto-btn-line is-inline px-4" aria-live="polite" data-copiar onClick={() => void copiar()}>
+        {copiado ? hecho : texto}
+      </button>
+      {fallo ? (
+        <label className="block w-full text-sm text-[var(--suave)]">
+          {t("cuenta.copyHere")}
+          <input readOnly value={valor} className="hyto-input mt-2 font-mono text-sm" onFocus={(evento) => evento.target.select()} />
+        </label>
+      ) : null}
+    </>
   );
 }
 

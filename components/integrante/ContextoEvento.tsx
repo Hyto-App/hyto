@@ -1,6 +1,7 @@
 "use client";
 
 import { useIdioma, useTexto } from "@/components/ui/Idioma";
+import { fechaGuardadaVisible } from "@/lib/tareas/fecha-limite";
 
 /** The cover photo and the public description of an event. The AI context never reaches this component. */
 export function ContextoEvento({
@@ -19,12 +20,9 @@ export function ContextoEvento({
 }) {
   const t = useTexto();
   const idioma = useIdioma();
-  if (!portada && !descripcion && !fecha) return null;
-  const dia = fecha
-    ? new Intl.DateTimeFormat(idioma === "es" ? "es-CR" : "en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
-        new Date(`${fecha}T00:00:00Z`),
-      )
-    : null;
+  // A past or old date still shows as stored; a broken one shows nothing instead of breaking the page.
+  const dia = fechaGuardadaVisible(fecha, idioma, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  if (!portada && !descripcion && !dia) return null;
   return (
     <section className="hyto-card mb-4 overflow-hidden" aria-label={nombre}>
       {portada ? (

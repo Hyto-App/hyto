@@ -35,6 +35,7 @@ import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { AVISO_GALERIA_TIPO } from "@/lib/integrante/fotoEnVivo";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
 import { formatearCentavos } from "@/lib/integrante/formato";
+import { AVISO_FECHA_FORMATO, AVISO_FECHA_LEJANA, AVISO_FECHA_PASADA } from "@/lib/tareas/fecha-limite";
 import { type Clave, texto } from "@/lib/ui/diccionario";
 import type { Idioma } from "@/lib/ui/idioma";
 
@@ -138,6 +139,9 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_CODIGO_INVALIDO]: "errores.codigoNo",
   [AVISO_CODIGO_VENCIDO]: "errores.codigoVencio",
   [AVISO_RED]: "errores.sinRed",
+  [AVISO_FECHA_PASADA]: "crear.fechaPasada",
+  [AVISO_FECHA_LEJANA]: "crear.fechaLejana",
+  [AVISO_FECHA_FORMATO]: "crear.fechaFormato",
   [AVISO_GOOGLE_CERRADO]: "errores.googleCerrado",
   [AVISO_GOOGLE_BLOQUEADO]: "errores.googleBloqueado",
   [AVISO_CONFIG]: "errores.sinConfig",

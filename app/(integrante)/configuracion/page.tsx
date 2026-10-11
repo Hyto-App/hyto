@@ -36,9 +36,6 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
           <p className="hyto-sub">{sesion.email}</p>
         </div>
       </header>
-      <div className="mb-6 max-w-sm">
-        <Salir />
-      </div>
       <PanelCuenta />
       {tipoCuentaActivo() ? <TipoCuenta /> : null}
       {perfilPublicoActivo() ? <AjustesPerfil /> : null}
@@ -53,6 +50,10 @@ export default async function PaginaConfiguracion({ searchParams }: Props) {
           <Entrar demoHabilitado={demoHabilitado()} />
         </div>
       ) : null}
+      {/* Pao, 10-oct: signing out is the last thing on the page. */}
+      <div className="mt-10 max-w-sm" data-salir>
+        <Salir />
+      </div>
     </main>
   );
 }
