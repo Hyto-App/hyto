@@ -38,7 +38,7 @@ export function LineaRevision({
   const rechazada = estaRechazada(tarea);
   const revisada = !mileSinTerminar && (calificacion !== null || revisionCerrada || pagado || rechazada);
   const nombre = nombreParaMostrar(tarea.organizador?.nombre, tarea.evento, idioma) || "";
-  const intento = (tarea.intentos ?? 0) > 1 ? t("evidencia.attempt", { n: tarea.intentos ?? 0 }) : null;
+  const intento = (tarea.intentos ?? 0) >= 1 ? t("evidencia.attempt", { n: tarea.intentos ?? 0 }) : null;
   const notaCorta = tarea.rechazo?.nota ? abreviarNota(tarea.rechazo.nota) : null;
 
   const detalleMile: ReactNode[] = [];

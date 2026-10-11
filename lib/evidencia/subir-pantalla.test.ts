@@ -65,7 +65,7 @@ test("un trabajo y un reembolso muestran el mismo espacio de evidencia, sin pest
       });
       assert.equal(document.querySelector('[role="tablist"]'), null, tareaId);
       assert.equal(document.querySelectorAll('[role="tab"]').length, 0, tareaId);
-      assert.match(texto(), /Take photo/);
+      assert.match(texto(), /Add evidence/);
       assert.match(texto(), /Upload file/);
       assert.match(texto(), /Drag your evidence here or choose a file/);
       assert.match(texto(), /Photo, invoice, PDF, or list/);

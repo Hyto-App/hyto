@@ -46,7 +46,9 @@ const LEGADO: Record<string, string> = {
   "Mesa de bienvenida": "Welcome table",
   "Mesa armada en la entrada": "Table set up at the entrance",
   "Comida del equipo": "Team meal",
-  "Foto del comprobante de la comida": "Photo of the meal receipt",
+  "Foto del comprobante de la comida": "Evidence of the meal receipt",
+  "Foto del comprobante": "Evidence of the meal receipt",
+  "el comprobante de la comida": "evidence of the meal receipt",
   "Evidencia de la comida": "Evidence of the meal",
   "Voluntario 1": "Volunteer 1",
   "Voluntario 2": "Volunteer 2",
@@ -70,6 +72,14 @@ const INVERSO_LEGADO: Record<string, string> = Object.fromEntries(
 );
 
 /** Older stored titles. The inbox shows one phrase, in either language. */
+/** The meal receipt condition, stored in either language. The screen says evidencia, not foto. */
+const COMPROBANTE_COMIDA = new Set([
+  "Foto del comprobante",
+  "Foto del comprobante de la comida",
+  "Photo of the meal receipt",
+  "Evidence of the meal receipt",
+]);
+
 const LLEGADA = new Set([
   "Lista de quienes llegaron al evento",
   "Comprobantes recibidos",
@@ -128,7 +138,11 @@ export function textoVisible(valor: string | null | undefined, idioma: Idioma = 
   if (!valor) return "";
   // The seed marks sample rows with "Example. " (or the old "Ejemplo. "). The screen drops it.
   const base = valor.replace(/^(?:Ejemplo|Example)\. /, "");
-  const directo = LLEGADA.has(base)
+  const directo = COMPROBANTE_COMIDA.has(base)
+    ? idioma === "es"
+      ? "Evidencia del comprobante de la comida"
+      : "Evidence of the meal receipt"
+    : LLEGADA.has(base)
     ? idioma === "es"
       ? "Comprobantes de llegada recibidos"
       : "Check-in proofs received"

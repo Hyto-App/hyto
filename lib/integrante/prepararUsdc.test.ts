@@ -591,7 +591,7 @@ test("en demo no aparece y en la revisión real sí", async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.doesNotMatch(texto(), /Get ready to be paid/);
-    assert.match(texto(), /Take photo/);
+    assert.match(texto(), /Add evidence/);
   } finally {
     globalThis.fetch = original;
     await desmontar();

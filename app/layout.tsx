@@ -5,6 +5,7 @@ import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { TituloDocumento } from "@/components/ui/TituloDocumento";
 import { COOKIE_IDIOMA, idiomaDe, idiomaDeNavegador } from "@/lib/ui/idioma";
 import { descripcionSeo, HOST_PUBLICO, metaPublica, tituloMarca } from "@/lib/ui/seo";
+import { TEMA_BOOT } from "@/lib/ui/tema";
 import "./globals.css";
 import "@/components/perfil/perfil.css";
 import "@/components/admin/crear.css";
@@ -19,7 +20,6 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-const TEMA_BOOT = `(function(){try{var t=localStorage.getItem("hyto-tema");if(t!=="light"){t="dark";}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0E1024":"#F5F6FA");}catch(e){}})();`;
 const BARRA_BOOT = `(function(){try{if(localStorage.getItem("hyto-barra")==="colapsada"){document.documentElement.setAttribute("data-barra","colapsada");}}catch(e){}})();`;
 
 export async function generateMetadata(): Promise<Metadata> {

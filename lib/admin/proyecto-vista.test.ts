@@ -6,7 +6,7 @@ import { act, createElement } from "react";
 import { Bandeja } from "@/components/admin/Bandeja";
 import { ProveedorIdioma } from "@/components/ui/Idioma";
 import { texto as textoDe } from "@/lib/ui/diccionario";
-import { chipsEstado, filtrarPorEstado, fraseMile, nombrePersona, pasosRevision, porcentajePagado, rotuloPrincipalRevision } from "./proyecto-vista";
+import { chipsEstado, filtrarPorEstado, fraseMile, nombrePersona, pasosRevision, porcentajePagado, rotuloPasoPago, rotuloPrincipalRevision } from "./proyecto-vista";
 import { desmontar, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 test("el botón principal de la revisión: Bloquear y aprobar sin bloqueo, Aprobar y pagar con bloqueo", () => {
@@ -27,7 +27,13 @@ test("el botón principal de la revisión: Bloquear y aprobar sin bloqueo, Aprob
 
 test("los tres pasos de la revisión", () => {
   assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: false, pagado: false }), ["hecho", "ahora", "luego"]);
-  assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: true, pagado: false }), ["hecho", "hecho", "ahora"]);
+  // Step 3 stays pending until the payment exists. «Pagado · Ahora» was early.
+  assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: true, pagado: false }), ["hecho", "hecho", "luego"]);
+  assert.equal(pasosRevision({ evidencia: true, bloqueado: true, pagado: false })[2], "luego");
+  assert.equal(rotuloPasoPago(false, "en"), "Pending payment");
+  assert.equal(rotuloPasoPago(false, "es"), "Pago pendiente");
+  assert.equal(rotuloPasoPago(true, "en"), "Paid · Now");
+  assert.equal(rotuloPasoPago(true, "es"), "Pagado · Ahora");
   assert.deepEqual(pasosRevision({ evidencia: false, bloqueado: false, pagado: false }), ["ahora", "luego", "luego"]);
   assert.deepEqual(pasosRevision({ evidencia: true, bloqueado: true, pagado: true }), ["hecho", "hecho", "hecho"]);
 });

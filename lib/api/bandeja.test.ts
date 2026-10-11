@@ -148,7 +148,7 @@ test("a saved receipt reading reaches the review screen with the main reason fir
       legible: true,
       faltantes: ["purchase date"],
     }),
-    { condicion: "Photo of the meal receipt", tipoTarea: "reembolso" },
+    { condicion: "Evidence of the meal receipt", tipoTarea: "reembolso" },
   );
   assert.ok(descripcion);
   const factura = { f1: "coincide_con_lo_pedido", f2: true, f3: false, f4: 1, g1: "comida_o_bebida", g2: true, g3: true, g4: true, g5: 1 } as const;

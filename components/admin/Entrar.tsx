@@ -1034,7 +1034,6 @@ export function Entrar({
             ) : fase === "correo" ? (
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
-                <p className="hyto-login-lead">{t(alta ? "entrar.introSignUp" : "entrar.intro")}</p>
                 {ofrece("google") ? (
                   <button
                     type="button"
@@ -1179,10 +1178,6 @@ export function Entrar({
                 {demoHabilitado && verDemo ? (
                   <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
-                <p className="hyto-login-legal">
-                  {t(alta ? "entrar.legalSignUp" : "entrar.legal")}{" "}
-                  <Link href="/privacy">{t("nav.privacy")}</Link>
-                </p>
               </div>
             ) : null}
             {fase === "enlace" ? (

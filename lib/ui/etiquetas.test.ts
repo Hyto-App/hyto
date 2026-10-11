@@ -36,6 +36,12 @@ test("la bandeja muestra comprobantes de llegada y la evidencia de la comida", (
   assert.equal(textoVisible("List of people who arrived", "es"), "Comprobantes de llegada recibidos");
   assert.equal(textoVisible("Evidencia de la comida"), "Evidence of the meal");
   assert.equal(textoVisible("Evidencia de la comida", "es"), "Evidencia de la comida");
+  assert.equal(textoVisible("Foto del comprobante de la comida"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Foto del comprobante"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Photo of the meal receipt"), "Evidence of the meal receipt");
+  assert.equal(textoVisible("Evidence of the meal receipt", "es"), "Evidencia del comprobante de la comida");
+  assert.equal(textoVisible("Foto del comprobante", "es"), "Evidencia del comprobante de la comida");
+  assert.equal(textoVisible("Photo of the meal receipt", "es"), "Evidencia del comprobante de la comida");
 });
 
 test("los veredictos en español no cambian el valor interno", () => {

@@ -360,7 +360,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
     etiquetas.push(etiqueta(
       "low_detail",
       "Low detail",
-      "Two or more answers are unclear or the model was unsure, so this grade is less certain.",
+      "Two or more answers are unclear or Mile was unsure, so this grade is less certain.",
       "warning",
       debiles,
     ));

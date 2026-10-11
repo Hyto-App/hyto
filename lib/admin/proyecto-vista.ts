@@ -1,4 +1,5 @@
-import type { Clave } from "@/lib/ui/diccionario";
+import { texto, type Clave } from "@/lib/ui/diccionario";
+import type { Idioma } from "@/lib/ui/idioma";
 
 /** Status chips on the project inbox: «Todas · Por revisar · Pagadas · Pendientes», each with its count. */
 export type FiltroEstado = "all" | "en revisión" | "pagado" | "pendiente";
@@ -54,8 +55,14 @@ export function pasosRevision(estado: { evidencia: boolean; bloqueado: boolean; 
   if (estado.pagado) return ["hecho", "hecho", "hecho"];
   const evidencia: EstadoPaso = estado.evidencia ? "hecho" : "ahora";
   const bloqueo: EstadoPaso = estado.bloqueado ? "hecho" : estado.evidencia ? "ahora" : "luego";
-  const pago: EstadoPaso = estado.evidencia && estado.bloqueado ? "ahora" : "luego";
+  // Paid only after the payment exists. Locking the budget does not start this step.
+  const pago: EstadoPaso = "luego";
   return [evidencia, bloqueo, pago];
+}
+
+/** Step 3 before the signature says the payment is still pending. «Paid · Now» only after it exists. */
+export function rotuloPasoPago(pagado: boolean, idioma: Idioma): string {
+  return texto(idioma, pagado ? "proyecto.pasoPagadoAhora" : "proyecto.pasoPagoPendiente");
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -84,7 +84,7 @@ export function tareasEjemploAdmin(): TareaAdmin[] {
       tipo: "reembolso",
       monto: "15",
       tope: "15",
-      condicion: "Photo of the meal receipt",
+      condicion: "Evidence of the meal receipt",
       miembroId: "voluntario-1",
       miembro: "Volunteer 1",
       estado: "en revisión",

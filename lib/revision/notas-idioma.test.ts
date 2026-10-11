@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { textoFalta } from "./falta";
 import { presentarEtiqueta } from "./notas-idioma";
 import type { EtiquetaNota } from "./razones";
 
@@ -20,6 +21,50 @@ test("en español Receipt no se queda en inglés aunque la explicación no esté
   assert.equal(fecha.texto, "Falta la fecha de la factura");
   assert.equal(monto.texto, "Falta el monto del recibo");
   assert.equal(presentarEtiqueta(etiqueta({ id: "date_missing", texto: "Receipt date missing" }), "en").texto, "Receipt date missing");
+});
+
+test("poco detalle nombra a Mile, no al modelo", () => {
+  const es = presentarEtiqueta(
+    etiqueta({
+      id: "low_detail",
+      texto: "Low detail",
+      explicacion: "Two or more answers are unclear or Mile was unsure, so this grade is less certain.",
+    }),
+    "es",
+  );
+  assert.match(es.explicacion, /Mile/);
+  assert.equal(es.explicacion.includes("el modelo"), false);
+});
+
+test("en inglés My tasks traduce «Missing: el comprobante de la comida.»", () => {
+  const etiquetaNota = etiqueta({
+    id: "part_missing",
+    texto: "Part of the request missing",
+    explicacion: "Missing: el comprobante de la comida.",
+  });
+  const en = presentarEtiqueta(etiquetaNota, "en");
+  assert.equal(en.explicacion, "Missing: evidence of the meal receipt.");
+  assert.equal(en.explicacion.includes("el comprobante"), false);
+  assert.equal(textoFalta([etiquetaNota], "en"), "Missing: evidence of the meal receipt.");
+  assert.equal(textoFalta([etiquetaNota], "es"), "Falta: el comprobante de la comida.");
+});
+
+test("My tasks cambia «the model was unsure» y «el modelo» por Mile", () => {
+  const vieja = etiqueta({
+    id: "low_detail",
+    texto: "Low detail",
+    explicacion: "Two or more answers are unclear or the model was unsure, so this grade is less certain.",
+  });
+  const en = presentarEtiqueta(vieja, "en");
+  assert.match(en.explicacion, /Mile was unsure/);
+  assert.equal(en.explicacion.includes("the model"), false);
+  const es = presentarEtiqueta(vieja, "es");
+  assert.match(es.explicacion, /Mile/);
+  assert.equal(es.explicacion.includes("el modelo"), false);
+  assert.equal(es.explicacion.includes("the model"), false);
+  const suelta = presentarEtiqueta(etiqueta({ id: "nota", texto: "Nota", explicacion: "el modelo no estaba seguro." }), "es");
+  assert.equal(suelta.explicacion.includes("el modelo"), false);
+  assert.match(suelta.explicacion, /Mile/);
 });
 
 test("las notas de Mile para quien organiza dicen evidencia, no foto", () => {

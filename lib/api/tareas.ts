@@ -7,6 +7,7 @@ import { etiquetaDesdeNota, notaDeTexto } from "@/lib/revision/pesos";
 import type { EtiquetaNota } from "@/lib/revision/razones";
 import { leerRechazo, leerRequisitos, leerRevisionMile, type RechazoGuardado, type RevisionMile } from "@/lib/revision/requisitos";
 import { brutoFondado, montoRecibido } from "@/lib/escrow/recibido";
+import { intentoGuardado, numeroIntentoVisible } from "@/lib/integrante/intento";
 import { nombreOrganizadorVisible } from "@/lib/sesion/nombre";
 import { tareasPropias, tareasVisibles, type Visor } from "./alcance";
 import { evidenciaVigente, lineaDeEnvio } from "./etapa";
@@ -114,7 +115,14 @@ export async function tareaConNota(
     notas: notasPublicas(fila, evidencia, tarea),
     rechazo,
     rechazada: tarea.estado === "pendiente" && rechazo !== null,
-    intentos: evidencia ? await almacen.contarEvidencias(tarea.id) : 0,
+    intentos: evidencia
+      ? numeroIntentoVisible({
+          filas: await almacen.listarEvidencias(tarea.id),
+          actualId: evidencia.id,
+          reintento: rechazo !== null,
+          guardado: intentoGuardado(fila?.mile),
+        })
+      : 0,
     revision: revisionPublica(tarea, fila),
     etapa: linea.etapa,
     enviadaEn: linea.enviadaEn,

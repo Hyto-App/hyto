@@ -39,7 +39,7 @@ test("Little Caesars en colones llega a Laya convertido y queda en Completed", a
   for (const llamada of resultado.laya) {
     assert.match(llamada.estado, /Total in US dollars: 14\.55, converted by Hyto at 505 CRC per US dollar\./);
     assert.match(llamada.estado, /Purchase date: 2026-10-02 \(printed as 02\/10\/2026\)\./);
-    assert.match(llamada.estado, /Condition: Photo of the meal receipt$/);
+    assert.match(llamada.estado, /Condition: Evidence of the meal receipt$/);
   }
   assert.deepEqual(
     resultado.razones.map((razon) => razon.id),

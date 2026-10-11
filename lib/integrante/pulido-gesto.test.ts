@@ -91,7 +91,7 @@ test("sin cámara se explica y se ofrece el teléfono con código", async () => 
     assert.equal(document.querySelector("input[capture]"), null);
     assert.match(texto(), /Upload file/);
     assert.match(texto(), /Drag your evidence here or choose a file/);
-    assert.equal([...document.querySelectorAll("button")].some((item) => item.textContent === "Take photo"), false);
+    assert.equal([...document.querySelectorAll("button")].some((item) => item.textContent === "Add evidence"), false);
     const seguir = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue on your phone");
     assert.ok(seguir instanceof HTMLButtonElement);
     await act(async () => {
@@ -118,7 +118,7 @@ test("si la cámara no existe al abrirla, el aviso pasa al teléfono", async () 
   });
   try {
     await abrir(tarea());
-    const abrirCamara = [...document.querySelectorAll("button")].find((item) => item.textContent === "Take photo");
+    const abrirCamara = [...document.querySelectorAll("button")].find((item) => item.textContent === "Add evidence");
     assert.ok(abrirCamara instanceof HTMLButtonElement);
     await act(async () => {
       abrirCamara.dispatchEvent(new MouseEvent("click", { bubbles: true }));

@@ -13,11 +13,12 @@ import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
 import { ORIGEN_ARCHIVO, ORIGEN_GALERIA } from "@/lib/integrante/fotoEnVivo";
+import { intentoGuardado, mileConIntento } from "@/lib/integrante/intento";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
 import { maxIntentosMile, mileRequisitosActivo } from "@/lib/revision/requisitos-bandera";
-import { leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisitos";
+import { leerRechazo, leerRequisitos, serializarRevisionMile } from "@/lib/revision/requisitos";
 import { unirDescripcion } from "@/lib/revision/snapshot-razones";
 import { idiomaDe, COOKIE_IDIOMA } from "@/lib/ui/idioma";
 import type { Idioma } from "@/lib/ui/idioma";
@@ -195,6 +196,13 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const veredictoPrevio = previa && previa.tareaId === tareaId ? await deps.almacen.veredictoDe(previa.id) : null;
     const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
     if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
+    // A clean send is attempt 1. An ask for other evidence continues that series.
+    // The same bytes after an error keep the number already saved.
+    const rechazoPrevio = leerRechazo(tarea.rechazo);
+    const ultimaAntes = await deps.almacen.ultimaEvidencia(tareaId);
+    const milePrevio = ultimaAntes ? ((await deps.almacen.veredictoDe(ultimaAntes.id))?.mile ?? null) : null;
+    const previoVisible = intentoGuardado(milePrevio);
+    const intentoVisible = reintento ? (previoVisible ?? 1) : rechazoPrevio ? (previoVisible ?? 1) + 1 : 1;
 
     // A file picked with «Upload file» (or the legacy demo gallery origin) takes any validated type and skips
     // the camera token and the freshness check. Without an origin, a work task stays on the live camera path.
@@ -310,11 +318,11 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const conTope = !deps.revisarTarea && usaCorte(contextoDesdeEntorno(), esEvidenciaTextual({ tipo, bytes }));
     const espera = await esperarCorte(trabajo, conTope ? PLAZO_RESPUESTA_MS : null);
     if (espera.estado === "listo") {
-      await guardarRevision(deps.almacen, evidencia.id, tareaId, espera.valor);
+      await guardarRevision(deps.almacen, evidencia.id, tareaId, espera.valor, intentoVisible);
     } else if (espera.estado === "fallo") {
       await guardarFalloDeRevision(deps.almacen, evidencia.id, tareaId, espera.error);
     } else if (deps.continuar) {
-      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo, planRevision(inicio).topeFondoMs));
+      deps.continuar(cerrarRevisionEnFondo(deps.almacen, evidencia.id, tareaId, trabajo, planRevision(inicio).topeFondoMs, intentoVisible));
     }
     const guardada = (await deps.almacen.leerEvidencia(evidencia.id)) ?? evidencia;
     return json({ evidencia: evidenciaPublica(guardada), ...(avisoCobro ? { aviso: avisoCobro } : {}) }, reintento ? 200 : 201);
@@ -350,6 +358,7 @@ export async function guardarRevision(
   evidenciaId: string,
   tareaId: string,
   resultado: ResultadoRevision,
+  intento?: number,
 ): Promise<void> {
   const veredicto: VeredictoFila = {
     id: evidenciaId,
@@ -362,7 +371,7 @@ export async function guardarRevision(
     noul: resultado.noul ? "si" : "no",
     score: resultado.score,
     origen: resultado.origen,
-    mile: resultado.mile ? serializarRevisionMile(resultado.mile) : null,
+    mile: mileConIntento(resultado.mile ? serializarRevisionMile(resultado.mile) : null, intento),
   };
   await almacen.guardarVeredicto(veredicto);
   if (resultado.mile && resultado.origen !== "error" && (await almacen.columnasRequisitos())) {
@@ -389,9 +398,10 @@ export function cerrarRevisionEnFondo(
   tareaId: string,
   trabajo: Promise<ResultadoRevision>,
   ms = TOPE_REVISION_FONDO_MS,
+  intento?: number,
 ): Promise<void> {
   return conTopeDuro(trabajo, ms)
-    .then((resultado) => guardarRevision(almacen, evidenciaId, tareaId, resultado))
+    .then((resultado) => guardarRevision(almacen, evidenciaId, tareaId, resultado, intento))
     .catch((error: unknown) => guardarFalloDeRevision(almacen, evidenciaId, tareaId, error));
 }
 

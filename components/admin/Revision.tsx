@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { Icono } from "@/components/admin/IconosProyecto";
 import { PersonaProyecto } from "@/components/admin/PersonaProyecto";
-import { pasosRevision, rotuloPrincipalRevision } from "@/lib/admin/proyecto-vista";
+import { pasosRevision, rotuloPasoPago, rotuloPrincipalRevision } from "@/lib/admin/proyecto-vista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -662,7 +662,7 @@ export function Revision({
   const subPasos = [
     t("proyecto.pasoEvidencia"),
     t("proyecto.pasoBloqueado"),
-    t("proyecto.pasoPagado"),
+    rotuloPasoPago(tarea.estado === "pagado", idioma),
   ];
   const detallesPasos = [
     "",
@@ -698,10 +698,12 @@ export function Revision({
                 <span>
                   <b>{subPasos[indice]}</b>
                   {detallesPasos[indice] ? <small>{detallesPasos[indice]}</small> : null}
-                  <span className="sr-only">
-                    {" · "}
-                    {estado === "hecho" ? t("comunes.done") : estado === "ahora" ? t("comunes.now") : t("comunes.later")}
-                  </span>
+                  {indice === 2 ? null : (
+                    <span className="sr-only">
+                      {" · "}
+                      {estado === "hecho" ? t("comunes.done") : estado === "ahora" ? t("comunes.now") : t("comunes.later")}
+                    </span>
+                  )}
                 </span>
               </li>
             </Fragment>

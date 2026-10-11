@@ -1664,7 +1664,16 @@ a {
   }
 
   .hyto-main {
-    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    /* The round Ask Mile button sits 16px above the bar and 40px tall. The last card ends 16px above it. */
+    padding: var(--e-1) var(--margen-lateral) calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px + 40px + 16px);
+  }
+
+  /* 390: the round button on the right stays off the card, 16px from the edge and 16px above the bottom bar. */
+  .hyto-preguntar.hyto-preguntar-icono {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom) + 16px);
+    z-index: 25;
   }
 
   .hyto-btn,
@@ -2005,6 +2014,7 @@ html.hyto-firmando body {
   --l-peligro: #ff4d8d;
   --l-fondo: #0e1024;
   --l-centro: #1d2148;
+  --l-velo: rgba(20, 22, 43, 0.5);
   --l-sup: #1e2140;
   --l-tinta: #f2f3f7;
   --l-suave: #a3a6b8;
@@ -2051,7 +2061,7 @@ html.hyto-firmando body {
   overflow: hidden;
   pointer-events: none;
   isolation: isolate;
-  background: radial-gradient(ellipse 90% 40% at 50% 20%, var(--l-centro) 0%, rgba(20, 22, 43, 0.5) 50%, transparent 85%), var(--l-fondo);
+  background: radial-gradient(ellipse 90% 40% at 50% 20%, var(--l-centro) 0%, var(--l-velo) 50%, transparent 85%), var(--l-fondo);
 }
 
 .hyto-login-remolino {
@@ -2421,8 +2431,10 @@ html.hyto-firmando body {
   display: block;
   max-width: 44ch;
   margin-top: 10px;
+  margin-inline: auto;
   font-size: 14px;
   line-height: 1.4;
+  text-align: center;
   color: var(--l-suave);
 }
 
@@ -2723,6 +2735,7 @@ html.hyto-firmando body {
   margin-top: 6px;
   font-size: 13.5px;
   line-height: 1.55;
+  text-align: center;
   color: var(--l-suave);
 }
 
@@ -3237,14 +3250,15 @@ html.hyto-firmando body {
   .hyto-login {
     --l-gutter: clamp(24px, calc((100vw - 1200px) / 2), 120px);
     --l-alto-top: 88px;
+    --l-velo: rgba(20, 22, 43, 0.55);
   }
 
   .hyto-login-escena {
-    background: radial-gradient(ellipse 70% 60% at 32% 46%, var(--l-centro) 0%, rgba(20, 22, 43, 0.55) 45%, transparent 78%), var(--l-fondo);
+    background: radial-gradient(ellipse 70% 60% at 32% 46%, var(--l-centro) 0%, var(--l-velo) 45%, transparent 78%), var(--l-fondo);
   }
 
   .hyto-login.is-exito .hyto-login-escena {
-    background: radial-gradient(ellipse 60% 55% at 32% 50%, #24304a 0%, rgba(20, 22, 43, 0.5) 48%, transparent 78%), var(--l-fondo);
+    background: radial-gradient(ellipse 60% 55% at 32% 50%, #24304a 0%, var(--l-velo) 48%, transparent 78%), var(--l-fondo);
   }
 
   .hyto-login-remolino {
@@ -3306,15 +3320,19 @@ html.hyto-firmando body {
   .hyto-login .hyto-login-titulo {
     max-width: none;
     margin-top: 20px;
+    margin-inline: 0;
     font-size: clamp(38px, 3.5vw, 50px);
     line-height: 1.06;
+    text-align: left;
   }
 
   .hyto-login-sub {
     display: block;
     margin-top: 18px;
+    margin-inline: 0;
     font-size: 16px;
     line-height: 1.6;
+    text-align: left;
   }
 
   .hyto-login-como {
@@ -3341,6 +3359,9 @@ html.hyto-firmando body {
   }
 
   .hyto-login-tarjeta {
+    justify-self: center;
+    align-self: center;
+    width: min(100%, 468px);
     border-radius: 28px;
     padding: 32px 36px 28px;
   }
@@ -3348,6 +3369,7 @@ html.hyto-firmando body {
   .hyto-login-tarjeta h2 {
     margin-top: 20px;
     font-size: 26px;
+    text-align: center;
   }
 
   .hyto-login-pasos {
@@ -3685,9 +3707,11 @@ html.hyto-firmando body {
 }
 
 
-/* Phone login: explanation, 52px demo, and a hero the language menu can push. */
+/* Phone login: the form sits centered at the top. The FAQ follows it. */
 @media (max-width: 1023px) {
   .hyto-login-izq {
+    order: 1;
+    width: 100%;
     min-height: 0;
     flex: none;
     display: grid;
@@ -3697,8 +3721,16 @@ html.hyto-firmando body {
   }
 
   .hyto-login-grid {
+    align-items: center;
+    justify-content: flex-start;
     gap: 8px;
     padding: 0 12px 12px;
+  }
+
+  .hyto-login-tarjeta {
+    order: -1;
+    align-self: center;
+    width: min(100%, 420px);
   }
 
   .hyto-login-hero {
@@ -3880,6 +3912,7 @@ html.hyto-firmando body {
 [data-theme="light"] .hyto-login {
   --l-fondo: #f5f6fa;
   --l-centro: #ffffff;
+  --l-velo: rgba(245, 246, 250, 0.72);
   --l-sup: #ffffff;
   --l-tinta: #14162b;
   --l-suave: #474b63;
@@ -3898,7 +3931,19 @@ html.hyto-firmando body {
 
 [data-theme="light"] .hyto-login-escena,
 [data-theme="light"] .hyto-login.is-exito .hyto-login-escena {
-  background: radial-gradient(ellipse 90% 40% at 50% 20%, #ffffff 0%, rgba(245, 246, 250, 0.65) 50%, transparent 85%), var(--l-fondo);
+  background: radial-gradient(ellipse 90% 40% at 50% 20%, #ffffff 0%, var(--l-velo) 50%, transparent 85%), var(--l-fondo);
+}
+
+/* The swirl bitmaps are opaque black. Without this they cover the light surface at 390 and at 1440. */
+[data-theme="light"] .hyto-login-remolino {
+  opacity: 0.16;
+}
+
+@media (min-width: 1024px) {
+  [data-theme="light"] .hyto-login-escena,
+  [data-theme="light"] .hyto-login.is-exito .hyto-login-escena {
+    background: radial-gradient(ellipse 70% 60% at 32% 46%, var(--l-centro) 0%, var(--l-velo) 45%, transparent 78%), var(--l-fondo);
+  }
 }
 
 [data-theme="light"] .hyto-login-tarjeta {
