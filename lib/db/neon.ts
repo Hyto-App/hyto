@@ -1,10 +1,10 @@
 import { tipoCuentaActivo } from "@/lib/cuenta/bandera";
-import { perfilVoluntarioActivo } from "@/lib/perfil/bandera";
+import { perfilPublicoActivo, perfilVoluntarioActivo } from "@/lib/perfil/bandera";
 import { etiquetasGuardadas } from "@/lib/perfil/reglas";
 import { neon } from "@neondatabase/serverless";
 import { comunidadesActivas } from "@/lib/comunidades/bandera";
 import { tablonActivo } from "@/lib/tablon/bandera";
-import { and, asc, desc, eq, getTableColumns, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, sql, type SQL } from "drizzle-orm";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -13,7 +13,7 @@ import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import { esHostNeon } from "./host";
 import { consultaPhashCercano } from "./sql";
-import { comunidadAvisos, comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareas, usuarios, veredictos } from "./schema";
+import { comunidadAvisos, comunidadMiembros, comunidadSolicitudes, comunidades, evidencias, perfilPrivacidad, proyectoInvitaciones, proyectoMiembros, proyectos, sesiones, tareaCambiosPedidos, tareas, usuarios, veredictos } from "./schema";
 import type { EstadoTarea, TipoTarea } from "@/lib/integrante/tipos";
 import { dificultadGuardada, prioridadGuardada } from "@/lib/tareas/clasificacion";
 import type { AvisoComunidad, Comunidad, ComunidadMiembro, ComunidadSolicitud, EstadoSolicitudComunidad, Proyecto, ProyectoInvitacion, ProyectoMiembro, Rol, RolComunidad, RolEvento, RolInvitacion, TareaFila, TipoAviso, TipoCuentaGuardado, TipoInvitacion, Usuario, VeredictoFila } from "./tipos";
@@ -32,6 +32,8 @@ const schema = {
   comunidadMiembros,
   comunidadSolicitudes,
   comunidadAvisos,
+  perfilPrivacidad,
+  tareaCambiosPedidos,
 };
 
 export type DbAlmacen = NeonHttpDatabase<typeof schema>;
@@ -120,6 +122,19 @@ function veredictoDe(valor: string): VeredictoFila["veredicto"] {
 export function origenDeFila(valor: string): VeredictoFila["origen"] {
   if (valor === "guion" || valor === "stub" || valor === "error" || valor === "scout") return valor;
   return "scout";
+}
+
+/** 0014 not applied yet: the table is missing. Drizzle can wrap the driver error in `cause`. */
+export function esTablaAusente(error: unknown): boolean {
+  let actual: unknown = error;
+  for (let paso = 0; paso < 3 && actual; paso += 1) {
+    const codigo = (actual as { code?: unknown }).code;
+    if (codigo === "42P01") return true;
+    const mensaje = actual instanceof Error ? actual.message : String(actual);
+    if (/42P01|relation "[a-z_]+" does not exist|no existe la relaci/i.test(mensaje)) return true;
+    actual = (actual as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 function esColumnaAusente(error: unknown): boolean {
@@ -784,6 +799,71 @@ export function crearAlmacenDesde(db: DbAlmacen): Almacen {
     async crearAvisoComunidad(aviso) {
       if (!tablonActivo() || !comunidadesActivas()) return;
       await db.insert(comunidadAvisos).values(aviso);
+    },
+    async guardarNombre(id, nombre) {
+      await db.update(usuarios).set({ nombre }).where(eq(usuarios.id, id));
+    },
+    async leerPrivacidadPerfil(usuarioId) {
+      if (!perfilPublicoActivo()) return null;
+      try {
+        const filas = await db
+          .select({ publico: perfilPrivacidad.publico, mostrarMontos: perfilPrivacidad.mostrarMontos })
+          .from(perfilPrivacidad)
+          .where(eq(perfilPrivacidad.usuarioId, usuarioId))
+          .limit(1);
+        // Anything other than "no" keeps the profile public; anything other than "si" keeps amounts hidden.
+        return filas[0] ? { publico: filas[0].publico !== "no", mostrarMontos: filas[0].mostrarMontos === "si" } : null;
+      } catch (error) {
+        if (esTablaAusente(error)) return null;
+        throw error;
+      }
+    },
+    async guardarPrivacidadPerfil(usuarioId, privacidad) {
+      if (!perfilPublicoActivo()) return false;
+      const fila = {
+        usuarioId,
+        publico: privacidad.publico ? "si" : "no",
+        mostrarMontos: privacidad.mostrarMontos ? "si" : "no",
+        actualizadoEn: new Date().toISOString(),
+      };
+      try {
+        await db
+          .insert(perfilPrivacidad)
+          .values(fila)
+          .onConflictDoUpdate({
+            target: perfilPrivacidad.usuarioId,
+            set: { publico: fila.publico, mostrarMontos: fila.mostrarMontos, actualizadoEn: fila.actualizadoEn },
+          });
+        return true;
+      } catch (error) {
+        if (esTablaAusente(error)) return false;
+        throw error;
+      }
+    },
+    async registrarCambioPedido(cambio) {
+      if (!perfilPublicoActivo()) return;
+      try {
+        await db.insert(tareaCambiosPedidos).values(cambio).onConflictDoNothing();
+      } catch (error) {
+        if (esTablaAusente(error)) return;
+        throw error;
+      }
+    },
+    async contarCambiosPedidos(tareaIds) {
+      if (!perfilPublicoActivo() || tareaIds.length === 0) return {};
+      try {
+        const filas = await db
+          .select({ tareaId: tareaCambiosPedidos.tareaId, total: sql<string>`count(*)` })
+          .from(tareaCambiosPedidos)
+          .where(inArray(tareaCambiosPedidos.tareaId, tareaIds))
+          .groupBy(tareaCambiosPedidos.tareaId);
+        const cuenta: Record<string, number> = {};
+        for (const fila of filas) cuenta[fila.tareaId] = Number(fila.total) || 0;
+        return cuenta;
+      } catch (error) {
+        if (esTablaAusente(error)) return {};
+        throw error;
+      }
     },
     async tomarTarea(id, usuarioId) {
       const filas = await db

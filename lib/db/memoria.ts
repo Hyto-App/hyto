@@ -3,11 +3,13 @@ import { walletDeSesiones } from "@/lib/sesion/cobro";
 import type { Almacen } from "./almacen";
 import type {
   AvisoComunidad,
+  CambioPedido,
   Comunidad,
   ComunidadMiembro,
   ComunidadSolicitud,
   EstadoSolicitudComunidad,
   EvidenciaFila,
+  PrivacidadPerfil,
   Proyecto,
   ProyectoInvitacion,
   ProyectoMiembro,
@@ -31,6 +33,8 @@ export function crearMemoria(): Almacen {
   const miembrosComunidad = new Map<string, ComunidadMiembro>();
   const solicitudesComunidad = new Map<string, ComunidadSolicitud>();
   const avisosComunidad = new Map<string, AvisoComunidad>();
+  const privacidades = new Map<string, PrivacidadPerfil>();
+  const cambiosPedidos = new Map<string, CambioPedido>();
 
   function claveMiembro(proyectoId: string, usuarioId: string): string {
     return `${proyectoId}:${usuarioId}`;
@@ -309,6 +313,31 @@ export function crearMemoria(): Almacen {
     },
     async crearAvisoComunidad(aviso) {
       avisosComunidad.set(aviso.id, aviso);
+    },
+    async guardarNombre(id, nombre) {
+      const actual = usuarios.get(id);
+      if (!actual) return;
+      usuarios.set(id, { ...actual, nombre });
+    },
+    async leerPrivacidadPerfil(usuarioId) {
+      const fila = privacidades.get(usuarioId);
+      return fila ? { ...fila } : null;
+    },
+    async guardarPrivacidadPerfil(usuarioId, privacidad) {
+      privacidades.set(usuarioId, { publico: privacidad.publico, mostrarMontos: privacidad.mostrarMontos });
+      return true;
+    },
+    async registrarCambioPedido(cambio) {
+      cambiosPedidos.set(cambio.id, { ...cambio });
+    },
+    async contarCambiosPedidos(tareaIds) {
+      const buscadas = new Set(tareaIds);
+      const cuenta: Record<string, number> = {};
+      for (const cambio of cambiosPedidos.values()) {
+        if (!buscadas.has(cambio.tareaId)) continue;
+        cuenta[cambio.tareaId] = (cuenta[cambio.tareaId] ?? 0) + 1;
+      }
+      return cuenta;
     },
     async tomarTarea(id, usuarioId) {
       const actual = tareas.get(id);

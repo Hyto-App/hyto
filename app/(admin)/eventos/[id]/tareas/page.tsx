@@ -5,6 +5,8 @@ import { avisoBloqueo } from "@/lib/api/editar-tarea";
 import { almacenNeon } from "@/lib/db/neon";
 import { saldoCreacion } from "@/lib/escrow/saldo";
 import { personaVisible } from "@/lib/perfil/vista";
+import { perfilPublicoActivo } from "@/lib/perfil/bandera";
+import { sugeridosDeEvento } from "@/lib/api/perfil-publico";
 import { exigirOrganizadorEvento, exigirPagina } from "@/lib/sesion/puerta";
 import { notFound } from "next/navigation";
 
@@ -46,10 +48,11 @@ export default async function PaginaTareasEvento({ params }: { params: Promise<{
         };
       }),
   );
+  const sugeridos = perfilPublicoActivo() ? await sugeridosDeEvento(almacen, sesion.usuarioId, id) : undefined;
   return (
     <>
-      <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="tasks" />
-      <TareasEvento tareas={tareas} miembros={miembros} saldo={await saldoP} />
+      <CabeceraEvento id={proyecto.id} nombre={proyecto.nombre} rol="organizer" pestana="tasks" sugeridos={sugeridos} />
+      <TareasEvento tareas={tareas} miembros={miembros} saldo={await saldoP} proyectoId={sugeridos ? proyecto.id : undefined} sugeridos={sugeridos} />
     </>
   );
 }

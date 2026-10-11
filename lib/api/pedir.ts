@@ -21,5 +21,13 @@ export async function pedirOtraFotoHttp(
     cambio.rechazo = serializarRechazo(rechazoDeOrganizador(pedido, new Date().toISOString()));
   }
   if (Object.keys(cambio).length > 0) await almacen.actualizarTarea(tareaId, cambio);
+  // A person asked for a change: the profile's "approved with no changes" counts it.
+  // Mile's automatic send-backs do not pass here. Before 0014, or with the switch off, this does nothing.
+  await almacen.registrarCambioPedido({
+    id: crypto.randomUUID(),
+    tareaId,
+    pedidoPor: usuarioId,
+    creadoEn: new Date().toISOString(),
+  });
   return json({ estado: "pendiente" });
 }
