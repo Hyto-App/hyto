@@ -129,8 +129,27 @@ function authComo(auth: AuthProvider): AuthConOtp {
   return auth as AuthConOtp;
 }
 
+/**
+ * Google skips the account chooser when this browser already has a Google session.
+ * `prompt=select_account` asks for it, and `prompt=none` (which would hide it) is dropped.
+ * Only Google's own authorize URL is touched. Any other URL is returned exactly as Cavos sent it.
+ */
+export function urlGoogleConSelector(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return url;
+  }
+  if (parsed.protocol !== "https:" || parsed.hostname !== "accounts.google.com") return url;
+  const partes = new Set((parsed.searchParams.get("prompt") ?? "").split(/\s+/).filter((parte) => parte && parte !== "none"));
+  partes.add("select_account");
+  parsed.searchParams.set("prompt", [...partes].join(" "));
+  return parsed.toString();
+}
+
 export async function urlGoogle(auth: AuthProvider, redirectUri: string): Promise<string> {
-  return authComo(auth).getGoogleOAuthUrl(redirectUri);
+  return urlGoogleConSelector(await authComo(auth).getGoogleOAuthUrl(redirectUri));
 }
 
 /** Apple returns through the same `?cavos_auth_code=` callback as Google (`entrarConGoogle`). */
