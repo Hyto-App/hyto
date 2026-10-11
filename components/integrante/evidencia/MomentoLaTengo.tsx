@@ -16,11 +16,14 @@ export function MomentoLaTengo({
   tareaId,
   monto,
   tope,
+  resumen,
   children,
 }: {
   tareaId: string;
   monto: string;
   tope: string | null;
+  /** The result card (percentage, flags). Always visible, never inside the "See more" fold. */
+  resumen?: ReactNode;
   children: ReactNode;
 }) {
   const t = useTexto();
@@ -56,6 +59,7 @@ export function MomentoLaTengo({
       {monto ? <p className="hyto-la-tengo-monto">{monto}</p> : null}
       {tope ? <p className="hyto-la-tengo-tope">{tope}</p> : null}
       <p className="hyto-la-tengo-frase">{t("evidencia.mileRecommends")}</p>
+      {resumen}
       <details className="hyto-ver-mas">
         <summary>{t("evidencia.seeMore")}</summary>
         <div className="hyto-ver-mas-cuerpo">{children}</div>

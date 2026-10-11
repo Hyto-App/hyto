@@ -11,6 +11,7 @@ import { detalleMontoTarea, lineaMontoTarea, textosSaldo } from "@/lib/integrant
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
 import { faltaParaBloquear } from "@/lib/escrow/saldo";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
+import { nombreEnIdioma } from "@/lib/sesion/nombre";
 import { estadoConFoto, etiquetaEstado, textoVisible } from "@/lib/ui/etiquetas";
 import type { DificultadTarea, EstadoTarea, PrioridadTarea, TipoTarea } from "@/lib/integrante/tipos";
 
@@ -303,7 +304,7 @@ export function TareasEvento({
                               <span className="sg-mini" aria-hidden="true">
                                 {persona?.iniciales ?? "•"}
                               </span>
-                              <span>{persona?.nombre ?? persona?.email ?? miembro?.email ?? tarea.miembroId}</span>
+                              <span>{persona?.nombre ? nombreEnIdioma(persona.nombre, idioma) : (persona?.email ?? miembro?.email ?? tarea.miembroId)}</span>
                             </span>
                           );
                         })()}

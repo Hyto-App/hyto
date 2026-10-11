@@ -11,6 +11,7 @@ import { conTarea } from "@/lib/admin/parche";
 import { detalleMonto, enlaceCredencial, enlacePago, etiquetaOrigen } from "@/lib/admin/vista";
 import type { VistaAdmin } from "@/lib/admin/tipos";
 import { formatearMonto } from "@/lib/integrante/formato";
+import { pagadoNetoEvento, pagoNetoTarea } from "@/lib/admin/pago-neto";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { etiquetaTipo, textoVisible } from "@/lib/ui/etiquetas";
@@ -55,6 +56,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
   }
 
   const presupuesto = Number(vista.resumen.presupuesto) || 0;
+  const pagadoTotal = pagadoNetoEvento(vista.tareas, idioma);
   const pagado = Number(vista.resumen.pagado) || 0;
   const ancho = presupuesto > 0 ? Math.min(100, (pagado / presupuesto) * 100) : 0;
 
@@ -79,7 +81,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
       <section>
         <h2 className="text-lg font-semibold tracking-tight">{t("eventos.against")}</h2>
         <div className="mt-4">
-          <Numeros resumen={vista.resumen} />
+          <Numeros resumen={vista.resumen} pagado={pagadoTotal} />
         </div>
         <div className="mt-4">
           <div className="hyto-bar" aria-hidden="true">
@@ -87,7 +89,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
           </div>
           <p className="mt-2 text-sm text-[var(--suave)]">
             {t(vista.personas.length === 1 ? "eventos.paidLine" : "eventos.paidLineMany", {
-              paid: formatearMonto(vista.resumen.pagado, idioma),
+              paid: pagadoTotal.corto,
               pending: formatearMonto(vista.resumen.pendiente, idioma),
               n: vista.personas.length,
             })}
@@ -109,7 +111,8 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                 const pago = enlacePago(tarea.hashPago);
                 const credencial = enlaceCredencial(tarea.credencialUrl);
                 const detalle = detalleMonto(tarea);
-                const cifra = detalle.hasta ? t("eventos.upTo", { amount: formatearMonto(detalle.cifra, idioma) }) : formatearMonto(detalle.cifra, idioma);
+                const pagada = pagoNetoTarea(tarea, idioma);
+                const cifra = pagada ? pagada.corto : detalle.hasta ? t("eventos.upTo", { amount: formatearMonto(detalle.cifra, idioma) }) : formatearMonto(detalle.cifra, idioma);
                 const origen = etiquetaOrigen(tarea.origen, idioma);
                 const lleno = tarea.estado === "pagado" ? 100 : 0;
                 return (
@@ -125,6 +128,7 @@ export function Informe({ proyectoId }: { proyectoId?: string } = {}) {
                       </span>
                     </div>
                     <p className="hyto-amount mt-4 text-xl">{cifra}</p>
+                    {pagada?.detalle ? <p className="mt-1 text-sm text-[var(--suave)]">{pagada.detalle}</p> : null}
                     <div className="hyto-bar mt-3" aria-hidden="true">
                       <span style={{ width: `${lleno}%` }} />
                     </div>

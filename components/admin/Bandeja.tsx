@@ -1,5 +1,6 @@
 "use client";
 
+import { pagadoNetoEvento } from "@/lib/admin/pago-neto";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IndicadorActualizado } from "@/components/admin/IndicadorActualizado";
@@ -266,7 +267,7 @@ export function Bandeja({
         </header>
       )}
 
-      <Numeros resumen={vista.resumen} />
+      <Numeros resumen={vista.resumen} pagado={pagadoNetoEvento(vista.tareas, idioma)} />
 
       <section className="mt-8">
         <IndicadorActualizado activo={Boolean(proyectoId && !vista.ejemplo)} visible={reciente} />

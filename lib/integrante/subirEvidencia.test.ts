@@ -303,7 +303,7 @@ test("una foto de cámara que el servidor rechaza no dice Your evidence arrived"
     const pedidos = await enviarCaptura({ subida: () => json({ aviso }, 503) });
     assert.ok(pedidos.includes("POST /api/evidencias"));
     assert.doesNotMatch(texto(), /Your evidence arrived/);
-    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("Photo checks are not ready on the server yet."));
+    assert.ok(document.querySelector('[role="alert"]')?.textContent?.includes("Evidence checks are not ready on the server yet."));
     assert.equal(boton("Send evidence").textContent, "Send evidence");
     sinRevisionLocal();
   } finally {

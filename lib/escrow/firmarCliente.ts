@@ -16,7 +16,7 @@ export const AVISO_REINGRESO = "Your sign-in expired. Sign in again to continue.
 export const AVISO_SIN_CUENTA_FIRMA =
   "This sign-in has no account to sign with. Sign in again on this site to continue.";
 export const AVISO_DISPOSITIVO =
-  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Account and tap Add a passkey. Then try again here and use that passkey.";
+  "This browser doesn't have your account key yet. Open Hyto once in the browser where you signed up, go to Settings and tap Add a passkey. Then try again here and use that passkey.";
 export const AVISO_PASSKEY =
   "Confirm with your passkey to use your account in this browser. Try again and choose Use passkey when it asks.";
 

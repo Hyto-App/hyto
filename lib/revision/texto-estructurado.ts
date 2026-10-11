@@ -14,8 +14,11 @@ export function estructurarTranscripcion(
   contexto: { condicion?: string | null; tipoTarea?: TipoTarea | null } = {},
 ): Descripcion {
   const limpio = texto.trim();
-  const lectura = lecturaDeTranscripcion(limpio, contexto.condicion ?? null);
-  if (!lectura) return { texto: limpio, monto: null, fecha: null };
+  const leida = lecturaDeTranscripcion(limpio, contexto.condicion ?? null);
+  if (!leida) return { texto: limpio, monto: null, fecha: null };
+  // A list or a report for a work task is the work, not a receipt, unless it reads like one.
+  const lectura: LecturaEvidencia =
+    contexto.tipoTarea === "trabajo" && !pareceRecibo(limpio, leida) ? { ...leida, tipo: "trabajo" } : leida;
   const reembolso = contexto.tipoTarea === "reembolso" || lectura.tipo === "recibo";
   return {
     texto: limpio,
@@ -164,4 +167,11 @@ function esLineaDeFecha(linea: string): boolean {
 
 function esLineaDeTotal(linea: string): boolean {
   return /\b(?:total|importe|amount due|grand total|balance due)\b/i.test(linea);
+}
+
+const PALABRAS_RECIBO = /\b(?:factura|recibo|invoice|receipt|subtotal|iva|impuesto|tax|ticket|comprobante)\b/i;
+
+/** A printed currency on the total, or receipt words, make a transcription a receipt. A count ("Total: 5") does not. */
+export function pareceRecibo(texto: string, lectura: Pick<LecturaEvidencia, "moneda">): boolean {
+  return Boolean(lectura.moneda) || PALABRAS_RECIBO.test(texto);
 }

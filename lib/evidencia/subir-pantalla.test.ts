@@ -249,7 +249,7 @@ test("si el servidor falla, la pantalla muestra su aviso y no dice Evidence sent
     await subirConRespuesta(() => json({ aviso }, 503));
     assert.doesNotMatch(texto(), /Evidence sent/);
     assert.doesNotMatch(texto(), /File sent/);
-    assert.match(texto(), /Photo checks are not ready on the server yet/);
+    assert.match(texto(), /Evidence checks are not ready on the server yet/);
     assert.match(texto(), /Upload evidence/);
     const memoria = JSON.stringify({ ...window.localStorage });
     assert.doesNotMatch(memoria, /en revisión/);
@@ -280,8 +280,7 @@ test("un 201 sin aviso sí dice que la foto llegó", async () => {
   const original = globalThis.fetch;
   try {
     await subirConRespuesta(() => json({ evidencia: { id: "ev-1", tareaId: "comida", blobId: "blob-1" } }, 201));
-    assert.match(texto(), /Your file arrived/);
-    assert.doesNotMatch(texto(), /Your evidence arrived/);
+    assert.match(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /action needed/);
     assert.match(texto(), /as soon as the organizer approves it/);
   } finally {

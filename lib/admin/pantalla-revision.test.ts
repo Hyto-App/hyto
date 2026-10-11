@@ -57,7 +57,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
       llamadas.some((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/stand"),
       true,
     );
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
     assert.match(texto(), /64% · Partially completed/);
@@ -126,7 +126,7 @@ test("el informe muestra el origen y el error", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     assert.match(texto(), /Listo de verdad/);
     assert.match(texto(), /64%/);
     assert.equal(document.querySelector("[role=alert]"), null);
@@ -412,7 +412,7 @@ test("an error outside lock or pay does not use the payment box", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => rotulo("Ask for another photo"));
+    await esperar(() => rotulo("Ask for other evidence"));
     await confirmarPedir();
     await esperar(() => texto().includes("The photo isn't ready. Try again."));
     assert.equal(texto().includes("The request was sent"), false);
@@ -458,7 +458,7 @@ test("antes de apartar el dinero, Avanzado dice que la referencia todavía no es
   }
 });
 
-test("a live review without a photo URL says No photo yet, not Sample evidence", async () => {
+test("a live review without a photo URL says No evidence yet, not Sample evidence", async () => {
   const anterior = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -472,7 +472,7 @@ test("a live review without a photo URL says No photo yet, not Sample evidence",
   }) as typeof fetch;
   try {
     await montar(createElement(Revision, { tareaId: "stand" }));
-    await esperar(() => texto().includes("No photo yet"));
+    await esperar(() => texto().includes("No evidence yet"));
     assert.equal(texto().includes("Sample evidence"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -499,13 +499,13 @@ test("asking for another photo removes the old verdict pill", async () => {
     await esperar(() => texto().includes("64% · Partially completed"));
     await confirmarPedir();
     await esperar(() => !texto().includes("Partially completed"));
-    assert.equal(texto().includes("AI recommendation"), false);
+    assert.equal(texto().includes("Mile's recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
     assert.match(texto(), /Pending/);
     const aviso = [...document.querySelectorAll("[role=status]")].find((nodo) => nodo.classList.contains("hyto-pedir-listo"));
     assert.equal(
       aviso?.textContent,
-      "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.",
+      "Asked for other evidence. The request was sent, and this task stays pending until new evidence arrives.",
     );
     assert.equal(aviso?.id, "bloqueo-foto");
     assert.equal(texto().includes("Waiting for a new photo"), false);
@@ -544,11 +544,11 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
     await montar(createElement(Revision, { tareaId: "comida" }));
     await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
     assert.match(texto(), /78% · Partially completed/);
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     await confirmarPedir();
     await esperar(() => texto().includes("The request was sent"));
     const aviso = document.querySelector(".hyto-pedir-listo");
-    assert.equal(aviso?.textContent, "Asked for another photo. The request was sent, and this task stays pending until a new photo arrives.");
+    assert.equal(aviso?.textContent, "Asked for other evidence. The request was sent, and this task stays pending until new evidence arrives.");
     assert.equal(texto().includes("Waiting for a new photo"), false);
     const monto = document.querySelector("dd.hyto-amount");
     assert.equal(monto?.textContent, "₡6.900,00");
@@ -615,8 +615,8 @@ test("pedir otra foto confirma el envío en español", async () => {
   }) as typeof fetch;
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
-    await esperar(() => rotulo("Pedir otra foto"));
-    await pulsar("Pedir otra foto");
+    await esperar(() => rotulo("Pedir otra evidencia"));
+    await pulsar("Pedir otra evidencia");
     await esperar(() => texto().includes("¿Qué falta?"));
     const enviar = document.querySelector(".hyto-pedir button[type='submit']");
     if (!enviar) throw new Error("No send-back confirm.");
@@ -626,7 +626,7 @@ test("pedir otra foto confirma el envío en español", async () => {
     await esperar(() => texto().includes("Pendiente"));
     const aviso = document.querySelector(".hyto-pedir-listo");
     assert.equal(aviso?.getAttribute("role"), "status");
-    assert.equal(aviso?.textContent, "Pidió otra foto. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
+    assert.equal(aviso?.textContent, "Pidió otra evidencia. La solicitud se envió y esta tarea queda pendiente hasta que llegue una nueva.");
     assert.equal(aviso?.id, "bloqueo-foto");
     assert.equal(texto().includes("Esperando una foto nueva"), false);
   } finally {
@@ -662,7 +662,7 @@ test("pedir otra foto sin red muestra el error y no cambia la tarea", async () =
     assert.equal(document.querySelector("[role=alert]")?.textContent, "Could not send. Check your connection and try again.");
     assert.match(texto(), /64% · Partially completed/);
     assert.match(texto(), /Half of the booth is set up/);
-    assert.equal(texto().includes("Asked for another photo. The request was sent"), false);
+    assert.equal(texto().includes("Asked for other evidence. The request was sent"), false);
     assert.equal(texto().includes("What's missing?"), true);
     assert.equal(rotulo("Lock budget") && [...document.querySelectorAll("button")].some((boton) => boton.textContent === "Lock budget" && !(boton as HTMLButtonElement).disabled), true);
     await act(async () => {
@@ -692,8 +692,8 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
   }) as typeof fetch;
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(Revision, { tareaId: "stand" }) }));
-    await esperar(() => rotulo("Pedir otra foto"));
-    await pulsar("Pedir otra foto");
+    await esperar(() => rotulo("Pedir otra evidencia"));
+    await pulsar("Pedir otra evidencia");
     await esperar(() => texto().includes("¿Qué falta?"));
     const enviar = document.querySelector(".hyto-pedir button[type='submit']");
     if (!enviar) throw new Error("No send-back confirm.");
@@ -703,7 +703,7 @@ test("pedir otra foto sin red avisa en español y deja la tarea en revisión", a
     await esperar(() => texto().includes("No se pudo enviar. Revise su conexión e intente de nuevo."));
     assert.equal(document.querySelector("[role=alert]")?.textContent, "No se pudo enviar. Revise su conexión e intente de nuevo.");
     assert.match(texto(), /64% · Parcialmente completado/);
-    assert.equal(texto().includes("Pidió otra foto"), false);
+    assert.equal(texto().includes("Pidió otra evidencia"), false);
     assert.equal(texto().includes("Pendiente"), false);
   } finally {
     globalThis.fetch = anterior;
@@ -737,7 +737,7 @@ test("lock budget stays off while a pending task waits for another photo", async
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
     assert.equal(bloqueo.getAttribute("aria-describedby"), "bloqueo-foto");
-    assert.match(texto(), /Waiting for a new photo\. This stays off until it arrives\./);
+    assert.match(texto(), /Waiting for new evidence\. This stays off until it arrives\./);
     assert.match(texto(), /Pending/);
     await pulsar("Lock budget");
     assert.equal(document.querySelector("dialog"), null);
@@ -765,7 +765,7 @@ test("bloquear presupuesto queda apagado en español mientras espera la foto nue
     const bloqueo = [...document.querySelectorAll("button")].find((boton) => boton.textContent === "Bloquear presupuesto");
     assert.ok(bloqueo instanceof HTMLButtonElement);
     assert.equal(bloqueo.disabled, true);
-    assert.match(texto(), /Esperando una foto nueva\. Esto queda apagado hasta que llegue\./);
+    assert.match(texto(), /Esperando una evidencia nueva\. Esto queda apagado hasta que llegue\./);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
@@ -869,7 +869,7 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
     assert.match(texto(), /Esto aparta US\$0,22/);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
-    assert.match(texto(), /Falta la fecha del recibo/);
+    assert.match(texto(), /Falta la fecha de la factura/);
     await pulsar("Bloquear presupuesto");
     assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
   } finally {
@@ -906,9 +906,9 @@ test("approve and pay shows US$2.00, the same amount as the rest of the screen",
   }
 });
 
-/** "Ask for another photo" opens the sheet. The submit inside confirms the existing action. */
+/** "Ask for other evidence" opens the sheet. The submit inside confirms the existing action. */
 async function confirmarPedir(): Promise<void> {
-  await pulsar("Ask for another photo");
+  await pulsar("Ask for other evidence");
   await esperar(() => texto().includes("What's missing?"));
   const enviar = document.querySelector(".hyto-pedir button[type='submit']");
   if (!enviar) throw new Error("No send-back confirm.");

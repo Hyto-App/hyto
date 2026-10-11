@@ -23,7 +23,7 @@ const EN = {
     {
       titulo: "How we use it",
       cuerpo:
-        "We use this to show your tasks, review the photo, and pay the amount a person approves. Mile can read the photo and suggest a score. Mile does not sign or move money. An invite goes to the email an organizer enters.",
+        "We use this to show your tasks, review the evidence, and pay the amount a person approves. Mile can read the evidence and suggest a score. Mile does not sign or move money. An invite goes to the email an organizer enters.",
     },
     {
       titulo: "Who can see it",
@@ -54,7 +54,7 @@ const ES = {
     {
       titulo: "Cómo lo usamos",
       cuerpo:
-        "Lo usamos para mostrar sus tareas, revisar la foto y pagar el monto que una persona aprueba. Mile puede leer la foto y sugerir una nota. Mile no firma ni mueve dinero. Una invitación llega al correo que escribe quien organiza.",
+        "Lo usamos para mostrar sus tareas, revisar la evidencia y pagar el monto que una persona aprueba. Mile puede leer la evidencia y sugerir una nota. Mile no firma ni mueve dinero. Una invitación llega al correo que escribe quien organiza.",
     },
     {
       titulo: "Quién puede verlo",

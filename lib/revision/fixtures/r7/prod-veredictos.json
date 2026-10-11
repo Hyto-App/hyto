@@ -1,0 +1,65 @@
+{
+  "Mesa de bienvenida completa": {
+    "tipo_archivo": "image/jpeg",
+    "monto": null,
+    "fecha": null,
+    "veredicto": "parcial",
+    "score": "57",
+    "choice": "trabajo",
+    "texto_scout": "La imagen muestra una mesa ubicada frente a una puerta que tiene la palabra ENTRADA escrita en la parte superior. La mesa está cubierta con un mantel de color rojo oscuro y blanco. Sobre la mesa se observa un cartel rectangular con el texto BIENVENIDOS QA en letras rojas. A la izquierda del cartel, hay una hoja de papel con la palabra Registro escrita en ella. La escena parece estar terminada y lista para recibir a los asistentes. La foto corresponde a lo solicitado por el organizador, mostrando la mesa armada en la entrada con el mantel, el cartel y la hoja de registro. No se observan elementos faltantes de la solicitud.\n@@hyto-razones@@\nc=trabajo&lugar=stand_o_mesa&v1=es_otra_cosa&v2=1&v3=1&v4=0&t5=documentar_evento&t6=no_aplica&t7=0&t8=1&t9=1&t10=1&cerca=c1\n@@hyto-lectura@@\n{\"tipo\":\"trabajo\",\"pais\":null,\"moneda\":null,\"monto_original\":null,\"monto_usd\":null,\"tasa\":null,\"fecha\":null,\"fecha_impresa\":null,\"comercio\":null,\"articulos\":[\"mesa\",\"mantel\",\"cartel de bienvenida\",\"hoja de registro\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null,\"coincide\":\"si\"}"
+  },
+  "Mesa de bienvenida (incompleta)": {
+    "tipo_archivo": "image/jpeg",
+    "monto": null,
+    "fecha": null,
+    "veredicto": "insuficiente",
+    "score": "0",
+    "choice": "otra",
+    "texto_scout": "La imagen muestra una vista de la entrada de un evento, identificada con el texto ENTRADA sobre una estructura marrón. En el suelo, a la derecha de la entrada, se observa una mesa formada por tres bloques cuadrados marrones. No se aprecia ningún mantel cubriendo la superficie de la mesa. Tampoco es visible un cartel de bienvenida ni una hoja de registro en el área mostrada. La escena parece ser una representación esquemática o un plano simple de la zona. El texto en la parte inferior indica que se trata de la entrada del evento. La imagen no cumple con la totalidad de los elementos solicitados por el organizador.\n@@hyto-razones@@\nc=otra&cerca=lugar\n@@hyto-lectura@@\n{\"tipo\":\"trabajo\",\"pais\":null,\"moneda\":null,\"monto_original\":null,\"monto_usd\":null,\"tasa\":null,\"fecha\":null,\"fecha_impresa\":null,\"comercio\":null,\"articulos\":[\"entrada\",\"mesa\"],\"legible\":true,\"faltantes\":[\"mantel sobre la mesa\",\"cartel de bienvenida\",\"hoja de registro\"],\"cumple_reglas\":null,\"coincide\":\"parcial\"}"
+  },
+  "Lista de asistentes": {
+    "tipo_archivo": "text/plain",
+    "monto": null,
+    "fecha": null,
+    "veredicto": "parcial",
+    "score": "74",
+    "choice": "trabajo",
+    "texto_scout": "LISTA DE ASISTENTES - Evento QA #300 - 10/10/2026\n1. Maria Rojas - llego 9:02\n2. Daniel Solis - llego 9:05\n3. Ana Castro - llego 9:10\n4. Luis Mora - llego 9:12\n5. Sofia Vargas - llego 9:20\nTotal asistentes: 5\nRegistrado por: vallesjo781\n@@hyto-razones@@\nc=trabajo&lugar=no_claro&v1=es_lo_pedido&v2=1&v3=1&v4=1&t5=otra_o_no_claro&t6=terminado&t7=0&t8=0&t9=0&t10=1&cerca=c1,v1,t7\n@@hyto-lectura@@\n{\"tipo\":\"recibo\",\"pais\":null,\"moneda\":null,\"monto_original\":\"5\",\"monto_usd\":null,\"tasa\":null,\"fecha\":\"2026-10-10\",\"fecha_impresa\":\"10/10/2026\",\"comercio\":\"LISTA DE ASISTENTES - Evento QA #300 - 10/10/2026\",\"articulos\":[\"1. Maria Rojas - llego 9:\",\"2. Daniel Solis - llego 9:\",\"3. Ana Castro - llego 9:\",\"4. Luis Mora - llego 9:\",\"5. Sofia Vargas - llego 9:\",\"Registrado por: vallesjo\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null}"
+  },
+  "Factura foto": {
+    "tipo_archivo": "image/jpeg",
+    "monto": "2.90",
+    "fecha": "2026-10-10",
+    "veredicto": "cumplió",
+    "score": "88",
+    "choice": "factura",
+    "texto_scout": "La imagen muestra una factura digital con el encabezado SODA LA ESQUINA HEREDIA en la parte superior. Se observa la fecha de la transacción impresa como 10/10/2026 a las 12:30. El documento detalla la compra de 2x Casado con un costo de $2.90. El total final aparece indicado como TOTAL USD 2.90. También se incluye el número de factura #R7-SE-1010 y la nota QA #300 photo. La información es clara y corresponde a una evidencia de pago.\n@@hyto-razones@@\nc=factura&f1=coincide_con_lo_pedido&f2=1&f3=1&f4=1&g1=impresion_o_papeleria&g2=1&g3=1&g4=1&g5=1\n@@hyto-lectura@@\n{\"tipo\":\"recibo\",\"pais\":\"CR\",\"moneda\":\"USD\",\"monto_original\":\"2.90\",\"monto_usd\":\"2.90\",\"tasa\":1,\"fecha\":\"2026-10-10\",\"fecha_impresa\":\"10/10/2026\",\"comercio\":\"SODA LA ESQUINA HEREDIA\",\"articulos\":[\"2x Casado\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null,\"coincide\":\"si\"}"
+  },
+  "Factura PDF texto": {
+    "tipo_archivo": "application/pdf",
+    "monto": "3.20",
+    "fecha": "2026-10-10",
+    "veredicto": "parcial",
+    "score": "65",
+    "choice": "trabajo",
+    "texto_scout": "LIBRERIA LEHMANN SAN JOSE\nFecha: 10/10/2026 10:45\nCuaderno USD 1.80\nLapiceros USD 1.40\nTOTAL USD 3.20\nFactura #R7-LL-4040\nQA #300 text-pdf\n@@hyto-razones@@\nc=trabajo&lugar=stand_o_mesa&v1=es_lo_pedido&v2=1&v3=1&v4=1&t5=otra_o_no_claro&t6=no_aplica&t7=0&t8=0&t9=1&t10=1&cerca=c1,lugar,t6\n@@hyto-lectura@@\n{\"tipo\":\"recibo\",\"pais\":null,\"moneda\":\"USD\",\"monto_original\":\"USD 3.20\",\"monto_usd\":\"3.20\",\"tasa\":1,\"fecha\":\"2026-10-10\",\"fecha_impresa\":\"10/10/2026\",\"comercio\":\"LIBRERIA LEHMANN SAN JOSE\",\"articulos\":[\"Cuaderno\",\"Lapiceros\",\"Factura #R7-LL-\",\"QA #300 text-pdf\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null}"
+  },
+  "Factura PDF escaneado": {
+    "tipo_archivo": "application/pdf",
+    "monto": "2.40",
+    "fecha": "2026-10-10",
+    "veredicto": "cumplió",
+    "score": "88",
+    "choice": "factura",
+    "texto_scout": "La imagen muestra una factura impresa en la parte superior con el encabezado PANADERIA SAN MARTIN. Debajo del nombre del comercio, se observa la fecha 10/10/2026 a las 08:15. El documento detalla la compra de Pan dulce x6 por un valor de USD 2.40. El total final aparece claramente impreso como TOTAL USD 2.40. Al final de la sección de texto, se indica el número de factura #R7-PS-3030. La parte inferior de la imagen contiene una ampliación parcial del mismo texto, donde se recortan algunos caracteres a la derecha. El documento cumple con los requisitos de una evidencia de pago para la tarea de reembolso.\n@@hyto-razones@@\nc=factura&f1=coincide_con_lo_pedido&f2=1&f3=1&f4=1&g1=impresion_o_papeleria&g2=1&g3=1&g4=1&g5=1\n@@hyto-lectura@@\n{\"tipo\":\"recibo\",\"pais\":null,\"moneda\":\"USD\",\"monto_original\":\"USD 2.40\",\"monto_usd\":\"2.40\",\"tasa\":1,\"fecha\":\"2026-10-10\",\"fecha_impresa\":\"10/10/2026\",\"comercio\":\"PANADERIA SAN MARTIN\",\"articulos\":[\"Pan dulce x6\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null,\"coincide\":\"si\"}"
+  },
+  "Factura sin fecha": {
+    "tipo_archivo": "image/jpeg",
+    "monto": "2.80",
+    "fecha": null,
+    "veredicto": "parcial",
+    "score": "73",
+    "choice": "factura",
+    "texto_scout": "La imagen muestra una factura impresa en la parte superior con el encabezado FERRERIA EL CLAVO. Se listan dos artículos: 1x Cinta adhesiva por $1.60 y 1x Marcadores por $1.20. El total impreso es TOTAL USD 2.80. Debajo del total aparece el texto Factura #R7-FC-2020. En la última línea se lee QA #300 sin fecha. No se observa ninguna fecha de compra en el documento. La parte inferior de la imagen está vacía y en blanco.\n@@hyto-razones@@\nc=factura&f1=coincide_con_lo_pedido&f2=1&f3=1&f4=1&g1=impresion_o_papeleria&g2=0&g3=1&g4=1&g5=2&cerca=f4,g5\n@@hyto-lectura@@\n{\"tipo\":\"recibo\",\"pais\":null,\"moneda\":\"USD\",\"monto_original\":\"USD 2.80\",\"monto_usd\":\"2.80\",\"tasa\":1,\"fecha\":null,\"fecha_impresa\":null,\"comercio\":\"FERRERIA EL CLAVO\",\"articulos\":[\"Cinta adhesiva\",\"Marcadores\"],\"legible\":true,\"faltantes\":[],\"cumple_reglas\":null,\"coincide\":\"si\"}"
+  }
+}

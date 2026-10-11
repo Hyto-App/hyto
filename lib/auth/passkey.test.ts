@@ -233,10 +233,10 @@ test("sin la clave, la tarjeta de Cuenta guía paso a paso al navegador donde se
       await Promise.resolve();
     });
     assert.match(texto(), /This browser doesn't have your account key, so it can't add a passkey here/);
-    assert.match(texto(), /Open Account where you signed up/);
-    assert.match(texto(), /localhost\/account/);
+    assert.match(texto(), /Open Settings where you signed up/);
+    assert.match(texto(), /localhost\/configuracion/);
     assert.match(texto(), /Tap Add a passkey, then Create passkey/);
-    assert.match(texto(), /Use a phone or tablet/);
+    assert.match(texto(), /save the passkey on another device/);
     assert.match(texto(), /open Events and tap Get ready to be paid/);
     assert.match(texto(), /Don't remember where you signed up\?/);
     assert.equal(document.querySelectorAll(".hyto-guia-paso").length, 4);

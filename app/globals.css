@@ -5191,22 +5191,29 @@ html.hyto-firmando body {
 }
 
 .hyto-resumen {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 12px;
-  padding: 14px 16px;
-}
-
-.hyto-resumen:not(:has(.hyto-resumen-mini)) {
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 0;
+  overflow: hidden;
+  text-align: center;
 }
 
 .hyto-resumen h2 {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.25;
+}
+
+.hyto-resumen > .hyto-tarea-meta,
+.hyto-resumen > .hyto-amount {
+  margin: 0;
+}
+
+.hyto-resumen > :last-child:not(.hyto-resumen-falta) {
+  margin-bottom: 18px;
 }
 
 .hyto-resumen-mini {
@@ -5218,6 +5225,15 @@ html.hyto-firmando body {
   background: var(--papel);
 }
 
+.hyto-resumen-icono {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--suave);
+  background: var(--superficie-2);
+}
+
 .hyto-resumen-mini img {
   width: 100%;
   height: 100%;
@@ -5226,8 +5242,76 @@ html.hyto-firmando body {
 
 .hyto-resumen-nota {
   display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.hyto-resumen-pct {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.hyto-resumen-estado {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hyto-resumen-notas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+/* An odd last flag spans both columns, so the grid stays symmetric. */
+.hyto-resumen-notas > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.hyto-resumen-caja {
+  display: grid;
+  justify-items: center;
+  align-content: start;
   gap: 4px;
-  margin-top: 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--r-sm);
+  background: var(--superficie-2);
+  overflow-wrap: anywhere;
+}
+
+.hyto-resumen-caja p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+@media (max-width: 640px) {
+  .hyto-resumen-notas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hyto-resumen-falta {
+  box-sizing: border-box;
+  width: calc(100% + 32px);
+  margin: 8px -16px 0;
+  padding: 12px 16px;
+  background: #f59e0b;
+  color: #14162b;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .hyto-linea {
@@ -5326,20 +5410,6 @@ html.hyto-firmando body {
   .hyto-ver-mas-cuerpo > .hyto-tarjeta {
     box-sizing: border-box;
     width: 100%;
-  }
-
-  .hyto-resumen,
-  .hyto-resumen:not(:has(.hyto-resumen-mini)) {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .hyto-resumen:not(:has(.hyto-resumen-mini)) > div {
-    grid-column: 1 / -1;
-  }
-
-  .hyto-resumen > .hyto-amount {
-    grid-column: 1 / -1;
-    margin: 0;
   }
 
   .hyto-revisando {
@@ -7220,4 +7290,19 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   .hyto-acciones-fila > p {
     text-align: center;
   }
+}
+
+/* Paid status on the volunteer's task: a centered lime pill, same shape as the «TAREA 1» tag in tarea_v2. */
+.hyto-estado-pagado {
+  align-self: center;
+  margin: 0 auto 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: #b7ee34;
+  color: #08090c;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-align: center;
 }

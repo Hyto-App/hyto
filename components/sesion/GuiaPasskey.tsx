@@ -11,7 +11,7 @@ type Props = {
   alReintentar?: () => void;
   reintentando?: boolean;
   className?: string;
-  /** `cuenta`: shown on Account when this browser cannot add a passkey because it has no key. */
+  /** `cuenta`: shown on Settings when this browser cannot add a passkey because it has no key. */
   variante?: "firma" | "cuenta";
 };
 
@@ -24,7 +24,7 @@ export function GuiaPasskey({ alReintentar, reintentando = false, className, var
   const t = useTexto();
   const id = useId();
   const [enlace, setEnlace] = useState<string | null>(null);
-  const [visible, setVisible] = useState("hyto.vercel.app/account");
+  const [visible, setVisible] = useState("hyto.vercel.app/configuracion");
   const [puedeCompartir, setPuedeCompartir] = useState(false);
   const [copia, setCopia] = useState<Copia>("nada");
 
@@ -85,7 +85,7 @@ export function GuiaPasskey({ alReintentar, reintentando = false, className, var
               <p className="hyto-guia-paso-texto">{paso.texto}</p>
               {paso.enlace ? (
                 <>
-                  {/* Plain text on purpose: the link is for the other computer, not this phone. */}
+                  {/* Plain text on purpose: the link is for the other browser, not this one. */}
                   <p className="hyto-guia-enlace" translate="no">
                     {visible}
                   </p>
