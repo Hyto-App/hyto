@@ -11,7 +11,7 @@ import { leerMemoriaAdmin } from "./memoria";
 import { desmontar, escribir, escribirArea, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 
 function botonCrear(): HTMLButtonElement {
-  const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create and set aside budget"));
+  const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Create project"));
   assert.ok(boton instanceof HTMLButtonElement, "Falta el botón de crear.");
   return boton;
 }
@@ -51,7 +51,7 @@ test("en modo demo se recorren los tres pasos, se ve el aviso y crear queda apag
     await llenarHastaVista();
     assert.match(texto(), /This is how your team will see it/);
     assert.equal(botonCrear().disabled, true);
-    await pulsar("Create and set aside budget");
+    await pulsar("Create project");
     assert.equal(red.cuerpos.length, 0);
     assert.equal(leerMemoriaAdmin().proyecto, null);
     assert.deepEqual(idas, []);
@@ -70,7 +70,7 @@ test("crear proyecto manda prioridad normal, dificultad nula y abre el proyecto"
     await montar(createElement(CrearProyecto), { push: (href) => idas.push(href) });
     assert.equal(/Priority|Difficulty/.test(texto()), false);
     await llenarHastaVista();
-    await pulsar("Create and set aside budget");
+    await pulsar("Create project");
     assert.equal(red.cuerpos.length, 1);
     const tareas = red.cuerpos[0]?.tareas as { titulo?: string; prioridad?: string; dificultad?: string | null; monto?: string }[];
     assert.equal(red.cuerpos[0]?.nombre, "Feria");
@@ -95,7 +95,7 @@ test("la fecha «¿Para cuándo?» solo se manda cuando la base la tiene", async
     const semana = moverDia(hoyLocal(), { dias: 7 });
     await escribir("#fecha-proyecto", semana);
     await llenarHastaVista();
-    await pulsar("Create and set aside budget");
+    await pulsar("Create project");
     assert.equal(red.cuerpos[0]?.fecha, semana);
   } finally {
     red.restaurar();
@@ -117,9 +117,11 @@ test("«¿Para cuándo?» va de hoy a cinco años y no deja seguir con una fecha
   try {
     await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(CrearProyecto, { conFecha: true }) }), { push: () => undefined });
     const campo = document.querySelector<HTMLInputElement>("#fecha-proyecto");
+    const calendario = document.querySelector<HTMLInputElement>("[data-fecha-nativa]");
     const hoy = hoyLocal();
-    assert.equal(campo?.min, hoy);
-    assert.equal(campo?.max, moverDia(hoy, { anios: 5 }));
+    assert.equal(calendario?.type, "date");
+    assert.equal(calendario?.min, hoy);
+    assert.equal(calendario?.max, moverDia(hoy, { anios: 5 }));
     await escribirArea("#nombre-proyecto", "Feria");
     await escribir("#fecha-proyecto", "2005-03-01");
     await salirDeFecha();
@@ -199,7 +201,7 @@ test("saldo insuficiente: barra naranja, Agregar saldo y el botón de crear apag
     const boton = botonCrear();
     assert.equal(boton.disabled, true);
     assert.equal(boton.getAttribute("aria-describedby"), "aviso-saldo-crear");
-    await pulsar("Create and set aside budget");
+    await pulsar("Create project");
     assert.equal(red.cuerpos.length, 0);
     assert.match(resumen?.textContent ?? "", /Work tasks/);
   } finally {
@@ -218,7 +220,7 @@ test("con saldo suficiente la barra dice cuánto queda y crear envía", async ()
     assert.match(document.querySelector(".cp-resumen")?.textContent ?? "", /You have US\$10\.00 left/);
     assert.equal(document.querySelector("#aviso-saldo-crear"), null);
     assert.equal(botonCrear().disabled, false);
-    await pulsar("Create and set aside budget");
+    await pulsar("Create project");
     assert.equal(red.cuerpos.length, 1);
   } finally {
     red.restaurar();
@@ -464,6 +466,62 @@ test("en escritorio la columna derecha muestra la vista previa en vivo y luego e
     const boton = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("See how it looks"));
     assert.ok(boton?.closest(".cp-principal"));
     assert.equal(boton?.closest(".cp-lado"), null);
+  } finally {
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("en español la fecha se escribe día primero (dd/mm/aaaa) y el calendario la llena igual", async () => {
+  limpiarPantalla();
+  const red = conFetch(creado);
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(CrearProyecto, { conFecha: true, saldo: "500" }) }), { push: () => undefined });
+    const campo = document.querySelector<HTMLInputElement>("#fecha-proyecto");
+    assert.equal(campo?.placeholder, "dd/mm/aaaa");
+    const semana = moverDia(hoyLocal(), { dias: 7 });
+    const [anio, mes, dia] = semana.split("-");
+    // Digits only: the slashes go in by themselves.
+    await escribir("#fecha-proyecto", `${dia}${mes}${anio}`);
+    assert.equal(campo?.value, `${dia}/${mes}/${anio}`);
+    assert.equal(document.querySelector<HTMLInputElement>("[data-fecha-nativa]")?.value, semana);
+    // The native picker writes back in the same order.
+    const otro = moverDia(hoyLocal(), { dias: 9 });
+    await escribir("[data-fecha-nativa]", otro);
+    const [a2, m2, d2] = otro.split("-");
+    assert.equal(campo?.value, `${d2}/${m2}/${a2}`);
+    // Something that is not a day says how to write one.
+    await escribir("#fecha-proyecto", "31/02/2027");
+    await act(async () => {
+      campo?.dispatchEvent(new Event("focusout", { bubbles: true }));
+    });
+    assert.match(texto(), /Escriba un día como 16\/10\/2026/);
+    await escribir("#fecha-proyecto", `${d2}/${m2}/${a2}`);
+    await escribirArea("#nombre-proyecto", "Feria");
+    await pulsar("Siguiente");
+    await escribir("#titulo-1", "Cajas");
+    await escribir("#monto-1", "8");
+    await pulsar("Ver cómo queda");
+    await pulsar("Crear proyecto");
+    assert.equal(red.cuerpos[0]?.fecha, otro);
+  } finally {
+    red.restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
+test("el nombre vacío muestra el ejemplo y una barra lima donde empieza el texto", async () => {
+  limpiarPantalla();
+  try {
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(CrearProyecto) }), { push: () => undefined });
+    const campo = document.querySelector<HTMLTextAreaElement>("#nombre-proyecto");
+    assert.equal(campo?.placeholder, "Ej.: Casa de alquiler · Playa Hermosa");
+    // The bar sits with the field (same line), not as a separate dash under it.
+    assert.equal(document.querySelector(".cp-cursor")?.parentElement, campo?.parentElement);
+    assert.equal(document.querySelector(".cp-subrayado"), null);
+    await escribirArea("#nombre-proyecto", "Feria");
+    assert.equal(document.querySelector(".cp-cursor"), null);
   } finally {
     await desmontar();
     limpiarPantalla();

@@ -1384,7 +1384,7 @@ export const en = {
     unaPersona: "1 person",
     nPersonas: "{n} people",
     candado: "This money is held on Stellar and is only released when a person approves each piece of evidence.",
-    crear: "Create and set aside budget",
+    crear: "Create project",
     creando: "Creating…",
     abrir: "Open the project",
     sinNombre: "Untitled project",
@@ -1419,6 +1419,9 @@ export const en = {
     fechaFormato: "Enter a day like 10/16/2026",
     botonLista: "Create project",
     vistaPrevia: "Preview",
+    nombrePh: "E.g.: Rental house · Playa Hermosa",
+    fechaPh: "mm/dd/yyyy",
+    abrirCalendario: "Open the calendar",
   },
 };
 
@@ -2805,7 +2808,7 @@ export const es: Rama<typeof en> = {
     unaPersona: "1 persona",
     nPersonas: "{n} personas",
     candado: "Este dinero queda guardado en Stellar y solo se libera cuando una persona aprueba cada evidencia.",
-    crear: "Crear y apartar presupuesto",
+    crear: "Crear proyecto",
     creando: "Creando…",
     abrir: "Abrir el proyecto",
     sinNombre: "Proyecto sin nombre",
@@ -2840,6 +2843,9 @@ export const es: Rama<typeof en> = {
     fechaFormato: "Escriba un día como 16/10/2026",
     botonLista: "Crear proyecto",
     vistaPrevia: "Vista previa",
+    nombrePh: "Ej.: Casa de alquiler · Playa Hermosa",
+    fechaPh: "dd/mm/aaaa",
+    abrirCalendario: "Abrir el calendario",
   },
 };
 

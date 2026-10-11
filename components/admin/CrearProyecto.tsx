@@ -22,7 +22,16 @@ import {
 import { formatearMonto } from "@/lib/integrante/formato";
 import type { Sugerido } from "@/lib/perfil/sugeridos";
 import { avisoMontoEntrada, escribirMonto } from "@/lib/tareas/monto-entrada";
-import { fechaGuardadaVisible, problemaFechaLocal, rangoFecha, type ProblemaFecha } from "@/lib/tareas/fecha-limite";
+import {
+  diaValido,
+  enmascararFecha,
+  fechaATexto,
+  fechaGuardadaVisible,
+  problemaFechaLocal,
+  rangoFecha,
+  textoAFecha,
+  type ProblemaFecha,
+} from "@/lib/tareas/fecha-limite";
 import { contextoAbierto, errorPortada } from "@/lib/ui/campos-evento";
 import type { Clave } from "@/lib/ui/diccionario";
 
@@ -111,7 +120,7 @@ function ArtePortada() {
   );
 }
 
-function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" | "atras" | "candado" | "chispa" | "arriba" }) {
+function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" | "atras" | "candado" | "chispa" | "arriba" | "calendario" }) {
   const comun = {
     width: 16,
     height: 16,
@@ -160,6 +169,13 @@ function Icono({ nombre }: { nombre: "trabajo" | "reembolso" | "mas" | "flecha" 
       return (
         <svg {...comun} width={12} height={12}>
           <path d="M6 15l6-6 6 6" />
+        </svg>
+      );
+    case "calendario":
+      return (
+        <svg {...comun} width={18} height={18}>
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+          <path d="M3.5 10h17M8 3v4M16 3v4" />
         </svg>
       );
     case "candado":
@@ -602,7 +618,10 @@ export function CrearProyecto({
   const [paso, setPaso] = useState<Paso>(1);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  /** YYYY-MM-DD when what was typed is a real day; otherwise the text itself, which then reads as «formato». */
   const [fecha, setFecha] = useState("");
+  const [textoFecha, setTextoFecha] = useState("");
+  const calendario = useRef<HTMLInputElement>(null);
   const [errorFecha, setErrorFecha] = useState<ProblemaFecha | null>(null);
   // Today in the person's own time zone. Read after mount so the server render and the browser agree.
   const [rango, setRango] = useState<{ min: string; max: string } | null>(null);
@@ -741,6 +760,22 @@ export function CrearProyecto({
     setErrorNombre(false);
     setErrorTarea(null);
     irA(2);
+  }
+
+  /** Opens the browser's own date picker. Older browsers without showPicker get a focus and click. */
+  function abrirCalendario() {
+    const nativo = calendario.current;
+    if (!nativo) return;
+    try {
+      if (typeof nativo.showPicker === "function") {
+        nativo.showPicker();
+        return;
+      }
+    } catch {
+      /* Some browsers refuse showPicker outside a direct gesture; fall through. */
+    }
+    nativo.focus();
+    nativo.click();
   }
 
   /** «¿Para cuándo?» from today onward. Returns false and shows the message when the date can't be used. */
@@ -939,19 +974,24 @@ export function CrearProyecto({
                     <label htmlFor="nombre-proyecto" className="cp-nombre-etiqueta">
                       {t("crear.nombre")}
                     </label>
-                    <Area
-                      id="nombre-proyecto"
-                      valor={nombre}
-                      max={MAX_NOMBRE}
-                      unaLinea
-                      className="cp-nombre-campo"
-                      describedBy={errorNombre ? "nombre-error" : undefined}
-                      onCambio={(valor) => {
-                        setNombre(valor);
-                        if (valor.trim()) setErrorNombre(false);
-                      }}
-                    />
-                    <span className="cp-subrayado" aria-hidden="true" />
+                    <div className="cp-nombre-linea">
+                      <Area
+                        id="nombre-proyecto"
+                        valor={nombre}
+                        max={MAX_NOMBRE}
+                        unaLinea
+                        className="cp-nombre-campo"
+                        placeholder={t("crear.nombrePh")}
+                        describedBy={errorNombre ? "nombre-error" : undefined}
+                        onCambio={(valor) => {
+                          setNombre(valor);
+                          if (valor.trim()) setErrorNombre(false);
+                        }}
+                      />
+                      {/* Pao, 10-oct: the lime bar is the caret where the name starts, not a dash under it.
+                          It blinks while the box is empty; once focused the field's own lime caret takes over. */}
+                      {nombre ? null : <span className="cp-cursor" aria-hidden="true" />}
+                    </div>
                   </div>
                   {errorNombre ? (
                     <p id="nombre-error" role="alert" className="cp-error">
@@ -1002,26 +1042,57 @@ export function CrearProyecto({
                         {t("crear.paraCuando")}
                       </label>
                       <p className="cp-ayuda">{t("crear.paraCuandoAyuda")}</p>
-                      <input
-                        id="fecha-proyecto"
-                        type="date"
-                        className="cp-campo cp-fecha"
-                        value={fecha}
-                        min={rango?.min}
-                        max={rango?.max}
-                        aria-invalid={errorFecha ? true : undefined}
-                        aria-describedby={errorFecha ? "fecha-error" : undefined}
-                        onChange={(evento) => {
-                          const valor = evento.target.value;
-                          setFecha(valor);
-                          // Clear as soon as the day works; a new error waits for blur so typing a year does not flash it.
-                          if (errorFecha && problemaFechaLocal(valor) === null) setErrorFecha(null);
-                        }}
-                        onBlur={(evento) => setErrorFecha(problemaFechaLocal(evento.target.value))}
-                      />
+                      {/*
+                        A native date input shows mm/dd/yyyy or dd/mm/yyyy by the browser's locale, not Hyto's
+                        language. The field is text in the session's order (dd/mm/aaaa in Spanish); the calendar
+                        button opens the native picker, which keeps min/max and fills the text.
+                      */}
+                      <div className="cp-fecha-caja">
+                        <input
+                          id="fecha-proyecto"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          className="cp-campo cp-fecha"
+                          placeholder={t("crear.fechaPh")}
+                          value={textoFecha}
+                          maxLength={10}
+                          aria-invalid={errorFecha ? true : undefined}
+                          aria-describedby={errorFecha ? "fecha-error" : undefined}
+                          onChange={(evento) => {
+                            const texto = enmascararFecha(evento.target.value);
+                            setTextoFecha(texto);
+                            const valor = texto.trim() ? (textoAFecha(texto, idioma) ?? texto.trim()) : "";
+                            setFecha(valor);
+                            // Clear as soon as the day works; a new error waits for blur so typing a year does not flash it.
+                            if (errorFecha && problemaFechaLocal(valor) === null) setErrorFecha(null);
+                          }}
+                          onBlur={() => setErrorFecha(problemaFechaLocal(fecha))}
+                        />
+                        <button type="button" className="cp-fecha-calendario" aria-label={t("crear.abrirCalendario")} onClick={abrirCalendario}>
+                          <Icono nombre="calendario" />
+                        </button>
+                        <input
+                          ref={calendario}
+                          type="date"
+                          className="cp-fecha-nativa"
+                          data-fecha-nativa
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          value={diaValido(fecha) ? fecha : ""}
+                          min={rango?.min}
+                          max={rango?.max}
+                          onChange={(evento) => {
+                            const valor = evento.target.value;
+                            setFecha(valor);
+                            setTextoFecha(fechaATexto(valor, idioma));
+                            setErrorFecha(problemaFechaLocal(valor));
+                          }}
+                        />
+                      </div>
                       {errorFecha ? (
                         <p id="fecha-error" role="alert" className="cp-error">
-                          {t(errorFecha === "lejana" ? "crear.fechaLejana" : "crear.fechaPasada")}
+                          {t(errorFecha === "lejana" ? "crear.fechaLejana" : errorFecha === "formato" ? "crear.fechaFormato" : "crear.fechaPasada")}
                         </p>
                       ) : null}
                     </div>

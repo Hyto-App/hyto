@@ -330,18 +330,38 @@
   outline: none;
 }
 
-.cp-subrayado {
-  display: block;
-  width: 44px;
-  height: 3px;
-  margin: 12px 0 0;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--cp-lima), transparent);
-  transition: width 240ms ease;
+.cp-nombre-campo::placeholder {
+  color: var(--cp-tenue);
+  font-weight: 500;
 }
 
-.cp-nombre:focus-within .cp-subrayado {
-  width: 96px;
+/* Pao, 10-oct: the lime bar is a caret at the start of the empty name, not a dash under it. */
+.cp-nombre-linea {
+  position: relative;
+}
+
+.cp-cursor {
+  position: absolute;
+  top: 0.12em;
+  left: -6px;
+  width: 3px;
+  height: 1.05em;
+  border-radius: 2px;
+  font-size: clamp(22px, 5.6vw, 28px);
+  background: var(--cp-lima);
+  box-shadow: 0 0 10px rgba(183, 238, 52, 0.6);
+  animation: cp-parpadeo 1.1s steps(1, end) infinite;
+}
+
+/* Focused, the field's own lime caret blinks in the same place. */
+.cp-nombre:focus-within .cp-cursor {
+  display: none;
+}
+
+@keyframes cp-parpadeo {
+  50% {
+    opacity: 0;
+  }
 }
 
 .cp-ejemplo,
@@ -1247,9 +1267,12 @@
     animation: none;
   }
 
-  .cp-punto,
-  .cp-subrayado {
+  .cp-punto {
     transition: none;
+  }
+
+  .cp-cursor {
+    animation: none;
   }
 }
 
@@ -1360,7 +1383,7 @@
 .cp-portada::after,
 .cp-vista-portada::after,
 .cp-tarjeta::before,
-.cp-subrayado,
+.cp-cursor,
 .cp-dock,
 .cp-dock-col {
   pointer-events: none;
@@ -1790,4 +1813,52 @@
 .cp-seccion > .cp-error,
 .cp-campo-grupo > .cp-error {
   padding-left: 4px;
+}
+
+/* «¿Para cuándo?»: text in the session's order, with a calendar button for the native picker. */
+.cp-fecha-caja {
+  position: relative;
+  width: 100%;
+}
+
+.cp-fecha-caja > .cp-fecha {
+  padding-right: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-fecha-calendario {
+  position: absolute;
+  top: 12px;
+  right: 6px;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--cp-blando);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cp-fecha-calendario:hover {
+  color: var(--cp-lima);
+}
+
+/* The native input only hosts the picker: invisible, under the field so the picker opens below it. */
+.cp-fecha-nativa {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.cp-dock-col.is-compacta .cp-boton {
+  white-space: nowrap;
 }

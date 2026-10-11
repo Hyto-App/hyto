@@ -88,3 +88,39 @@ export function fechaGuardadaVisible(valor: string | null | undefined, idioma: "
     return null;
   }
 }
+
+/**
+ * The date as the person reads it: day first in Spanish (16/10/2026), month first in English (10/16/2026).
+ * Native date inputs follow the browser's locale, not Hyto's language, so the field shows this text instead.
+ */
+export function fechaATexto(valor: string, idioma: "en" | "es"): string {
+  const leido = diaValido(valor.trim());
+  if (!leido) return "";
+  const dia = dosDigitos(leido.dia);
+  const mes = dosDigitos(leido.mes);
+  return idioma === "es" ? `${dia}/${mes}/${leido.anio}` : `${mes}/${dia}/${leido.anio}`;
+}
+
+/** Reads what was typed: dd/mm/aaaa in Spanish, mm/dd/yyyy in English, eight digits, or YYYY-MM-DD. Null when it is not a real day. */
+export function textoAFecha(texto: string, idioma: "en" | "es"): string | null {
+  const limpio = texto.trim();
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(limpio);
+  if (iso) {
+    const valor = aTexto(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+    return diaValido(valor) ? valor : null;
+  }
+  const partes = /^(\d{1,2})[/.\-\s](\d{1,2})[/.\-\s](\d{4})$/.exec(limpio) ?? /^(\d{2})(\d{2})(\d{4})$/.exec(limpio);
+  if (!partes) return null;
+  const [primero, segundo] = [Number(partes[1]), Number(partes[2])];
+  const valor = idioma === "es" ? aTexto(Number(partes[3]), segundo, primero) : aTexto(Number(partes[3]), primero, segundo);
+  return diaValido(valor) ? valor : null;
+}
+
+/** While typing only digits, adds the slashes: 16102026 → 16/10/2026. Anything else is left as typed. */
+export function enmascararFecha(texto: string): string {
+  if (!/^[\d/]*$/.test(texto)) return texto;
+  const digitos = texto.replace(/\D/g, "").slice(0, 8);
+  if (digitos.length <= 2) return texto.endsWith("/") && digitos.length === 2 ? `${digitos}/` : digitos;
+  if (digitos.length <= 4) return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+  return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+}

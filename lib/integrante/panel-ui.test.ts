@@ -313,6 +313,11 @@ test("con la línea USDC abierta, Recargar saldo de prueba abre el faucet de Cir
     assert.equal(faucet.getAttribute("target"), "_blank");
     assert.equal(faucet.getAttribute("rel"), "noopener noreferrer");
     assert.ok(faucet.classList.contains("hyto-btn"));
+    // Left-aligned under the address, like the rest of the card.
+    const accion = faucet.closest("[data-recarga-accion]");
+    assert.ok(accion?.classList.contains("justify-items-start"));
+    assert.equal(accion?.classList.contains("text-center"), false);
+    assert.equal(faucet.classList.contains("w-full"), false);
     assert.match(
       seccion.textContent ?? "",
       /Copie su dirección, ábrala en el faucet de Circle, elija Stellar Testnet y péguela\. Es dinero de prueba, no real\./,

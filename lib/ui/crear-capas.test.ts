@@ -25,7 +25,7 @@ function ultimoPointer(selector: string): string | null {
 }
 
 test("las capas decorativas de Crear proyecto no toman clics", () => {
-  for (const selector of [".cp-arte", ".cp-arte *", ".cp-portada::after", ".cp-vista-portada::after", ".cp-tarjeta::before", ".cp-subrayado", ".cp-dock", ".cp-dock-col"]) {
+  for (const selector of [".cp-arte", ".cp-arte *", ".cp-portada::after", ".cp-vista-portada::after", ".cp-tarjeta::before", ".cp-cursor", ".cp-dock", ".cp-dock-col"]) {
     assert.equal(ultimoPointer(selector), "none", selector);
   }
   // The bar and the buttons inside the dock still take clicks.

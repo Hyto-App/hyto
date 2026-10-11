@@ -76,3 +76,24 @@ test("una fecha guardada en el pasado se sigue mostrando y una rota no rompe la 
   assert.equal(fechaGuardadaVisible("no-es-fecha", "es", { day: "numeric" }), null);
   assert.equal(fechaGuardadaVisible(null, "es", { day: "numeric" }), null);
 });
+
+test("la fecha se lee y se muestra con el día primero en español y el mes primero en inglés", async () => {
+  const { fechaATexto, textoAFecha, enmascararFecha } = await import("./fecha-limite");
+  assert.equal(fechaATexto("2026-10-16", "es"), "16/10/2026");
+  assert.equal(fechaATexto("2026-10-16", "en"), "10/16/2026");
+  assert.equal(fechaATexto("nada", "es"), "");
+  assert.equal(textoAFecha("16/10/2026", "es"), "2026-10-16");
+  assert.equal(textoAFecha("10/16/2026", "en"), "2026-10-16");
+  assert.equal(textoAFecha("16102026", "es"), "2026-10-16");
+  assert.equal(textoAFecha("6/3/2027", "es"), "2027-03-06");
+  assert.equal(textoAFecha("2026-10-16", "es"), "2026-10-16");
+  // 16 is not a month, and 30 February is not a day.
+  assert.equal(textoAFecha("10/16/2026", "es"), null);
+  assert.equal(textoAFecha("30/02/2027", "es"), null);
+  assert.equal(textoAFecha("", "es"), null);
+  assert.equal(enmascararFecha("16"), "16");
+  assert.equal(enmascararFecha("161"), "16/1");
+  assert.equal(enmascararFecha("16102026"), "16/10/2026");
+  assert.equal(enmascararFecha("16/10/2026"), "16/10/2026");
+  assert.equal(enmascararFecha("2026-10-16"), "2026-10-16");
+});

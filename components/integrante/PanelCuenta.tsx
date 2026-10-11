@@ -273,12 +273,13 @@ function RecargaPrueba({ vista }: { vista: VistaCuenta }) {
           <BotonCopiar valor={direccion} texto={t("cuenta.copiar")} hecho={t("cuenta.copiada")} />
         </div>
       </div>
-      <div className="grid justify-items-center gap-3 text-center">
-        <a className="hyto-btn w-full max-w-sm px-5" href={FAUCET_CIRCLE} target="_blank" rel="noopener noreferrer">
+      {/* Left-aligned under the address, like the rest of the card (Pao, 10-oct). */}
+      <div className="grid justify-items-start gap-3 text-left" data-recarga-accion>
+        <a className="hyto-btn w-fit max-w-full px-5" href={FAUCET_CIRCLE} target="_blank" rel="noopener noreferrer">
           {t("cuenta.recargar")}
           <span className="sr-only"> {t("cuenta.nuevaPestana")}</span>
         </a>
-        <p className="max-w-sm text-sm leading-6 text-[var(--suave)]">{t("cuenta.recargarAyuda")}</p>
+        <p className="max-w-prose text-sm leading-6 text-[var(--suave)]">{t("cuenta.recargarAyuda")}</p>
       </div>
     </div>
   );
