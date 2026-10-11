@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PasskeyCuenta } from "@/components/integrante/PasskeyCuenta";
+import type { RevisarFirma } from "@/components/sesion/ClaveNavegador";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
@@ -36,7 +37,7 @@ function mesVisible(clave: string, modo: "short" | "long", idioma: Idioma): stri
   }).format(new Date(Date.UTC(anio, numero - 1, 1)));
 }
 
-export function PanelCuenta() {
+export function PanelCuenta({ revisarFirma }: { revisarFirma?: RevisarFirma }) {
   const t = useTexto();
   const claro = useClaro();
   const [estado, setEstado] = useState<Estado>("cargando");
@@ -105,7 +106,7 @@ export function PanelCuenta() {
       <Billetera vista={vista} alListo={() => setIntento((valor) => valor + 1)} />
       <ComoCobrar />
       <CostoDePagar />
-      {vista.muestra ? null : <PasskeyCuenta />}
+      {vista.muestra ? null : <PasskeyCuenta revisar={revisarFirma} />}
       <Ganancias orgullo={vista.orgullo} />
       <OrgulloFila orgullo={vista.orgullo} />
       <Insignias insignias={vista.orgullo.insignias} />

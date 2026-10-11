@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
 import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
@@ -18,6 +19,7 @@ import { agruparPorEvento, idsMejorPagadas, ordenarPorPago, type OrdenTareas } f
 import { puntosDeCondicion } from "@/lib/integrante/puntos";
 import { contarEnRevision } from "@/lib/integrante/contadores";
 import { listarTareas } from "@/lib/integrante/rutas";
+import { CONSULTA_SUBIR, tareaParaSubir } from "@/lib/integrante/subir";
 import { esperaRevision, INTERVALO_SEGUIMIENTO_MS, reintentoEnLista, seguirEnLista } from "@/lib/integrante/seguimiento";
 import type { EstadoTarea, Tarea } from "@/lib/integrante/tipos";
 import { cuandoVence } from "@/lib/integrante/vence";
@@ -140,7 +142,14 @@ function Cargando() {
   );
 }
 
-export function MisTareas({ nombre = null }: { nombre?: string | null }) {
+/** A full navigation, so the upload page opens even when the router is not mounted (tests inject their own). */
+function irConCarga(href: string): void {
+  window.location.replace(href);
+}
+
+export function MisTareas({ nombre = null, irA = irConCarga }: { nombre?: string | null; irA?: (href: string) => void }) {
+  const consulta = useSearchParams();
+  const pideSubir = consulta?.get(CONSULTA_SUBIR) === "1";
   const demo = useModoDemo();
   const t = useTexto();
   const claro = useClaro();
@@ -225,6 +234,21 @@ export function MisTareas({ nombre = null }: { nombre?: string | null }) {
       window.clearInterval(id);
     };
   }, [haySeguimiento, demo]);
+
+  // Mile's "Upload evidence" shortcut lands here as ?subir=1. Before, it pointed at /mis-tareas itself, so from
+  // this page a click only closed the panel and nothing happened. Now it opens the next pending task's upload page.
+  useEffect(() => {
+    if (!pideSubir || !lista) return;
+    const id = tareaParaSubir(tareas, orden);
+    if (id) {
+      irA(`/tareas/${id}`);
+      return;
+    }
+    // Nothing pending: stay on the list and drop the flag so the shortcut works again next time.
+    const url = new URL(window.location.href);
+    url.searchParams.delete(CONSULTA_SUBIR);
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [pideSubir, lista, tareas, orden, irA]);
 
   const visibles = filtro === "all" ? tareas : tareas.filter((tarea) => tarea.estado === filtro);
   const cuenta = (estado: EstadoTarea) => tareas.filter((tarea) => tarea.estado === estado).length;

@@ -4,6 +4,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { act } from "react";
 import { PanelCuenta } from "../../components/integrante/PanelCuenta";
+import type { RevisarFirma } from "@/components/sesion/ClaveNavegador";
 import { ProveedorIdioma } from "../../components/ui/Idioma";
 import { desmontar, limpiarPantalla, montar, pulsar, texto } from "../../tests/integracion/montar";
 import { armarOrgullo } from "./orgullo";
@@ -25,6 +26,9 @@ function responder(body: unknown, status = 200): Response {
   });
 }
 
+/** This browser holds the account key, so Settings can say it is saved here. */
+const LISTA: RevisarFirma = async () => ({ estado: "lista", direccion: "GCUENTA" });
+
 test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerradas", async () => {
   limpiarPantalla();
   const original = globalThis.fetch;
@@ -40,7 +44,7 @@ test("el panel vacío muestra ceros, el gráfico en blanco y las insignias cerra
       orgullo: armarOrgullo([]),
     })) as typeof fetch;
   try {
-    await montar(createElement(PanelCuenta));
+    await montar(createElement(PanelCuenta, { revisarFirma: LISTA }));
     await asentar();
     assert.match(texto(), /Paid tasks will show up here/);
     assert.match(texto(), /Nothing paid yet/);
@@ -94,7 +98,7 @@ test("configuración en español muestra el costo y la llave en tuteo", async ()
       orgullo: armarOrgullo([]),
     })) as typeof fetch;
   try {
-    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta) }));
+    await montar(createElement(ProveedorIdioma, { idioma: "es", children: createElement(PanelCuenta, { revisarFirma: LISTA }) }));
     await asentar();
     assert.match(texto(), /¿Cuánto cuesta pagar una tarea\?/);
     assert.match(texto(), /comisión del 0,3 %/);

@@ -44,8 +44,18 @@ function etiquetaPaso(paso: PasoActividad, tarea: Tarea): Clave {
 export function ActividadTarea({ tarea }: { tarea: Tarea }) {
   const t = useTexto();
   const idioma = useIdioma();
-  const { pasos, eventos } = seguimientoDe(tarea);
+  const { pasos, eventos, empezo } = seguimientoDe(tarea);
   const titulo = useId();
+
+  // Nothing sent yet: no steps, so nothing looks approved or paid before it happened.
+  if (!empezo && eventos.length === 0) {
+    return (
+      <section className="hyto-tarjeta hyto-actividad" aria-labelledby={titulo}>
+        <h2 id={titulo}>{t("actividad.titulo")}</h2>
+        <p className="hyto-actividad-vacio">{t("actividad.sinActividad")}</p>
+      </section>
+    );
+  }
 
   return (
     <section className="hyto-tarjeta hyto-actividad" aria-labelledby={titulo}>
@@ -53,7 +63,11 @@ export function ActividadTarea({ tarea }: { tarea: Tarea }) {
       <ol className="hyto-rastreo" aria-label={t("actividad.rastreo")}>
         {pasos.map((paso) => (
           <li key={paso.id} data-estado={paso.estado} aria-current={paso.estado === "ahora" ? "step" : undefined}>
-            {t(etiquetaPaso(paso, tarea))}
+            {/* Only a step that really happened gets the lime check; the rest stay an empty gray circle. */}
+            <span className="hyto-rastreo-marca" data-hecho={paso.estado === "hecho" ? "si" : "no"} aria-hidden="true">
+              {paso.estado === "hecho" ? "✓" : null}
+            </span>
+            <span className="hyto-rastreo-texto">{t(etiquetaPaso(paso, tarea))}</span>
           </li>
         ))}
       </ol>
