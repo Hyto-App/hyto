@@ -4892,6 +4892,8 @@ html.hyto-firmando body {
 /* Upload evidence, Reviewing, Sent (redesign part 2). No animation on Mile. */
 .hyto-tarea {
   display: grid;
+  /* One column that may shrink below its content: a long, unwrapped line (the Mile note) must not widen the page on a phone. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-content: start;
 }
@@ -4951,6 +4953,7 @@ html.hyto-firmando body {
 .hyto-tarea-cols,
 .hyto-tarea-col {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-content: start;
 }
@@ -4981,6 +4984,7 @@ html.hyto-firmando body {
 
 .hyto-panel-mile-nota {
   display: flex;
+  flex: 1 1 auto;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
@@ -5345,6 +5349,28 @@ html.hyto-firmando body {
 
   .hyto-revisando > div {
     min-width: 0;
+  }
+
+  /* On a phone the Mile note gets up to three lines before "See more", instead of a few letters. */
+  .hyto-panel-mile-nota {
+    flex-wrap: wrap;
+  }
+
+  /* "Amount to pay US$12.40 · Limit US$15.00" wraps inside the pill instead of pushing the page wider. */
+  .hyto-chip-monto {
+    box-sizing: border-box;
+    max-width: 100%;
+    height: auto;
+    min-height: 32px;
+    padding-block: 5px;
+    white-space: normal;
+  }
+
+  .hyto-panel-mile-nota p:not(.is-abierta) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    white-space: normal;
   }
 }
 
@@ -5986,6 +6012,10 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   max-width: 100%;
 }
 
+.hyto-ayuda > [hidden] {
+  display: none;
+}
+
 .hyto-ayuda-burbuja {
   overflow-wrap: anywhere;
 }
@@ -6008,11 +6038,28 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 
   .hyto-capa-ayuda .hyto-ayuda {
     width: 100%;
-    max-width: none;
+    max-width: 100%;
     max-height: min(78dvh, 720px);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  /* Shortcuts and suggested questions sit centered, with equal space on both sides. */
+  .hyto-capa-ayuda .hyto-ayuda-atajos,
+  .hyto-capa-ayuda .hyto-ayuda-chips {
+    justify-content: center;
+  }
+
+  /* The title and × stay in view while the conversation scrolls inside the sheet. */
+  .hyto-capa-ayuda .hyto-ayuda-cabeza {
+    position: sticky;
+    top: -16px;
+    z-index: 1;
+    max-width: none;
+    margin: -16px -16px 0;
+    padding: 16px 16px 8px;
+    background: var(--papel);
   }
 }
 
@@ -6163,6 +6210,9 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 .hyto-ayuda-chip {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   min-height: 36px;
   border: 1px solid var(--acento-texto);
   border-radius: 999px;
@@ -7090,5 +7140,27 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 @media (prefers-reduced-motion: reduce) {
   .hyto-evid-soltar {
     transition: none;
+  }
+}
+
+/* Organizer task actions on phones: one centered, full-width column so nothing sits pushed to the left. */
+@media (max-width: 1023px) {
+  .hyto-acciones-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+    gap: 8px;
+  }
+
+  .hyto-acciones-fila > .hyto-btn,
+  .hyto-acciones-fila > .hyto-btn-line {
+    width: 100%;
+    max-width: none;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hyto-acciones-fila > p {
+    text-align: center;
   }
 }

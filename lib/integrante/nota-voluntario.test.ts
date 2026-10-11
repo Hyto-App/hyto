@@ -81,7 +81,7 @@ test("sin nota real no hay porcentaje ni la frase del pago", async () => {
   const anterior = globalThis.fetch;
   try {
     await abrir(tarea({ nota: null, veredicto: null, frase: "SECRETO-LAYA" }));
-    assert.match(texto(), /Mile is checking your photo/);
+    assert.match(texto(), /Mile is checking your evidence/);
     assert.equal(document.querySelector(".hyto-pill-veredicto"), null);
     assert.equal(texto().includes("%"), false);
     assert.equal(texto().includes(FRASE_PAGO), false);
@@ -264,7 +264,7 @@ test("después de enviar, la pantalla usa la nota que ya guardó la revisión", 
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 40));
     });
-    assert.doesNotMatch(texto(), /Your photo arrived/);
+    assert.doesNotMatch(texto(), /Your evidence arrived/);
     assert.doesNotMatch(texto(), /Great job/);
     assert.match(texto(), /Mile marked this as partially completed/);
     assert.match(texto(), /64% · Partially completed/);
@@ -291,7 +291,7 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
         veredicto: "parcial",
       }),
     );
-    assert.match(texto(), /Your photo already reached the organizer/);
+    assert.match(texto(), /Your evidence already reached the organizer/);
     assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
     assert.equal((texto().match(/the organizer decides|makes the final call/g) ?? []).length, 1);
     assert.match(texto(), /Take another/);
@@ -299,7 +299,7 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
       [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Take photo/);
-    assert.equal(texto().includes("Your photo already reached the organizer"), false);
+    assert.equal(texto().includes("Your evidence already reached the organizer"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
