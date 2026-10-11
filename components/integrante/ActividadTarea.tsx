@@ -32,8 +32,12 @@ function etiquetaHora(iso: string, idioma: "en" | "es"): string {
   }).format(new Date(iso));
 }
 
-/** The first step is named Approved only once the task is paid. Until then it shows the real status. */
+/**
+ * The first step is named Approved only once the task is paid. Until then it shows the real status.
+ * After another photo was requested, the middle step is the photo already sent, not a payment.
+ */
 function etiquetaPaso(paso: PasoActividad, tarea: Tarea): Clave {
+  if (paso.id === "enviado" && (tarea.rechazada || tarea.etapa === "rechazada")) return "evidencia.photoSent";
   if (paso.id !== "aprobada" || paso.estado === "hecho") return PASO[paso.id];
   if (tarea.rechazada || tarea.etapa === "rechazada") return "tareas.badgeNewPhoto";
   if (tarea.estado === "en revisión") return "actividad.enRevision";

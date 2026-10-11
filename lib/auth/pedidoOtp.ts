@@ -1,4 +1,4 @@
-import { avisoDeIngreso, esperaDeRespuesta429, textoEspera } from "@/lib/auth/errores";
+import { ESPERA_TRAS_ENVIO, avisoDeIngreso, esperaDeclarada, textoEspera } from "@/lib/auth/errores";
 import { nonceDe } from "@/lib/auth/retoCorreo";
 
 const RUTA_OTP = "/api/oauth/firebase/otp/request";
@@ -29,7 +29,12 @@ export class TopeCodigo extends Error {
 
 type AuthConOtp = { sendOtp(email: string): Promise<void> };
 
-export async function pedirOtp(auth: AuthConOtp, email: string): Promise<void> {
+/**
+ * Asks for one code. Resolves with the seconds the server said to wait before
+ * another one (`Retry-After`, or the longer figure in the body). A 429 throws
+ * `TopeCodigo` with that same wait: Cavos did not accept a new code.
+ */
+export async function pedirOtp(auth: AuthConOtp, email: string): Promise<number> {
   const previo = nonceDe(auth);
   let tope: number | null = null;
   const anterior = globalThis.fetch;
@@ -37,11 +42,15 @@ export async function pedirOtp(auth: AuthConOtp, email: string): Promise<void> {
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const propio = esPedidoOtp(input);
     const respuesta = await llamar(propio ? RUTA_PROPIA : input, init);
-    if (propio && respuesta.status === 429) tope = await esperaDeRespuesta429(respuesta);
+    if (propio) {
+      const dicha = await esperaDeclarada(respuesta);
+      if (dicha !== null) tope = dicha;
+    }
     return respuesta;
   };
   try {
     await auth.sendOtp(email);
+    return tope ?? ESPERA_TRAS_ENVIO;
   } catch (error) {
     restaurarNonce(auth, previo);
     if (tope === null) {

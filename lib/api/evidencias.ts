@@ -5,6 +5,7 @@ import { esBlobEjemplo, esProyectoDemo } from "@/lib/db/semilla";
 import type { EvidenciaFila, Rol, TareaFila, VeredictoFila } from "@/lib/db/tipos";
 import { aplicarCopia, MOTIVO_COPIA } from "@/lib/evidencia/copia";
 import { evaluarFrescura, fechaExif } from "@/lib/evidencia/frescura";
+import { sinMetadatos } from "@/lib/evidencia/metadatos";
 import { sha256De } from "@/lib/evidencia/huella";
 import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
@@ -104,6 +105,8 @@ export async function leerFotoHttp(
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
     const tipo = tipoDeFoto(foto.tipo, foto.bytes);
+    // Files saved before the upload stripped them can still carry a location. The reply does not.
+    const servida = esImagen(tipo) ? await sinMetadatos(foto.bytes, tipo) : { bytes: foto.bytes, tipo };
     const cabeceras: Record<string, string> = {
       "content-type": tipo,
       "cache-control": "private, max-age=3600",
@@ -113,7 +116,7 @@ export async function leerFotoHttp(
     // A stored HTML receipt or a list is served as text/plain. Opened on its own, it still runs nothing.
     // PDFs keep no sandbox, because a sandboxed document cannot load the browser's PDF viewer.
     if (tipo === "text/plain") cabeceras["content-security-policy"] = CSP_DOCUMENTO;
-    return new Response(Buffer.from(foto.bytes), { headers: cabeceras });
+    return new Response(Buffer.from(servida.bytes), { headers: cabeceras });
   } catch (error) {
     return baseNoLista(error);
   }
@@ -251,7 +254,10 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
         }
       }
 
-      const archivo = new Blob([bytes], { type: tipo });
+      // sha256, phash, and the capture time above come from the original file, so duplicates are still caught.
+      // The saved file drops location and the other camera notes Hyto does not use.
+      const paraGuardar = esImagen(tipo) ? await sinMetadatos(bytes, tipo) : { bytes, tipo };
+      const archivo = new Blob([Uint8Array.from(paraGuardar.bytes)], { type: paraGuardar.tipo });
       let blobId: string;
       try {
         blobId = await deps.fotos.guardar(nombreDeTipo(tipo), archivo);

@@ -1,6 +1,7 @@
 import { conAlmacen } from "@/lib/api/base";
 
-export const maxDuration = 30;
+/** A forced review runs inside this limit. Keep it equal to `MAX_DURACION_REVISION_MS` in `lib/api/revision.ts`. */
+export const maxDuration = 60;
 import { json } from "@/lib/api/json";
 import { AVISO_REVISION, estadoOrganizadorTarea, organizaAlguno } from "@/lib/api/organizador";
 import { leerRevisionHttp } from "@/lib/api/revision";
@@ -22,6 +23,7 @@ async function atender(
   contexto: { params: Promise<{ id: string }> },
   forzar: boolean,
 ): Promise<Response> {
+  const inicio = Date.now();
   const sesion = await exigirSesion(request);
   if (sesion instanceof Response) return sesion;
   const { id } = await contexto.params;
@@ -39,6 +41,6 @@ async function atender(
       return json({ aviso: AVISO_REVISION }, 403);
     }
     if (estado === "no") return json({ aviso: AVISO_REVISION }, 403);
-    return leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet, idiomaDePeticion(request));
+    return leerRevisionHttp(almacen, fotos, id, forzar, sesion.wallet, idiomaDePeticion(request), inicio);
   });
 }

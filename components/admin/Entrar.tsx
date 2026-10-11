@@ -20,7 +20,8 @@ import {
   olvidarRetorno,
   rutaRetornoSegura,
 } from "@/lib/sesion/retorno";
-import { guardarRetoCorreo, leerRetoCorreo, nonceDe, olvidarRetoCorreo, ponerNonce } from "@/lib/auth/retoCorreo";
+import { guardarEsperaReenvio, leerEsperaReenvio, olvidarEsperaReenvio } from "@/lib/auth/esperaReenvio";
+import { guardarRetoCorreo, leerRetoCorreo, nonceDe, olvidarRetoCorreo, ponerNonce, type RetoCorreo } from "@/lib/auth/retoCorreo";
 import {
   AVISO_CODIGO_INVALIDO,
   AVISO_CODIGO_VENCIDO,
@@ -42,7 +43,8 @@ import { pedirOtp } from "@/lib/auth/pedidoOtp";
 import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
+import { SelectorIdiomaMenu, useClaro, useDiscurso, useTexto } from "@/components/ui/Idioma";
+import { preguntasDiscurso } from "@/lib/ui/discurso";
 import { appIdPublico } from "@/lib/integrante/identidades";
 import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -157,6 +159,8 @@ export function Entrar({
   const rolActual = useRolDemo();
   const t = useTexto();
   const claro = useClaro();
+  const discurso = useDiscurso();
+  const faq = preguntasDiscurso(discurso);
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
   const [retorno, setRetorno] = useState<string | null>(null);
@@ -173,6 +177,7 @@ export function Entrar({
   const [altaPendiente, setAltaPendiente] = useState<string | null>(null);
   const [espera, setEspera] = useState(0);
   const [mostrarEspera, setMostrarEspera] = useState(false);
+  const [retoVivo, setRetoVivo] = useState<RetoCorreo | null>(null);
   const [verCheck, setVerCheck] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   const [recuperacion, setRecuperacion] = useState<PoliticaRecuperacion>(POLITICA_INACTIVA);
@@ -205,8 +210,14 @@ export function Entrar({
     if (reto) {
       setCorreo(reto.email);
       setPestana(reto.intencion);
+      setRetoVivo(reto);
       setPedirIngreso(true);
       setFase("codigo");
+      const queda = leerEsperaReenvio();
+      if (queda > 0) {
+        esperaRef.current = queda;
+        setEspera(queda);
+      }
       void crear()
         .then((auth) => {
           if (!vivo || !auth || authRef.current) return;
@@ -265,6 +276,7 @@ export function Entrar({
     const id = window.setTimeout(() => {
       // Move the ref before React paints, and before a click already in this turn.
       const siguiente = tickEspera(esperaRef.current, esperaRef);
+      if (siguiente <= 0) olvidarEsperaReenvio();
       setEspera(siguiente);
     }, 1000);
     return () => window.clearTimeout(id);
@@ -278,10 +290,9 @@ export function Entrar({
     function tecla(evento: KeyboardEvent) {
       if (evento.key === "Escape") {
         // On success the session is open and the hand-off to tasks is running.
-        if (fase !== "exito") {
-          if (fase === "codigo" || fase === "enlace") olvidarRetoCorreo();
-          setFase("inicio");
-        }
+        // From the code, go back to the email. The sign-up / sign-in cards are an unstyled full-width selector.
+        if (fase === "codigo" || fase === "enlace") volverAlCorreo();
+        else if (fase !== "exito") setFase("inicio");
         return;
       }
       if (evento.key !== "Tab" || !nodo) return;
@@ -366,6 +377,18 @@ export function Entrar({
     esperaRef.current = n;
     setEspera(n);
     setMostrarEspera(visible);
+    guardarEsperaReenvio(n);
+  }
+
+  function volverAlCodigo() {
+    if (!retoVivo || ocupado !== null) return;
+    guardarRetoCorreo(retoVivo);
+    setCorreo(retoVivo.email);
+    setPestana(retoVivo.intencion);
+    setAviso(null);
+    setAlertaRegreso(false);
+    setDigitos(CODIGO_VACIO);
+    setFase("codigo");
   }
 
   function mostrarFallo(error: unknown) {
@@ -484,7 +507,6 @@ export function Entrar({
   }
 
   function pedirOtroCodigo() {
-    setDigitos(CODIGO_VACIO);
     void enviarCodigo();
   }
 
@@ -531,14 +553,18 @@ export function Entrar({
         await enviarEnlace(auth, email);
         return;
       }
-      await Promise.all([pedirOtp(auth, email), pausa(esperaMinima)]);
+      const [esperaPedido] = await Promise.all([pedirOtp(auth, email), pausa(esperaMinima)]);
       authRef.current = auth;
       const nonce = nonceDe(auth);
-      if (nonce) guardarRetoCorreo({ email, nonce, intencion: pestana });
+      if (nonce) {
+        const reto = { email, nonce, intencion: pestana };
+        guardarRetoCorreo(reto);
+        setRetoVivo(reto);
+      }
       setCorreo(email);
       setDigitos(CODIGO_VACIO);
       setFase("codigo");
-      iniciarEspera(ESPERA_TRAS_ENVIO, false);
+      iniciarEspera(esperaPedido, false);
     } catch (error) {
       mostrarFallo(error);
     } finally {
@@ -895,7 +921,10 @@ export function Entrar({
             className="hyto-login-logo"
             onClick={() => {
               if (fase === "exito") return;
-              if (fase === "codigo" || fase === "enlace") olvidarRetoCorreo();
+              if (fase === "codigo" || fase === "enlace") {
+                volverAlCorreo();
+                return;
+              }
               setFase("inicio");
             }}
             aria-label={t("entrar.close")}
@@ -921,6 +950,21 @@ export function Entrar({
                     <li key={linea}>{linea}</li>
                   ))}
               </ol>
+              {faq.length > 0 ? (
+                <section className="hyto-login-faq" aria-labelledby={`${ids}-faq`}>
+                  <h2 id={`${ids}-faq`} className="hyto-login-faq-titulo">
+                    {discurso.faqTitle}
+                  </h2>
+                  <dl>
+                    {faq.map((item) => (
+                      <div key={item.titulo}>
+                        <dt>{item.titulo}</dt>
+                        <dd>{item.cuerpo}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ) : null}
             </div>
             <Mile pose={pose} />
           </div>
@@ -1067,7 +1111,7 @@ export function Entrar({
                     </div>
                     {enviando ? (
                       <p className="hyto-login-estado" aria-live="polite">
-                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} />
+                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} aria-hidden="true" />
                         {t("entrar.mile.dive")}
                       </p>
                     ) : (
@@ -1090,6 +1134,11 @@ export function Entrar({
                     {aviso === AVISO_SIN_CUENTA ? (
                       <button type="button" className="hyto-login-btn is-enlace" onClick={() => elegirPestana("signup")} disabled={ocupado !== null}>
                         {t("entrar.irCrearCuenta")}
+                      </button>
+                    ) : null}
+                    {retoVivo ? (
+                      <button type="button" className="hyto-login-btn is-enlace" onClick={volverAlCodigo} disabled={ocupado !== null}>
+                        {t("entrar.yaTengoCodigo")}
                       </button>
                     ) : null}
                     <button

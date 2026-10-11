@@ -1,15 +1,16 @@
-import { AVISO_CORREO, correoValido } from "@/lib/auth/errores";
+import { AVISO_CORREO, ESPERA_TRAS_ENVIO, correoValido, esperaDeclaradaDe } from "@/lib/auth/errores";
 import { appIdPublico } from "@/lib/config/publico";
 import { clienteEstable } from "@/lib/api/existe-cuenta";
-import { excedido } from "@/lib/escrow/limite";
+import { segundosDeVentanaLlena, segundosSiExcedido } from "@/lib/escrow/limite";
 import { json } from "@/lib/api/json";
 
 /** Same host the kit uses when `backendUrl` is unset. Not taken from the request. */
 const URL_OTP = "https://cavos.xyz/api/oauth/firebase/otp/request";
 const TOPE_POR_MINUTO = 8;
-const TOPE_PROPIO_S = 20;
 const TOPE_CUERPO = 2048;
 const TOPE_RESPUESTA = 8192;
+/** Absolute time when this client may ask again. Only a wait the server will actually enforce. */
+const anuncioHasta = new Map<string, number>();
 
 const NONCE = /^0x[0-9a-fA-F]{1,80}$/;
 
@@ -25,9 +26,12 @@ export type PedidoCodigoDeps = {
  * instead of a failed fetch. The app id is the server's, never the body's.
  */
 export async function pedirCodigoHttp(request: Request, deps: PedidoCodigoDeps = {}): Promise<Response> {
-  if (excedido(`codigo:${clienteEstable(request)}`, deps.ahora ?? Date.now(), TOPE_POR_MINUTO)) {
-    return respuestaTope(TOPE_PROPIO_S);
-  }
+  const ahora = deps.ahora ?? Date.now();
+  const clave = `codigo:${clienteEstable(request)}`;
+  const previa = esperaAnunciada(clave, ahora);
+  if (previa !== null) return respuestaTope(previa);
+  const ventana = segundosSiExcedido(clave, ahora, TOPE_POR_MINUTO);
+  if (ventana !== null) return respuestaTope(ventana);
   const appId = deps.appId === undefined ? appIdPublico() : deps.appId;
   if (!appId) return json({ error: "missing_app_id", message: "Sign-in is waiting for the Cavos app id." }, 503);
 
@@ -63,9 +67,30 @@ export async function pedirCodigoHttp(request: Request, deps: PedidoCodigoDeps =
   const crudo = await upstream.text();
   const recorte = crudo.length > TOPE_RESPUESTA ? crudo.slice(0, TOPE_RESPUESTA) : crudo;
   const headers = new Headers({ "content-type": "application/json", "cache-control": "no-store" });
-  const retry = upstream.headers.get("retry-after");
-  if (retry) headers.set("retry-after", retry);
+  const dicha = esperaDeclaradaDe(upstream.headers.get("retry-after"), recorte, ahora);
+  const llena = segundosDeVentanaLlena(clave, ahora, TOPE_POR_MINUTO);
+  const real = Math.max(dicha ?? 0, llena);
+  const aceptado = upstream.status >= 200 && upstream.status < 300;
+  const limitado = upstream.status === 429;
+  const retry = real > 0 ? real : aceptado || limitado ? ESPERA_TRAS_ENVIO : 0;
+  if (retry > 0 && (real > 0 || limitado)) anunciar(clave, ahora, retry);
+  if (retry > 0) headers.set("retry-after", String(retry));
   return new Response(recorte, { status: upstream.status, headers });
+}
+
+function esperaAnunciada(clave: string, ahora: number): number | null {
+  const hasta = anuncioHasta.get(clave);
+  if (hasta === undefined || hasta <= ahora) {
+    if (hasta !== undefined) anuncioHasta.delete(clave);
+    return null;
+  }
+  return Math.max(1, Math.ceil((hasta - ahora) / 1000));
+}
+
+function anunciar(clave: string, ahora: number, segundos: number): void {
+  const hasta = ahora + Math.ceil(segundos) * 1000;
+  const previo = anuncioHasta.get(clave) ?? 0;
+  if (hasta > previo) anuncioHasta.set(clave, hasta);
 }
 
 function respuestaTope(segundos: number): Response {

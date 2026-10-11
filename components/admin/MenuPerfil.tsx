@@ -26,7 +26,8 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
   const [saliendo, setSaliendo] = useState(false);
   const idioma = useIdioma();
   const nombre = usuario.nombre?.trim() ? nombreEnIdioma(usuario.nombre.trim(), idioma) : null;
-  const rotulo = nombre ?? usuario.email;
+  // Without a stored name the sheet says «Su cuenta» and the email goes on the second line.
+  const rotulo = nombre ?? t("nav.profile");
 
   useEffect(() => {
     if (!abierto) return;
@@ -69,7 +70,7 @@ export function MenuPerfil({ usuario, abierto, alCerrar, alAyuda, devolver }: Pr
           </span>
           <span className="hyto-usuario-datos">
             <strong id={titulo}>{rotulo}</strong>
-            {nombre ? <span>{usuario.email}</span> : null}
+            <span>{usuario.email}</span>
           </span>
         </div>
         <Link href="/configuracion" className="hyto-perfil-item" onClick={alCerrar}>

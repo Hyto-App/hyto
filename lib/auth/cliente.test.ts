@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AVISO_ORIGEN_CAVOS } from "./errores";
-import { cuentaTrasConexion, fijarWallet, publicarSesion, type IngresoCerrado } from "./cliente";
+import { cuentaTrasConexion, fijarWallet, publicarSesion, urlGoogleConSelector, type IngresoCerrado } from "./cliente";
 
 const WALLET = "G" + "C".repeat(55);
 
@@ -95,4 +95,22 @@ test("publicarSesion marca nuevo solo cuando el servidor lo dice", async () => {
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test("Google pide el selector de cuentas aunque el navegador ya tenga una sesión", () => {
+  const base = "https://accounts.google.com/o/oauth2/v2/auth?client_id=app&redirect_uri=https%3A%2F%2Fhyto.vercel.app%2F&state=abc";
+  const conPrompt = new URL(urlGoogleConSelector(base));
+  assert.equal(conPrompt.searchParams.get("prompt"), "select_account");
+  assert.equal(conPrompt.searchParams.get("client_id"), "app");
+  assert.equal(conPrompt.searchParams.get("state"), "abc");
+  assert.equal(conPrompt.searchParams.get("redirect_uri"), "https://hyto.vercel.app/");
+
+  assert.equal(new URL(urlGoogleConSelector(`${base}&prompt=none`)).searchParams.get("prompt"), "select_account");
+  const consent = new URL(urlGoogleConSelector(`${base}&prompt=consent`)).searchParams.get("prompt")?.split(" ") ?? [];
+  assert.deepEqual(consent.sort(), ["consent", "select_account"]);
+
+  const cavos = "https://cavos.example/oauth?next=https%3A%2F%2Faccounts.google.com%2Fo%2Foauth2%2Fv2%2Fauth";
+  assert.equal(urlGoogleConSelector(cavos), cavos);
+  assert.equal(urlGoogleConSelector("https://appleid.apple.com/auth/authorize?client_id=app"), "https://appleid.apple.com/auth/authorize?client_id=app");
+  assert.equal(urlGoogleConSelector("no-es-url"), "no-es-url");
 });

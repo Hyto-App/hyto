@@ -57,6 +57,10 @@ export type ClaveDiscurso = (typeof CLAVES_DISCURSO)[number];
 export const DESCRIPCION_PAGINA =
   "Any community, anywhere in the world, funded from afar accounts for every spend. Lock digital dollars, upload one piece of evidence (a photo, invoice, PDF or list), and a person releases the payment.";
 
+/** Spanish twin of `DESCRIPCION_PAGINA`. Formal usted; no payment-network jargon. */
+export const DESCRIPCION_PAGINA_ES =
+  "Cualquier comunidad, en cualquier parte del mundo, que recibe fondos desde lejos rinde cuentas de cada gasto. Aparte dólares digitales, envíe una evidencia (foto, factura, PDF o lista) y una persona libera el pago.";
+
 export const discurso: Record<ClaveDiscurso, string> = {
   sloganLead: "Proof before",
   sloganPay: "payout.",

@@ -25,6 +25,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Por qué se queda atascada:** el seguro que escribe un veredicto de error espera 55 segundos (`TOPE_REVISION_FONDO_MS`, línea 369) contados cuando ya respondimos. Subir el archivo, calcular el hash y llamar a Groq puede gastar el minuto entero antes de que ese reloj dispare. Si Vercel mata la función, el reloj no corre y no hay fila. La tarea se queda en **en revisión**.
 - **Qué tan probable:** alta. Es el camino normal cuando Groq tarda.
 - **Arreglo propuesto:** guardar un veredicto de error dentro del tiempo que la función sí va a vivir, o en un trabajo que no muera con la respuesta. Al leer la tarea, si la foto tiene más de un minuto y no hay veredicto, escribir ese error ahí. No dejar el estado en **en revisión** sin fila.
+- **Estado:** arreglado en `c17baf7` (#204). El tope del trabajo en `after()` y el presupuesto de la revisión cuentan desde que entra el pedido (`planRevision` en `lib/api/plazo-revision.ts`).
 
 ### 2. Un fallo rápido tampoco se guarda en la respuesta
 
@@ -32,6 +33,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** si Groq o Laya fallan dentro de esos 2,8 segundos, la respuesta sale sin veredicto. El error solo se guarda si `after()` llega a `cerrarRevisionEnFondo`. Si ese trabajo no corre, el fallo desaparece.
 - **Qué tan probable:** alta, junto con la causa 1.
 - **Arreglo propuesto:** si la promesa ya falló, guardar el veredicto de error antes de responder. Reservar `after()` para cuando Mile sigue en curso.
+- **Estado:** arreglado en `c17baf7` (#204). Un fallo dentro de los 2,8 segundos guarda el veredicto de error antes de responder (`esperarCorte`).
 
 ### 3. Groq y Laya pueden ocupar más tiempo del que la función tiene
 
@@ -39,6 +41,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** cada intento a Groq puede durar 20 segundos y hay hasta 3. El presupuesto de toda la revisión es 45 segundos. Si Groq falla y hay clave de Gemini, se vuelve a describir la foto con el mismo presupuesto. Después Laya hace dos llamadas seguidas (clasificar y luego las preguntas) con una sola señal de aborto de 14 segundos: la segunda llamada a menudo se corta y se reintenta. Antes de llamar a Groq, la foto se endereza y se achica (`ajustarParaVision`). Ese trabajo consume los 20 segundos del intento y no se cancela con la señal. La señal sí llega al `fetch` de Groq (línea 144); el hueco es el trabajo de antes y la suma de reintentos.
 - **Qué tan probable:** alta para la lentitud y los cortes. Media para que, además, se pase de los 60 segundos de `maxDuration` y se pierda el veredicto (causa 1).
 - **Arreglo propuesto:** un solo tope para Groq + Gemini + Laya que quepa en `maxDuration` después de guardar la foto. No encadenar dos llamadas de Laya con la misma señal de 14 segundos. No contar el retoque de la imagen dentro de los 20 segundos de Groq, o cancelarlo si el tiempo se acaba.
+- **Estado:** arreglado en `c17baf7` (#204). Un solo presupuesto con reserva para Laya, el retoque de la foto fuera del intento de Groq, y cada llamada a Laya con su propia señal.
 
 ### 4. Si no hay clave de Groq, el pedido espera la revisión entera
 
@@ -46,6 +49,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** si la descripción va solo por Gemini, el servidor no corta a los 2,8 segundos. Espera la revisión dentro del mismo pedido. El navegador corta a los 60 segundos y la función también. Si el corte llega después de la línea 262, la tarea ya está en **en revisión** y puede no haber veredicto.
 - **Qué tan probable:** media. Solo cuando Groq no está y Gemini sí.
 - **Arreglo propuesto:** usar el mismo corte de 2,8 segundos y el mismo `after()` cuando la descripción la hace Gemini.
+- **Estado:** arreglado en `c17baf7` (#204). El corte de 2,8 segundos también vale cuando solo hay clave de Gemini (`usaCorte`).
 
 ### 5. Si guardar el veredicto falla, el error solo se escribe en el log
 
@@ -53,6 +57,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** hay un segundo intento. Si los dos fallan, queda un `console.error` y la tarea sigue sin fila.
 - **Qué tan probable:** baja. Hace falta que la base falle dos veces.
 - **Arreglo propuesto:** reintentar más tarde, o marcar la tarea para que la próxima lectura vuelva a guardar el fallo.
+- **Estado:** cubierto por el error de tiempo al leer (causa 6): si las dos escrituras fallan, la primera lectura pasado el minuto guarda el fallo, y si esa escritura también falla, la lectura siguiente lo reintenta (`veredictoAlLeer`). Queda una ventana de hasta un minuto en **en revisión** sin nada en curso, y el aviso dice que la IA no respondió a tiempo aunque lo que falló fue la base.
 
 ### 6. No hay un proceso que desatasque las fotos viejas
 
@@ -60,6 +65,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** las fotos que ya se quedaron así no se arreglan solas. El voluntario las sigue viendo en revisión hasta que envía otra.
 - **Qué tan probable:** alta para las fotos que ya cayeron en las causas 1 o 2.
 - **Arreglo propuesto:** al leer las tareas del voluntario, si la foto supera el minuto y no hay veredicto, guardar el fallo de tiempo. Así Mis tareas deja de decir que Mile sigue.
+- **Estado:** arreglado en `c17baf7` (#204). `veredictoAlLeer` (`lib/api/revision-vencida.ts`) guarda el error de tiempo en Mis tareas, en las vistas del organizador y en `GET /api/revision/:id`.
 
 ### 7. Forzar la revisión tiene otro tope, más corto
 
@@ -67,6 +73,7 @@ No se cambió este código. Son las causas que dejan la tarea sin veredicto.
 - **Qué pasa:** es la ruta del organizador, no la de la subida. Con el mismo presupuesto de 45 segundos, un reintento forzado puede cortarse antes de guardar.
 - **Qué tan probable:** baja para el buzón #072. El voluntario no usa esta ruta.
 - **Arreglo propuesto:** el mismo tope que la subida, cuando se toque esa ruta.
+- **Estado:** arreglado en este PR. La ruta pide `maxDuration = 60`, el presupuesto cuenta desde que entra el pedido (`presupuestoForzado` en `lib/api/revision.ts`), con menos de 5 segundos no empieza, y un fallo guarda un veredicto de error en vez de responder 503.
 
 ## Carril de la pantalla (este PR)
 

@@ -9,6 +9,7 @@ import { GET as tareasGet } from "../../app/api/tareas/route";
 import type { Almacen } from "../db/almacen";
 import { crearMemoria } from "../db/memoria";
 import { asegurarSemilla } from "../db/semilla";
+import { organizaTareaAjena } from "./alcance";
 import { crearProyectoHttp } from "./proyectos";
 import { leerFotoHttp, publicarEvidenciaHttp } from "./evidencias";
 import { jpegDePrueba, PDF_MINIMO, tokenDePrueba } from "../evidencia/muestras";
@@ -169,6 +170,26 @@ test("cada sesión ve los proyectos que organiza o en los que es voluntario", as
     if (demo === undefined) delete process.env.HYTO_DEMO_LOGIN;
     else process.env.HYTO_DEMO_LOGIN = demo;
   }
+});
+
+test("quien organiza y no tiene la tarea va a la revisión; quien la tiene se queda en la tarea", async () => {
+  const almacen = crearMemoria();
+  await asegurarSemilla(almacen);
+  await almacen.asignarOrganizador("zeek", "ana");
+  await almacen.guardarMiembro({ proyectoId: "zeek", usuarioId: "equipo", rol: "team", estado: "active", creadoEn: new Date().toISOString() });
+  const stand = await almacen.leerTarea("stand");
+  assert.ok(stand);
+  assert.equal(stand.miembroId, "voluntario-1");
+
+  assert.equal(await organizaTareaAjena(almacen, "ana", stand), true);
+  assert.equal(await organizaTareaAjena(almacen, "ana", { ...stand, miembroId: "" }), true);
+  assert.equal(await organizaTareaAjena(almacen, "ana", { ...stand, miembroId: "ana" }), false);
+  assert.equal(await organizaTareaAjena(almacen, "voluntario-1", stand), false);
+  assert.equal(await organizaTareaAjena(almacen, "equipo", stand), false);
+  assert.equal(await organizaTareaAjena(almacen, "nadie", stand), false);
+
+  await almacen.guardarMiembro({ proyectoId: "zeek", usuarioId: "ana", rol: "organizer", estado: "inactive", creadoEn: new Date().toISOString() });
+  assert.equal(await organizaTareaAjena(almacen, "ana", stand), false);
 });
 
 test("en demo, sin sesión solo se ve el proyecto demo y no ZEEK", async () => {

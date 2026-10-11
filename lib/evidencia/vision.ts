@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { sinMetadatos } from "@/lib/evidencia/metadatos";
 import { FalloRevision } from "@/lib/revision/fallo";
 
 /** Raw size whose base64 form stays under the vision request cap (base64 adds about 33%). */
@@ -14,11 +15,15 @@ export function tamanoBase64(bytes: number): number {
  * pixels, so it gets them upright and sees what the organizer sees.
  */
 export async function ajustarParaVision(
-  bytes: Uint8Array,
-  tipo: string,
+  entrada: Uint8Array,
+  tipoEntrada: string,
   topeBase64 = TOPE_BASE64,
 ): Promise<{ bytes: Uint8Array; tipo: string }> {
-  if (tipo === "application/pdf") return { bytes, tipo };
+  if (tipoEntrada === "application/pdf") return { bytes: entrada, tipo: tipoEntrada };
+  // Mile receives the photo. Location and the rest of the camera notes are not part of the review.
+  const limpia = await sinMetadatos(entrada, tipoEntrada);
+  const bytes = limpia.bytes;
+  const tipo = limpia.tipo;
   if (tamanoBase64(bytes.byteLength) <= topeBase64) {
     if (!(await estaGirada(bytes))) return { bytes, tipo };
     const derecha = new Uint8Array(await sharp(Buffer.from(bytes)).rotate().jpeg({ quality: 90 }).toBuffer());
