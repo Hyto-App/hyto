@@ -32,6 +32,7 @@ import { AVISO_CONFIG, AVISO_CORREO, AVISO_DEMO, AVISO_GENERICO, AVISO_METODO_RE
 import { AVISO_YA_FONDEADO, CODIGO_YA_FONDEADO } from "@/lib/escrow/fondeo";
 import { AVISO_MONTO_INVALIDO, AVISO_MONTO_TARDE, AVISO_MONTO_TOPE } from "@/lib/escrow/monto";
 import { MOTIVO_COPIA } from "@/lib/evidencia/copia";
+import { AVISO_SIN_TIEMPO } from "@/lib/revision/aviso-tiempo";
 import { AVISO_GALERIA_TIPO } from "@/lib/integrante/fotoEnVivo";
 import { AVISO_ENVIO_FALLIDO, AVISO_ENVIO_INCIERTO, AVISO_ENVIO_SIN_CONFIRMAR } from "@/lib/integrante/rutas";
 import { formatearCentavos } from "@/lib/integrante/formato";
@@ -156,6 +157,7 @@ const EXACTO: Record<string, Clave> = {
   [AVISO_MONTO_TOPE]: "errores.montoTope",
   [AVISO_MONTO_TARDE]: "errores.montoTarde",
   [MOTIVO_COPIA]: "revision.copia",
+  [AVISO_SIN_TIEMPO]: "errores.sinTiempoRevision",
   "Needs a manual review": "revision.manual",
   "Could not sign in.": "entrar.couldNotSignIn",
   "Could not leave demo mode.": "entrar.leaveDemoFail",

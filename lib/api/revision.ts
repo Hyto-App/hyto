@@ -21,7 +21,8 @@ const ESPERA_REVISION_MS = 30_000;
 export const MAX_DURACION_REVISION_MS = 60_000;
 /** Below this, Groq and Laya cannot finish, so a forced review is not started. */
 export const MIN_PRESUPUESTO_FORZADO_MS = 5_000;
-export const AVISO_SIN_TIEMPO = "There isn't enough time left to review this photo. Try again in a moment.";
+import { AVISO_SIN_TIEMPO } from "@/lib/revision/aviso-tiempo";
+export { AVISO_SIN_TIEMPO };
 
 /** What is left for `revisar()` once the verdict write and a small slack are set aside. */
 export function presupuestoForzado(inicio: number, ahora = Date.now()): number {
