@@ -70,22 +70,26 @@ export function Marco({
   const foco = ruta.startsWith("/revision");
   const volver = destinoVolver(ruta);
   const [menu, setMenu] = useState(false);
+  const [mas, setMas] = useState(false);
   const [ayuda, setAyuda] = useState(false);
   const [colapsada, setColapsada] = useState(false);
   const abreMenu = useRef<HTMLElement | null>(null);
   const abreAyuda = useRef<HTMLElement | null>(null);
   const cerrarMenu = useCallback(() => setMenu(false), []);
+  const cerrarMas = useCallback(() => setMas(false), []);
   const cerrarAyuda = useCallback(() => setAyuda(false), []);
 
   function abrirMenu(boton: HTMLElement) {
     abreMenu.current = boton;
     setAyuda(false);
+    setMas(false);
     setMenu(true);
   }
 
   function abrirAyuda(boton: HTMLElement) {
     abreAyuda.current = boton;
     setMenu(false);
+    setMas(false);
     setAyuda((abierta) => !abierta);
   }
 
@@ -94,6 +98,7 @@ export function Marco({
       if (!(evento.metaKey || evento.ctrlKey) || evento.key.toLowerCase() !== "k") return;
       evento.preventDefault();
       setMenu(false);
+      setMas(false);
       setAyuda((abierta) => !abierta);
     }
     window.addEventListener("keydown", tecla);
@@ -114,6 +119,10 @@ export function Marco({
     publicarBarra(guardada);
     setColapsada(guardada);
   }, []);
+
+  useEffect(() => {
+    setMas(false);
+  }, [ruta]);
 
   function alternarBarra() {
     const siguiente = !colapsada;
@@ -158,6 +167,7 @@ export function Marco({
             </button>
             <SelectorIdiomaMenu className="hyto-idioma-marco" />
             <Tema />
+            <MenuEncabezado abierto={mas} alAlternar={() => setMas((abierto) => !abierto)} alCerrar={cerrarMas} />
             {usuario ? <BotonPerfil usuario={usuario} compacto onAbrir={abrirMenu} abierto={menu} /> : null}
           </div>
         </div>
@@ -211,6 +221,61 @@ export function Marco({
       ) : null}
       <AyudaMile abierto={ayuda} alCerrar={cerrarAyuda} devolver={abreAyuda.current} />
     </div>
+  );
+}
+
+/** Phone header overflow. The lines-icon notes control lives here, with the same row as the other menus, instead of floating over the cards. */
+function MenuEncabezado({ abierto, alAlternar, alCerrar }: { abierto: boolean; alAlternar: () => void; alCerrar: () => void }) {
+  const t = useTexto();
+  const raiz = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function fuera(evento: MouseEvent) {
+      if (!raiz.current?.contains(evento.target as Node)) alCerrar();
+    }
+    function tecla(evento: KeyboardEvent) {
+      if (evento.key === "Escape") alCerrar();
+    }
+    document.addEventListener("mousedown", fuera);
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("mousedown", fuera);
+      document.removeEventListener("keydown", tecla);
+    };
+  }, [abierto, alCerrar]);
+
+  return (
+    <div ref={raiz} className="hyto-encabezado-mas">
+      <button
+        type="button"
+        className="hyto-encabezado-mas-boton"
+        aria-haspopup="menu"
+        aria-expanded={abierto}
+        aria-label={t("nav.more")}
+        onClick={alAlternar}
+      >
+        <PuntosMenu />
+      </button>
+      {abierto ? (
+        <div className="hyto-encabezado-mas-menu" role="menu">
+          <Link href="/mis-tareas" role="menuitem" className="hyto-perfil-item" onClick={alCerrar}>
+            <Icono nombre="tasks" />
+            {t("nav.notes")}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PuntosMenu() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="19" cy="12" r="1.7" />
+    </svg>
   );
 }
 
