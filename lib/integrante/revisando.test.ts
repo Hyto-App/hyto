@@ -42,9 +42,8 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
     assert.match(texto(), /Mile is checking your evidence/);
-    // Static fallback while the animated rig loads, or the rig itself once it is ready (#159).
-    const rigListo = [...document.querySelectorAll<HTMLElement>(".hyto-mile-animada [data-mile-rig]")].some((nodo) => nodo.style.display === "block");
-    assert.ok(document.querySelector('img[src="/mile/mile-buscando-dark.svg"]') || rigListo);
+    assert.equal(document.querySelectorAll("svg.mile").length, 1);
+    assert.equal(document.querySelector("svg.mile")?.getAttribute("data-mile"), "leyendo");
     assert.equal(document.querySelectorAll(".hyto-checklist li").length, 2);
     assert.equal(document.querySelectorAll(".hyto-checklist .hyto-punto-espera").length, 2);
     const cta = [...document.querySelectorAll("button")].find((item) => item.textContent === "Sent");
@@ -61,8 +60,7 @@ test("Revisando muestra a Mile buscando y pasa a Enviada cuando llega la nota", 
     assert.match(texto(), /See more/);
     assert.match(texto(), /What happens now/);
     assert.match(texto(), /84% · Completed/);
-    assert.ok(document.querySelector('img[src="/mile/mile-la-tengo-dark.svg"]'));
-    assert.equal(document.querySelector("[data-mile-rig]"), null);
+    assert.ok(document.querySelector('svg.mile[data-mile="listo"]'));
     assert.doesNotMatch(texto(), /Well done/);
   } finally {
     globalThis.fetch = anterior;

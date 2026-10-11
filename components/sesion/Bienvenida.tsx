@@ -60,7 +60,7 @@ export function Bienvenida({ paso, accion }: Props) {
                 {t("bienvenida.open", { name: paso.nombre })}
               </Link>
             ) : (
-              <Link href={paso.href} className="hyto-btn is-inline px-5">
+              <Link href={paso.href} className="hyto-btn-line is-contorno is-inline px-5">
                 {t("bienvenida.startDemo")}
               </Link>
             )}

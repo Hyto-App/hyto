@@ -14,7 +14,7 @@ import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
-import { MileAnimada } from "@/components/ui/MileAnimada";
+import { Mile } from "@/components/ui/Mile";
 import { errorSinCamara, listaSinCamara } from "@/lib/integrante/camaraDispositivo";
 import { codigoTelefono } from "@/lib/integrante/codigoTelefono";
 import { leerMemoria } from "@/lib/integrante/almacen";
@@ -559,7 +559,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
       <main className="hyto-page hyto-tarea">
         {cabecera}
         <section className="hyto-tarjeta hyto-revisando" aria-live="polite">
-          <MileAnimada estado="buscando" tamano={140} />
+          <Mile estado="leyendo" tamano={140} />
           <div>
             <span className="hyto-badge hyto-badge-rev">{t("evidencia.checking")}</span>
             <h2>{t(documental ? "evidencia.mileCheckingFile" : "evidencia.mileChecking")}</h2>
@@ -620,7 +620,7 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
               !
             </div>
           ) : (
-            <MileAnimada estado="lo-tengo" tamano={64} />
+            <Mile estado="listo" tamano={64} />
           )}
           <h1 className="hyto-tarea-titulo">
             {mileSinTerminar

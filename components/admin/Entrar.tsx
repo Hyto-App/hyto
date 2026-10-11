@@ -43,14 +43,12 @@ import { pedirOtp } from "@/lib/auth/pedidoOtp";
 import { tickEspera } from "@/lib/auth/relojEspera";
 import { acortarDireccion } from "@/lib/integrante/formato";
 import { mensajeClaro } from "@/lib/ui/claro";
-import { SelectorIdiomaMenu, useClaro, useDiscurso, useTexto } from "@/components/ui/Idioma";
-import { preguntasDiscurso } from "@/lib/ui/discurso";
+import { SelectorIdiomaMenu, useClaro, useTexto } from "@/components/ui/Idioma";
 import { appIdPublico } from "@/lib/integrante/identidades";
-import { InsigniaDemo, useModoDemo, useRolDemo } from "@/components/sesion/InsigniaDemo";
-import { MileAnimada } from "@/components/ui/MileAnimada";
+import { InsigniaDemo, useModoDemo } from "@/components/sesion/InsigniaDemo";
+import { Mile, type EstadoMile } from "@/components/ui/Mile";
 import { Eslogan, Logo } from "@/components/ui/Marca";
 import type { Clave } from "@/lib/ui/diccionario";
-import type { EstadoAnimado } from "@/lib/ui/mile-animado";
 
 /** `enlace`: Cavos enclave recovery is on with email, so a sign-in link replaces the code. */
 type Fase = "inicio" | "correo" | "codigo" | "enlace" | "exito";
@@ -156,20 +154,26 @@ export function Entrar({
   politica?: CargarPolitica;
 }) {
   const modoDemo = useModoDemo();
-  const rolActual = useRolDemo();
   const t = useTexto();
   const claro = useClaro();
-  const discurso = useDiscurso();
-  const faq = preguntasDiscurso(discurso);
   const [direccion, setDireccion] = useState<string | null>(null);
   const [pedirIngreso, setPedirIngreso] = useState(abrirLogin);
   const [retorno, setRetorno] = useState<string | null>(null);
   const [fase, setFase] = useState<Fase>(abrirLogin ? "correo" : "inicio");
   const [pestana, setPestana] = useState<IntencionIngreso>("signin");
+  /** «Welcome back» is only for someone who already signed in on this browser; a first visit reads «Welcome». */
+  const [vuelve, setVuelve] = useState(false);
+  useEffect(() => {
+    try {
+      setVuelve(window.localStorage.getItem("hyto_ya_entro") === "1");
+    } catch {
+      setVuelve(false);
+    }
+  }, []);
   const [correo, setCorreo] = useState("");
+  const [enfocado, setEnfocado] = useState(false);
   const [digitos, setDigitos] = useState<string[]>(CODIGO_VACIO);
   const [verDemo, setVerDemo] = useState(false);
-  const [rolDemo, setRolDemo] = useState<"organizador" | "voluntario">("organizador");
   const [ocupado, setOcupado] = useState<Ocupado | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [alertaRegreso, setAlertaRegreso] = useState(false);
@@ -631,6 +635,11 @@ export function Entrar({
         entrarListo(resultado.direccion, resultado.pendiente, false);
         return;
       }
+      try {
+        window.localStorage.setItem("hyto_ya_entro", "1");
+      } catch {
+        // Private mode: the next visit reads «Welcome» again.
+      }
       setFase("exito");
     } catch (error) {
       mostrarFallo(error);
@@ -660,7 +669,7 @@ export function Entrar({
     }
   }
 
-  async function entrarDemo(rolPedido = rolDemo) {
+  async function entrarDemo() {
     if (enCurso.current) return;
     enCurso.current = true;
     setAviso(null);
@@ -669,16 +678,14 @@ export function Entrar({
       const respuesta = await fetch("/api/sesion/demo", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rol: rolPedido }),
+        body: JSON.stringify({ rol: "organizador" }),
       });
-      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown; rol?: unknown } | null;
+      const cuerpo = (await respuesta.json().catch(() => null)) as { aviso?: unknown } | null;
       if (!respuesta.ok) {
         setAviso(mensajeClaro(cuerpo && typeof cuerpo.aviso === "string" ? cuerpo.aviso : "Could not sign in."));
         return;
       }
-      const rol = cuerpo && typeof cuerpo.rol === "string" ? cuerpo.rol : rolPedido;
-      // Demo organizer opens Events. Demo volunteer opens their tasks. The shell nav is unchanged.
-      window.location.assign(rol === "voluntario" ? "/mis-tareas" : "/eventos");
+      window.location.assign("/eventos");
     } catch {
       setAviso("Could not sign in.");
     } finally {
@@ -750,22 +757,12 @@ export function Entrar({
   }, [fase]);
 
   if (modoDemo) {
-    const otro = rolActual === "voluntario" ? "organizador" : "voluntario";
-    const nombreRol = rolActual === "voluntario" ? t("entrar.volunteerDemo") : t("entrar.organizerDemo");
     return (
       <div className="flex w-full flex-col items-stretch gap-3">
         <p className="text-sm text-[var(--suave)]">
           <InsigniaDemo />
-          <span className="ml-2 align-middle">{nombreRol} · Cavos</span>
+          <span className="ml-2 align-middle">{t("entrar.tryDemo")}</span>
         </p>
-        <button
-          type="button"
-          onClick={() => void entrarDemo(otro)}
-          disabled={ocupado !== null}
-          className="hyto-btn-line"
-        >
-          {ocupado === "demo" ? t("entrar.switching") : t(otro === "voluntario" ? "entrar.switchVolunteer" : "entrar.switchOrganizer")}
-        </button>
         <button
           type="button"
           onClick={() => void salirDemo()}
@@ -839,7 +836,7 @@ export function Entrar({
           </button>
         </section>
         <section className="hyto-entry hyto-entry-signin" aria-labelledby={`${ids}-signin`}>
-          <p className="hyto-kicker">{t("entrar.welcomeBack")}</p>
+          <p className="hyto-kicker">{t(vuelve ? "entrar.welcomeBack" : "entrar.welcome")}</p>
           <h2 id={`${ids}-signin`} className="text-lg font-semibold tracking-tight">
             {t("entrar.signIn")}
           </h2>
@@ -852,7 +849,7 @@ export function Entrar({
             {t("entrar.signIn")}
           </button>
         </section>
-        {demoHabilitado ? <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
+        {demoHabilitado ? <Demo ocupado={ocupado} entrarDemo={entrarDemo} /> : null}
         {mensaje ? (
           <p role="status" className="text-sm leading-6 text-[var(--suave)]">
             {claro(mensaje)}
@@ -885,7 +882,7 @@ export function Entrar({
             ? t("entrar.chipCodigoLlego")
             : fase === "enlace"
               ? t("entrar.chipEnlace")
-              : t(alta ? "entrar.newHere" : "entrar.welcomeBack");
+              : t(alta ? "entrar.newHere" : vuelve ? "entrar.welcomeBack" : "entrar.welcome");
   const paso = fase === "exito" ? 3 : fase === "codigo" || fase === "enlace" ? 2 : 1;
   const llenado: [number, number, number] =
     fase === "exito"
@@ -895,6 +892,8 @@ export function Entrar({
         : enviando
           ? [1, 0.45, 0]
           : [1, 0, 0];
+  const escribiendo = fase === "correo" ? enfocado : fase === "codigo" && digitos.some(Boolean) && !alertaCodigo;
+  const estadoMile: EstadoMile = escribiendo && (pose === "rest" || pose === "code") ? "mirando" : ESTADO_MILE[pose];
   const vozMile = pose === "code" || pose === "worry" || pose === "win" ? t(VOZ_MILE[pose]) : "";
   const clases = [
     "hyto-login",
@@ -941,32 +940,8 @@ export function Entrar({
                 {chip}
               </p>
               <Eslogan como="h1" className="hyto-login-titulo" />
-              <p className="hyto-login-sub">{t("entrar.sub")}</p>
-              <ol className="hyto-login-como" aria-label={t("landing.panel")}>
-                {t("landing.panelQ")
-                  .split(/(?<=\.)\s+/)
-                  .filter(Boolean)
-                  .map((linea) => (
-                    <li key={linea}>{linea}</li>
-                  ))}
-              </ol>
-              {faq.length > 0 ? (
-                <section className="hyto-login-faq" aria-labelledby={`${ids}-faq`}>
-                  <h2 id={`${ids}-faq`} className="hyto-login-faq-titulo">
-                    {discurso.faqTitle}
-                  </h2>
-                  <dl>
-                    {faq.map((item) => (
-                      <div key={item.titulo}>
-                        <dt>{item.titulo}</dt>
-                        <dd>{item.cuerpo}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-              ) : null}
             </div>
-            <Mile pose={pose} />
+            <MileLogin estado={estadoMile} pose={pose} />
           </div>
           <section className={`hyto-login-tarjeta${enviando ? " is-enviando" : ""}`} aria-label={t(alta ? "entrar.titleSignUp" : "entrar.title")}>
             <p className="sr-only" aria-live="polite">
@@ -1034,28 +1009,6 @@ export function Entrar({
             ) : fase === "correo" ? (
               <div key={pestana} className="hyto-login-cambio">
                 <h2>{t(alta ? "entrar.titleSignUp" : "entrar.title")}</h2>
-                {ofrece("google") ? (
-                  <button
-                    type="button"
-                    onClick={() => void google(pestana)}
-                    disabled={ocupado !== null}
-                    className="hyto-login-btn is-fantasma hyto-login-google"
-                  >
-                    <IconoGoogle />
-                    {ocupado === "google" ? t("entrar.openingGoogle") : t("entrar.googleContinuar")}
-                  </button>
-                ) : null}
-                {ofrece("apple") ? (
-                  <button
-                    type="button"
-                    onClick={() => void google(pestana, "apple")}
-                    disabled={ocupado !== null}
-                    className="hyto-login-btn is-fantasma hyto-login-apple"
-                  >
-                    <IconoApple />
-                    {ocupado === "apple" ? t("entrar.openingApple") : t("entrar.appleContinuar")}
-                  </button>
-                ) : null}
                 {!conCorreo && mensaje ? (
                   alertaFormulario ? (
                     <div className="hyto-login-alerta" role="alert">
@@ -1067,11 +1020,6 @@ export function Entrar({
                       {claro(mensaje)}
                     </p>
                   )
-                ) : null}
-                {conCorreo && conRedes ? (
-                  <p className="hyto-login-o">
-                    <span>{t("entrar.oCorreo")}</span>
-                  </p>
                 ) : null}
                 {conCorreo ? (
                   <form
@@ -1093,6 +1041,8 @@ export function Entrar({
                         inputMode="email"
                         data-foco=""
                         value={correo}
+                        onFocus={() => setEnfocado(true)}
+                        onBlur={() => setEnfocado(false)}
                         onChange={(evento) => {
                           setCorreo(evento.target.value);
                           setAviso(null);
@@ -1110,7 +1060,6 @@ export function Entrar({
                     </div>
                     {enviando ? (
                       <p className="hyto-login-estado" aria-live="polite">
-                        <img src="/login/mile-icon.svg" alt="" width={22} height={22} aria-hidden="true" />
                         {t("entrar.mile.dive")}
                       </p>
                     ) : (
@@ -1161,22 +1110,64 @@ export function Entrar({
                     </button>
                   </form>
                 ) : null}
-                {demoHabilitado ? (
-                  <div className="hyto-login-demo">
-                    <p>{t("entrar.soloMirar")}</p>
-                    <button
-                      type="button"
-                      className="hyto-login-btn is-fantasma"
-                      onClick={() => setVerDemo((actual) => !actual)}
-                      aria-expanded={verDemo}
-                      disabled={ocupado !== null}
-                    >
-                      {t("entrar.probarDemo")}
-                    </button>
-                  </div>
+                {conRedes || demoHabilitado ? (
+                  <>
+                    {conCorreo ? (
+                      <p className="hyto-login-o">
+                        <span>{t("entrar.oCorreo")}</span>
+                      </p>
+                    ) : null}
+                    <div className="hyto-login-alternas">
+                      {ofrece("google") ? (
+                        <button
+                          type="button"
+                          onClick={() => void google(pestana)}
+                          disabled={ocupado !== null}
+                          className="hyto-login-btn is-fantasma hyto-login-google"
+                        >
+                          <IconoGoogle />
+                          {ocupado === "google" ? (
+                            t("entrar.openingGoogle")
+                          ) : (
+                            <span>
+                              <span className="sr-only">{t("entrar.continuarCon")} </span>Google
+                            </span>
+                          )}
+                        </button>
+                      ) : null}
+                      {ofrece("apple") ? (
+                        <button
+                          type="button"
+                          onClick={() => void google(pestana, "apple")}
+                          disabled={ocupado !== null}
+                          className="hyto-login-btn is-fantasma hyto-login-apple"
+                        >
+                          <IconoApple />
+                          {ocupado === "apple" ? (
+                            t("entrar.openingApple")
+                          ) : (
+                            <span>
+                              <span className="sr-only">{t("entrar.continuarCon")} </span>Apple
+                            </span>
+                          )}
+                        </button>
+                      ) : null}
+                      {demoHabilitado ? (
+                        <button
+                          type="button"
+                          className="hyto-login-btn is-fantasma hyto-login-prueba"
+                          onClick={() => setVerDemo((actual) => !actual)}
+                          aria-expanded={verDemo}
+                          disabled={ocupado !== null}
+                        >
+                          {t("entrar.probarDemo")}
+                        </button>
+                      ) : null}
+                    </div>
+                  </>
                 ) : null}
                 {demoHabilitado && verDemo ? (
-                  <Demo rolDemo={rolDemo} setRolDemo={setRolDemo} ocupado={ocupado} entrarDemo={entrarDemo} />
+                  <Demo ocupado={ocupado} entrarDemo={entrarDemo} />
                 ) : null}
               </div>
             ) : null}
@@ -1446,39 +1437,12 @@ function iniciarGoogle(busqueda: string, redirect: string, intencion: IntencionI
   })().finally(() => olvidarIntencion());
 }
 
-function Demo({
-  rolDemo,
-  setRolDemo,
-  ocupado,
-  entrarDemo,
-}: {
-  rolDemo: "organizador" | "voluntario";
-  setRolDemo: (rol: "organizador" | "voluntario") => void;
-  ocupado: Ocupado | null;
-  entrarDemo: (rolPedido?: "organizador" | "voluntario") => Promise<void>;
-}) {
+function Demo({ ocupado, entrarDemo }: { ocupado: Ocupado | null; entrarDemo: () => Promise<void> }) {
   const t = useTexto();
-  const idRol = `${useId()}-rol-demo`;
   return (
     <div className="hyto-card grid gap-3 p-4">
       <p className="text-sm font-medium">{t("entrar.tryDemo")}</p>
       <p className="text-sm text-[var(--suave)]">{t("entrar.noAccount")}</p>
-      <label className="sr-only" htmlFor={idRol}>
-        {t("entrar.demoRole")}
-      </label>
-      <select
-        id={idRol}
-        value={rolDemo}
-        onChange={(evento) => {
-          const valor = evento.target.value;
-          if (valor === "organizador" || valor === "voluntario") setRolDemo(valor);
-        }}
-        disabled={ocupado !== null}
-        className="hyto-input"
-      >
-        <option value="organizador">{t("entrar.organizerDemo")}</option>
-        <option value="voluntario">{t("entrar.volunteerDemo")}</option>
-      </select>
       <button type="button" onClick={() => void entrarDemo()} disabled={ocupado !== null} className="hyto-btn-line">
         {ocupado === "demo" ? t("entrar.signingIn") : t("entrar.enterDemo")}
       </button>
@@ -1583,13 +1547,13 @@ function Escena() {
   );
 }
 
-const ESTADO_MILE: Record<Pose, EstadoAnimado> = { rest: "reposo", dive: "buscando", code: "buscando", worry: "rechazado", win: "lo-tengo" };
+const ESTADO_MILE: Record<Pose, EstadoMile> = { rest: "reposo", dive: "leyendo", code: "listo", worry: "preocupada", win: "celebrando" };
 
-/** Mile and the chest, animated by code. The status text stays in the aria-live region of the card. */
-function Mile({ pose }: { pose: Pose }) {
+/** Standalone Mile. The status text stays in the aria-live region of the card, so Mile is decorative. */
+function MileLogin({ estado, pose }: { estado: EstadoMile; pose: Pose }) {
   return (
     <div className={`hyto-login-mile is-${pose}`}>
-      <MileAnimada estado={ESTADO_MILE[pose]} llena tocable />
+      <Mile estado={estado} tamano={200} />
     </div>
   );
 }

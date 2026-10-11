@@ -9,6 +9,7 @@ import { TEMA_BOOT } from "@/lib/ui/tema";
 import "./globals.css";
 import "@/components/perfil/perfil.css";
 import "@/components/admin/crear.css";
+import "@/components/ui/mile.css";
 import "@/components/admin/proyecto.css";
 
 export const dynamic = "force-dynamic";

@@ -81,7 +81,7 @@ test("el claro aclara el fondo y baja el remolino negro en 390 y en 1440", () =>
   assert.doesNotMatch(ancho, /#24304a|rgba\(20,\s*22,\s*43/);
 });
 
-test("el ingreso no muestra el subtítulo ni la línea de Cavos, y deja las preguntas", async () => {
+test("el ingreso no muestra subtítulo, texto largo, preguntas ni la línea de Cavos, y trae una sola Mile", async () => {
   limpiarPantalla();
   window.sessionStorage.clear();
   try {
@@ -89,17 +89,19 @@ test("el ingreso no muestra el subtítulo ni la línea de Cavos, y deja las preg
     await pulsar("Sign in");
     const ingreso = texto();
     assert.match(ingreso, /Sign in to Hyto/);
-    assert.match(ingreso, /Communities anywhere in the world/);
-    assert.match(ingreso, /Before you start/);
+    assert.doesNotMatch(ingreso, /Communities anywhere in the world/);
+    assert.doesNotMatch(ingreso, /Before you start/);
     assert.doesNotMatch(ingreso, INTRO);
     assert.doesNotMatch(ingreso, CAVOS);
     const tarjeta = document.querySelector(".hyto-login-tarjeta");
-    const faq = document.querySelector(".hyto-login-faq");
     assert.ok(tarjeta);
-    assert.ok(faq);
+    assert.equal(document.querySelector(".hyto-login-faq"), null);
+    assert.equal(document.querySelector(".hyto-login-sub"), null);
+    assert.equal(document.querySelector(".hyto-login-como"), null);
     assert.equal(tarjeta?.querySelector(".hyto-login-lead"), null);
     assert.equal(tarjeta?.querySelector(".hyto-login-legal"), null);
-    assert.equal(document.querySelector(".hyto-login-grid")?.contains(faq), true);
+    assert.equal(document.querySelectorAll("svg.mile").length, 1);
+    assert.equal(document.querySelectorAll(".hyto-login-btn.is-primario").length, 1);
 
     await pulsar("Create account");
     const alta = texto();

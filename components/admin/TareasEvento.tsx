@@ -519,7 +519,7 @@ export function TareasEvento({
           );
           const montoNodo = (
             <span className="pj-amt">
-              {hasta ? <small>{t("proyecto.hasta")}</small> : null}
+              {hasta ? <small>{t("proyecto.hasta")} </small> : null}
               {formatearMonto(cifra, idioma)}
               {bloqueada ? (
                 <span className="pj-candado" role="img" aria-label={t("proyecto.bloqueada")} title={t("proyecto.bloqueada")}>

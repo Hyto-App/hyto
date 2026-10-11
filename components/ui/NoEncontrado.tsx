@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { SelectorIdiomaMenu, useTexto } from "@/components/ui/Idioma";
 import { Logo } from "@/components/ui/Marca";
-import { MileAnimada } from "@/components/ui/MileAnimada";
+import { Mile } from "@/components/ui/Mile";
 
 /** Shared 404 for the landing and the app. Keeps Hyto mark, navy/lime, and Mile. */
 export function NoEncontrado() {
@@ -28,7 +28,7 @@ export function NoEncontrado() {
         <h1 className="hyto-title">{t("ausente.titulo")}</h1>
         <p className="hyto-sub">{t("ausente.cuerpo")}</p>
         <div className="hyto-ausente-mile" aria-hidden="true">
-          <MileAnimada estado="rechazado" tamano={140} />
+          <Mile estado="preocupada" tamano={140} />
         </div>
         <div className="hyto-ausente-acciones">
           <Link href="/" className="hyto-btn max-w-xs">

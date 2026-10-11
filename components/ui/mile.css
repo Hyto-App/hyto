@@ -1,0 +1,189 @@
+/* Mile: theme + motion. Only transform and opacity animate. */
+.hyto-mile {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  line-height: 0;
+}
+
+.hyto-mile .mile {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  --mile-contorno: transparent;
+}
+
+/* The dark outline only exists in the light theme. */
+:root:not([data-theme="dark"]) .hyto-mile .mile {
+  --mile-contorno: #14162b;
+}
+
+.mile * {
+  transform-box: fill-box;
+}
+
+.mile-ojos-felices,
+.mile-ojos-preocupados,
+.mile-boca,
+.mile-check,
+.mile-chispas {
+  opacity: 0;
+}
+
+.mile[data-mile="listo"] .mile-ojos-abiertos,
+.mile[data-mile="celebrando"] .mile-ojos-abiertos,
+.mile[data-mile="preocupada"] .mile-ojos-abiertos {
+  opacity: 0;
+}
+
+.mile[data-mile="listo"] .mile-ojos-felices,
+.mile[data-mile="celebrando"] .mile-ojos-felices,
+.mile[data-mile="preocupada"] .mile-ojos-preocupados,
+.mile[data-mile="recomendando"] .mile-boca,
+.mile[data-mile="listo"] .mile-check,
+.mile[data-mile="celebrando"] .mile-chispas {
+  opacity: 1;
+}
+
+.mile-parpado {
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+}
+
+.mile-raiz {
+  transform-origin: 50% 100%;
+}
+
+@keyframes mile-respira {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes mile-parpadeo {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(0);
+  }
+  97% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes mile-escanea {
+  0%,
+  100% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes mile-pop {
+  0% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes mile-asiente {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(6px);
+  }
+  70% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes mile-salta {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-30px);
+  }
+}
+
+@keyframes mile-vaiven {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes mile-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+.mile[data-mile="reposo"] .mile-raiz,
+.mile[data-mile="mirando"] .mile-raiz {
+  animation: mile-respira 2.8s ease-in-out infinite;
+}
+
+.mile[data-mile="reposo"] .mile-parpado,
+.mile[data-mile="mirando"] .mile-parpado {
+  animation: mile-parpadeo 4.2s ease-in-out infinite;
+}
+
+.mile[data-mile="mirando"] .mile-ojos {
+  transition: transform 120ms ease-out;
+}
+
+.mile[data-mile="leyendo"] .mile-raiz {
+  transform: rotate(-4deg);
+}
+
+.mile[data-mile="leyendo"] .mile-ojos-abiertos {
+  animation: mile-escanea 1.6s ease-in-out infinite;
+}
+
+.mile[data-mile="listo"] .mile-raiz {
+  animation: mile-pop 360ms ease-out;
+}
+
+.mile[data-mile="recomendando"] .mile-raiz {
+  animation: mile-asiente 600ms ease-in-out;
+}
+
+.mile[data-mile="celebrando"] .mile-raiz {
+  animation: mile-salta 700ms ease-out 2;
+}
+
+.mile[data-mile="preocupada"] .mile-raiz {
+  animation: mile-vaiven 2.4s ease-in-out infinite;
+}
+
+/* No loops, jumps or sway: only a short fade when the state changes. */
+@media (prefers-reduced-motion: reduce) {
+  .mile * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .mile {
+    animation: mile-entra 150ms linear !important;
+  }
+
+  .mile[data-mile="leyendo"] .mile-raiz,
+  .mile[data-mile="preocupada"] .mile-raiz {
+    transform: none;
+  }
+}

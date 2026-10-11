@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { SugeridosElegir } from "@/components/perfil/Sugeridos";
+import { Mile } from "@/components/ui/Mile";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { textoMonto } from "@/lib/admin/vista";
@@ -1134,7 +1135,7 @@ export function CrearProyecto({
               <div className="cp-col is-paso2">
                 <p className="cp-mile">
                   <span className="cp-mile-sello" aria-hidden="true">
-                    M
+                    <Mile estado="reposo" tamano={40} />
                   </span>
                   {t("crear.mileRevisa")}
                 </p>
@@ -1164,7 +1165,7 @@ export function CrearProyecto({
                   onClick={agregarTarea}
                 >
                   <Icono nombre="mas" />
-                  {t("crear.agregarOtra")}
+                  {t("eventos.addTask")}
                 </button>
               </div>
             ) : null}
@@ -1244,9 +1245,12 @@ export function CrearProyecto({
                   </p>
                 ) : null}
                 {creadoId ? (
-                  <Link href={`/eventos/${creadoId}`} className="cp-enlace">
-                    {t("crear.abrir")}
-                  </Link>
+                  <>
+                    <Mile estado="celebrando" tamano={40} />
+                    <Link href={`/eventos/${creadoId}`} className="cp-enlace">
+                      {t("crear.abrir")}
+                    </Link>
+                  </>
                 ) : null}
               </div>
             ) : null}

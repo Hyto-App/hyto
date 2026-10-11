@@ -210,7 +210,7 @@ test("un código inválido, uno vencido o un navegador lleno siguen en el paso d
     await llegarAlCodigo(async () => {
       throw new Error('{"error":"invalid_code","message":"Invalid code"}');
     });
-    assert.match(document.querySelector('[role="alert"]')?.textContent ?? "", /That code doesn't match/);
+    assert.match(document.querySelector('[role="alert"]')?.textContent ?? "", /That code didn't work/);
     assert.ok(document.querySelector(".hyto-login-otp.is-mal"));
     assert.match(texto(), /Try again/);
     assert.match(texto(), /Resend code/);

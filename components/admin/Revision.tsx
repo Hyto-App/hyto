@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useId, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { AccionesRevisionFallida } from "@/components/admin/RevisionFallida";
 import { Icono } from "@/components/admin/IconosProyecto";
+import { Mile } from "@/components/ui/Mile";
 import { PersonaProyecto } from "@/components/admin/PersonaProyecto";
 import { pasosRevision, rotuloPasoPago, rotuloPrincipalRevision } from "@/lib/admin/proyecto-vista";
 import { FichaVoluntario } from "@/components/perfil/Ficha";
@@ -749,9 +750,7 @@ export function Revision({
           <div className="pj-mileblk">
             {tarea.veredicto ? (
               <p className="mb-3 flex items-center gap-2.5 text-sm font-medium">
-                <span className="pj-mm" aria-hidden="true">
-                  <Icono nombre="spark" tam={14} />
-                </span>
+                <Mile estado={tarea.estado === "pagado" ? "celebrando" : "recomendando"} tamano={40} />
                 {t("proyecto.recomendacionMile")}
               </p>
             ) : null}

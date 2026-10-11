@@ -5,8 +5,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTexto } from "@/components/ui/Idioma";
 import { Mile } from "@/components/ui/Mile";
-import { MileAnimada } from "@/components/ui/MileAnimada";
-import { useRolDemo } from "@/components/sesion/InsigniaDemo";
+import { usePathname } from "next/navigation";
 import {
   ATAJOS,
   buscarPreguntas,
@@ -35,7 +34,14 @@ type Props = {
   devolver: HTMLElement | null;
 };
 
-type Turno = { clave: number; id: IdPregunta };
+function publicoDeRuta(ruta: string | null): Publico {
+  if (!ruta) return "todos";
+  if (ruta.startsWith("/mis-tareas") || ruta.startsWith("/tareas/")) return "voluntario";
+  if (ruta.startsWith("/eventos") || ruta.startsWith("/revision/") || ruta.startsWith("/informe")) return "organizador";
+  return "todos";
+}
+
+type Turno ={ clave: number; id: IdPregunta };
 
 function movimientoReducido(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
@@ -45,8 +51,8 @@ function movimientoReducido(): boolean {
 /** Fixed answers told as a short chat. Search only filters the questions. */
 export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
   const t = useTexto();
-  // In the demo the role is known: each side only sees its own questions. A real account can be both, so it sees all.
-  const publico: Publico = useRolDemo() ?? "todos";
+  // No stored role: the shortcuts follow the view. Funding screens ask the organizer's questions, task screens the volunteer's.
+  const publico = publicoDeRuta(usePathname());
   const panel = useRef<HTMLDivElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const charla = useRef<HTMLDivElement>(null);
@@ -179,7 +185,7 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
         onMouseDown={(evento) => evento.stopPropagation()}
       >
         <header className="hyto-ayuda-cabeza">
-          <Mile estado="cara-feliz" tamano={40} />
+          <Mile estado={escribiendo ? "leyendo" : "reposo"} tamano={40} />
           <h2 id={titulo}>{t("ayuda.titulo")}</h2>
           <button type="button" className="hyto-ayuda-cerrar" onClick={alCerrar} aria-label={t("ayuda.cerrar")}>
             ×
@@ -212,7 +218,6 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
         </div>
         <div ref={charla} className="hyto-ayuda-charla" hidden={buscada} role="log" aria-live="polite" aria-label={t("ayuda.titulo")} tabIndex={-1}>
           <div className="hyto-ayuda-fila is-mile">
-            <Mile estado="cara-feliz" tamano={32} />
             <div className="hyto-ayuda-burbujas">
               <p className="hyto-ayuda-burbuja">{t("ayuda.saludo")}</p>
             </div>
@@ -232,11 +237,6 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
                   </p>
                 </div>
                 <div className="hyto-ayuda-fila is-mile">
-                  {actual ? (
-                    <MileAnimada estado={escribiendo ? "buscando" : "reposo"} tamano={32} className="hyto-ayuda-avatar" />
-                  ) : (
-                    <Mile estado="cara-feliz" tamano={32} className="hyto-ayuda-avatar" />
-                  )}
                   <div className="hyto-ayuda-burbujas">
                     {vistas.map((parte, indice) => (
                       <p key={indice} className="hyto-ayuda-burbuja">

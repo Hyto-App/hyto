@@ -54,7 +54,8 @@ export type EstadoPaso = "hecho" | "ahora" | "luego";
 export function pasosRevision(estado: { evidencia: boolean; bloqueado: boolean; pagado: boolean }): [EstadoPaso, EstadoPaso, EstadoPaso] {
   if (estado.pagado) return ["hecho", "hecho", "hecho"];
   const evidencia: EstadoPaso = estado.evidencia ? "hecho" : "ahora";
-  const bloqueo: EstadoPaso = estado.bloqueado ? "hecho" : estado.evidencia ? "ahora" : "luego";
+  // Never «Now» before anything is locked: the step is pending until the budget is on hold.
+  const bloqueo: EstadoPaso = estado.bloqueado ? "hecho" : "luego";
   // Paid only after the payment exists. Locking the budget does not start this step.
   const pago: EstadoPaso = "luego";
   return [evidencia, bloqueo, pago];
