@@ -17,6 +17,9 @@ type Props = {
   /** Settings already explains the account. Skip the extra pending line and keep the button. */
   silencioPendiente?: boolean;
   onListo?: () => void;
+  /** Settings' balance card: one line above the button and its own label (the button still runs the same setup). */
+  ayuda?: string;
+  etiqueta?: string;
 };
 
 export function PrepararUsdc({
@@ -24,6 +27,8 @@ export function PrepararUsdc({
   preparar = () => prepararUsdcDeSesion(),
   silencioPendiente = false,
   onListo,
+  ayuda,
+  etiqueta,
 }: Props) {
   const demo = useModoDemo();
   const t = useTexto();
@@ -106,9 +111,14 @@ export function PrepararUsdc({
           {mensaje}
         </p>
       ) : null}
+      {mostrarBoton && ayuda ? (
+        <p className="mt-4 max-w-prose text-sm leading-6 text-[var(--suave)]" data-recarga="preparar">
+          {ayuda}
+        </p>
+      ) : null}
       {mostrarBoton ? (
         <button type="button" className={CLASE} disabled={estado === "preparando"} aria-busy={estado === "preparando"} onClick={() => void correr()}>
-          {estado === "preparando" ? t("pago.preparingPayout") : t("pago.preparePayout")}
+          {estado === "preparando" ? t("pago.preparingPayout") : (etiqueta ?? t("pago.preparePayout"))}
         </button>
       ) : null}
       {estado === "hecho" && hash ? (

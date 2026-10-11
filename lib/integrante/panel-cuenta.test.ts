@@ -88,6 +88,8 @@ test("solo suma los hitos liberados de la persona que inició sesión", async ()
   assert.equal(vista.walletMuestra, false);
   assert.equal(vista.saldo, "18.5000000");
   assert.equal(vista.saldoEstado, "ok");
+  // Settings offers the Circle faucet only on testnet.
+  assert.equal(vista.red, "testnet");
   assert.equal(vista.orgullo.total, montoRecibido("20"));
   assert.equal(vista.orgullo.tareasCompletadas, 1);
   assert.equal(vista.orgullo.proyectosCompletados, 0);

@@ -6,6 +6,7 @@ import type { SesionFila, TareaFila } from "@/lib/db/tipos";
 import { conReserva, rechazoSiFondos, sumarMontos, type LectorSaldo } from "@/lib/escrow/saldo";
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import { leerDificultadEntrada, leerPrioridadEntrada } from "@/lib/tareas/clasificacion";
+import { AVISO_FECHA_FORMATO, AVISO_FECHA_LEJANA, AVISO_FECHA_PASADA, problemaFecha, rangoServidor } from "@/lib/tareas/fecha-limite";
 import { AVISO_PROYECTO_DEMO, sesionEsDemo } from "@/lib/sesion/demo";
 import { proyectosVisibles, tareasVisibles, type Visor } from "./alcance";
 import { tareaEnBandeja } from "./informe";
@@ -241,15 +242,18 @@ function emailDe(valor: unknown): string {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
 
-/** «¿Para cuándo?»: empty or missing is no date; otherwise a real calendar day as YYYY-MM-DD. */
-export function leerFechaProyecto(valor: unknown): string | null | { aviso: string } {
+/**
+ * «¿Para cuándo?»: empty or missing is no date; otherwise a real calendar day as YYYY-MM-DD,
+ * from today onward and at most five years ahead. The browser checks the same, but the API does not trust it.
+ */
+export function leerFechaProyecto(valor: unknown, ahora: Date = new Date()): string | null | { aviso: string } {
   if (valor === undefined || valor === null) return null;
-  if (typeof valor !== "string") return { aviso: "The project date has to be a day like 2026-10-16." };
+  if (typeof valor !== "string") return { aviso: AVISO_FECHA_FORMATO };
   const limpio = valor.trim();
   if (!limpio) return null;
-  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(limpio);
-  if (!partes) return { aviso: "The project date has to be a day like 2026-10-16." };
-  const dia = new Date(Date.UTC(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])));
-  if (dia.toISOString().slice(0, 10) !== limpio) return { aviso: "The project date has to be a day like 2026-10-16." };
+  const problema = problemaFecha(limpio, rangoServidor(ahora));
+  if (problema === "formato") return { aviso: AVISO_FECHA_FORMATO };
+  if (problema === "pasada") return { aviso: AVISO_FECHA_PASADA };
+  if (problema === "lejana") return { aviso: AVISO_FECHA_LEJANA };
   return limpio;
 }
