@@ -9,9 +9,14 @@ import {
   SIGUIENTES,
   buscarPreguntas,
   normalizarBusqueda,
+  PARA,
+  inicioPara,
   partesRespuesta,
+  preguntasPara,
+  siguientesPara,
   tiemposPartes,
   type PreguntaVisible,
+  type Publico,
 } from "./ayuda";
 import { es, leerTexto } from "./diccionario";
 
@@ -143,4 +148,37 @@ test("Mile no promete tiempos: ninguna respuesta dice «en segundos» ni \"in se
       assert.doesNotMatch(leerTexto(idioma, `ayuda.${id}A`), /en segundos|in seconds/i, `${idioma} ${id}`);
     }
   }
+});
+
+test("en el demo cada lado ve solo sus preguntas, y siempre hay 2 o 3 siguientes", () => {
+  const organizador = preguntasPara("organizador");
+  const voluntario = preguntasPara("voluntario");
+  for (const id of ["fondear", "costos", "sinPagar", "orgReembolso"] as const) {
+    assert.equal(voluntario.includes(id), false, id);
+    assert.equal(organizador.includes(id), true, id);
+  }
+  for (const id of ["pago", "evidencia", "otra", "cobrar"] as const) {
+    assert.equal(organizador.includes(id), false, id);
+    assert.equal(voluntario.includes(id), true, id);
+  }
+  assert.deepEqual(preguntasPara("todos"), [...PREGUNTAS]);
+  for (const id of PREGUNTAS) assert.ok(PARA[id]);
+  for (const publico of ["organizador", "voluntario", "todos"] as Publico[]) {
+    const validas = preguntasPara(publico);
+    for (const id of inicioPara(publico)) assert.equal(validas.includes(id), true, `${publico} inicio ${id}`);
+    for (const id of validas) {
+      // Asking everything once in a row must never leave the person without next questions.
+      const preguntadas: (typeof PREGUNTAS)[number][] = [];
+      for (const pregunta of validas) {
+        preguntadas.push(pregunta);
+        const siguientes = siguientesPara(pregunta, publico, preguntadas);
+        assert.ok(siguientes.length >= 2 && siguientes.length <= 3, `${publico} ${pregunta}: ${siguientes.length}`);
+        assert.equal(siguientes.includes(pregunta), false);
+        for (const siguiente of siguientes) assert.equal(validas.includes(siguiente), true, `${publico} ${pregunta} -> ${siguiente}`);
+      }
+      assert.ok(siguientesPara(id, publico).length >= 2);
+    }
+  }
+  assert.deepEqual(siguientesPara("pago", "todos"), ["tarda", "otra", "costos"]);
+  assert.equal(siguientesPara("pago", "voluntario").includes("costos"), false);
 });

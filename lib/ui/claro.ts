@@ -82,7 +82,10 @@ const EXACTO: Record<string, Clave> = {
   "This task already has an escrow.": "errores.yaBloqueado",
   [AVISO_YA_FONDEADO]: "errores.yaEnRed",
   "The submit succeeded and Trustless did not return the contract.": "errores.enviadoSinContrato",
+  "The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account.": "errores.sinWalletVoluntario",
+  // Older servers still send this text.
   "The task has no payout wallet. Ask the volunteer to sign in and open the task.": "errores.sinWalletVoluntario",
+  "The task has no volunteer yet. Assign it before you lock the budget.": "errores.sinVoluntarioAsignado",
   "Review pending": "errores.esperaRevision",
   "The milestone amount has to be greater than zero.": "errores.montoCero",
   "Only the organizer prepares the payment.": "errores.soloOrganizador",

@@ -25,9 +25,12 @@ test("technical payment errors tell the person what to do", () => {
   assert.match(mensajeClaro("ESCROW_RECEIVER_TRUSTLINE_MISSING"), /Get ready to be paid/);
   assert.equal(mensajeClaro("This task has no escrow yet. Deploy and fund it first."), "Lock the budget before you pay.");
   assert.equal(
-    mensajeClaro("The task has no payout wallet. Ask the volunteer to sign in and open the task."),
-    "We don't have the volunteer's payout account yet. Ask them to sign in to Hyto and open the task.",
+    mensajeClaro("The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account."),
+    "We don't have the volunteer's payout account yet. To fix it: 1. Ask the person assigned to this task to sign in to Hyto with their own email (not the demo). 2. Ask them to stay signed in: signing out removes the account we pay to. 3. Come back here and tap Lock budget again.",
   );
+  assert.equal(mensajeClaro("The task has no payout wallet. Ask the volunteer to sign in and open the task."), mensajeClaro("The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account."));
+  assert.match(mensajeClaro("The task has no volunteer yet. Assign it before you lock the budget."), /^This task has no volunteer yet\. To fix it: 1\. .* 2\. .* 3\. .*Lock budget again\.$/);
+  assert.match(mensajeClaro("The task has no payout wallet. The assigned volunteer has to sign in to Hyto with their own account.", "es"), /^Todavía no tenemos la cuenta de cobro.* 1\. .* 2\. .* 3\. Vuelva aquí y toque Bloquear presupuesto otra vez\.$/);
   assert.equal(mensajeClaro(CODIGO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(mensajeClaro(AVISO_RECEPTOR_NO_LISTO), AVISO_RECEPTOR_NO_LISTO);
   assert.equal(mensajeClaro(CODIGO_HORIZON_RECEPTOR), AVISO_HORIZON_RECEPTOR);

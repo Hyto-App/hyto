@@ -132,7 +132,11 @@ export function textoVisible(valor: string | null | undefined, idioma: Idioma = 
         condicion: texto(idioma, met ? "legado.met" : "legado.notMet"),
         evidencia: etiquetaVeredicto(evidencia.trim(), idioma),
       });
-    });
+    })
+    // Mile's stored note ends with " Category work, grade 67%." for the record. The pill already shows the
+    // grade in the reader's language, so the English tail never reaches the screen.
+    .replace(/\s*Category [^,.]+, grade [^.]+\.(?=\s|$)/g, "")
+    .trim();
   if (idioma !== "es" || !frase.includes(MOTIVO_COPIA)) return frase;
   return frase.replaceAll(MOTIVO_COPIA, texto("es", "revision.copia"));
 }

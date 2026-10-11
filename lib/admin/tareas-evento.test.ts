@@ -125,7 +125,7 @@ test("subir el tope por encima del saldo avisa con dos decimales y no guarda", a
   }
 });
 
-test("asignar una tarea también deja elegir prioridad y dificultad", async () => {
+test("la tarea del evento no muestra ni deja editar prioridad o dificultad", async () => {
   limpiarPantalla();
   const anterior = globalThis.fetch;
   const llamadas: { url: string; body: unknown }[] = [];
@@ -158,27 +158,10 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
         ],
       }),
     );
-    const rejilla = document.querySelector(".sm\\:grid-cols-2");
-    assert.ok(rejilla);
-    assert.match(rejilla.className, /grid-cols-1/);
     assert.equal([...document.querySelectorAll("button")].some((boton) => boton.textContent === "Edit"), true);
-    assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "normal");
-    assert.equal((document.querySelector("#dificultad-t1") as HTMLSelectElement).value, "");
-    assert.equal(texto().includes("High priority"), false);
-
-    await elegir("#prioridad-t1", "high");
-    await elegir("#dificultad-t1", "easy");
-    assert.deepEqual(llamadas, [
-      { url: "/api/tareas/t1/clasificar", body: { prioridad: "high" } },
-      { url: "/api/tareas/t1/clasificar", body: { dificultad: "easy" } },
-    ]);
-    assert.match(texto(), /High priority/);
-    assert.match(texto(), /Easy/);
-    const alta = document.querySelector(".hyto-pill-ok");
-    const suave = [...document.querySelectorAll(".hyto-pill-muted")].find((nodo) => nodo.textContent?.includes("Easy"));
-    assert.match(alta?.className ?? "", /hyto-pill /);
-    assert.equal(alta?.className.includes("hyto-pill-bad"), false);
-    assert.match(suave?.className ?? "", /hyto-pill-muted/);
+    assert.equal(document.querySelector("#prioridad-t1"), null);
+    assert.equal(document.querySelector("#dificultad-t1"), null);
+    assert.equal(/Priority|Difficulty|High priority|\b(Easy|Medium|Hard)\b/.test(texto()), false);
 
     await pulsar("Edit");
     await escribir("#titulo-t1", "Cajas nuevas");
@@ -186,7 +169,7 @@ test("asignar una tarea también deja elegir prioridad y dificultad", async () =
     assert.equal(llamadas.at(-1)?.url, "/api/tareas/t1");
     assert.equal((llamadas.at(-1)?.body as { titulo?: string; prioridad?: string }).titulo, "Cajas nuevas");
     assert.equal((llamadas.at(-1)?.body as { prioridad?: string }).prioridad, undefined);
-    assert.equal((document.querySelector("#prioridad-t1") as HTMLSelectElement).value, "high");
+    assert.equal(llamadas.some((llamada) => llamada.url.endsWith("/clasificar")), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();
