@@ -180,6 +180,28 @@ test("el ingreso no nombra columnas de features aunque el interruptor esté ence
   }
 });
 
+test("el ingreso con una G… en el JWT funciona sin la columna de 0016 y la sesión guarda la cuenta", async () => {
+  const { almacen, consultas, sesiones } = ledgerSinMigrar();
+  const avisos: string[] = [];
+  const original = console.warn;
+  console.warn = (...args: unknown[]) => {
+    avisos.push(args.map(String).join(" "));
+  };
+  let estado = 0;
+  try {
+    estado = (await crearSesionHttp(pedido("nuevo@hyto.app", "signup", { wallet: CUENTA }), almacen)).status;
+  } finally {
+    console.warn = original;
+  }
+  assert.equal(estado, 200, consultas.join("\n"));
+  assert.equal(sesiones.length, 1);
+  assert.equal(sesiones[0]?.wallet, CUENTA);
+  assert.ok(consultas.some((consulta) => /update "usuarios" set "wallet_cobro"/i.test(consulta)), consultas.join("\n"));
+  // A missing column is an expected state before 0016, not a failure worth logging.
+  assert.deepEqual(avisos, []);
+  assert.equal(await almacen.walletCobroDeUsuario(String(sesiones[0]?.usuario_id)), null);
+});
+
 test("sin 0016 la cuenta guardada se lee vacía, y otro error de la base no se esconde", async () => {
   const { almacen } = ledgerSinMigrar();
   assert.equal(await almacen.walletCobroDeUsuario("u-1"), null);
