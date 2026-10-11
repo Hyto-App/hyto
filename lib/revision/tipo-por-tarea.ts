@@ -33,7 +33,8 @@ export function tipoGroqEscrito(texto: string): ClaseCamino | null {
 
 /**
  * Which questionnaire to ask after c1 has been read. Used only when the switch is on.
- * "otra" stays "otra", so a something-else score is unchanged.
+ * "otra" stays "otra", so a something-else score is unchanged, except on a reimbursement whose
+ * evidence was read as a receipt: that one takes the invoice questions.
  * A receipt Groq already named stays on the invoice questions.
  * A work task that Groq also read as work never takes the invoice questions
  * (exam cases 17, 31, and 33).
@@ -49,8 +50,10 @@ export function claseConTipoDeTarea(
     c1Cerca: boolean;
   },
 ): ClaseCamino {
-  if (laya === "otra") return "otra";
   const groq = tipoGroqEscrito(entrada.texto);
+  // A reimbursement whose evidence reads as a receipt is scored as an invoice, never with the work
+  // questions (finished, unfinished, place), even when Laya's c1 said "something else".
+  if (laya === "otra") return entrada.tipoTarea === "reembolso" && groq === "factura" ? "factura" : "otra";
   if (groq === "factura") return "factura";
   if (entrada.tipoTarea === "trabajo" && groq === "trabajo") return "trabajo";
   if (!entrada.c1Cerca) return laya;

@@ -273,3 +273,10 @@ function respuestasFactura(): Record<string, unknown> {
     g5: { score: 1 },
   };
 }
+
+test("un reembolso cuya evidencia se leyó como recibo usa las preguntas de factura aunque Laya diga «otra» (r7, factura en PDF)", () => {
+  const recibo = "Evidence type: a receipt or an invoice.\nLIBRERIA LEHMANN TOTAL USD 3.20";
+  assert.equal(claseConTipoDeTarea("otra", { tipoTarea: "reembolso", texto: recibo, c1Cerca: false }), "factura");
+  assert.equal(claseConTipoDeTarea("otra", { tipoTarea: "trabajo", texto: recibo, c1Cerca: false }), "otra");
+  assert.equal(claseConTipoDeTarea("otra", { tipoTarea: "reembolso", texto: "Evidence type: work, a place, or a scene.", c1Cerca: false }), "otra");
+});

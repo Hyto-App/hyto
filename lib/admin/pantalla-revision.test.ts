@@ -57,7 +57,7 @@ test("la revisión muestra el error y reintenta con POST", async () => {
       llamadas.some((llamada) => llamada.method === "POST" && llamada.url === "/api/revision/stand"),
       true,
     );
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     assert.equal(document.querySelector("[role=alert]"), null);
     assert.match(texto(), /Banner de ZEEK de frente/);
     assert.match(texto(), /64% · Partially completed/);
@@ -126,7 +126,7 @@ test("el informe muestra el origen y el error", async () => {
     await act(async () => {
       await new Promise((resolver) => setTimeout(resolver, 30));
     });
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     assert.match(texto(), /Listo de verdad/);
     assert.match(texto(), /64%/);
     assert.equal(document.querySelector("[role=alert]"), null);
@@ -499,7 +499,7 @@ test("asking for another photo removes the old verdict pill", async () => {
     await esperar(() => texto().includes("64% · Partially completed"));
     await confirmarPedir();
     await esperar(() => !texto().includes("Partially completed"));
-    assert.equal(texto().includes("AI recommendation"), false);
+    assert.equal(texto().includes("Mile's recommendation"), false);
     assert.equal(texto().includes("Half of the booth is set up."), false);
     assert.match(texto(), /Pending/);
     const aviso = [...document.querySelectorAll("[role=status]")].find((nodo) => nodo.classList.contains("hyto-pedir-listo"));
@@ -544,7 +544,7 @@ test("pedir otra foto deja el monto del recibo con colones y la conversión", as
     await montar(createElement(Revision, { tareaId: "comida" }));
     await esperar(() => texto().includes("Printed ₡6.900,00, converted at 505 CRC per US dollar."));
     assert.match(texto(), /78% · Partially completed/);
-    assert.match(texto(), /AI recommendation/);
+    assert.match(texto(), /Mile's recommendation/);
     await confirmarPedir();
     await esperar(() => texto().includes("The request was sent"));
     const aviso = document.querySelector(".hyto-pedir-listo");
@@ -869,7 +869,7 @@ test("en español la frase de apartar no lleva Hasta a media oración y Receipt 
     assert.match(texto(), /Esto aparta US\$0,22/);
     assert.equal(/Esto aparta Hasta/.test(texto()), false);
     assert.equal(texto().includes("Receipt"), false);
-    assert.match(texto(), /Falta la fecha del recibo/);
+    assert.match(texto(), /Falta la fecha de la factura/);
     await pulsar("Bloquear presupuesto");
     assert.equal(document.querySelector(".hyto-dialogo-monto")?.textContent, "US$0,22");
   } finally {

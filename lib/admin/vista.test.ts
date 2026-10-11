@@ -6,7 +6,7 @@ import type { MemoriaAdmin } from "./tipos";
 const VACIA: MemoriaAdmin = { decisiones: {}, proyecto: null, direccion: null };
 
 test("el origen de la revisión se lee como recomendación, muestra o fallo", () => {
-  assert.equal(etiquetaOrigen("scout"), "AI recommendation");
+  assert.equal(etiquetaOrigen("scout"), "Mile's recommendation");
   assert.equal(etiquetaOrigen("stub"), "Sample recommendation");
   assert.equal(etiquetaOrigen("guion"), "Sample recommendation");
   assert.equal(etiquetaOrigen("error"), "Review failed");

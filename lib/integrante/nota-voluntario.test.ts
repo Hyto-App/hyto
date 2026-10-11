@@ -291,15 +291,15 @@ test("una foto ya enviada se puede volver a tomar, y dice que llegó", async () 
         veredicto: "parcial",
       }),
     );
-    assert.match(texto(), /Your photo already reached the organizer/);
-    assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
+    assert.match(texto(), /Your evidence already reached the organizer/);
+    assert.match(texto(), /If you want, you can send better evidence; the organizer decides\./);
     assert.equal((texto().match(/the organizer decides|makes the final call/g) ?? []).length, 1);
     assert.match(texto(), /Take another/);
     await act(async () => {
       [...document.querySelectorAll("button")].find((item) => item.textContent === "Take another")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /Take photo/);
-    assert.equal(texto().includes("Your photo already reached the organizer"), false);
+    assert.equal(texto().includes("Your evidence already reached the organizer"), false);
   } finally {
     globalThis.fetch = anterior;
     await desmontar();

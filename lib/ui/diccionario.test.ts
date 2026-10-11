@@ -90,8 +90,8 @@ test("verdict labels and the payout notices keep their English wording", () => {
   assert.equal(texto("es", "revision.yourAccount", { direccion: "G…AAAA" }), "ID de su cuenta de pagos (para soporte): G…AAAA");
   assert.equal(texto("en", "evidencia.uploaded"), "Photo uploaded successfully");
   assert.equal(texto("es", "evidencia.uploaded"), "Foto subida correctamente");
-  assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your photo already reached the organizer");
-  assert.equal(texto("es", "evidencia.reachedOrganizer"), "Su foto ya le llegó al organizador");
+  assert.equal(texto("en", "evidencia.reachedOrganizer"), "Your evidence already reached the organizer");
+  assert.equal(texto("es", "evidencia.reachedOrganizer"), "Su evidencia ya le llegó al organizador");
   assert.equal(texto("en", "evidencia.mileCouldntFinish"), "Mile could not finish. Try again.");
   assert.equal(texto("es", "evidencia.mileCouldntFinish"), "Mile no pudo terminar. Intente de nuevo.");
   assert.equal(texto("en", "evidencia.mileRetry"), "The review did not finish. Send the photo again.");
@@ -356,8 +356,8 @@ test("el demo dice una sola frase y no habla de red ni billetera", () => {
       assert.doesNotMatch(valor, /billetera|wallet|testnet|red de prueba|network/i, clave);
     }
   }
-  assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una foto mejor; quien organiza decide.");
-  assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send a better photo; the organizer decides.");
+  assert.equal(texto("es", "evidencia.betterPhoto"), "Si quiere, puede enviar una evidencia mejor; quien organiza decide.");
+  assert.equal(texto("en", "evidencia.betterPhoto"), "If you want, you can send better evidence; the organizer decides.");
 });
 
 test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y nadie dice que la galería no se acepta", () => {
@@ -404,4 +404,13 @@ test("una sola evidencia: la copia nueva existe en los dos idiomas, en usted, y 
     assert.equal(vieja in en.evidencia, false, vieja);
     assert.equal(vieja in es.evidencia, false, vieja);
   }
+});
+
+test("la copia nunca dice IA ni AI (es Mile) y Hyto es global: sin Latinoamérica", () => {
+  for (const valor of [...textosDe(es), ...textosDe(en)]) {
+    assert.doesNotMatch(valor, /(^|[^\p{L}])(IA|AI)([^\p{L}]|$)/u, valor);
+    assert.doesNotMatch(valor, /Latinoam[ée]rica|Latin America/i, valor);
+  }
+  assert.equal(texto("es", "revision.origenIa"), "Recomendación de Mile");
+  assert.equal(texto("en", "revision.origenIa"), "Mile's recommendation");
 });

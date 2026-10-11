@@ -96,7 +96,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
     assert.match(texto(), /Mile could not finish. Try again./);
     assert.match(texto(), /Send the photo again/);
     assert.doesNotMatch(texto(), /Your photo arrived/);
-    assert.doesNotMatch(texto(), /Mile checks your photo/);
+    assert.doesNotMatch(texto(), /Mile checks your evidence/);
     const reintentar = [...document.querySelectorAll("button")].find((item) => item.textContent === "Try again");
     assert.ok(reintentar instanceof HTMLButtonElement);
     await act(async () => {
@@ -256,7 +256,7 @@ test("una nota insuficiente no usa el texto de éxito", async () => {
     });
     assert.match(texto(), /Ana, this photo did not pass Mile's review/);
     assert.match(texto(), /40% · Insufficient/);
-    assert.match(texto(), /If you want, you can send a better photo; the organizer decides\./);
+    assert.match(texto(), /If you want, you can send better evidence; the organizer decides\./);
     assert.doesNotMatch(texto(), /Your photo arrived/);
     assert.doesNotMatch(texto(), /Great job/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);

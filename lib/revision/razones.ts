@@ -71,6 +71,41 @@ export function faltantesDe(lectura: LecturaEvidencia | null | undefined): strin
   return lista.length > 0 ? lista.join("; ") : null;
 }
 
+/** Start of an explanation that lists what the task asks for and the answers could not confirm. */
+export const PREFIJO_SIN_CONFIRMAR = "Not confirmed: ";
+
+/**
+ * The things the task asks for, from its condition: «Mesa armada en la entrada con mantel, cartel de
+ * bienvenida y hoja de registro» gives «mantel», «cartel de bienvenida», «hoja de registro». A condition
+ * with no list after «con» / «with» stays one item. Empty when there is no condition.
+ */
+export function elementosPedidos(condicion: string | null | undefined): string[] {
+  const limpia = (condicion ?? "").replace(/\s+/g, " ").trim().replace(/[.;]+$/, "");
+  if (!limpia) return [];
+  const lineas = limpia.split(/\r?\n|;|(?:^|\s)[•·-](?=\s)/u).map((linea) => linea.trim()).filter(Boolean);
+  if (lineas.length > 1) return lineas.slice(0, 6);
+  const con = /\s(?:con|with|que tenga|que incluya|including)\s(.+)$/i.exec(limpia);
+  if (!con?.[1]) return [limpia];
+  const items = con[1]
+    .split(/\s*,\s*|\s+(?:y|e|and)\s+/i)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 1);
+  return items.length > 0 ? items.slice(0, 6) : [limpia];
+}
+
+/** What is missing: the reading's own list, or else the task's items. */
+function listaFalta(entrada: EntradaRazones): { prefijo: string; lista: string } | null {
+  const faltan = faltantesDe(entrada.lectura);
+  if (faltan) return { prefijo: PREFIJO_FALTA, lista: faltan };
+  const pedidos = elementosPedidos(entrada.condicion);
+  return pedidos.length > 0 ? { prefijo: PREFIJO_SIN_CONFIRMAR, lista: pedidos.join("; ") } : null;
+}
+
+/** Groq saw the photo next to the request: legible, nothing missing, and a match. */
+function lecturaConfirmada(lectura: LecturaEvidencia | null | undefined): boolean {
+  return lecturaCompleta(lectura, ["trabajo", "recibo"]) && lectura?.coincide === "si";
+}
+
 const SEVERIDAD: Record<SeveridadNota, number> = { problem: 0, warning: 1, good: 2 };
 
 const BORROSO =
@@ -88,11 +123,17 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   const reembolso = entrada.clase === "factura" || entrada.tipo === "reembolso";
   const sinUsd = reembolso && montoSinUsd(entrada.lectura);
 
+  const falta = listaFalta(entrada);
+  // The reading saw the requested kind of evidence (work or a receipt), only incomplete: say what is missing.
+  const vioLoPedido = entrada.lectura?.tipo === "trabajo" || entrada.lectura?.tipo === "recibo";
   if (otra) {
+    const faltaOtra = faltantesDe(entrada.lectura) ?? (falta ? falta.lista : null);
     etiquetas.push(etiqueta(
       "cap_otra",
-      "Serious issue: no work or receipt shown",
-      "The photo is not the requested work and not a receipt, so the grade stays Insufficient.",
+      vioLoPedido ? "Serious issue: it does not show what was requested" : "Serious issue: no work or receipt shown",
+      faltaOtra
+        ? `${PREFIJO_FALTA}${faltaOtra}.`
+        : "The photo is not the requested work and not a receipt, so the grade stays Insufficient.",
       "problem",
       ["c1"],
     ));
@@ -133,7 +174,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       ["r1"],
     ));
   }
-  if (factura && !factura.g2) {
+  if (factura && !factura.g2 && !soloFaltaFecha(entrada, factura)) {
     etiquetas.push(etiqueta(
       "cap_no_razonable",
       "Cannot be Completed: the expense is not reasonable",
@@ -151,7 +192,7 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
       otra ? ["c1"] : [],
     ));
   }
-  if (otra) {
+  if (otra && !vioLoPedido && !faltantesDe(entrada.lectura)) {
     etiquetas.push(etiqueta(
       "selfie_or_empty",
       "Looks like a photo of the person / no work or receipt shown",
@@ -199,24 +240,30 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
   }
   if (factura?.f4 === 1) parciales.push("f4");
   if (parciales.length > 0) {
-    const faltan = faltantesDe(entrada.lectura);
     etiquetas.push(etiqueta(
       "part_missing",
       "Part of the request missing",
-      faltan
-        ? `${PREFIJO_FALTA}${faltan}.`
+      falta
+        ? `${falta.prefijo}${falta.lista}.`
         : "The answers say part of what was requested is missing or only partly shown.",
-      parcialProblema || faltan ? "problem" : "warning",
+      parcialProblema || falta?.prefijo === PREFIJO_FALTA ? "problem" : "warning",
       parciales,
     ));
   }
 
-  if (trabajo && trabajo.t6 !== "sin_empezar" && (trabajo.t6 === "a_medias" || trabajo.t9)) {
+  if (
+    trabajo &&
+    trabajo.t6 !== "sin_empezar" &&
+    (trabajo.t6 === "a_medias" || trabajo.t9) &&
+    !lecturaConfirmada(entrada.lectura)
+  ) {
     const ids = [trabajo.t6 === "a_medias" ? "t6" : null, trabajo.t9 ? "t9" : null].filter((id): id is string => Boolean(id));
     etiquetas.push(etiqueta(
       "unfinished",
       "Work unfinished",
-      "The answers say the work is only partly done, or that something is unfinished or not visible.",
+      falta
+        ? `${falta.prefijo}${falta.lista}.`
+        : "The answers say the work is only partly done, or that something is unfinished or not visible.",
       trabajo.t9 ? "problem" : "warning",
       ids,
     ));
@@ -378,6 +425,20 @@ function sinContradicciones(etiquetas: EtiquetaNota[], entrada: EntradaRazones):
     if (coincide && (etiqueta.id === "part_missing" || etiqueta.id === "none_shown" || (etiqueta.id === "amount_missing" && monto))) return false;
     return true;
   });
+}
+
+/**
+ * Laya called the expense not reasonable, but the expense matches the request, the amount is within the cap,
+ * and the receipt simply has no date. The missing date is the problem, and date_missing already names it.
+ */
+function soloFaltaFecha(entrada: EntradaRazones, factura: RespuestasFactura): boolean {
+  if (factura.f1 !== "coincide_con_lo_pedido") return false;
+  if (fechaPresente(entrada)) return false;
+  const coincide = entrada.lectura?.coincide;
+  if (coincide === "no" || coincide === "parcial") return false;
+  const monto = centavos(entrada.monto ?? entrada.lectura?.montoUsd ?? null);
+  const tope = centavos(entrada.tope);
+  return monto > 0 && (tope <= 0 || monto <= tope);
 }
 
 function montoPresente(entrada: EntradaRazones): boolean {

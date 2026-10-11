@@ -1,7 +1,11 @@
 import type { Idioma } from "@/lib/ui/idioma";
-import { PREFIJO_FALTA, type EtiquetaNota } from "./razones";
+import { PREFIJO_FALTA, PREFIJO_SIN_CONFIRMAR, type EtiquetaNota } from "./razones";
 
 const FIJAS: Record<string, { texto: string; explicacion: string }> = {
+  cap_otra_incompleta: {
+    texto: "Problema grave: no muestra lo que pide la tarea",
+    explicacion: "La evidencia no muestra lo que pide la tarea, así que la nota se queda en insuficiente.",
+  },
   cap_otra: {
     texto: "Problema grave: no se ve el trabajo ni un recibo",
     explicacion: "La foto no es el trabajo pedido ni un recibo, así que la nota se queda en insuficiente.",
@@ -67,7 +71,7 @@ const FIJAS: Record<string, { texto: string; explicacion: string }> = {
     explicacion: "Las respuestas del recibo no dan un monto.",
   },
   date_missing: {
-    texto: "Falta la fecha del recibo",
+    texto: "Falta la fecha de la factura",
     explicacion: "Las respuestas del recibo no dan una fecha.",
   },
   low_detail: {
@@ -94,11 +98,11 @@ const POR_TEXTO: Record<string, { texto: string; explicacion: string }> = {
     explicacion: "El recibo guardado no tiene un monto mayor que cero, así que la nota se queda en 40% o menos.",
   },
   "Receipt date missing|The receipt answers do not give a date.": {
-    texto: "Falta la fecha del recibo",
+    texto: "Falta la fecha de la factura",
     explicacion: "Las respuestas del recibo no dan una fecha.",
   },
   "Receipt date missing|The saved receipt has no date, so the grade cannot reach Completed.": {
-    texto: "Falta la fecha del recibo",
+    texto: "Falta la fecha de la factura",
     explicacion: "El recibo guardado no tiene fecha, así que la nota no puede llegar a completada.",
   },
   "Matches the request|The answers say this is what was requested.": {
@@ -137,19 +141,26 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
   if (etiqueta.id === "date_missing" && impresa) {
     return {
       ...etiqueta,
-      texto: "Falta la fecha del recibo",
+      texto: "Falta la fecha de la factura",
       explicacion: `La fecha impresa ${impresa[1]} no se pudo leer como fecha, así que la nota no puede llegar a completada.`,
     };
   }
-  if (etiqueta.id === "part_missing" && etiqueta.explicacion.startsWith(PREFIJO_FALTA)) {
-    // The list itself comes from the vision reading, already in the session language.
+  // The list itself comes from the vision reading or the task condition, already in the session language.
+  const base =
+    etiqueta.id === "cap_otra" && etiqueta.texto === "Serious issue: it does not show what was requested"
+      ? FIJAS.cap_otra_incompleta
+      : FIJAS[etiqueta.id];
+  if (base && etiqueta.explicacion.startsWith(PREFIJO_FALTA)) {
+    return { ...etiqueta, texto: base.texto, explicacion: `Falta: ${etiqueta.explicacion.slice(PREFIJO_FALTA.length)}` };
+  }
+  if (base && etiqueta.explicacion.startsWith(PREFIJO_SIN_CONFIRMAR)) {
     return {
       ...etiqueta,
-      texto: "Falta parte de lo pedido",
-      explicacion: `Falta: ${etiqueta.explicacion.slice(PREFIJO_FALTA.length)}`,
+      texto: base.texto,
+      explicacion: `No se pudo confirmar: ${etiqueta.explicacion.slice(PREFIJO_SIN_CONFIRMAR.length)}`,
     };
   }
-  const fija = FIJAS[etiqueta.id];
+  const fija = base;
   if (fija) return { ...etiqueta, ...fija };
   return etiqueta;
 }

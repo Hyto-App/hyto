@@ -2,18 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { EtiquetasNota } from "@/components/admin/EtiquetasNota";
-import { PastillaVeredicto } from "@/components/admin/PastillaVeredicto";
 import { BotonPrincipal } from "@/components/integrante/BotonPrincipal";
-import { PastillaEstado } from "@/components/integrante/EstadoTarea";
 import { Checklist } from "@/components/integrante/evidencia/Checklist";
 import { LineaRevision } from "@/components/integrante/evidencia/LineaRevision";
+import { ResumenResultado } from "@/components/integrante/evidencia/ResumenResultado";
 import { PanelMile } from "@/components/integrante/evidencia/PanelMile";
 import { ActividadTarea } from "@/components/integrante/ActividadTarea";
 import { MomentoLaTengo } from "@/components/integrante/evidencia/MomentoLaTengo";
 import { PantallaPagada } from "@/components/integrante/evidencia/PantallaPagada";
 import { PantallaRechazada } from "@/components/integrante/evidencia/PantallaRechazada";
-import { NotaCobro } from "@/components/integrante/NotaCobro";
 import { useModoDemo } from "@/components/sesion/InsigniaDemo";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
 import { MileAnimada } from "@/components/ui/MileAnimada";
@@ -584,23 +581,20 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
 
   if (enviada && cumbre) {
     return (
-      <MomentoLaTengo tareaId={tarea.id} monto={montoFrente} tope={topeFondo}>
-        <article className="hyto-tarjeta hyto-resumen">
-          {vistaFoto ? <div className="hyto-resumen-mini">{vistaFoto}</div> : null}
-          <div>
-            <PastillaEstado estado={tarea.estado} />
-            <h2>{titulo}</h2>
-            {calificacion ? (
-              <div className="hyto-resumen-nota">
-                <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
-                <EtiquetasNota etiquetas={tarea.notas} />
-                <NotaCobro tarea={tarea} />
-                <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>
-              </div>
-            ) : null}
-          </div>
-          <p className="hyto-amount">{montoVisible}</p>
-        </article>
+      <MomentoLaTengo
+        tareaId={tarea.id}
+        monto={montoFrente}
+        tope={topeFondo}
+        resumen={
+          <ResumenResultado
+            tarea={tarea}
+            titulo={titulo}
+            calificacion={calificacion}
+            montoVisible={montoVisible}
+            miniatura={vistaFoto}
+          />
+        }
+      >
         <LineaRevision tarea={tarea} revisionCerrada={esperaAgotada || !!avisoEnvio} monto={montoPaso} archivo={documental} />
         <ActividadTarea tarea={tarea} />
         {!cerrada ? (
@@ -665,12 +659,15 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
             </>
           )}
         </header>
-        <article className="hyto-tarjeta hyto-resumen">
-          {vistaFoto ? <div className="hyto-resumen-mini">{vistaFoto}</div> : null}
-          <div>
-            <PastillaEstado estado={tarea.estado} />
-            <h2>{titulo}</h2>
-            {nombreEvento || hora ? (
+        <ResumenResultado
+          tarea={tarea}
+          titulo={titulo}
+          calificacion={calificacion}
+          montoVisible={montoVisible}
+          miniatura={vistaFoto}
+          mostrarLlamada={!mejorable}
+          meta={
+            nombreEvento || hora ? (
               <p className="hyto-tarea-meta">
                 {hora
                   ? nombreEvento
@@ -678,18 +675,9 @@ export function SubirEvidencia({ tareaId, nombre = null }: { tareaId: string; no
                     : t(documental ? "evidencia.fileSentAt" : "evidencia.photoSentAt", { time: hora })
                   : meta}
               </p>
-            ) : null}
-            {calificacion ? (
-              <div className="hyto-resumen-nota">
-                <PastillaVeredicto veredicto={calificacion.veredicto} nota={calificacion.nota} />
-                <EtiquetasNota etiquetas={tarea.notas} />
-                <NotaCobro tarea={tarea} />
-                {mejorable ? null : <p className="hyto-tarea-meta">{t("evidencia.organizerCall")}.</p>}
-              </div>
-            ) : null}
-          </div>
-          <p className="hyto-amount">{montoVisible}</p>
-        </article>
+            ) : null
+          }
+        />
         <LineaRevision
           tarea={tarea}
           revisionCerrada={esperaAgotada || !!avisoEnvio}

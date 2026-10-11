@@ -12,14 +12,14 @@ export type CodigoFalloRevision =
 export type FuenteRevision = "groq" | "gemini" | "laya" | "revision";
 
 const MENSAJES: Record<CodigoFalloRevision, string> = {
-  sin_clave: "AI review is not configured",
-  sin_laya: "AI scoring is not configured",
+  sin_clave: "Mile's review is not configured",
+  sin_laya: "Mile's scoring is not configured",
   pdf: "This PDF needs a person to review it. Automatic reading is not available, and it is not approved automatically.",
   sin_texto: "This file has no readable text, so it is not approved automatically.",
-  cupo: "The AI quota is used up",
-  tiempo: "The AI did not respond in time",
-  proveedor: "The AI could not finish the review",
-  respuesta: "The AI returned a response that could not be read",
+  cupo: "Mile's quota is used up",
+  tiempo: "Mile did not respond in time",
+  proveedor: "Mile could not finish the review",
+  respuesta: "Mile returned a response that could not be read",
   sin_foto: "There is no photo to review",
 };
 
