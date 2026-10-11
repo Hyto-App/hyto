@@ -1,6 +1,7 @@
 import type { TipoTarea } from "@/lib/integrante/tipos";
 import type { RespuestasFactura, RespuestasTrabajo } from "./laya";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
+import { lecturaCompleta } from "./lectura-completa";
 import { layaPuedeTaparPorOtra } from "./otra-groq";
 import { condicionPideLugar } from "./lugar-pedido";
 import type { DetalleRazones } from "./snapshot-razones";
@@ -60,6 +61,15 @@ const ORDEN = [
   "finished",
   "amount_date",
 ] as const;
+
+/** Start of a part_missing explanation that names what is missing. notas-idioma.ts keeps the list. */
+export const PREFIJO_FALTA = "Missing: ";
+
+/** What the vision reading says is missing, in the session language, joined for one sentence. */
+export function faltantesDe(lectura: LecturaEvidencia | null | undefined): string | null {
+  const lista = (lectura?.faltantes ?? []).map((item) => item.trim().replace(/[.;]+$/, "")).filter(Boolean);
+  return lista.length > 0 ? lista.join("; ") : null;
+}
 
 const SEVERIDAD: Record<SeveridadNota, number> = { problem: 0, warning: 1, good: 2 };
 
@@ -179,18 +189,24 @@ export function etiquetasDe(entrada: EntradaRazones): EtiquetaNota[] {
 
   const parciales: string[] = [];
   let parcialProblema = false;
-  if (trabajo?.v2 === 1) parciales.push("v2");
+  // A legible reading of the work with nothing missing: a middle answer from Laya is a hedge on
+  // the written text, not a missing part, so it does not raise «Falta parte de lo pedido».
+  const completa = lecturaCompleta(entrada.lectura);
+  if (trabajo?.v2 === 1 && !completa) parciales.push("v2");
   if (trabajo?.v4) {
     parciales.push("v4");
     parcialProblema = true;
   }
   if (factura?.f4 === 1) parciales.push("f4");
   if (parciales.length > 0) {
+    const faltan = faltantesDe(entrada.lectura);
     etiquetas.push(etiqueta(
       "part_missing",
       "Part of the request missing",
-      "The answers say part of what was requested is missing or only partly shown.",
-      parcialProblema ? "problem" : "warning",
+      faltan
+        ? `${PREFIJO_FALTA}${faltan}.`
+        : "The answers say part of what was requested is missing or only partly shown.",
+      parcialProblema || faltan ? "problem" : "warning",
       parciales,
     ));
   }

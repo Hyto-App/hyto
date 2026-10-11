@@ -77,7 +77,7 @@ test("solo no_cumple rechaza, parcial sigue, y el tope deja la foto al organizad
   assert.equal(rechazo?.puntaje, 50);
   assert.equal(rechazo?.resultados[1]?.estado, "no_cumple");
   assert.equal(rechazo?.resultados[1]?.observacion, "Esto no aparece en su foto.");
-  assert.match(rechazo?.notaMile ?? "", /Tome otra foto/);
+  assert.match(rechazo?.notaMile ?? "", /Falta en su evidencia: «Mesa»\. Envíe otra evidencia/);
 
   const tope = decidirRequisitos({ requisitos, niveles: [0, 0], idioma: "en", intento: 3, maxIntentos: 3 });
   assert.equal(tope?.accion, "seguir");
@@ -186,7 +186,7 @@ test("con la bandera encendida Mile rechaza el requisito que no cumple", async (
   assert.equal(resultado.mile?.puntaje, 50);
   assert.equal(resultado.mile?.resultados[1]?.estado, "no_cumple");
   assert.equal(resultado.mile?.resultados[1]?.observacion, "Esto no aparece en su foto.");
-  assert.match(resultado.frase, /Tome otra foto/);
+  assert.match(resultado.frase, /Falta en su evidencia: «La mesa armada»/);
   const rechazo = leerRechazo(resultado.mile?.rechazoJson);
   assert.equal(rechazo?.origen, "mile");
   assert.deepEqual(rechazo?.fallidos, ["mesa"]);

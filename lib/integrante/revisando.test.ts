@@ -102,7 +102,7 @@ test("si el plazo se acaba sin nota, Mile no queda en visto y se puede reenviar"
     await act(async () => {
       reintentar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    assert.match(texto(), /Open camera/);
+    assert.match(texto(), /Take photo/);
     assert.doesNotMatch(texto(), /Mile could not finish/);
   } finally {
     Date.now = ahoraPrevio;
@@ -217,8 +217,11 @@ test("un reembolso fallido vuelve al selector de archivo", async () => {
     await act(async () => {
       reintentar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    assert.ok(document.querySelector('input[type="file"]') instanceof HTMLInputElement);
-    assert.match(texto(), /Choose a file/);
+    const selector = document.querySelector('input[type="file"]:not([capture])');
+    assert.ok(selector instanceof HTMLInputElement);
+    assert.match(selector.accept, /pdf/);
+    assert.match(texto(), /Upload file/);
+    assert.match(texto(), /Drag your evidence here or choose a file/);
     assert.doesNotMatch(texto(), /Mile could not finish/);
     assert.doesNotMatch(texto(), /Mile is checking your photo/);
   } finally {

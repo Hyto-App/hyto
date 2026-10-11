@@ -4,6 +4,7 @@ import type { Veredicto } from "@/lib/admin/tipos";
 import { etiquetaChoice } from "@/lib/ui/etiquetas";
 import { montoSinUsd, type LecturaEvidencia } from "./lectura";
 import { calificar, motivosDeRegla, notaDeTexto, notaEntera, puntosTecho80, type MotivoTope } from "./pesos";
+import { puntosLecturaCompleta } from "./lectura-completa";
 import { leerSnapshot } from "./snapshot-razones";
 import type { EntornoTecho } from "./techo-bandera";
 
@@ -140,13 +141,16 @@ export function cerrar(
   descripcion: Descripcion,
   senales: Senales,
   origen: Exclude<OrigenRevision, "error">,
-  entorno: EntornoTecho = process.env,
+  entorno: EntornoTecho & { HYTO_MILE_FALTANTES_GROQ?: string } = process.env,
 ): ResultadoRevision | null {
   const monto = tipo === "reembolso" ? descripcion.monto : null;
   const fecha = tipo === "reembolso" ? descripcion.fecha : null;
   const base = notaDeTexto(senales.score);
   const trabajo = senales.detalle ? leerSnapshot(senales.detalle)?.trabajo : null;
-  const extra = tipo === "trabajo" && base !== null ? puntosTecho80(trabajo, descripcion.lectura, entorno) : 0;
+  const extra =
+    tipo === "trabajo" && base !== null
+      ? Math.max(puntosTecho80(trabajo, descripcion.lectura, entorno), puntosLecturaCompleta(trabajo, descripcion.lectura, entorno))
+      : 0;
   const armado = armarVeredicto({
     tipo,
     tope,

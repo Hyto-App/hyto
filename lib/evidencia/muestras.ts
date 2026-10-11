@@ -90,3 +90,51 @@ export function pdfConTexto(texto: string): Uint8Array {
 function utf8(texto: string): Uint8Array {
   return new TextEncoder().encode(texto);
 }
+
+/** A scanned page: a one-page PDF whose only content is a JPEG picture, with no text layer. */
+export async function pdfEscaneado(ancho = 400, alto = 520): Promise<Uint8Array> {
+  const datos = Buffer.alloc(ancho * alto * 3);
+  for (let y = 0; y < alto; y += 1) {
+    for (let x = 0; x < ancho; x += 1) {
+      const i = (y * ancho + x) * 3;
+      const raya = y % 40 < 6 && x > 30 && x < ancho - 30 ? 20 : 245;
+      datos[i] = raya;
+      datos[i + 1] = raya;
+      datos[i + 2] = raya;
+    }
+  }
+  const imagen = new Uint8Array(await sharp(datos, { raw: { width: ancho, height: alto, channels: 3 } }).jpeg().toBuffer());
+  const contenido = `q ${ancho} 0 0 ${alto} 0 0 cm /Im1 Do Q`;
+  const partes: Uint8Array[] = [
+    utf8("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"),
+    utf8("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"),
+    utf8(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ancho} ${alto}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>\nendobj\n`),
+    utf8(`4 0 obj\n<< /Length ${contenido.length} >>\nstream\n${contenido}\nendstream\nendobj\n`),
+    concatenar([
+      utf8(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${ancho} /Height ${alto} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagen.length} >>\nstream\n`),
+      imagen,
+      utf8("\nendstream\nendobj\n"),
+    ]),
+  ];
+  const cabecera = utf8("%PDF-1.4\n");
+  const offsets: number[] = [];
+  let cursor = cabecera.length;
+  for (const parte of partes) {
+    offsets.push(cursor);
+    cursor += parte.length;
+  }
+  let tabla = `xref\n0 ${partes.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) tabla += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  tabla += `trailer\n<< /Size ${partes.length + 1} /Root 1 0 R >>\nstartxref\n${cursor}\n%%EOF\n`;
+  return concatenar([cabecera, ...partes, utf8(tabla)]);
+}
+
+function concatenar(partes: Uint8Array[]): Uint8Array {
+  const salida = new Uint8Array(partes.reduce((suma, parte) => suma + parte.length, 0));
+  let pos = 0;
+  for (const parte of partes) {
+    salida.set(parte, pos);
+    pos += parte.length;
+  }
+  return salida;
+}

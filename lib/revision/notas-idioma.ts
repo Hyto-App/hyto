@@ -1,5 +1,5 @@
 import type { Idioma } from "@/lib/ui/idioma";
-import type { EtiquetaNota } from "./razones";
+import { PREFIJO_FALTA, type EtiquetaNota } from "./razones";
 
 const FIJAS: Record<string, { texto: string; explicacion: string }> = {
   cap_otra: {
@@ -139,6 +139,14 @@ export function presentarEtiqueta(etiqueta: EtiquetaNota, idioma: Idioma): Etiqu
       ...etiqueta,
       texto: "Falta la fecha del recibo",
       explicacion: `La fecha impresa ${impresa[1]} no se pudo leer como fecha, así que la nota no puede llegar a completada.`,
+    };
+  }
+  if (etiqueta.id === "part_missing" && etiqueta.explicacion.startsWith(PREFIJO_FALTA)) {
+    // The list itself comes from the vision reading, already in the session language.
+    return {
+      ...etiqueta,
+      texto: "Falta parte de lo pedido",
+      explicacion: `Falta: ${etiqueta.explicacion.slice(PREFIJO_FALTA.length)}`,
     };
   }
   const fija = FIJAS[etiqueta.id];

@@ -126,9 +126,14 @@ export function decidirRequisitos(entrada: {
   const falla = fallidos.length > 0;
   const rechazar = falla && intento < maximo;
   const hayParcial = resultados.some((item) => item.estado === "parcial");
+  // The note names what is missing or only partly there, so the person knows what to fix.
+  const puntos = listaDePuntos(
+    resultados.filter((item) => (falla ? item.estado === "no_cumple" : item.estado === "parcial")),
+  );
   const notaMile = texto(
     entrada.idioma,
     rechazar ? "mile.notaRechazo" : falla ? "mile.notaTope" : hayParcial ? "mile.notaParcial" : "mile.notaSigue",
+    { puntos },
   );
   return {
     resultados,
@@ -137,6 +142,18 @@ export function decidirRequisitos(entrada: {
     accion: rechazar ? "rechazar" : "seguir",
     fallidos,
   };
+}
+
+const MAX_PUNTO_NOTA = 70;
+
+/** «A», «B» y «C», each cut so the note stays under NOTA_MAX. */
+export function listaDePuntos(resultados: ReadonlyArray<Pick<ResultadoRequisito, "texto">>): string {
+  const citas = resultados
+    .map((item) => item.texto.replace(/\s+/g, " ").trim().replace(/[.;:]+$/, ""))
+    .filter(Boolean)
+    .map((frase) => `«${frase.length > MAX_PUNTO_NOTA ? `${frase.slice(0, MAX_PUNTO_NOTA - 1).trimEnd()}…` : frase}»`);
+  if (citas.length <= 1) return citas[0] ?? "";
+  return `${citas.slice(0, -1).join(", ")} / ${citas[citas.length - 1]}`;
 }
 
 /** Organizer ask for another photo. An empty note still counts, so the member can see the ask. */

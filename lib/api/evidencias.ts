@@ -11,7 +11,7 @@ import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/to
 import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
 import { esContrato } from "@/lib/escrow/cuerpos";
-import { AVISO_GALERIA_TIPO, ORIGEN_GALERIA } from "@/lib/integrante/fotoEnVivo";
+import { ORIGEN_ARCHIVO, ORIGEN_GALERIA } from "@/lib/integrante/fotoEnVivo";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
 import { falloDeExcepcion, FalloRevision, registrarFallo } from "@/lib/revision/fallo";
 import { contextoDesdeEntorno, revisar } from "@/lib/revision/revisar";
@@ -96,14 +96,17 @@ export async function leerFotoHttp(almacen: Almacen, fotos: Fotos | null, id: st
     if (!fotos) return sinFotos();
     const foto = await fotos.leer(evidencia.blobId);
     if (!foto) return json({ aviso: "We couldn't find the photo." }, 404);
-    return new Response(Buffer.from(foto.bytes), {
-      headers: {
-        "content-type": tipoDeFoto(foto.tipo, foto.bytes),
-        "cache-control": "private, max-age=3600",
-        "content-disposition": disposicionDe(foto.tipo, foto.bytes),
-        "x-content-type-options": "nosniff",
-      },
-    });
+    const tipo = tipoDeFoto(foto.tipo, foto.bytes);
+    const cabeceras: Record<string, string> = {
+      "content-type": tipo,
+      "cache-control": "private, max-age=3600",
+      "content-disposition": disposicionDe(foto.tipo, foto.bytes),
+      "x-content-type-options": "nosniff",
+    };
+    // A stored HTML receipt or a list is served as text/plain. Opened on its own, it still runs nothing.
+    // PDFs keep no sandbox, because a sandboxed document cannot load the browser's PDF viewer.
+    if (tipo === "text/plain") cabeceras["content-security-policy"] = CSP_DOCUMENTO;
+    return new Response(Buffer.from(foto.bytes), { headers: cabeceras });
   } catch (error) {
     return baseNoLista(error);
   }
@@ -183,13 +186,13 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const reintento = Boolean(previa && previa.tareaId === tareaId && (!veredictoPrevio || veredictoPrevio.origen === "error"));
     if (previa && !reintento) return json({ aviso: "This file was already submitted." }, 409);
 
-    // Live-capture rules stay for real events. The seeded demo event also takes a gallery photo.
-    const galeria = tarea.tipo === "trabajo" && demo && texto(form.get("origen")) === ORIGEN_GALERIA;
+    // A file picked with «Upload file» (or the legacy demo gallery origin) takes any validated type and skips
+    // the camera token and the freshness check. Without an origin, a work task stays on the live camera path.
+    const origen = texto(form.get("origen"));
+    const archivoElegido = tarea.tipo === "trabajo" && (origen === ORIGEN_ARCHIVO || origen === ORIGEN_GALERIA);
     const validado = validarBytes(bytes, { tipo: foto.type, nombre: nombreDeArchivo(foto) });
-    if (galeria && validado.ok && !esImagen(validado.tipo)) return json({ aviso: AVISO_GALERIA_TIPO }, 400);
     if (!validado.ok) {
-      if (galeria && (validado.motivo === "falso" || validado.motivo === "tipo")) return json({ aviso: AVISO_GALERIA_TIPO }, 400);
-      const camara = tarea.tipo === "trabajo" && (validado.motivo === "falso" || validado.motivo === "tipo");
+      const camara = tarea.tipo === "trabajo" && !archivoElegido && (validado.motivo === "falso" || validado.motivo === "tipo");
       if (camara) return json({ aviso: "Take the photo with the camera." }, 400);
       return json({ aviso: avisoArchivo(validado.motivo) }, validado.motivo === "grande" ? 413 : 400);
     }
@@ -198,7 +201,7 @@ export async function publicarEvidenciaHttp(request: Request, deps: DepsEvidenci
     const ahora = Date.now();
     let capturadaEn: string | null = null;
     let frescura: EvidenciaFila["frescura"] = null;
-    if (tarea.tipo === "trabajo" && !galeria) {
+    if (tarea.tipo === "trabajo" && !archivoElegido) {
       if (tipo !== "image/jpeg") return json({ aviso: "Take the photo with the camera." }, 400);
       const token = texto(form.get("token"));
       if (!token) return json({ aviso: "Take the photo with the camera." }, 400);
@@ -424,6 +427,9 @@ function nombreDeArchivo(entrada: Blob): string {
   if (typeof File !== "undefined" && entrada instanceof File) return entrada.name;
   return "";
 }
+
+/** Text evidence (HTML, TXT, Markdown) is served under this policy: no scripts, no requests, unique origin. */
+export const CSP_DOCUMENTO = "default-src 'none'; sandbox";
 
 export function tipoDeFoto(declarado: string, bytes: Uint8Array): string {
   const olido = tipoPorBytes(bytes);
