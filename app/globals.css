@@ -762,6 +762,17 @@ a {
   margin-bottom: 16px;
 }
 
+/* 360–430 px (#113, from #277): the inbox filters wrap inside the screen instead of pushing the page sideways. */
+@media (max-width: 430px) {
+  .hyto-tabs {
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 0;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 .hyto-tabs button,
 .hyto-tabs a {
   display: inline-flex;

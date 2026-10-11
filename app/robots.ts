@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: PREFIJOS_PRIVADOS.map((ruta) => ruta),
+      // "/p" alone would also match "/privacy", so public profiles are blocked as "/p/".
+      disallow: PREFIJOS_PRIVADOS.map((ruta) => (ruta === "/p" ? "/p/" : ruta)),
     },
     sitemap: `${HOST_PUBLICO}/sitemap.xml`,
     host: HOST_PUBLICO,
