@@ -24,4 +24,4 @@ export const ESLOGAN_LINEA = "Proof before";
 export const ESLOGAN_ACENTO = "payout.";
 export const ESLOGAN = `${ESLOGAN_LINEA} ${ESLOGAN_ACENTO}`;
 export const LINEA_OG =
-  "Communities in Latin America funded from afar account for the spend with a photo. A person releases the payment in digital dollars.";
+  "Any community, anywhere in the world, funded from afar accounts for the spend with one piece of evidence. A person releases the payment in digital dollars.";

@@ -322,7 +322,7 @@ function cumplio() {
   return { ...desdeGuion("trabajo", null), veredicto: "cumplió" as const, origen: "scout" as const, score: "cumplió" };
 }
 
-test("solo el evento demo acepta una foto de galería sin token ni hora de captura", async () => {
+test("un archivo elegido entra sin token ni hora de captura, dentro y fuera del demo", async () => {
   reiniciarTokensEvidencia();
   const previo = process.env.HYTO_DEMO_LOGIN;
   process.env.HYTO_DEMO_LOGIN = "1";
@@ -343,10 +343,13 @@ test("solo el evento demo acepta una foto de galería sin token ni hora de captu
     };
 
     const real = { usuarioId: "voluntario-1", rol: "voluntario" as const };
-    const ajena = await publicarEvidenciaHttp(galeria("stand", png, "image/png", "vieja.png"), { almacen, fotos, actor: real, revisarTarea });
-    assert.equal(ajena.status, 400);
-    assert.equal(((await ajena.json()) as { aviso: string }).aviso, "Take the photo with the camera.");
+    const sinCamara = await publicarEvidenciaHttp(galeria("stand", png, "image/png", "vieja.png", null), { almacen, fotos, actor: real, revisarTarea });
+    assert.equal(sinCamara.status, 400);
+    assert.equal(((await sinCamara.json()) as { aviso: string }).aviso, "Take the photo with the camera.");
     assert.equal((await almacen.ultimaEvidencia("stand"))?.id, "ejemplo-stand");
+    const real201 = await publicarEvidenciaHttp(galeria("stand", png, "image/png", "vieja.png"), { almacen, fotos, actor: real, revisarTarea });
+    assert.equal(real201.status, 201);
+    assert.equal((await almacen.ultimaEvidencia("stand"))?.frescura ?? null, null);
 
     const demo = { usuarioId: "demo-voluntario", rol: "voluntario" as const, demo: true };
     const sinOrigen = await publicarEvidenciaHttp(galeria("demo-bienvenida", await jpegDePrueba(), "image/jpeg", "vieja.jpg", null), {
@@ -357,16 +360,19 @@ test("solo el evento demo acepta una foto de galería sin token ni hora de captu
     });
     assert.equal(sinOrigen.status, 400);
 
-    const pdf = await publicarEvidenciaHttp(galeria("demo-bienvenida", PDF_MINIMO, "application/pdf", "nota.pdf"), {
+    const pdf = await publicarEvidenciaHttp(galeria("demo-bienvenida", PDF_MINIMO, "application/pdf", "nota.pdf", "archivo"), {
       almacen,
       fotos,
       actor: demo,
       revisarTarea,
     });
-    assert.equal(pdf.status, 400);
-    assert.equal(((await pdf.json()) as { aviso: string }).aviso, "Choose a JPEG, PNG, or WebP photo.");
+    assert.equal(pdf.status, 201);
+    assert.equal((await almacen.ultimaEvidencia("demo-bienvenida"))?.tipoArchivo, "application/pdf");
 
-    const creada = await publicarEvidenciaHttp(galeria("demo-bienvenida", png, "image/png", "vieja.png"), {
+    const otroPng = new Uint8Array(
+      await sharp({ create: { width: 40, height: 30, channels: 3, background: { r: 20, g: 140, b: 90 } } }).png().toBuffer(),
+    );
+    const creada = await publicarEvidenciaHttp(galeria("demo-bienvenida", otroPng, "image/png", "vieja.png"), {
       almacen,
       fotos,
       actor: demo,

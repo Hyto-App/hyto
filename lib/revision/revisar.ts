@@ -1,7 +1,8 @@
 import { claveDeGemini, claveDeGroq, enProduccion, urlDeLaya } from "@/lib/config/entorno";
 import type { TareaFila } from "@/lib/db/tipos";
 import type { FotoLeida } from "@/lib/blob/fotos";
-import { esEvidenciaTextual } from "@/lib/evidencia/tipo";
+import { claseTextual, esEvidenciaTextual } from "@/lib/evidencia/tipo";
+import { imagenDePdf, textoInsuficiente } from "@/lib/evidencia/pdf-imagen";
 import { ajustarParaVision } from "@/lib/evidencia/vision";
 import { transcribirEvidencia } from "@/lib/evidencia/transcribir";
 import type { Idioma } from "@/lib/ui/idioma";
@@ -12,6 +13,7 @@ import { describirFotoGemini } from "./gemini";
 import { aplicarV4DeFaltantes } from "./faltantes-groq";
 import { preguntarLaya, type LlamadaLaya } from "./laya";
 import { montoSinUsd } from "./lectura";
+import { nivelesConLectura } from "./lectura-completa";
 import { motivosDeRegla } from "./pesos";
 import { estructurarTranscripcion, textoParaLaya } from "./texto-estructurado";
 import { preguntarRequisitos } from "./requisitos-laya";
@@ -71,14 +73,16 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
   // The call below only passes lectura, the same line as the sibling switch.
   Object.assign(llamarLaya, { tipoTarea: tarea.tipo, tipoPorTarea: contexto.tipoPorTarea });
   const claveGemini = contexto.claveGemini?.trim() || null;
-  if (!esEvidenciaTextual(foto) && !contexto.claveGroq && !claveGemini) {
-    return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
-  }
   try {
-    const cruda = esEvidenciaTextual(foto)
-      ? await transcribirEvidencia(foto)
-      : await describirConReserva(
-          foto,
+    // A PDF, text list, or HTML receipt is read locally. A scanned PDF (pictures, no text layer)
+    // is turned into one image and goes through the same vision path as a photo.
+    const lectura = await prepararEvidencia(foto);
+    if (lectura.vision && !contexto.claveGroq && !claveGemini) {
+      return fallar(new FalloRevision("sin_clave", { fuente: "groq", providerMessage: "GROQ_API_KEY" }));
+    }
+    const descripcion = lectura.vision
+      ? await describirConReserva(
+          lectura.vision,
           tarea,
           contexto.claveGroq,
           claveGemini,
@@ -87,10 +91,9 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
           contexto.idioma ?? "en",
           contexto.evento,
           contexto.organizacion,
-        );
-    const descripcion = esEvidenciaTextual(foto)
-      ? estructurarTranscripcion(cruda.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo })
-      : cruda;
+        )
+      : estructurarTranscripcion(lectura.transcrita.texto, { condicion: tarea.condicion, tipoTarea: tarea.tipo });
+    const textual = !lectura.vision;
     const paraLaya = textoParaLaya(descripcion);
     const requisitos = (contexto.mileActivo ?? mileRequisitosActivo()) ? leerRequisitos(tarea.requisitos) : [];
     if (!contexto.layaUrl) {
@@ -129,7 +132,7 @@ export async function revisar(tarea: TareaFila, foto: FotoLeida | null, contexto
       { lectura: descripcion.lectura },
     );
     // A transcribed file has no Groq list. An empty faltantes there is not "nothing missing".
-    const senalesParaNota = esEvidenciaTextual(foto)
+    const senalesParaNota = textual
       ? senales
       : aplicarV4DeFaltantes(senales, descripcion.lectura, tarea.condicion);
     const cerrado = cerrar(tarea.tipo, tarea.tope, descripcion, senalesParaNota, "scout");
@@ -149,7 +152,7 @@ function cerrarRequisitos(
   const requisitos = leerRequisitos(tarea.requisitos);
   const decision = decidirRequisitos({
     requisitos,
-    niveles,
+    niveles: nivelesConLectura(niveles, descripcion.lectura),
     idioma: contexto.idioma,
     intento: contexto.intento,
     maxIntentos: contexto.maxIntentos,
@@ -233,6 +236,34 @@ async function describirConReserva(
       throw error;
     }
   }
+}
+
+type EvidenciaPreparada = { vision: FotoLeida; transcrita?: undefined } | { vision: null; transcrita: Descripcion };
+
+/**
+ * Photos go to vision as they are. PDF, text, and HTML are transcribed locally. A PDF whose text layer
+ * is empty or nearly empty (a scan) is turned into a JPEG of its pages for vision. When that PDF has
+ * no picture either, the original "no readable text" failure stands.
+ */
+export async function prepararEvidencia(foto: FotoLeida): Promise<EvidenciaPreparada> {
+  if (!esEvidenciaTextual(foto)) return { vision: foto };
+  const pdf = claseTextual(foto.tipo, foto.bytes) === "pdf";
+  let transcrita: Descripcion | null = null;
+  let falloTexto: FalloRevision | null = null;
+  // pdf.js can detach the buffer it reads, so the text pass gets its own copy and the scan pass keeps these bytes.
+  const copia = pdf ? new Uint8Array(foto.bytes) : foto.bytes;
+  try {
+    transcrita = await transcribirEvidencia({ tipo: foto.tipo, bytes: copia });
+  } catch (error) {
+    if (!pdf || !(error instanceof FalloRevision) || error.code !== "sin_texto") throw error;
+    falloTexto = error;
+  }
+  if (pdf && (!transcrita || textoInsuficiente(transcrita.texto))) {
+    const imagen = await imagenDePdf(foto.bytes);
+    if (imagen) return { vision: { tipo: imagen.tipo, bytes: imagen.bytes } };
+  }
+  if (transcrita) return { vision: null, transcrita };
+  throw falloTexto ?? new FalloRevision("sin_texto", { fuente: "revision", providerMessage: "pdf" });
 }
 
 function fallar(fallo: FalloRevision): ResultadoRevision {

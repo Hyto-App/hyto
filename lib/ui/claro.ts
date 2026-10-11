@@ -169,7 +169,6 @@ const EXACTO: Record<string, Clave> = {
   "This task already has a real budget.": "revision.demoRealBudget",
   "That demo action is not allowed.": "revision.demoBadAction",
   "The demo step did not go through. Try again.": "revision.demoStepFail",
-  "Take the photo now. Photos from the gallery are not accepted.": "evidencia.gallery",
   "Could not send. Try again.": "evidencia.noSend",
   [AVISO_ENVIO_FALLIDO]: "evidencia.sendFailed",
   [AVISO_ENVIO_SIN_CONFIRMAR]: "evidencia.sendUnconfirmed",

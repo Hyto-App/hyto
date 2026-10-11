@@ -6942,3 +6942,153 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Evidencia: un solo espacio para subir (foto, factura, PDF o lista).
+   Móvil (< 768px): «Tomar foto» lima + «Subir archivo» con contorno.
+   Escritorio (>= 768px): zona para soltar el archivo + «Tomar foto» secundario.
+   Bloque propio al final del archivo para no chocar con otras ramas.
+   ========================================================================== */
+.hyto-evid-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.hyto-evid-movil {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hyto-evid-movil > .hyto-btn,
+.hyto-evid-contorno {
+  width: 100%;
+}
+
+.hyto-evid-contorno {
+  display: flex;
+  box-sizing: border-box;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #b7ee34;
+  border-radius: var(--r-pill);
+  background: transparent;
+  padding: 0 22px;
+  color: #b7ee34;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hyto-evid-contorno:hover {
+  background: color-mix(in srgb, #b7ee34 10%, transparent);
+}
+
+.hyto-evid-contorno:focus-visible,
+.hyto-evid-soltar:focus-visible,
+.hyto-evid-texto:focus-visible {
+  outline: 2px solid #b7ee34;
+  outline-offset: 3px;
+}
+
+.hyto-evid-escritorio {
+  display: none;
+}
+
+.hyto-evid-soltar {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px dashed color-mix(in srgb, #ffffff 22%, transparent);
+  border-radius: 20px;
+  background: #14162b;
+  padding: 32px 24px;
+  color: #ffffff;
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 150ms ease-out, background-color 150ms ease-out;
+}
+
+.hyto-evid-soltar:hover,
+.hyto-evid-soltar.is-encima {
+  border-color: #b7ee34;
+}
+
+.hyto-evid-soltar.is-encima {
+  background: color-mix(in srgb, #b7ee34 8%, #14162b);
+}
+
+.hyto-evid-soltar-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hyto-evid-soltar-formatos {
+  color: #9a9db5;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.hyto-evid-texto {
+  align-self: center;
+  border: 1px solid #b7ee34;
+  border-radius: var(--r-pill);
+  background: transparent;
+  padding: 8px 18px;
+  color: #b7ee34;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.hyto-evid-texto:hover {
+  background: color-mix(in srgb, #b7ee34 10%, transparent);
+}
+
+.hyto-evid-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, #b7ee34 60%, transparent);
+  border-radius: var(--r-pill);
+  background: #14162b;
+  padding: 8px 16px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.hyto-evid-pista {
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .hyto-evid-movil {
+    display: none;
+  }
+
+  .hyto-evid-escritorio {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-evid-soltar {
+    transition: none;
+  }
+}

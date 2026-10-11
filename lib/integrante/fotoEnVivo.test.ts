@@ -34,3 +34,9 @@ test("un archivo reciente de cámara se acepta y uno de galería no", () => {
   assert.equal(archivoDeCamaraReciente(archivo("", AHORA), AHORA), true);
   assert.equal(archivoDeCamaraReciente(archivo("image/jpeg", AHORA, 0), AHORA), false);
 });
+
+test("un archivo elegido viaja con origen «archivo»; el origen viejo «galeria» sigue exportado", async () => {
+  const { ORIGEN_ARCHIVO, ORIGEN_GALERIA } = await import("./fotoEnVivo");
+  assert.equal(ORIGEN_ARCHIVO, "archivo");
+  assert.equal(ORIGEN_GALERIA, "galeria");
+});

@@ -82,10 +82,16 @@ test("sin cámara se explica y se ofrece el teléfono con código", async () => 
     assert.match(texto(), /This device has no camera/);
     assert.match(texto(), /Continue on your phone with this code/);
     assert.match(texto(), /STAND/);
-    assert.match(texto(), /The photo is taken here/);
+    assert.match(texto(), /Send one piece of evidence/);
     assert.match(texto(), /Banner visible/);
-    assert.equal(document.querySelector('input[type="file"]'), null);
-    assert.equal([...document.querySelectorAll("button")].some((item) => item.textContent === "Open camera"), false);
+    // No camera does not block: the file picker and the drop zone stay, and nothing offers the camera.
+    const selector = document.querySelector('input[type="file"]');
+    assert.ok(selector instanceof HTMLInputElement);
+    assert.equal(selector.getAttribute("capture"), null);
+    assert.equal(document.querySelector("input[capture]"), null);
+    assert.match(texto(), /Upload file/);
+    assert.match(texto(), /Drag your evidence here or choose a file/);
+    assert.equal([...document.querySelectorAll("button")].some((item) => item.textContent === "Take photo"), false);
     const seguir = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue on your phone");
     assert.ok(seguir instanceof HTMLButtonElement);
     await act(async () => {
@@ -112,14 +118,15 @@ test("si la cámara no existe al abrirla, el aviso pasa al teléfono", async () 
   });
   try {
     await abrir(tarea());
-    const abrirCamara = [...document.querySelectorAll("button")].find((item) => item.textContent === "Open camera");
+    const abrirCamara = [...document.querySelectorAll("button")].find((item) => item.textContent === "Take photo");
     assert.ok(abrirCamara instanceof HTMLButtonElement);
     await act(async () => {
       abrirCamara.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     assert.match(texto(), /This device has no camera/);
     assert.match(texto(), /STAND/);
-    assert.equal(document.querySelector('input[type="file"]'), null);
+    assert.ok(document.querySelector('input[type="file"]:not([capture])') instanceof HTMLInputElement);
+    assert.match(texto(), /Upload file/);
     assert.doesNotMatch(texto(), /Allow the camera and try again/);
   } finally {
     globalThis.fetch = anterior;

@@ -505,7 +505,7 @@ test("el vacío de tareas es una invitación con un solo cofre en reposo", async
     await esperar(() => texto().includes("Aún no tiene tareas."));
     assert.match(texto(), /Únase a su evento con el código que le dio quien organiza/);
     assert.match(texto(), /Entre con el código que le dio quien organiza/);
-    assert.match(texto(), /Tome una foto con la cámara/);
+    assert.match(texto(), /Envíe una evidencia del trabajo o del gasto: una foto, una factura, un PDF o una lista\./);
     assert.match(texto(), /Mile recomienda/);
     assert.match(texto(), /dólares digitales/);
     assert.doesNotMatch(texto(), /\bplata\b/i);
