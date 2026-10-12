@@ -12,9 +12,9 @@ This file is the short map. Agents and contributors should read [AGENTS.md](AGEN
 
 ## Testnet proof
 
-TODO: paste the hash of the first successful testnet USDC payment here, as `https://stellar.expert/explorer/testnet/tx/<hash>`.
+One successful Stellar testnet `release_funds`, seen on Horizon at `2026-10-11T01:40:02Z` (10 October 2026, about 7:40 p.m. Costa Rica): [731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a](https://stellar.expert/explorer/testnet/tx/731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a). Escrow contract [CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R](https://stellar.expert/explorer/testnet/contract/CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R).
 
-No hash is in this repo yet. The pay button prepares a testnet transaction. It does not invent a payment. Amounts in the ZEEK sample (three US$20 work tasks and a meal cap of US$15) are examples in the seed. They are not real money and not real wallets. There is no pilot and no mainnet payment.
+This payment is on testnet, not mainnet. The pay button prepares a testnet transaction. It does not invent a payment. Amounts in the ZEEK sample (three US$20 work tasks and a meal cap of US$15) are examples in the seed. They are not real money and not real wallets. There is no pilot and no mainnet payment. The payment inside the public demo (hyto.vercel.app demo login) is simulated and resets for everyone.
 
 ## What it does
 
