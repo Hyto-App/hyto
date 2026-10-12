@@ -2,7 +2,7 @@
 
 Current as of `main` at `c958992` (8 October 2026). Product rules and the env table are in [AGENTS.md](AGENTS.md).
 
-Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Trustless Work is the base, not a product Hyto competes with. Evidence, the AI review, and the report stay off-chain. A receipt in colones is read from the photo and converted with a hand-updated rate. There is no mainnet payment and no recorded testnet hash yet.
+Hyto is the accountability layer for communities funded from afar in Latin America. Stellar is the settlement rail, not the audience. One Next.js app. Money sits in a Trustless Work v2 multi-release escrow, one contract per task, on Stellar testnet. Trustless Work is the base, not a product Hyto competes with. Evidence, the AI review, and the report stay off-chain. A receipt in colones is read from the photo and converted with a hand-updated rate. There is no mainnet payment. One testnet `release_funds` is recorded: [731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a](https://stellar.expert/explorer/testnet/tx/731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a), contract [CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R](https://stellar.expert/explorer/testnet/contract/CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R), seen on Horizon at `2026-10-11T01:40:02Z` (10 October 2026, about 7:40 p.m. Costa Rica). The payment inside the public demo (hyto.vercel.app demo login) is simulated and resets for everyone.
 
 Communities (`drizzle/0010` through `0013`) are the same story: a group, a bulletin, an account type, and a member profile. The flags `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO` stay off.
 
@@ -59,7 +59,7 @@ Tables: `usuarios`, `proyectos`, `tareas`, `evidencias`, `veredictos`, `sesiones
 - Mainnet payments. The Trustless base in code is the testnet beta API.
 - Partial milestone payouts, except through dispute resolution, which is stricter than the protocol in places (see the audit).
 - An AI button that releases funds.
-- Acta credentials. That waits on a real USDC payment. None is recorded yet.
+- Acta credentials. A testnet `release_funds` is recorded above. This credential is not.
 
 ## Rules that are in the code
 
