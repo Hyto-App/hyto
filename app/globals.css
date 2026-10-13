@@ -6267,9 +6267,6 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     right: 0;
   }
 
-  html[data-barra="colapsada"] .hyto-capa-ayuda {
-    left: 72px;
-  }
 }
 
 /* Phone: a sheet from the bottom. No motion. */
@@ -7310,6 +7307,10 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 @media (min-width: 1024px) {
+  html[data-barra="colapsada"] .hyto-capa-ayuda {
+    left: 72px;
+  }
+
   .hyto-nav.hyto-nav-escritorio {
     flex: 1 1 auto;
     min-height: 0;
