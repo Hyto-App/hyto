@@ -178,7 +178,9 @@ export function AyudaMile({ abierto, alCerrar, devolver }: Props) {
         onMouseDown={(evento) => evento.stopPropagation()}
       >
         <header className="hyto-ayuda-cabeza">
-          <Mile estado={escribiendo ? "leyendo" : "reposo"} tamano={40} />
+          <span className="hyto-ayuda-mile">
+            <Mile estado={escribiendo ? "leyendo" : "reposo"} tamano={48} />
+          </span>
           <h2 id={titulo}>{t("ayuda.titulo")}</h2>
           <button type="button" className="hyto-ayuda-cerrar" onClick={alCerrar} aria-label={t("ayuda.cerrar")}>
             ×
