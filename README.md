@@ -1,50 +1,127 @@
-# Hyto
+<p align="center">
+  <img src="./brand/banner-hyto.png" alt="Hyto" width="100%" />
+</p>
 
-Hyto is the accountability layer for community funds: lock USDC per task, prove the spend with evidence, and a person releases the payment on a public Stellar trail.
+<h1 align="center">Hyto</h1>
 
-Communities anywhere in the world, including ones whose funders are far away or not physically present, receive stipends, scholarships, and funds to run events, and they have to prove how that money was spent. Today that proof is loose screenshots and spreadsheets nobody can verify. The funder locks USDC in a Trustless Work escrow for each task. The member does the work and uploads evidence: a live photo of the work or a receipt in any currency. Mile reviews the evidence and recommends, and never moves money. A person approves, and the payment is released on Stellar with a public trail anyone can audit. Sign-in is an email through Cavos. There is no wallet to install and no crypto app.
+<p align="center">
+  <strong>Proof before payout.</strong><br />
+  Pay anyone, anywhere, for work you can't see in person, and prove where every dollar went.
+</p>
 
-Stellar is the settlement rail, not the audience. Why USDC, and not a local transfer such as a local bank transfer: the money arrives from abroad in dollars, and the funder wants proof of spending. Trustless Work is the escrow Hyto is built on. It is not a competitor, and Hyto is not an on-ramp.
+<p align="center">
+  <a href="https://tryhyto.com"><strong>Website</strong></a> ·
+  <a href="https://hyto.vercel.app"><strong>App</strong></a> ·
+  <a href="#testnet-proof"><strong>Testnet proof</strong></a> ·
+  <a href="https://x.com/tryhyto"><strong>X</strong></a>
+</p>
 
-Try it: https://tryhyto.com. Production deploy: https://hyto.vercel.app. Repo: [Hyto-App/hyto](https://github.com/Hyto-App/hyto).
+<p align="center">
+  <img alt="Stellar testnet" src="https://img.shields.io/badge/Stellar-testnet-B7EE34?style=flat-square&labelColor=08090C" />
+  <img alt="USDC" src="https://img.shields.io/badge/USDC-escrow-B7EE34?style=flat-square&labelColor=08090C" />
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-B7EE34?style=flat-square&labelColor=08090C" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-B7EE34?style=flat-square&labelColor=08090C" />
+</p>
 
-This file is the short map. Agents and contributors should read [AGENTS.md](AGENTS.md) before changing anything. Stack detail is in [STACK.md](STACK.md). The pitch the team can reuse is in [Hyto-informe.md](Hyto-informe.md).
+---
+
+## What we build
+
+Every day, money is sent to people far away to get something done: a company paying field workers, an NGO funding a local project, a sponsor backing an event in another country, a grant released in stages, a remote team paying contractors. Today that runs on trust, invoices and screenshots. The payer can't check the work, the worker waits to get paid, and nobody can easily prove what was paid, for what, and to whom.
+
+Hyto locks the money per task, collects the proof, and releases each payment only after a person approves it, all on a public Stellar trail anyone can audit.
+
+> **The core question:** *What has to be proven before the money moves?*
+
+Stellar is the settlement rail, not the audience. People sign in with an email and never install a wallet or a crypto app.
+
+---
+
+## How it works
+
+| Step | What happens |
+| :---: | :--- |
+| **1. Lock** | The payer creates a project with tasks and locks the budget in USDC in a **[Trustless Work](https://trustlesswork.com)** multi-release escrow (escrow-as-a-service on Stellar: non-custodial smart-contract escrows that hold funds until each milestone is approved). One milestone per task. |
+| **2. Join** | Workers join with a code or an invite and sign in with email, Google or Apple through **[Cavos](https://cavos.xyz)** (embedded wallets: a Stellar wallet created from a normal login). No seed phrases. |
+| **3. Prove** | For each task, the worker uploads evidence: a live photo of the work, a receipt in any currency, or a document. |
+| **4. Review** | **Mile**, Hyto's AI reviewer (Qwen vision + Laya scoring), checks the evidence against the task and the payer's rules, explains what is missing, and recommends *Met*, *Partial* or *Not enough*. **Mile never signs or moves money.** |
+| **5. Release** | A person approves, and the milestone is released in USDC straight to the worker's wallet. Every payment links to Stellar Expert. |
+
+---
 
 ## Testnet proof
 
-One successful Stellar testnet `release_funds`, seen on Horizon at `2026-10-11T01:40:02Z` (10 October 2026, about 7:40 p.m. Costa Rica): [731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a](https://stellar.expert/explorer/testnet/tx/731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a). Escrow contract [CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R](https://stellar.expert/explorer/testnet/contract/CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R).
+The first successful `release_funds` on Stellar testnet, seen on Horizon at `2026-10-11T01:40:02Z` (10 October 2026, about 7:40 p.m. Costa Rica):
 
-This payment is on testnet, not mainnet. The pay button prepares a testnet transaction. It does not invent a payment. Amounts in the ZEEK sample (three US$20 work tasks and a meal cap of US$15) are examples in the seed. They are not real money and not real wallets. There is no pilot and no mainnet payment. The payment inside the public demo (hyto.vercel.app demo login) is simulated and resets for everyone.
+| | |
+| :--- | :--- |
+| **Transaction** | [`731d4ab4fd30…dc359a`](https://stellar.expert/explorer/testnet/tx/731d4ab4fd30d30759eb228a525c9a8e9b50c96e3a26672dc6f6cee39fdc359a) |
+| **Escrow contract** | [`CA7PNU3THJWZ…PXNN4R`](https://stellar.expert/explorer/testnet/contract/CA7PNU3THJWZUIMAGSTDCPSKZ5LXLLDLTYWM6XURWJSMCRN6BDPXNN4R) |
 
-## What it does
+> [!NOTE]
+> This payment is on **testnet**, not mainnet. There is no pilot and no mainnet payment yet. The amounts in the ZEEK sample (three US$20 work tasks and a US$15 meal cap) are seed examples, not real money or real wallets. Inside the public demo (demo login at [hyto.vercel.app](https://hyto.vercel.app)) the payment is simulated and resets for everyone.
 
-Login does not pick a global role, and it does not ask for a wallet. A signed-in user who can cover the budget plus a 1 USDC reserve creates an event and becomes that event's organizer. Other people join with a direct invite or a code `HYTO-` plus 12 characters. Invites expire in 7 days. Members see the tasks assigned to them. The organizer sees every task and assigns them at `/eventos/[id]/tareas`.
-
-The shell is Events, Tasks, and Account (light and dark). Evidence is a photo of the work in place, or a receipt. Groq describes it; Laya scores that description when `LAYA_URL` is set. The organizer confirms a reimbursement amount, locks the budget, then pays. The AI never signs.
-
-Communities, the bulletin, account type, and the volunteer profile are the same story: a group that holds events, notices when a task moves, and a profile a member writes for themselves. They stay behind `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, and `HYTO_PERFIL_VOLUNTARIO`. Those flags stay off until their migrations are applied and someone sets the value to `on`.
+---
 
 ## Screens
 
-Demo organizer on Events, the review screen (money controls stay off in the demo), and the account with nothing paid yet.
+<table>
+  <tr>
+    <td width="33%"><img src="docs/capturas/eventos-organizador.png" alt="Organizer events" /></td>
+    <td width="33%"><img src="docs/capturas/revision-demo.png" alt="Review with Mile" /></td>
+    <td width="33%"><img src="docs/capturas/cuenta-demo.png" alt="Account" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Events, as the organizer</sub></td>
+    <td align="center"><sub>Review with Mile (money controls off in the demo)</sub></td>
+    <td align="center"><sub>Account, nothing paid yet</sub></td>
+  </tr>
+</table>
 
-![Organizer events](docs/capturas/eventos-organizador.png)
+---
 
-![Demo review](docs/capturas/revision-demo.png)
+## What's inside
 
-![Demo account](docs/capturas/cuenta-demo.png)
+- **No global roles.** Whoever creates an event and can cover the budget plus a 1 USDC reserve becomes that event's organizer. Others join with a direct invite or a `HYTO-` code; invites expire in 7 days.
+- **Organizer:** create the project, assign tasks at `/eventos/[id]/tareas`, review evidence, confirm reimbursement amounts, lock the budget and pay.
+- **Member:** sees only their own tasks, uploads evidence, and follows each payment to the chain.
+- **Event context for Mile:** organizers can tell Mile about the event and set the rules evidence must meet. Volunteers never see it.
+- **Light and dark themes, English and Spanish.**
+- **Behind flags (off until their migrations are applied):** `HYTO_COMUNIDADES`, `HYTO_TABLON`, `HYTO_TIPO_CUENTA`, `HYTO_PERFIL_VOLUNTARIO`.
 
-## Run it
+---
+
+## Built with
+
+| Layer | Stack |
+| :--- | :--- |
+| App | Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind 4 |
+| Data | Neon Postgres, Drizzle schema, Vercel Blob (private) |
+| Payments | Stellar SDK, Trustless Work escrow v2, USDC on testnet |
+| Identity | Cavos embedded wallets (email OTP, Google, Apple, passkeys) |
+| AI review | Groq / Qwen vision with Gemini fallback, Laya scoring |
+| Hosting | Vercel (production on `main`, a preview for every pull request) |
+
+---
+
+## Run it locally
 
 ```bash
 npm ci
 npm run dev
-npm test
+```
+
+Checks:
+
+```bash
+npm test          # *.test.ts under lib/, scripts/backend-traspaso and tests/integracion (tsx)
 npx tsc --noEmit
 npm run build
 ```
 
-`npm test` runs the `*.test.ts` files under `lib/`, `scripts/backend-traspaso`, and two files in `tests/integracion`, with `tsx`. There is no ESLint and no `npm run lint`. `npm run test:integracion` talks to Postgres and is separate.
+There is no ESLint. `npm run test:integracion` talks to Postgres and runs separately.
+
+Local database and escrow scripts:
 
 ```bash
 npm run db:local
@@ -54,24 +131,43 @@ npm run verificar:entorno
 npm run hito
 ```
 
-`db:migrar` applies `drizzle/*.sql` in filename order. `db:semilla` loads the ZEEK sample. Do not migrate or seed production without the database owner's go-ahead (`HYTO_CONFIRMAR_BASE_PRODUCCION=si` only when that is intended). `npm run hito` is a standalone escrow script; without `TRUSTLESS_API_KEY` it does not pay.
+- `db:migrar` applies `drizzle/*.sql` in filename order.
+- `db:semilla` loads the ZEEK sample.
+- Do not migrate or seed production without the database owner's go-ahead. Set `HYTO_CONFIRMAR_BASE_PRODUCCION=si` only when that is intended.
+- `npm run hito` is a standalone escrow script. Without `TRUSTLESS_API_KEY` it does not pay.
 
-## Deploy
+**Deploy and environment.** A push to `main` deploys production on Vercel, and every pull request gets a preview. Secrets live in Vercel only, never in the repo. The only public variable is `NEXT_PUBLIC_CAVOS_APP_ID`. Variable names are listed in [AGENTS.md](AGENTS.md) and [.env.example](.env.example).
 
-Vercel. A push to `main` deploys production. Every pull request gets a preview. Secrets live in Vercel only, never in the repo. The only `NEXT_PUBLIC_` variable is `NEXT_PUBLIC_CAVOS_APP_ID`.
-
-## Environment
-
-Names only. The full list, taken from `process.env` reads in the app, is in [AGENTS.md](AGENTS.md) and [.env.example](.env.example).
+---
 
 ## Docs
 
 | File | What it is |
-|---|---|
-| [AGENTS.md](AGENTS.md) | Current product, code map, open issues. Read this first. |
+| :--- | :--- |
+| [AGENTS.md](AGENTS.md) | Current product, code map and open issues. **Read this first.** |
 | [STACK.md](STACK.md) | Stack and how a payment moves. |
 | [ROLES.md](ROLES.md) | Event membership and how the team splits work. |
-| [PLAN.md](PLAN.md) | What is left. The September kickoff plan is retired. |
+| [PLAN.md](PLAN.md) | What is left. |
 | [CHANGELOG.md](CHANGELOG.md) | What landed. |
-| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Audit against `db82b93`, with a status note for `2b9fad4`. |
-| [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md) | Research on Ramp Network, the crypto on/off-ramp (not the Ramp spend card). Not part of the demo; testnet only. Lands with [#109](https://github.com/Hyto-App/hyto/pull/109). |
+| [Hyto-informe.md](Hyto-informe.md) | The pitch the team reuses. |
+| [docs/AUDIT-2026-09-30.md](docs/AUDIT-2026-09-30.md) | Security audit against `db82b93`, with a status note for `2b9fad4`. |
+| [docs/auditorias/2026-10-02-ramp-adaptation.md](docs/auditorias/2026-10-02-ramp-adaptation.md) | Research on Ramp Network (crypto on/off-ramp). Not part of the demo. |
+
+---
+
+## Team
+
+| | Focus |
+| :--- | :--- |
+| **Josué Valles** · [@jxsu404](https://github.com/jxsu404) | Admin app and backend, Vercel and Neon |
+| **Sebastián Ceciliano** · [@Cbiux](https://github.com/Cbiux) | Escrow and wallets: Trustless Work, Cavos, USDC release |
+| **Abdiel** · [@abdxcole](https://github.com/abdxcole) | UX/UI, brand, social and pitch |
+| **Raúl** · [@Milasur](https://github.com/Milasur) | Member app, evidence and Mile's review |
+| **Esteban** · [@Psybre](https://github.com/Psybre) | Backend foundations |
+
+---
+
+<p align="center">
+  Built in Costa Rica 🇨🇷 for anyone, anywhere.<br />
+  <sub>Find Your Way hackathon · Stellar</sub>
+</p>
