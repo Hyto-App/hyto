@@ -138,6 +138,35 @@ test("en el demo de quien hace tareas, Mile no ofrece preguntas de quien organiz
   }
 });
 
+test("el mascot del panel es el SVG de Mile y flota, salvo con movimiento reducido", async () => {
+  const css = readFileSync("app/globals.css", "utf8");
+  assert.match(css, /\.hyto-capa-ayuda \{[^}]*align-items: center;/);
+  assert.match(css, /\.hyto-ayuda-cabeza \{[^}]*display: grid;/);
+  assert.match(css, /\.hyto-ayuda-chips \{[^}]*justify-content: center;/);
+  assert.match(css, /@keyframes hyto-ayuda-mile-flota/);
+  assert.match(css, /@keyframes hyto-ayuda-mile-lee/);
+  assert.match(css, /\.hyto-ayuda \.mile\[data-mile="leyendo"\] \.mile-raiz \{[^}]*animation: hyto-ayuda-mile-lee/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.hyto-ayuda \.mile-raiz,\s*\.hyto-ayuda \.mile-parpado \{\s*animation: none;/);
+
+  limpiarPantalla();
+  const restaurar = movimiento(false);
+  try {
+    await montar(createElement(AyudaMile, { abierto: true, alCerrar: () => {}, devolver: null }));
+    const svg = document.querySelector(".hyto-ayuda-mile svg.mile");
+    assert.equal(svg?.getAttribute("data-mile"), "reposo");
+    assert.equal(svg?.tagName.toLowerCase(), "svg");
+    assert.equal(document.querySelector(".hyto-ayuda-mile img"), null);
+    assert.equal(document.querySelector(".hyto-ayuda-charla")?.getAttribute("aria-live"), "polite");
+    await pulsar("How long does it take?");
+    assert.equal(document.querySelector(".hyto-ayuda-mile svg.mile")?.getAttribute("data-mile"), "leyendo");
+    assert.ok(document.querySelector(".hyto-ayuda-escribiendo"));
+  } finally {
+    restaurar();
+    await desmontar();
+    limpiarPantalla();
+  }
+});
+
 test("el panel de Mile cabe en un teléfono: chips que se parten y el × siempre a la vista", () => {
   const css = readFileSync("app/globals.css", "utf8");
   assert.match(css, /\.hyto-ayuda-chip \{[^}]*max-width: 100%;[^}]*overflow-wrap: anywhere;/);

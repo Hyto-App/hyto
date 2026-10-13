@@ -6108,7 +6108,8 @@ html.hyto-firmando body {
 .hyto-perfil-boton[aria-expanded="true"],
 .hyto-perfil-item:hover,
 .hyto-ayuda-atajo:hover,
-.hyto-ayuda-chip:hover {
+.hyto-ayuda-chip:hover,
+.hyto-ayuda-cerrar:hover {
   background: var(--superficie-2);
 }
 
@@ -6155,10 +6156,10 @@ html.hyto-firmando body {
 
 .hyto-capa-ayuda {
   display: grid;
-  align-items: start;
+  align-items: center;
   justify-content: center;
-  padding: 10vh 16px 16px;
-  background: rgba(8, 9, 12, 0.48);
+  padding: 24px 20px;
+  background: rgba(8, 9, 12, 0.52);
 }
 
 .hyto-preguntar-sello {
@@ -6231,16 +6232,19 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 .hyto-ayuda {
-  display: grid;
-  align-content: start;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
   box-sizing: border-box;
   width: min(560px, 100%);
   min-width: 0;
-  max-height: min(72dvh, 640px);
+  max-height: min(76dvh, 680px);
   justify-self: center;
   overflow: auto;
-  padding: 16px;
+  padding: 16px 16px 18px;
+  border-radius: 22px;
+  box-shadow: 0 28px 64px -32px rgba(8, 9, 12, 0.62), 0 0 0 1px var(--card-line);
 }
 
 .hyto-ayuda > * {
@@ -6256,12 +6260,13 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   overflow-wrap: anywhere;
 }
 
-/* Desktop: the dialog stays in the content column, clear of the sidebar. */
+/* Desktop: the dialog stays centered in the content column, clear of the sidebar. */
 @media (min-width: 1024px) {
   .hyto-capa-ayuda {
     left: 256px;
     right: 0;
   }
+
 }
 
 /* Phone: a sheet from the bottom. No motion. */
@@ -6275,10 +6280,9 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   .hyto-capa-ayuda .hyto-ayuda {
     width: 100%;
     max-width: 100%;
-    max-height: min(78dvh, 720px);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    max-height: min(82dvh, 720px);
+    border-radius: 22px 22px 0 0;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   /* Shortcuts and suggested questions sit centered, with equal space on both sides. */
@@ -6294,45 +6298,83 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
     z-index: 1;
     max-width: none;
     margin: -16px -16px 0;
-    padding: 16px 16px 8px;
+    padding: 22px 16px 12px;
     background: var(--papel);
+  }
+
+  .hyto-capa-ayuda .hyto-ayuda-cabeza::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--borde);
+    transform: translateX(-50%);
   }
 }
 
 .hyto-ayuda-cabeza {
-  display: flex;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
   align-items: center;
-  gap: 10px;
+  column-gap: 8px;
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  margin: -16px -16px 0;
+  padding: 12px 16px 12px;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linea);
+}
+
+.hyto-ayuda-mile {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  justify-self: start;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--acento) 34%, var(--papel));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 55%, transparent);
 }
 
 .hyto-ayuda-cabeza h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .hyto-ayuda-cerrar {
-  margin-left: auto;
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  margin-left: 0;
   width: 36px;
   height: 36px;
   border-radius: 999px;
   font-size: 22px;
   line-height: 1;
+  color: var(--suave);
 }
 
 .hyto-ayuda-buscar input {
   width: 100%;
   min-height: 44px;
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--fondo);
-  padding: 0 12px;
+  padding: 0 14px;
   color: var(--tinta);
 }
 
 .hyto-ayuda-atajos {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -6340,22 +6382,31 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   min-height: 36px;
   border-radius: 999px;
   border: 1px solid var(--linea);
+  background: var(--fondo);
   padding: 6px 12px;
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
+  text-align: center;
 }
 
 .hyto-ayuda-charla {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   outline: none;
+  padding: 4px 2px 2px;
 }
 
 .hyto-ayuda-fila {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 8px;
+}
+
+.hyto-ayuda-fila.is-mile {
+  justify-content: flex-start;
 }
 
 .hyto-ayuda-fila.is-persona {
@@ -6365,24 +6416,24 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 .hyto-ayuda-burbujas {
   display: grid;
   justify-items: start;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
-  max-width: 85%;
+  max-width: min(88%, 440px);
 }
 
 .hyto-ayuda-burbuja {
   margin: 0;
-  border-radius: 16px 16px 16px 4px;
+  border-radius: 18px 18px 18px 6px;
   background: var(--superficie-2);
-  padding: 9px 13px;
+  padding: 10px 14px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   animation: hyto-burbuja 200ms var(--hyto-curva) backwards;
 }
 
 .hyto-ayuda-burbuja.is-persona {
-  max-width: 85%;
-  border-radius: 16px 16px 4px 16px;
+  max-width: min(88%, 440px);
+  border-radius: 18px 18px 6px 18px;
   background: var(--acento);
   color: var(--sobre-acento);
   font-weight: 500;
@@ -6441,7 +6492,7 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 .hyto-ayuda-chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -6450,12 +6501,14 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   max-width: 100%;
   overflow-wrap: anywhere;
   min-height: 36px;
-  border: 1px solid var(--acento-texto);
+  border: 1px solid color-mix(in srgb, var(--acento-texto) 62%, var(--linea));
   border-radius: 999px;
-  padding: 6px 12px;
-  text-align: left;
+  background: color-mix(in srgb, var(--acento) 16%, var(--papel));
+  padding: 8px 14px;
+  text-align: center;
   font-size: 13px;
   font-weight: 500;
+  line-height: 1.35;
 }
 
 /* Reduced motion: the answer is already all there, and nothing moves. */
@@ -6463,6 +6516,57 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
   .hyto-ayuda-burbuja,
   .hyto-ayuda-puntos i {
     animation: none;
+  }
+}
+
+/* The header uses the existing inline Mile (reposo while idle, leyendo while typing). */
+@keyframes hyto-ayuda-mile-flota {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes hyto-ayuda-mile-lee {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2.5deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-6deg);
+  }
+}
+
+.hyto-ayuda .mile[data-mile="reposo"] .mile-raiz {
+  animation: hyto-ayuda-mile-flota 3.4s ease-in-out infinite;
+  transform-origin: 50% 82%;
+}
+
+.hyto-ayuda .mile[data-mile="leyendo"] .mile-raiz {
+  animation: hyto-ayuda-mile-lee 2.6s ease-in-out infinite;
+  transform-origin: 50% 78%;
+}
+
+.hyto-ayuda .mile[data-mile="reposo"] .mile-parpado,
+.hyto-ayuda .mile[data-mile="leyendo"] .mile-parpado {
+  animation: mile-parpadeo 4.8s ease-in-out infinite;
+}
+
+.hyto-ayuda .mile[data-mile="leyendo"] .mile-ojos-abiertos {
+  animation: mile-escanea 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyto-ayuda .mile-raiz,
+  .hyto-ayuda .mile-parpado {
+    animation: none;
+  }
+
+  .hyto-ayuda .mile-raiz {
+    transform: none;
   }
 }
 
@@ -7203,6 +7307,10 @@ html[data-ayuda-mile="abierta"] .hyto-mile-prominente {
 }
 
 @media (min-width: 1024px) {
+  html[data-barra="colapsada"] .hyto-capa-ayuda {
+    left: 72px;
+  }
+
   .hyto-nav.hyto-nav-escritorio {
     flex: 1 1 auto;
     min-height: 0;
