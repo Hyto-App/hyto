@@ -1,4 +1,5 @@
 import { cuentaTieneUsdc } from "@/lib/integrante/usdc";
+import { esCuenta } from "./cuerpos";
 import {
   AVISO_HORIZON_RECEPTOR,
   AVISO_RECEPTOR_NO_LISTO,
@@ -26,6 +27,8 @@ const RED: EstadoReceptor = {
 };
 
 export async function estadoReceptorUsdc(direccion: string, fetchImpl: typeof fetch = fetch): Promise<EstadoReceptor> {
+  // A muxed contract (W…) is not a Horizon account and cannot hold the trustline.
+  if (!esCuenta(direccion.trim())) return NO_LISTO;
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${HORIZON_TESTNET}/accounts/${encodeURIComponent(direccion)}`, {

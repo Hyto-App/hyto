@@ -1,5 +1,6 @@
 import { USDC } from "@/lib/integrante/identidades";
 import { HORIZON_TESTNET } from "@/lib/integrante/trustline";
+import { esCuenta } from "./cuerpos";
 
 const ESCALA = 10_000_000n;
 const CENTAVO = 100_000n;
@@ -137,7 +138,7 @@ export async function saldoCreacion(
   leer: LectorSaldo = leerSaldoUsdc,
 ): Promise<string | null> {
   const limpia = wallet?.trim() ?? "";
-  if (!/^G[A-Z2-7]{55}$/.test(limpia)) return null;
+  if (!esCuenta(limpia)) return null;
   try {
     return (await leer(limpia)).saldo;
   } catch {
@@ -182,7 +183,7 @@ export async function leerSaldoUsdc(direccion: string, fetchImpl: typeof fetch =
 
 export async function rechazoSiFondos(wallet: string, monto: string, leer: LectorSaldo = lectorSaldoVigente()): Promise<Response | null> {
   const limpia = wallet.trim();
-  if (!/^G[A-Z2-7]{55}$/.test(limpia)) {
+  if (!esCuenta(limpia)) {
     return Response.json({ aviso: "Add a Stellar wallet before locking this payment." }, { status: 400 });
   }
   const necesario = conReserva(monto);

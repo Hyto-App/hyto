@@ -7,6 +7,7 @@ import type { RevisarFirma } from "@/components/sesion/ClaveNavegador";
 import { PrepararUsdc } from "@/components/sesion/PrepararUsdc";
 import { EnlaceExplorador } from "@/components/ui/EnlaceExplorador";
 import { useClaro, useIdioma, useTexto } from "@/components/ui/Idioma";
+import { esCuenta } from "@/lib/escrow/cuerpos";
 import { acortarDireccion, explicarNeto, formatearFecha, formatearMonto, formatearRecibido } from "@/lib/integrante/formato";
 import type { InsigniaOrgullo, MesOrgullo, Orgullo, VistaCuenta } from "@/lib/integrante/orgullo";
 import { estadoRecarga, FAUCET_CIRCLE } from "@/lib/integrante/recarga";
@@ -541,6 +542,6 @@ function copiarConSeleccion(texto: string): boolean {
 }
 
 function direccionPublica(direccion: string | null): string | null {
-  if (!direccion || !/^G[A-Z2-7]{55}$/.test(direccion)) return null;
+  if (!direccion || !esCuenta(direccion)) return null;
   return direccion;
 }

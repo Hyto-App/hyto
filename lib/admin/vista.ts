@@ -1,4 +1,5 @@
 import { calcularEstadoTarea } from "@/lib/api/estado-tarea";
+import { esContrato } from "@/lib/escrow/cuerpos";
 import { PROYECTO_EJEMPLO, tareasEjemploAdmin } from "./ejemplo";
 export { notaCopia, notaManual } from "@/lib/evidencia/copia";
 import { texto } from "@/lib/ui/diccionario";
@@ -155,10 +156,13 @@ export function enlacePago(hash: string | null | undefined): string | null {
   return `https://stellar.expert/explorer/testnet/tx/${limpio}`;
 }
 
-/** Persisted lock (the escrow contract) on Stellar testnet. A payment hash uses enlacePago. */
+/**
+ * Persisted lock (the escrow contract) on Stellar testnet. A payment hash uses enlacePago.
+ * The explorer page is the contract id (`C…`). A muxed contract (`W…`) is not that id.
+ */
 export function enlaceContrato(contrato: string | null | undefined): string | null {
   const limpio = contrato?.trim() ?? "";
-  if (!/^C[A-Z2-7]{55}$/.test(limpio)) return null;
+  if (!esContrato(limpio)) return null;
   return `https://stellar.expert/explorer/testnet/contract/${limpio}`;
 }
 

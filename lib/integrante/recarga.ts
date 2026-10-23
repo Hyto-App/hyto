@@ -1,3 +1,4 @@
+import { esCuenta } from "@/lib/escrow/cuerpos";
 import type { VistaCuenta } from "./orgullo";
 
 /** Circle's public faucet. The person picks Stellar Testnet there and pastes the address. */
@@ -16,7 +17,7 @@ export function estadoRecarga(
 ): EstadoRecarga {
   if (vista.demo || vista.muestra || vista.walletMuestra) return "oculta";
   if ((vista.red ?? "testnet") !== "testnet") return "oculta";
-  if (!vista.wallet || !/^G[A-Z2-7]{55}$/.test(vista.wallet)) return "oculta";
+  if (!vista.wallet || !esCuenta(vista.wallet)) return "oculta";
   if (vista.saldoEstado === "ok") return "lista";
   if (vista.saldoEstado === "ausente") return "preparar";
   return "oculta";

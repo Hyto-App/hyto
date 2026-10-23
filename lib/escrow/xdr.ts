@@ -9,6 +9,7 @@ import {
   xdr,
 } from "@stellar/stellar-sdk";
 import { esCuenta } from "./cuerpos";
+import { esDestinoStellar } from "./direcciones";
 
 // Factory de multi-release v2 en Stellar testnet. El alta llama
 // tw_new_multi_release_escrow aquí; la dirección prevista del escrow no es este contrato.
@@ -102,7 +103,11 @@ function leerLlamada(crudo: string): Llamada | null {
 
 function direccionScVal(valor: xdr.ScVal): string | null {
   try {
-    return Address.fromScVal(valor).toString();
+    // stellar-sdk 17.3 reads the Protocol 30 muxed-contract arm (W…).
+    // Keep it. The fee check compares it with the server account and rejects
+    // a mismatch, instead of treating an unreadable destination as "no fee".
+    const texto = Address.fromScVal(valor).toString();
+    return esDestinoStellar(texto) ? texto : null;
   } catch {
     return null;
   }
@@ -139,7 +144,8 @@ function firmantesDe(
     const info = inspectAuthEntry(entrada);
     // Una G firmada que no es la wallet de la sesión invalida el XDR,
     // aunque autorice otro contrato (por ejemplo transfer). Una credencial
-    // de contrato (C…) puede quedar: no es la cuenta de la sesión.
+    // de contrato (C…) o de contrato multiplexado (W…) puede quedar:
+    // ninguna de las dos es la cuenta de la sesión.
     if (info.address === null) {
       if (!sobreFirmado(tx) || !esCuenta(tx.source)) return null;
       if (wallet && tx.source !== wallet) return null;

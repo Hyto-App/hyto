@@ -1,6 +1,7 @@
 import { normalizarMonto } from "@/lib/admin/vista";
 import type { Almacen, CambioTarea } from "@/lib/db/almacen";
 import type { TareaFila } from "@/lib/db/tipos";
+import { esCuenta } from "@/lib/escrow/cuerpos";
 import { AVISO_MONTO_INVALIDO } from "@/lib/escrow/monto";
 import { lectorSaldoVigente, rechazoSiFondos, type LectorSaldo } from "@/lib/escrow/saldo";
 import { montoBloqueable } from "@/lib/tareas/monto-bloqueable";
@@ -70,7 +71,7 @@ export async function editarTareaHttp(
   if (bloqueo) return json({ aviso: bloqueo }, 409);
   const subida = montoBloqueable(fresco, leido.cambio);
   const wallet = opciones.wallet?.trim() ?? "";
-  if (subida && /^G[A-Z2-7]{55}$/.test(wallet)) {
+  if (subida && esCuenta(wallet)) {
     const fondos = await rechazoSiFondos(wallet, subida, opciones.leerSaldo ?? lectorSaldoVigente());
     if (fondos) return fondos;
   }

@@ -297,10 +297,21 @@ function avisoDistribuciones(lista: Distribucion[]): string | null {
   return null;
 }
 
+/**
+ * Classic account (`G…`). It can sign and hold a USDC trustline.
+ * A Protocol 30 muxed contract (`W…`) is not an account: it cannot sign,
+ * and a Trustless Work receiver still needs a classic trustline.
+ * The check stays a shape check. Several fixtures use accounts whose
+ * checksum the network would reject, and those flows are unchanged.
+ */
 export function esCuenta(direccion: string): boolean {
   return /^G[A-Z2-7]{55}$/.test(direccion);
 }
 
+/**
+ * Contract id (`C…`). Escrow ids and the USDC asset contract use this form.
+ * A `W…` address is that contract plus a multiplexing id, not the id itself.
+ */
 export function esContrato(direccion: string): boolean {
   return /^C[A-Z2-7]{55}$/.test(direccion);
 }

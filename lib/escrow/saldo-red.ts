@@ -1,5 +1,6 @@
 import { Account, Address, Contract, Keypair, Networks, TransactionBuilder, scValToNative, xdr } from "@stellar/stellar-sdk";
 import { esContrato } from "./cuerpos";
+import { contratoBase } from "./direcciones";
 import { USDC_SAC_TESTNET } from "./desplegar";
 import { aplicarSaldoRed, balanceNumerico, hayFondos } from "./fondeo";
 import { RPC_TESTNET } from "./confirmacion";
@@ -26,7 +27,10 @@ export function tokenDeEscrow(escrow: Record<string, unknown>): string {
   const trust = escrow.trustline;
   if (trust && typeof trust === "object") {
     const id = (trust as { contractId?: unknown }).contractId;
-    if (typeof id === "string" && esContrato(id.trim())) return id.trim();
+    if (typeof id === "string") {
+      const canonico = contratoBase(id);
+      if (canonico) return canonico;
+    }
   }
   return USDC_SAC_TESTNET;
 }
