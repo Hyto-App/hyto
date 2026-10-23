@@ -11,7 +11,7 @@ import { phashDe, UMBRAL_COPIA } from "@/lib/evidencia/phash";
 import { consumirTokenEvidencia, emitirTokenEvidencia } from "@/lib/evidencia/token";
 import { esEvidenciaTextual, esImagen, nombreDeTipo, tipoPorBytes } from "@/lib/evidencia/tipo";
 import { avisoArchivo, MAX_BYTES_ARCHIVO, validarBytes } from "@/lib/evidencia/validar";
-import { esContrato } from "@/lib/escrow/cuerpos";
+import { esContrato, esCuenta } from "@/lib/escrow/cuerpos";
 import { ORIGEN_ARCHIVO, ORIGEN_GALERIA } from "@/lib/integrante/fotoEnVivo";
 import { intentoGuardado, mileConIntento } from "@/lib/integrante/intento";
 import { desdeFallo, type ResultadoRevision } from "@/lib/revision/armar";
@@ -508,7 +508,7 @@ async function puedeSubir(almacen: Almacen, tarea: TareaFila, actor: ActorEviden
 
 function direccion(valor: string): string | null {
   const limpio = valor.trim();
-  if (!/^G[A-Z2-7]{55}$/.test(limpio)) return null;
+  if (!esCuenta(limpio)) return null;
   return limpio;
 }
 

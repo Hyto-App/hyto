@@ -1,4 +1,5 @@
 import { FeeBumpTransaction, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
+import { esCuenta } from "./cuerpos";
 
 /**
  * Escrow fees are paid on Stellar testnet by the session account. Trustless Work v2
@@ -59,7 +60,7 @@ export async function rechazoSiComision(
   const comision = xdr === undefined ? 1n : comisionDeXdr(xdr);
   if (comision === null) return null;
   const direccion = wallet.trim();
-  if (!/^G[A-Z2-7]{55}$/.test(direccion)) return null;
+  if (!esCuenta(direccion)) return null;
   let respuesta: Response;
   try {
     respuesta = await fetchImpl(`${HORIZON_TESTNET}/accounts/${encodeURIComponent(direccion)}`, {
